@@ -432,7 +432,36 @@ const Projects = () => {
           <div>
             <h2 className="text-2xl font-display font-normal tracking-tight">{t('projects.title')}</h2>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2">
+              <Button onClick={() => setDialogOpen(true)}>
+                <Plus className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">
+                  {t('projects.newProject')}
+                </span>
+                <span className="sm:hidden">{t('common.create', 'Skapa')}</span>
+              </Button>
+            <CreateProjectDialog
+              open={dialogOpen}
+              onOpenChange={setDialogOpen}
+              isGuest={isGuest}
+              isContractor={isContractor}
+              refreshStorageUsage={refreshStorageUsage}
+              onOpenAIImport={() => setShowAIImport(true)}
+              onOpenIntake={() => setCreateIntakeOpen(true)}
+            />
+          </div>
+        </div>
+
+        {/* Dashboard strip — reminders, right below header (excludes demo project) */}
+        {nonDemoProjects.length > 0 && (
+          <DashboardStrip
+            projectIds={nonDemoProjects.map((p) => p.id)}
+            currency={nonDemoProjects[0]?.currency || "SEK"}
+          />
+        )}
+
+        {/* View controls — directly above the project list */}
+        <div className="flex items-center gap-2 flex-wrap mb-4">
               {displayProjects.length > 0 && !editorialDashboard && (
                 <div className="flex items-center border rounded-md">
                   <button
@@ -542,34 +571,7 @@ const Projects = () => {
                   }
                 />
               )}
-              <Button onClick={() => setDialogOpen(true)}>
-                <Plus className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">
-                  {t('projects.newProject')}
-                </span>
-                <span className="sm:hidden">{t('common.create', 'Skapa')}</span>
-              </Button>
-            <CreateProjectDialog
-              open={dialogOpen}
-              onOpenChange={setDialogOpen}
-              isGuest={isGuest}
-              isContractor={isContractor}
-              refreshStorageUsage={refreshStorageUsage}
-              onOpenAIImport={() => setShowAIImport(true)}
-              onOpenIntake={() => setCreateIntakeOpen(true)}
-            />
           </div>
-        </div>
-
-        {/* Dashboard strip — reminders, right below header (excludes demo project) */}
-        {nonDemoProjects.length > 0 && (
-          <DashboardStrip
-            projectIds={nonDemoProjects.map((p) => p.id)}
-            currency={nonDemoProjects[0]?.currency || "SEK"}
-          />
-        )}
-
-
 
         {displayProjects.length === 0 && !showAdminProjects ? (
           <div className="max-w-lg mx-auto text-center py-12 space-y-8">
