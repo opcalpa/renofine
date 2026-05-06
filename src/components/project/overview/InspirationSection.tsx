@@ -1774,7 +1774,7 @@ export function InspirationSection({ projectId, currency, isPlanning = false }: 
       {/* ===== Fullscreen Gallery Dialog ===== */}
       <Dialog open={galleryIndex !== null} onOpenChange={(open) => { if (!open) closeGallery(); }}>
         <DialogContent
-          className="!max-w-[min(1200px,94vw)] w-[94vw] !max-h-[88vh] h-[88vh] !p-0 gap-0 flex flex-col sm:flex-row overflow-hidden !rounded-xl"
+          className="!max-w-[min(1200px,94vw)] w-[94vw] sm:!max-h-[88vh] sm:h-[88vh] !max-h-[100dvh] !h-[100dvh] !p-0 gap-0 flex flex-col sm:flex-row overflow-hidden sm:!rounded-xl !rounded-none"
           onKeyDown={(e) => {
             if (e.key === "ArrowLeft") galleryPrev();
             if (e.key === "ArrowRight") galleryNext();
@@ -1782,13 +1782,13 @@ export function InspirationSection({ projectId, currency, isPlanning = false }: 
         >
           <DialogTitle className="sr-only">{t("inspiration.gallery", "Inspiration gallery")}</DialogTitle>
           {galleryPhoto && (
-            <>
+            <div className="flex flex-col sm:flex-row flex-1 overflow-y-auto sm:overflow-hidden">
               {/* Image area — cinematic dark backdrop */}
-              <div className="relative flex-1 bg-neutral-950 flex items-center justify-center min-h-[45vh] sm:min-h-0 min-w-0">
+              <div className="relative flex-1 bg-neutral-950 flex items-center justify-center sm:min-h-0 min-w-0 shrink-0 sm:shrink">
                 <img
                   src={galleryPhoto.url}
                   alt={galleryPhoto.caption || ""}
-                  className="w-full h-full object-contain select-none"
+                  className="w-full sm:h-full object-contain select-none"
                   draggable={false}
                 />
                 {/* Nav arrows */}
@@ -1828,8 +1828,8 @@ export function InspirationSection({ projectId, currency, isPlanning = false }: 
                 </div>
               </div>
 
-              {/* Side panel */}
-              <div className="w-full sm:w-72 shrink-0 border-t sm:border-t-0 sm:border-l bg-background p-4 space-y-4 overflow-y-auto max-h-[43vh] sm:max-h-none">
+              {/* Side panel — scrolls on mobile, fixed width on desktop */}
+              <div className="w-full sm:w-72 shrink-0 border-t sm:border-t-0 sm:border-l bg-background p-4 space-y-4 overflow-y-auto sm:max-h-none">
                 {/* Caption */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1">
@@ -1972,7 +1972,7 @@ export function InspirationSection({ projectId, currency, isPlanning = false }: 
                   />
                 </div>
               </div>
-            </>
+            </div>
           )}
         </DialogContent>
       </Dialog>

@@ -90,23 +90,26 @@ export function ImageLightbox({ images, initialIndex, open, onClose, projectId }
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent
-        className="!max-w-[min(1200px,94vw)] w-[94vw] !max-h-[88vh] h-[88vh] !p-0 gap-0 flex flex-col sm:flex-row overflow-hidden !rounded-xl"
+        className="!max-w-[min(1200px,94vw)] w-[94vw] sm:!max-h-[88vh] sm:h-[88vh] !max-h-[100dvh] !h-[100dvh] !p-0 gap-0 flex flex-col sm:flex-row overflow-hidden sm:!rounded-xl !rounded-none"
         onKeyDown={handleKeyDown}
       >
         <DialogTitle className="sr-only">{t("inspiration.gallery", "Gallery")}</DialogTitle>
 
+        {/* Mobile: scrollable vertical layout. Desktop: flex row */}
+        <div className="flex flex-col sm:flex-row flex-1 overflow-y-auto sm:overflow-hidden">
+
         {/* Image area */}
-        <div className="relative flex-1 bg-neutral-950 flex flex-col min-h-[45vh] sm:min-h-0 min-w-0">
+        <div className="relative flex-1 bg-neutral-950 flex flex-col sm:min-h-0 min-w-0 shrink-0 sm:shrink">
           {/* Image container with zoom/rotate */}
           <div className="flex-1 flex items-center justify-center overflow-auto min-h-0">
             <img
               src={photo.url}
               alt={photo.caption || photo.filename || ""}
-              className="select-none transition-transform duration-150"
+              className="w-full sm:w-auto sm:max-w-full sm:max-h-full object-contain select-none transition-transform duration-150"
               style={{
                 transform: `scale(${zoom / 100}) rotate(${rotation}deg)`,
                 maxWidth: zoom <= 100 ? "100%" : "none",
-                maxHeight: zoom <= 100 ? "100%" : "none",
+                maxHeight: zoom <= 100 ? (window.innerWidth < 640 ? "none" : "100%") : "none",
               }}
               draggable={false}
             />
@@ -168,8 +171,8 @@ export function ImageLightbox({ images, initialIndex, open, onClose, projectId }
           </div>
         </div>
 
-        {/* Sidebar */}
-        <div className="w-full sm:w-72 shrink-0 border-t sm:border-t-0 sm:border-l bg-background p-4 space-y-4 overflow-y-auto max-h-[43vh] sm:max-h-none">
+        {/* Sidebar — scrolls independently on mobile, fixed width on desktop */}
+        <div className="w-full sm:w-72 shrink-0 border-t sm:border-t-0 sm:border-l bg-background p-4 space-y-4 overflow-y-auto sm:max-h-none">
           {/* Info */}
           {(photo.caption || photo.filename) && (
             <div>
@@ -188,6 +191,8 @@ export function ImageLightbox({ images, initialIndex, open, onClose, projectId }
               />
             </div>
           )}
+        </div>
+
         </div>
       </DialogContent>
     </Dialog>
