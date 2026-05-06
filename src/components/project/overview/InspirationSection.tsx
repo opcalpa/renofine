@@ -1157,13 +1157,13 @@ export function InspirationSection({ projectId, currency, isPlanning = false }: 
         {/* ===== MOODBOARD VIEW ===== */}
         {inspoView === "moodboard" && (
           <div className="space-y-3">
-            {/* Interactive grid — horizontal scroll on mobile */}
+            {/* Interactive grid — fits viewport on mobile, scrollable on desktop if needed */}
             <div
-              className="rounded-xl overflow-x-auto overflow-y-hidden transition-colors -mx-1 px-1"
+              className="rounded-xl sm:overflow-x-auto overflow-y-hidden transition-colors -mx-1 px-1"
               style={{ WebkitOverflowScrolling: "touch" }}
             >
             <div
-              className="rounded-xl overflow-hidden transition-colors min-w-[600px]"
+              className="rounded-xl overflow-hidden transition-colors sm:min-w-[600px]"
               style={{ backgroundColor: moodboardBg, padding: moodboardGap ? `${moodboardGapSize + 4}px` : "0" }}
               onClick={() => setSelectedPhotoId(null)}
             >
