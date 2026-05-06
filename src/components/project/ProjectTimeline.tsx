@@ -348,15 +348,18 @@ const ProjectTimeline = ({
         setDaysVisible(90);
         setCenterDate(addDays(new Date(), 45));
         break;
-      case 'full':
-        // Calculate full project span
+      case 'full': {
+        // Calculate span from actual task dates (not project dates which may be stale)
         const dates: Date[] = [];
-        if (projectStartDate) dates.push(parseISO(projectStartDate));
-        if (projectFinishDate) dates.push(parseISO(projectFinishDate));
         tasks.forEach(task => {
           if (task.start_date) dates.push(parseISO(task.start_date));
           if (task.finish_date) dates.push(parseISO(task.finish_date));
         });
+        // Fallback to project dates only if no tasks have dates
+        if (dates.length === 0) {
+          if (projectStartDate) dates.push(parseISO(projectStartDate));
+          if (projectFinishDate) dates.push(parseISO(projectFinishDate));
+        }
         if (dates.length >= 2) {
           const minDate = new Date(Math.min(...dates.map(d => d.getTime())));
           const maxDate = new Date(Math.max(...dates.map(d => d.getTime())));
@@ -365,6 +368,7 @@ const ProjectTimeline = ({
           setCenterDate(addDays(minDate, Math.floor(span / 2)));
         }
         break;
+      }
     }
   };
 
