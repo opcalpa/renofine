@@ -12,14 +12,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -347,71 +339,68 @@ export function RoomsTableView({
   };
 
   return (
-    <div className="border rounded-lg overflow-hidden">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-10" />
-            <TableHead>{t("rooms.roomName", "Namn")}</TableHead>
+    <div className="rounded-lg border bg-card overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="bg-muted border-b">
+            <th className="w-10 px-3 py-2.5" />
+            <th className="px-3 py-2.5 text-left kicker">{t("rooms.roomName", "Namn")}</th>
             {visibleFields.map((field) => {
               const def = fieldDefinitions.find((f) => f.key === field);
+              const isNumeric = def?.type === "number";
               return (
-                <TableHead key={field}>
+                <th key={field} className={`px-3 py-2.5 kicker whitespace-nowrap ${isNumeric ? "text-right" : "text-left"}`}>
                   {t(def?.labelKey || field)}
-                </TableHead>
+                </th>
               );
             })}
-            <TableHead className="w-24 text-right">
-              {t("common.actions", "Actions")}
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+            <th className="w-20 px-2 py-2.5" />
+          </tr>
+        </thead>
+        <tbody>
           {rooms.map((room) => (
-            <TableRow
+            <tr
               key={room.id}
-              className={`cursor-pointer hover:bg-muted/50 ${
-                selectedRoomIds.has(room.id) ? "bg-blue-50" : ""
+              className={`border-b last:border-b-0 hover:bg-muted/30 transition-colors cursor-pointer ${
+                selectedRoomIds.has(room.id) ? "bg-primary/5" : ""
               }`}
               onClick={() => onRoomClick(room)}
             >
-              <TableCell onClick={(e) => e.stopPropagation()}>
+              <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
                 <Checkbox
                   checked={selectedRoomIds.has(room.id)}
                   onCheckedChange={() => onToggleSelection(room.id)}
                 />
-              </TableCell>
-              <TableCell>
-                <span className="font-medium">{room.name}</span>
-              </TableCell>
-              {visibleFields.map((field) => (
-                <TableCell
-                  key={field}
-                  className="text-sm"
-                  onClick={(e) => {
-                    const def = fieldDefinitions.find((d) => d.key === field);
-                    if (def?.editable) e.stopPropagation();
-                  }}
-                >
-                  {renderCell(room, field)}
-                </TableCell>
-              ))}
-              <TableCell
-                className="text-right"
-                onClick={(e) => e.stopPropagation()}
-              >
+              </td>
+              <td className="px-3 py-2.5">
+                <span className="font-medium truncate block max-w-[200px]">{room.name}</span>
+              </td>
+              {visibleFields.map((field) => {
+                const def = fieldDefinitions.find((d) => d.key === field);
+                const isNumeric = def?.type === "number";
+                return (
+                  <td
+                    key={field}
+                    className={`px-3 py-2.5 ${isNumeric ? "text-right" : ""}`}
+                    onClick={(e) => { if (def?.editable) e.stopPropagation(); }}
+                  >
+                    {renderCell(room, field)}
+                  </td>
+                );
+              })}
+              <td className="px-2 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center justify-end gap-1">
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
                           variant="ghost"
-                          size="sm"
-                          className={
+                          size="icon"
+                          className={`h-7 w-7 ${
                             isRoomPlacedOnCanvas(room)
                               ? "text-green-600 hover:text-green-700 hover:bg-green-50"
-                              : "text-gray-400 hover:text-amber-600 hover:bg-amber-50"
-                          }
+                              : "text-muted-foreground hover:text-amber-600 hover:bg-amber-50"
+                          }`}
                           onClick={() => {
                             if (isRoomPlacedOnCanvas(room)) {
                               onNavigateToRoom?.(room);
@@ -420,16 +409,13 @@ export function RoomsTableView({
                             }
                           }}
                         >
-                          <MapPin className="h-4 w-4" />
+                          <MapPin className="h-3.5 w-3.5" />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
                         {isRoomPlacedOnCanvas(room)
                           ? t("rooms.showOnFloorPlan", "Visa på ritning")
-                          : t(
-                              "rooms.placeOnFloorPlan",
-                              "Placera på ritning"
-                            )}
+                          : t("rooms.placeOnFloorPlan", "Placera på ritning")}
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -439,11 +425,11 @@ export function RoomsTableView({
                         <TooltipTrigger asChild>
                           <Button
                             variant="ghost"
-                            size="sm"
-                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                            size="icon"
+                            className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                             onClick={() => onDeleteRoom(room.id)}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-3.5 w-3.5" />
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>
@@ -453,11 +439,11 @@ export function RoomsTableView({
                     </TooltipProvider>
                   )}
                 </div>
-              </TableCell>
-            </TableRow>
+              </td>
+            </tr>
           ))}
-        </TableBody>
-      </Table>
+        </tbody>
+      </table>
     </div>
   );
 }
