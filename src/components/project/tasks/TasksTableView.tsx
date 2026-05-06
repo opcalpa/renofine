@@ -17,19 +17,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Card, CardContent } from "@/components/ui/card";
 import { MultiRoomSelect } from "@/components/shared/MultiRoomSelect";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -992,27 +983,28 @@ export function TasksTableView({
   };
 
   const renderTaskRow = (task: typeof sortedTasks[0]) => (
-    <TableRow
+    <tr
       key={task.id}
       className={cn(
-        "hover:bg-muted/50 cursor-pointer",
+        "hover:bg-muted/30 transition-colors cursor-pointer border-b last:border-b-0",
         bulk.selectedIds.has(task.id) && "bg-primary/5",
       )}
       onClick={() => onTaskClick(task)}
     >
       {!isReadOnly && (
-        <TableCell className="w-[40px] px-2" onClick={(e) => e.stopPropagation()}>
+        <td className="w-[40px] px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
           <Checkbox
             checked={bulk.selectedIds.has(task.id)}
             onCheckedChange={() => bulk.toggleOne(task.id)}
             aria-label={t("tasksTable.bulkSelectTask", "Select task")}
           />
-        </TableCell>
+        </td>
       )}
       {visibleColumns.map((col, colIdx) => (
-        <TableCell
+        <td
           key={col.key}
           className={cn(
+            "px-3 py-2.5",
             col.align === "right" ? "text-right" : "",
             compactRows && "py-1 text-xs",
             dragOverIdx === colIdx && dragColIdx !== null && dragColIdx !== colIdx && "border-l-2 border-primary",
@@ -1020,9 +1012,9 @@ export function TasksTableView({
           )}
         >
           {renderCell(col, task)}
-        </TableCell>
+        </td>
       ))}
-    </TableRow>
+    </tr>
   );
 
   return (
@@ -1092,26 +1084,25 @@ export function TasksTableView({
       </div>}
 
       {/* Table */}
-      <Card>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
+      <div className="rounded-lg border bg-card overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-muted border-b">
                   {!isReadOnly && (
-                    <TableHead className="w-[40px] px-2">
+                    <th className="kicker w-[40px] px-3 py-2.5">
                       <Checkbox
                         checked={bulk.allSelected ? true : bulk.someSelected ? "indeterminate" : false}
                         onCheckedChange={() => bulk.toggleAll()}
                         onClick={(e) => e.stopPropagation()}
                         aria-label={t("tasksTable.bulkSelectAll", "Select all")}
                       />
-                    </TableHead>
+                    </th>
                   )}
                   {visibleColumns.map((col, idx) => (
-                    <TableHead
+                    <th
                       key={col.key}
                       className={cn(
+                        "kicker px-3 py-2.5",
                         col.width || "",
                         col.align === "right" ? "text-right" : "",
                         "select-none",
@@ -1139,24 +1130,24 @@ export function TasksTableView({
                       ) : (
                         <span className="text-xs">{col.label}</span>
                       )}
-                    </TableHead>
+                    </th>
                   ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+                </tr>
+              </thead>
+              <tbody>
                 {sortedTasks.length === 0 ? (
-                  <TableRow>
-                    <TableCell
+                  <tr>
+                    <td
                       colSpan={visibleColumns.length + (isReadOnly ? 0 : 1)}
-                      className="py-12"
+                      className="px-3 py-12"
                     >
                       <div className="flex flex-col items-center gap-2 text-muted-foreground">
                         <ClipboardList className="h-10 w-10 opacity-30" />
                         <p className="text-sm font-medium">{t("tasksTable.noTasks")}</p>
                         <p className="text-xs">{t("tasksTable.noTasksHint", "Add your first task using the button above")}</p>
                       </div>
-                    </TableCell>
-                  </TableRow>
+                    </td>
+                  </tr>
                 ) : (
                   (() => {
                     // Build grouped display list
@@ -1204,30 +1195,28 @@ export function TasksTableView({
                     return groupOrder.flatMap((key) => {
                       const groupTasks = groups.get(key)!;
                       const header = (
-                        <TableRow
+                        <tr
                           key={`group-${key}`}
-                          className="cursor-pointer hover:bg-muted/50 bg-primary/5 border-t-2 border-primary/20"
+                          className="cursor-pointer hover:bg-muted/30 transition-colors bg-primary/5 border-t-2 border-primary/20 border-b last:border-b-0"
                           onClick={() => toggleGroupCollapse(key)}
                         >
-                          <TableCell colSpan={visibleColumns.length + (isReadOnly ? 0 : 1)} className="py-2">
+                          <td colSpan={visibleColumns.length + (isReadOnly ? 0 : 1)} className="px-3 py-2">
                             <div className="flex items-center gap-2">
                               <ChevronDown className={cn("h-4 w-4 text-primary transition-transform", collapsedGroups.has(key) && "-rotate-90")} />
                               <span className="text-sm font-semibold">{getGroupLabel(key)}</span>
                               <Badge variant="secondary" className="text-xs">{groupTasks.length}</Badge>
                             </div>
-                          </TableCell>
-                        </TableRow>
+                          </td>
+                        </tr>
                       );
                       if (collapsedGroups.has(key)) return [header];
                       return [header, ...groupTasks.map((task) => renderTaskRow(task))];
                     });
                   })()
                 )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+              </tbody>
+            </table>
+      </div>
 
       {/* Dependency override confirmation dialog */}
       <AlertDialog open={!!pendingStatusChange} onOpenChange={(open) => !open && setPendingStatusChange(null)}>

@@ -15,19 +15,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/currency";
@@ -734,16 +725,16 @@ export function PurchasesTableView({
       </div>}
 
       {/* Table */}
-      <Card>
-        <CardContent className="p-0">
+      <div className="rounded-lg border bg-card overflow-x-auto">
           <div className="overflow-auto max-h-[calc(100vh-20rem)]">
-            <Table>
-              <TableHeader className="sticky top-0 z-20 bg-card">
-                <TableRow>
+            <table className="w-full text-sm">
+              <thead className="sticky top-0 z-20 bg-card">
+                <tr className="bg-muted border-b">
                   {visibleColumns.map((col, idx) => (
-                    <TableHead
+                    <th
                       key={col.key}
                       className={cn(
+                        "kicker px-3 py-2.5",
                         col.width || "",
                         col.align === "right" ? "text-right" : "",
                         "select-none",
@@ -771,36 +762,37 @@ export function PurchasesTableView({
                       ) : (
                         <span className="text-xs">{col.label}</span>
                       )}
-                    </TableHead>
+                    </th>
                   ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+                </tr>
+              </thead>
+              <tbody>
                 {sortedMaterials.length === 0 ? (
-                  <TableRow>
-                    <TableCell
+                  <tr>
+                    <td
                       colSpan={visibleColumns.length}
-                      className="py-12"
+                      className="px-3 py-12"
                     >
                       <div className="flex flex-col items-center gap-2 text-muted-foreground">
                         <Package className="h-10 w-10 opacity-30" />
                         <p className="text-sm font-medium">{t("purchasesTable.noMaterials")}</p>
                         <p className="text-xs">{t("purchasesTable.noMaterialsHint", "Track materials and purchases for this project")}</p>
                       </div>
-                    </TableCell>
-                  </TableRow>
+                    </td>
+                  </tr>
                 ) : (
                   (() => {
                     const renderMaterialRow = (material: typeof sortedMaterials[0]) => (
-                      <TableRow
+                      <tr
                         key={material.id}
-                        className="hover:bg-muted/50 cursor-pointer"
+                        className="hover:bg-muted/30 transition-colors cursor-pointer border-b last:border-b-0"
                         onClick={() => onMaterialClick(material)}
                       >
                         {visibleColumns.map((col, colIdx) => (
-                          <TableCell
+                          <td
                             key={col.key}
                             className={cn(
+                              "px-3 py-2.5",
                               col.align === "right" ? "text-right" : "",
                               compactRows && "py-1 text-xs",
                               dragOverIdx === colIdx && dragColIdx !== null && dragColIdx !== colIdx && "border-l-2 border-primary",
@@ -808,9 +800,9 @@ export function PurchasesTableView({
                             )}
                           >
                             {renderCell(col, material)}
-                          </TableCell>
+                          </td>
                         ))}
-                      </TableRow>
+                      </tr>
                     );
 
                     if (groupBy === "none") return sortedMaterials.map(renderMaterialRow);
@@ -845,30 +837,29 @@ export function PurchasesTableView({
                     return groupOrder.flatMap((key) => {
                       const groupItems = groups.get(key)!;
                       const header = (
-                        <TableRow
+                        <tr
                           key={`group-${key}`}
-                          className="cursor-pointer hover:bg-muted/50 bg-primary/5 border-t-2 border-primary/20"
+                          className="cursor-pointer hover:bg-muted/30 transition-colors bg-primary/5 border-t-2 border-primary/20 border-b last:border-b-0"
                           onClick={() => toggleGroupCollapse(key)}
                         >
-                          <TableCell colSpan={visibleColumns.length} className="py-2">
+                          <td colSpan={visibleColumns.length} className="px-3 py-2">
                             <div className="flex items-center gap-2">
                               <ChevronDown className={cn("h-4 w-4 text-primary transition-transform", collapsedGroups.has(key) && "-rotate-90")} />
                               <span className="text-sm font-semibold">{getGroupLabel(key)}</span>
                               <Badge variant="secondary" className="text-xs">{groupItems.length}</Badge>
                             </div>
-                          </TableCell>
-                        </TableRow>
+                          </td>
+                        </tr>
                       );
                       if (collapsedGroups.has(key)) return [header];
                       return [header, ...groupItems.map(renderMaterialRow)];
                     });
                   })()
                 )}
-              </TableBody>
-            </Table>
+              </tbody>
+            </table>
           </div>
-        </CardContent>
-      </Card>
+      </div>
 
       <PaidDateConfirm
         open={!!paidConfirm}

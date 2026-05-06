@@ -34,15 +34,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableFooter,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -2844,16 +2835,17 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
         {isBuilder ? t('budget.exMomsNote', 'All amounts ex. VAT') : t('budget.incMomsNote', 'All amounts inc. VAT')}
       </p>
       <div className={cn("border rounded-lg overflow-auto bg-card", isFullscreen ? "max-h-[calc(100vh-8rem)] mx-0 px-0" : "max-h-[calc(100vh-20rem)] -mx-3 px-3 md:mx-0 md:px-0")}>
-        <Table>
-          <TableHeader className="sticky top-0 z-20 bg-card">
-            <TableRow>
+        <table className="w-full text-sm">
+          <thead className="sticky top-0 z-20 bg-card">
+            <tr className="bg-muted border-b">
               {visibleColumns.map((col, idx) => {
                 const isDragging = draggingColIdx === idx;
                 const isDropTarget = dragOverColIdx === idx && draggingColIdx !== null && draggingColIdx !== idx;
                 return (
-                <TableHead
+                <th
                   key={col.key}
                   className={cn(
+                    "kicker px-3 py-2.5",
                     col.align === "right" ? "text-right" : "",
                     "select-none transition-colors",
                     compactRows ? "py-1 text-xs h-8" : "",
@@ -2889,34 +2881,34 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
                       )}
                     </button>
                   </div>
-                </TableHead>
+                </th>
                 );
               })}
               {/* Actions column header (builder only) */}
               {isBuilder && (
-                <TableHead className={`w-20${compactRows ? " py-1 text-xs h-8" : ""}`} />
+                <th className={`kicker px-3 py-2.5 w-20${compactRows ? " py-1 text-xs h-8" : ""}`} />
               )}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+            </tr>
+          </thead>
+          <tbody>
             {displayRows.length === 0 && !isAddingRow ? (
-              <TableRow>
-                <TableCell colSpan={visibleColumns.length + (isBuilder ? 1 : 0)} className="text-center py-8 text-muted-foreground">
+              <tr className="border-b last:border-b-0 hover:bg-muted/30 transition-colors">
+                <td colSpan={visibleColumns.length + (isBuilder ? 1 : 0)} className="px-3 py-2.5 text-center py-8 text-muted-foreground">
                   {t('budget.noBudgetItems')}
-                </TableCell>
-              </TableRow>
+                </td>
+              </tr>
             ) : (
               displayRows.map((row) => {
                 const rowMeta = row as unknown as { isSectionHeader?: boolean; childCount?: number; _groupKey?: string };
 
                 // Standalone material budgets section header
                 if (rowMeta.isSectionHeader && row.id === "__standalone_bp_header__") return (
-                  <TableRow
+                  <tr
                     key="standalone-bp-header"
-                    className={`cursor-pointer hover:bg-muted/50 bg-blue-50/50 border-t-2 border-blue-200${compactRows ? " h-8" : ""}`}
+                    className={`border-b last:border-b-0 hover:bg-muted/30 transition-colors cursor-pointer hover:bg-muted/50 bg-blue-50/50 border-t-2 border-blue-200${compactRows ? " h-8" : ""}`}
                     onClick={() => setUnlinkedExpanded(!unlinkedExpanded)}
                   >
-                    <TableCell colSpan={visibleColumns.length + (isBuilder ? 1 : 0)} className="py-2">
+                    <td colSpan={visibleColumns.length + (isBuilder ? 1 : 0)} className="px-3 py-2.5 py-2">
                       <div className="flex items-center gap-2">
                         <ChevronDown className={`h-4 w-4 text-blue-500 transition-transform ${unlinkedExpanded ? "" : "-rotate-90"}`} />
                         <ShoppingCart className="h-4 w-4 text-blue-500" />
@@ -2924,18 +2916,18 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
                         <Badge variant="secondary" className="text-xs">{rowMeta.childCount}</Badge>
                         <span className="text-xs text-muted-foreground ml-auto">{formatCurrency(row.budget, currency)}</span>
                       </div>
-                    </TableCell>
-                  </TableRow>
+                    </td>
+                  </tr>
                 );
 
                 // Tillägg section header
                 if (rowMeta.isSectionHeader && row.id === "__ata_header__") return (
-                  <TableRow
+                  <tr
                     key="ata-header"
-                    className={`cursor-pointer hover:bg-muted/50 bg-orange-50/60 border-t-2 border-orange-300${compactRows ? " h-8" : ""}`}
+                    className={`border-b last:border-b-0 hover:bg-muted/30 transition-colors cursor-pointer hover:bg-muted/50 bg-orange-50/60 border-t-2 border-orange-300${compactRows ? " h-8" : ""}`}
                     onClick={() => setAtaExpanded(!ataExpanded)}
                   >
-                    <TableCell colSpan={visibleColumns.length + (isBuilder ? 1 : 0)} className="py-2">
+                    <td colSpan={visibleColumns.length + (isBuilder ? 1 : 0)} className="px-3 py-2.5 py-2">
                       <div className="flex items-center gap-2">
                         <ChevronDown className={`h-4 w-4 text-orange-500 transition-transform ${ataExpanded ? "" : "-rotate-90"}`} />
                         <Badge variant="outline" className="text-xs text-orange-700 border-orange-300 bg-orange-100">{t('budget.addition', 'Tillägg')}</Badge>
@@ -2947,18 +2939,18 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
                           </span>
                         )}
                       </div>
-                    </TableCell>
-                  </TableRow>
+                    </td>
+                  </tr>
                 );
 
                 // Group header (from groupBy)
                 if (rowMeta.isSectionHeader && rowMeta._groupKey != null) return (
-                  <TableRow
+                  <tr
                     key={row.id}
-                    className={`cursor-pointer hover:bg-muted/50 bg-primary/5 border-t-2 border-primary/20${compactRows ? " h-8" : ""}`}
+                    className={`border-b last:border-b-0 hover:bg-muted/30 transition-colors cursor-pointer hover:bg-muted/50 bg-primary/5 border-t-2 border-primary/20${compactRows ? " h-8" : ""}`}
                     onClick={() => toggleGroupCollapse(rowMeta._groupKey!)}
                   >
-                    <TableCell colSpan={visibleColumns.length + (isBuilder ? 1 : 0)} className="py-2">
+                    <td colSpan={visibleColumns.length + (isBuilder ? 1 : 0)} className="px-3 py-2.5 py-2">
                       <div className="flex items-center gap-2">
                         <ChevronDown className={`h-4 w-4 text-primary transition-transform ${collapsedGroups.has(rowMeta._groupKey!) ? "-rotate-90" : ""}`} />
                         <span className="text-sm font-semibold">{row.name}</span>
@@ -2969,8 +2961,8 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
                           </span>
                         )}
                       </div>
-                    </TableCell>
-                  </TableRow>
+                    </td>
+                  </tr>
                 );
 
                 // Regular row
@@ -2984,22 +2976,22 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
                       ? "bg-muted/30"
                       : "";
                 return (
-                <TableRow
+                <tr
                   key={`${row.type}-${row.id}`}
                   id={`budget-row-${row.id}`}
-                  className={`hover:bg-muted/50${compactRows ? " h-8" : ""} ${rowBg} transition-all`}
+                  className={`border-b last:border-b-0 hover:bg-muted/30 transition-colors hover:bg-muted/50${compactRows ? " h-8" : ""} ${rowBg} transition-all`}
                 >
                   {visibleColumns.map((col, colIdx) => (
-                    <TableCell
+                    <td
                       key={col.key}
-                      className={`${col.align === "right" ? "text-right" : ""}${compactRows ? " py-0.5 px-2 text-xs" : " text-sm"}${row.isChild && compactRows ? " text-[11px]" : ""}${colIdx === 0 ? ` sticky left-0 z-10 ${rowBg || "bg-card"} after:content-[''] after:absolute after:inset-y-0 after:right-0 after:w-px after:bg-border` : ""}`}
+                      className={`px-3 py-2.5 ${col.align === "right" ? "text-right" : ""}${compactRows ? " py-0.5 px-2 text-xs" : " text-sm"}${row.isChild && compactRows ? " text-[11px]" : ""}${colIdx === 0 ? ` sticky left-0 z-10 ${rowBg || "bg-card"} after:content-[''] after:absolute after:inset-y-0 after:right-0 after:w-px after:bg-border` : ""}`}
                     >
                       {renderCell(col, row)}
-                    </TableCell>
+                    </td>
                   ))}
                   {/* Row Actions (builder only) */}
                   {isBuilder && (
-                    <TableCell className={`${compactRows ? "py-0.5 px-1" : "px-2"}`} onClick={(e) => e.stopPropagation()}>
+                    <td className={`px-3 py-2.5 ${compactRows ? "py-0.5 px-1" : "px-2"}`} onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center gap-0.5">
                         {/* +Inköp button for material budget posts */}
                         {isBudgetPostRow && !row.id.startsWith("__") && (
@@ -3032,9 +3024,9 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
                           <Trash2 className={compactRows ? "h-3 w-3" : "h-4 w-4"} />
                         </Button>
                       </div>
-                    </TableCell>
+                    </td>
                   )}
-                </TableRow>
+                </tr>
                 );
               })
             )}
@@ -3042,11 +3034,11 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
             {/* Inline Add Row (builder only) */}
             {isBuilder && (
               isAddingRow ? (
-                <TableRow className={`bg-primary/5 border-primary/20${compactRows ? " h-8" : ""}`}>
+                <tr className={`border-b last:border-b-0 hover:bg-muted/30 transition-colors bg-primary/5 border-primary/20${compactRows ? " h-8" : ""}`}>
                   {visibleColumns.map((col) => (
-                    <TableCell
+                    <td
                       key={col.key}
-                      className={`${col.align === "right" ? "text-right" : ""}${compactRows ? " py-0.5 px-2 text-xs" : " py-1"}`}
+                      className={`px-3 py-2.5 ${col.align === "right" ? "text-right" : ""}${compactRows ? " py-0.5 px-2 text-xs" : " py-1"}`}
                     >
                       {col.key === "name" ? (
                         <Input
@@ -3102,10 +3094,10 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
                           </SelectContent>
                         </Select>
                       ) : null}
-                    </TableCell>
+                    </td>
                   ))}
                   {/* Save/Cancel buttons in actions column */}
-                  <TableCell>
+                  <td className="px-3 py-2.5">
                     <div className="flex items-center gap-1">
                       <Button
                         size="sm"
@@ -3129,46 +3121,46 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
                         {t('common.cancel')}
                       </Button>
                     </div>
-                  </TableCell>
-                </TableRow>
+                  </td>
+                </tr>
               ) : (
-                <TableRow
-                  className={`hover:bg-muted/50 cursor-pointer${compactRows ? " h-8" : ""}`}
+                <tr
+                  className={`border-b last:border-b-0 hover:bg-muted/30 transition-colors hover:bg-muted/50 cursor-pointer${compactRows ? " h-8" : ""}`}
                   onClick={handleStartAddRow}
                 >
-                  <TableCell
+                  <td
                     colSpan={visibleColumns.length + 1}
-                    className={`text-muted-foreground${compactRows ? " py-0.5 px-2 text-xs" : ""}`}
+                    className={`px-3 py-2.5 text-muted-foreground${compactRows ? " py-0.5 px-2 text-xs" : ""}`}
                   >
                     <span className="inline-flex items-center gap-1.5 text-sm">
                       <Plus className="h-4 w-4" />
                       {t('budget.addRow')}
                     </span>
-                  </TableCell>
-                </TableRow>
+                  </td>
+                </tr>
               )
             )}
-          </TableBody>
-        </Table>
+          </tbody>
+        </table>
       </div>
       {/* Summary row — pinned below the scroll area, always visible */}
       {filtered.length > 0 && (
         <div className="border border-t-2 border-border rounded-b-lg -mt-[1px] -mx-3 px-3 md:mx-0 md:px-0 bg-muted/50 overflow-x-auto">
-          <Table>
-            <TableFooter className="border-t-0">
-              <TableRow>
+          <table className="w-full text-sm">
+            <tfoot className="border-t-0">
+              <tr className="bg-muted border-b">
                 {visibleColumns.map((col) => (
-                  <TableCell
+                  <td
                     key={col.key}
-                    className={`${col.align === "right" ? "text-right" : ""}${compactRows ? " py-0.5 px-2 text-xs" : ""}`}
+                    className={`px-3 py-2.5 ${col.align === "right" ? "text-right" : ""}${compactRows ? " py-0.5 px-2 text-xs" : ""}`}
                   >
                     {renderFooterCell(col)}
-                  </TableCell>
+                  </td>
                 ))}
-                {isBuilder && <TableCell />}
-              </TableRow>
-            </TableFooter>
-          </Table>
+                {isBuilder && <td className="px-3 py-2.5" />}
+              </tr>
+            </tfoot>
+          </table>
         </div>
       )}
 
