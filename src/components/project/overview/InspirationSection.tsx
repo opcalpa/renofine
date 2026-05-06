@@ -141,6 +141,10 @@ export function InspirationSection({ projectId, currency, isPlanning = false }: 
   const [dragPhotoId, setDragPhotoId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const moodboardGridRef = useRef<HTMLDivElement>(null);
+  const moodboardWrapperRef = useRef<HTMLDivElement>(null);
+  const moodboardInnerRef = useRef<HTMLDivElement>(null);
+  const [mbZoom, setMbZoom] = useState(1);
+  const mbInitialScale = useRef(1);
   const inspoRef = useRef<HTMLDivElement>(null);
 
   // Check for room filter deep-link from room details
@@ -255,6 +259,72 @@ export function InspirationSection({ projectId, currency, isPlanning = false }: 
     if (selectedRoom === "untagged") return allPhotos.filter((p) => !p.roomId);
     return allPhotos.filter((p) => p.roomId === selectedRoom);
   }, [allPhotos, selectedRoom]);
+
+  // Mobile moodboard: calculate fit-to-width scale
+  useEffect(() => {
+    if (inspoView !== "moodboard") return;
+    const wrapper = moodboardWrapperRef.current;
+    const inner = moodboardInnerRef.current;
+    if (!wrapper || !inner) return;
+    const isMobile = window.innerWidth < 640;
+    if (!isMobile) { setMbZoom(1); mbInitialScale.current = 1; return; }
+    // Temporarily remove zoom to measure natural width
+    requestAnimationFrame(() => {
+      const prevZoom = inner.style.zoom;
+      inner.style.zoom = "1";
+      const wrapperW = wrapper.clientWidth;
+      const innerW = inner.scrollWidth;
+      inner.style.zoom = prevZoom;
+      if (innerW > wrapperW) {
+        const scale = wrapperW / innerW;
+        mbInitialScale.current = scale;
+        setMbZoom(scale);
+      }
+    });
+  }, [inspoView, filteredPhotos.length, moodboardGap, moodboardGapSize]);
+
+  // Pinch-to-zoom handler for mobile moodboard
+  useEffect(() => {
+    if (inspoView !== "moodboard") return;
+    const wrapper = moodboardWrapperRef.current;
+    if (!wrapper || window.innerWidth >= 640) return;
+
+    let startDist = 0;
+    let startZoom = 1;
+
+    const getDist = (touches: TouchList) => {
+      if (touches.length < 2) return 0;
+      const dx = touches[1].clientX - touches[0].clientX;
+      const dy = touches[1].clientY - touches[0].clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    };
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        startDist = getDist(e.touches);
+        startZoom = mbInitialScale.current <= 0 ? 1 : mbZoom;
+      }
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 2 && startDist > 0) {
+        e.preventDefault();
+        const dist = getDist(e.touches);
+        const ratio = dist / startDist;
+        const minScale = mbInitialScale.current * 0.9;
+        const maxScale = 2;
+        const newZoom = Math.max(minScale, Math.min(maxScale, startZoom * ratio));
+        setMbZoom(newZoom);
+      }
+    };
+
+    wrapper.addEventListener("touchstart", onTouchStart, { passive: true });
+    wrapper.addEventListener("touchmove", onTouchMove, { passive: false });
+    return () => {
+      wrapper.removeEventListener("touchstart", onTouchStart);
+      wrapper.removeEventListener("touchmove", onTouchMove);
+    };
+  }, [inspoView, mbZoom]);
 
   // Before/During/After photos grouped by room — uses ALL photos (not filtered allPhotos)
   const beforeAfterByRoom = useMemo(() => {
@@ -1157,14 +1227,20 @@ export function InspirationSection({ projectId, currency, isPlanning = false }: 
         {/* ===== MOODBOARD VIEW ===== */}
         {inspoView === "moodboard" && (
           <div className="space-y-3">
-            {/* Interactive grid — fits viewport on mobile, scrollable on desktop if needed */}
+            {/* Interactive grid — pinch-to-zoom on mobile, scrollable on desktop */}
             <div
-              className="rounded-xl sm:overflow-x-auto overflow-y-hidden transition-colors -mx-1 px-1"
-              style={{ WebkitOverflowScrolling: "touch" }}
+              ref={moodboardWrapperRef}
+              className="rounded-xl overflow-hidden transition-colors -mx-1 px-1 sm:overflow-x-auto sm:overflow-y-hidden"
+              style={{ touchAction: mbZoom <= mbInitialScale.current ? "pan-y" : "none" }}
             >
             <div
-              className="rounded-xl overflow-hidden transition-colors sm:min-w-[600px]"
-              style={{ backgroundColor: moodboardBg, padding: moodboardGap ? `${moodboardGapSize + 4}px` : "0" }}
+              ref={moodboardInnerRef}
+              className="rounded-xl overflow-hidden transition-colors min-w-[600px]"
+              style={{
+                backgroundColor: moodboardBg,
+                padding: moodboardGap ? `${moodboardGapSize + 4}px` : "0",
+                zoom: mbZoom < 1 ? mbZoom : undefined,
+              }}
               onClick={() => setSelectedPhotoId(null)}
             >
               {filteredPhotos.length === 0 ? (
