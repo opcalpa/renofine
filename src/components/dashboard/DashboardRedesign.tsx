@@ -123,6 +123,13 @@ export default function DashboardRedesign({ userId, userName, onNewProject, onTo
               ))}
             </div>
           )}
+          <button
+            type="button"
+            onClick={onToggleBack}
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-md hover:bg-muted"
+          >
+            ← {t("dashboard.classicView", "Klassisk vy")}
+          </button>
         </div>
 
         <GreetingBlock
