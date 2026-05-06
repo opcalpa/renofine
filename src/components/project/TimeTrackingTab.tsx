@@ -52,7 +52,7 @@ export function TimeTrackingTab({ projectId, isReadOnly, userType }: TimeTrackin
   const [exporting, setExporting] = useState(false);
 
   const fetchData = useCallback(async () => {
-    if (!user) return;
+    if (!user) { setLoading(false); return; }
 
     const { data: profile } = await supabase
       .from("profiles")
