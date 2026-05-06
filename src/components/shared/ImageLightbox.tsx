@@ -188,6 +188,7 @@ export function ImageLightbox({ images, initialIndex, open, onClose, projectId }
                 entityId={stableEntityId(photo)}
                 entityType="photo"
                 projectId={projectId}
+                compact
               />
             </div>
           )}

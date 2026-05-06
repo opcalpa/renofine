@@ -2045,6 +2045,7 @@ export function InspirationSection({ projectId, currency, isPlanning = false }: 
                     entityId={stablePhotoEntityId(galleryPhoto.url, galleryPhoto.id)}
                     entityType="photo"
                     projectId={projectId}
+                    compact
                   />
                 </div>
               </div>

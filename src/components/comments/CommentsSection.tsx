@@ -52,13 +52,15 @@ interface CommentsSectionProps {
   drawingObjectId?: string;
   projectId?: string;
   chatMode?: boolean;
+  /** Compact mode: minimal header, inline input, no empty state text. Used in lightboxes. */
+  compact?: boolean;
 }
 
 const COLLAPSED_REPLY_THRESHOLD = 2;
 
 // compressImage imported from @/lib/compressImage
 
-export const CommentsSection = ({ taskId, materialId, entityId, entityType, drawingObjectId, projectId, chatMode = false }: CommentsSectionProps) => {
+export const CommentsSection = ({ taskId, materialId, entityId, entityType, drawingObjectId, projectId, chatMode = false, compact = false }: CommentsSectionProps) => {
   const { t, i18n } = useTranslation();
   const lightbox = useLightbox();
   const [comments, setComments] = useState<Comment[]>([]);
@@ -874,6 +876,104 @@ export const CommentsSection = ({ taskId, materialId, entityId, entityType, draw
       </div>
     );
   };
+
+  // Compact mode: minimal header + inline input (used in lightboxes)
+  if (compact) {
+    return (
+      <div className="space-y-2">
+        {/* Header — only show when there are comments */}
+        {comments.length > 0 && (
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <MessageSquare className="h-3.5 w-3.5" />
+            <span>{t('comments.title')} ({comments.length})</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-xs ml-auto"
+              disabled={translating}
+              onClick={() => toggleTranslations(comments)}
+            >
+              {translating ? (
+                <Loader2 className="h-3 w-3 animate-spin mr-1" />
+              ) : (
+                <Languages className="h-3 w-3 mr-1" />
+              )}
+              {translating
+                ? t('comments.translating', 'Translating...')
+                : translationsEnabled
+                  ? t('comments.showOriginal', 'Show original')
+                  : t('comments.translateAll', { language: t(`languages.${targetLang}`, targetLang), defaultValue: `Translate all to ${targetLang}` })}
+            </Button>
+          </div>
+        )}
+
+        {/* Comments list — only rendered when there are comments */}
+        {comments.length > 0 && (
+          <div className="space-y-3 max-h-48 overflow-y-auto pr-1">
+            {topLevelComments.map((comment) => renderComment(comment))}
+          </div>
+        )}
+
+        {/* Reply banner */}
+        {replyBanner}
+
+        {/* Image previews */}
+        {imagePreviews.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 p-1.5 bg-muted rounded-md">
+            {imagePreviews.map((preview, index) => (
+              <div key={index} className="relative group">
+                <img src={preview} alt={`Preview ${index + 1}`} className="w-12 h-12 object-cover rounded border" />
+                <button type="button" onClick={() => removeImage(index)} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <X className="w-2.5 h-2.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Inline input — camera + textarea + send */}
+        <div className="relative">
+          {showMentions && filteredMembers.length > 0 && (
+            <div className="absolute bottom-full mb-1 w-full bg-popover border rounded-md shadow-lg max-h-40 overflow-y-auto z-10">
+              {filteredMembers.map((member) => (
+                <button key={member.id} className="w-full px-3 py-2 text-left hover:bg-accent text-sm flex items-center gap-2" onClick={() => insertMention(member)}>
+                  <Avatar className="h-5 w-5"><AvatarFallback className={`text-[10px] font-medium ${getAvatarColor(member.name)}`}>{member.name.charAt(0)}</AvatarFallback></Avatar>
+                  <span className="text-xs">{member.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleImageSelect} className="hidden" />
+          <div className="flex items-end gap-1.5">
+            <button type="button" className="h-9 w-9 shrink-0 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors" onClick={() => fileInputRef.current?.click()}>
+              <Camera className="h-4 w-4" />
+            </button>
+            <Textarea
+              ref={textareaRef}
+              placeholder={t('comments.placeholder')}
+              value={newComment}
+              onChange={handleTextChange}
+              className="flex-1 min-h-[36px] max-h-20 text-sm resize-none"
+              rows={1}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape' && replyingTo) { e.preventDefault(); cancelReply(); }
+                else if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); handlePostComment(); }
+              }}
+            />
+            <Button
+              onClick={handlePostComment}
+              disabled={posting || !newComment.trim()}
+              size="icon"
+              className="h-9 w-9 shrink-0 rounded-full"
+            >
+              {posting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            </Button>
+          </div>
+        </div>
+        <ImageLightbox {...lightbox.props} projectId={projectId} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
