@@ -26,6 +26,9 @@ export interface ProjectItem {
 interface ProjectFinancials {
   budget: number;
   profit: number;
+  tasksDone: number;
+  tasksTotal: number;
+  spentAmount: number;
 }
 
 export interface ProjectsDataResult {
@@ -96,22 +99,37 @@ export function useProjectsData(): ProjectsDataResult {
     if (projectIds.length === 0) return;
     const { data: tasks } = await supabase
       .from("tasks")
-      .select("project_id, budget, estimated_hours, hourly_rate, labor_cost_percent, subcontractor_cost, markup_percent, material_estimate, material_markup_percent")
+      .select("project_id, status, budget, estimated_hours, hourly_rate, labor_cost_percent, subcontractor_cost, markup_percent, material_estimate, material_markup_percent")
       .in("project_id", projectIds);
 
     if (!tasks) return;
 
     const financials: Record<string, ProjectFinancials> = {};
     for (const task of tasks) {
-      if (!financials[task.project_id]) financials[task.project_id] = { budget: 0, profit: 0 };
-      financials[task.project_id].budget += task.budget || 0;
+      if (!financials[task.project_id]) financials[task.project_id] = { budget: 0, profit: 0, tasksDone: 0, tasksTotal: 0, spentAmount: 0 };
+      const fin = financials[task.project_id];
+      fin.budget += task.budget || 0;
+      fin.tasksTotal++;
+      if (task.status === "done") fin.tasksDone++;
       const laborTotal = (task.estimated_hours || 0) * (task.hourly_rate || 0);
       const costPct = task.labor_cost_percent ?? laborCostPercent;
       const laborProfit = laborTotal * (1 - costPct / 100);
       const ueProfit = (task.subcontractor_cost || 0) * (task.markup_percent || 0) / 100;
       const matProfit = (task.material_estimate || 0) * (task.material_markup_percent || 0) / 100;
-      financials[task.project_id].profit += laborProfit + ueProfit + matProfit;
+      fin.profit += laborProfit + ueProfit + matProfit;
     }
+
+    // Fetch spent amounts from projects table
+    const { data: projectData } = await supabase
+      .from("projects")
+      .select("id, spent_amount")
+      .in("id", projectIds);
+    if (projectData) {
+      for (const p of projectData) {
+        if (financials[p.id]) financials[p.id].spentAmount = p.spent_amount || 0;
+      }
+    }
+
     setProjectFinancials(financials);
   }, []);
 

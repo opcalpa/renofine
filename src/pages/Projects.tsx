@@ -108,6 +108,7 @@ const Projects = () => {
   } | null>(null);
   const [loadingCounts, setLoadingCounts] = useState(false);
   const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "completed">("all");
   const [viewMode, setViewMode] = useState<"grid" | "list" | "resource" | "timeline">(() => {
     const saved = localStorage.getItem("projects_view_mode");
     if (saved === "grid") return "grid";
@@ -123,8 +124,8 @@ const Projects = () => {
   );
   // Task drawer from timeline
   const [drawerTask, setDrawerTask] = useState<{ projectId: string; taskId: string } | null>(null);
-  const ALL_LIST_COLS = ["status", "description", "budget", "date", "owner", "address"] as const;
-  const DEFAULT_HIDDEN_COLS: ListColKey[] = ["address"];
+  const ALL_LIST_COLS = ["status", "tasks", "budget", "progress", "date", "description", "owner", "address"] as const;
+  const DEFAULT_HIDDEN_COLS: ListColKey[] = ["description", "owner", "address"];
   type ListColKey = typeof ALL_LIST_COLS[number];
   const [listColumnOrder, setListColumnOrder] = useState<ListColKey[]>(() => {
     try {
@@ -161,6 +162,8 @@ const Projects = () => {
     address: t("projects.address"),
     description: t("projects.colDescription", "Beskrivning"),
     budget: t("projects.totalBudget"),
+    tasks: t("projects.colTasks", "Arbeten"),
+    progress: t("projects.colProgress", "Framsteg"),
     status: t("projects.colStatus", "Status"),
     date: t("projects.colDate", "Skapad"),
     owner: t("projects.colOwner", "Ägare"),
@@ -184,6 +187,12 @@ const Projects = () => {
     () => hideDemo ? visibleProjects.filter((p) => !isDemoProject(p.project_type)) : visibleProjects,
     [visibleProjects, hideDemo]
   );
+
+  const filteredProjects = useMemo(() => {
+    if (statusFilter === "all") return displayProjects;
+    if (statusFilter === "active") return displayProjects.filter((p) => p.status !== "completed" && p.status !== "archived");
+    return displayProjects.filter((p) => p.status === "completed");
+  }, [displayProjects, statusFilter]);
 
   // Exclude demo projects from financial/tax aggregations
   const nonDemoProjects = useMemo(
@@ -440,8 +449,27 @@ const Projects = () => {
           />
         )}
 
-        {/* View controls + new project — directly above the project list, right-aligned */}
-        <div className="flex items-center gap-2 flex-wrap justify-end mb-4">
+        {/* View controls + new project — directly above the project list */}
+        <div className="flex items-center gap-2 flex-wrap mb-4">
+              {/* Status filter tabs */}
+              {displayProjects.length > 0 && (
+                <div className="flex items-center border rounded-md mr-auto">
+                  {([
+                    { key: "all" as const, label: t("projects.filterAll", "Alla") },
+                    { key: "active" as const, label: t("projects.filterActive", "Pågående") },
+                    { key: "completed" as const, label: t("projects.filterCompleted", "Avslutade") },
+                  ]).map((f, i, arr) => (
+                    <button
+                      key={f.key}
+                      type="button"
+                      onClick={() => setStatusFilter(f.key)}
+                      className={`px-2.5 py-1.5 text-xs font-medium transition-colors ${i === 0 ? "rounded-l-md" : ""} ${i === arr.length - 1 ? "rounded-r-md" : ""} ${statusFilter === f.key ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+              )}
               {displayProjects.length > 0 && !editorialDashboard && (
                 <div className="flex items-center border rounded-md">
                   <button
@@ -603,18 +631,18 @@ const Projects = () => {
           /* ---- Timeline view ---- */
           <div className="rounded-lg border bg-card overflow-hidden">
             <PortfolioTimeline
-              projectIds={displayProjects.map((p) => p.id)}
+              projectIds={filteredProjects.map((p) => p.id)}
               onProjectClick={(id) => navigate(`/projects/${id}`)}
               onTaskClick={(projectId, taskId) => setDrawerTask({ projectId, taskId })}
             />
           </div>
         ) : effectiveViewMode === "resource" ? (
           /* ---- Resource planning view ---- */
-          <ResourcePlanningView projectIds={displayProjects.map(p => p.id)} />
+          <ResourcePlanningView projectIds={filteredProjects.map(p => p.id)} />
         ) : effectiveViewMode === "list" ? (
           /* ---- List view ---- */
           (() => {
-            const colAlign: Partial<Record<ListColKey, "right">> = { budget: "right" };
+            const colAlign: Partial<Record<ListColKey, "right">> = { budget: "right", tasks: "right" };
 
             const renderListCell = (col: ListColKey, project: Project) => {
               const fin = projectFinancials[project.id];
@@ -629,10 +657,35 @@ const Projects = () => {
                       {project.description ? (project.description.length > 60 ? project.description.slice(0, 60).trim() + "..." : project.description) : "—"}
                     </span>
                   );
+                case "tasks":
+                  return fin ? (
+                    <span className="tabular-nums text-sm">
+                      <span className="font-medium">{fin.tasksDone}</span>
+                      <span className="text-muted-foreground"> / {fin.tasksTotal}</span>
+                    </span>
+                  ) : <span className="text-muted-foreground">—</span>;
                 case "budget":
-                  return fin && fin.budget > 0
-                    ? <span className="font-medium tabular-nums">{formatCurrency(fin.budget)}</span>
-                    : <span className="text-muted-foreground">—</span>;
+                  if (!fin || fin.budget === 0) return <span className="text-muted-foreground">—</span>;
+                  return (
+                    <span className="tabular-nums text-sm">
+                      <span className="font-medium">{fin.spentAmount > 0 ? formatCurrency(fin.spentAmount) : "0"}</span>
+                      <span className="text-muted-foreground"> / {formatCurrency(fin.budget)}</span>
+                    </span>
+                  );
+                case "progress": {
+                  const progress = fin && fin.tasksTotal > 0 ? Math.round((fin.tasksDone / fin.tasksTotal) * 100) : 0;
+                  return (
+                    <div className="flex items-center gap-2 min-w-[80px]">
+                      <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all ${progress === 100 ? "bg-muted-foreground" : "bg-primary"}`}
+                          style={{ width: `${progress}%` }}
+                        />
+                      </div>
+                      <span className="tabular-nums text-xs text-muted-foreground min-w-[28px] text-right">{progress}%</span>
+                    </div>
+                  );
+                }
                 case "status":
                   return (
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusMeta.color}`}>
@@ -697,7 +750,7 @@ const Projects = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {displayProjects.map((project) => {
+                      {filteredProjects.map((project) => {
                         const isDemo = isDemoProject(project.project_type);
                         return (
                           <tr
@@ -752,7 +805,7 @@ const Projects = () => {
         ) : (
           /* ---- Grid / card view ---- */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-            {displayProjects.map((project) => {
+            {filteredProjects.map((project) => {
               const isDemo = isDemoProject(project.project_type);
               const projectStatus = normalizeStatus(project.status);
               const statusMeta = STATUS_META[projectStatus];
