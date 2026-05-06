@@ -572,9 +572,8 @@ const Projects = () => {
                     saveListColPrefs(listColumnOrder, hidden);
                   }}
                   trigger={
-                    <Button variant="ghost" size="sm" className="h-7 gap-1.5 text-xs">
-                      <Settings2 className="h-3 w-3" />
-                      {t("declaration.columns", "Kolumner")}
+                    <Button variant="ghost" size="icon" className="h-7 w-7" title={t("declaration.columns", "Kolumner")}>
+                      <Settings2 className="h-3.5 w-3.5" />
                     </Button>
                   }
                 />
