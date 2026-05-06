@@ -143,6 +143,16 @@ BEGIN
   ) sub
   WHERE t.id = sub.task_id AND t.project_id = v_project_id;
 
+  -- Add planned material budget posts (visible as summary boxes on Inköp page)
+  INSERT INTO materials (id, project_id, room_id, task_id, name, quantity, unit, cost, price_total, vendor_name, status, created_by_user_id)
+  VALUES
+    (gen_random_uuid(), v_project_id, NULL, NULL, 'Färg & spackel',   1, 'st', 5000,  5000,  NULL, 'planned', p_owner_id),
+    (gen_random_uuid(), v_project_id, NULL, NULL, 'Golvmaterial',     1, 'st', 3000,  3000,  NULL, 'planned', p_owner_id),
+    (gen_random_uuid(), v_project_id, NULL, NULL, 'Kakel & klinker',  1, 'st', 12000, 12000, NULL, 'planned', p_owner_id),
+    (gen_random_uuid(), v_project_id, NULL, NULL, 'Köksmaterial',     1, 'st', 10000, 10000, NULL, 'planned', p_owner_id),
+    (gen_random_uuid(), v_project_id, NULL, NULL, 'Lister & detaljer',1, 'st', 7500,  7500,  NULL, 'planned', p_owner_id),
+    (gen_random_uuid(), v_project_id, NULL, NULL, 'El & belysning',   1, 'st', 2000,  2000,  NULL, 'planned', p_owner_id);
+
   RETURN v_project_id;
 END;
 $fn$;
