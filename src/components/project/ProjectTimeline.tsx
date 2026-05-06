@@ -200,20 +200,32 @@ const ProjectTimeline = ({
     toast({ title: t("common.saved") });
   };
 
-  // Auto-zoom to project span when start+finish dates exist
+  // Auto-zoom to task span (or project dates as fallback) on first load
   const hasAutoZoomed = useRef(false);
   useEffect(() => {
     if (hasAutoZoomed.current || loading) return;
-    if (!effectiveStartDate || !effectiveFinishDate) return;
 
-    const start = parseISO(effectiveStartDate);
-    const finish = parseISO(effectiveFinishDate);
-    const span = differenceInDays(finish, start) + 2; // 1 day padding each side
+    // Prefer actual task dates over project dates (tasks may be shifted, e.g. demo projects)
+    const dates: Date[] = [];
+    tasks.forEach(task => {
+      if (task.start_date) dates.push(parseISO(task.start_date));
+      if (task.finish_date) dates.push(parseISO(task.finish_date));
+    });
+    // Fallback to project dates if no tasks
+    if (dates.length === 0) {
+      if (effectiveStartDate) dates.push(parseISO(effectiveStartDate));
+      if (effectiveFinishDate) dates.push(parseISO(effectiveFinishDate));
+    }
+    if (dates.length < 2) return;
+
+    const minD = new Date(Math.min(...dates.map(d => d.getTime())));
+    const maxD = new Date(Math.max(...dates.map(d => d.getTime())));
+    const span = differenceInDays(maxD, minD) + 14;
     const clampedSpan = Math.max(7, Math.min(span, maxDays));
     setDaysVisible(clampedSpan);
-    setCenterDate(addDays(start, Math.floor(differenceInDays(finish, start) / 2)));
+    setCenterDate(addDays(minD, Math.floor(span / 2)));
     hasAutoZoomed.current = true;
-  }, [loading, effectiveStartDate, effectiveFinishDate, maxDays, setDaysVisible, setCenterDate]);
+  }, [loading, tasks, effectiveStartDate, effectiveFinishDate, maxDays, setDaysVisible, setCenterDate]);
 
   const fetchTasks = async () => {
     try {
