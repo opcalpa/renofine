@@ -10,7 +10,7 @@ import { AppBottomNav } from "@/components/AppBottomNav";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Users, User, BookOpen, Trash2, Loader2, Sparkles, ChevronDown, ChevronUp, LayoutGrid, List, Settings2, ShieldCheck, GanttChart, EyeOff } from "lucide-react";
+import { Plus, Users, User, BookOpen, Trash2, Loader2, Sparkles, ChevronDown, LayoutGrid, List, Settings2, ShieldCheck, GanttChart, EyeOff } from "lucide-react";
 import { PortfolioTimeline } from "@/components/project/PortfolioTimeline";
 import { TaskEditDialog } from "@/components/project/TaskEditDialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -108,9 +108,10 @@ const Projects = () => {
   } | null>(null);
   const [loadingCounts, setLoadingCounts] = useState(false);
   const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
-  const [viewMode, setViewMode] = useState<"grid" | "list" | "resource">(() => {
+  const [viewMode, setViewMode] = useState<"grid" | "list" | "resource" | "timeline">(() => {
     const saved = localStorage.getItem("projects_view_mode");
     if (saved === "grid") return "grid";
+    if (saved === "timeline") return "timeline";
     if (saved === "resource") return "resource"; // will be clamped to "list" for homeowners below
     return "list";
   });
@@ -119,9 +120,6 @@ const Projects = () => {
   );
   const [hideDemo, setHideDemo] = useState(() =>
     localStorage.getItem("rf_hide_demo") === "true"
-  );
-  const [timelineOpen, setTimelineOpen] = useState(() =>
-    localStorage.getItem("projects_timeline_open") !== "false"
   );
   // Task drawer from timeline
   const [drawerTask, setDrawerTask] = useState<{ projectId: string; taskId: string } | null>(null);
@@ -448,10 +446,18 @@ const Projects = () => {
                   <button
                     type="button"
                     onClick={() => { setViewMode("list"); localStorage.setItem("projects_view_mode", "list"); }}
-                    className={`p-1.5 transition-colors ${!isContractor ? "rounded-r-md" : ""} ${effectiveViewMode === "list" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                    className={`p-1.5 transition-colors ${effectiveViewMode === "list" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"}`}
                     title={t("projects.listView", "List view")}
                   >
                     <List className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setViewMode("timeline"); localStorage.setItem("projects_view_mode", "timeline"); }}
+                    className={`p-1.5 transition-colors ${!isContractor || !isSectionEnabled("resource_planning") ? "rounded-r-md" : ""} ${effectiveViewMode === "timeline" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                    title={t("projects.timelineView", "Timeline")}
+                  >
+                    <GanttChart className="h-4 w-4" />
                   </button>
                   {isContractor && isSectionEnabled("resource_planning") && (
                     <button
@@ -563,37 +569,7 @@ const Projects = () => {
           />
         )}
 
-        {/* Timeline section — collapsible, always visible when projects exist */}
-        {nonDemoProjects.length > 0 && (
-          <section className="mb-6">
-            <button
-              type="button"
-              className="flex items-center gap-2 w-full text-left py-2 group"
-              onClick={() => {
-                const next = !timelineOpen;
-                setTimelineOpen(next);
-                localStorage.setItem("projects_timeline_open", String(next));
-              }}
-            >
-              <GanttChart className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-semibold">{t("projects.timelineView", "Timeline")}</span>
-              {timelineOpen ? (
-                <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" />
-              ) : (
-                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-              )}
-            </button>
-            {timelineOpen && (
-              <div className="rounded-lg border bg-card overflow-hidden">
-                <PortfolioTimeline
-                  projectIds={nonDemoProjects.map((p) => p.id)}
-                  onProjectClick={(id) => navigate(`/projects/${id}`)}
-                  onTaskClick={(projectId, taskId) => setDrawerTask({ projectId, taskId })}
-                />
-              </div>
-            )}
-          </section>
-        )}
+
 
         {displayProjects.length === 0 && !showAdminProjects ? (
           <div className="max-w-lg mx-auto text-center py-12 space-y-8">
@@ -624,6 +600,15 @@ const Projects = () => {
                 </div>
               </Button>
             </div>
+          </div>
+        ) : effectiveViewMode === "timeline" ? (
+          /* ---- Timeline view ---- */
+          <div className="rounded-lg border bg-card overflow-hidden">
+            <PortfolioTimeline
+              projectIds={displayProjects.map((p) => p.id)}
+              onProjectClick={(id) => navigate(`/projects/${id}`)}
+              onTaskClick={(projectId, taskId) => setDrawerTask({ projectId, taskId })}
+            />
           </div>
         ) : effectiveViewMode === "resource" ? (
           /* ---- Resource planning view ---- */
