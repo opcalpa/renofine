@@ -428,28 +428,8 @@ const Projects = () => {
         )}
 
         <section id="projekt" className="scroll-mt-20">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-4">
-          <div>
-            <h2 className="text-2xl font-display font-normal tracking-tight">{t('projects.title')}</h2>
-          </div>
-          <div className="flex items-center gap-2">
-              <Button onClick={() => setDialogOpen(true)}>
-                <Plus className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">
-                  {t('projects.newProject')}
-                </span>
-                <span className="sm:hidden">{t('common.create', 'Skapa')}</span>
-              </Button>
-            <CreateProjectDialog
-              open={dialogOpen}
-              onOpenChange={setDialogOpen}
-              isGuest={isGuest}
-              isContractor={isContractor}
-              refreshStorageUsage={refreshStorageUsage}
-              onOpenAIImport={() => setShowAIImport(true)}
-              onOpenIntake={() => setCreateIntakeOpen(true)}
-            />
-          </div>
+        <div className="mb-4">
+          <h2 className="text-2xl font-display font-normal tracking-tight">{t('projects.title')}</h2>
         </div>
 
         {/* Dashboard strip — reminders, right below header (excludes demo project) */}
@@ -460,8 +440,8 @@ const Projects = () => {
           />
         )}
 
-        {/* View controls — directly above the project list */}
-        <div className="flex items-center gap-2 flex-wrap mb-4">
+        {/* View controls + new project — directly above the project list, right-aligned */}
+        <div className="flex items-center gap-2 flex-wrap justify-end mb-4">
               {displayProjects.length > 0 && !editorialDashboard && (
                 <div className="flex items-center border rounded-md">
                   <button
@@ -571,6 +551,22 @@ const Projects = () => {
                   }
                 />
               )}
+              <Button onClick={() => setDialogOpen(true)}>
+                <Plus className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">
+                  {t('projects.newProject')}
+                </span>
+                <span className="sm:hidden">{t('common.create', 'Skapa')}</span>
+              </Button>
+              <CreateProjectDialog
+                open={dialogOpen}
+                onOpenChange={setDialogOpen}
+                isGuest={isGuest}
+                isContractor={isContractor}
+                refreshStorageUsage={refreshStorageUsage}
+                onOpenAIImport={() => setShowAIImport(true)}
+                onOpenIntake={() => setCreateIntakeOpen(true)}
+              />
           </div>
 
         {displayProjects.length === 0 && !showAdminProjects ? (
