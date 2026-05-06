@@ -30,8 +30,7 @@ export function HeroSection({ onCta, onDemo, onScreenshotClick }: HeroSectionPro
               color: "var(--lp-fg)",
             }}
           >
-            {t("landingV2.hero.h1", "Det enda projekt\u00adkontoret du kommer beh\u00f6va")}
-            <span style={{ color: "var(--lp-primary)" }}>.</span>
+            {t("landingV2.hero.h1", "Hela renoveringen i en app.")}
           </h1>
           <p
             style={{
@@ -109,8 +108,7 @@ export function HeroSection({ onCta, onDemo, onScreenshotClick }: HeroSectionPro
             color: "var(--lp-fg)",
           }}
         >
-          {t("landingV2.hero.h1", "Det enda projektkontoret du kommer beh\u00f6va")}
-          <span style={{ color: "var(--lp-primary)" }}>.</span>
+          {t("landingV2.hero.h1", "Hela renoveringen i en app.")}
         </h1>
         <p style={{ fontSize: 15, color: "var(--lp-fg-muted)", lineHeight: 1.55, margin: "0 0 20px" }}>
           {t(
