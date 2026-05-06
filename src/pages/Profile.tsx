@@ -1402,35 +1402,24 @@ const Profile = ({ asDrawer = false }: { asDrawer?: boolean }) => {
           </CardContent>
         </Card>
 
-        {/* Data & Privacy */}
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle>{t('profile.dataPrivacy')}</CardTitle>
-            <CardDescription>{t('profile.dataPrivacyDescription')}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <p className="text-sm font-medium">{t('profile.exportData')}</p>
-                <p className="text-xs text-muted-foreground">
-                  {t('profile.exportDataDescription')}
-                </p>
-              </div>
-              <Button
-                variant="outline"
-                onClick={handleExportData}
-                disabled={exportingData}
-              >
-                {exportingData ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Download className="mr-2 h-4 w-4" />
-                )}
-                {t('profile.downloadData')}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Data & Privacy — minimal footer */}
+        <div className="mt-8 mb-4 flex items-center justify-center gap-1 text-xs text-muted-foreground">
+          <button
+            type="button"
+            className="inline-flex items-center gap-1 hover:text-foreground transition-colors underline-offset-2 hover:underline"
+            onClick={handleExportData}
+            disabled={exportingData}
+          >
+            {exportingData ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <Download className="h-3 w-3" />
+            )}
+            {t('profile.exportData')}
+          </button>
+          <span>·</span>
+          <span>GDPR</span>
+        </div>
       </main>
   );
 
