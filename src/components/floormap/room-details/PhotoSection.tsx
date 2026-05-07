@@ -45,6 +45,7 @@ export function PhotoSection({ roomId, showPinterest = false }: PhotoSectionProp
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [loadingPhotos, setLoadingPhotos] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [projectId, setProjectId] = useState<string | null>(null);
   const [pinterestDialogOpen, setPinterestDialogOpen] = useState(false);
   const [pinterestUrlInput, setPinterestUrlInput] = useState("");
   const [pinterestUrlError, setPinterestUrlError] = useState<string | null>(null);
@@ -60,6 +61,12 @@ export function PhotoSection({ roomId, showPinterest = false }: PhotoSectionProp
   // Carousel state
   const [carouselOpen, setCarouselOpen] = useState(false);
   const [carouselIndex, setCarouselIndex] = useState(0);
+
+  // Fetch project_id for correct storage path
+  useEffect(() => {
+    supabase.from("rooms").select("project_id").eq("id", roomId).single()
+      .then(({ data }) => { if (data) setProjectId(data.project_id); });
+  }, [roomId]);
 
   const loadPhotos = useCallback(async () => {
     setLoadingPhotos(true);
@@ -142,7 +149,10 @@ export function PhotoSection({ roomId, showPinterest = false }: PhotoSectionProp
         const uploadFile = await compressImage(file);
 
         const fileExt = uploadFile.type === "image/jpeg" ? "jpg" : file.name.split(".").pop();
-        const fileName = `${roomId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const uniqueName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const fileName = projectId
+          ? `projects/${projectId}/attachments/room/${uniqueName}`
+          : `room-attachments/${roomId}/${uniqueName}`;
 
         const { error: uploadError } = await supabase.storage
           .from("project-files")
@@ -188,11 +198,13 @@ export function PhotoSection({ roomId, showPinterest = false }: PhotoSectionProp
     if (!confirm(t('rooms.confirmDeletePhoto', 'Are you sure you want to delete this photo?'))) return;
 
     try {
-      const urlParts = photoUrl.split("/project-files/");
+      // Extract file path from URL — handle both old (room-photos) and new (project-files) bucket paths
+      const bucket = "project-files";
+      const urlParts = photoUrl.split(`/${bucket}/`);
       if (urlParts.length > 1) {
         const filePath = urlParts[1];
         const { error: storageError } = await supabase.storage
-          .from("project-files")
+          .from(bucket)
           .remove([filePath]);
 
         if (storageError) {
