@@ -4639,7 +4639,8 @@
     "viewAs": "View as",
     "customerView": "Client view",
     "instructionsFor": "Instructions for {{name}}",
-    "noAssignedTasks": "No tasks assigned to this person"
+    "noAssignedTasks": "No tasks assigned to this person",
+    "pendingInvites": "Pending invitations"
   },
   "unifiedTable": {
     "tabTitle": "Table",

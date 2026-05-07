@@ -4636,7 +4636,8 @@
     "viewAs": "Visa som",
     "customerView": "Kundvy",
     "instructionsFor": "Instruktioner för {{name}}",
-    "noAssignedTasks": "Inga uppgifter tilldelade denna person"
+    "noAssignedTasks": "Inga uppgifter tilldelade denna person",
+    "pendingInvites": "Väntande inbjudningar"
   },
   "unifiedTable": {
     "tabTitle": "Tabell",
