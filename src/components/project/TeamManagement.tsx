@@ -1020,7 +1020,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
                 {t("roles.inviteButton")}
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl w-[95vw] max-h-[90vh] overflow-hidden flex flex-col">
+            <DialogContent className={`w-[95vw] max-h-[90vh] overflow-hidden flex flex-col ${selectedTemplate === "worker" ? "max-w-4xl" : "max-w-2xl"}`}>
               <DialogHeader>
                 <DialogTitle>{t("roles.inviteTitle")}</DialogTitle>
                 <DialogDescription>
@@ -1386,7 +1386,7 @@ function RoleCardGrid({ selected, onSelect, t }: RoleCardGridProps) {
               {t(`roles.roleTemplates.${key}`, key)}
             </div>
             <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-              {t(`roles.cards.${key}.description`)}
+              {t(`roles.cards.${key}.description`, "")}
             </div>
           </button>
         );

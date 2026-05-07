@@ -180,62 +180,65 @@ export function WorkerInviteFields({ projectId, data, onChange }: WorkerInviteFi
   };
 
   return (
-    <div className="space-y-5">
-      {/* Phone */}
-      <div className="space-y-2">
-        <Label htmlFor="worker-phone">{t("teamWorker.workerPhone", "Phone number")}</Label>
-        <Input
-          id="worker-phone"
-          type="tel"
-          value={data.phone}
-          onChange={(e) => onChange({ phone: e.target.value })}
-          placeholder="+380 ..."
-        />
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Left column: contact + settings */}
+      <div className="space-y-4">
+        {/* Phone + Email side by side */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-2">
+            <Label htmlFor="worker-phone">{t("teamWorker.workerPhone", "Phone number")}</Label>
+            <Input
+              id="worker-phone"
+              type="tel"
+              value={data.phone}
+              onChange={(e) => onChange({ phone: e.target.value })}
+              placeholder="+380 ..."
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="worker-email">{t("teamWorker.workerEmail", "Email")}</Label>
+            <Input
+              id="worker-email"
+              type="email"
+              value={data.email}
+              onChange={(e) => onChange({ email: e.target.value })}
+              placeholder="name@example.com"
+            />
+          </div>
+        </div>
+
+        {/* Language */}
+        <div className="space-y-2">
+          <Label>{t("teamWorker.workerLanguage", "Language")}</Label>
+          <Select value={data.language} onValueChange={(v) => onChange({ language: v })}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {LANGUAGES.map((lang) => (
+                <SelectItem key={lang.code} value={lang.code}>
+                  {lang.flag} {lang.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Welcome message */}
+        <div className="space-y-2">
+          <Label htmlFor="welcome-msg">{t("teamWorker.welcomeMessage", "Welcome message")}</Label>
+          <Textarea
+            id="welcome-msg"
+            value={data.welcomeMessage}
+            onChange={(e) => onChange({ welcomeMessage: e.target.value })}
+            placeholder={t("teamWorker.welcomeMessagePlaceholder", "Optional message shown when the worker opens the link...")}
+            rows={3}
+            className="resize-none"
+          />
+        </div>
       </div>
 
-      {/* Email */}
-      <div className="space-y-2">
-        <Label htmlFor="worker-email">{t("teamWorker.workerEmail", "Email")}</Label>
-        <Input
-          id="worker-email"
-          type="email"
-          value={data.email}
-          onChange={(e) => onChange({ email: e.target.value })}
-          placeholder="name@example.com"
-        />
-      </div>
-
-      {/* Language */}
-      <div className="space-y-2">
-        <Label>{t("teamWorker.workerLanguage", "Language")}</Label>
-        <Select value={data.language} onValueChange={(v) => onChange({ language: v })}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {LANGUAGES.map((lang) => (
-              <SelectItem key={lang.code} value={lang.code}>
-                {lang.flag} {lang.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Welcome message */}
-      <div className="space-y-2">
-        <Label htmlFor="welcome-msg">{t("teamWorker.welcomeMessage", "Welcome message")}</Label>
-        <Textarea
-          id="welcome-msg"
-          value={data.welcomeMessage}
-          onChange={(e) => onChange({ welcomeMessage: e.target.value })}
-          placeholder={t("teamWorker.welcomeMessagePlaceholder", "Optional message shown when the worker opens the link...")}
-          rows={2}
-          className="resize-none"
-        />
-      </div>
-
-      {/* Task selection with per-task overrides */}
+      {/* Right column: task selection */}
       <div className="space-y-2">
         <Label>{t("teamWorker.assignTasks", "Assign tasks")} *</Label>
         <div className="border rounded-lg divide-y max-h-[400px] overflow-y-auto">
