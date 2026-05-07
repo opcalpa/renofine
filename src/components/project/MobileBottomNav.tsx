@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { LayoutDashboard, PenTool, CheckSquare, ShoppingCart, FolderOpen, PiggyBank, Users, MessageSquare, ClipboardList } from "lucide-react";
+import { LayoutDashboard, PenTool, CheckSquare, ShoppingCart, FolderOpen, PiggyBank, Users, MessageSquare, ClipboardList, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface TabConfig {
@@ -28,11 +28,11 @@ const ALL_TABS: TabConfig[] = [
   { tab: "spaceplanner", icon: PenTool, labelKey: "nav.mobileNav.plans", subTab: "floorplan" },
   { tab: "files", icon: FolderOpen, labelKey: "nav.mobileNav.files" },
   { tab: "team", icon: Users, labelKey: "nav.mobileNav.team" },
-  { tab: "customer", icon: LayoutDashboard, labelKey: "nav.mobileNav.clientView" },
+  { tab: "sharing", icon: Share2, labelKey: "nav.mobileNav.sharing" },
 ];
 
 const CLIENT_TABS: TabConfig[] = [
-  { tab: "customer", icon: LayoutDashboard, labelKey: "nav.mobileNav.clientView" },
+  { tab: "sharing", icon: LayoutDashboard, labelKey: "nav.mobileNav.sharing" },
   { tab: "chat", icon: MessageSquare, labelKey: "nav.mobileNav.chat" },
   { tab: "files", icon: FolderOpen, labelKey: "nav.mobileNav.files" },
 ];

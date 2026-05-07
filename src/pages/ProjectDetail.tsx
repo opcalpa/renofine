@@ -27,7 +27,7 @@ import { TimeTrackingTab } from "@/components/project/TimeTrackingTab";
 import { InspectionsTab } from "@/components/project/InspectionsTab";
 import ProjectFeedTab from "@/components/project/ProjectFeedTab";
 import ProjectFilesTab from "@/components/project/ProjectFilesTab";
-import CustomerViewTab from "@/components/project/CustomerViewTab";
+import SharingTab from "@/components/project/SharingTab";
 import { HomeownerPlanningView } from "@/components/project/overview/HomeownerPlanningView";
 import { CommentsSection } from "@/components/comments/CommentsSection";
 import { ProjectChatSection } from "@/components/project/overview/ProjectChatSection";
@@ -161,7 +161,7 @@ const ProjectDetail = () => {
     budget: "none",
     table: "none",
     team: "none",
-    customer: "none",
+    sharing: "none",
     planning: "edit",
     chat: "none",
   } : {
@@ -174,7 +174,7 @@ const ProjectDetail = () => {
     budget: permissions.budget,
     table: permissions.budget,
     team: permissions.teams,
-    customer: (isPublicDemoProject && demoPrefs.preferences.role === "homeowner")
+    sharing: (isPublicDemoProject && demoPrefs.preferences.role === "homeowner")
       ? "view"
       : (permissions.customerView || "none"),
     planning: permissions.overview,
@@ -187,8 +187,8 @@ const ProjectDetail = () => {
 
   const isTabBlocked = (tab: string) => {
     if (tabPermissionMap[tab] === "none") return true;
-    // Clients always see customer tab regardless of module settings
-    if (tab === "customer" && permissions.isClient) return false;
+    // Clients always see sharing tab regardless of module settings
+    if (tab === "sharing" && permissions.isClient) return false;
     return !isTabEnabled(tab);
   };
 
@@ -204,7 +204,7 @@ const ProjectDetail = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(() => {
     const tabParam = searchParams.get("tab");
-    const validTabs = ["overview", "spaceplanner", "files", "tasks", "purchases", "budget", "timetracking", "table", "team", "customer", "planning", "chat"];
+    const validTabs = ["overview", "spaceplanner", "files", "tasks", "purchases", "budget", "timetracking", "table", "team", "sharing", "planning", "chat"];
     return tabParam && validTabs.includes(tabParam) ? tabParam : "overview";
   });
   const [openEntityId, setOpenEntityId] = useState<string | null>(() => searchParams.get("entityId"));
@@ -218,7 +218,7 @@ const ProjectDetail = () => {
     const subtabParam = searchParams.get("subtab");
     const sectionParam = searchParams.get("section");
     const entityParam = searchParams.get("entityId");
-    const validTabs = ["overview", "spaceplanner", "files", "tasks", "purchases", "budget", "timetracking", "table", "team", "customer", "planning", "chat"];
+    const validTabs = ["overview", "spaceplanner", "files", "tasks", "purchases", "budget", "timetracking", "table", "team", "sharing", "planning", "chat"];
 
     if (tabParam && validTabs.includes(tabParam)) {
       if (tabParam !== activeTab || subtabParam) {
@@ -256,8 +256,8 @@ const ProjectDetail = () => {
   useEffect(() => {
     if (!permissions.loading && permissions.isClient && !isQuotePhase) {
       if (!searchParams.get("tab") || isTabBlocked(activeTab)) {
-        // Clients default to customer view
-        setActiveTab("customer");
+        // Clients default to sharing view
+        setActiveTab("sharing");
       }
     }
   }, [permissions.loading, permissions.isClient, isQuotePhase, activeTab, effectiveUserType]);
@@ -284,7 +284,7 @@ const ProjectDetail = () => {
   const getTabLabelKey = (tab: string): string => {
     const map: Record<string, string> = {
       overview: 'nav.mobileNav.overview',
-      customer: 'nav.mobileNav.customerView',
+      sharing: 'nav.mobileNav.sharing',
       tasks: 'nav.mobileNav.tasks',
       purchases: 'nav.mobileNav.purchases',
       files: 'nav.mobileNav.files',
@@ -669,7 +669,7 @@ const ProjectDetail = () => {
 
   // Handle menu item selection
   const handleMenuSelect = (menuId: string, itemValue: string) => {
-    if (menuId !== "customer" && isTabBlocked(menuId)) return;
+    if (menuId !== "sharing" && isTabBlocked(menuId)) return;
     if (isSubTabBlocked(menuId, itemValue)) return;
 
     // Save current tab before navigating to floor planner (for Back button)
@@ -907,15 +907,15 @@ const ProjectDetail = () => {
             )}
             <div className="hidden md:flex items-center gap-0.5 flex-nowrap overflow-visible">
               {/* Kundvy — first tab for clients, hidden here for owners (shown after Team instead) */}
-              {!isTabBlocked("customer") && permissions.isClient && (
+              {!isTabBlocked("sharing") && permissions.isClient && (
                 <div
                   className={cn(
                     "px-2.5 py-1.5 text-[13px] tracking-[-0.002em] cursor-pointer rounded-md transition-colors",
-                    activeTab === "customer" ? "bg-accent/60 text-foreground font-medium" : "text-muted-foreground hover:text-foreground font-normal"
+                    activeTab === "sharing" ? "bg-accent/60 text-foreground font-medium" : "text-muted-foreground hover:text-foreground font-normal"
                   )}
-                  onClick={() => handleMenuSelect('customer', 'customer')}
+                  onClick={() => handleMenuSelect('sharing', 'sharing')}
                 >
-                  {t("customerView.tabTitle")}
+                  {t("sharing.tabTitle", "Sharing")}
                 </div>
               )}
               {/* Chat tab — mobile: own tab; desktop: navigate to Overview + scroll to chat */}
@@ -1082,16 +1082,16 @@ const ProjectDetail = () => {
               />
               )}
 
-              {/* Kundvy — for project owners/proffs: preview what clients see */}
-              {!isTabBlocked("customer") && !permissions.isClient && (
+              {/* Delning — for project owners/proffs: preview what clients/contractors see */}
+              {!isTabBlocked("sharing") && !permissions.isClient && (
                 <div
                   className={cn(
                     "px-2.5 py-1.5 text-[13px] tracking-[-0.002em] cursor-pointer rounded-md transition-colors",
-                    activeTab === "customer" ? "bg-accent/60 text-foreground font-medium" : "text-muted-foreground hover:text-foreground font-normal"
+                    activeTab === "sharing" ? "bg-accent/60 text-foreground font-medium" : "text-muted-foreground hover:text-foreground font-normal"
                   )}
-                  onClick={() => handleMenuSelect('customer', 'customer')}
+                  onClick={() => handleMenuSelect('sharing', 'sharing')}
                 >
-                  {t("customerView.tabTitle")}
+                  {t("sharing.tabTitle", "Sharing")}
                 </div>
               )}
 
@@ -1118,7 +1118,7 @@ const ProjectDetail = () => {
             onPhaseChange={demoPrefs.setPhase}
             onRoleChange={demoPrefs.setRole}
             infoText={demoPrefs.preferences.role === "homeowner"
-              ? (activeTab === "customer"
+              ? (activeTab === "sharing"
                 ? t("demo.homeownerContext.customerView", "You are viewing the Client View — this is what you see when a builder invites you to follow your project.")
                 : t("demo.homeownerContext.overview", "You are viewing your own project — this is how it looks when you manage a renovation yourself."))
               : undefined}
@@ -1401,13 +1401,13 @@ const ProjectDetail = () => {
           </ErrorBoundary>
         </TabsContent>
 
-        <TabsContent value="customer" className="m-0 pb-8">
+        <TabsContent value="sharing" className="m-0 pb-8">
           <ErrorBoundary>
-          {isTabBlocked("customer") ? (
+          {isTabBlocked("sharing") ? (
             <NoAccessPlaceholder />
           ) : (
             <div className="container py-4 md:py-8">
-              <CustomerViewTab
+              <SharingTab
                 projectId={project.id}
                 projectName={project.name}
                 projectStartDate={project.start_date}
@@ -1419,6 +1419,7 @@ const ProjectDetail = () => {
                 status={project.status}
                 totalBudget={project.total_budget}
                 coverImageUrl={project.cover_image_url}
+                isClient={permissions.isClient}
               />
             </div>
           )}
@@ -1519,7 +1520,7 @@ const ProjectDetail = () => {
           demoPrefs.setLanguage(language);
           setShowDemoRoleModal(false);
           if (role === "homeowner") {
-            setActiveTab("customer");
+            setActiveTab("sharing");
           } else {
             setActiveTab("overview");
           }

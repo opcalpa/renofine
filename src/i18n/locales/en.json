@@ -202,7 +202,8 @@
       "showAllTabs": "Show all tabs",
       "planning": "Planning",
       "clientView": "My Project",
-      "customerView": "My Project"
+      "customerView": "My Project",
+      "sharing": "Sharing"
     }
   },
   "landing": {
@@ -4632,6 +4633,13 @@
       "warning": "The budget is approaching its limit. {{remaining}} left of {{total}}."
     },
     "detailedTimeline": "Detailed timeline"
+  },
+  "sharing": {
+    "tabTitle": "Sharing",
+    "viewAs": "View as",
+    "customerView": "Client view",
+    "instructionsFor": "Instructions for {{name}}",
+    "noAssignedTasks": "No tasks assigned to this person"
   },
   "unifiedTable": {
     "tabTitle": "Table",

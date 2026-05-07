@@ -82,7 +82,7 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
     icon: "Users",
     audience: "contractor",
     region: null,
-    tabs: ["customer"],
+    tabs: ["sharing"],
     sections: [],
     routes: [],
     defaults: { solo: false, small: true, company: true, homeowner: false },

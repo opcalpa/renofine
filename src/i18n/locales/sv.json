@@ -202,7 +202,8 @@
       "showAllTabs": "Visa alla flikar",
       "planning": "Planering",
       "clientView": "Mitt projekt",
-      "customerView": "Mitt projekt"
+      "customerView": "Mitt projekt",
+      "sharing": "Delning"
     }
   },
   "landing": {
@@ -4629,6 +4630,13 @@
       "warning": "Budgeten n\u00e4rmar sig taket. {{remaining}} kvar av {{total}}."
     },
     "detailedTimeline": "Detaljerad tidslinje"
+  },
+  "sharing": {
+    "tabTitle": "Delning",
+    "viewAs": "Visa som",
+    "customerView": "Kundvy",
+    "instructionsFor": "Instruktioner för {{name}}",
+    "noAssignedTasks": "Inga uppgifter tilldelade denna person"
   },
   "unifiedTable": {
     "tabTitle": "Tabell",
