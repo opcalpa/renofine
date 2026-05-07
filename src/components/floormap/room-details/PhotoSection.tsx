@@ -663,6 +663,10 @@ export function PhotoSection({ roomId, showPinterest = false }: PhotoSectionProp
         onOpenChange={setCarouselOpen}
         showMetadata
         onDelete={(photo) => handleDeletePhoto(photo.id, photo.url)}
+        onSourceChange={async (photo, source) => {
+          await supabase.from("photos").update({ source }).eq("id", photo.id);
+          loadPhotos();
+        }}
       />
     </div>
   );

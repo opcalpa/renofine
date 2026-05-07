@@ -1657,7 +1657,8 @@
     "caption": "Caption",
     "category": "Category",
     "uploaded": "Uploaded",
-    "sourceUrl": "Source"
+    "sourceUrl": "Source",
+    "noCategory": "Not classified"
   },
   "photoSource": {
     "classify": "What type of photo is this?",

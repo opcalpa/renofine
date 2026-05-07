@@ -2740,7 +2740,8 @@
     "caption": "Bildtext",
     "category": "Kategori",
     "uploaded": "Uppladdad",
-    "sourceUrl": "Källa"
+    "sourceUrl": "Källa",
+    "noCategory": "Inte klassificerad"
   },
   "photoSource": {
     "classify": "Vilken typ av bild är detta?",

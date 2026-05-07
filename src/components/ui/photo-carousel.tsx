@@ -21,6 +21,8 @@ interface PhotoCarouselProps {
   /** Enable metadata sidebar (caption, source badge, delete) */
   showMetadata?: boolean;
   onDelete?: (photo: Photo) => void;
+  /** Called when user changes photo source/category */
+  onSourceChange?: (photo: Photo, source: string) => void;
 }
 
 const SOURCE_LABELS: Record<string, { labelKey: string; icon: string }> = {
@@ -33,6 +35,8 @@ const SOURCE_LABELS: Record<string, { labelKey: string; icon: string }> = {
   pinterest: { labelKey: "photoSource.pinterest", icon: "📌" },
 };
 
+const CLASSIFIABLE_SOURCES = ["before", "during", "after", "receipt", "product"];
+
 export function PhotoCarousel({
   photos,
   initialIndex = 0,
@@ -40,6 +44,7 @@ export function PhotoCarousel({
   onOpenChange,
   showMetadata = false,
   onDelete,
+  onSourceChange,
 }: PhotoCarouselProps) {
   const { t } = useTranslation();
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
@@ -218,15 +223,39 @@ export function PhotoCarousel({
               </div>
             )}
 
-            {/* Source badge — hidden for generic uploads (no useful info) */}
-            {sourceInfo && currentPhoto.source && !["upload", "unclassified"].includes(currentPhoto.source) && (
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground">{t("entityPhotos.category", "Category")}</p>
+            {/* Source category — interactive picker if onSourceChange provided */}
+            <div className="space-y-1.5">
+              <p className="text-xs text-muted-foreground">{t("entityPhotos.category", "Category")}</p>
+              {onSourceChange ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {CLASSIFIABLE_SOURCES.map((src) => {
+                    const info = SOURCE_LABELS[src];
+                    const isActive = currentPhoto.source === src;
+                    return (
+                      <button
+                        key={src}
+                        type="button"
+                        onClick={() => onSourceChange(currentPhoto, isActive ? "upload" : src)}
+                        className={cn(
+                          "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs border transition-colors",
+                          isActive
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-muted hover:bg-primary/10 hover:border-primary/50"
+                        )}
+                      >
+                        {info.icon} {t(info.labelKey, src)}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : sourceInfo && currentPhoto.source && !["upload", "unclassified"].includes(currentPhoto.source) ? (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs border bg-muted">
                   {sourceInfo.icon} {t(sourceInfo.labelKey, currentPhoto.source)}
                 </span>
-              </div>
-            )}
+              ) : (
+                <p className="text-xs text-muted-foreground italic">{t("entityPhotos.noCategory", "Not classified")}</p>
+              )}
+            </div>
 
             {/* Date */}
             {currentPhoto.created_at && (
