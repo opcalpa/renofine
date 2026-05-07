@@ -64,16 +64,17 @@ export default function SharingTab({
       const [sharesRes, invitesRes] = await Promise.all([
         supabase
           .from("project_shares")
-          .select("id, shared_with_user_id, display_name, display_email, contractor_category, company")
-          .eq("project_id", projectId)
-          .eq("role_type", "contractor"),
+          .select("id, shared_with_user_id, role_type, display_name, display_email, contractor_category, company")
+          .eq("project_id", projectId),
         supabase
           .from("project_invitations")
-          .select("id, invited_email, invited_name, contractor_role, status")
+          .select("id, invited_email, invited_name, contractor_role, role_type, status")
           .eq("project_id", projectId)
-          .eq("role_type", "contractor")
           .eq("status", "pending"),
       ]);
+
+      // Exclude clients and co-owners — they don't get instruction views
+      const excludedRoleTypes = new Set(["client", "co_owner", "planning_contributor"]);
 
       const entries: ShareEntry[] = [];
       const seenProfileIds = new Set<string>();
@@ -81,6 +82,7 @@ export default function SharingTab({
       // Active shares first
       for (const s of sharesRes.data || []) {
         if (!s.shared_with_user_id) continue;
+        if (s.role_type && excludedRoleTypes.has(s.role_type)) continue;
         seenProfileIds.add(s.shared_with_user_id);
         entries.push({
           id: s.id,
@@ -91,8 +93,9 @@ export default function SharingTab({
         });
       }
 
-      // Pending invitations (not yet accepted — no shared_with_user_id)
+      // Pending invitations (not yet accepted)
       for (const inv of invitesRes.data || []) {
+        if (inv.role_type && excludedRoleTypes.has(inv.role_type)) continue;
         entries.push({
           id: inv.id,
           profileId: `invite_${inv.id}`,
