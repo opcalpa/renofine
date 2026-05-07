@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import { Eye, Users, Wrench } from "lucide-react";
+import { Eye, Wrench } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import CustomerViewTab from "./CustomerViewTab";
-import { InstructionsView } from "./InstructionsView";
 import { WorkerInstructionsView } from "./WorkerInstructionsView";
 
 interface SharingTabProps {
@@ -30,13 +29,11 @@ interface SharingTabProps {
   isClient?: boolean;
 }
 
-interface ShareEntry {
+interface WorkerEntry {
   id: string;
-  profileId: string;
+  token: string;
   displayName: string;
-  detail: string | null;
-  source: "share" | "invitation" | "worker";
-  assignedTaskIds?: string[];
+  taskCount: number;
 }
 
 const CUSTOMER_VIEW_KEY = "__customer__";
@@ -58,70 +55,28 @@ export default function SharingTab({
   const { t } = useTranslation();
   const [selectedView, setSelectedView] = useState(CUSTOMER_VIEW_KEY);
 
-  // Fetch shares, invitations, and worker tokens for the dropdown
-  const { data: shareEntries } = useQuery({
-    queryKey: ["sharing-entries", projectId],
+  // Fetch active worker tokens for the dropdown
+  const { data: workers } = useQuery({
+    queryKey: ["sharing-workers", projectId],
     enabled: !isClient,
     queryFn: async () => {
-      const [sharesRes, invitesRes, workersRes] = await Promise.all([
-        supabase
-          .from("project_shares")
-          .select("id, shared_with_user_id, role_type, display_name, display_email, contractor_category, company")
-          .eq("project_id", projectId),
-        supabase
-          .from("project_invitations")
-          .select("id, invited_email, invited_name, contractor_role, role_type, status")
-          .eq("project_id", projectId)
-          .eq("status", "pending"),
-        supabase
-          .from("worker_access_tokens")
-          .select("id, worker_name, worker_phone, worker_email, assigned_task_ids, expires_at, revoked_at")
-          .eq("project_id", projectId),
-      ]);
+      const { data } = await supabase
+        .from("worker_access_tokens")
+        .select("id, token, worker_name, assigned_task_ids, expires_at, revoked_at")
+        .eq("project_id", projectId)
+        .order("created_at", { ascending: false });
 
-      const excludedRoleTypes = new Set(["client", "co_owner", "planning_contributor"]);
-      const entries: ShareEntry[] = [];
-
-      // Active shares
-      for (const s of sharesRes.data || []) {
-        if (!s.shared_with_user_id) continue;
-        if (s.role_type && excludedRoleTypes.has(s.role_type)) continue;
-        entries.push({
-          id: s.id,
-          profileId: s.shared_with_user_id,
-          displayName: s.display_name || s.display_email || "",
-          detail: s.contractor_category || s.company || null,
-          source: "share",
-        });
-      }
-
-      // Pending invitations
-      for (const inv of invitesRes.data || []) {
-        if (inv.role_type && excludedRoleTypes.has(inv.role_type)) continue;
-        entries.push({
-          id: inv.id,
-          profileId: `invite_${inv.id}`,
-          displayName: inv.invited_name || inv.invited_email || "",
-          detail: inv.contractor_role || null,
-          source: "invitation",
-        });
-      }
-
-      // Worker tokens (active only)
-      for (const wt of workersRes.data || []) {
+      const entries: WorkerEntry[] = [];
+      for (const wt of data || []) {
         const isExpired = new Date(wt.expires_at) < new Date();
-        const isRevoked = !!wt.revoked_at;
-        if (isExpired || isRevoked) continue;
+        if (wt.revoked_at || isExpired) continue;
         entries.push({
           id: wt.id,
-          profileId: `worker_${wt.id}`,
+          token: wt.token,
           displayName: wt.worker_name,
-          detail: null,
-          source: "worker",
-          assignedTaskIds: wt.assigned_task_ids || [],
+          taskCount: wt.assigned_task_ids?.length || 0,
         });
       }
-
       return entries;
     },
     staleTime: 60_000,
@@ -146,10 +101,7 @@ export default function SharingTab({
     );
   }
 
-  const activeShares = shareEntries?.filter((e) => e.source === "share") || [];
-  const workers = shareEntries?.filter((e) => e.source === "worker") || [];
-  const pendingInvites = shareEntries?.filter((e) => e.source === "invitation") || [];
-  const selectedEntry = [...activeShares, ...workers].find((e) => e.profileId === selectedView);
+  const selectedWorker = workers?.find((w) => w.id === selectedView);
 
   return (
     <div className="space-y-6">
@@ -168,44 +120,19 @@ export default function SharingTab({
               {t("sharing.customerView", "Client view")}
             </SelectItem>
 
-            {activeShares.length > 0 && (
-              <>
-                <SelectSeparator />
-                {activeShares.map((e) => (
-                  <SelectItem key={e.profileId} value={e.profileId}>
-                    {e.displayName || t("common.unnamed", "Unnamed")}
-                    {e.detail ? ` (${e.detail})` : ""}
-                  </SelectItem>
-                ))}
-              </>
-            )}
-
-            {workers.length > 0 && (
+            {workers && workers.length > 0 && (
               <>
                 <SelectSeparator />
                 <div className="px-2 py-1.5 text-xs text-muted-foreground flex items-center gap-1.5">
                   <Wrench className="h-3 w-3" />
                   {t("team.roles.worker", "Workers")}
                 </div>
-                {workers.map((e) => (
-                  <SelectItem key={e.profileId} value={e.profileId}>
-                    {e.displayName}
-                  </SelectItem>
-                ))}
-              </>
-            )}
-
-            {pendingInvites.length > 0 && (
-              <>
-                <SelectSeparator />
-                <div className="px-2 py-1.5 text-xs text-muted-foreground flex items-center gap-1.5">
-                  <Users className="h-3 w-3" />
-                  {t("sharing.pendingInvites", "Pending invitations")}
-                </div>
-                {pendingInvites.map((e) => (
-                  <SelectItem key={e.profileId} value={e.profileId} disabled>
-                    {e.displayName || t("common.unnamed", "Unnamed")}
-                    {e.detail ? ` (${e.detail})` : ""}
+                {workers.map((w) => (
+                  <SelectItem key={w.id} value={w.id}>
+                    {w.displayName}
+                    <span className="text-muted-foreground ml-1">
+                      ({w.taskCount} {t("common.tasks", "tasks")})
+                    </span>
                   </SelectItem>
                 ))}
               </>
@@ -229,18 +156,11 @@ export default function SharingTab({
           totalBudget={totalBudget}
           coverImageUrl={coverImageUrl}
         />
-      ) : selectedEntry?.source === "worker" ? (
+      ) : selectedWorker ? (
         <WorkerInstructionsView
           projectId={projectId}
-          taskIds={selectedEntry.assignedTaskIds || []}
-          displayName={selectedEntry.displayName}
-        />
-      ) : selectedEntry?.source === "share" ? (
-        <InstructionsView
-          projectId={projectId}
-          profileId={selectedEntry.profileId}
-          displayName={selectedEntry.displayName}
-          contractorCategory={selectedEntry.detail}
+          workerToken={selectedWorker.token}
+          displayName={selectedWorker.displayName}
         />
       ) : null}
     </div>
