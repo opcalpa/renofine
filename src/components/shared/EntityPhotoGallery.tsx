@@ -50,11 +50,13 @@ interface EntityPhotoGalleryProps {
   entityType: "task" | "room" | "material" | "shape";
   projectId?: string;
   storagePath?: string;
+  /** Called when photo count changes (for parent to display in header) */
+  onPhotoCount?: (count: number) => void;
 }
 
 // compressImage imported from @/lib/compressImage
 
-export function EntityPhotoGallery({ entityId, entityType, projectId, storagePath }: EntityPhotoGalleryProps) {
+export function EntityPhotoGallery({ entityId, entityType, projectId, storagePath, onPhotoCount }: EntityPhotoGalleryProps) {
   const { t } = useTranslation();
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [loadingPhotos, setLoadingPhotos] = useState(false);
@@ -81,7 +83,9 @@ export function EntityPhotoGallery({ entityId, entityType, projectId, storagePat
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setPhotos((data as Photo[]) || []);
+      const loaded = (data as Photo[]) || [];
+      setPhotos(loaded);
+      onPhotoCount?.(loaded.length);
     } catch (error) {
       console.error("Error loading photos:", error);
       toast.error(t('entityPhotos.loadError'));

@@ -683,6 +683,7 @@ export const TaskEditDialog = ({
   const [rotSubsidyPercent, setRotSubsidyPercent] = useState(30);
   const [rotMaxPerPerson, setRotMaxPerPerson] = useState(50000);
   const [profileDefaultRate, setProfileDefaultRate] = useState<number | null>(null);
+  const [photoCount, setPhotoCount] = useState(0);
   const [profileLaborCostPercent, setProfileLaborCostPercent] = useState<number | null>(null);
   const [userType, setUserType] = useState<string | null>(null);
   const [taskProfileId, setTaskProfileId] = useState<string | null>(null);
@@ -742,6 +743,14 @@ export const TaskEditDialog = ({
       data.material_items = plannedItems.length > 0 ? plannedItems : undefined;
 
       setTask(data);
+
+      // Quick photo count for header badge
+      supabase
+        .from("photos")
+        .select("id", { count: "exact", head: true })
+        .eq("linked_to_type", "task")
+        .eq("linked_to_id", data.id)
+        .then(({ count }) => setPhotoCount(count || 0));
 
       // Material spend = non-planned materials linked to this task
       const actualSpend = allMaterials
@@ -2175,10 +2184,11 @@ export const TaskEditDialog = ({
                   <CollapsibleTrigger className="flex items-center gap-2 w-full py-2.5 px-3 text-sm font-medium rounded-lg hover:bg-background hover:shadow-sm border border-transparent hover:border-border transition-all group">
                     <ChevronRight className="h-4 w-4 transition-transform group-data-[state=open]:rotate-90" />
                     {t("entityPhotos.photos", "Photos")}
+                    {photoCount > 0 && <span className="text-muted-foreground font-normal">({photoCount})</span>}
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <div className="ml-3 pl-4 pb-3 border-l-2 border-muted">
-                      <EntityPhotoGallery entityId={task.id} entityType="task" projectId={projectId} />
+                      <EntityPhotoGallery entityId={task.id} entityType="task" projectId={projectId} onPhotoCount={setPhotoCount} />
                     </div>
                   </CollapsibleContent>
                 </Collapsible>
