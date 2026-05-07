@@ -5,7 +5,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { cn } from "@/lib/utils";
 import ProjectTimeline from "@/components/project/ProjectTimeline";
 import { ProjectDocumentsCard } from "@/components/project/overview/ProjectDocumentsCard";
-import { CommentsSection } from "@/components/comments/CommentsSection";
+import { ProjectChatSection } from "@/components/project/overview/ProjectChatSection";
 
 interface CustomerViewTabProps {
   projectId: string;
@@ -90,11 +90,9 @@ export default function CustomerViewTab({
           title={t("customerView.messages")}
           description={t("customerView.messagesDescription")}
         >
-          <CommentsSection
-            entityId={projectId}
-            entityType="project"
+          <ProjectChatSection
             projectId={projectId}
-            chatMode
+            userType={userType}
           />
         </CollapsibleSection>
       </div>

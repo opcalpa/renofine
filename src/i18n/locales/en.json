@@ -4957,7 +4957,11 @@
     "quantity": "Qty",
     "recalculate": "Recalculate",
     "materialsRecalculated": "Material estimates updated",
-    "noRecipeForTask": "No recipe available for this task type"
+    "noRecipeForTask": "No recipe available for this task type",
+    "lockedTitle": "Planning is locked",
+    "lockedDescription": "The project has been activated and planning can no longer be edited. Additions and changes are made via Tasks or by creating a new quote.",
+    "goToTasks": "Go to Tasks",
+    "newQuote": "New quote"
   },
   "externalQuotes": {
     "importQuote": "Import quote",

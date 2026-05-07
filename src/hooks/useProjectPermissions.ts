@@ -175,7 +175,8 @@ export function useProjectPermissions(projectId: string | undefined): ProjectPer
         }
 
         // Other roles - use their share permissions
-        const customerView = share.customer_view_access || "none";
+        // Clients always get customer view access even if not explicitly set in DB
+        const customerView = share.customer_view_access || (shareRoleType === "client" ? "view" : "none");
         setPerms({
           isOwner: false,
           isSystemAdmin: false,

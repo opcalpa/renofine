@@ -4954,7 +4954,11 @@
     "quantity": "Antal",
     "recalculate": "Beräkna om",
     "materialsRecalculated": "Materialberäkningar uppdaterade",
-    "noRecipeForTask": "Inget recept tillgängligt för denna arbetstyp"
+    "noRecipeForTask": "Inget recept tillgängligt för denna arbetstyp",
+    "lockedTitle": "Planeringen är låst",
+    "lockedDescription": "Projektet har aktiverats och planeringen kan inte längre redigeras. Tillägg och ändringar görs via Arbeten eller genom en ny offert.",
+    "goToTasks": "Gå till Arbeten",
+    "newQuote": "Ny offert"
   },
   "externalQuotes": {
     "importQuote": "Importera offert",

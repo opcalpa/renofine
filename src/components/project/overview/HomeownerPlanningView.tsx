@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Plus, Trash2, Send, ClipboardList, Info, Columns3, Play, Bell, X, Sparkles, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, Trash2, Send, ClipboardList, Info, Columns3, Play, Bell, X, Sparkles, ChevronDown, ChevronRight, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   detectWorkType,
@@ -123,6 +123,10 @@ interface HomeownerPlanningViewProps {
   onActivate?: () => void;
   /** When true, hides owner-only actions (activate, import quote, share RFQ) */
   contributorMode?: boolean;
+  /** When true, planning is read-only because the project has been activated */
+  locked?: boolean;
+  /** Callback to navigate to another tab */
+  onNavigateTab?: (tab: string) => void;
   reminders?: ProjectReminder[];
   onDismissReminder?: (id: string) => void;
   onDismissAllReminders?: () => void;
@@ -141,6 +145,8 @@ export function HomeownerPlanningView({
   currency,
   onActivate,
   contributorMode = false,
+  locked = false,
+  onNavigateTab,
   reminders = [],
   onDismissReminder,
   onDismissAllReminders,
@@ -720,8 +726,40 @@ export function HomeownerPlanningView({
   }
 
   return (
-    <div className="space-y-6">
+    <div className={cn("space-y-6", locked && "select-none")}>
+      {/* Locked banner — project has been activated */}
+      {locked && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-5 flex flex-col sm:flex-row gap-4 items-start">
+          <div className="w-10 h-10 rounded-lg bg-amber-100 grid place-items-center shrink-0 mt-0.5">
+            <Lock className="h-5 w-5 text-amber-700" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-base font-medium tracking-tight text-amber-900">
+              {t("homeownerPlanning.lockedTitle", "Planeringen är låst")}
+            </h3>
+            <p className="text-sm text-amber-800/80 mt-1 leading-relaxed">
+              {t("homeownerPlanning.lockedDescription", "Projektet har aktiverats och planeringen kan inte längre redigeras. Tillägg och ändringar görs via Arbeten eller genom en ny offert.")}
+            </p>
+            <div className="flex gap-2 mt-3">
+              {onNavigateTab && (
+                <Button variant="outline" size="sm" className="gap-1.5 border-amber-300 hover:bg-amber-100/60" onClick={() => onNavigateTab("tasks")}>
+                  <ClipboardList className="h-3.5 w-3.5" />
+                  {t("homeownerPlanning.goToTasks", "Gå till Arbeten")}
+                </Button>
+              )}
+              {onNavigateTab && (
+                <Button variant="outline" size="sm" className="gap-1.5 border-amber-300 hover:bg-amber-100/60" onClick={() => onNavigateTab("purchases")}>
+                  <Send className="h-3.5 w-3.5" />
+                  {t("homeownerPlanning.newQuote", "Ny offert")}
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Intro card — explains what Planning is for */}
+      {!locked && (
       <div className="rounded-xl border border-border/60 bg-card p-5 flex flex-col sm:flex-row gap-4 items-start">
         <div className="w-10 h-10 rounded-lg bg-primary/10 grid place-items-center shrink-0 mt-0.5">
           <ClipboardList className="h-5 w-5 text-primary" />
@@ -735,6 +773,10 @@ export function HomeownerPlanningView({
           </p>
         </div>
       </div>
+      )}
+
+      {/* Planning content — disabled overlay when locked */}
+      <div className={cn("space-y-6", locked && "pointer-events-none opacity-60")}>
 
       {/* Task list */}
       <div className="space-y-3">
@@ -792,8 +834,7 @@ export function HomeownerPlanningView({
             </div>
           </div>
         </div>
-        <div>
-          {tasksWithRoomNames.length > 0 && (
+        {tasksWithRoomNames.length > 0 && (
             <div className="rounded-lg border bg-card overflow-auto max-h-[calc(100vh-20rem)] mb-3">
               <table className="w-full text-sm">
                 <thead className="sticky top-0 z-20">
@@ -1165,10 +1206,8 @@ export function HomeownerPlanningView({
               </Button>
             </div>
           )}
-        </div>
-      </div>
 
-      {/* Rooms — reuse builder component */}
+      {/* Rooms: reuse builder component */}
       <PlanningRoomList
         projectId={projectId}
         locked={false}
@@ -1187,6 +1226,7 @@ export function HomeownerPlanningView({
           </div>
         </div>
       )}
+      </div>{/* end locked wrapper */}
 
       {/* Share RFQ dialog */}
       <ShareRfqDialog
