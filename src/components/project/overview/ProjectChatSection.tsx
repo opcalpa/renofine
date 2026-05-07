@@ -475,8 +475,9 @@ export function ProjectChatSection({ projectId, userType, onNavigateToEntity, on
 
   // --- Build feed ---
 
+  // Clients see project-level + task comments (not material/drawing comments which are internal)
   const visibleComments = isClient
-    ? comments.filter((c) => !!c.project_id && !c.task_id && !c.material_id && !c.drawing_object_id)
+    ? comments.filter((c) => (!!c.project_id || !!c.task_id) && !c.material_id && !c.drawing_object_id)
     : comments;
   const visibleActivities = isClient
     ? activities.filter((a) => CLIENT_SAFE_ACTIONS.has(a.action) && CLIENT_SAFE_ENTITY_TYPES.has(a.entity_type))

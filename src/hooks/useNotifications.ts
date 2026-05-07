@@ -224,16 +224,14 @@ export function useNotifications() {
       }
     }
 
-    // 2b. Comments by others on tasks/materials the user created (even in shared projects)
+    // 2b. Comments by others on tasks/materials in the user's projects
     const { data: userTasks } = await supabase
       .from("tasks")
       .select("id")
-      .eq("created_by_user_id", userId)
       .in("project_id", projectIds);
     const { data: userMaterials } = await supabase
       .from("materials")
       .select("id")
-      .eq("created_by_user_id", userId)
       .in("project_id", projectIds);
 
     // Cap IDs to avoid overly long URLs that cause Supabase 500 errors
