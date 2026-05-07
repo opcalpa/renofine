@@ -218,12 +218,12 @@ export function PhotoCarousel({
               </div>
             )}
 
-            {/* Source badge */}
-            {sourceInfo && (
+            {/* Source badge — hidden for generic uploads (no useful info) */}
+            {sourceInfo && currentPhoto.source && !["upload", "unclassified"].includes(currentPhoto.source) && (
               <div className="space-y-1">
                 <p className="text-xs text-muted-foreground">{t("entityPhotos.category", "Category")}</p>
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs border bg-muted">
-                  {sourceInfo.icon} {t(sourceInfo.labelKey, currentPhoto.source || "")}
+                  {sourceInfo.icon} {t(sourceInfo.labelKey, currentPhoto.source)}
                 </span>
               </div>
             )}
