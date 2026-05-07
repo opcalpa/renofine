@@ -295,6 +295,7 @@ export function ShapePhotoSection({ shapeId, projectId, compact = false }: Shape
         initialIndex={carouselIndex}
         open={carouselOpen}
         onOpenChange={setCarouselOpen}
+        showMetadata
       />
     </div>
   );

@@ -661,6 +661,8 @@ export function PhotoSection({ roomId, showPinterest = false }: PhotoSectionProp
         initialIndex={carouselIndex}
         open={carouselOpen}
         onOpenChange={setCarouselOpen}
+        showMetadata
+        onDelete={(photo) => handleDeletePhoto(photo.id, photo.url)}
       />
     </div>
   );
