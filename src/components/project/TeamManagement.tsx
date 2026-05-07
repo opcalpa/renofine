@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Collapsible,
   CollapsibleContent,
@@ -41,8 +42,11 @@ import { FeatureAccessEditor } from "./team/FeatureAccessEditor";
 import type { FeatureAccess } from "./team/FeatureAccessEditor";
 import { TeamTable } from "./team/TeamTable";
 import type { TeamRow } from "./team/TeamTable";
+import { WorkerInviteFields } from "./team/WorkerInviteFields";
+import type { WorkerInviteData, TaskOverride } from "./team/WorkerInviteFields";
 import { DirectMessageSheet } from "./DirectMessageSheet";
-import { InviteWorkerDialog } from "./team/InviteWorkerDialog";
+
+
 import { useUnreadDmCounts } from "@/hooks/useDirectMessages";
 
 
@@ -167,6 +171,21 @@ const ROLE_TEMPLATES: Record<string, { access: FeatureAccess }> = {
       files: "upload",
     },
   },
+  worker: {
+    access: {
+      customerView: "none",
+      timeline: "none",
+      tasks: "none",
+      tasksScope: "assigned",
+      spacePlanner: "none",
+      purchases: "none",
+      purchasesScope: "assigned",
+      overview: "none",
+      teams: "none",
+      budget: "none",
+      files: "none",
+    },
+  },
 };
 
 // Legacy mapping — existing DB shares with old keys still resolve correctly
@@ -181,6 +200,7 @@ const ROLE_ICONS: Record<string, typeof Wrench> = {
   project_manager: ClipboardList,
   collaborator: Eye,
   client: User,
+  worker: Wrench,
 };
 
 const invitationSchemaEmail = z.object({
@@ -269,7 +289,11 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
   const [currentProfileId, setCurrentProfileId] = useState<string | null>(null);
   const [dmRecipient, setDmRecipient] = useState<{ id: string; name: string } | null>(null);
   const unreadCounts = useUnreadDmCounts(projectId, currentProfileId || "");
-  const [workerDialogOpen, setWorkerDialogOpen] = useState(false);
+  const [workerData, setWorkerData] = useState<WorkerInviteData>({
+    phone: "", email: "", language: "sv", welcomeMessage: "",
+    selectedTaskIds: [], taskOverrides: new Map(),
+  });
+  const [generatedWorkerLink, setGeneratedWorkerLink] = useState<string | null>(null);
   const [workerTokens, setWorkerTokens] = useState<Array<{
     id: string; token: string; worker_name: string; worker_phone: string | null;
     worker_email: string | null; worker_language: string; assigned_task_ids: string[];
@@ -457,6 +481,12 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
 
   const handleSendInvitation = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Route to worker handler if worker template selected
+    if (selectedTemplate === "worker") {
+      return handleSendWorkerInvitation();
+    }
+
     setInviting(true);
 
     try {
@@ -543,6 +573,88 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
     } finally {
       setInviting(false);
     }
+  };
+
+  const handleSendWorkerInvitation = async () => {
+    if (!inviteName.trim() || workerData.selectedTaskIds.length === 0) return;
+    setInviting(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+      const { data: profile } = await supabase.from("profiles").select("id").eq("user_id", user.id).single();
+      if (!profile) throw new Error("Profile not found");
+
+      // Create worker token
+      const { data: tokenRecord, error } = await supabase
+        .from("worker_access_tokens")
+        .insert({
+          project_id: projectId,
+          created_by_user_id: profile.id,
+          worker_name: inviteName.trim(),
+          worker_phone: workerData.phone.trim() || null,
+          worker_email: workerData.email.trim() || null,
+          worker_language: workerData.language,
+          welcome_message: workerData.welcomeMessage.trim() || null,
+          assigned_task_ids: workerData.selectedTaskIds,
+        })
+        .select("id, token")
+        .single();
+
+      if (error) throw error;
+
+      // Insert instruction overrides for tasks with customizations
+      const overrides = Array.from(workerData.taskOverrides.values())
+        .filter((o) => o.descriptionOverride !== null || o.checklistOverride !== null);
+
+      if (overrides.length > 0) {
+        await supabase.from("worker_instruction_overrides").insert(
+          overrides.map((o) => ({
+            worker_token_id: tokenRecord.id,
+            task_id: o.taskId,
+            description_override: o.descriptionOverride,
+            checklist_override: o.checklistOverride,
+          }))
+        );
+      }
+
+      // Trigger translation if needed
+      if (workerData.language !== "en" && workerData.language !== "sv") {
+        supabase.functions.invoke("translate-task-content", {
+          body: { taskIds: workerData.selectedTaskIds, targetLanguage: workerData.language },
+        }).catch(() => {});
+      }
+
+      const appOrigin = window.location.hostname === "localhost"
+        ? "https://app.renofine.com"
+        : window.location.origin;
+      setGeneratedWorkerLink(`${appOrigin}/w/${tokenRecord.token}`);
+
+      toast({
+        title: t("teamWorker.workerInvited", "Worker invited"),
+        description: t("teamWorker.linkCreated", "Link created. Share it with the worker."),
+      });
+      fetchTeamData();
+    } catch (err) {
+      console.error("Failed to create worker token:", err);
+      toast({
+        title: t("common.error", "Error"),
+        description: String(err),
+        variant: "destructive",
+      });
+    } finally {
+      setInviting(false);
+    }
+  };
+
+  const resetInviteForm = () => {
+    setInviteName("");
+    setInviteEmail("");
+    setSelectedTemplate("contractor");
+    setIsCoOwner(false);
+    setFeatureAccess({ ...ROLE_TEMPLATES.contractor.access });
+    setWorkerData({ phone: "", email: "", language: "sv", welcomeMessage: "", selectedTaskIds: [], taskOverrides: new Map() });
+    setGeneratedWorkerLink(null);
   };
 
   const openEditDialog = (
@@ -901,7 +1013,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
           <h2 className="font-display text-xl font-normal tracking-tight">{t("roles.title")}</h2>
         </div>
         {canManageTeam && (
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetInviteForm(); }}>
             <DialogTrigger asChild>
               <Button>
                 <UserPlus className="h-4 w-4 mr-2" />
@@ -930,21 +1042,6 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
                   />
                 </div>
 
-                {/* Email */}
-                <div className="space-y-2">
-                  <Label htmlFor="invite-email">
-                    {t("roles.emailLabel")} *
-                  </Label>
-                  <Input
-                    id="invite-email"
-                    type="email"
-                    placeholder={t("roles.emailPlaceholder")}
-                    value={inviteEmail}
-                    onChange={(e) => setInviteEmail(e.target.value)}
-                    required
-                  />
-                </div>
-
                 {/* Role Cards */}
                 <div className="space-y-2">
                   <Label>{t("roles.selectRole")}</Label>
@@ -955,46 +1052,104 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
                   />
                 </div>
 
-                {/* Permissions — compact dropdown-per-feature list */}
-                <Collapsible>
-                  <CollapsibleTrigger className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                    <ChevronRight className="h-4 w-4 transition-transform [[data-state=open]>&]:rotate-90" />
-                    {t("roles.permissions", "Permissions")}
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <div className="pt-2">
-                      <FeatureAccessEditor
-                        featureAccess={featureAccess}
-                        onChange={handleFeatureAccessChange}
-                        idPrefix="invite"
-                        readOnly={!isOwner}
+                {/* --- TEAM MEMBER FIELDS (non-worker) --- */}
+                {selectedTemplate !== "worker" && (
+                  <>
+                    {/* Email */}
+                    <div className="space-y-2">
+                      <Label htmlFor="invite-email">
+                        {t("roles.emailLabel")} *
+                      </Label>
+                      <Input
+                        id="invite-email"
+                        type="email"
+                        placeholder={t("roles.emailPlaceholder")}
+                        value={inviteEmail}
+                        onChange={(e) => setInviteEmail(e.target.value)}
+                        required
                       />
                     </div>
-                  </CollapsibleContent>
-                </Collapsible>
 
-                {/* Co-owner checkbox — only for project_manager on Swedish projects */}
-                {selectedTemplate === "project_manager" && showTaxDeduction && (
-                  <label className="flex items-center gap-2 text-sm cursor-pointer p-2 rounded-lg border hover:bg-accent transition-colors">
-                    <Checkbox
-                      checked={isCoOwner}
-                      onCheckedChange={(checked) => setIsCoOwner(!!checked)}
-                    />
-                    <div>
-                      <span className="font-medium">{t("roles.coOwnerOption", "Co-owner (double ROT)")}</span>
-                      <p className="text-xs text-muted-foreground">{t("roles.coOwnerOptionDesc", "Same access as owner + doubles ROT deduction to 100,000 kr")}</p>
-                    </div>
-                  </label>
+                    {/* Permissions */}
+                    <Collapsible>
+                      <CollapsibleTrigger className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                        <ChevronRight className="h-4 w-4 transition-transform [[data-state=open]>&]:rotate-90" />
+                        {t("roles.permissions", "Permissions")}
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <div className="pt-2">
+                          <FeatureAccessEditor
+                            featureAccess={featureAccess}
+                            onChange={handleFeatureAccessChange}
+                            idPrefix="invite"
+                            readOnly={!isOwner}
+                          />
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
+
+                    {/* Co-owner checkbox */}
+                    {selectedTemplate === "project_manager" && showTaxDeduction && (
+                      <label className="flex items-center gap-2 text-sm cursor-pointer p-2 rounded-lg border hover:bg-accent transition-colors">
+                        <Checkbox
+                          checked={isCoOwner}
+                          onCheckedChange={(checked) => setIsCoOwner(!!checked)}
+                        />
+                        <div>
+                          <span className="font-medium">{t("roles.coOwnerOption", "Co-owner (double ROT)")}</span>
+                          <p className="text-xs text-muted-foreground">{t("roles.coOwnerOptionDesc", "Same access as owner + doubles ROT deduction to 100,000 kr")}</p>
+                        </div>
+                      </label>
+                    )}
+                  </>
                 )}
 
-                <div className="flex justify-end pt-2">
-                  <Button type="submit" disabled={inviting}>
-                    {inviting && (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    )}
-                    {t("roles.sendInvitation")}
-                  </Button>
-                </div>
+                {/* --- WORKER FIELDS --- */}
+                {selectedTemplate === "worker" && !generatedWorkerLink && (
+                  <WorkerInviteFields
+                    projectId={projectId}
+                    data={workerData}
+                    onChange={(updates) => setWorkerData((prev) => ({ ...prev, ...updates }))}
+                  />
+                )}
+
+                {/* Worker success view — link generated */}
+                {selectedTemplate === "worker" && generatedWorkerLink && (
+                  <div className="space-y-3">
+                    <div className="p-3 bg-muted rounded-lg">
+                      <p className="text-xs text-muted-foreground mb-1">{t("teamWorker.copyLink", "Copy link")}</p>
+                      <p className="text-sm font-mono break-all select-all">{generatedWorkerLink}</p>
+                    </div>
+                    <Button
+                      type="button"
+                      className="w-full"
+                      onClick={async () => {
+                        await navigator.clipboard.writeText(generatedWorkerLink);
+                        toast({ description: t("teamWorker.linkCopied", "Link copied to clipboard") });
+                      }}
+                    >
+                      {t("teamWorker.copyLink", "Copy link")}
+                    </Button>
+                    <Button type="button" variant="outline" className="w-full" onClick={() => { resetInviteForm(); setDialogOpen(false); }}>
+                      {t("common.close", "Close")}
+                    </Button>
+                  </div>
+                )}
+
+                {/* Submit button */}
+                {!(selectedTemplate === "worker" && generatedWorkerLink) && (
+                  <div className="flex justify-end pt-2">
+                    <Button
+                      type="submit"
+                      disabled={inviting || (selectedTemplate === "worker" && (!inviteName.trim() || workerData.selectedTaskIds.length === 0))}
+                    >
+                      {inviting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                      {selectedTemplate === "worker"
+                        ? t("teamWorker.inviteWorker", "Invite Worker")
+                        : t("roles.sendInvitation")}
+                    </Button>
+                  </div>
+                )}
               </form>
             </DialogContent>
           </Dialog>
@@ -1026,13 +1181,8 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
         </Card>
       )}
 
-      {/* Invite Worker Dialog */}
-      <InviteWorkerDialog
-        projectId={projectId}
-        open={workerDialogOpen}
-        onOpenChange={setWorkerDialogOpen}
-        onCreated={fetchTeamData}
-      />
+
+
 
       {/* Unified Edit Dialog (members + invitations) */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>

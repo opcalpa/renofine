@@ -1286,13 +1286,15 @@
       "viewer": "Collaborator",
       "client": "Client",
       "co_owner": "Project Manager",
-      "custom": "Custom"
+      "custom": "Custom",
+      "worker": "Worker"
     },
     "cards": {
       "contractor": { "description": "Sees assigned tasks, can update status and create purchase orders" },
       "project_manager": { "description": "Full access to all project features, can invite team members" },
       "collaborator": { "description": "Read-only overview with file upload — for architects, consultants, and advisors" },
       "client": { "description": "Follows project progress, photos, and messages — no pricing visible" },
+      "worker": { "description": "Gets a link with work instructions — no login needed. Checklist, photos, and messages." },
       "co_owner": { "description": "Same access as the owner — full control, shared project management + double ROT" }
     },
     "coOwnerOption": "Co-owner (double ROT)",
@@ -5461,7 +5463,14 @@
     "tasksAssigned": "{{count}} tasks",
     "missingChecklists": "{{count}} tasks have no step-by-step instructions. Generate them automatically from room specs?",
     "generateChecklists": "Generate checklists",
-    "assignedTasksList": "Assigned tasks"
+    "assignedTasksList": "Assigned tasks",
+    "welcomeMessage": "Welcome message",
+    "welcomeMessagePlaceholder": "Optional message shown when the worker opens the link...",
+    "customized": "customized",
+    "overridden": "overridden",
+    "descriptionLabel": "Description",
+    "noDescription": "No description",
+    "noChecklist": "No checklist — add one to the task first"
   },
   "batchTolk": {
     "title": "Smart Tolk",

@@ -1284,14 +1284,16 @@
       "viewer": "Samarbetspartner",
       "client": "Kund",
       "co_owner": "Projektledare",
-      "custom": "Anpassad"
+      "custom": "Anpassad",
+      "worker": "Arbetare"
     },
     "cards": {
       "contractor": { "description": "Ser tilldelade arbeten, kan uppdatera status och skapa inköpsordrar" },
       "project_manager": { "description": "Full åtkomst till alla projektfunktioner, kan bjuda in teammedlemmar" },
       "collaborator": { "description": "Läsbehörighet med filuppladdning — för arkitekter, konsulter och rådgivare" },
       "client": { "description": "Följer projektets framsteg, foton och meddelanden — inga priser synliga" },
-      "co_owner": { "description": "Samma åtkomst som ägaren — full kontroll, delad projektledning + dubbelt ROT" }
+      "co_owner": { "description": "Samma åtkomst som ägaren — full kontroll, delad projektledning + dubbelt ROT" },
+      "worker": { "description": "Får en länk med arbetsinstruktioner — ingen inloggning krävs. Checklista, foton och meddelanden." }
     },
     "coOwnerOption": "Delägare (dubbelt ROT)",
     "coOwnerOptionDesc": "Samma åtkomst som ägare + fördubblar ROT-avdraget till 100 000 kr",
@@ -5458,7 +5460,14 @@
     "tasksAssigned": "{{count}} uppgifter",
     "missingChecklists": "{{count}} uppgifter saknar steg-för-steg-instruktioner. Generera automatiskt från rumspecifikationer?",
     "generateChecklists": "Generera checklistor",
-    "assignedTasksList": "Tilldelade uppgifter"
+    "assignedTasksList": "Tilldelade uppgifter",
+    "welcomeMessage": "Välkomstmeddelande",
+    "welcomeMessagePlaceholder": "Valfritt meddelande som visas när arbetaren öppnar länken...",
+    "customized": "anpassad",
+    "overridden": "anpassad",
+    "descriptionLabel": "Beskrivning",
+    "noDescription": "Ingen beskrivning",
+    "noChecklist": "Ingen checklista — lägg till en på uppgiften först"
   },
   "batchTolk": {
     "title": "Smart Tolk",

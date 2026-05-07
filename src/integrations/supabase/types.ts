@@ -3339,6 +3339,7 @@ export type Database = {
           project_id: string
           revoked_at: string | null
           token: string
+          welcome_message: string | null
           worker_email: string | null
           worker_language: string
           worker_name: string
@@ -3356,6 +3357,7 @@ export type Database = {
           project_id: string
           revoked_at?: string | null
           token?: string
+          welcome_message?: string | null
           worker_email?: string | null
           worker_language?: string
           worker_name: string
@@ -3373,6 +3375,7 @@ export type Database = {
           project_id?: string
           revoked_at?: string | null
           token?: string
+          welcome_message?: string | null
           worker_email?: string | null
           worker_language?: string
           worker_name?: string
@@ -3398,6 +3401,48 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      worker_instruction_overrides: {
+        Row: {
+          checklist_override: Json | null
+          created_at: string | null
+          description_override: string | null
+          id: string
+          task_id: string
+          worker_token_id: string
+        }
+        Insert: {
+          checklist_override?: Json | null
+          created_at?: string | null
+          description_override?: string | null
+          id?: string
+          task_id: string
+          worker_token_id: string
+        }
+        Update: {
+          checklist_override?: Json | null
+          created_at?: string | null
+          description_override?: string | null
+          id?: string
+          task_id?: string
+          worker_token_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "worker_instruction_overrides_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "worker_instruction_overrides_worker_token_id_fkey"
+            columns: ["worker_token_id"]
+            isOneToOne: false
+            referencedRelation: "worker_access_tokens"
             referencedColumns: ["id"]
           },
         ]
