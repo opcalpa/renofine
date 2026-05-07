@@ -1158,7 +1158,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
                     />
 
                     {/* Col 3: Live preview */}
-                    <div className="hidden md:block border-l pl-6 min-h-[400px]">
+                    <div className="hidden md:block border-l pl-6 max-h-[60vh] overflow-y-auto">
                       {previewTaskId && workerTasks.find((t) => t.id === previewTaskId) ? (
                         <WorkerInvitePreview
                           task={workerTasks.find((t) => t.id === previewTaskId)!}
