@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { useTaxDeductionVisible } from "@/hooks/useTaxDeduction";
@@ -158,6 +158,8 @@ export function HomeownerPlanningView({
   const [loginPromptAction, setLoginPromptAction] = useState<"activate" | "share_rfq" | null>(null);
   const [showStartModal, setShowStartModal] = useState(false);
   const [wizardDismissed, setWizardDismissed] = useState(false);
+  // Latch: once we show the wizard, don't yank it away on background re-fetches
+  const wizardShownRef = useRef(false);
 
   // Inline add
   const [isAdding, setIsAdding] = useState(false);
@@ -701,14 +703,18 @@ export function HomeownerPlanningView({
   }
 
   // Show wizard when project has no tasks (empty state)
-  const showWizard = tasks.length === 0 && !wizardDismissed && !contributorMode && !isGuest;
+  // Once shown, latch it — don't yank away on background re-fetches that
+  // temporarily make tasks.length > 0 or cause a remount.
+  const shouldShowWizard = tasks.length === 0 && !wizardDismissed && !contributorMode && !isGuest;
+  if (shouldShowWizard) wizardShownRef.current = true;
+  const showWizard = wizardShownRef.current && !wizardDismissed;
 
   if (showWizard) {
     return (
       <PlanningWizard
         projectId={projectId}
-        onComplete={() => { fetchTasks(); fetchRooms(); setWizardDismissed(true); }}
-        onSkip={() => setWizardDismissed(true)}
+        onComplete={() => { wizardShownRef.current = false; fetchTasks(); fetchRooms(); setWizardDismissed(true); }}
+        onSkip={() => { wizardShownRef.current = false; setWizardDismissed(true); }}
       />
     );
   }

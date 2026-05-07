@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronLeft, ChevronRight, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,10 +21,35 @@ interface PlanningWizardProps {
 
 export function PlanningWizard({ projectId, onComplete, onSkip }: PlanningWizardProps) {
   const { t } = useTranslation();
-  const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState<PlanningWizardData>(INITIAL_FORM_DATA);
+  const storageKey = `planning-wizard-${projectId}`;
+
+  // Restore draft from localStorage (survives unmount/remount)
+  const [step, setStep] = useState(() => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) return (JSON.parse(saved) as { step: number }).step || 1;
+    } catch { /* use default */ }
+    return 1;
+  });
+  const [formData, setFormData] = useState<PlanningWizardData>(() => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) return (JSON.parse(saved) as { formData: PlanningWizardData }).formData || INITIAL_FORM_DATA;
+    } catch { /* use default */ }
+    return INITIAL_FORM_DATA;
+  });
   const [analyzing, setAnalyzing] = useState(false);
   const [creating, setCreating] = useState(false);
+
+  // Persist draft on every change
+  useEffect(() => {
+    localStorage.setItem(storageKey, JSON.stringify({ step, formData }));
+  }, [step, formData, storageKey]);
+
+  // Clear draft on complete/skip
+  const clearDraft = useCallback(() => {
+    localStorage.removeItem(storageKey);
+  }, [storageKey]);
 
   const updateFormData = useCallback((updates: Partial<PlanningWizardData>) => {
     setFormData((prev) => ({ ...prev, ...updates }));
@@ -107,6 +132,7 @@ export function PlanningWizard({ projectId, onComplete, onSkip }: PlanningWizard
           tasks: taskCount,
         })
       );
+      clearDraft();
       onComplete();
     } catch {
       toast.error(t("common.errorSaving", "Could not save"));
@@ -155,7 +181,7 @@ export function PlanningWizard({ projectId, onComplete, onSkip }: PlanningWizard
         <div className="flex items-center justify-between px-6 py-4 border-t bg-muted/30 rounded-b-xl">
           <div>
             {step === 1 ? (
-              <Button variant="ghost" size="sm" onClick={onSkip} className="text-muted-foreground">
+              <Button variant="ghost" size="sm" onClick={() => { clearDraft(); onSkip(); }} className="text-muted-foreground">
                 {t("planningWizard.skipWizard", "Skip — add manually")}
               </Button>
             ) : (

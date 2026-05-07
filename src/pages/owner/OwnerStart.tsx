@@ -396,7 +396,7 @@ export default function OwnerStart() {
 
       {/* Guided setup dialog */}
       <Dialog open={showGuidedSetup} onOpenChange={setShowGuidedSetup}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
           <GuidedSetupWizard
             userType="homeowner"
             profileId={profile?.id || ""}
