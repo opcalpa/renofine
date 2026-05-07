@@ -1,4 +1,8 @@
 import { useState, useEffect, useRef, useCallback, useMemo, Fragment } from "react";
+import type { ProjectFile, FileLink, FileSortKey, FileColKey } from "./files/types";
+import { isImageFile, FILE_TYPE_LABELS } from "./files/types";
+import { useFilesData } from "./files/hooks/useFilesData";
+import { useFilesView } from "./files/hooks/useFilesView";
 import { ImageLightbox, useLightbox } from "@/components/shared/ImageLightbox";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
@@ -97,25 +101,6 @@ import { FileStatsStrip } from "./files/FileStatsStrip";
 import { ColumnToggle } from "@/components/shared/ColumnToggle";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-interface ProjectFile {
-  id: string;
-  name: string;
-  path: string;
-  size: number;
-  type: string;
-  uploaded_at: string;
-  uploaded_by: string;
-  uploader_name?: string;
-  folder?: string;
-  thumbnail_url?: string;
-}
-
-interface Folder {
-  id: string;
-  name: string;
-  path: string;
-}
-
 interface ProjectFilesTabProps {
   projectId: string;
   projectName: string;
@@ -124,15 +109,32 @@ interface ProjectFilesTabProps {
   onUseAsBackground?: (imageUrl: string, fileName: string) => void;
 }
 
-const IMAGE_EXTS = new Set(["jpg", "jpeg", "png", "gif", "webp", "heic", "svg", "bmp"]);
-const isImageFile = (name: string) => IMAGE_EXTS.has(name.split(".").pop()?.toLowerCase() || "");
-
 const ProjectFilesTab = ({ projectId, projectName, canEdit = true, onNavigateToFloorPlan, onUseAsBackground }: ProjectFilesTabProps) => {
   const imageLightbox = useLightbox();
-  const [files, setFiles] = useState<ProjectFile[]>([]);
-  const [folders, setFolders] = useState<Folder[]>([]);
   const [currentFolder, setCurrentFolder] = useState<string>('');
-  const [loading, setLoading] = useState(true);
+
+  // ---- Data hook (files, folders, links, entities) ----
+  const {
+    files, folders, allProjectFiles, fileLinks, fileLinksMap, getFileLinksForPath,
+    availTasks, availMaterials, availRooms, currentProfileId,
+    loading, loadingFlat,
+    fetchFiles, fetchFolders, fetchAllFiles, fetchFileLinks, setFileLinks,
+  } = useFilesData(projectId, currentFolder);
+
+  // ---- View hook (sort, filter, columns, categories) ----
+  const {
+    viewMode, changeViewMode,
+    fileSortKey, fileSortDir, toggleFileSort,
+    fileSearch, setFileSearch,
+    categoryFilter, missingAmountFilter, handleCategoryFilter, handleMissingAmountFilter, clearCategoryFilter,
+    hiddenFileCols, visibleFileCols, toggleFileCol, fileColLabels,
+    compactRows, toggleCompact,
+    pinnedCol, setPinnedCol,
+    selectedFiles, toggleFileSelection, toggleSelectAll,
+    categoryOverrides, setCategoryForFile, customCategories, setCustomCategories,
+    guessCategory, getCategoryForPath,
+    filteredFolders, filteredFiles, sortedFiles,
+  } = useFilesView(files, folders, allProjectFiles, fileLinksMap, getFileLinksForPath);
   const [uploading, setUploading] = useState(false);
   const [fileToDelete, setFileToDelete] = useState<ProjectFile | null>(null);
   const [selectedFileForComments, setSelectedFileForComments] = useState<ProjectFile | null>(null);
@@ -304,257 +306,9 @@ const ProjectFilesTab = ({ projectId, projectName, canEdit = true, onNavigateToF
     await moveFile(fromPath, targetFolderPath, fileName);
   }, [moveFile, t]);
 
-  // Search filter
-  const [fileSearch, setFileSearch] = useState('');
-
-  // Category filter from FileStatsStrip
-  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
-  const [missingAmountFilter, setMissingAmountFilter] = useState<string | null>(null);
-  // Track the view mode before filter was applied so we can restore it
-  const [preFilterViewMode, setPreFilterViewMode] = useState<'folder' | 'grid' | 'flat' | null>(null);
-
-  // Compact row toggle
-  const [compactRows, setCompactRows] = useState(() => localStorage.getItem('files_compact') === 'true');
-  const toggleCompact = () => {
-    setCompactRows(prev => { const next = !prev; localStorage.setItem('files_compact', String(next)); return next; });
-  };
-
-  // File sorting
-  type FileSortKey = 'name' | 'category' | 'task' | 'purchase' | 'room' | 'vendor' | 'invoiceDate' | 'invoiceAmount' | 'rotAmount' | 'summary' | 'type' | 'size' | 'uploaded';
-  const [fileSortKey, setFileSortKey] = useState<FileSortKey | null>(null);
-  const [fileSortDir, setFileSortDir] = useState<'asc' | 'desc'>('asc');
-  const toggleFileSort = (key: FileSortKey) => {
-    if (fileSortKey === key) {
-      setFileSortDir(d => d === 'asc' ? 'desc' : 'asc');
-    } else {
-      setFileSortKey(key);
-      setFileSortDir('asc');
-    }
-  };
-
-  // Pinned column (sticky left after checkbox)
-  const [pinnedCol, setPinnedCol] = useState<'name' | FileSortKey | null>('name');
-
-  // View mode — folder (default), grid, or flat
-  type FilesViewMode = 'folder' | 'grid' | 'flat';
-  const [viewMode, setViewMode] = useState<FilesViewMode>(() => {
-    return (localStorage.getItem('files_view_mode') as FilesViewMode) || 'folder';
-  });
-  const changeViewMode = (mode: FilesViewMode) => {
-    setViewMode(mode);
-    localStorage.setItem('files_view_mode', mode);
-  };
-  const [allProjectFiles, setAllProjectFiles] = useState<ProjectFile[]>([]);
-  const [loadingFlat, setLoadingFlat] = useState(false);
-
-  const fetchAllFiles = async () => {
-    setLoadingFlat(true);
-    try {
-      const basePath = `projects/${projectId}`;
-      const result: ProjectFile[] = [];
-
-      // Recursive list function
-      const listRecursive = async (path: string) => {
-        const { data, error } = await supabase.storage
-          .from('project-files')
-          .list(path, { sortBy: { column: 'name', order: 'asc' } });
-        if (error || !data) return;
-
-        for (const item of data) {
-          if (item.name === '.emptyFolderPlaceholder') continue;
-          const fullPath = `${path}/${item.name}`;
-
-          if (item.metadata?.mimetype) {
-            // It's a file — generate thumbnail for images
-            let thumbnailUrl: string | undefined;
-            if (item.metadata.mimetype.startsWith('image/')) {
-              const { data: { publicUrl } } = supabase.storage
-                .from('project-files')
-                .getPublicUrl(fullPath, { transform: { width: 100, height: 100, resize: 'cover' } });
-              thumbnailUrl = publicUrl;
-            }
-            result.push({
-              id: item.id || item.name,
-              name: item.name,
-              path: fullPath,
-              size: item.metadata?.size || 0,
-              type: item.metadata?.mimetype || 'unknown',
-              uploaded_at: item.created_at || new Date().toISOString(),
-              uploaded_by: '',
-              folder: path.replace(basePath, '').replace(/^\//, '') || '/',
-              thumbnail_url: thumbnailUrl,
-            });
-          } else if (!item.name.includes('.')) {
-            // Likely a folder — recurse
-            await listRecursive(fullPath);
-          }
-        }
-      };
-
-      await listRecursive(basePath);
-      setAllProjectFiles(result);
-    } catch (err) {
-      console.error('Failed to fetch all files:', err);
-    } finally {
-      setLoadingFlat(false);
-    }
-  };
-
-  // Always fetch all files for the stats strip (and flat view)
-  useEffect(() => {
-    fetchAllFiles();
-  }, [projectId]);
-
-  // Re-fetch when switching to flat view explicitly
-  useEffect(() => {
-    if (viewMode === 'flat' && allProjectFiles.length === 0) fetchAllFiles();
-  }, [viewMode]);
-
-  // Batch selection
-  const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
-  // batchProcessing/batchProgress removed — BatchSmartTolkDialog handles its own state
-
-  const toggleFileSelection = (path: string) => {
-    setSelectedFiles(prev => {
-      const next = new Set(prev);
-      next.has(path) ? next.delete(path) : next.add(path);
-      return next;
-    });
-  };
-
-  // Configurable file table columns
-  type FileColKey = 'category' | 'task' | 'purchase' | 'room' | 'vendor' | 'invoiceDate' | 'invoiceAmount' | 'rotAmount' | 'summary' | 'size' | 'uploaded' | 'type';
-  const ALL_FILE_COLS: FileColKey[] = ['category', 'task', 'purchase', 'room', 'vendor', 'invoiceDate', 'invoiceAmount', 'rotAmount', 'summary', 'size', 'uploaded', 'type'];
-  const [hiddenFileCols, setHiddenFileCols] = useState<Set<FileColKey>>(() => {
-    try {
-      const saved = localStorage.getItem('files_hidden_cols');
-      return saved ? new Set(JSON.parse(saved) as FileColKey[]) : new Set<FileColKey>(['type', 'room', 'invoiceDate', 'invoiceAmount', 'rotAmount', 'vendor', 'summary']);
-    } catch { return new Set<FileColKey>(['type', 'room', 'invoiceDate', 'invoiceAmount', 'rotAmount', 'vendor', 'summary']); }
-  });
-  const fileColLabels: Record<FileColKey, string> = {
-    category: t('files.category', 'Kategori'),
-    task: t('common.task', 'Arbete'),
-    purchase: t('nav.purchases', 'Inköp'),
-    room: t('common.room', 'Rum'),
-    invoiceDate: t('files.invoiceDate', 'Fakturadatum'),
-    invoiceAmount: t('files.invoiceAmount', 'Belopp'),
-    rotAmount: t('files.rotAmount', 'ROT-avdrag'),
-    vendor: t('files.vendor', 'Leverantör'),
-    summary: t('files.aiSummary', 'AI-sammanfattning'),
-    type: t('budget.type', 'Typ'),
-    size: t('files.size', 'Storlek'),
-    uploaded: t('files.uploaded', 'Uppladdad'),
-  };
-
-  // Fetch file-entity links for the project
-  interface FileLink {
-    id?: string;
-    file_path: string;
-    task_id: string | null;
-    material_id: string | null;
-    room_id: string | null;
-    file_type: string;
-    invoice_date?: string | null;
-    invoice_amount?: number | null;
-    rot_amount?: number | null;
-    vendor_name?: string | null;
-    ai_summary?: string | null;
-    task_name?: string;
-    material_name?: string;
-    room_name?: string;
-  }
-  const [fileLinks, setFileLinks] = useState<FileLink[]>([]);
-  useEffect(() => {
-    if (!projectId) return;
-    (async () => {
-      const { data } = await supabase
-        .from('task_file_links')
-        .select('id, file_path, task_id, material_id, room_id, file_type, invoice_date, invoice_amount, rot_amount, vendor_name, ai_summary')
-        .eq('project_id', projectId);
-      if (!data) return;
-
-      // Fetch names for linked entities
-      const taskIds = [...new Set(data.filter(d => d.task_id).map(d => d.task_id!))];
-      const matIds = [...new Set(data.filter(d => d.material_id).map(d => d.material_id!))];
-      const roomIds = [...new Set(data.filter(d => d.room_id).map(d => d.room_id!))];
-
-      const [tasksRes, matsRes, roomsRes] = await Promise.all([
-        taskIds.length > 0 ? supabase.from('tasks').select('id, title').in('id', taskIds) : { data: [] },
-        matIds.length > 0 ? supabase.from('materials').select('id, name').in('id', matIds) : { data: [] },
-        roomIds.length > 0 ? supabase.from('rooms').select('id, name').in('id', roomIds) : { data: [] },
-      ]);
-
-      const taskMap = new Map((tasksRes.data || []).map(t => [t.id, t.title]));
-      const matMap = new Map((matsRes.data || []).map(m => [m.id, m.name]));
-      const roomMap = new Map((roomsRes.data || []).map(r => [r.id, r.name]));
-
-      setFileLinks(data.map(d => ({
-        ...d,
-        task_name: d.task_id ? taskMap.get(d.task_id) || undefined : undefined,
-        material_name: d.material_id ? matMap.get(d.material_id) || undefined : undefined,
-        room_name: d.room_id ? roomMap.get(d.room_id) || undefined : undefined,
-      })));
-    })();
-  }, [projectId, files]);
-
-  // Precomputed Map for O(1) lookups instead of O(n) filter per cell
-  const fileLinksMap = useMemo(() => {
-    const map = new Map<string, typeof fileLinks>();
-    for (const link of fileLinks) {
-      const arr = map.get(link.file_path);
-      if (arr) arr.push(link);
-      else map.set(link.file_path, [link]);
-    }
-    return map;
-  }, [fileLinks]);
-
-  const getFileLinksForPath = useCallback(
-    (path: string) => fileLinksMap.get(path) || [],
-    [fileLinksMap],
-  );
-
-  // Available entities for linking dropdowns
-  const [availTasks, setAvailTasks] = useState<Array<{ id: string; name: string }>>([]);
-  const [availMaterials, setAvailMaterials] = useState<Array<{ id: string; name: string }>>([]);
-  const [availRooms, setAvailRooms] = useState<Array<{ id: string; name: string }>>([]);
-  useEffect(() => {
-    if (!projectId) return;
-    Promise.all([
-      supabase.from('tasks').select('id, title').eq('project_id', projectId).order('title'),
-      supabase.from('materials').select('id, name').eq('project_id', projectId).order('name'),
-      supabase.from('rooms').select('id, name').eq('project_id', projectId).order('name'),
-    ]).then(([t, m, r]) => {
-      setAvailTasks((t.data || []).map(x => ({ id: x.id, name: x.title })));
-      setAvailMaterials((m.data || []).map(x => ({ id: x.id, name: x.name })));
-      setAvailRooms((r.data || []).map(x => ({ id: x.id, name: x.name })));
-    });
-  }, [projectId]);
-
-  // Category overrides (localStorage since no DB column for standalone file category)
-  const [categoryOverrides, setCategoryOverrides] = useState<Record<string, string>>(() => {
-    try { return JSON.parse(localStorage.getItem('files_cat_overrides') || '{}'); } catch { return {}; }
-  });
-  const setCategoryForFile = (path: string, cat: string) => {
-    setCategoryOverrides(prev => {
-      const next = { ...prev, [path]: cat };
-      localStorage.setItem('files_cat_overrides', JSON.stringify(next));
-      return next;
-    });
-  };
-  const [customCategories, setCustomCategories] = useState<string[]>(() => {
-    try { return JSON.parse(localStorage.getItem('files_custom_cats') || '[]'); } catch { return []; }
-  });
-
-  // Get current user profile ID for linking
-  const [currentProfileId, setCurrentProfileId] = useState<string | null>(null);
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) return;
-      supabase.from('profiles').select('id').eq('user_id', user.id).single().then(({ data }) => {
-        if (data) setCurrentProfileId(data.id);
-      });
-    });
-  }, []);
+  // (State for data, view, sort, filter, columns, categories, file links,
+  //  available entities, and currentProfileId is now provided by
+  //  useFilesData and useFilesView hooks above.)
 
   // Link/unlink a file to an entity
   const linkFileToEntity = async (file: ProjectFile, entityType: 'task' | 'material' | 'room', entityId: string) => {
@@ -676,111 +430,12 @@ const ProjectFilesTab = ({ projectId, projectName, canEdit = true, onNavigateToF
     }
   };
 
-  const toggleSelectAll = () => {
-    if (selectedFiles.size === filteredFiles.length) {
-      setSelectedFiles(new Set());
-    } else {
-      setSelectedFiles(new Set(filteredFiles.map(f => f.path)));
-    }
-  };
-
   // Batch Smart Tolk — opens dialog with parallel classification + linking
   const [batchTolkFiles, setBatchTolkFiles] = useState<ProjectFile[]>([]);
   const handleBatchSmartTolk = () => {
     const filesToProcess = filteredFiles.filter(f => selectedFiles.has(f.path));
     if (filesToProcess.length === 0) return;
     setBatchTolkFiles(filesToProcess);
-  };
-
-  const visibleFileCols = ALL_FILE_COLS.filter(k => !hiddenFileCols.has(k));
-  const toggleFileCol = (key: FileColKey) => {
-    setHiddenFileCols(prev => {
-      const next = new Set(prev);
-      next.has(key) ? next.delete(key) : next.add(key);
-      localStorage.setItem('files_hidden_cols', JSON.stringify([...next]));
-      return next;
-    });
-  };
-
-  // Map DB file_type to Swedish display label
-  const FILE_TYPE_LABELS: Record<string, string> = {
-    quote: 'Offert',
-    invoice: 'Faktura',
-    receipt: 'Kvitto',
-    contract: 'Kontrakt',
-    specification: 'Specifikation',
-    floor_plan: 'Ritning',
-  };
-
-  // Guess file category: prioritize AI/DB classification, then path heuristics
-  const guessCategory = (file: ProjectFile): string => {
-    // Check if any link for this file has a meaningful file_type from AI classification
-    const links = getFileLinksForPath(file.path);
-    for (const link of links) {
-      const label = FILE_TYPE_LABELS[link.file_type];
-      if (label) return label;
-    }
-
-    // Path-based heuristics
-    const p = file.path.toLowerCase();
-    if (p.includes('/offerter/') || p.includes('offert')) return 'Offert';
-    if (p.includes('/fakturor/') || p.includes('faktura') || p.includes('invoice')) return 'Faktura';
-    if (p.includes('/kvitton/') || p.includes('kvitto') || p.includes('receipt')) return 'Kvitto';
-    if (p.includes('/ritningar/') || p.includes('ritning') || p.includes('floor-plan')) return 'Ritning';
-    if (p.includes('/kontrakt/') || p.includes('kontrakt') || p.includes('contract')) return 'Kontrakt';
-
-    // No meaningful category — show nothing instead of redundant "Bild"/"Dokument"
-    return '';
-  };
-
-  // Category resolver for FileStatsStrip — wraps guessCategory + overrides
-  const getCategoryForPath = useCallback((path: string): string => {
-    if (categoryOverrides[path]) return categoryOverrides[path];
-    // Create a minimal ProjectFile-like object for guessCategory
-    const links = getFileLinksForPath(path);
-    for (const link of links) {
-      const label = FILE_TYPE_LABELS[link.file_type];
-      if (label) return label;
-    }
-    // Path heuristics
-    const p = path.toLowerCase();
-    if (p.includes('/offerter/') || p.includes('offert')) return 'Offert';
-    if (p.includes('/fakturor/') || p.includes('faktura') || p.includes('invoice')) return 'Faktura';
-    if (p.includes('/kvitton/') || p.includes('kvitto') || p.includes('receipt')) return 'Kvitto';
-    if (p.includes('/ritningar/') || p.includes('ritning') || p.includes('floor-plan')) return 'Ritning';
-    if (p.includes('/kontrakt/') || p.includes('kontrakt') || p.includes('contract')) return 'Kontrakt';
-    return '';
-  }, [categoryOverrides, getFileLinksForPath]);
-
-  // Handlers for FileStatsStrip
-  const handleCategoryFilter = (category: string | null) => {
-    if (category) {
-      if (!preFilterViewMode) setPreFilterViewMode(viewMode);
-      changeViewMode('flat');
-    } else {
-      if (preFilterViewMode) {
-        changeViewMode(preFilterViewMode);
-        setPreFilterViewMode(null);
-      }
-    }
-    setCategoryFilter(category);
-    setMissingAmountFilter(null);
-  };
-
-  const handleMissingAmountFilter = (category: string) => {
-    if (!preFilterViewMode) setPreFilterViewMode(viewMode);
-    changeViewMode('flat');
-    setCategoryFilter(category);
-    setMissingAmountFilter(category);
-  };
-
-  const clearCategoryFilter = () => {
-    setCategoryFilter(null);
-    setMissingAmountFilter(null);
-    if (preFilterViewMode) {
-      changeViewMode(preFilterViewMode);
-      setPreFilterViewMode(null);
-    }
   };
 
   // Helper to check if file is a document (PDF, DOC, DOCX, TXT)
@@ -791,100 +446,6 @@ const ProjectFilesTab = ({ projectId, projectName, canEdit = true, onNavigateToF
   // Helper to check if file is an image
   const checkIsImageFile = (file: ProjectFile) => {
     return file.type.startsWith('image/');
-  };
-
-  useEffect(() => {
-    fetchFiles();
-    fetchFolders();
-  }, [projectId, currentFolder]);
-
-  const fetchFolders = async () => {
-    try {
-      const basePath = `projects/${projectId}${currentFolder}`;
-      const { data: folderList, error } = await supabase.storage
-        .from('project-files')
-        .list(basePath);
-
-      if (error) throw error;
-
-      if (folderList) {
-        const foldersOnly = folderList
-          .filter(item => !item.name.includes('.') && item.name !== '.emptyFolderPlaceholder')
-          .map(folder => ({
-            id: folder.id || folder.name,
-            name: folder.name,
-            path: `${currentFolder}/${folder.name}`.replace(/^\//, ''),
-          }));
-        
-        setFolders(foldersOnly);
-      }
-    } catch (error: unknown) {
-      console.error('Error fetching folders:', error);
-    }
-  };
-
-  const fetchFiles = async () => {
-    try {
-      setLoading(true);
-      
-      const basePath = `projects/${projectId}${currentFolder}`;
-      const { data: fileList, error: listError } = await supabase.storage
-        .from('project-files')
-        .list(basePath, {
-          sortBy: { column: 'created_at', order: 'desc' }
-        });
-
-      if (listError) throw listError;
-
-      if (fileList) {
-        const filesWithDetails: ProjectFile[] = [];
-        
-        for (const file of fileList) {
-          // Skip folders and placeholder files
-          if (!file.name.includes('.') || file.name === '.emptyFolderPlaceholder') continue;
-          
-          const filePath = `${basePath}/${file.name}`;
-          let thumbnailUrl: string | undefined;
-          
-          // Generate thumbnail for images
-          if (file.metadata?.mimetype?.startsWith('image/')) {
-            const { data: { publicUrl } } = supabase.storage
-              .from('project-files')
-              .getPublicUrl(filePath, {
-                transform: {
-                  width: 100,
-                  height: 100,
-                  resize: 'cover'
-                }
-              });
-            thumbnailUrl = publicUrl;
-          }
-          
-          filesWithDetails.push({
-            id: file.id || file.name,
-            name: file.name,
-            path: filePath,
-            size: file.metadata?.size || 0,
-            type: file.metadata?.mimetype || 'unknown',
-            uploaded_at: file.created_at || new Date().toISOString(),
-            uploaded_by: '',
-            folder: currentFolder,
-            thumbnail_url: thumbnailUrl,
-          });
-        }
-
-        setFiles(filesWithDetails);
-      }
-    } catch (error: unknown) {
-      console.error('Error fetching files:', error);
-      toast({
-        title: t('files.error'),
-        description: t('files.errorLoadingFiles'),
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
   };
 
   const createFolder = async () => {
@@ -1162,79 +723,7 @@ const ProjectFilesTab = ({ projectId, projectName, canEdit = true, onNavigateToF
     e.stopPropagation();
   }, []);
 
-  // Filtered files/folders for search + category filter
-  const searchQ = fileSearch.toLowerCase().trim();
-  const filteredFolders = (searchQ || categoryFilter) ? folders.filter(f => !categoryFilter && f.name.toLowerCase().includes(searchQ)) : folders;
-
-  // Choose source: flat view uses allProjectFiles, folder view uses files
-  const fileSource = (viewMode === 'flat' || viewMode === 'grid') ? allProjectFiles : files;
-  const filteredFiles = useMemo(() => {
-    let result = fileSource;
-
-    // Category filter from stats strip
-    if (categoryFilter) {
-      result = result.filter(f => {
-        const cat = categoryOverrides[f.path] || guessCategory(f);
-        if (categoryFilter === '__unclassified__') return !cat;
-        return cat === categoryFilter;
-      });
-
-      // Additional: filter to only files missing amount
-      if (missingAmountFilter) {
-        result = result.filter(f => {
-          const links = getFileLinksForPath(f.path);
-          return !links.some(l => l.invoice_amount != null);
-        });
-      }
-    }
-
-    // Text search
-    if (searchQ) {
-      result = result.filter(f => {
-        if (f.name.toLowerCase().includes(searchQ)) return true;
-        const cat = (categoryOverrides[f.path] || guessCategory(f)).toLowerCase();
-        if (cat.includes(searchQ)) return true;
-        const links = getFileLinksForPath(f.path);
-        return links.some(l => l.task_name?.toLowerCase().includes(searchQ) || l.material_name?.toLowerCase().includes(searchQ) || l.room_name?.toLowerCase().includes(searchQ));
-      });
-    }
-
-    return result;
-  }, [fileSource, categoryFilter, missingAmountFilter, searchQ, categoryOverrides, getFileLinksForPath]);
-
-  // Sorted files
-  const sortedFiles = useMemo(() => {
-    if (!fileSortKey) return filteredFiles;
-    const sorted = [...filteredFiles].sort((a, b) => {
-      let aVal = '';
-      let bVal = '';
-      if (fileSortKey === 'name') {
-        aVal = a.name.toLowerCase();
-        bVal = b.name.toLowerCase();
-      } else if (fileSortKey === 'category') {
-        aVal = (categoryOverrides[a.path] || guessCategory(a)).toLowerCase();
-        bVal = (categoryOverrides[b.path] || guessCategory(b)).toLowerCase();
-      } else if (fileSortKey === 'type') {
-        aVal = (a.type || '').toLowerCase();
-        bVal = (b.type || '').toLowerCase();
-      } else if (fileSortKey === 'size') {
-        return fileSortDir === 'asc' ? (a.size || 0) - (b.size || 0) : (b.size || 0) - (a.size || 0);
-      } else if (fileSortKey === 'uploaded') {
-        aVal = a.uploaded_at || '';
-        bVal = b.uploaded_at || '';
-      } else {
-        // Link-based columns
-        const aLinks = fileLinksMap.get(a.path) || [];
-        const bLinks = fileLinksMap.get(b.path) || [];
-        const field = fileSortKey === 'task' ? 'task_name' : fileSortKey === 'purchase' ? 'material_name' : fileSortKey === 'room' ? 'room_name' : fileSortKey === 'vendor' ? 'vendor_name' : fileSortKey === 'summary' ? 'ai_summary' : fileSortKey === 'invoiceDate' ? 'invoice_date' : fileSortKey === 'invoiceAmount' ? 'invoice_amount' : 'rot_amount';
-        aVal = String((aLinks[0] as Record<string, unknown>)?.[field] || '').toLowerCase();
-        bVal = String((bLinks[0] as Record<string, unknown>)?.[field] || '').toLowerCase();
-      }
-      const cmp = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
-      return fileSortDir === 'asc' ? cmp : -cmp;
-    });
-    return sorted;
-  }, [filteredFiles, fileSortKey, fileSortDir, categoryOverrides, fileLinksMap]);
+  // (filteredFolders, filteredFiles, sortedFiles are provided by useFilesView hook)
 
   // Flat list of all previewable files (expanded folder files + top-level files)
   const allPreviewableFiles = useMemo(() => {

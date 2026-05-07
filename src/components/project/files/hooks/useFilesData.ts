@@ -39,6 +39,8 @@ export interface FilesDataResult {
   fetchAllFiles: () => Promise<void>;
   /** Re-fetch file-entity links */
   fetchFileLinks: () => Promise<void>;
+  /** Direct setter for optimistic updates on fileLinks */
+  setFileLinks: React.Dispatch<React.SetStateAction<FileLink[]>>;
 }
 
 // ---------------------------------------------------------------------------
@@ -339,5 +341,6 @@ export function useFilesData(
     fetchFolders,
     fetchAllFiles,
     fetchFileLinks,
+    setFileLinks,
   };
 }
