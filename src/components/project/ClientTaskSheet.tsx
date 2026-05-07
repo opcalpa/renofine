@@ -128,11 +128,16 @@ export function ClientTaskSheet({ taskId, projectId, open, onOpenChange }: Clien
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="sm:max-w-md w-full overflow-y-auto p-0">
+      <SheetContent side="right" className="sm:max-w-md w-full overflow-y-auto p-0" aria-describedby={undefined}>
         {loading && (
           <div className="flex items-center justify-center h-32">
+            <SheetTitle className="sr-only">{t("common.loading", "Loading...")}</SheetTitle>
             <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent" />
           </div>
+        )}
+
+        {!task && !loading && (
+          <SheetTitle className="sr-only">{t("tasks.task", "Task")}</SheetTitle>
         )}
 
         {task && !loading && (
