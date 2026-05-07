@@ -42,8 +42,17 @@ import { FeatureAccessEditor } from "./team/FeatureAccessEditor";
 import type { FeatureAccess } from "./team/FeatureAccessEditor";
 import { TeamTable } from "./team/TeamTable";
 import type { TeamRow } from "./team/TeamTable";
-import { WorkerInviteFields } from "./team/WorkerInviteFields";
+import {
+  WorkerContactFields,
+  WorkerTaskList,
+  useWorkerTasks,
+  getOverride,
+  isChecklistItemIncluded,
+  toggleChecklistItem,
+  setOverrideField,
+} from "./team/WorkerInviteFields";
 import type { WorkerInviteData, TaskOverride } from "./team/WorkerInviteFields";
+import { WorkerInvitePreview, WorkerPreviewEmpty } from "./team/WorkerInvitePreview";
 import { DirectMessageSheet } from "./DirectMessageSheet";
 
 
@@ -293,6 +302,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
     phone: "", email: "", language: "sv", welcomeMessage: "",
     selectedTaskIds: [], taskOverrides: new Map(),
   });
+  const [previewTaskId, setPreviewTaskId] = useState<string | null>(null);
   const [generatedWorkerLink, setGeneratedWorkerLink] = useState<string | null>(null);
   const [workerTokens, setWorkerTokens] = useState<Array<{
     id: string; token: string; worker_name: string; worker_phone: string | null;
@@ -313,6 +323,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
   const { toast } = useToast();
   const { t } = useTranslation();
   const { showTaxDeduction } = useTaxDeductionVisible();
+  const workerTasks = useWorkerTasks(projectId);
 
   const handleTemplateChange = (templateKey: string) => {
     setSelectedTemplate(templateKey);
@@ -654,6 +665,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
     setIsCoOwner(false);
     setFeatureAccess({ ...ROLE_TEMPLATES.contractor.access });
     setWorkerData({ phone: "", email: "", language: "sv", welcomeMessage: "", selectedTaskIds: [], taskOverrides: new Map() });
+    setPreviewTaskId(null);
     setGeneratedWorkerLink(null);
   };
 
@@ -1020,7 +1032,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
                 {t("roles.inviteButton")}
               </Button>
             </DialogTrigger>
-            <DialogContent className={`w-[95vw] max-h-[90vh] overflow-hidden flex flex-col ${selectedTemplate === "worker" ? "max-w-4xl" : "max-w-2xl"}`}>
+            <DialogContent className={`w-[95vw] max-h-[90vh] overflow-hidden flex flex-col ${selectedTemplate === "worker" ? "max-w-7xl" : "max-w-2xl"}`}>
               <DialogHeader>
                 <DialogTitle>{t("roles.inviteTitle")}</DialogTitle>
                 <DialogDescription>
@@ -1104,13 +1116,80 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
                   </>
                 )}
 
-                {/* --- WORKER FIELDS --- */}
+                {/* --- WORKER FIELDS: 3-column layout --- */}
                 {selectedTemplate === "worker" && !generatedWorkerLink && (
-                  <WorkerInviteFields
-                    projectId={projectId}
-                    data={workerData}
-                    onChange={(updates) => setWorkerData((prev) => ({ ...prev, ...updates }))}
-                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {/* Col 1: Contact + settings */}
+                    <WorkerContactFields
+                      data={workerData}
+                      onChange={(updates) => setWorkerData((prev) => ({ ...prev, ...updates }))}
+                    />
+
+                    {/* Col 2: Task selection */}
+                    <WorkerTaskList
+                      tasks={workerTasks}
+                      data={workerData}
+                      onChange={(updates) => setWorkerData((prev) => ({ ...prev, ...updates }))}
+                      previewTaskId={previewTaskId}
+                      onPreviewTask={setPreviewTaskId}
+                    />
+
+                    {/* Col 3: Live preview */}
+                    <div className="hidden md:block border-l pl-6 min-h-[400px]">
+                      {previewTaskId && workerTasks.find((t) => t.id === previewTaskId) ? (
+                        <WorkerInvitePreview
+                          task={workerTasks.find((t) => t.id === previewTaskId)!}
+                          override={getOverride(workerData, previewTaskId)}
+                          onOverrideChange={(updates) =>
+                            setOverrideField(workerData, previewTaskId, updates, (u) =>
+                              setWorkerData((prev) => ({ ...prev, ...u }))
+                            )
+                          }
+                          onChecklistToggle={(checklistId, itemId) => {
+                            const task = workerTasks.find((t) => t.id === previewTaskId);
+                            if (task) {
+                              toggleChecklistItem(workerData, task, checklistId, itemId, (u) =>
+                                setWorkerData((prev) => ({ ...prev, ...u }))
+                              );
+                            }
+                          }}
+                          isChecklistItemIncluded={(checklistId, itemId) =>
+                            isChecklistItemIncluded(workerData, previewTaskId, checklistId, itemId)
+                          }
+                        />
+                      ) : (
+                        <WorkerPreviewEmpty />
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Mobile preview — shown below the grid on small screens */}
+                {selectedTemplate === "worker" && !generatedWorkerLink && previewTaskId && (
+                  <div className="md:hidden border-t pt-4">
+                    {workerTasks.find((t) => t.id === previewTaskId) && (
+                      <WorkerInvitePreview
+                        task={workerTasks.find((t) => t.id === previewTaskId)!}
+                        override={getOverride(workerData, previewTaskId)}
+                        onOverrideChange={(updates) =>
+                          setOverrideField(workerData, previewTaskId, updates, (u) =>
+                            setWorkerData((prev) => ({ ...prev, ...u }))
+                          )
+                        }
+                        onChecklistToggle={(checklistId, itemId) => {
+                          const task = workerTasks.find((t) => t.id === previewTaskId);
+                          if (task) {
+                            toggleChecklistItem(workerData, task, checklistId, itemId, (u) =>
+                              setWorkerData((prev) => ({ ...prev, ...u }))
+                            );
+                          }
+                        }}
+                        isChecklistItemIncluded={(checklistId, itemId) =>
+                          isChecklistItemIncluded(workerData, previewTaskId, checklistId, itemId)
+                        }
+                      />
+                    )}
+                  </div>
                 )}
 
                 {/* Worker success view — link generated */}

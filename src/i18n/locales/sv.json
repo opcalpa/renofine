@@ -5467,7 +5467,9 @@
     "overridden": "anpassad",
     "descriptionLabel": "Beskrivning",
     "noDescription": "Ingen beskrivning",
-    "noChecklist": "Ingen checklista — lägg till en på uppgiften först"
+    "noChecklist": "Ingen checklista — lägg till en på uppgiften först",
+    "preview": "Förhandsvisning",
+    "previewHint": "Välj en uppgift för att se hur arbetaren ser den"
   },
   "batchTolk": {
     "title": "Smart Tolk",

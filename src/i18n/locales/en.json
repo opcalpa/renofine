@@ -5470,7 +5470,9 @@
     "overridden": "overridden",
     "descriptionLabel": "Description",
     "noDescription": "No description",
-    "noChecklist": "No checklist — add one to the task first"
+    "noChecklist": "No checklist — add one to the task first",
+    "preview": "Worker preview",
+    "previewHint": "Select a task to preview what the worker will see"
   },
   "batchTolk": {
     "title": "Smart Tolk",
