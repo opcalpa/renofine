@@ -163,19 +163,6 @@ export default function CustomerViewTab({
         </div>
       </div>
 
-      <CollapsibleSection
-        icon={PiggyBank}
-        title={t("customerView.budget")}
-        description={t("customerView.budgetDescription")}
-      >
-        <ProjectDocumentsCard
-          projectId={projectId}
-          currency={currency}
-          embedded
-          excludeDrafts
-        />
-      </CollapsibleSection>
-
       <div id="project-chat">
         <CollapsibleSection
           icon={MessageSquare}
@@ -188,6 +175,19 @@ export default function CustomerViewTab({
           />
         </CollapsibleSection>
       </div>
+
+      <CollapsibleSection
+        icon={PiggyBank}
+        title={t("customerView.budget")}
+        description={t("customerView.budgetDescription")}
+      >
+        <ProjectDocumentsCard
+          projectId={projectId}
+          currency={currency}
+          embedded
+          excludeDrafts
+        />
+      </CollapsibleSection>
 
       {/* Task detail — read-only sheet for customers */}
       <ClientTaskSheet
