@@ -3,16 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useTaxDeductionVisible } from "@/hooks/useTaxDeduction";
 import { supabase } from "@/integrations/supabase/client";
 import { TASK_CATEGORY_LABELS, TaskCategory } from "@/services/aiDocumentService.types";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -1608,26 +1599,25 @@ export function PlanningTaskList({
   const visibleColCount = 1 + extraCount + 1 + (effectiveLock ? 0 : 1); // task + extras + price + edit
 
   return (
-    <Card className="border-l-4 border-l-primary/60">
-      <CardHeader className="pb-3">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          <div>
-            <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <ClipboardList className="h-4 w-4" />
-              {t("planningTasks.title", "Scope of work")}
-            </CardTitle>
-            <CardDescription>
-              {t("planningTasks.description", "Define tasks to include in your quote")}
-            </CardDescription>
-          </div>
-          {tasks.length > 0 && (
-            <span className="text-xs text-muted-foreground">
-              {pricedCount}/{tasks.length} {t("planningTasks.priced", "priced")}
-            </span>
-          )}
+    <div className="space-y-3">
+      {/* Header strip */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div>
+          <h3 className="text-base font-semibold flex items-center gap-2">
+            <ClipboardList className="h-4 w-4" />
+            {t("planningTasks.title", "Scope of work")}
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            {t("planningTasks.description", "Define tasks to include in your quote")}
+          </p>
         </div>
-      </CardHeader>
-      <CardContent>
+        {tasks.length > 0 && (
+          <span className="text-xs text-muted-foreground">
+            {pricedCount}/{tasks.length} {t("planningTasks.priced", "priced")}
+          </span>
+        )}
+      </div>
+      <div>
         {locked && (
           <Alert variant="default" className="mb-4">
             <Lock className="h-4 w-4" />
@@ -1666,55 +1656,55 @@ export function PlanningTaskList({
           </div>
         ) : (
           <>
-            <div className="rounded-md border overflow-auto max-h-[calc(100vh-20rem)]">
-              <Table>
-                <TableHeader className="sticky top-0 z-20 bg-card">
-                  <TableRow className="hover:bg-transparent">
+            <div className="rounded-lg border bg-card overflow-auto max-h-[calc(100vh-20rem)]">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 z-20">
+                  <tr className="bg-muted border-b">
                     {show.costType && (
-                      <TableHead className="hidden sm:table-cell w-[60px]">
+                      <th className="px-3 py-2.5 kicker hidden sm:table-cell w-[60px]">
                         {t("planningTasks.costType", "Typ")}
-                      </TableHead>
+                      </th>
                     )}
-                    <TableHead className="min-w-[220px]">
+                    <th className="px-3 py-2.5 kicker min-w-[220px]">
                       {t("planningTasks.taskName", "Task")}
-                    </TableHead>
+                    </th>
                     {show.description && (
-                      <TableHead className="hidden sm:table-cell w-[200px]">
+                      <th className="px-3 py-2.5 kicker hidden sm:table-cell w-[200px]">
                         {t("tasks.description", "Description")}
-                      </TableHead>
+                      </th>
                     )}
                     {show.hours && (
-                      <TableHead className="hidden sm:table-cell text-right w-[90px]">
+                      <th className="px-3 py-2.5 kicker hidden sm:table-cell text-right w-[90px]">
                         {t("planningTasks.hoursQty", "Hours / Qty")}
-                      </TableHead>
+                      </th>
                     )}
                     {show.hourlyRate && (
-                      <TableHead className="hidden sm:table-cell text-right w-[110px]">
+                      <th className="px-3 py-2.5 kicker hidden sm:table-cell text-right w-[110px]">
                         {t("planningTasks.rateUnitPrice", "Timpris / Á-pris")}
-                      </TableHead>
+                      </th>
                     )}
                     {show.room && (
-                      <TableHead className="hidden sm:table-cell w-[130px]">
+                      <th className="px-3 py-2.5 kicker hidden sm:table-cell w-[130px]">
                         {t("planningTasks.room", "Room")}
-                      </TableHead>
+                      </th>
                     )}
                     {show.markup && (
-                      <TableHead className="hidden sm:table-cell text-right w-[80px]">
+                      <th className="px-3 py-2.5 kicker hidden sm:table-cell text-right w-[80px]">
                         {t("planningTasks.markup", "Markup")}
-                      </TableHead>
+                      </th>
                     )}
                     {show.budget && (
-                      <TableHead className="hidden sm:table-cell text-right w-[120px]">
+                      <th className="px-3 py-2.5 kicker hidden sm:table-cell text-right w-[120px]">
                         {t("planningTasks.budget", "Budget")}
-                      </TableHead>
+                      </th>
                     )}
                     {show.materialEstimate && (
-                      <TableHead className="hidden sm:table-cell text-right w-[130px]">
+                      <th className="px-3 py-2.5 kicker hidden sm:table-cell text-right w-[130px]">
                         {t("planningTasks.materialEstimate", "Materialbudget")}
-                      </TableHead>
+                      </th>
                     )}
                     {show.rotAmount && (
-                      <TableHead className="hidden sm:table-cell text-right w-[110px]">
+                      <th className="px-3 py-2.5 kicker hidden sm:table-cell text-right w-[110px]">
                         {!isHomeowner && !effectiveLock ? (
                           <TooltipProvider>
                             <Tooltip>
@@ -1734,9 +1724,9 @@ export function PlanningTaskList({
                         ) : (
                           t("files.rotAmount", "ROT-avdrag")
                         )}
-                      </TableHead>
+                      </th>
                     )}
-                    <TableHead className="text-right w-[140px]">
+                    <th className="px-3 py-2.5 kicker text-right w-[140px]">
                       <div>
                         {isHomeowner
                           ? t("planningTasks.estimatedBudget", "Budget")
@@ -1745,9 +1735,9 @@ export function PlanningTaskList({
                           <span className="block text-[10px] font-normal text-muted-foreground/70">{t("estimation.exMomsShort", "ex moms")}</span>
                         )}
                       </div>
-                    </TableHead>
+                    </th>
                     {show.profit && (
-                      <TableHead className="hidden sm:table-cell text-right w-[110px]">
+                      <th className="px-3 py-2.5 kicker hidden sm:table-cell text-right w-[110px]">
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -1758,12 +1748,12 @@ export function PlanningTaskList({
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
-                      </TableHead>
+                      </th>
                     )}
-                    {!effectiveLock && <TableHead className="w-[40px]" />}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+                    {!effectiveLock && <th className="px-3 py-2.5 kicker w-[40px]" />}
+                  </tr>
+                </thead>
+                <tbody>
                   {effectiveDisplayOrder.map((displayItem, displayIdx) => {
                   // --- Group header row ---
                   if (displayItem.type === "groupHeader") {
@@ -1772,9 +1762,9 @@ export function PlanningTaskList({
                       ? t("planningTasks.standaloneMaterials", "Fristående material")
                       : (TASK_CATEGORY_LABELS[displayItem.category as TaskCategory] || displayItem.category);
                     return (
-                      <TableRow
+                      <tr
                         key={`group-${displayItem.category}`}
-                        className="bg-muted/40 hover:bg-muted/60 cursor-pointer"
+                        className="bg-muted/40 hover:bg-muted/60 cursor-pointer border-b transition-colors"
                         onClick={() => setCollapsedGroups((prev) => {
                           const next = new Set(prev);
                           if (next.has(displayItem.category)) next.delete(displayItem.category);
@@ -1782,7 +1772,7 @@ export function PlanningTaskList({
                           return next;
                         })}
                       >
-                        <TableCell colSpan={99} className="py-2 px-3">
+                        <td colSpan={99} className="py-2 px-3">
                           <div className="flex items-center gap-2">
                             <ChevronRight className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${isCollapsed ? '' : 'rotate-90'}`} />
                             <span className="text-sm font-semibold">{label}</span>
@@ -1795,8 +1785,8 @@ export function PlanningTaskList({
                               </span>
                             )}
                           </div>
-                        </TableCell>
-                      </TableRow>
+                        </td>
+                      </tr>
                     );
                   }
 
@@ -1871,9 +1861,9 @@ export function PlanningTaskList({
                     };
 
                     return (
-                      <TableRow
+                      <tr
                         key={`s-${mat.id}`}
-                        className={`bg-amber-50/30 ${dragOverTarget?.id === mat.id ? (dragOverTarget.position === "above" ? "border-t-2 border-t-primary" : "border-b-2 border-b-primary") : ""}`}
+                        className={`bg-amber-50/30 border-b last:border-b-0 hover:bg-muted/30 transition-colors ${dragOverTarget?.id === mat.id ? (dragOverTarget.position === "above" ? "border-t-2 border-t-primary" : "border-b-2 border-b-primary") : ""}`}
                         draggable={!effectiveLock}
                         onDragStart={(e) => handleRowDragStart(e, "material", mat.id, displayIdx)}
                         onDragEnd={handleRowDragEnd}
@@ -1881,15 +1871,15 @@ export function PlanningTaskList({
                         onDrop={(e) => handleRowDrop(e, "material", mat.id)}
                       >
                         {show.costType && (
-                          <TableCell className="hidden sm:table-cell py-2.5">
+                          <td className="hidden sm:table-cell px-3 py-2.5">
                             <MaterialKindIcon
                               kind={mat.kind}
                               editable={!effectiveLock}
                               onChangeKind={(kind) => handleChangeMaterialKind(mat.id, kind)}
                             />
-                          </TableCell>
+                          </td>
                         )}
-                        <TableCell className="py-2.5">
+                        <td className="px-3 py-2.5">
                           <div className="flex items-center gap-1.5">
                             <span className="text-sm">{mat.name}</span>
                             <MaterialFileAttachment materialId={mat.id} projectId={projectId} />
@@ -1919,20 +1909,20 @@ export function PlanningTaskList({
                               </Popover>
                             ) : null}
                           </div>
-                        </TableCell>
-                        {show.description && <TableCell className="hidden sm:table-cell py-2.5" />}
+                        </td>
+                        {show.description && <td className="hidden sm:table-cell py-2.5" />}
                         {show.hours && (
-                          <TableCell className="text-right hidden sm:table-cell py-2.5">
+                          <td className="text-right hidden sm:table-cell px-3 py-2.5">
                             {renderStandaloneInline2("mat_quantity", "quantity", mat.quantity, ` ${mat.unit && mat.unit !== "kr" ? mat.unit : "st"}`)}
-                          </TableCell>
+                          </td>
                         )}
                         {show.hourlyRate && (
-                          <TableCell className="text-right hidden sm:table-cell py-2.5">
+                          <td className="text-right hidden sm:table-cell px-3 py-2.5">
                             {renderStandaloneInline2("mat_price_per_unit", "price_per_unit", mat.price_per_unit)}
-                          </TableCell>
+                          </td>
                         )}
                         {show.room && (
-                          <TableCell className="hidden sm:table-cell py-2.5">
+                          <td className="hidden sm:table-cell px-3 py-2.5">
                             {editingCell && "materialId" in editingCell && editingCell.materialId === mat.id && editingCell.field === "mat_room_id" && !effectiveLock ? (
                               <Popover open onOpenChange={(isOpen) => { if (!isOpen) { setEditingCell(null); setNewRoomName(""); } }}>
                                 <PopoverTrigger asChild>
@@ -2017,12 +2007,12 @@ export function PlanningTaskList({
                                 {mat.room_id && rooms.find((r) => r.id === mat.room_id)?.name || "–"}
                               </button>
                             )}
-                          </TableCell>
+                          </td>
                         )}
                         {show.markup && (
-                          <TableCell className="text-right hidden sm:table-cell py-2.5">
+                          <td className="text-right hidden sm:table-cell px-3 py-2.5">
                             {renderStandaloneInline2("mat_markup_percent", "markup_percent", mat.markup_percent, "%")}
-                          </TableCell>
+                          </td>
                         )}
                         {(() => {
                           const base = matTotal || 0;
@@ -2032,21 +2022,21 @@ export function PlanningTaskList({
                           return (
                             <>
                               {show.budget && (
-                                <TableCell className="text-right hidden sm:table-cell py-2.5">
+                                <td className="text-right hidden sm:table-cell px-3 py-2.5">
                                   <span className="text-xs text-muted-foreground">–</span>
-                                </TableCell>
+                                </td>
                               )}
                               {show.materialEstimate && (
-                                <TableCell className="text-right hidden sm:table-cell py-2.5">
+                                <td className="text-right hidden sm:table-cell px-3 py-2.5">
                                   <span className="text-xs text-muted-foreground">–</span>
-                                </TableCell>
+                                </td>
                               )}
                               {show.rotAmount && (
-                                <TableCell className="text-right hidden sm:table-cell py-2.5">
+                                <td className="text-right hidden sm:table-cell px-3 py-2.5">
                                   <span className="text-xs text-muted-foreground">–</span>
-                                </TableCell>
+                                </td>
                               )}
-                              <TableCell className="text-right py-2.5">
+                              <td className="text-right px-3 py-2.5">
                                 {customerPrice > 0 && markup > 0 ? (
                                   <HoverCard openDelay={200} closeDelay={100}>
                                     <HoverCardTrigger asChild>
@@ -2077,9 +2067,9 @@ export function PlanningTaskList({
                                 ) : (
                                   <span className="text-xs text-muted-foreground">–</span>
                                 )}
-                              </TableCell>
+                              </td>
                               {show.profit && (
-                                <TableCell className="text-right hidden sm:table-cell py-2.5">
+                                <td className="text-right hidden sm:table-cell px-3 py-2.5">
                                   {profit > 0 ? (
                                     <Popover>
                                       <PopoverTrigger asChild>
@@ -2103,13 +2093,13 @@ export function PlanningTaskList({
                                   ) : (
                                     <span className="text-xs text-muted-foreground">–</span>
                                   )}
-                                </TableCell>
+                                </td>
                               )}
                             </>
                           );
                         })()}
                         {!effectiveLock && (
-                          <TableCell className="py-2.5">
+                          <td className="px-3 py-2.5">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => e.stopPropagation()}>
@@ -2134,9 +2124,9 @@ export function PlanningTaskList({
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
-                          </TableCell>
+                          </td>
                         )}
-                      </TableRow>
+                      </tr>
                     );
                   }
 
@@ -2211,13 +2201,13 @@ export function PlanningTaskList({
 
                     return (
                     <React.Fragment key={task.id}>
-                    <TableRow
+                    <tr
                       draggable={!effectiveLock}
                       onDragStart={(e) => handleRowDragStart(e, "task", task.id, idx)}
                       onDragEnd={handleRowDragEnd}
                       onDragOver={(e) => handleRowDragOver(e, "task", task.id)}
                       onDrop={(e) => handleRowDrop(e, "task", task.id)}
-                      className={`bg-white dark:bg-card ${
+                      className={`border-b last:border-b-0 hover:bg-muted/30 transition-colors ${
                         dragOverTarget?.id === task.id
                           ? dragOverTarget.position === "above"
                             ? "border-t-2 border-t-primary"
@@ -2229,7 +2219,7 @@ export function PlanningTaskList({
                         const hasMaterial = taskMaterials.length > 0 || !!(task.material_estimate && task.material_estimate > 0);
                         const hasAny = hasOwnLabor || hasMaterial || hasSubcontractor;
                         return (
-                        <TableCell className="hidden sm:table-cell py-2.5">
+                        <td className="hidden sm:table-cell px-3 py-2.5">
                           {hasAny ? (
                             <div className="flex items-center gap-1">
                               {hasOwnLabor && (
@@ -2272,10 +2262,10 @@ export function PlanningTaskList({
                           ) : (
                             <span className="text-xs text-muted-foreground">–</span>
                           )}
-                        </TableCell>
+                        </td>
                         );
                       })()}
-                      <TableCell className="font-medium py-2.5">
+                      <td className="font-medium px-3 py-2.5">
                         <div className="flex items-center gap-1">
                           <button
                             type="button"
@@ -2296,9 +2286,9 @@ export function PlanningTaskList({
                           )}
                           <MaterialFileAttachment taskId={task.id} projectId={projectId} />
                         </div>
-                      </TableCell>
+                      </td>
                       {show.description && (
-                        <TableCell className="hidden sm:table-cell py-2.5 max-w-[200px]">
+                        <td className="hidden sm:table-cell py-2.5 max-w-[200px]">
                           {editingCell?.taskId === task.id && editingCell?.field === "description" && !effectiveLock ? (
                             <Input
                               className="h-7 text-sm"
@@ -2331,20 +2321,20 @@ export function PlanningTaskList({
                               {task.description || "–"}
                             </button>
                           )}
-                        </TableCell>
+                        </td>
                       )}
                       {show.hours && (
-                        <TableCell className="text-right hidden sm:table-cell py-2.5">
+                        <td className="text-right hidden sm:table-cell px-3 py-2.5">
                           {renderInlineCell("estimated_hours", task.estimated_hours, "hours")}
-                        </TableCell>
+                        </td>
                       )}
                       {show.hourlyRate && (
-                        <TableCell className="text-right hidden sm:table-cell py-2.5">
+                        <td className="text-right hidden sm:table-cell px-3 py-2.5">
                           {renderInlineCell("hourly_rate", task.hourly_rate, "currency")}
-                        </TableCell>
+                        </td>
                       )}
                       {show.room && (
-                        <TableCell className="hidden sm:table-cell py-2.5">
+                        <td className="hidden sm:table-cell px-3 py-2.5">
                           {editingCell?.taskId === task.id && editingCell?.field === "room_id" && !effectiveLock ? (
                             <Popover open onOpenChange={(isOpen) => { if (!isOpen) { setEditingCell(null); setNewRoomName(""); } }}>
                               <PopoverTrigger asChild>
@@ -2428,10 +2418,10 @@ export function PlanningTaskList({
                               {task.room_names.length > 0 ? task.room_names.join(", ") : "–"}
                             </button>
                           )}
-                        </TableCell>
+                        </td>
                       )}
                       {show.markup && (
-                        <TableCell className="text-right hidden sm:table-cell py-2.5">
+                        <td className="text-right hidden sm:table-cell px-3 py-2.5">
                           {(() => {
                             const hasMatMarkup = (task.material_markup_percent && task.material_markup_percent > 0)
                               || (task.material_items || []).some(i => i.markup_percent && i.markup_percent > 0);
@@ -2456,15 +2446,15 @@ export function PlanningTaskList({
                               </TooltipProvider>
                             );
                           })()}
-                        </TableCell>
+                        </td>
                       )}
                       {show.budget && (
-                        <TableCell className="text-right hidden sm:table-cell py-2.5">
+                        <td className="text-right hidden sm:table-cell px-3 py-2.5">
                           {task.budget ? <span className="text-sm">{formatCurrency(task.budget, currency)}</span> : <span className="text-xs text-muted-foreground">–</span>}
-                        </TableCell>
+                        </td>
                       )}
                       {show.materialEstimate && (
-                        <TableCell className="text-right hidden sm:table-cell py-2.5">
+                        <td className="text-right hidden sm:table-cell px-3 py-2.5">
                           {task.material_estimate ? (() => {
                             const matMarkup = task.material_markup_percent || 0;
                             const matItems = task.material_items || [];
@@ -2505,10 +2495,10 @@ export function PlanningTaskList({
                             }
                             return <span className="text-sm text-amber-700">{formatCurrency(task.material_estimate, currency)}</span>;
                           })() : <span className="text-xs text-muted-foreground">–</span>}
-                        </TableCell>
+                        </td>
                       )}
                       {show.rotAmount && (
-                        <TableCell className="text-right hidden sm:table-cell py-2.5">
+                        <td className="text-right hidden sm:table-cell px-3 py-2.5">
                           {task.rot_amount ? (() => {
                             const laborCost = (task.estimated_hours || 0) * (task.hourly_rate || 0);
                             const laborIncMoms = Math.round(laborCost * 1.25);
@@ -2541,9 +2531,9 @@ export function PlanningTaskList({
                           })() : (
                             <span className="text-xs text-muted-foreground">–</span>
                           )}
-                        </TableCell>
+                        </td>
                       )}
-                      <TableCell className="text-right py-2.5">
+                      <td className="text-right px-3 py-2.5">
                         {(() => {
                           const laborTotal = (task.estimated_hours || 0) * (task.hourly_rate || 0);
                           const matItems = task.material_items || [];
@@ -2618,7 +2608,7 @@ export function PlanningTaskList({
                             </HoverCard>
                           );
                         })()}
-                      </TableCell>
+                      </td>
                       {show.profit && (() => {
                         const rowProfit = calcTaskProfit(task);
                         const laborTotal = (task.estimated_hours || 0) * (task.hourly_rate || 0);
@@ -2629,7 +2619,7 @@ export function PlanningTaskList({
                         const matProfit = rowProfit - laborProfit - ueProfit;
 
                         return (
-                          <TableCell className="text-right hidden sm:table-cell py-2.5">
+                          <td className="text-right hidden sm:table-cell px-3 py-2.5">
                             {rowProfit > 0 ? (
                               <HoverCard openDelay={200} closeDelay={100}>
                                 <HoverCardTrigger asChild>
@@ -2698,11 +2688,11 @@ export function PlanningTaskList({
                             ) : (
                               <span className="text-xs text-muted-foreground">–</span>
                             )}
-                          </TableCell>
+                          </td>
                         );
                       })()}
                       {!effectiveLock && (
-                        <TableCell className="py-2.5">
+                        <td className="px-3 py-2.5">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => e.stopPropagation()}>
@@ -2748,9 +2738,9 @@ export function PlanningTaskList({
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
-                        </TableCell>
+                        </td>
                       )}
-                    </TableRow>
+                    </tr>
 
                     {/* Material/UE sub-rows */}
                     {isExpanded && taskMaterials.map((mat) => {
@@ -2813,7 +2803,7 @@ export function PlanningTaskList({
                       };
 
                       return (
-                        <TableRow
+                        <tr
                           key={mat.id}
                           className={`bg-muted/30 hover:bg-muted/50 ${dragOverTarget?.id === mat.id ? (dragOverTarget.position === "above" ? "border-t-2 border-t-primary" : "border-b-2 border-b-primary") : ""}`}
                           draggable={!effectiveLock}
@@ -2823,16 +2813,16 @@ export function PlanningTaskList({
                           onDrop={(e) => handleRowDrop(e, "child-material", mat.id)}
                         >
                           {show.costType && (
-                            <TableCell className="hidden sm:table-cell py-2">
+                            <td className="hidden sm:table-cell px-3 py-2">
                               <MaterialKindIcon
                                 kind={mat.kind}
                                 editable={!effectiveLock}
                                 onChangeKind={(kind) => handleChangeMaterialKind(mat.id, kind)}
                                 size="xs"
                               />
-                            </TableCell>
+                            </td>
                           )}
-                          <TableCell className="py-2 pl-8">
+                          <td className="px-3 py-2 pl-8">
                             <div className="flex items-center gap-1.5">
                               <span className="text-muted-foreground text-xs">└</span>
                               <span className="text-sm">{mat.name}</span>
@@ -2871,23 +2861,23 @@ export function PlanningTaskList({
                                 </Popover>
                               )}
                             </div>
-                          </TableCell>
-                          {show.description && <TableCell className="hidden sm:table-cell py-2" />}
+                          </td>
+                          {show.description && <td className="hidden sm:table-cell py-2" />}
                           {show.hours && (
-                            <TableCell className="text-right hidden sm:table-cell py-2">
+                            <td className="text-right hidden sm:table-cell px-3 py-2">
                               {renderMatInline("mat_quantity", "quantity", mat.quantity, ` ${mat.unit && mat.unit !== "kr" ? mat.unit : "st"}`)}
-                            </TableCell>
+                            </td>
                           )}
                           {show.hourlyRate && (
-                            <TableCell className="text-right hidden sm:table-cell py-2">
+                            <td className="text-right hidden sm:table-cell px-3 py-2">
                               {renderMatInline("mat_price_per_unit", "price_per_unit", mat.price_per_unit)}
-                            </TableCell>
+                            </td>
                           )}
-                          {show.room && <TableCell className="hidden sm:table-cell py-2" />}
+                          {show.room && <td className="hidden sm:table-cell py-2" />}
                           {show.markup && (
-                            <TableCell className="text-right hidden sm:table-cell py-2">
+                            <td className="text-right hidden sm:table-cell px-3 py-2">
                               {renderMatInline("mat_markup_percent", "markup_percent", mat.markup_percent, "%")}
-                            </TableCell>
+                            </td>
                           )}
                           {(() => {
                             const base = matTotal || 0;
@@ -2896,10 +2886,10 @@ export function PlanningTaskList({
                             const pr = mkp > 0 ? Math.round(base * mkp / 100) : 0;
                             return (
                               <>
-                                {show.budget && <TableCell className="hidden sm:table-cell py-2" />}
-                                {show.materialEstimate && <TableCell className="hidden sm:table-cell py-2" />}
-                                {show.rotAmount && <TableCell className="hidden sm:table-cell py-2" />}
-                                <TableCell className="text-right py-2">
+                                {show.budget && <td className="hidden sm:table-cell py-2" />}
+                                {show.materialEstimate && <td className="hidden sm:table-cell py-2" />}
+                                {show.rotAmount && <td className="hidden sm:table-cell py-2" />}
+                                <td className="text-right px-3 py-2">
                                   {cp > 0 && mkp > 0 ? (
                                     <HoverCard openDelay={200} closeDelay={100}>
                                       <HoverCardTrigger asChild>
@@ -2928,9 +2918,9 @@ export function PlanningTaskList({
                                   ) : cp > 0 ? (
                                     <span className="text-sm text-muted-foreground">{formatCurrency(cp, currency)}</span>
                                   ) : null}
-                                </TableCell>
+                                </td>
                                 {show.profit && (
-                                  <TableCell className="text-right hidden sm:table-cell py-2">
+                                  <td className="text-right hidden sm:table-cell px-3 py-2">
                                     {pr > 0 ? (
                                       <Popover>
                                         <PopoverTrigger asChild>
@@ -2952,13 +2942,13 @@ export function PlanningTaskList({
                                         </PopoverContent>
                                       </Popover>
                                     ) : null}
-                                  </TableCell>
+                                  </td>
                                 )}
                               </>
                             );
                           })()}
                           {!effectiveLock && (
-                            <TableCell className="py-2">
+                            <td className="px-3 py-2">
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => e.stopPropagation()}>
@@ -2983,9 +2973,9 @@ export function PlanningTaskList({
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
-                            </TableCell>
+                            </td>
                           )}
-                        </TableRow>
+                        </tr>
                       );
                     })}
                     </React.Fragment>
@@ -2994,7 +2984,7 @@ export function PlanningTaskList({
 
                   {/* Unlink drop zone — shown when dragging a linked material */}
                   {isDraggingMaterial && (
-                    <TableRow
+                    <tr
                       className={`transition-colors ${unlinkDropHover ? "bg-amber-100 border-2 border-dashed border-amber-400" : "bg-amber-50/50 border-2 border-dashed border-amber-200"}`}
                       onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; setUnlinkDropHover(true); setDragOverTarget(null); }}
                       onDragLeave={() => setUnlinkDropHover(false)}
@@ -3013,18 +3003,18 @@ export function PlanningTaskList({
                         setUnlinkDropHover(false);
                       }}
                     >
-                      <TableCell colSpan={visibleColCount} className="py-3 text-center">
+                      <td colSpan={visibleColCount} className="px-3 py-3 text-center">
                         <span className={`text-sm ${unlinkDropHover ? "text-amber-700 font-medium" : "text-amber-500"}`}>
                           {t("planningTasks.unlinkFromTask", "Make standalone")}
                         </span>
-                      </TableCell>
-                    </TableRow>
+                      </td>
+                    </tr>
                   )}
 
                   {/* Inline add row */}
                   {isAdding && !effectiveLock && (
-                    <TableRow className="hover:bg-transparent">
-                      <TableCell colSpan={visibleColCount} className="py-2">
+                    <tr className="hover:bg-transparent">
+                      <td colSpan={visibleColCount} className="px-3 py-2.5">
                         <form
                           className="flex items-center gap-2"
                           onSubmit={(e) => {
@@ -3061,10 +3051,10 @@ export function PlanningTaskList({
                             {t("common.cancel", "Cancel")}
                           </Button>
                         </form>
-                      </TableCell>
-                    </TableRow>
+                      </td>
+                    </tr>
                   )}
-                </TableBody>
+                </tbody>
                 {tasks.length > 0 && (
                 <tfoot>
                   <tr className="border-t-2 border-primary/20 bg-primary/5">
@@ -3123,7 +3113,7 @@ export function PlanningTaskList({
                   </tr>
                 </tfoot>
                 )}
-              </Table>
+              </table>
             </div>
 
             {/* Action bar */}
@@ -3258,7 +3248,7 @@ export function PlanningTaskList({
             </div>
           </>
         )}
-      </CardContent>
+      </div>
 
       <TaskEditDialog
         taskId={editTaskId}
@@ -3349,6 +3339,6 @@ export function PlanningTaskList({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </Card>
+    </div>
   );
 }

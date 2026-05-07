@@ -2,19 +2,10 @@ import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   Popover,
   PopoverContent,
@@ -522,58 +513,56 @@ export function PlanningRoomList({ projectId, locked = false, onRoomChange }: Pl
 
   // ---- Render ----
   return (
-    <Card className="border-l-4 border-l-blue-400">
-      <CardHeader className="pb-3">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex items-center gap-2">
-            <Home className="h-5 w-5 text-blue-500" />
-            <div>
-              <CardTitle className="text-base">{t("planningRooms.title", "Room planning")}</CardTitle>
-              <CardDescription className="text-xs">
-                {t("planningRooms.description", "Add rooms and dimensions to help estimate work")}
-              </CardDescription>
-            </div>
+    <div className="space-y-3">
+      {/* Header strip */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2">
+          <Home className="h-5 w-5 text-blue-500" />
+          <div>
+            <h3 className="text-base font-semibold">{t("planningRooms.title", "Room planning")}</h3>
+            <p className="text-xs text-muted-foreground">
+              {t("planningRooms.description", "Add rooms and dimensions to help estimate work")}
+            </p>
           </div>
-
-          {rooms.length > 0 && (
-            <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-              <span>
-                {t("planningRooms.totalArea", "Total area")}: <strong>{totalArea > 0 ? `${totalArea.toFixed(1)} ${ms.areaLabel}` : "–"}</strong>
-              </span>
-              {show.wallArea && totalWallArea > 0 && (
-                <span>
-                  {t("rooms.wallArea")}: <strong>{totalWallArea.toFixed(1)} {ms.areaLabel}</strong>
-                </span>
-              )}
-              <span className="text-muted-foreground/60">
-                {roomsWithDimensions}/{rooms.length} {t("planningRooms.measured", "measured")}
-              </span>
-            </div>
-          )}
         </div>
-      </CardHeader>
 
-      <CardContent className="pt-0">
-        {loading ? (
-          <div className="space-y-2">
-            <Skeleton className="h-8 w-full" />
-            <Skeleton className="h-8 w-full" />
+        {rooms.length > 0 && (
+          <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+            <span>
+              {t("planningRooms.totalArea", "Total area")}: <strong>{totalArea > 0 ? `${totalArea.toFixed(1)} ${ms.areaLabel}` : "–"}</strong>
+            </span>
+            {show.wallArea && totalWallArea > 0 && (
+              <span>
+                {t("rooms.wallArea")}: <strong>{totalWallArea.toFixed(1)} {ms.areaLabel}</strong>
+              </span>
+            )}
+            <span className="text-muted-foreground/60">
+              {roomsWithDimensions}/{rooms.length} {t("planningRooms.measured", "measured")}
+            </span>
           </div>
-        ) : (
-          <>
-            <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="text-xs font-medium w-[140px] sticky left-0 z-20 bg-card">{t("planningRooms.roomName", "Room")}</TableHead>
-                  {show.width && <TableHead className="text-xs font-medium w-[80px]">{t("rooms.width")}</TableHead>}
-                  {show.depth && <TableHead className="text-xs font-medium w-[80px]">{t("rooms.depth")}</TableHead>}
-                  {show.ceilingHeight && <TableHead className="text-xs font-medium w-[80px] hidden sm:table-cell">{t("rooms.ceilingHeight")}</TableHead>}
-                  <TableHead className="text-xs font-medium w-[80px]">{t("rooms.area")}</TableHead>
-                  {show.wallArea && <TableHead className="text-xs font-medium w-[80px] hidden sm:table-cell">{t("rooms.wallArea")}</TableHead>}
+        )}
+      </div>
+
+      {loading ? (
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-8 w-full" />
+        </div>
+      ) : (
+        <>
+          <div className="rounded-lg border bg-card overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-muted border-b">
+                  <th className="px-3 py-2.5 text-left kicker w-[140px] sticky left-0 z-20 bg-muted">{t("planningRooms.roomName", "Room")}</th>
+                  {show.width && <th className="px-3 py-2.5 text-right kicker w-[80px]">{t("rooms.width")}</th>}
+                  {show.depth && <th className="px-3 py-2.5 text-right kicker w-[80px]">{t("rooms.depth")}</th>}
+                  {show.ceilingHeight && <th className="px-3 py-2.5 text-right kicker w-[80px] hidden sm:table-cell">{t("rooms.ceilingHeight")}</th>}
+                  <th className="px-3 py-2.5 text-right kicker w-[80px]">{t("rooms.area")}</th>
+                  {show.wallArea && <th className="px-3 py-2.5 text-right kicker w-[80px] hidden sm:table-cell">{t("rooms.wallArea")}</th>}
                   {show.paintEstimate && (
-                    <TableHead className="text-xs font-medium w-[100px]">
-                      <div className="flex items-center gap-1">
+                    <th className="px-3 py-2.5 text-right kicker w-[100px]">
+                      <div className="flex items-center justify-end gap-1">
                         {t("rooms.paintEstimate")}
                         <TooltipProvider>
                           <Tooltip>
@@ -593,56 +582,56 @@ export function PlanningRoomList({ projectId, locked = false, onRoomChange }: Pl
                           </Tooltip>
                         </TooltipProvider>
                       </div>
-                    </TableHead>
+                    </th>
                   )}
-                  {show.status && <TableHead className="text-xs font-medium w-[100px]">{t("common.status")}</TableHead>}
-                  {show.attachments && <TableHead className="text-xs font-medium w-[60px]">{t("tasksTable.attachment", "Bilagor")}</TableHead>}
-                  {!locked && <TableHead className="text-xs font-medium w-[40px]" />}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+                  {show.status && <th className="px-3 py-2.5 text-left kicker w-[100px]">{t("common.status")}</th>}
+                  {show.attachments && <th className="px-3 py-2.5 text-left kicker w-[60px]">{t("tasksTable.attachment", "Bilagor")}</th>}
+                  {!locked && <th className="w-[40px] px-2 py-2.5" />}
+                </tr>
+              </thead>
+              <tbody>
                 {rooms.map((room) => {
                   const area = computeFloorAreaSqm(room);
                   const wallArea = computeWallAreaSqm(room);
                   const paintLiters = computePaintLiters(room, estimationSettings);
 
                   return (
-                    <TableRow key={room.id} className="group">
-                      <TableCell className="py-1.5 sticky left-0 z-10 bg-card">
+                    <tr key={room.id} className="group border-b last:border-b-0 hover:bg-muted/30 transition-colors">
+                      <td className="px-3 py-2.5 sticky left-0 z-10 bg-card">
                         {renderEditableCell(room, "name", room.name, "font-medium")}
-                      </TableCell>
+                      </td>
                       {show.width && (
-                        <TableCell className="py-1.5">
-                          {renderEditableCell(room, "width", mmToM(room.dimensions?.width_mm), "tabular-nums")}
-                        </TableCell>
+                        <td className="px-3 py-2.5 text-right">
+                          {renderEditableCell(room, "width", mmToM(room.dimensions?.width_mm), "tabular-nums text-right")}
+                        </td>
                       )}
                       {show.depth && (
-                        <TableCell className="py-1.5">
-                          {renderEditableCell(room, "depth", mmToM(room.dimensions?.height_mm), "tabular-nums")}
-                        </TableCell>
+                        <td className="px-3 py-2.5 text-right">
+                          {renderEditableCell(room, "depth", mmToM(room.dimensions?.height_mm), "tabular-nums text-right")}
+                        </td>
                       )}
                       {show.ceilingHeight && (
-                        <TableCell className="py-1.5 hidden sm:table-cell">
-                          {renderEditableCell(room, "ceilingHeight", mmToM(room.ceiling_height_mm), "tabular-nums")}
-                        </TableCell>
+                        <td className="px-3 py-2.5 text-right hidden sm:table-cell">
+                          {renderEditableCell(room, "ceilingHeight", mmToM(room.ceiling_height_mm), "tabular-nums text-right")}
+                        </td>
                       )}
-                      <TableCell className="py-1.5">
-                        {renderEditableCell(room, "area", area !== null ? area.toFixed(1) : "", "tabular-nums")}
-                      </TableCell>
+                      <td className="px-3 py-2.5 text-right">
+                        {renderEditableCell(room, "area", area !== null ? area.toFixed(1) : "", "tabular-nums text-right")}
+                      </td>
                       {show.wallArea && (
-                        <TableCell className="py-1.5 hidden sm:table-cell">
+                        <td className="px-3 py-2.5 text-right hidden sm:table-cell">
                           {renderEditableCell(
                             room,
                             "wallArea",
                             room.dimensions?.wall_area_sqm != null
                               ? (room.dimensions.wall_area_sqm as number).toFixed(1)
                               : wallArea !== null ? wallArea.toFixed(1) : "",
-                            "tabular-nums text-muted-foreground"
+                            "tabular-nums text-muted-foreground text-right"
                           )}
-                        </TableCell>
+                        </td>
                       )}
                       {show.paintEstimate && (
-                        <TableCell className="py-1.5">
+                        <td className="px-3 py-2.5 text-right">
                           {paintLiters !== null ? (
                             <PaintFormulaPopover
                               settings={estimationSettings}
@@ -656,17 +645,17 @@ export function PlanningRoomList({ projectId, locked = false, onRoomChange }: Pl
                           ) : (
                             <span className="text-sm text-muted-foreground">–</span>
                           )}
-                        </TableCell>
+                        </td>
                       )}
                       {show.status && (
-                        <TableCell className="py-1.5">
+                        <td className="px-3 py-2.5">
                           <span className="text-xs text-muted-foreground">
                             {room.status ? t(`roomStatuses.${room.status.replace(/_/g, "")}`, room.status) : "–"}
                           </span>
-                        </TableCell>
+                        </td>
                       )}
                       {show.attachments && (
-                        <TableCell className="py-1.5">
+                        <td className="px-3 py-2.5">
                           {roomAttachCounts.get(room.id) ? (
                             <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                               <Paperclip className="h-3 w-3" />
@@ -675,10 +664,10 @@ export function PlanningRoomList({ projectId, locked = false, onRoomChange }: Pl
                           ) : (
                             <span className="text-muted-foreground/40 text-xs">–</span>
                           )}
-                        </TableCell>
+                        </td>
                       )}
                       {!locked && (
-                        <TableCell className="py-1.5 w-[40px]">
+                        <td className="px-2 py-2.5 w-[40px]">
                           <Button
                             variant="ghost"
                             size="icon"
@@ -687,15 +676,15 @@ export function PlanningRoomList({ projectId, locked = false, onRoomChange }: Pl
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
-                        </TableCell>
+                        </td>
                       )}
-                    </TableRow>
+                    </tr>
                   );
                 })}
 
                 {isAdding && (
-                  <TableRow className="hover:bg-transparent">
-                    <TableCell colSpan={visibleColCount} className="py-1.5">
+                  <tr>
+                    <td colSpan={visibleColCount} className="px-3 py-2.5">
                       <form
                         className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2"
                         onSubmit={(e) => {
@@ -730,46 +719,45 @@ export function PlanningRoomList({ projectId, locked = false, onRoomChange }: Pl
                           {t("common.cancel")}
                         </Button>
                       </form>
-                    </TableCell>
-                  </TableRow>
+                    </td>
+                  </tr>
                 )}
-              </TableBody>
-            </Table>
-            </div>
+              </tbody>
+            </table>
+          </div>
 
-            <div className="flex items-center gap-2 mt-2 pt-2 border-t">
-              {!locked && (
-                <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => setIsAdding(true)}>
-                  <Plus className="h-3.5 w-3.5" />
-                  {t("planningRooms.addRoom", "Add room")}
+          <div className="flex items-center gap-2">
+            {!locked && (
+              <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => setIsAdding(true)}>
+                <Plus className="h-3.5 w-3.5" />
+                {t("planningRooms.addRoom", "Add room")}
+              </Button>
+            )}
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7 ml-auto" title={t("planningTasks.showColumns", "Columns")}>
+                  <Columns3 className="h-3.5 w-3.5" />
                 </Button>
-              )}
-
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 ml-auto" title={t("planningTasks.showColumns", "Columns")}>
-                    <Columns3 className="h-3.5 w-3.5" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-48 p-2" align="end">
-                  {EXTRA_COLUMNS.map((col) => (
-                    <label
-                      key={col.key}
-                      className="flex items-center gap-2 py-1 px-1 rounded hover:bg-muted cursor-pointer text-sm"
-                    >
-                      <Checkbox
-                        checked={visibleExtras.has(col.key)}
-                        onCheckedChange={() => toggleColumn(col.key)}
-                      />
-                      {t(col.labelKey)}
-                    </label>
-                  ))}
-                </PopoverContent>
-              </Popover>
-            </div>
-          </>
-        )}
-      </CardContent>
-    </Card>
+              </PopoverTrigger>
+              <PopoverContent className="w-48 p-2" align="end">
+                {EXTRA_COLUMNS.map((col) => (
+                  <label
+                    key={col.key}
+                    className="flex items-center gap-2 py-1 px-1 rounded hover:bg-muted cursor-pointer text-sm"
+                  >
+                    <Checkbox
+                      checked={visibleExtras.has(col.key)}
+                      onCheckedChange={() => toggleColumn(col.key)}
+                    />
+                    {t(col.labelKey)}
+                  </label>
+                ))}
+              </PopoverContent>
+            </Popover>
+          </div>
+        </>
+      )}
+    </div>
   );
 }

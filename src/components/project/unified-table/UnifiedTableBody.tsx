@@ -12,14 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+
+
 import { AttachmentIndicator } from "@/components/shared/AttachmentIndicator";
 import { GripVertical, ArrowUp, ArrowDown, ArrowUpDown, ShoppingCart } from "lucide-react";
 import type { RowType, UnifiedRow, UnifiedColumnKey, UnifiedColumnDef } from "./types";
@@ -688,14 +682,14 @@ export function UnifiedTableBody({
   };
 
   return (
-    <div className="border rounded-lg overflow-x-auto -mx-3 px-3 md:mx-0 md:px-0">
-      <Table>
-        <TableHeader>
-          <TableRow>
+    <div className="rounded-lg border bg-card overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="bg-muted border-b">
             {visibleColumns.map((col, idx) => (
-              <TableHead
+              <th
                 key={col.key}
-                className={`${col.align === "right" ? "text-right" : ""} select-none${compactRows ? " py-1 text-xs h-8" : ""}`}
+                className={`px-3 py-2.5 kicker ${col.align === "right" ? "text-right" : "text-left"} select-none${compactRows ? " py-1 text-xs h-8" : ""}`}
                 draggable
                 onDragStart={() => handleDragStart(idx)}
                 onDragOver={(e) => handleDragOver(e, idx)}
@@ -719,33 +713,33 @@ export function UnifiedTableBody({
                     )}
                   </button>
                 </span>
-              </TableHead>
+              </th>
             ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+          </tr>
+        </thead>
+        <tbody>
           {groups.length === 0 ? (
-            <TableRow>
-              <TableCell
+            <tr>
+              <td
                 colSpan={visibleColumns.length}
-                className="text-center py-8 text-muted-foreground"
+                className="text-center px-3 py-8 text-muted-foreground"
               >
                 {t("unifiedTable.noRows")}
-              </TableCell>
-            </TableRow>
+              </td>
+            </tr>
           ) : (
             <>
               {/* Summary row */}
-              <TableRow className="bg-muted/50 font-medium border-b-2">
+              <tr className="bg-muted/50 font-medium border-b-2">
                 {visibleColumns.map((col) => (
-                  <TableCell
+                  <td
                     key={col.key}
-                    className={`${col.align === "right" ? "text-right" : ""}${compactRows ? " py-0.5 px-2 text-xs" : ""}`}
+                    className={`px-3 py-2.5 ${col.align === "right" ? "text-right" : ""}${compactRows ? " py-0.5 px-2 text-xs" : ""}`}
                   >
                     {renderSummaryCell(col)}
-                  </TableCell>
+                  </td>
                 ))}
-              </TableRow>
+              </tr>
 
               {/* Group rows */}
               {groups.map((group) => {
@@ -756,39 +750,39 @@ export function UnifiedTableBody({
                 return (
                   <Fragment key={`${group.parent.rowType}-${group.parent.id}`}>
                     {/* Parent row */}
-                    <TableRow
-                      className={`cursor-pointer ${
+                    <tr
+                      className={`cursor-pointer border-b last:border-b-0 transition-colors ${
                         group.parent.status === "paid"
                           ? "bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:hover:bg-emerald-950/50"
-                          : "hover:bg-muted/50"
+                          : "hover:bg-muted/30"
                       }${compactRows ? " h-8" : ""}`}
                       onClick={() => onRowClick(group.parent)}
                     >
                       {visibleColumns.map((col) => (
-                        <TableCell
+                        <td
                           key={col.key}
-                          className={`${col.align === "right" ? "text-right" : ""}${compactRows ? " py-0.5 px-2 text-xs" : ""}`}
+                          className={`px-3 py-2.5 ${col.align === "right" ? "text-right" : ""}${compactRows ? " py-0.5 px-2 text-xs" : ""}`}
                         >
                           {col.key === "name"
                             ? renderParentName(col, group, isExpanded)
                             : isAggregatedCol(col.key)
                               ? renderAggregatedCell(col, group)
                               : renderCell(col, group.parent)}
-                        </TableCell>
+                        </td>
                       ))}
-                    </TableRow>
+                    </tr>
 
                     {/* Child rows (expanded sub-rows) */}
                     {isExpanded && group.children.map((child) => (
-                      <TableRow
+                      <tr
                         key={`child-${child.id}`}
-                        className={`cursor-pointer bg-muted/20 hover:bg-muted/40${compactRows ? " h-8" : ""}`}
+                        className={`cursor-pointer border-b last:border-b-0 bg-muted/20 hover:bg-muted/40 transition-colors${compactRows ? " h-8" : ""}`}
                         onClick={() => onRowClick(child)}
                       >
                         {visibleColumns.map((col) => (
-                          <TableCell
+                          <td
                             key={col.key}
-                            className={`${col.align === "right" ? "text-right" : ""}${compactRows ? " py-0.5 px-2 text-xs" : ""}${col.key === "name" ? " pl-10" : ""}`}
+                            className={`px-3 py-2.5 ${col.align === "right" ? "text-right" : ""}${compactRows ? " py-0.5 px-2 text-xs" : ""}${col.key === "name" ? " pl-10" : ""}`}
                           >
                             {col.key === "name" ? (
                               <span className="inline-flex items-center text-sm text-muted-foreground">
@@ -798,17 +792,17 @@ export function UnifiedTableBody({
                             ) : (
                               renderCell(col, child)
                             )}
-                          </TableCell>
+                          </td>
                         ))}
-                      </TableRow>
+                      </tr>
                     ))}
                   </Fragment>
                 );
               })}
             </>
           )}
-        </TableBody>
-      </Table>
+        </tbody>
+      </table>
     </div>
   );
 }
