@@ -146,6 +146,70 @@ export type Database = {
           },
         ]
       }
+      attendance_logs: {
+        Row: {
+          check_in: string
+          check_out: string | null
+          created_at: string
+          duration_minutes: number | null
+          id: string
+          notes: string | null
+          project_id: string
+          worker_name: string
+          worker_personnummer: string | null
+          worker_phone: string | null
+          worker_user_id: string | null
+        }
+        Insert: {
+          check_in?: string
+          check_out?: string | null
+          created_at?: string
+          duration_minutes?: number | null
+          id?: string
+          notes?: string | null
+          project_id: string
+          worker_name: string
+          worker_personnummer?: string | null
+          worker_phone?: string | null
+          worker_user_id?: string | null
+        }
+        Update: {
+          check_in?: string
+          check_out?: string | null
+          created_at?: string
+          duration_minutes?: number | null
+          id?: string
+          notes?: string | null
+          project_id?: string
+          worker_name?: string
+          worker_personnummer?: string | null
+          worker_phone?: string | null
+          worker_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_logs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_logs_worker_user_id_fkey"
+            columns: ["worker_user_id"]
+            isOneToOne: false
+            referencedRelation: "professional_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_logs_worker_user_id_fkey"
+            columns: ["worker_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           address: string | null
@@ -841,6 +905,188 @@ export type Database = {
           user_type?: string | null
         }
         Relationships: []
+      }
+      inspection_templates: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          items: Json
+          name: string
+          profile_id: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          id?: string
+          items?: Json
+          name: string
+          profile_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          items?: Json
+          name?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspection_templates_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "professional_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspection_templates_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inspections: {
+        Row: {
+          approved_at: string | null
+          approved_by_id: string | null
+          approved_by_name: string | null
+          category: string
+          created_at: string
+          created_by_user_id: string
+          id: string
+          inspected_at: string | null
+          inspector_id: string | null
+          inspector_name: string | null
+          items: Json
+          notes: string | null
+          photos: Json | null
+          project_id: string
+          room_id: string | null
+          status: string
+          task_id: string | null
+          template_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by_id?: string | null
+          approved_by_name?: string | null
+          category?: string
+          created_at?: string
+          created_by_user_id: string
+          id?: string
+          inspected_at?: string | null
+          inspector_id?: string | null
+          inspector_name?: string | null
+          items?: Json
+          notes?: string | null
+          photos?: Json | null
+          project_id: string
+          room_id?: string | null
+          status?: string
+          task_id?: string | null
+          template_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by_id?: string | null
+          approved_by_name?: string | null
+          category?: string
+          created_at?: string
+          created_by_user_id?: string
+          id?: string
+          inspected_at?: string | null
+          inspector_id?: string | null
+          inspector_name?: string | null
+          items?: Json
+          notes?: string | null
+          photos?: Json | null
+          project_id?: string
+          room_id?: string | null
+          status?: string
+          task_id?: string | null
+          template_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspections_approved_by_id_fkey"
+            columns: ["approved_by_id"]
+            isOneToOne: false
+            referencedRelation: "professional_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspections_approved_by_id_fkey"
+            columns: ["approved_by_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspections_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "professional_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspections_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspections_inspector_id_fkey"
+            columns: ["inspector_id"]
+            isOneToOne: false
+            referencedRelation: "professional_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspections_inspector_id_fkey"
+            columns: ["inspector_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspections_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspections_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspections_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspections_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "inspection_templates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       invoice_items: {
         Row: {
@@ -3093,6 +3339,7 @@ export type Database = {
           project_id: string
           revoked_at: string | null
           token: string
+          worker_email: string | null
           worker_language: string
           worker_name: string
           worker_phone: string | null
@@ -3109,6 +3356,7 @@ export type Database = {
           project_id: string
           revoked_at?: string | null
           token?: string
+          worker_email?: string | null
           worker_language?: string
           worker_name: string
           worker_phone?: string | null
@@ -3125,6 +3373,7 @@ export type Database = {
           project_id?: string
           revoked_at?: string | null
           token?: string
+          worker_email?: string | null
           worker_language?: string
           worker_name?: string
           worker_phone?: string | null
@@ -3479,3 +3728,4 @@ export const Constants = {
     },
   },
 } as const
+<claude-code-hint v="1" type="plugin" value="supabase@claude-plugins-official" />

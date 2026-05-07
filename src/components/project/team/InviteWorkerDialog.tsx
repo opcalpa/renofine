@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Copy, Check, Send, MessageSquare } from "lucide-react";
+import { Loader2, Copy, Check, Send, MessageSquare, Mail } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -73,6 +73,7 @@ export function InviteWorkerDialog({
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [language, setLanguage] = useState("sv");
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
   const [tasks, setTasks] = useState<TaskOption[]>([]);
@@ -82,7 +83,11 @@ export function InviteWorkerDialog({
   const [copied, setCopied] = useState(false);
   const [smsSending, setSmsSending] = useState(false);
   const [smsSent, setSmsSent] = useState(false);
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
   const [generatingChecklists, setGeneratingChecklists] = useState(false);
+
+  const hasContactMethod = phone.trim() || email.trim();
 
   // Load project tasks
   useEffect(() => {
@@ -91,6 +96,7 @@ export function InviteWorkerDialog({
     // Reset on open
     setName("");
     setPhone("");
+    setEmail("");
     setLanguage("sv");
     setSelectedTaskIds([]);
     setGeneratedLink(null);
@@ -165,6 +171,7 @@ export function InviteWorkerDialog({
           created_by_user_id: profile.id,
           worker_name: name.trim(),
           worker_phone: phone.trim() || null,
+          worker_email: email.trim() || null,
           worker_language: language,
           assigned_task_ids: selectedTaskIds,
         })
@@ -229,7 +236,7 @@ export function InviteWorkerDialog({
           <DialogDescription>
             {t(
               "teamWorker.inviteWorkerDescription",
-              "Create a link with work instructions for a subcontractor."
+              "Create a link with work instructions for a subcontractor. Add phone, email, or both to send the invitation."
             )}
           </DialogDescription>
         </DialogHeader>
@@ -290,6 +297,50 @@ export function InviteWorkerDialog({
               </Button>
             )}
 
+            {/* Email send */}
+            {email.trim() && generatedTokenId && (
+              <Button
+                variant="outline"
+                className="w-full gap-2"
+                disabled={emailSending || emailSent}
+                onClick={async () => {
+                  setEmailSending(true);
+                  try {
+                    const { data } = await supabase.functions.invoke("send-worker-email", {
+                      body: { tokenId: generatedTokenId },
+                    });
+                    if (data?.sent) {
+                      setEmailSent(true);
+                      toast({ description: t("worker.emailSent", "Email sent to {{email}}", { email }) });
+                    } else {
+                      // Edge function not deployed — open mailto as fallback
+                      const subject = encodeURIComponent(t("worker.emailSubject", "Your work instructions"));
+                      const body = encodeURIComponent(generatedLink || "");
+                      window.open(`mailto:${email}?subject=${subject}&body=${body}`, "_blank");
+                    }
+                  } catch {
+                    // Fallback to mailto
+                    const subject = encodeURIComponent(t("worker.emailSubject", "Your work instructions"));
+                    const body = encodeURIComponent(generatedLink || "");
+                    window.open(`mailto:${email}?subject=${subject}&body=${body}`, "_blank");
+                  } finally {
+                    setEmailSending(false);
+                  }
+                }}
+              >
+                {emailSending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : emailSent ? (
+                  <Check className="h-4 w-4" />
+                ) : (
+                  <Mail className="h-4 w-4" />
+                )}
+                {emailSent
+                  ? t("worker.emailSent", "Email sent")
+                  : t("worker.sendEmail", "Send email")}
+              </Button>
+            )}
+
             {/* WhatsApp share */}
             {phone.trim() && (
               <Button
@@ -333,7 +384,7 @@ export function InviteWorkerDialog({
             {/* Phone */}
             <div className="space-y-2">
               <Label htmlFor="worker-phone">
-                {t("teamWorker.workerPhone", "Phone number (optional)")}
+                {t("teamWorker.workerPhone", "Phone number")}
               </Label>
               <Input
                 id="worker-phone"
@@ -341,6 +392,20 @@ export function InviteWorkerDialog({
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="+380 ..."
+              />
+            </div>
+
+            {/* Email */}
+            <div className="space-y-2">
+              <Label htmlFor="worker-email">
+                {t("teamWorker.workerEmail", "Email")}
+              </Label>
+              <Input
+                id="worker-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="name@example.com"
               />
             </div>
 
