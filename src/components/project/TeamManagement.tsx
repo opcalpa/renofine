@@ -1032,7 +1032,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
                 {t("roles.inviteButton")}
               </Button>
             </DialogTrigger>
-            <DialogContent className={`w-[95vw] max-h-[90vh] overflow-hidden flex flex-col ${selectedTemplate === "worker" ? "max-w-7xl" : "max-w-2xl"}`}>
+            <DialogContent className={`w-[95vw] max-h-[90vh] overflow-hidden flex flex-col ${selectedTemplate === "worker" ? "md:!max-w-[90vw] lg:!max-w-7xl" : "md:!max-w-2xl"}`}>
               <DialogHeader>
                 <DialogTitle>{t("roles.inviteTitle")}</DialogTitle>
                 <DialogDescription>
@@ -1043,26 +1043,49 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
                 onSubmit={handleSendInvitation}
                 className="space-y-5 overflow-y-auto flex-1 pr-2"
               >
-                {/* Name (optional) */}
-                <div className="space-y-2">
-                  <Label htmlFor="invite-name">{t("roles.nameLabel")}</Label>
-                  <Input
-                    id="invite-name"
-                    placeholder={t("roles.namePlaceholder")}
-                    value={inviteName}
-                    onChange={(e) => setInviteName(e.target.value)}
-                  />
-                </div>
-
-                {/* Role Cards */}
-                <div className="space-y-2">
-                  <Label>{t("roles.selectRole")}</Label>
-                  <RoleCardGrid
-                    selected={selectedTemplate}
-                    onSelect={handleTemplateChange}
-                    t={t}
-                  />
-                </div>
+                {/* Name + Role in compact row for worker, stacked for others */}
+                {selectedTemplate === "worker" ? (
+                  <div className="flex flex-col sm:flex-row gap-4 items-start">
+                    <div className="space-y-2 sm:w-64 shrink-0">
+                      <Label htmlFor="invite-name">{t("roles.nameLabel")} *</Label>
+                      <Input
+                        id="invite-name"
+                        placeholder={t("roles.namePlaceholder")}
+                        value={inviteName}
+                        onChange={(e) => setInviteName(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2 flex-1">
+                      <Label>{t("roles.selectRole")}</Label>
+                      <RoleCardGrid
+                        selected={selectedTemplate}
+                        onSelect={handleTemplateChange}
+                        t={t}
+                        compact
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="invite-name">{t("roles.nameLabel")}</Label>
+                      <Input
+                        id="invite-name"
+                        placeholder={t("roles.namePlaceholder")}
+                        value={inviteName}
+                        onChange={(e) => setInviteName(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{t("roles.selectRole")}</Label>
+                      <RoleCardGrid
+                        selected={selectedTemplate}
+                        onSelect={handleTemplateChange}
+                        t={t}
+                      />
+                    </div>
+                  </>
+                )}
 
                 {/* --- TEAM MEMBER FIELDS (non-worker) --- */}
                 {selectedTemplate !== "worker" && (
@@ -1437,9 +1460,37 @@ interface RoleCardGridProps {
   selected: string;
   onSelect: (key: string) => void;
   t: (key: string, fallback?: string) => string;
+  /** Compact horizontal pills instead of big cards */
+  compact?: boolean;
 }
 
-function RoleCardGrid({ selected, onSelect, t }: RoleCardGridProps) {
+function RoleCardGrid({ selected, onSelect, t, compact }: RoleCardGridProps) {
+  if (compact) {
+    return (
+      <div className="flex flex-wrap gap-2">
+        {Object.keys(ROLE_TEMPLATES).map((key) => {
+          const Icon = ROLE_ICONS[key] || User;
+          const isSelected = selected === key;
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => onSelect(key)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm transition-colors ${
+                isSelected
+                  ? "border-2 border-primary bg-primary/5 font-medium"
+                  : "border border-border hover:border-primary/50 text-muted-foreground"
+              }`}
+            >
+              <Icon className={`h-3.5 w-3.5 ${isSelected ? "text-primary" : ""}`} />
+              {t(`roles.roleTemplates.${key}`, key)}
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-2 gap-3">
       {Object.keys(ROLE_TEMPLATES).map((key) => {
