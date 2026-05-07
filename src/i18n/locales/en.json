@@ -5440,7 +5440,8 @@
     "noWorkers": "No workers invited yet.",
     "tasksAssigned": "{{count}} tasks",
     "missingChecklists": "{{count}} tasks have no step-by-step instructions. Generate them automatically from room specs?",
-    "generateChecklists": "Generate checklists"
+    "generateChecklists": "Generate checklists",
+    "assignedTasksList": "Assigned tasks"
   },
   "batchTolk": {
     "title": "Smart Tolk",

@@ -24,6 +24,8 @@ import { useTranslation } from "react-i18next";
 import {
   UserPlus,
   Mail,
+  Phone,
+  ChevronDown,
   X,
   CheckCircle,
   XCircle,
@@ -282,9 +284,11 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
   const [workerDialogOpen, setWorkerDialogOpen] = useState(false);
   const [workerTokens, setWorkerTokens] = useState<Array<{
     id: string; token: string; worker_name: string; worker_phone: string | null;
-    worker_language: string; assigned_task_ids: string[];
+    worker_email: string | null; worker_language: string; assigned_task_ids: string[];
     expires_at: string; last_accessed_at: string | null; revoked_at: string | null;
   }>>([]);
+  const [expandedWorkerId, setExpandedWorkerId] = useState<string | null>(null);
+  const [workerTaskNames, setWorkerTaskNames] = useState<Record<string, string>>({});
 
   // Invite form state
   const [inviteName, setInviteName] = useState("");
@@ -419,10 +423,23 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
       if (canManageTeam) {
         const { data: wTokens } = await supabase
           .from("worker_access_tokens")
-          .select("id, token, worker_name, worker_phone, worker_language, assigned_task_ids, expires_at, last_accessed_at, revoked_at")
+          .select("id, token, worker_name, worker_phone, worker_email, worker_language, assigned_task_ids, expires_at, last_accessed_at, revoked_at")
           .eq("project_id", projectId)
           .order("created_at", { ascending: false });
         setWorkerTokens((wTokens || []) as typeof workerTokens);
+
+        // Fetch task names for worker cards
+        const allTaskIds = (wTokens || []).flatMap((w) => w.assigned_task_ids || []);
+        if (allTaskIds.length > 0) {
+          const uniqueIds = [...new Set(allTaskIds)];
+          const { data: taskRows } = await supabase
+            .from("tasks")
+            .select("id, title")
+            .in("id", uniqueIds);
+          const nameMap: Record<string, string> = {};
+          for (const t of taskRows || []) nameMap[t.id] = t.title;
+          setWorkerTaskNames(nameMap);
+        }
       }
 
       // Fetch ROT persons (non-account partners)
@@ -1045,45 +1062,104 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
                 const isRevoked = !!wt.revoked_at;
                 const isActive = !isExpired && !isRevoked;
                 const langFlag = LANG_FLAGS[wt.worker_language] || "";
+                const isExpanded = expandedWorkerId === wt.id;
+                const taskNames = (wt.assigned_task_ids || []).map((id) => workerTaskNames[id] || id);
 
                 return (
                   <div
                     key={wt.id}
-                    className={`flex items-center gap-3 p-3 border rounded-lg ${
-                      !isActive ? "opacity-60" : ""
-                    }`}
+                    className={`border rounded-lg transition-colors ${!isActive ? "opacity-60" : ""}`}
                   >
-                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-sm">
-                      {langFlag}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{wt.worker_name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {t("teamWorker.tasksAssigned", "{{count}} tasks", {
-                          count: wt.assigned_task_ids?.length || 0,
-                        })}
-                        {wt.last_accessed_at && (
-                          <> · {t("teamWorker.lastAccessed", "Last accessed")}: {new Date(wt.last_accessed_at).toLocaleDateString("sv-SE")}</>
+                    {/* Main row — clickable to expand */}
+                    <button
+                      type="button"
+                      className="flex items-center gap-3 p-3 w-full text-left hover:bg-muted/50 transition-colors rounded-lg"
+                      onClick={() => setExpandedWorkerId(isExpanded ? null : wt.id)}
+                    >
+                      <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-sm">
+                        {langFlag}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{wt.worker_name}</p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {taskNames.length > 0
+                            ? taskNames.slice(0, 2).join(", ") + (taskNames.length > 2 ? ` +${taskNames.length - 2}` : "")
+                            : t("teamWorker.tasksAssigned", "{{count}} tasks", { count: 0 })}
+                          {wt.worker_phone && <> · {wt.worker_phone}</>}
+                          {wt.worker_email && <> · {wt.worker_email}</>}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {isActive ? (
+                          <span className="text-xs text-emerald-600 font-medium">{t("teamWorker.active", "Active")}</span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">{isRevoked ? t("teamWorker.revoked", "Revoked") : t("teamWorker.expired", "Expired")}</span>
                         )}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      {isActive ? (
-                        <span className="text-xs text-emerald-600 font-medium">{t("teamWorker.active", "Active")}</span>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">{isRevoked ? t("teamWorker.revoked", "Revoked") : t("teamWorker.expired", "Expired")}</span>
-                      )}
-                      {isActive && (
-                        <>
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleCopyWorkerLink(wt.token)} title={t("teamWorker.copyLink")}>
-                            <ClipboardList className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleRevokeWorker(wt.id)} title={t("teamWorker.revokeAccess")}>
-                            <X className="h-3.5 w-3.5" />
-                          </Button>
-                        </>
-                      )}
-                    </div>
+                        {isExpanded ? (
+                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </div>
+                    </button>
+
+                    {/* Expanded detail panel */}
+                    {isExpanded && (
+                      <div className="border-t px-4 py-3 space-y-3 bg-muted/30">
+                        {/* Contact info */}
+                        {(wt.worker_phone || wt.worker_email) && (
+                          <div className="flex flex-wrap gap-4 text-sm">
+                            {wt.worker_phone && (
+                              <a href={`tel:${wt.worker_phone}`} className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
+                                <Phone className="h-3.5 w-3.5" />
+                                {wt.worker_phone}
+                              </a>
+                            )}
+                            {wt.worker_email && (
+                              <a href={`mailto:${wt.worker_email}`} className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
+                                <Mail className="h-3.5 w-3.5" />
+                                {wt.worker_email}
+                              </a>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Assigned tasks */}
+                        <div>
+                          <p className="text-xs font-medium text-muted-foreground mb-1.5">
+                            {t("teamWorker.assignedTasksList", "Assigned tasks")}
+                          </p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {taskNames.map((name, i) => (
+                              <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-md bg-background border text-xs">
+                                {name}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Last accessed */}
+                        {wt.last_accessed_at && (
+                          <p className="text-xs text-muted-foreground">
+                            {t("teamWorker.lastAccessed", "Last accessed")}: {new Date(wt.last_accessed_at).toLocaleDateString("sv-SE")}
+                          </p>
+                        )}
+
+                        {/* Actions */}
+                        {isActive && (
+                          <div className="flex items-center gap-2 pt-1">
+                            <Button variant="outline" size="sm" className="gap-1.5" onClick={(e) => { e.stopPropagation(); handleCopyWorkerLink(wt.token); }}>
+                              <ClipboardList className="h-3.5 w-3.5" />
+                              {t("teamWorker.copyLink", "Copy link")}
+                            </Button>
+                            <Button variant="ghost" size="sm" className="gap-1.5 text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); handleRevokeWorker(wt.id); }}>
+                              <X className="h-3.5 w-3.5" />
+                              {t("teamWorker.revokeAccess", "Revoke access")}
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })

@@ -5437,7 +5437,8 @@
     "noWorkers": "Inga arbetare inbjudna ännu.",
     "tasksAssigned": "{{count}} uppgifter",
     "missingChecklists": "{{count}} uppgifter saknar steg-för-steg-instruktioner. Generera automatiskt från rumspecifikationer?",
-    "generateChecklists": "Generera checklistor"
+    "generateChecklists": "Generera checklistor",
+    "assignedTasksList": "Tilldelade uppgifter"
   },
   "batchTolk": {
     "title": "Smart Tolk",
