@@ -1,20 +1,11 @@
-import { useState, useMemo, useRef, useCallback, useEffect, lazy, Suspense } from "react";
+import { useState, useRef, useCallback, useEffect, lazy, Suspense } from "react";
 import { usePersistedPreference } from "@/hooks/usePersistedPreference";
 import { useTranslation } from "react-i18next";
 import { CommentsSection } from "@/components/comments/CommentsSection";
-
-/** Extract stable storage path from Supabase URL for consistent comment threading.
- *  Returns "photo:<relative-path>" to avoid UUID cast errors in RLS policies. */
-function stablePhotoEntityId(url: string, fallbackId: string): string {
-  try {
-    const parsed = new URL(url);
-    const match = parsed.pathname.match(/\/projects\/[a-f0-9-]+\/(.+)/);
-    if (match) return `photo:${match[1]}`;
-  } catch { /* use fallback */ }
-  return fallbackId;
-}
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { MOODBOARD_BACKGROUNDS, hexLuminance, stablePhotoEntityId } from "./inspiration/types";
+import { useInspirationData } from "./inspiration/hooks/useInspirationData";
+import { useInspirationActions } from "./inspiration/hooks/useInspirationActions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -55,82 +46,21 @@ import {
   Columns3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { compressImage } from "@/lib/compressImage";
 import { toast } from "sonner";
-import { fetchPinterestPin, parsePinterestPinUrl } from "@/services/pinterestOEmbed";
-import { parsePinterestBoardUrl } from "@/components/pinterest";
 
-interface InspirationSectionProps {
-  projectId: string;
-  currency: string;
-  /** When true, before-photos show as simple gallery. When false, shows Före/Pågående/Efter columns. */
-  isPlanning?: boolean;
-}
-
-type DisplaySize = "sm" | "md" | "lg";
-type CropPosition = "center" | "top" | "bottom" | "left" | "right" | "top left" | "top right" | "bottom left" | "bottom right";
-type FitMode = "cover" | "contain";
-type CropShape = "landscape" | "square" | "portrait" | "circle";
-
-interface InspoPhoto {
-  id: string;
-  url: string;
-  caption: string | null;
-  source: string;
-  sourceUrl: string | null;
-  roomId: string | null;
-  roomName: string | null;
-  displaySize: DisplaySize;
-  sortOrder: number;
-  cropPosition: CropPosition;
-  fitMode: FitMode;
-  cropZoom: number;
-  cropOffsetX: number;
-  cropOffsetY: number;
-  cropShape: CropShape;
-  gridColSpan: number;
-  gridRowSpan: number;
-}
-
-
-const hexLuminance = (hex: string) => {
-  const h = hex.replace("#", "");
-  return (parseInt(h.substring(0, 2), 16) || 0) * 0.299
-    + (parseInt(h.substring(2, 4), 16) || 0) * 0.587
-    + (parseInt(h.substring(4, 6), 16) || 0) * 0.114;
-};
-
-const MOODBOARD_BACKGROUNDS = [
-  { id: "white", color: "#ffffff", label: "Pure White" },
-  { id: "linen", color: "#F3EDE4", label: "Warm Linen" },
-  { id: "greige", color: "#D6CFC7", label: "Soft Greige" },
-  { id: "sage", color: "#C5CDB0", label: "Pale Sage" },
-  { id: "mauve", color: "#C4AEAD", label: "Dusty Mauve" },
-  { id: "charcoal", color: "#4A4A48", label: "Warm Charcoal" },
-  { id: "navy", color: "#1E2A3A", label: "Deep Navy" },
-  { id: "black", color: "#141414", label: "Rich Black" },
-] as const;
-
-interface Room {
-  id: string;
-  name: string;
-}
+import type { InspirationSectionProps } from "./inspiration/types";
 
 export function InspirationSection({ projectId, currency, isPlanning = false }: InspirationSectionProps) {
   const { t } = useTranslation();
-  const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedRoom, setSelectedRoom] = useState<string>("all");
   const [dragging, setDragging] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [urlInput, setUrlInput] = useState("");
   const [addMenuOpen, setAddMenuOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState<number | null>(null);
   const [editingCaption, setEditingCaption] = useState<string | null>(null);
   const [captionDraft, setCaptionDraft] = useState("");
-  const [showUrlInput, setShowUrlInput] = useState(false);
-  const [newRoomName, setNewRoomName] = useState("");
-  const [creatingRoom, setCreatingRoom] = useState(false);
+  const [baPhase, setBaPhase] = useState<"before" | "during" | "after">("before");
+  const [baViewMode, setBaViewMode] = useState<"gallery" | "compare">("gallery");
   const [inspoView, setInspoView] = usePersistedPreference<"gallery" | "moodboard" | "beforeafter">("inspo-view-mode", "gallery");
   const [collapsed, setCollapsed] = usePersistedPreference("inspo-collapsed", false);
   const [moodboardBg, setMoodboardBg] = usePersistedPreference("moodboard-bg", "#f5f0eb");
@@ -147,6 +77,21 @@ export function InspirationSection({ projectId, currency, isPlanning = false }: 
   const mbInitialScale = useRef(1);
   const inspoRef = useRef<HTMLDivElement>(null);
 
+  // ---- Data hook ----
+  const {
+    rooms, allPhotos, beforePhotos, materialCards, filteredPhotos,
+    beforeAfterByRoom, allGalleryPhotos, totalCount, rawData: data, tasks,
+  } = useInspirationData(projectId, selectedRoom);
+
+  // ---- Actions hook ----
+  const {
+    uploading, baUploading, handleUpload, handleBeforeAfterUpload, handleUrlImport,
+    urlInput, setUrlInput, showUrlInput, setShowUrlInput,
+    assignPhoto, deletePhoto, updateCaption,
+    createRoomAndLink, newRoomName, setNewRoomName, creatingRoom,
+    updateGridSpan, toggleCircle, saveCropTransform, reorderPhotos,
+  } = useInspirationActions(projectId, inspoView, baPhase, selectedRoom, filteredPhotos, setEditingCaption);
+
   // Check for room filter deep-link from room details
   useEffect(() => {
     try {
@@ -162,386 +107,6 @@ export function InspirationSection({ projectId, currency, isPlanning = false }: 
     } catch { /* ignore */ }
   }, []);
 
-  // Fetch rooms + all inspiration photos
-  const { data } = useQuery({
-    queryKey: ["inspiration", projectId],
-    queryFn: async () => {
-      const [roomsRes, photosRes, materialsRes, materialPhotosRes] = await Promise.all([
-        supabase
-          .from("rooms")
-          .select("id, name")
-          .eq("project_id", projectId)
-          .order("name"),
-        supabase
-          .from("photos")
-          .select("id, url, caption, linked_to_id, linked_to_type, source, source_url, display_size, sort_order, crop_position, fit_mode, crop_zoom, crop_offset_x, crop_offset_y, crop_shape, grid_col_span, grid_row_span")
-          .or(`linked_to_type.eq.room,linked_to_type.eq.project,linked_to_type.eq.task`)
-          .order("created_at", { ascending: false }),
-        supabase
-          .from("materials")
-          .select("id, name, price_total, room_id")
-          .eq("project_id", projectId)
-          .not("room_id", "is", null),
-        supabase
-          .from("photos")
-          .select("id, url, linked_to_id")
-          .eq("linked_to_type", "material"),
-      ]);
-
-      const rooms: Room[] = roomsRes.data || [];
-      const roomIds = new Set(rooms.map((r) => r.id));
-      const roomMap = new Map(rooms.map((r) => [r.id, r.name]));
-
-      // Also fetch task IDs for this project so task-linked photos are included
-      const { data: taskRows } = await supabase.from("tasks").select("id").eq("project_id", projectId);
-      const taskIds = new Set((taskRows || []).map((t) => t.id));
-
-      // Room photos + project-level photos + task-linked photos
-      const photos: InspoPhoto[] = (photosRes.data || [])
-        .filter((p) => {
-          if (p.linked_to_type === "project") return p.linked_to_id === projectId;
-          if (p.linked_to_type === "room") return roomIds.has(p.linked_to_id);
-          if (p.linked_to_type === "task") return taskIds.has(p.linked_to_id);
-          return false;
-        })
-        .map((p) => ({
-          id: p.id,
-          url: p.url,
-          caption: p.caption,
-          source: p.source || "upload",
-          sourceUrl: p.source_url || null,
-          displaySize: (p.display_size as DisplaySize) || "md",
-          sortOrder: p.sort_order || 0,
-          cropPosition: (p.crop_position as CropPosition) || "center",
-          fitMode: (p.fit_mode as FitMode) || "cover",
-          cropZoom: p.crop_zoom ?? 1.0,
-          cropOffsetX: p.crop_offset_x ?? 50,
-          cropOffsetY: p.crop_offset_y ?? 50,
-          cropShape: (p.crop_shape as CropShape) || "landscape",
-          gridColSpan: p.grid_col_span ?? 3,
-          gridRowSpan: p.grid_row_span ?? 2,
-          roomId: p.linked_to_type === "room" ? p.linked_to_id : null,
-          roomName: p.linked_to_type === "room" ? (roomMap.get(p.linked_to_id) || null) : null,
-        }));
-
-      // Build material photo map
-      const matPhotoMap = new Map<string, string>();
-      for (const p of (materialPhotosRes.data || [])) {
-        if (!matPhotoMap.has(p.linked_to_id)) matPhotoMap.set(p.linked_to_id, p.url);
-      }
-
-      // Material cards with room context
-      const materialCards = (materialsRes.data || [])
-        .filter((m) => matPhotoMap.has(m.id))
-        .map((m) => ({
-          id: m.id,
-          name: m.name,
-          price: m.price_total || 0,
-          roomId: m.room_id,
-          roomName: roomMap.get(m.room_id!) || null,
-          photoUrl: matPhotoMap.get(m.id) || null,
-        }));
-
-      return { rooms, photos, materialCards };
-    },
-    staleTime: 60 * 1000,
-  });
-
-  const rooms = data?.rooms || [];
-  // Separate inspiration photos from before/during/after photos
-  const BA_SOURCES = new Set(["before", "during", "after"]);
-  const allPhotos = useMemo(() => (data?.photos || []).filter((p) => !BA_SOURCES.has(p.source)), [data?.photos]);
-  const beforePhotos = useMemo(() => (data?.photos || []).filter((p) => p.source === "before"), [data?.photos]);
-  const materialCards = data?.materialCards || [];
-
-  const filteredPhotos = useMemo(() => {
-    if (selectedRoom === "all") return allPhotos;
-    if (selectedRoom === "untagged") return allPhotos.filter((p) => !p.roomId);
-    return allPhotos.filter((p) => p.roomId === selectedRoom);
-  }, [allPhotos, selectedRoom]);
-
-  // Mobile moodboard: calculate fit-to-width scale
-  useEffect(() => {
-    if (inspoView !== "moodboard") return;
-    const wrapper = moodboardWrapperRef.current;
-    const inner = moodboardInnerRef.current;
-    if (!wrapper || !inner) return;
-    const isMobile = window.innerWidth < 640;
-    if (!isMobile) { setMbZoom(1); mbInitialScale.current = 1; return; }
-    // Temporarily remove zoom to measure natural width
-    requestAnimationFrame(() => {
-      const prevZoom = inner.style.zoom;
-      inner.style.zoom = "1";
-      const wrapperW = wrapper.clientWidth;
-      const innerW = inner.scrollWidth;
-      inner.style.zoom = prevZoom;
-      if (innerW > wrapperW) {
-        const scale = wrapperW / innerW;
-        mbInitialScale.current = scale;
-        setMbZoom(scale);
-      }
-    });
-  }, [inspoView, filteredPhotos.length, moodboardGap, moodboardGapSize]);
-
-  // Pinch-to-zoom handler for mobile moodboard
-  useEffect(() => {
-    if (inspoView !== "moodboard") return;
-    const wrapper = moodboardWrapperRef.current;
-    if (!wrapper || window.innerWidth >= 640) return;
-
-    let startDist = 0;
-    let startZoom = 1;
-
-    const getDist = (touches: TouchList) => {
-      if (touches.length < 2) return 0;
-      const dx = touches[1].clientX - touches[0].clientX;
-      const dy = touches[1].clientY - touches[0].clientY;
-      return Math.sqrt(dx * dx + dy * dy);
-    };
-
-    const onTouchStart = (e: TouchEvent) => {
-      if (e.touches.length === 2) {
-        startDist = getDist(e.touches);
-        startZoom = mbInitialScale.current <= 0 ? 1 : mbZoom;
-      }
-    };
-
-    const onTouchMove = (e: TouchEvent) => {
-      if (e.touches.length === 2 && startDist > 0) {
-        e.preventDefault();
-        const dist = getDist(e.touches);
-        const ratio = dist / startDist;
-        const minScale = mbInitialScale.current * 0.9;
-        const maxScale = 2;
-        const newZoom = Math.max(minScale, Math.min(maxScale, startZoom * ratio));
-        setMbZoom(newZoom);
-      }
-    };
-
-    wrapper.addEventListener("touchstart", onTouchStart, { passive: true });
-    wrapper.addEventListener("touchmove", onTouchMove, { passive: false });
-    return () => {
-      wrapper.removeEventListener("touchstart", onTouchStart);
-      wrapper.removeEventListener("touchmove", onTouchMove);
-    };
-  }, [inspoView, mbZoom]);
-
-  // Before/During/After photos grouped by room — uses ALL photos (not filtered allPhotos)
-  const beforeAfterByRoom = useMemo(() => {
-    const baPhotos = (data?.photos || []).filter((p) => BA_SOURCES.has(p.source));
-    const targetPhotos = selectedRoom === "all" ? baPhotos : selectedRoom === "untagged" ? baPhotos.filter((p) => !p.roomId) : baPhotos.filter((p) => p.roomId === selectedRoom);
-    const roomGroups = new Map<string, { name: string; before: InspoPhoto[]; during: InspoPhoto[]; after: InspoPhoto[] }>();
-
-    for (const photo of targetPhotos) {
-      const key = photo.roomId || "__none__";
-      if (!roomGroups.has(key)) {
-        roomGroups.set(key, { name: photo.roomName || t("tasks.noRoom"), before: [], during: [], after: [] });
-      }
-      const group = roomGroups.get(key)!;
-      if (photo.source === "before") group.before.push(photo);
-      else if (photo.source === "during" || photo.source === "worker_progress") group.during.push(photo);
-      else if (photo.source === "after" || photo.source === "worker_completed") group.after.push(photo);
-    }
-
-    return Array.from(roomGroups.entries())
-      .map(([id, data]) => ({ id, ...data }))
-      .filter((g) => g.before.length > 0 || g.during.length > 0 || g.after.length > 0);
-  }, [data?.photos, selectedRoom, t]);
-
-  const totalCount = allPhotos.length + materialCards.filter((m) => m.photoUrl).length;
-
-  // Before/After phase selector state (must be before handleUpload which references it)
-  const [baPhase, setBaPhase] = useState<"before" | "during" | "after">("before");
-  const [baViewMode, setBaViewMode] = useState<"gallery" | "compare">("gallery");
-
-  // Upload handler
-  const handleUpload = useCallback(async (files: FileList | File[]) => {
-    if (uploading) return;
-    setUploading(true);
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-      const { data: profile } = await supabase.from("profiles").select("id").eq("user_id", user.id).single();
-      if (!profile) throw new Error("No profile");
-
-      let uploaded = 0;
-      for (const file of Array.from(files)) {
-        if (!file.type.startsWith("image/")) continue;
-
-        const uploadFile = await compressImage(file);
-        const isCompressed = uploadFile !== file;
-
-        const ext = isCompressed ? "jpg" : (file.name.split(".").pop() || "jpg");
-        const path = `projects/${projectId}/inspiration/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
-        const { error: uploadError } = await supabase.storage
-          .from("project-files")
-          .upload(path, uploadFile, { contentType: isCompressed ? "image/jpeg" : file.type });
-        if (uploadError) {
-          console.error("Inspiration upload failed:", uploadError);
-          toast.error(uploadError.message || t("common.error"));
-          continue;
-        }
-
-        const { data: publicUrl } = supabase.storage.from("project-files").getPublicUrl(path);
-
-        const isBA = inspoView === "beforeafter";
-        const roomId = selectedRoom !== "all" && selectedRoom !== "untagged" ? selectedRoom : null;
-        await supabase.from("photos").insert({
-          linked_to_type: isBA && roomId ? "room" : "project",
-          linked_to_id: isBA && roomId ? roomId : projectId,
-          url: publicUrl.publicUrl,
-          caption: null,
-          uploaded_by_user_id: profile.id,
-          source: isBA ? baPhase : "upload",
-        });
-        uploaded++;
-      }
-
-      if (uploaded > 0) {
-        toast.success(t("inspiration.uploaded", { count: uploaded }));
-        queryClient.invalidateQueries({ queryKey: ["inspiration", projectId] });
-      }
-    } catch {
-      toast.error(t("common.error"));
-    } finally {
-      setUploading(false);
-    }
-  }, [projectId, uploading, queryClient, t, inspoView, baPhase, selectedRoom]);
-
-  // Before/After upload handler — tags photo with source and room
-  const [baUploading, setBaUploading] = useState(false);
-  const handleBeforeAfterUpload = useCallback(async (file: File, category: "before" | "during" | "after", roomId: string | null) => {
-    setBaUploading(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-      const { data: profile } = await supabase.from("profiles").select("id").eq("user_id", user.id).single();
-      if (!profile) throw new Error("No profile");
-
-      const uploadFile = await compressImage(file);
-      const isCompressed = uploadFile !== file;
-      const ext = isCompressed ? "jpg" : (file.name.split(".").pop() || "jpg");
-      const path = `projects/${projectId}/before-after/${category}-${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("project-files")
-        .upload(path, uploadFile, { contentType: isCompressed ? "image/jpeg" : file.type });
-      if (uploadError) throw uploadError;
-
-      const { data: publicUrl } = supabase.storage.from("project-files").getPublicUrl(path);
-
-      await supabase.from("photos").insert({
-        linked_to_type: roomId ? "room" : "project",
-        linked_to_id: roomId || projectId,
-        url: publicUrl.publicUrl,
-        uploaded_by_user_id: profile.id,
-        source: category,
-      });
-
-      queryClient.invalidateQueries({ queryKey: ["inspiration", projectId] });
-      toast.success(t("inspiration.photoAdded", "Bild tillagd"));
-    } catch {
-      toast.error(t("common.error"));
-    } finally {
-      setBaUploading(false);
-    }
-  }, [projectId, queryClient, t]);
-
-  // URL import handler — smart detection for Pinterest pins, boards, or plain image URLs
-  const handleUrlImport = useCallback(async () => {
-    const url = urlInput.trim();
-    if (!url) return;
-    setUploading(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-      const { data: profile } = await supabase.from("profiles").select("id").eq("user_id", user.id).single();
-      if (!profile) throw new Error("No profile");
-
-      // Detect Pinterest URLs
-      const isPinterest = url.includes("pinterest");
-      const pinUrl = parsePinterestPinUrl(url);
-
-      if (pinUrl) {
-        try {
-          const pinData = await fetchPinterestPin(pinUrl, projectId);
-          let finalUrl = pinData.storageUrl;
-
-          // If edge function couldn't download to Storage, use proxy-image function
-          if (!finalUrl && pinData.imageUrl) {
-            try {
-              const { data: proxyResult, error: proxyErr } = await supabase.functions.invoke("proxy-image", {
-                body: { imageUrl: pinData.imageUrl, projectId, filename: `pin-${pinData.pinId}` },
-              });
-              if (!proxyErr && proxyResult?.storageUrl) {
-                finalUrl = proxyResult.storageUrl;
-              }
-            } catch {
-              // Proxy also failed
-            }
-          }
-
-          if (!finalUrl) {
-            toast.error(t("inspiration.pinFetchFailed"));
-            return;
-          }
-
-          await supabase.from("photos").insert({
-            linked_to_type: "project",
-            linked_to_id: projectId,
-            url: finalUrl,
-            caption: pinData.title || null,
-            source: "pinterest",
-            source_url: pinUrl,
-            pinterest_pin_id: pinData.pinId,
-            uploaded_by_user_id: profile.id,
-          });
-          toast.success(t("inspiration.pinImported"));
-          setUrlInput("");
-          setShowUrlInput(false);
-          queryClient.invalidateQueries({ queryKey: ["inspiration", projectId] });
-        } catch (pinErr) {
-          console.error("Pinterest pin fetch failed:", pinErr);
-          toast.error(t("inspiration.pinFetchFailed"));
-        }
-        return;
-      }
-
-      const boardParsed = parsePinterestBoardUrl(url);
-      if (boardParsed) {
-        toast.info(t("inspiration.boardHint"));
-        setUrlInput("");
-        setShowUrlInput(false);
-        return;
-      }
-
-      // Other Pinterest URLs we can't parse
-      if (isPinterest) {
-        toast.error(t("inspiration.pinterestInvalid"));
-        return;
-      }
-
-      // Plain image URL
-      await supabase.from("photos").insert({
-        linked_to_type: "project",
-        linked_to_id: projectId,
-        url,
-        source: "url",
-        source_url: url,
-        uploaded_by_user_id: profile.id,
-      });
-      toast.success(t("inspiration.imported"));
-      setUrlInput("");
-      setShowUrlInput(false);
-      queryClient.invalidateQueries({ queryKey: ["inspiration", projectId] });
-    } catch {
-      toast.error(t("common.error"));
-    } finally {
-      setUploading(false);
-    }
-  }, [urlInput, projectId, queryClient, t]);
-
   // Drag and drop
   const onDragOver = (e: React.DragEvent) => { e.preventDefault(); setDragging(true); };
   const onDragLeave = () => setDragging(false);
@@ -551,148 +116,8 @@ export function InspirationSection({ projectId, currency, isPlanning = false }: 
     if (e.dataTransfer.files.length) handleUpload(e.dataTransfer.files);
   };
 
-  // Fetch tasks for linking
-  const { data: tasks } = useQuery({
-    queryKey: ["project-tasks-names", projectId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("tasks")
-        .select("id, title")
-        .eq("project_id", projectId)
-        .order("title");
-      return data || [];
-    },
-    staleTime: 5 * 60 * 1000,
-  });
-
-  // Assign photo to entity
-  const assignPhoto = useCallback(async (photoId: string, type: string, entityId: string) => {
-    const { error } = await supabase.from("photos").update({ linked_to_type: type, linked_to_id: entityId }).eq("id", photoId);
-    if (error) {
-      console.error("Failed to link photo:", error);
-      toast.error(t("common.error"));
-      return;
-    }
-    queryClient.invalidateQueries({ queryKey: ["inspiration", projectId] });
-    toast.success(t("inspiration.linked"));
-  }, [projectId, queryClient, t]);
-
-  // Delete photo
-  const deletePhoto = useCallback(async (photoId: string) => {
-    await supabase.from("photos").delete().eq("id", photoId);
-    queryClient.invalidateQueries({ queryKey: ["inspiration", projectId] });
-  }, [projectId, queryClient]);
-
-  // Update caption
-  const captionSavingRef = useRef(false);
-  const updateCaption = useCallback(async (photoId: string, caption: string) => {
-    if (captionSavingRef.current) return; // prevent double-fire from Enter + blur
-    captionSavingRef.current = true;
-    setEditingCaption(null);
-    const { error } = await supabase.from("photos").update({ caption: caption || null }).eq("id", photoId);
-    if (error) {
-      toast.error(t("common.error"));
-    }
-    queryClient.invalidateQueries({ queryKey: ["inspiration", projectId] });
-    captionSavingRef.current = false;
-  }, [projectId, queryClient, t]);
-
-  // Create room and optionally link a photo to it
-  const createRoomAndLink = useCallback(async (name: string, photoId?: string) => {
-    if (!name.trim() || creatingRoom) return;
-    setCreatingRoom(true);
-    try {
-      const { data, error } = await supabase.from("rooms").insert({ project_id: projectId, name: name.trim() }).select("id").single();
-      if (error) { toast.error(error.message); return; }
-      if (photoId && data) {
-        await supabase.from("photos").update({ linked_to_type: "room", linked_to_id: data.id }).eq("id", photoId);
-      }
-      queryClient.invalidateQueries({ queryKey: ["inspiration", projectId] });
-      setNewRoomName("");
-      toast.success(t("rooms.created", "Rum skapat"));
-    } catch { toast.error(t("common.error")); } finally { setCreatingRoom(false); }
-  }, [projectId, creatingRoom, queryClient, t]);
-
-  // Update grid span — optimistic + debounced DB write
-  const spanSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const updateGridSpan = useCallback((photoId: string, colSpan: number, rowSpan: number) => {
-    const clamped = { col: Math.max(1, Math.min(6, colSpan)), row: Math.max(1, Math.min(6, rowSpan)) };
-    queryClient.setQueryData(["inspiration", projectId], (old: typeof data) => {
-      if (!old) return old;
-      return { ...old, photos: old.photos.map((p: InspoPhoto) => p.id === photoId ? { ...p, gridColSpan: clamped.col, gridRowSpan: clamped.row } : p) };
-    });
-    if (spanSaveTimer.current) clearTimeout(spanSaveTimer.current);
-    spanSaveTimer.current = setTimeout(async () => {
-      await supabase.from("photos").update({ grid_col_span: clamped.col, grid_row_span: clamped.row }).eq("id", photoId);
-    }, 300);
-  }, [projectId, queryClient, data]);
-
-  // Toggle circle shape
-  const toggleCircle = useCallback(async (photoId: string, isCircle: boolean) => {
-    const shape = isCircle ? "landscape" : "circle";
-    // Circle defaults to 3×3 for a nice visible size
-    const updates = shape === "circle"
-      ? { crop_shape: shape, grid_col_span: 3, grid_row_span: 3 }
-      : { crop_shape: shape };
-    queryClient.setQueryData(["inspiration", projectId], (old: typeof data) => {
-      if (!old) return old;
-      return { ...old, photos: old.photos.map((p: InspoPhoto) => p.id === photoId
-        ? { ...p, cropShape: shape as CropShape, ...(shape === "circle" ? { gridColSpan: 3, gridRowSpan: 3 } : {}) }
-        : p
-      )};
-    });
-    await supabase.from("photos").update(updates).eq("id", photoId);
-  }, [projectId, queryClient, data]);
-
-  // Save zoom + pan — optimistic cache update + debounced DB write
-  const cropSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const saveCropTransform = useCallback((photoId: string, zoom: number, offsetX: number, offsetY: number) => {
-    // Optimistic: update cache immediately so UI responds instantly
-    queryClient.setQueryData(["inspiration", projectId], (old: typeof data) => {
-      if (!old) return old;
-      return {
-        ...old,
-        photos: old.photos.map((p: InspoPhoto) =>
-          p.id === photoId ? { ...p, cropZoom: zoom, cropOffsetX: offsetX, cropOffsetY: offsetY } : p
-        ),
-      };
-    });
-    // Debounce DB write
-    if (cropSaveTimer.current) clearTimeout(cropSaveTimer.current);
-    cropSaveTimer.current = setTimeout(async () => {
-      await supabase.from("photos").update({ crop_zoom: zoom, crop_offset_x: offsetX, crop_offset_y: offsetY }).eq("id", photoId);
-    }, 300);
-  }, [projectId, queryClient, data]);
-
-  // Cleanup debounce timers on unmount
-  useEffect(() => {
-    return () => {
-      if (spanSaveTimer.current) clearTimeout(spanSaveTimer.current);
-      if (cropSaveTimer.current) clearTimeout(cropSaveTimer.current);
-    };
-  }, []);
-
-  // Reorder: move dragId to position of targetId
-  const reorderPhotos = useCallback(async (dragId: string, targetId: string) => {
-    if (dragId === targetId) return;
-    const sorted = [...filteredPhotos].sort((a, b) => a.sortOrder - b.sortOrder);
-    const dragIdx = sorted.findIndex((p) => p.id === dragId);
-    const targetIdx = sorted.findIndex((p) => p.id === targetId);
-    if (dragIdx === -1 || targetIdx === -1) return;
-
-    const moved = sorted.splice(dragIdx, 1)[0];
-    sorted.splice(targetIdx, 0, moved);
-
-    // Batch update sort_order
-    const updates = sorted.map((p, i) => ({ id: p.id, sort_order: i }));
-    await Promise.all(updates.map((u) => supabase.from("photos").update({ sort_order: u.sort_order }).eq("id", u.id)));
-    queryClient.invalidateQueries({ queryKey: ["inspiration", projectId] });
-  }, [filteredPhotos, projectId, queryClient]);
 
   const hasPhotos = totalCount > 0;
-
-  // Unified gallery: all photos (inspiration + before) for the lightbox
-  const allGalleryPhotos = useMemo(() => [...filteredPhotos, ...beforePhotos], [filteredPhotos, beforePhotos]);
 
   // Gallery navigation
   const openGallery = (index: number) => setGalleryIndex(index);
