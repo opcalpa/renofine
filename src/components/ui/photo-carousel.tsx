@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { X, ChevronLeft, ChevronRight, ExternalLink, Trash2, Camera } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, ExternalLink, Trash2, Pencil, Check, MapPin } from "lucide-react";
 import { Button } from "./button";
+import { Textarea } from "./textarea";
 import { cn } from "@/lib/utils";
 
 interface Photo {
@@ -11,6 +12,11 @@ interface Photo {
   source?: string | null;
   source_url?: string | null;
   created_at?: string;
+}
+
+interface Room {
+  id: string;
+  name: string;
 }
 
 interface PhotoCarouselProps {
@@ -23,6 +29,14 @@ interface PhotoCarouselProps {
   onDelete?: (photo: Photo) => void;
   /** Called when user changes photo source/category */
   onSourceChange?: (photo: Photo, source: string) => void;
+  /** Called when user edits caption */
+  onCaptionChange?: (photo: Photo, caption: string) => void;
+  /** Available rooms for linking (shows room selector if provided) */
+  rooms?: Room[];
+  /** Current room the photo is linked to */
+  linkedRoomId?: string | null;
+  /** Called when user changes room link */
+  onRoomChange?: (photo: Photo, roomId: string | null) => void;
 }
 
 const SOURCE_LABELS: Record<string, { labelKey: string; icon: string }> = {
@@ -45,14 +59,21 @@ export function PhotoCarousel({
   showMetadata = false,
   onDelete,
   onSourceChange,
+  onCaptionChange,
+  rooms,
+  linkedRoomId,
+  onRoomChange,
 }: PhotoCarouselProps) {
   const { t } = useTranslation();
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const [editingCaption, setEditingCaption] = useState(false);
+  const [captionDraft, setCaptionDraft] = useState("");
 
   useEffect(() => {
     setCurrentIndex(initialIndex);
+    setEditingCaption(false);
   }, [initialIndex]);
 
   useEffect(() => {
@@ -76,10 +97,12 @@ export function PhotoCarousel({
 
   const goToPrevious = useCallback(() => {
     setCurrentIndex((prev) => (prev === 0 ? photos.length - 1 : prev - 1));
+    setEditingCaption(false);
   }, [photos.length]);
 
   const goToNext = useCallback(() => {
     setCurrentIndex((prev) => (prev === photos.length - 1 ? 0 : prev + 1));
+    setEditingCaption(false);
   }, [photos.length]);
 
   const minSwipeDistance = 50;
@@ -215,11 +238,86 @@ export function PhotoCarousel({
 
           {/* Metadata content */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {/* Caption / filename */}
-            {currentPhoto.caption && (
-              <div className="space-y-1">
+            {/* Caption — editable if onCaptionChange provided */}
+            <div className="space-y-1">
+              <div className="flex items-center gap-1.5">
                 <p className="text-xs text-muted-foreground">{t("entityPhotos.caption", "Caption")}</p>
-                <p className="text-sm">{currentPhoto.caption}</p>
+                {onCaptionChange && !editingCaption && (
+                  <button
+                    type="button"
+                    className="h-4 w-4 text-muted-foreground hover:text-foreground"
+                    onClick={() => { setCaptionDraft(currentPhoto.caption || ""); setEditingCaption(true); }}
+                  >
+                    <Pencil className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+              {editingCaption && onCaptionChange ? (
+                <div className="space-y-1.5">
+                  <Textarea
+                    value={captionDraft}
+                    onChange={(e) => setCaptionDraft(e.target.value)}
+                    rows={2}
+                    className="text-sm resize-none"
+                    autoFocus
+                    placeholder={t("entityPhotos.captionPlaceholder", "Add a description...")}
+                  />
+                  <div className="flex gap-1">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 text-xs"
+                      onClick={() => {
+                        onCaptionChange(currentPhoto, captionDraft);
+                        setEditingCaption(false);
+                      }}
+                    >
+                      <Check className="h-3 w-3 mr-1" /> {t("common.save", "Save")}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 text-xs text-muted-foreground"
+                      onClick={() => setEditingCaption(false)}
+                    >
+                      {t("common.cancel", "Cancel")}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm">{currentPhoto.caption || <span className="italic text-muted-foreground">{t("entityPhotos.noCaption", "No description")}</span>}</p>
+              )}
+            </div>
+
+            {/* Room link */}
+            {rooms && rooms.length > 0 && onRoomChange && (
+              <div className="space-y-1.5">
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <MapPin className="h-3 w-3" />
+                  {t("entityPhotos.linkedRoom", "Room")}
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {rooms.map((room) => {
+                    const isLinked = linkedRoomId === room.id;
+                    return (
+                      <button
+                        key={room.id}
+                        type="button"
+                        onClick={() => onRoomChange(currentPhoto, isLinked ? null : room.id)}
+                        className={cn(
+                          "px-2.5 py-1 rounded-full text-xs border transition-colors",
+                          isLinked
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-muted hover:bg-primary/10 hover:border-primary/50"
+                        )}
+                      >
+                        {room.name}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             )}
 

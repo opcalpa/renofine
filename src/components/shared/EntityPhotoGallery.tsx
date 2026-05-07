@@ -480,6 +480,10 @@ export function EntityPhotoGallery({ entityId, entityType, projectId, storagePat
           await supabase.from("photos").update({ source }).eq("id", photo.id);
           loadPhotos();
         }}
+        onCaptionChange={async (photo, caption) => {
+          await supabase.from("photos").update({ caption }).eq("id", photo.id);
+          loadPhotos();
+        }}
       />
     </div>
   );

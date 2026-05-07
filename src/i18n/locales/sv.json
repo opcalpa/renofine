@@ -2741,7 +2741,10 @@
     "category": "Kategori",
     "uploaded": "Uppladdad",
     "sourceUrl": "Källa",
-    "noCategory": "Inte klassificerad"
+    "noCategory": "Inte klassificerad",
+    "noCaption": "Ingen beskrivning",
+    "captionPlaceholder": "Lägg till en beskrivning...",
+    "linkedRoom": "Rum"
   },
   "photoSource": {
     "classify": "Vilken typ av bild är detta?",

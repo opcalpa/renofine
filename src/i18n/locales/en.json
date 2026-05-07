@@ -1658,7 +1658,10 @@
     "category": "Category",
     "uploaded": "Uploaded",
     "sourceUrl": "Source",
-    "noCategory": "Not classified"
+    "noCategory": "Not classified",
+    "noCaption": "No description",
+    "captionPlaceholder": "Add a description...",
+    "linkedRoom": "Room"
   },
   "photoSource": {
     "classify": "What type of photo is this?",

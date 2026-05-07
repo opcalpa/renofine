@@ -667,6 +667,10 @@ export function PhotoSection({ roomId, showPinterest = false }: PhotoSectionProp
           await supabase.from("photos").update({ source }).eq("id", photo.id);
           loadPhotos();
         }}
+        onCaptionChange={async (photo, caption) => {
+          await supabase.from("photos").update({ caption }).eq("id", photo.id);
+          loadPhotos();
+        }}
       />
     </div>
   );
