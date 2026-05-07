@@ -747,6 +747,8 @@
     "addCustomCostCenter": "Lägg till egen",
     "enterCustomCostCenter": "Ange egen kategori",
     "dependencies": "Beroenden",
+    "roomDetails": "Rumsdetaljer",
+    "rooms": "rum",
     "linkedFiles": "Kopplade filer",
     "addDependency": "Lägg till beroende...",
     "depReady": "Klar",

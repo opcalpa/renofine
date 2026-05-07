@@ -48,6 +48,7 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { CommentsSection } from "@/components/comments/CommentsSection";
 import { EntityPhotoGallery } from "@/components/shared/EntityPhotoGallery";
+import { TaskRoomDetails } from "@/components/shared/TaskRoomDetails";
 import { TaskFilesList } from "./TaskFilesList";
 import { TaskCostTable } from "./TaskCostTable";
 import { DEFAULT_COST_CENTERS } from "@/lib/costCenters";
@@ -695,6 +696,11 @@ export const TaskEditDialog = ({
   const [estimationSettings, setEstimationSettings] = useState<RecipeEstimationSettings | null>(null);
   const [dependencies, setDependencies] = useState<{ id: string; depends_on_task_id: string; title: string; status: string; finish_date: string | null }[]>([]);
   const [allProjectTasks, setAllProjectTasks] = useState<{ id: string; title: string; status: string; finish_date: string | null }[]>([]);
+
+  // Room IDs for room details section
+  const taskRoomIds = task
+    ? (task.room_ids && task.room_ids.length > 0 ? task.room_ids : task.room_id ? [task.room_id] : [])
+    : [];
 
   // Contextual tips based on task title, work type, room, etc.
   const taskTipContext = React.useMemo(() => ({
@@ -2178,6 +2184,22 @@ export const TaskEditDialog = ({
                     </div>
                   </CollapsibleContent>
                 </Collapsible>
+
+                {/* Room details (aggregated from all linked rooms) */}
+                {taskRoomIds.length > 0 && (
+                  <Collapsible>
+                    <CollapsibleTrigger className="flex items-center gap-2 w-full py-2.5 px-3 text-sm font-medium rounded-lg hover:bg-background hover:shadow-sm border border-transparent hover:border-border transition-all group">
+                      <ChevronRight className="h-4 w-4 transition-transform group-data-[state=open]:rotate-90" />
+                      {t("tasks.roomDetails", "Room details")}
+                      {taskRoomIds.length > 1 && <span className="text-muted-foreground font-normal">({taskRoomIds.length} {t("tasks.rooms", "rooms")})</span>}
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="ml-3 pl-4 pb-3 border-l-2 border-muted">
+                        <TaskRoomDetails roomIds={taskRoomIds} />
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                )}
 
                 {/* Photos */}
                 <Collapsible>

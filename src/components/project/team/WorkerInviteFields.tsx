@@ -53,6 +53,7 @@ export interface TaskOption {
   title: string;
   description: string | null;
   roomId: string | null;
+  roomIds: string[];
   roomName: string | null;
   checklists: Checklist[];
 }
@@ -86,7 +87,7 @@ export function useWorkerTasks(projectId: string) {
     const load = async () => {
       const { data: taskRows } = await supabase
         .from("tasks")
-        .select("id, title, description, room_id, checklists")
+        .select("id, title, description, room_id, room_ids, checklists")
         .eq("project_id", projectId)
         .order("created_at", { ascending: true });
 
@@ -105,6 +106,7 @@ export function useWorkerTasks(projectId: string) {
           title: t.title,
           description: t.description,
           roomId: t.room_id,
+          roomIds: (t.room_ids && (t.room_ids as string[]).length > 0) ? t.room_ids as string[] : t.room_id ? [t.room_id] : [],
           roomName: t.room_id ? roomMap[t.room_id] || null : null,
           checklists: Array.isArray(t.checklists) ? (t.checklists as Checklist[]) : [],
         }))

@@ -747,6 +747,8 @@
     "addCustomCostCenter": "Add custom",
     "enterCustomCostCenter": "Enter custom category",
     "dependencies": "Dependencies",
+    "roomDetails": "Room details",
+    "rooms": "rooms",
     "linkedFiles": "Linked files",
     "addDependency": "Add dependency...",
     "depReady": "Ready",

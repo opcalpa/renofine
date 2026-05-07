@@ -6,11 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { ColorSwatchRow } from "@/components/worker/ColorSwatchRow";
-import { RoomSpecsSummary } from "@/components/worker/RoomSpecsSummary";
+import { TaskRoomDetails } from "@/components/shared/TaskRoomDetails";
 import {
-  MapPin,
-  Ruler,
   CheckSquare,
   Camera,
   Pencil,
@@ -39,16 +36,6 @@ interface Checklist {
   items: ChecklistItem[];
 }
 
-interface RoomData {
-  name: string;
-  wallSpec: Record<string, unknown> | null;
-  floorSpec: Record<string, unknown> | null;
-  ceilingSpec: Record<string, unknown> | null;
-  joinerySpec: Record<string, unknown> | null;
-  dimensions: { area_sqm?: number; ceiling_height_mm?: number } | null;
-  ceilingHeightMm: number | null;
-}
-
 interface BeforePhoto {
   id: string;
   url: string;
@@ -61,6 +48,7 @@ interface PreviewTask {
   title: string;
   description: string | null;
   roomId: string | null;
+  roomIds: string[];
   roomName: string | null;
   checklists: Checklist[];
 }
@@ -92,46 +80,20 @@ export function WorkerInvitePreview({
   onNavigate,
 }: WorkerInvitePreviewProps) {
   const { t } = useTranslation();
-  const [room, setRoom] = useState<RoomData | null>(null);
   const [beforePhotos, setBeforePhotos] = useState<BeforePhoto[]>([]);
   const [editingDesc, setEditingDesc] = useState(false);
 
-  // Fetch room data + before-photos when task changes
+  // Fetch before-photos when task changes
   useEffect(() => {
-    setRoom(null);
     setBeforePhotos([]);
-
-    if (task.roomId) {
-      fetchRoomData(task.roomId);
-    }
-    fetchBeforePhotos(task.roomId, task.id);
-  }, [task.id, task.roomId]);
-
-  const fetchRoomData = async (roomId: string) => {
-    const { data } = await supabase
-      .from("rooms")
-      .select("name, wall_spec, floor_spec, ceiling_spec, joinery_spec, dimensions, ceiling_height_mm")
-      .eq("id", roomId)
-      .single();
-
-    if (data) {
-      setRoom({
-        name: data.name,
-        wallSpec: data.wall_spec as RoomData["wallSpec"],
-        floorSpec: data.floor_spec as RoomData["floorSpec"],
-        ceilingSpec: data.ceiling_spec as RoomData["ceilingSpec"],
-        joinerySpec: data.joinery_spec as RoomData["joinerySpec"],
-        dimensions: data.dimensions as RoomData["dimensions"],
-        ceilingHeightMm: data.ceiling_height_mm,
-      });
-    }
-  };
+    fetchBeforePhotos(task.roomIds, task.id);
+  }, [task.id, task.roomIds.join(",")]);
 
   /**
    * Smart resolution: fetch before-photos from task directly + room fallback.
    * Task-linked photos take priority, room photos fill in the gaps.
    */
-  const fetchBeforePhotos = async (roomId: string | null, taskId: string) => {
+  const fetchBeforePhotos = async (roomIds: string[], taskId: string) => {
     const resolved: BeforePhoto[] = [];
     const seenIds = new Set<string>();
 
@@ -149,14 +111,14 @@ export function WorkerInvitePreview({
       seenIds.add(p.id);
     }
 
-    // 2. Room-linked before-photos (fallback / supplement)
-    if (roomId) {
+    // 2. Room-linked before-photos from ALL linked rooms
+    if (roomIds.length > 0) {
       const { data: roomPhotos } = await supabase
         .from("photos")
         .select("id, url, caption")
         .eq("linked_to_type", "room")
-        .eq("linked_to_id", roomId)
         .eq("source", "before")
+        .in("linked_to_id", roomIds)
         .order("created_at", { ascending: true });
 
       for (const p of roomPhotos || []) {
@@ -192,8 +154,6 @@ export function WorkerInvitePreview({
 
   const displayDescription = override.descriptionOverride ?? task.description ?? "";
   const isOverridden = override.descriptionOverride !== null;
-  const areaSqm = room?.dimensions?.area_sqm;
-  const ceilingH = room?.ceilingHeightMm || room?.dimensions?.ceiling_height_mm;
   const includedItems = task.checklists.flatMap((cl) =>
     cl.items.filter((item) => isChecklistItemIncluded(cl.id, item.id))
   );
@@ -245,47 +205,10 @@ export function WorkerInvitePreview({
             </div>
           </div>
 
-          {/* Room info */}
-          {room && (
-            <div className="px-4 pb-3 flex flex-wrap gap-3 text-sm text-muted-foreground">
-              <div className="flex items-center gap-1.5">
-                <MapPin className="h-3.5 w-3.5" />
-                <span className="font-medium text-foreground">{room.name}</span>
-              </div>
-              {areaSqm && (
-                <div className="flex items-center gap-1.5">
-                  <Ruler className="h-3.5 w-3.5" />
-                  <span>{areaSqm} m²</span>
-                </div>
-              )}
-              {ceilingH && (
-                <span className="text-xs">
-                  {t("worker.ceilingHeight", "Ceiling")}: {(ceilingH / 1000).toFixed(1)}m
-                </span>
-              )}
-            </div>
-          )}
-
-          {/* Color specs */}
-          {room?.wallSpec && (
+          {/* Room details (all linked rooms) */}
+          {task.roomIds.length > 0 && (
             <div className="px-4 pb-3">
-              <ColorSwatchRow
-                wallSpec={room.wallSpec}
-                ceilingSpec={room.ceilingSpec}
-                floorSpec={room.floorSpec}
-              />
-            </div>
-          )}
-
-          {/* Room specs */}
-          {room && (room.wallSpec || room.floorSpec || room.ceilingSpec || room.joinerySpec) && (
-            <div className="px-4 pb-3">
-              <RoomSpecsSummary
-                wallSpec={room.wallSpec}
-                floorSpec={room.floorSpec}
-                ceilingSpec={room.ceilingSpec}
-                joinerySpec={room.joinerySpec}
-              />
+              <TaskRoomDetails roomIds={task.roomIds} compact />
             </div>
           )}
 
