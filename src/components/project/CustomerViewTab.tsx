@@ -122,10 +122,12 @@ export default function CustomerViewTab({
 
       {/* 6. Detailed timeline (collapsible) */}
       <div className="border rounded-lg">
-        <button
-          type="button"
-          className="flex items-center gap-3 w-full p-4 hover:bg-muted/50 transition-colors"
+        <div
+          role="button"
+          tabIndex={0}
+          className="flex items-center gap-3 w-full p-4 hover:bg-muted/50 transition-colors cursor-pointer"
           onClick={() => setScheduleOpen((prev) => !prev)}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setScheduleOpen((prev) => !prev); }}
         >
           <Calendar className="h-5 w-5 text-primary shrink-0" />
           <div className="flex-1 text-left min-w-0">
@@ -161,7 +163,7 @@ export default function CustomerViewTab({
           ) : (
             <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
           )}
-        </button>
+        </div>
         {scheduleOpen && (
           <div className="border-t">
             {scheduleView === "timeline" ? (

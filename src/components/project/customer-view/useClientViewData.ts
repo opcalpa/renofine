@@ -55,16 +55,25 @@ export function useClientViewData(projectId: string): ClientViewData {
           .eq("project_id", projectId)
           .is("deleted_at", null)
           .in("status", ["in_progress", "to_do"])
-          .lte("start_date", today)
-          .order("start_date", { ascending: true })
+          .order("start_date", { ascending: true, nullsFirst: false })
           .limit(5),
 
+        // Photos don't have project_id — fetch via rooms linked to this project
         supabase
-          .from("photos")
-          .select("id, url, caption")
+          .from("rooms")
+          .select("id")
           .eq("project_id", projectId)
-          .order("created_at", { ascending: false })
-          .limit(4),
+          .then(async ({ data: rooms }) => {
+            if (!rooms?.length) return { data: [] as SitePhoto[], error: null };
+            const roomIds = rooms.map((r) => r.id);
+            return supabase
+              .from("photos")
+              .select("id, url, caption")
+              .eq("linked_to_type", "room")
+              .in("linked_to_id", roomIds)
+              .order("created_at", { ascending: false })
+              .limit(4);
+          }),
       ]);
 
       if (cancelled) return;
