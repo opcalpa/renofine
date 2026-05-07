@@ -51,9 +51,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye,
-  ZoomIn,
-  ZoomOut,
-  RotateCw,
+
+
   X,
   Layers,
   Sparkles,
@@ -99,6 +98,7 @@ import { FilesGridView } from "./files/FilesGridView";
 import { FileActionMenu } from "./files/FileActionMenu";
 import { FileStatsStrip } from "./files/FileStatsStrip";
 import { FileColumnCell } from "./files/FileColumnCell";
+import { FilePreviewDialog } from "./files/FilePreviewDialog";
 import { ColumnToggle } from "@/components/shared/ColumnToggle";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -1543,158 +1543,24 @@ const ProjectFilesTab = ({ projectId, projectName, canEdit = true, onNavigateToF
         </DialogContent>
       </Dialog>
 
-      {/* Image Preview Dialog with Zoom */}
-      <Dialog open={!!previewFile} onOpenChange={closePreview}>
-        <DialogContent className="!w-[calc(100%-2rem)] !max-w-[calc(100%-2rem)] !h-[calc(100vh-2rem)] !max-h-[calc(100vh-2rem)] !p-0 !rounded-xl">
-          <DialogTitle className="sr-only">{previewFile?.name || t('files.imagePreview')}</DialogTitle>
-          <div className="relative h-full">
-            {/* Header with controls */}
-            <div className="absolute top-0 left-0 right-0 z-10 bg-background/95 backdrop-blur border-b px-4 py-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <ImageIcon className="h-5 w-5 text-primary" />
-                  <div>
-                    <h3 className="font-semibold">{previewFile?.name}</h3>
-                    <p className="text-xs text-muted-foreground">
-                      {previewFile && formatFileSize(previewFile.size)}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {/* Zoom/Rotate controls — only for images */}
-                  {previewFile && !previewFile.type?.includes('pdf') && (
-                    <>
-                      <div className="flex items-center gap-1 border rounded-md p-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setImageZoom(Math.max(25, imageZoom - 25))}
-                          disabled={imageZoom <= 25}
-                        >
-                          <ZoomOut className="h-4 w-4" />
-                        </Button>
-                        <span className="text-sm font-medium min-w-[60px] text-center">
-                          {imageZoom}%
-                        </span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setImageZoom(Math.min(400, imageZoom + 25))}
-                          disabled={imageZoom >= 400}
-                        >
-                          <ZoomIn className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setImageRotation((imageRotation + 90) % 360)}
-                        title={t('files.rotate')}
-                      >
-                        <RotateCw className="h-4 w-4" />
-                      </Button>
-                    </>
-                  )}
-
-                  <div className="h-6 w-px bg-border mx-1" />
-
-                  {/* Comments */}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => previewFile && setSelectedFileForComments(previewFile)}
-                    title={t('common.comments')}
-                  >
-                    <MessageSquare className="h-4 w-4" />
-                  </Button>
-
-                  {/* Download */}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => previewFile && handleDownload(previewFile)}
-                    title={t('common.download')}
-                  >
-                    <Download className="h-4 w-4" />
-                  </Button>
-
-                  {/* Close */}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={closePreview}
-                    title={t('common.close')}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            {/* Prev/Next navigation arrows */}
-            {hasPrevFile && (
-              <button
-                type="button"
-                onClick={goToPrevFile}
-                className="absolute left-3 top-1/2 -translate-y-1/2 z-20 bg-background/80 hover:bg-background backdrop-blur rounded-full p-2 shadow-lg border transition-colors"
-                title={t('files.previousFile', 'Föregående fil')}
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </button>
-            )}
-            {hasNextFile && (
-              <button
-                type="button"
-                onClick={goToNextFile}
-                className="absolute right-3 top-1/2 -translate-y-1/2 z-20 bg-background/80 hover:bg-background backdrop-blur rounded-full p-2 shadow-lg border transition-colors"
-                title={t('files.nextFile', 'Nästa fil')}
-              >
-                <ChevronRight className="h-5 w-5" />
-              </button>
-            )}
-
-            {/* Content container */}
-            <div className="pt-16 pb-8 px-0 h-[calc(100vh-4rem)] overflow-auto bg-muted/30">
-              <div className="flex items-center justify-center min-h-full">
-                {previewUrl && previewFile?.type?.includes('pdf') ? (
-                  <iframe
-                    src={`${previewUrl}#navpanes=0&scrollbar=1&view=FitH`}
-                    title={previewFile?.name}
-                    className="w-full h-full border-0 rounded"
-                    style={{ minHeight: 'calc(100vh - 6rem)' }}
-                  />
-                ) : previewUrl && (
-                  <img
-                    src={previewUrl}
-                    alt={previewFile?.name}
-                    className="max-w-full h-auto transition-all duration-200"
-                    style={{
-                      transform: `scale(${imageZoom / 100}) rotate(${imageRotation}deg)`,
-                      transformOrigin: 'center',
-                    }}
-                  />
-                )}
-              </div>
-            </div>
-
-            {/* Footer with navigation info */}
-            <div className="absolute bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t p-2">
-              <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
-                {allPreviewableFiles.length > 1 && (
-                  <>
-                    <span>{previewFileIndex + 1} / {allPreviewableFiles.length}</span>
-                    <span>•</span>
-                    <span>← → {t('files.navigateFiles', 'bläddra mellan filer')}</span>
-                    <span>•</span>
-                  </>
-                )}
-                <span>{t('files.scrollToPan')}</span>
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <FilePreviewDialog
+        previewFile={previewFile}
+        previewUrl={previewUrl}
+        imageZoom={imageZoom}
+        setImageZoom={setImageZoom}
+        imageRotation={imageRotation}
+        setImageRotation={setImageRotation}
+        hasPrevFile={hasPrevFile}
+        hasNextFile={hasNextFile}
+        previewFileIndex={previewFileIndex}
+        totalPreviewable={allPreviewableFiles.length}
+        onClose={closePreview}
+        onPrev={goToPrevFile}
+        onNext={goToNextFile}
+        onDownload={handleDownload}
+        onComments={setSelectedFileForComments}
+        formatFileSize={formatFileSize}
+      />
 
       {/* AI Document Import Modal */}
       <AIDocumentImportModal
