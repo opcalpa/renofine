@@ -17,6 +17,8 @@ import {
   Check,
   Eye,
   HardHat,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TaskOverride } from "./WorkerInviteFields";
@@ -69,6 +71,10 @@ interface WorkerInvitePreviewProps {
   onOverrideChange: (updates: Partial<TaskOverride>) => void;
   onChecklistToggle: (checklistId: string, itemId: string) => void;
   isChecklistItemIncluded: (checklistId: string, itemId: string) => boolean;
+  /** Navigation between selected tasks */
+  currentIndex?: number;
+  totalCount?: number;
+  onNavigate?: (direction: "prev" | "next") => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -81,6 +87,9 @@ export function WorkerInvitePreview({
   onOverrideChange,
   onChecklistToggle,
   isChecklistItemIncluded,
+  currentIndex,
+  totalCount,
+  onNavigate,
 }: WorkerInvitePreviewProps) {
   const { t } = useTranslation();
   const [room, setRoom] = useState<RoomData | null>(null);
@@ -193,12 +202,33 @@ export function WorkerInvitePreview({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
+      {/* Header with navigation */}
       <div className="flex items-center gap-2 pb-3 border-b mb-3">
         <Eye className="h-4 w-4 text-muted-foreground" />
-        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex-1">
           {t("teamWorker.preview", "Worker preview")}
         </span>
+        {totalCount != null && totalCount > 1 && onNavigate && (
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => onNavigate("prev")}
+              className="h-6 w-6 rounded-full flex items-center justify-center hover:bg-muted transition-colors"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </button>
+            <span className="text-xs tabular-nums text-muted-foreground">
+              {(currentIndex ?? 0) + 1}/{totalCount}
+            </span>
+            <button
+              type="button"
+              onClick={() => onNavigate("next")}
+              className="h-6 w-6 rounded-full flex items-center justify-center hover:bg-muted transition-colors"
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Scrollable content */}

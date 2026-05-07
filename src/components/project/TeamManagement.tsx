@@ -326,6 +326,18 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
   const { showTaxDeduction } = useTaxDeductionVisible();
   const workerTasks = useWorkerTasks(projectId);
 
+  // Navigate between selected tasks in preview
+  const selectedTaskIds = workerData.selectedTaskIds;
+  const previewIdx = previewTaskId ? selectedTaskIds.indexOf(previewTaskId) : -1;
+  const navigatePreview = (direction: "prev" | "next") => {
+    if (selectedTaskIds.length < 2) return;
+    const idx = previewIdx < 0 ? 0 : previewIdx;
+    const next = direction === "next"
+      ? (idx + 1) % selectedTaskIds.length
+      : (idx - 1 + selectedTaskIds.length) % selectedTaskIds.length;
+    setPreviewTaskId(selectedTaskIds[next]);
+  };
+
   const handleTemplateChange = (templateKey: string) => {
     setSelectedTemplate(templateKey);
     if (templateKey !== "custom" && ROLE_TEMPLATES[templateKey]) {
@@ -1176,6 +1188,9 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
                             isChecklistItemIncluded={(checklistId, itemId) =>
                               isChecklistItemIncluded(workerData, previewTaskId, checklistId, itemId)
                             }
+                            currentIndex={previewIdx}
+                            totalCount={selectedTaskIds.length}
+                            onNavigate={navigatePreview}
                           />
                         ) : (
                           <WorkerPreviewEmpty />
@@ -1205,6 +1220,9 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
                           isChecklistItemIncluded={(checklistId, itemId) =>
                             isChecklistItemIncluded(workerData, previewTaskId, checklistId, itemId)
                           }
+                          currentIndex={previewIdx}
+                          totalCount={selectedTaskIds.length}
+                          onNavigate={navigatePreview}
                         />
                       </div>
                     )}
