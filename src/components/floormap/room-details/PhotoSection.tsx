@@ -145,7 +145,7 @@ export function PhotoSection({ roomId, showPinterest = false }: PhotoSectionProp
         const fileName = `${roomId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
         const { error: uploadError } = await supabase.storage
-          .from("room-photos")
+          .from("project-files")
           .upload(fileName, uploadFile);
 
         if (uploadError) {
@@ -156,7 +156,7 @@ export function PhotoSection({ roomId, showPinterest = false }: PhotoSectionProp
 
         const {
           data: { publicUrl },
-        } = supabase.storage.from("room-photos").getPublicUrl(fileName);
+        } = supabase.storage.from("project-files").getPublicUrl(fileName);
 
         const { error: dbError } = await supabase.from("photos").insert({
           linked_to_type: "room",
@@ -188,11 +188,11 @@ export function PhotoSection({ roomId, showPinterest = false }: PhotoSectionProp
     if (!confirm(t('rooms.confirmDeletePhoto', 'Are you sure you want to delete this photo?'))) return;
 
     try {
-      const urlParts = photoUrl.split("/room-photos/");
+      const urlParts = photoUrl.split("/project-files/");
       if (urlParts.length > 1) {
         const filePath = urlParts[1];
         const { error: storageError } = await supabase.storage
-          .from("room-photos")
+          .from("project-files")
           .remove([filePath]);
 
         if (storageError) {

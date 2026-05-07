@@ -106,7 +106,7 @@ export function ShapePhotoSection({ shapeId, projectId, compact = false }: Shape
 
         // Upload to shape-photos bucket (create if needed via Supabase dashboard)
         const { error: uploadError } = await supabase.storage
-          .from("room-photos") // Reuse room-photos bucket
+          .from("project-files") // Reuse room-photos bucket
           .upload(fileName, file);
 
         if (uploadError) {
@@ -117,7 +117,7 @@ export function ShapePhotoSection({ shapeId, projectId, compact = false }: Shape
 
         const {
           data: { publicUrl },
-        } = supabase.storage.from("room-photos").getPublicUrl(fileName);
+        } = supabase.storage.from("project-files").getPublicUrl(fileName);
 
         const { error: dbError } = await supabase.from("photos").insert({
           linked_to_type: "shape",
@@ -154,7 +154,7 @@ export function ShapePhotoSection({ shapeId, projectId, compact = false }: Shape
       if (urlParts.length > 1) {
         const filePath = urlParts[1];
         await supabase.storage
-          .from("room-photos")
+          .from("project-files")
           .remove([filePath]);
       }
 
