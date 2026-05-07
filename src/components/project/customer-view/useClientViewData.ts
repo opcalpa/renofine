@@ -55,7 +55,7 @@ export function useClientViewData(projectId: string): ClientViewData {
           .eq("project_id", projectId)
           .is("deleted_at", null)
           .in("status", ["in_progress", "to_do"])
-          .order("start_date", { ascending: true, nullsFirst: false })
+          .order("created_at", { ascending: false })
           .limit(5),
 
         // Site photos: exclude inspiration sources (pinterest, url) — show actual project photos

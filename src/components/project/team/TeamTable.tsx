@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Crown, Pencil, X, ClipboardList, Phone, Mail, ChevronDown, ChevronRight, Copy, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -122,10 +122,9 @@ export function TeamTable({
           const canDm = row.profileId && currentProfileId && row.profileId !== currentProfileId;
 
           return (
-            <>
+            <Fragment key={row.id}>
               {/* Main row */}
               <TableRow
-                key={row.id}
                 className={cn(
                   "cursor-pointer",
                   isExpanded && "bg-muted/30",
@@ -240,7 +239,7 @@ export function TeamTable({
                   </TableCell>
                 </TableRow>
               )}
-            </>
+            </Fragment>
           );
         })}
       </TableBody>
