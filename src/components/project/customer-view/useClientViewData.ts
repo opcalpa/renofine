@@ -58,7 +58,7 @@ export function useClientViewData(projectId: string): ClientViewData {
           .order("start_date", { ascending: true, nullsFirst: false })
           .limit(5),
 
-        // Photos don't have project_id — fetch via rooms linked to this project
+        // Site photos: exclude inspiration sources (pinterest, url) — show actual project photos
         supabase
           .from("rooms")
           .select("id")
@@ -66,13 +66,18 @@ export function useClientViewData(projectId: string): ClientViewData {
           .then(async ({ data: rooms }) => {
             if (!rooms?.length) return { data: [] as SitePhoto[], error: null };
             const roomIds = rooms.map((r) => r.id);
-            return supabase
+            const { data: photos, error } = await supabase
               .from("photos")
-              .select("id, url, caption")
+              .select("id, url, caption, source")
               .eq("linked_to_type", "room")
               .in("linked_to_id", roomIds)
               .order("created_at", { ascending: false })
-              .limit(4);
+              .limit(20);
+            // Filter out inspiration sources client-side
+            const sitePhotos = (photos || [])
+              .filter((p) => !["pinterest", "url"].includes(p.source || ""))
+              .slice(0, 4);
+            return { data: sitePhotos, error };
           }),
       ]);
 
