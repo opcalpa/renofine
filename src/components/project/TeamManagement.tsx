@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTaxDeductionVisible } from "@/hooks/useTaxDeduction";
 import { Button } from "@/components/ui/button";
@@ -23,34 +23,28 @@ import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 import {
   UserPlus,
-  Mail,
-  Phone,
-  ChevronDown,
   X,
   CheckCircle,
   XCircle,
   Clock,
   Loader2,
-  Pencil,
-  Send,
   ChevronRight,
   Wrench,
   ClipboardList,
   User,
   Eye,
-  Crown,
-  Ruler,
   Users,
-  Shield,
 } from "lucide-react";
 import { z } from "zod";
-import { getAvatarColor } from "@/lib/avatarColor";
+
 import { FeatureAccessEditor } from "./team/FeatureAccessEditor";
 import type { FeatureAccess } from "./team/FeatureAccessEditor";
+import { TeamTable } from "./team/TeamTable";
+import type { TeamRow } from "./team/TeamTable";
 import { DirectMessageSheet } from "./DirectMessageSheet";
 import { InviteWorkerDialog } from "./team/InviteWorkerDialog";
 import { useUnreadDmCounts } from "@/hooks/useDirectMessages";
-import { MessageCircle } from "lucide-react";
+
 
 interface TeamMember {
   id: string;
@@ -254,12 +248,6 @@ function detectTemplate(access: FeatureAccess): string {
   return "custom";
 }
 
-const LANG_FLAGS: Record<string, string> = {
-  sv: "\u{1F1F8}\u{1F1EA}", en: "\u{1F1EC}\u{1F1E7}", uk: "\u{1F1FA}\u{1F1E6}",
-  pl: "\u{1F1F5}\u{1F1F1}", ro: "\u{1F1F7}\u{1F1F4}", lt: "\u{1F1F1}\u{1F1F9}",
-  et: "\u{1F1EA}\u{1F1EA}", de: "\u{1F1E9}\u{1F1EA}", fr: "\u{1F1EB}\u{1F1F7}", es: "\u{1F1EA}\u{1F1F8}",
-};
-
 const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: TeamManagementProps) => {
   const canManageTeam = canManageProp ?? isOwner;
   const [projectOwner, setProjectOwner] = useState<ProjectOwner | null>(null);
@@ -287,7 +275,6 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
     worker_email: string | null; worker_language: string; assigned_task_ids: string[];
     expires_at: string; last_accessed_at: string | null; revoked_at: string | null;
   }>>([]);
-  const [expandedWorkerId, setExpandedWorkerId] = useState<string | null>(null);
   const [workerTaskNames, setWorkerTaskNames] = useState<Record<string, string>>({});
 
   // Invite form state
@@ -734,6 +721,167 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
     return t("roles.roleTemplates.custom");
   };
 
+  // Build unified rows for TeamTable
+  const teamRows: TeamRow[] = useMemo(() => {
+    const rows: TeamRow[] = [];
+
+    // 1. Owner
+    if (projectOwner) {
+      rows.push({
+        id: `owner-${projectOwner.id}`,
+        type: "owner",
+        name: projectOwner.name,
+        email: projectOwner.email,
+        phone: projectOwner.phone,
+        role: t("roles.projectOwner", "Owner"),
+        roleTemplate: "owner",
+        status: "active",
+        addedDate: null,
+        profileId: projectOwner.id,
+        featureAccess: null,
+        company: projectOwner.company,
+        contractorCategory: null,
+        notes: null,
+        assignedTaskIds: null,
+        assignedTaskNames: null,
+        workerLanguage: null,
+        workerToken: null,
+        personnummerLast4: null,
+      });
+    }
+
+    // 2. Members
+    for (const m of members) {
+      const access = dbToAccess(m);
+      rows.push({
+        id: m.id,
+        type: "member",
+        name: m.user_name,
+        email: m.user_email || null,
+        phone: m.phone,
+        role: getMemberRoleLabel(m),
+        roleTemplate: detectTemplate(access),
+        status: "active",
+        addedDate: null,
+        profileId: m.profile_id || null,
+        featureAccess: access,
+        company: m.company,
+        contractorCategory: m.contractor_category,
+        notes: m.notes,
+        assignedTaskIds: null,
+        assignedTaskNames: null,
+        workerLanguage: null,
+        workerToken: null,
+        personnummerLast4: null,
+      });
+    }
+
+    // 3. Pending invitations
+    for (const inv of invitations) {
+      const access = dbToAccess(inv, "view");
+      rows.push({
+        id: inv.id,
+        type: "invitation",
+        name: inv.email,
+        email: inv.email,
+        phone: inv.phone || null,
+        role: t(`roles.roleTemplates.${detectTemplate(access)}`),
+        roleTemplate: detectTemplate(access),
+        status: inv.status === "pending" ? "pending" : "expired",
+        addedDate: inv.created_at,
+        profileId: null,
+        featureAccess: access,
+        company: null,
+        contractorCategory: null,
+        notes: null,
+        assignedTaskIds: null,
+        assignedTaskNames: null,
+        workerLanguage: null,
+        workerToken: null,
+        personnummerLast4: null,
+      });
+    }
+
+    // 4. Workers
+    for (const wt of workerTokens) {
+      const isExpired = new Date(wt.expires_at) < new Date();
+      const isRevoked = !!wt.revoked_at;
+      const taskNames = (wt.assigned_task_ids || []).map((id) => workerTaskNames[id] || id);
+      rows.push({
+        id: wt.id,
+        type: "worker",
+        name: wt.worker_name,
+        email: wt.worker_email,
+        phone: wt.worker_phone,
+        role: t("team.roles.worker", "Worker"),
+        roleTemplate: "worker",
+        status: isRevoked ? "revoked" : isExpired ? "expired" : "active",
+        addedDate: null,
+        profileId: null,
+        featureAccess: null,
+        company: null,
+        contractorCategory: null,
+        notes: null,
+        assignedTaskIds: wt.assigned_task_ids,
+        assignedTaskNames: taskNames,
+        workerLanguage: wt.worker_language,
+        workerToken: wt.token,
+        personnummerLast4: null,
+      });
+    }
+
+    // 5. ROT persons
+    for (const rp of rotPersons) {
+      rows.push({
+        id: rp.id,
+        type: "rot",
+        name: rp.name,
+        email: null,
+        phone: null,
+        role: t("team.roles.rotPerson", "ROT person"),
+        roleTemplate: "rot",
+        status: "active",
+        addedDate: null,
+        profileId: null,
+        featureAccess: null,
+        company: null,
+        contractorCategory: null,
+        notes: null,
+        assignedTaskIds: null,
+        assignedTaskNames: null,
+        workerLanguage: null,
+        workerToken: null,
+        personnummerLast4: rp.personnummerLast4,
+      });
+    }
+
+    return rows;
+  }, [projectOwner, members, invitations, workerTokens, rotPersons, workerTaskNames, t]);
+
+  // Handlers for TeamTable
+  const handleTableEdit = (row: TeamRow) => {
+    if (row.type === "member") {
+      const member = members.find((m) => m.id === row.id);
+      if (member) openEditDialog({ type: "member", data: member });
+    } else if (row.type === "invitation") {
+      const inv = invitations.find((i) => i.id === row.id);
+      if (inv) openEditDialog({ type: "invitation", data: inv });
+    }
+  };
+
+  const handleTableDelete = async (row: TeamRow) => {
+    if (row.type === "member") {
+      handleDeleteMember(row.id);
+    } else if (row.type === "invitation") {
+      handleCancelInvitation(row.id);
+    } else if (row.type === "worker") {
+      handleRevokeWorker(row.id);
+    } else if (row.type === "rot") {
+      await supabase.from("project_rot_persons").delete().eq("id", row.id);
+      fetchTeamData();
+    }
+  };
+
   if (loading) {
     return (
       <Card>
@@ -853,362 +1001,26 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
         )}
       </div>
 
-      {/* All Team Members (owner + shares) */}
-      {(projectOwner || members.length > 0) && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("roles.teamMembers")}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {/* Project Owner — always first */}
-            {projectOwner && (
-              <div className="flex items-center gap-3 p-3 border border-border rounded-lg bg-primary/5">
-                <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center text-sm font-medium shrink-0">
-                  <Crown className="h-5 w-5 text-primary" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{projectOwner.name}</p>
-                  <p className="text-xs text-muted-foreground truncate">{projectOwner.email}</p>
-                  {(projectOwner.company || projectOwner.phone) && (
-                    <p className="text-xs text-muted-foreground truncate mt-0.5">
-                      {[projectOwner.company, projectOwner.phone].filter(Boolean).join(" · ")}
-                    </p>
-                  )}
-                </div>
-                <span className="text-sm text-muted-foreground whitespace-nowrap">
-                  {t("roles.projectOwner", "Ägare")}
-                </span>
-              </div>
-            )}
-            {/* Shared members */}
-            {members.map((member) => (
-              <div
-                key={member.id}
-                className="flex items-center gap-3 p-3 border border-border rounded-lg"
-              >
-                <div className="relative shrink-0">
-                  <button
-                    onClick={() => {
-                      if (currentProfileId && member.profile_id && member.profile_id !== currentProfileId) {
-                        setDmRecipient({ id: member.profile_id, name: member.user_name });
-                      }
-                    }}
-                    className={`h-10 w-10 rounded-full flex items-center justify-center text-sm font-medium ${getAvatarColor(member.user_name)} ${
-                      currentProfileId && member.profile_id && member.profile_id !== currentProfileId
-                        ? "cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
-                        : ""
-                    }`}
-                    title={currentProfileId && member.profile_id !== currentProfileId ? t("dm.openChat", "Skicka meddelande") : undefined}
-                  >
-                    {member.user_name.charAt(0).toUpperCase()}
-                  </button>
-                  {unreadCounts[member.profile_id] > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
-                      {unreadCounts[member.profile_id] > 9 ? "9+" : unreadCounts[member.profile_id]}
-                    </span>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{member.user_name}</p>
-                  <p className="text-xs text-muted-foreground truncate">{member.user_email}</p>
-                  {(member.company || member.phone) && (
-                    <p className="text-xs text-muted-foreground truncate mt-0.5">
-                      {[member.company, member.phone].filter(Boolean).join(" · ")}
-                    </p>
-                  )}
-                </div>
-                <span className="hidden sm:inline text-sm text-muted-foreground whitespace-nowrap">
-                  {getMemberRoleLabel(member)}
-                  {member.contractor_category && (
-                    <span className="text-xs">
-                      {" · "}
-                      {t(`roles.contractorRoles.${member.contractor_category}`, member.contractor_category)}
-                    </span>
-                  )}
-                </span>
-                <div className="flex items-center gap-1 shrink-0">
-                  {currentProfileId && member.profile_id && member.profile_id !== currentProfileId && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => setDmRecipient({ id: member.profile_id, name: member.user_name })}
-                      title={t("dm.openChat", "Skicka meddelande")}
-                    >
-                      <MessageCircle className="h-3.5 w-3.5" />
-                    </Button>
-                  )}
-                {canManageTeam && (
-                  <>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() =>
-                        openEditDialog({ type: "member", data: member })
-                      }
-                      title={t("roles.editMember")}
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    {isOwner && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => handleDeleteMember(member.id)}
-                        disabled={deleting === member.id}
-                        title={t("roles.removeMember")}
-                      >
-                        {deleting === member.id ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <X className="h-3.5 w-3.5 text-destructive" />
-                        )}
-                      </Button>
-                    )}
-                  </>
-                )}
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
+      {/* Unified Team Table */}
+      <Card>
+        <CardContent className="p-0">
+          <TeamTable
+            rows={teamRows}
+            currentProfileId={currentProfileId}
+            canManageTeam={canManageTeam}
+            isOwner={isOwner}
+            onEdit={handleTableEdit}
+            onDelete={handleTableDelete}
+            onCopyLink={handleCopyWorkerLink}
+            onDm={(profileId, name) => setDmRecipient({ id: profileId, name })}
+          />
+        </CardContent>
+      </Card>
 
-      {/* Pending Invitations */}
-      {canManageTeam && invitations.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("roles.pendingInvitations")}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {invitations.map((invitation) => (
-              <div
-                key={invitation.id}
-                className="flex items-center gap-3 p-3 border border-border rounded-lg"
-              >
-                <Mail className="h-5 w-5 text-muted-foreground shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{invitation.email}</p>
-                  <p className="text-sm text-muted-foreground capitalize">
-                    {t(
-                      `roles.roleTemplates.${invitation.role}`,
-                      invitation.role
-                    )}
-                  </p>
-                </div>
-                <div className="flex items-center gap-1">
-                  {getStatusIcon(invitation.status)}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => handleResendInvitation(invitation.id)}
-                    disabled={resending === invitation.id}
-                    title={t("roles.resendInvitationEmail")}
-                  >
-                    {resending === invitation.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Send className="h-4 w-4" />
-                    )}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() =>
-                      openEditDialog({ type: "invitation", data: invitation })
-                    }
-                    title={t("roles.editInvitationPermissions")}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => handleCancelInvitation(invitation.id)}
-                    title={t("roles.cancelInvitationTitle")}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Workers Section */}
-      {canManageTeam && (
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-base">{t("teamWorker.workers", "Workers")}</CardTitle>
-            <Button size="sm" variant="outline" onClick={() => setWorkerDialogOpen(true)}>
-              <Wrench className="h-3.5 w-3.5 mr-1.5" />
-              {t("teamWorker.inviteWorker", "Invite Worker")}
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {workerTokens.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-2">
-                {t("teamWorker.noWorkers", "No workers invited yet.")}
-              </p>
-            ) : (
-              workerTokens.map((wt) => {
-                const isExpired = new Date(wt.expires_at) < new Date();
-                const isRevoked = !!wt.revoked_at;
-                const isActive = !isExpired && !isRevoked;
-                const langFlag = LANG_FLAGS[wt.worker_language] || "";
-                const isExpanded = expandedWorkerId === wt.id;
-                const taskNames = (wt.assigned_task_ids || []).map((id) => workerTaskNames[id] || id);
-
-                return (
-                  <div
-                    key={wt.id}
-                    className={`border rounded-lg transition-colors ${!isActive ? "opacity-60" : ""}`}
-                  >
-                    {/* Main row — clickable to expand */}
-                    <button
-                      type="button"
-                      className="flex items-center gap-3 p-3 w-full text-left hover:bg-muted/50 transition-colors rounded-lg"
-                      onClick={() => setExpandedWorkerId(isExpanded ? null : wt.id)}
-                    >
-                      <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-sm">
-                        {langFlag}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">{wt.worker_name}</p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {taskNames.length > 0
-                            ? taskNames.slice(0, 2).join(", ") + (taskNames.length > 2 ? ` +${taskNames.length - 2}` : "")
-                            : t("teamWorker.tasksAssigned", "{{count}} tasks", { count: 0 })}
-                          {wt.worker_phone && <> · {wt.worker_phone}</>}
-                          {wt.worker_email && <> · {wt.worker_email}</>}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        {isActive ? (
-                          <span className="text-xs text-emerald-600 font-medium">{t("teamWorker.active", "Active")}</span>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">{isRevoked ? t("teamWorker.revoked", "Revoked") : t("teamWorker.expired", "Expired")}</span>
-                        )}
-                        {isExpanded ? (
-                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                        )}
-                      </div>
-                    </button>
-
-                    {/* Expanded detail panel */}
-                    {isExpanded && (
-                      <div className="border-t px-4 py-3 space-y-3 bg-muted/30">
-                        {/* Contact info */}
-                        {(wt.worker_phone || wt.worker_email) && (
-                          <div className="flex flex-wrap gap-4 text-sm">
-                            {wt.worker_phone && (
-                              <a href={`tel:${wt.worker_phone}`} className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
-                                <Phone className="h-3.5 w-3.5" />
-                                {wt.worker_phone}
-                              </a>
-                            )}
-                            {wt.worker_email && (
-                              <a href={`mailto:${wt.worker_email}`} className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
-                                <Mail className="h-3.5 w-3.5" />
-                                {wt.worker_email}
-                              </a>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Assigned tasks */}
-                        <div>
-                          <p className="text-xs font-medium text-muted-foreground mb-1.5">
-                            {t("teamWorker.assignedTasksList", "Assigned tasks")}
-                          </p>
-                          <div className="flex flex-wrap gap-1.5">
-                            {taskNames.map((name, i) => (
-                              <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-md bg-background border text-xs">
-                                {name}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Last accessed */}
-                        {wt.last_accessed_at && (
-                          <p className="text-xs text-muted-foreground">
-                            {t("teamWorker.lastAccessed", "Last accessed")}: {new Date(wt.last_accessed_at).toLocaleDateString("sv-SE")}
-                          </p>
-                        )}
-
-                        {/* Actions */}
-                        {isActive && (
-                          <div className="flex items-center gap-2 pt-1">
-                            <Button variant="outline" size="sm" className="gap-1.5" onClick={(e) => { e.stopPropagation(); handleCopyWorkerLink(wt.token); }}>
-                              <ClipboardList className="h-3.5 w-3.5" />
-                              {t("teamWorker.copyLink", "Copy link")}
-                            </Button>
-                            <Button variant="ghost" size="sm" className="gap-1.5 text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); handleRevokeWorker(wt.id); }}>
-                              <X className="h-3.5 w-3.5" />
-                              {t("teamWorker.revokeAccess", "Revoke access")}
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* ROT Persons — owner-only, lowest priority */}
+      {/* ROT person add form (owner only) */}
       {isOwner && showTaxDeduction && (
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Shield className="h-4 w-4 text-green-600" />
-              {t("roles.rotPersons")}
-            </CardTitle>
-            <p className="text-xs text-muted-foreground">
-              {t("roles.rotPersonsDescription")}
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {rotPersons.map((person) => (
-              <div key={person.id} className="flex items-center gap-3 p-2.5 border rounded-lg">
-                <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center text-xs font-medium text-green-700 shrink-0">
-                  {person.name.charAt(0).toUpperCase()}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{person.name}</p>
-                  {person.personnummerLast4 && (
-                    <p className="text-xs text-muted-foreground">****-{person.personnummerLast4}</p>
-                  )}
-                </div>
-                <Badge variant="outline" className="text-[10px] shrink-0 text-green-700 border-green-200">
-                  ROT
-                </Badge>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    const { error } = await supabase.from("project_rot_persons").delete().eq("id", person.id);
-                    if (error) console.error("Error removing ROT person:", error);
-                    fetchTeamData();
-                  }}
-                  className="text-muted-foreground hover:text-destructive transition-colors"
-                  title={t("common.remove")}
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            ))}
+          <CardContent className="pt-4">
             <RotPersonAddForm projectId={projectId} onAdded={fetchTeamData} t={t} />
           </CardContent>
         </Card>

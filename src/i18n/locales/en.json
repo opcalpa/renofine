@@ -4642,6 +4642,26 @@
     "noAssignedTasks": "No tasks assigned to this person",
     "pendingInvites": "Pending invitations"
   },
+  "team": {
+    "table": {
+      "name": "Name",
+      "role": "Role",
+      "contact": "Contact",
+      "status": "Status",
+      "added": "Added",
+      "access": "Access"
+    },
+    "roles": {
+      "worker": "Worker",
+      "rotPerson": "ROT person"
+    },
+    "status": {
+      "active": "Active",
+      "pending": "Pending",
+      "expired": "Expired",
+      "revoked": "Revoked"
+    }
+  },
   "unifiedTable": {
     "tabTitle": "Table",
     "sandboxBadge": "Sandbox",
