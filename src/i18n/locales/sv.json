@@ -5469,7 +5469,8 @@
     "noDescription": "Ingen beskrivning",
     "noChecklist": "Ingen checklista — lägg till en på uppgiften först",
     "preview": "Förhandsvisning",
-    "previewHint": "Välj en uppgift för att se hur arbetaren ser den"
+    "previewHint": "Välj en uppgift för att se hur arbetaren ser den",
+    "contactStepDescription": "Fyll i kontaktuppgifter för arbetaren"
   },
   "batchTolk": {
     "title": "Smart Tolk",

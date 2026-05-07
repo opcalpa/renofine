@@ -5472,7 +5472,8 @@
     "noDescription": "No description",
     "noChecklist": "No checklist — add one to the task first",
     "preview": "Worker preview",
-    "previewHint": "Select a task to preview what the worker will see"
+    "previewHint": "Select a task to preview what the worker will see",
+    "contactStepDescription": "Add contact details for the worker"
   },
   "batchTolk": {
     "title": "Smart Tolk",

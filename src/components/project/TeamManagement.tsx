@@ -303,6 +303,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
     selectedTaskIds: [], taskOverrides: new Map(),
   });
   const [previewTaskId, setPreviewTaskId] = useState<string | null>(null);
+  const [workerStep, setWorkerStep] = useState<1 | 2>(1);
   const [generatedWorkerLink, setGeneratedWorkerLink] = useState<string | null>(null);
   const [workerTokens, setWorkerTokens] = useState<Array<{
     id: string; token: string; worker_name: string; worker_phone: string | null;
@@ -666,6 +667,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
     setFeatureAccess({ ...ROLE_TEMPLATES.contractor.access });
     setWorkerData({ phone: "", email: "", language: "sv", welcomeMessage: "", selectedTaskIds: [], taskOverrides: new Map() });
     setPreviewTaskId(null);
+    setWorkerStep(1);
     setGeneratedWorkerLink(null);
   };
 
@@ -1032,41 +1034,23 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
                 {t("roles.inviteButton")}
               </Button>
             </DialogTrigger>
-            <DialogContent className={`w-[95vw] max-h-[90vh] overflow-hidden flex flex-col ${selectedTemplate === "worker" ? "md:!max-w-[90vw] lg:!max-w-7xl" : "md:!max-w-2xl"}`}>
+            <DialogContent className={`w-[95vw] max-h-[90vh] overflow-hidden flex flex-col ${selectedTemplate === "worker" && workerStep === 1 && !generatedWorkerLink ? "md:!max-w-[90vw] lg:!max-w-7xl" : "md:!max-w-2xl"}`}>
               <DialogHeader>
                 <DialogTitle>{t("roles.inviteTitle")}</DialogTitle>
                 <DialogDescription>
-                  {t("roles.inviteDescription")}
+                  {selectedTemplate === "worker" && workerStep === 2
+                    ? t("teamWorker.contactStepDescription", "Add contact details for the worker")
+                    : t("roles.inviteDescription")}
                 </DialogDescription>
               </DialogHeader>
               <form
                 onSubmit={handleSendInvitation}
                 className="space-y-5 overflow-y-auto flex-1 pr-2"
               >
-                {/* Name + Role in compact row for worker, stacked for others */}
-                {selectedTemplate === "worker" ? (
-                  <div className="flex flex-col sm:flex-row gap-4 items-start">
-                    <div className="space-y-2 sm:w-64 shrink-0">
-                      <Label htmlFor="invite-name">{t("roles.nameLabel")} *</Label>
-                      <Input
-                        id="invite-name"
-                        placeholder={t("roles.namePlaceholder")}
-                        value={inviteName}
-                        onChange={(e) => setInviteName(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2 flex-1">
-                      <Label>{t("roles.selectRole")}</Label>
-                      <RoleCardGrid
-                        selected={selectedTemplate}
-                        onSelect={handleTemplateChange}
-                        t={t}
-                        compact
-                      />
-                    </div>
-                  </div>
-                ) : (
+                {/* ═══ NON-WORKER FLOW (unchanged) ═══ */}
+                {selectedTemplate !== "worker" && (
                   <>
+                    {/* Name */}
                     <div className="space-y-2">
                       <Label htmlFor="invite-name">{t("roles.nameLabel")}</Label>
                       <Input
@@ -1076,6 +1060,8 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
                         onChange={(e) => setInviteName(e.target.value)}
                       />
                     </div>
+
+                    {/* Role Cards */}
                     <div className="space-y-2">
                       <Label>{t("roles.selectRole")}</Label>
                       <RoleCardGrid
@@ -1084,12 +1070,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
                         t={t}
                       />
                     </div>
-                  </>
-                )}
 
-                {/* --- TEAM MEMBER FIELDS (non-worker) --- */}
-                {selectedTemplate !== "worker" && (
-                  <>
                     {/* Email */}
                     <div className="space-y-2">
                       <Label htmlFor="invite-email">
@@ -1136,30 +1117,74 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
                         </div>
                       </label>
                     )}
+
+                    {/* Submit */}
+                    <div className="flex justify-end pt-2">
+                      <Button type="submit" disabled={inviting}>
+                        {inviting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                        {t("roles.sendInvitation")}
+                      </Button>
+                    </div>
                   </>
                 )}
 
-                {/* --- WORKER FIELDS: 3-column layout --- */}
-                {selectedTemplate === "worker" && !generatedWorkerLink && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {/* Col 1: Contact + settings */}
-                    <WorkerContactFields
-                      data={workerData}
-                      onChange={(updates) => setWorkerData((prev) => ({ ...prev, ...updates }))}
-                    />
+                {/* ═══ WORKER FLOW — Step 1: Role + Tasks + Preview ═══ */}
+                {selectedTemplate === "worker" && workerStep === 1 && !generatedWorkerLink && (
+                  <>
+                    {/* Compact role pills */}
+                    <div className="space-y-2">
+                      <Label>{t("roles.selectRole")}</Label>
+                      <RoleCardGrid
+                        selected={selectedTemplate}
+                        onSelect={(key) => { handleTemplateChange(key); setWorkerStep(1); }}
+                        t={t}
+                        compact
+                      />
+                    </div>
 
-                    {/* Col 2: Task selection */}
-                    <WorkerTaskList
-                      tasks={workerTasks}
-                      data={workerData}
-                      onChange={(updates) => setWorkerData((prev) => ({ ...prev, ...updates }))}
-                      previewTaskId={previewTaskId}
-                      onPreviewTask={setPreviewTaskId}
-                    />
+                    {/* Task selection + Preview: 2-col layout */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Task list */}
+                      <WorkerTaskList
+                        tasks={workerTasks}
+                        data={workerData}
+                        onChange={(updates) => setWorkerData((prev) => ({ ...prev, ...updates }))}
+                        previewTaskId={previewTaskId}
+                        onPreviewTask={setPreviewTaskId}
+                      />
 
-                    {/* Col 3: Live preview */}
-                    <div className="hidden md:block border-l pl-6 max-h-[60vh] overflow-y-auto">
-                      {previewTaskId && workerTasks.find((t) => t.id === previewTaskId) ? (
+                      {/* Live preview */}
+                      <div className="hidden md:block border-l pl-6 max-h-[60vh] overflow-y-auto">
+                        {previewTaskId && workerTasks.find((t) => t.id === previewTaskId) ? (
+                          <WorkerInvitePreview
+                            task={workerTasks.find((t) => t.id === previewTaskId)!}
+                            override={getOverride(workerData, previewTaskId)}
+                            onOverrideChange={(updates) =>
+                              setOverrideField(workerData, previewTaskId, updates, (u) =>
+                                setWorkerData((prev) => ({ ...prev, ...u }))
+                              )
+                            }
+                            onChecklistToggle={(checklistId, itemId) => {
+                              const task = workerTasks.find((t) => t.id === previewTaskId);
+                              if (task) {
+                                toggleChecklistItem(workerData, task, checklistId, itemId, (u) =>
+                                  setWorkerData((prev) => ({ ...prev, ...u }))
+                                );
+                              }
+                            }}
+                            isChecklistItemIncluded={(checklistId, itemId) =>
+                              isChecklistItemIncluded(workerData, previewTaskId, checklistId, itemId)
+                            }
+                          />
+                        ) : (
+                          <WorkerPreviewEmpty />
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Mobile preview */}
+                    {previewTaskId && workerTasks.find((t) => t.id === previewTaskId) && (
+                      <div className="md:hidden border-t pt-4">
                         <WorkerInvitePreview
                           task={workerTasks.find((t) => t.id === previewTaskId)!}
                           override={getOverride(workerData, previewTaskId)}
@@ -1180,42 +1205,79 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
                             isChecklistItemIncluded(workerData, previewTaskId, checklistId, itemId)
                           }
                         />
-                      ) : (
-                        <WorkerPreviewEmpty />
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Mobile preview — shown below the grid on small screens */}
-                {selectedTemplate === "worker" && !generatedWorkerLink && previewTaskId && (
-                  <div className="md:hidden border-t pt-4">
-                    {workerTasks.find((t) => t.id === previewTaskId) && (
-                      <WorkerInvitePreview
-                        task={workerTasks.find((t) => t.id === previewTaskId)!}
-                        override={getOverride(workerData, previewTaskId)}
-                        onOverrideChange={(updates) =>
-                          setOverrideField(workerData, previewTaskId, updates, (u) =>
-                            setWorkerData((prev) => ({ ...prev, ...u }))
-                          )
-                        }
-                        onChecklistToggle={(checklistId, itemId) => {
-                          const task = workerTasks.find((t) => t.id === previewTaskId);
-                          if (task) {
-                            toggleChecklistItem(workerData, task, checklistId, itemId, (u) =>
-                              setWorkerData((prev) => ({ ...prev, ...u }))
-                            );
-                          }
-                        }}
-                        isChecklistItemIncluded={(checklistId, itemId) =>
-                          isChecklistItemIncluded(workerData, previewTaskId, checklistId, itemId)
-                        }
-                      />
+                      </div>
                     )}
-                  </div>
+
+                    {/* Next button */}
+                    <div className="flex justify-end pt-2">
+                      <Button
+                        type="button"
+                        disabled={workerData.selectedTaskIds.length === 0}
+                        onClick={() => setWorkerStep(2)}
+                      >
+                        {t("common.next", "Next")}
+                        <ChevronRight className="h-4 w-4 ml-1" />
+                      </Button>
+                    </div>
+                  </>
                 )}
 
-                {/* Worker success view — link generated */}
+                {/* ═══ WORKER FLOW — Step 2: Contact details ═══ */}
+                {selectedTemplate === "worker" && workerStep === 2 && !generatedWorkerLink && (
+                  <>
+                    {/* Summary of selected tasks */}
+                    <div className="p-3 bg-muted/50 rounded-lg space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        {t("teamWorker.assignedTasksList", "Assigned tasks")}
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {workerData.selectedTaskIds.map((id) => {
+                          const task = workerTasks.find((t) => t.id === id);
+                          return task ? (
+                            <span key={id} className="text-sm px-2 py-0.5 rounded-full bg-background border">
+                              {task.title}
+                            </span>
+                          ) : null;
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Name */}
+                    <div className="space-y-2">
+                      <Label htmlFor="invite-name">{t("roles.nameLabel")} *</Label>
+                      <Input
+                        id="invite-name"
+                        placeholder={t("roles.namePlaceholder")}
+                        value={inviteName}
+                        onChange={(e) => setInviteName(e.target.value)}
+                        autoFocus
+                      />
+                    </div>
+
+                    {/* Contact fields */}
+                    <WorkerContactFields
+                      data={workerData}
+                      onChange={(updates) => setWorkerData((prev) => ({ ...prev, ...updates }))}
+                    />
+
+                    {/* Back + Submit */}
+                    <div className="flex justify-between pt-2">
+                      <Button type="button" variant="ghost" onClick={() => setWorkerStep(1)}>
+                        <ChevronRight className="h-4 w-4 mr-1 rotate-180" />
+                        {t("common.back", "Back")}
+                      </Button>
+                      <Button
+                        type="submit"
+                        disabled={inviting || !inviteName.trim()}
+                      >
+                        {inviting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                        {t("teamWorker.inviteWorker", "Invite Worker")}
+                      </Button>
+                    </div>
+                  </>
+                )}
+
+                {/* ═══ WORKER FLOW — Success: link generated ═══ */}
                 {selectedTemplate === "worker" && generatedWorkerLink && (
                   <div className="space-y-3">
                     <div className="p-3 bg-muted rounded-lg">
@@ -1234,21 +1296,6 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
                     </Button>
                     <Button type="button" variant="outline" className="w-full" onClick={() => { resetInviteForm(); setDialogOpen(false); }}>
                       {t("common.close", "Close")}
-                    </Button>
-                  </div>
-                )}
-
-                {/* Submit button */}
-                {!(selectedTemplate === "worker" && generatedWorkerLink) && (
-                  <div className="flex justify-end pt-2">
-                    <Button
-                      type="submit"
-                      disabled={inviting || (selectedTemplate === "worker" && (!inviteName.trim() || workerData.selectedTaskIds.length === 0))}
-                    >
-                      {inviting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                      {selectedTemplate === "worker"
-                        ? t("teamWorker.inviteWorker", "Invite Worker")
-                        : t("roles.sendInvitation")}
                     </Button>
                   </div>
                 )}
