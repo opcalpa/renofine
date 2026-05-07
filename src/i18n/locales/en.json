@@ -1650,7 +1650,12 @@
     "fileDeleted": "File removed",
     "deleteError": "Could not remove file",
     "removePhoto": "Remove photo",
-    "removeFile": "Remove file"
+    "removeFile": "Remove file",
+    "details": "Details",
+    "caption": "Caption",
+    "category": "Category",
+    "uploaded": "Uploaded",
+    "sourceUrl": "Source"
   },
   "photoSource": {
     "classify": "What type of photo is this?",
@@ -1658,7 +1663,9 @@
     "during": "In progress",
     "after": "Completed",
     "receipt": "Receipt",
-    "product": "Product"
+    "product": "Product",
+    "upload": "Upload",
+    "unclassified": "Unclassified"
   },
   "comments": {
     "title": "Comments",

@@ -2733,7 +2733,12 @@
     "fileDeleted": "Fil borttagen",
     "deleteError": "Kunde inte ta bort fil",
     "removePhoto": "Ta bort bild",
-    "removeFile": "Ta bort fil"
+    "removeFile": "Ta bort fil",
+    "details": "Detaljer",
+    "caption": "Bildtext",
+    "category": "Kategori",
+    "uploaded": "Uppladdad",
+    "sourceUrl": "Källa"
   },
   "photoSource": {
     "classify": "Vilken typ av bild är detta?",
@@ -2741,7 +2746,9 @@
     "during": "Pågående",
     "after": "Färdigt",
     "receipt": "Kvitto",
-    "product": "Produkt"
+    "product": "Produkt",
+    "upload": "Uppladdad",
+    "unclassified": "Oklassificerad"
   },
   "comments": {
     "title": "Kommentarer",

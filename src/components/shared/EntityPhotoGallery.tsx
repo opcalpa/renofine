@@ -244,6 +244,32 @@ export function EntityPhotoGallery({ entityId, entityType, projectId, storagePat
   const imagePhotos = photos.filter((p) => isImageUrl(p));
   const docPhotos = photos.filter((p) => !isImageUrl(p));
 
+  // Group images by source category (only for entity types with classification)
+  const groupedImages = sourceOptions
+    ? (() => {
+        const groups: Array<{ source: string; label: string; icon: string; photos: Photo[] }> = [];
+        const bySource: Record<string, Photo[]> = {};
+        for (const p of imagePhotos) {
+          const key = p.source || "unclassified";
+          if (!bySource[key]) bySource[key] = [];
+          bySource[key].push(p);
+        }
+        // Ordered by source options, then unclassified/upload at end
+        for (const opt of sourceOptions) {
+          if (bySource[opt.value]?.length) {
+            groups.push({ source: opt.value, label: t(opt.labelKey, opt.value), icon: opt.icon, photos: bySource[opt.value] });
+          }
+        }
+        // Remaining (unclassified, upload, etc.)
+        for (const [key, items] of Object.entries(bySource)) {
+          if (!sourceOptions.some((o) => o.value === key) && items.length > 0) {
+            groups.push({ source: key, label: t(`photoSource.${key}`, key), icon: "📎", photos: items });
+          }
+        }
+        return groups;
+      })()
+    : null;
+
   const handleDownloadDoc = (photo: Photo) => {
     const a = document.createElement("a");
     a.href = photo.url;
@@ -388,47 +414,47 @@ export function EntityPhotoGallery({ entityId, entityType, projectId, storagePat
             </div>
           )}
 
-          {/* Image gallery */}
+          {/* Image gallery — grouped by category when applicable */}
           {imagePhotos.length > 0 && (
-            <ScrollArea className="h-48">
-              <div className="grid grid-cols-2 gap-3">
-                {imagePhotos.map((photo, index) => (
-                  <div
-                    key={photo.id}
-                    className="relative group cursor-pointer"
-                    onClick={() => {
-                      setCarouselIndex(index);
-                      setCarouselOpen(true);
-                    }}
-                  >
-                    <img
-                      src={photo.url}
-                      alt={photo.caption || "Bild"}
-                      className="w-full h-32 object-cover rounded-lg border border-gray-200 transition-all group-hover:brightness-90"
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      <div className="bg-black/50 rounded-full p-2">
-                        <Maximize2 className="h-5 w-5 text-white" />
+            <ScrollArea className="h-56">
+              {groupedImages && groupedImages.length > 0 ? (
+                <div className="space-y-3">
+                  {groupedImages.map((group) => (
+                    <div key={group.source}>
+                      <p className="text-xs font-medium text-muted-foreground mb-1.5 flex items-center gap-1">
+                        <span>{group.icon}</span> {group.label}
+                        <span className="text-[10px] tabular-nums ml-auto">{group.photos.length}</span>
+                      </p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {group.photos.map((photo) => {
+                          const flatIdx = imagePhotos.findIndex((p) => p.id === photo.id);
+                          return (
+                            <PhotoThumbnail
+                              key={photo.id}
+                              photo={photo}
+                              onClick={() => { setCarouselIndex(flatIdx); setCarouselOpen(true); }}
+                              onDelete={() => handleDeletePhoto(photo.id, photo.url)}
+                              t={t}
+                            />
+                          );
+                        })}
                       </div>
                     </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeletePhoto(photo.id, photo.url);
-                      }}
-                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 z-10"
-                      title={t('entityPhotos.removePhoto')}
-                    >
-                      <XCircle className="h-4 w-4" />
-                    </button>
-                    {photo.caption && (
-                      <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs p-2 rounded-b-lg truncate">
-                        {photo.caption}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-2">
+                  {imagePhotos.map((photo, index) => (
+                    <PhotoThumbnail
+                      key={photo.id}
+                      photo={photo}
+                      onClick={() => { setCarouselIndex(index); setCarouselOpen(true); }}
+                      onDelete={() => handleDeletePhoto(photo.id, photo.url)}
+                      t={t}
+                    />
+                  ))}
+                </div>
+              )}
             </ScrollArea>
           )}
         </div>
@@ -444,7 +470,47 @@ export function EntityPhotoGallery({ entityId, entityType, projectId, storagePat
         initialIndex={carouselIndex}
         open={carouselOpen}
         onOpenChange={setCarouselOpen}
+        showMetadata
+        onDelete={(photo) => handleDeletePhoto(photo.id, photo.url)}
       />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Photo thumbnail sub-component
+// ---------------------------------------------------------------------------
+
+function PhotoThumbnail({
+  photo,
+  onClick,
+  onDelete,
+  t,
+}: {
+  photo: Photo;
+  onClick: () => void;
+  onDelete: () => void;
+  t: (key: string, fallback?: string) => string;
+}) {
+  return (
+    <div className="relative group cursor-pointer" onClick={onClick}>
+      <img
+        src={photo.url}
+        alt={photo.caption || ""}
+        className="w-full aspect-square object-cover rounded-lg border border-gray-200 transition-all group-hover:brightness-90"
+      />
+      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="bg-black/50 rounded-full p-1.5">
+          <Maximize2 className="h-4 w-4 text-white" />
+        </div>
+      </div>
+      <button
+        onClick={(e) => { e.stopPropagation(); onDelete(); }}
+        className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity bg-red-500 hover:bg-red-600 text-white rounded-full p-1 z-10"
+        title={t("entityPhotos.removePhoto")}
+      >
+        <XCircle className="h-3.5 w-3.5" />
+      </button>
     </div>
   );
 }
