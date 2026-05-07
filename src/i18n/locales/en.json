@@ -5436,7 +5436,8 @@
     "sendEmail": "Send email",
     "emailSent": "Email sent",
     "emailSubject": "Your work instructions",
-    "shareViaWhatsApp": "Share via WhatsApp"
+    "shareViaWhatsApp": "Share via WhatsApp",
+    "beforePhotos": "Before photos"
   },
   "teamWorker": {
     "workers": "Workers",
@@ -5473,7 +5474,9 @@
     "noChecklist": "No checklist — add one to the task first",
     "preview": "Worker preview",
     "previewHint": "Select a task to preview what the worker will see",
-    "contactStepDescription": "Add contact details for the worker"
+    "contactStepDescription": "Add contact details for the worker",
+    "beforePhotos": "Before photos",
+    "fromRoom": "room"
   },
   "batchTolk": {
     "title": "Smart Tolk",

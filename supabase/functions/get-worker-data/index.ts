@@ -235,18 +235,89 @@ serve(async (req) => {
       });
     }
 
+    // 6c. Fetch instruction overrides for this worker token
+    const { data: overrides } = await sb
+      .from("worker_instruction_overrides")
+      .select("task_id, description_override, checklist_override, photo_override")
+      .eq("worker_token_id", tokenRecord.id);
+
+    const overridesByTask: Record<string, { description: string | null; checklists: unknown; photoOverride: string[] | null }> = {};
+    for (const o of overrides || []) {
+      overridesByTask[o.task_id] = {
+        description: o.description_override,
+        checklists: o.checklist_override,
+        photoOverride: o.photo_override as string[] | null,
+      };
+    }
+
+    // 6d. Resolve before-photos per task (task-linked + room fallback)
+    // Task-linked before-photos
+    const { data: taskBeforePhotos } = await sb
+      .from("photos")
+      .select("id, url, caption, linked_to_id")
+      .eq("linked_to_type", "task")
+      .eq("source", "before")
+      .in("linked_to_id", taskIds);
+
+    const taskBeforeMap: Record<string, Array<{ id: string; url: string; caption: string | null }>> = {};
+    for (const p of taskBeforePhotos || []) {
+      if (!taskBeforeMap[p.linked_to_id]) taskBeforeMap[p.linked_to_id] = [];
+      taskBeforeMap[p.linked_to_id].push({ id: p.id, url: p.url, caption: p.caption });
+    }
+
+    // Room-linked before-photos
+    let roomBeforeMap: Record<string, Array<{ id: string; url: string; caption: string | null }>> = {};
+    if (roomIds.length > 0) {
+      const { data: roomBeforePhotos } = await sb
+        .from("photos")
+        .select("id, url, caption, linked_to_id")
+        .eq("linked_to_type", "room")
+        .eq("source", "before")
+        .in("linked_to_id", roomIds);
+
+      for (const p of roomBeforePhotos || []) {
+        if (!roomBeforeMap[p.linked_to_id]) roomBeforeMap[p.linked_to_id] = [];
+        roomBeforeMap[p.linked_to_id].push({ id: p.id, url: p.url, caption: p.caption });
+      }
+    }
+
     // 7. Assemble response (use translations when available)
     const workerTasks = (tasks || []).map((task) => {
       const room = task.room_id ? roomsMap[task.room_id] as Record<string, unknown> | undefined : null;
       const tr = translationsMap[task.id];
+      const taskOverride = overridesByTask[task.id];
+
+      // Resolve before-photos: task-linked first, then room-linked (deduplicated)
+      const seenPhotoIds = new Set<string>();
+      const resolvedBeforePhotos: Array<{ id: string; url: string; caption: string | null }> = [];
+
+      for (const p of taskBeforeMap[task.id] || []) {
+        resolvedBeforePhotos.push(p);
+        seenPhotoIds.add(p.id);
+      }
+      if (task.room_id) {
+        for (const p of roomBeforeMap[task.room_id] || []) {
+          if (!seenPhotoIds.has(p.id)) {
+            resolvedBeforePhotos.push(p);
+          }
+        }
+      }
+
+      // Apply photo override if set
+      const photoOverride = taskOverride?.photoOverride;
+      const filteredBeforePhotos = photoOverride
+        ? resolvedBeforePhotos.filter((p) => photoOverride.includes(p.id))
+        : resolvedBeforePhotos;
+
       return {
         id: task.id,
         title: tr?.title || task.title,
-        description: tr?.description ?? task.description,
+        description: taskOverride?.description ?? tr?.description ?? task.description,
         status: task.status,
         progress: task.progress || 0,
-        checklists: tr?.checklists || task.checklists || [],
+        checklists: taskOverride?.checklists || tr?.checklists || task.checklists || [],
         photos: photosByTask[task.id] || [],
+        beforePhotos: filteredBeforePhotos,
         messages: messagesByTask[task.id] || [],
         roomId: task.room_id || null,
         room: room

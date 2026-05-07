@@ -617,7 +617,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
 
       // Insert instruction overrides for tasks with customizations
       const overrides = Array.from(workerData.taskOverrides.values())
-        .filter((o) => o.descriptionOverride !== null || o.checklistOverride !== null);
+        .filter((o) => o.descriptionOverride !== null || o.checklistOverride !== null || o.photoOverride !== null);
 
       if (overrides.length > 0) {
         await supabase.from("worker_instruction_overrides").insert(
@@ -626,6 +626,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
             task_id: o.taskId,
             description_override: o.descriptionOverride,
             checklist_override: o.checklistOverride,
+            photo_override: o.photoOverride,
           }))
         );
       }

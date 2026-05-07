@@ -102,6 +102,7 @@ export interface WorkerTask {
   progress: number;
   checklists: Checklist[];
   photos: Photo[];
+  beforePhotos?: Photo[];
   messages: WorkerMessage[];
   roomId: string | null;
   room: WorkerRoom | null;
@@ -347,6 +348,36 @@ export function WorkerTaskCard({
             ceilingSpec={room.ceilingSpec}
             joinerySpec={room.joinerySpec}
           />
+        </div>
+      )}
+
+      {/* Before-photos (reference images) */}
+      {task.beforePhotos && task.beforePhotos.length > 0 && (
+        <div className="px-4 pb-3 space-y-2">
+          <div className="flex items-center gap-2">
+            <Camera className="h-4 w-4 text-muted-foreground" />
+            <span className="text-xs font-medium text-muted-foreground">
+              {t("worker.beforePhotos", "Before photos")}
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {task.beforePhotos.map((photo) => (
+              <a
+                key={photo.id}
+                href={photo.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="aspect-square rounded-lg overflow-hidden bg-muted"
+              >
+                <img
+                  src={photo.url}
+                  alt={photo.caption || ""}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
+              </a>
+            ))}
+          </div>
         </div>
       )}
 

@@ -5433,7 +5433,8 @@
     "sendEmail": "Skicka e-post",
     "emailSent": "E-post skickat",
     "emailSubject": "Dina arbetsinstruktioner",
-    "shareViaWhatsApp": "Dela via WhatsApp"
+    "shareViaWhatsApp": "Dela via WhatsApp",
+    "beforePhotos": "Före-bilder"
   },
   "teamWorker": {
     "workers": "Arbetare",
@@ -5470,7 +5471,9 @@
     "noChecklist": "Ingen checklista — lägg till en på uppgiften först",
     "preview": "Förhandsvisning",
     "previewHint": "Välj en uppgift för att se hur arbetaren ser den",
-    "contactStepDescription": "Fyll i kontaktuppgifter för arbetaren"
+    "contactStepDescription": "Fyll i kontaktuppgifter för arbetaren",
+    "beforePhotos": "Före-bilder",
+    "fromRoom": "rum"
   },
   "batchTolk": {
     "title": "Smart Tolk",

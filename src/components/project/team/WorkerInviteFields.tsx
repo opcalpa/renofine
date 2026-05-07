@@ -61,6 +61,7 @@ export interface TaskOverride {
   taskId: string;
   descriptionOverride: string | null;
   checklistOverride: Array<{ checklistId: string; itemId: string }> | null; // null = all items
+  photoOverride: string[] | null; // array of photo IDs to include, null = all
 }
 
 export interface WorkerInviteData {
@@ -125,6 +126,7 @@ export function getOverride(data: WorkerInviteData, taskId: string): TaskOverrid
     taskId,
     descriptionOverride: null,
     checklistOverride: null,
+    photoOverride: null,
   };
 }
 
@@ -305,7 +307,8 @@ export function WorkerTaskList({
             const override = data.taskOverrides.get(task.id);
             const hasOverrides =
               (override?.descriptionOverride !== null && override?.descriptionOverride !== undefined) ||
-              (override?.checklistOverride !== null && override?.checklistOverride !== undefined);
+              (override?.checklistOverride !== null && override?.checklistOverride !== undefined) ||
+              (override?.photoOverride !== null && override?.photoOverride !== undefined);
             const totalChecklist = task.checklists.reduce((s, cl) => s + cl.items.length, 0);
             const includedCount = override?.checklistOverride
               ? override.checklistOverride.length
