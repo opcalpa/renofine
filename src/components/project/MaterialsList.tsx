@@ -29,14 +29,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+
+
 
 interface Material {
   id: string;
@@ -521,35 +515,35 @@ const MaterialsList = ({ taskId, currency }: MaterialsListProps) => {
           <p className="text-sm text-muted-foreground">{t('purchases.noPurchaseOrders')}</p>
         </div>
       ) : (
-        <div className="border rounded-lg overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('purchases.materialName')}</TableHead>
-                <TableHead>{t('common.quantity')}</TableHead>
-                <TableHead>{t('purchases.pricePerUnit')}</TableHead>
-                <TableHead>{t('purchases.priceTotal')}</TableHead>
-                <TableHead>{t('purchases.vendor')}</TableHead>
-                <TableHead>{t('purchases.addedBy')}</TableHead>
-                <TableHead>{t('purchases.addedDate')}</TableHead>
-                <TableHead>{t('common.status')}</TableHead>
-                <TableHead className="w-[50px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+        <div className="rounded-lg border bg-card overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-muted border-b">
+                <th className="px-3 py-2.5 kicker text-left">{t('purchases.materialName')}</th>
+                <th className="px-3 py-2.5 kicker text-left">{t('common.quantity')}</th>
+                <th className="px-3 py-2.5 kicker text-right">{t('purchases.pricePerUnit')}</th>
+                <th className="px-3 py-2.5 kicker text-right">{t('purchases.priceTotal')}</th>
+                <th className="px-3 py-2.5 kicker text-left">{t('purchases.vendor')}</th>
+                <th className="px-3 py-2.5 kicker text-left">{t('purchases.addedBy')}</th>
+                <th className="px-3 py-2.5 kicker text-left">{t('purchases.addedDate')}</th>
+                <th className="px-3 py-2.5 kicker text-left">{t('common.status')}</th>
+                <th className="px-3 py-2.5 kicker w-[50px]" />
+              </tr>
+            </thead>
+            <tbody>
               {materials.map((material) => (
-                <TableRow key={material.id}>
-                  <TableCell className="font-medium">{material.name}</TableCell>
-                  <TableCell>
+                <tr key={material.id} className="border-b last:border-b-0 hover:bg-muted/30 transition-colors">
+                  <td className="px-3 py-2.5 font-medium">{material.name}</td>
+                  <td className="px-3 py-2.5">
                     {material.quantity} {material.unit}
-                  </TableCell>
-                  <TableCell>
+                  </td>
+                  <td className="px-3 py-2.5 text-right tabular-nums">
                     {material.price_per_unit ? formatCurrency(material.price_per_unit, currency, { decimals: 2 }) : "-"}
-                  </TableCell>
-                  <TableCell className="font-semibold">
+                  </td>
+                  <td className="px-3 py-2.5 text-right tabular-nums font-semibold">
                     {material.price_total ? formatCurrency(material.price_total, currency, { decimals: 2 }) : "-"}
-                  </TableCell>
-                  <TableCell>
+                  </td>
+                  <td className="px-3 py-2.5">
                     {material.vendor_name ? (
                       material.vendor_link ? (
                         <a
@@ -567,14 +561,14 @@ const MaterialsList = ({ taskId, currency }: MaterialsListProps) => {
                     ) : (
                       "-"
                     )}
-                  </TableCell>
-                  <TableCell>
+                  </td>
+                  <td className="px-3 py-2.5">
                     {material.creator?.name || "Unknown"}
-                  </TableCell>
-                  <TableCell>
+                  </td>
+                  <td className="px-3 py-2.5">
                     {new Date(material.created_at).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell>
+                  </td>
+                  <td className="px-3 py-2.5">
                     <Select
                       value={material.status}
                       onValueChange={(value) => handleStatusChange(material.id, value)}
@@ -592,8 +586,8 @@ const MaterialsList = ({ taskId, currency }: MaterialsListProps) => {
                         <SelectItem value="declined">{t('materialStatuses.declined')}</SelectItem>
                       </SelectContent>
                     </Select>
-                  </TableCell>
-                  <TableCell>
+                  </td>
+                  <td className="px-3 py-2.5">
                     <Button
                       variant="ghost"
                       size="icon"
@@ -604,11 +598,11 @@ const MaterialsList = ({ taskId, currency }: MaterialsListProps) => {
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
-                  </TableCell>
-                </TableRow>
+                  </td>
+                </tr>
               ))}
-            </TableBody>
-          </Table>
+            </tbody>
+          </table>
         </div>
       )}
     </div>

@@ -3,20 +3,11 @@ import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { useTaxDeductionVisible } from "@/hooks/useTaxDeduction";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Plus, Trash2, Send, ClipboardList, Info, Columns3, Play, Bell, X, Sparkles, ChevronDown, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -740,16 +731,15 @@ export function HomeownerPlanningView({
       </div>
 
       {/* Task list */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <ClipboardList className="h-5 w-5 text-primary" />
-              <div>
-                <CardTitle className="text-base">{t("homeownerPlanning.whatToDo", "What needs to be done?")}</CardTitle>
-                <CardDescription>{t("homeownerPlanning.whatToDoDesc", "List every type of work. Connect each task to a room for better estimates.")}</CardDescription>
-              </div>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ClipboardList className="h-5 w-5 text-primary" />
+            <div>
+              <h3 className="text-base font-semibold">{t("homeownerPlanning.whatToDo", "What needs to be done?")}</h3>
+              <p className="text-sm text-muted-foreground">{t("homeownerPlanning.whatToDoDesc", "List every type of work. Connect each task to a room for better estimates.")}</p>
             </div>
+          </div>
             <div className="flex items-center gap-2">
               {/* Import quote — populates table with quote data */}
               {!contributorMode && (
@@ -795,33 +785,33 @@ export function HomeownerPlanningView({
             </Popover>
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
+        </div>
+        <div>
           {tasksWithRoomNames.length > 0 && (
-            <div className="rounded-md border overflow-auto max-h-[calc(100vh-20rem)] mb-3">
-              <Table>
-                <TableHeader className="sticky top-0 z-20 bg-card">
-                  <TableRow onContextMenu={(e) => { e.preventDefault(); setHeaderMenu({ x: e.clientX, y: e.clientY }); }}>
-                    <TableHead className="min-w-[140px]">{t("planningTasks.task", "Task")}</TableHead>
-                    {show.description && <TableHead className="min-w-[120px]">{t("tasks.description", "Description")}</TableHead>}
-                    {show.room && <TableHead className="min-w-[100px]">{t("tasks.room", "Room")}</TableHead>}
-                    {show.area && <TableHead className="min-w-[60px] text-right hidden sm:table-cell">{t("homeownerPlanning.area", "Area")}</TableHead>}
-                    {show.quote && <TableHead className="min-w-[80px] text-center">{t("homeownerPlanning.quote", "Quote")}</TableHead>}
-                    {show.budget && <TableHead className="min-w-[90px] text-right">{t("planningTasks.budget", "Budget")} <span className="text-[10px] font-normal text-muted-foreground">({t("budget.incVat", "ink. moms")})</span></TableHead>}
-                    {show.materialEstimate && <TableHead className="min-w-[100px] text-right">{t("planningTasks.materialEstimate", "Materialbudget")} <span className="text-[10px] font-normal text-muted-foreground">({t("budget.incVat", "ink. moms")})</span></TableHead>}
-                    {show.rotAmount && <TableHead className="min-w-[80px] text-right">{t("files.rotAmount", "ROT-avdrag")}</TableHead>}
-                    <TableHead className="w-[40px]" />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+            <div className="rounded-lg border bg-card overflow-auto max-h-[calc(100vh-20rem)] mb-3">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 z-20">
+                  <tr className="bg-muted border-b" onContextMenu={(e) => { e.preventDefault(); setHeaderMenu({ x: e.clientX, y: e.clientY }); }}>
+                    <th className="px-3 py-2.5 kicker text-left min-w-[140px]">{t("planningTasks.task", "Task")}</th>
+                    {show.description && <th className="px-3 py-2.5 kicker text-left min-w-[120px]">{t("tasks.description", "Description")}</th>}
+                    {show.room && <th className="px-3 py-2.5 kicker text-left min-w-[100px]">{t("tasks.room", "Room")}</th>}
+                    {show.area && <th className="px-3 py-2.5 kicker text-right min-w-[60px] hidden sm:table-cell">{t("homeownerPlanning.area", "Area")}</th>}
+                    {show.quote && <th className="px-3 py-2.5 kicker text-center min-w-[80px]">{t("homeownerPlanning.quote", "Quote")}</th>}
+                    {show.budget && <th className="px-3 py-2.5 kicker text-right min-w-[90px]">{t("planningTasks.budget", "Budget")} <span className="text-[10px] font-normal text-muted-foreground">({t("budget.incVat", "ink. moms")})</span></th>}
+                    {show.materialEstimate && <th className="px-3 py-2.5 kicker text-right min-w-[100px]">{t("planningTasks.materialEstimate", "Materialbudget")} <span className="text-[10px] font-normal text-muted-foreground">({t("budget.incVat", "ink. moms")})</span></th>}
+                    {show.rotAmount && <th className="px-3 py-2.5 kicker text-right min-w-[80px]">{t("files.rotAmount", "ROT-avdrag")}</th>}
+                    <th className="px-3 py-2.5 kicker w-[40px]" />
+                  </tr>
+                </thead>
+                <tbody>
                   {displayItems.map((item) => {
                     if (item.type === "groupHeader") {
                       const colSpan = 1 + (show.description ? 1 : 0) + (show.room ? 1 : 0) + (show.area ? 1 : 0) + (show.quote ? 1 : 0) + (show.budget ? 1 : 0) + (show.materialEstimate ? 1 : 0) + (show.rotAmount ? 1 : 0) + 1;
                       const isCollapsed = collapsedGroups.has(item.category);
                       const label = COST_CENTER_LABELS[item.category] || TASK_CATEGORY_LABELS[item.category as TaskCategory] || item.category;
                       return (
-                        <TableRow key={`group-${item.category}`} className="bg-muted/50 hover:bg-muted/70">
-                          <TableCell colSpan={colSpan} className="py-2">
+                        <tr key={`group-${item.category}`} className="bg-muted/50 hover:bg-muted/70 border-b transition-colors">
+                          <td colSpan={colSpan} className="px-3 py-2.5">
                             <button
                               type="button"
                               className="flex items-center gap-2 w-full text-left font-medium text-sm"
@@ -836,8 +826,8 @@ export function HomeownerPlanningView({
                                 </span>
                               )}
                             </button>
-                          </TableCell>
-                        </TableRow>
+                          </td>
+                        </tr>
                       );
                     }
 
@@ -847,9 +837,9 @@ export function HomeownerPlanningView({
                     const mats = taskMaterials.get(task.id) || [];
                     const matCount = mats.length;
                     return (
-                      <TableRow key={task.id}>
+                      <tr key={task.id} className="border-b last:border-b-0 hover:bg-muted/30 transition-colors">
                         {/* Title — always visible */}
-                        <TableCell className="font-medium py-2.5">
+                        <td className="font-medium px-3 py-2.5">
                           {editingCell?.taskId === task.id && editingCell.field === "title" ? (
                             <Input
                               autoFocus
@@ -897,11 +887,11 @@ export function HomeownerPlanningView({
                               })()}
                             </div>
                           )}
-                        </TableCell>
+                        </td>
 
                         {/* Description */}
                         {show.description && (
-                        <TableCell className="text-muted-foreground text-sm py-2.5">
+                        <td className="text-muted-foreground text-sm px-3 py-2.5">
                           {editingCell?.taskId === task.id && editingCell.field === "description" ? (
                             <Input
                               autoFocus
@@ -931,12 +921,12 @@ export function HomeownerPlanningView({
                               )}
                             </button>
                           )}
-                        </TableCell>
+                        </td>
                         )}
 
                         {/* Room — multi-select popover with inline create */}
                         {show.room && (
-                        <TableCell className="py-2.5">
+                        <td className="px-3 py-2.5">
                           {editingCell?.taskId === task.id && editingCell?.field === "room_id" ? (
                             <Popover open onOpenChange={(isOpen) => { if (!isOpen) { setEditingCell(null); setNewRoomName(""); } }}>
                               <PopoverTrigger asChild>
@@ -1011,19 +1001,19 @@ export function HomeownerPlanningView({
                               {task.room_names.length > 0 ? task.room_names.join(", ") : "–"}
                             </button>
                           )}
-                        </TableCell>
+                        </td>
                         )}
 
                         {/* Area (m²) */}
                         {show.area && (
-                        <TableCell className="text-right text-xs tabular-nums text-muted-foreground hidden sm:table-cell py-2.5">
+                        <td className="text-right text-xs tabular-nums text-muted-foreground hidden sm:table-cell px-3 py-2.5">
                           {areaSqm != null ? `${areaSqm.toFixed(1)} ${ms.areaLabel}` : "–"}
-                        </TableCell>
+                        </td>
                         )}
 
                         {/* Quote */}
                         {show.quote && (
-                        <TableCell className="py-2.5">
+                        <td className="px-3 py-2.5">
                           <ExternalQuoteCell
                             taskId={task.id}
                             quotes={externalQuotes}
@@ -1031,10 +1021,10 @@ export function HomeownerPlanningView({
                             currency={currency}
                             onAssignmentChange={fetchExternalQuotes}
                           />
-                        </TableCell>
+                        </td>
                         )}
                         {show.budget && (
-                          <TableCell className="text-right py-2.5">
+                          <td className="text-right px-3 py-2.5">
                             {editingCell?.taskId === task.id && editingCell.field === "budget" ? (
                               <input autoFocus type="number" className="w-full h-7 px-1 text-sm text-right rounded border focus:outline-none focus:ring-1 focus:ring-primary tabular-nums" value={editValue} onChange={(e) => setEditValue(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") commitCellEdit(); if (e.key === "Escape") setEditingCell(null); }} onBlur={commitCellEdit} step="100" />
                             ) : (
@@ -1042,14 +1032,14 @@ export function HomeownerPlanningView({
                                 {task.budget ? <span className="text-sm tabular-nums">{Math.round(task.budget * (1 + VAT_RATE)).toLocaleString("sv-SE")} kr</span> : <span className="text-xs text-muted-foreground">–</span>}
                               </button>
                             )}
-                          </TableCell>
+                          </td>
                         )}
                         {show.materialEstimate && (() => {
                           const autoTotal = mats.reduce((sum, m) => sum + (m.price_total ?? 0), 0);
                           const displayValue = task.material_estimate ?? (autoTotal > 0 ? autoTotal : null);
                           const isAutoCalc = !task.material_estimate && autoTotal > 0;
                           return (
-                          <TableCell className="text-right py-2.5">
+                          <td className="text-right px-3 py-2.5">
                             {editingCell?.taskId === task.id && editingCell.field === "material_estimate" ? (
                               <input autoFocus type="number" className="w-full h-7 px-1 text-sm text-right rounded border focus:outline-none focus:ring-1 focus:ring-primary tabular-nums" value={editValue} onChange={(e) => setEditValue(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") commitCellEdit(); if (e.key === "Escape") setEditingCell(null); }} onBlur={commitCellEdit} step="100" />
                             ) : (
@@ -1063,11 +1053,11 @@ export function HomeownerPlanningView({
                                 )}
                               </button>
                             )}
-                          </TableCell>
+                          </td>
                           );
                         })()}
                         {show.rotAmount && (
-                          <TableCell className="text-right py-2.5">
+                          <td className="text-right px-3 py-2.5">
                             {editingCell?.taskId === task.id && editingCell.field === "rot_amount" ? (
                               <input autoFocus type="number" className="w-full h-7 px-1 text-sm text-right rounded border focus:outline-none focus:ring-1 focus:ring-primary tabular-nums" value={editValue} onChange={(e) => setEditValue(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") commitCellEdit(); if (e.key === "Escape") setEditingCell(null); }} onBlur={commitCellEdit} step="100" />
                             ) : (
@@ -1075,11 +1065,11 @@ export function HomeownerPlanningView({
                                 {task.rot_amount ? <span className="text-sm tabular-nums text-green-700">{Math.round(task.rot_amount).toLocaleString("sv-SE")} kr</span> : <span className="text-xs text-muted-foreground">–</span>}
                               </button>
                             )}
-                          </TableCell>
+                          </td>
                         )}
 
                         {/* Delete — always visible */}
-                        <TableCell className="py-2.5">
+                        <td className="px-3 py-2.5">
                           <button
                             type="button"
                             className="text-muted-foreground hover:text-destructive transition-colors"
@@ -1087,12 +1077,12 @@ export function HomeownerPlanningView({
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
-                        </TableCell>
-                      </TableRow>
+                        </td>
+                      </tr>
                     );
                   })}
-                </TableBody>
-              </Table>
+                </tbody>
+              </table>
             </div>
           )}
 
@@ -1169,8 +1159,8 @@ export function HomeownerPlanningView({
               </Button>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Rooms — reuse builder component */}
       <PlanningRoomList
@@ -1181,17 +1171,15 @@ export function HomeownerPlanningView({
 
       {/* Prompt: connect tasks to rooms if not done */}
       {totalTasks > 0 && rooms.length > 0 && linkedTasks < totalTasks && (
-        <Card className="border-amber-200 bg-amber-50/50">
-          <CardContent className="pt-4 pb-4">
-            <div className="flex items-start gap-2">
-              <Info className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
-              <p className="text-sm text-amber-800">
-                {t("homeownerPlanning.connectHint", "Connect each task to a room to get estimated costs and create a more detailed quote request.")}
-                {" "}<strong>{linkedTasks}/{totalTasks}</strong> {t("homeownerPlanning.tasksConnected", "tasks connected to rooms.")}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="rounded-lg border border-amber-200 bg-amber-50/50 px-4 py-4">
+          <div className="flex items-start gap-2">
+            <Info className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+            <p className="text-sm text-amber-800">
+              {t("homeownerPlanning.connectHint", "Connect each task to a room to get estimated costs and create a more detailed quote request.")}
+              {" "}<strong>{linkedTasks}/{totalTasks}</strong> {t("homeownerPlanning.tasksConnected", "tasks connected to rooms.")}
+            </p>
+          </div>
+        </div>
       )}
 
       {/* Share RFQ dialog */}

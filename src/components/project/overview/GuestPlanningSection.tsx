@@ -1,19 +1,10 @@
 import { useState, useCallback, useMemo } from "react";
 import { GuestLoginPrompt } from "@/components/guest/GuestLoginPrompt";
 import { useTranslation } from "react-i18next";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ColumnToggle } from "@/components/shared/ColumnToggle";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   Select,
   SelectContent,
@@ -369,20 +360,18 @@ export function GuestPlanningSection({ projectId, projectStatus, onActivate }: G
         </div>
       )}
 
-      {/* Task planning card */}
-      <Card className="border-l-4 border-l-primary" data-tour="task-table">
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <ClipboardList className="h-5 w-5 text-primary" />
-            <div>
-              <CardTitle className="text-base">{t("planningTasks.title", "Scope of work")}</CardTitle>
-              <CardDescription className="text-xs">
-                {t("planningTasks.description", "Define the tasks included in your renovation, e.g. painting, demolition, tiling")}
-              </CardDescription>
-            </div>
+      {/* Task planning */}
+      <div className="space-y-3" data-tour="task-table">
+        <div className="flex items-center gap-2">
+          <ClipboardList className="h-5 w-5 text-primary" />
+          <div>
+            <h3 className="text-base font-semibold">{t("planningTasks.title", "Scope of work")}</h3>
+            <p className="text-xs text-muted-foreground">
+              {t("planningTasks.description", "Define the tasks included in your renovation, e.g. painting, demolition, tiling")}
+            </p>
           </div>
-        </CardHeader>
-        <CardContent className="pt-0">
+        </div>
+        <div>
           {tasks.length === 0 && !addingTask ? (
             <div className="text-center py-8">
               <ClipboardList className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
@@ -399,24 +388,24 @@ export function GuestPlanningSection({ projectId, projectStatus, onActivate }: G
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead className="text-xs font-medium">{t("planningTasks.taskName", "Task")}</TableHead>
+              <div className="rounded-lg border bg-card overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-muted border-b">
+                    <th className="px-3 py-2.5 kicker text-left">{t("planningTasks.taskName", "Task")}</th>
                     {show.room && (
-                      <TableHead className="text-xs font-medium w-[140px]">{t("planningTasks.room", "Room")}</TableHead>
+                      <th className="px-3 py-2.5 kicker text-left w-[140px]">{t("planningTasks.room", "Room")}</th>
                     )}
                     {show.description && (
-                      <TableHead className="text-xs font-medium w-[200px]">{t("tasks.description", "Description")}</TableHead>
+                      <th className="px-3 py-2.5 kicker text-left w-[200px]">{t("tasks.description", "Description")}</th>
                     )}
                     {show.status && (
-                      <TableHead className="text-xs font-medium w-[120px]">{t("common.status", "Status")}</TableHead>
+                      <th className="px-3 py-2.5 kicker text-left w-[120px]">{t("common.status", "Status")}</th>
                     )}
-                    <TableHead className="text-xs font-medium w-[40px]" />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+                    <th className="px-3 py-2.5 kicker w-[40px]" />
+                  </tr>
+                </thead>
+                <tbody>
                   {tasks.map((task) => {
                     const isEditingTitle = editingCell?.id === task.id && editingCell?.field === "title";
                     const isEditingDesc = editingCell?.id === task.id && editingCell?.field === "description";
@@ -426,9 +415,9 @@ export function GuestPlanningSection({ projectId, projectStatus, onActivate }: G
                     const canEstimate = taskWorkType !== null && roomHasDims;
 
                     return (
-                      <TableRow key={task.id} className="group">
+                      <tr key={task.id} className="group border-b last:border-b-0 hover:bg-muted/30 transition-colors">
                         {/* Title — inline editable + sparkles indicator */}
-                        <TableCell className="py-1.5">
+                        <td className="px-3 py-2.5">
                           {isEditingTitle ? (
                             <Input
                               autoFocus
@@ -469,11 +458,11 @@ export function GuestPlanningSection({ projectId, projectStatus, onActivate }: G
                               )}
                             </div>
                           )}
-                        </TableCell>
+                        </td>
 
                         {/* Room — select dropdown */}
                         {show.room && (
-                          <TableCell className="py-1.5">
+                          <td className="px-3 py-2.5">
                             <Select
                               value={task.room_id || "__none__"}
                               onValueChange={(val) =>
@@ -492,12 +481,12 @@ export function GuestPlanningSection({ projectId, projectStatus, onActivate }: G
                                 ))}
                               </SelectContent>
                             </Select>
-                          </TableCell>
+                          </td>
                         )}
 
                         {/* Description — inline editable */}
                         {show.description && (
-                          <TableCell className="py-1.5">
+                          <td className="px-3 py-2.5">
                             {isEditingDesc ? (
                               <Input
                                 autoFocus
@@ -518,12 +507,12 @@ export function GuestPlanningSection({ projectId, projectStatus, onActivate }: G
                                 {task.description || <span className="text-muted-foreground/50">–</span>}
                               </button>
                             )}
-                          </TableCell>
+                          </td>
                         )}
 
                         {/* Status — select dropdown */}
                         {show.status && (
-                          <TableCell className="py-1.5">
+                          <td className="px-3 py-2.5">
                             <Select
                               value={task.status}
                               onValueChange={(val) => handleTaskUpdate(task.id, { status: val })}
@@ -539,11 +528,11 @@ export function GuestPlanningSection({ projectId, projectStatus, onActivate }: G
                                 ))}
                               </SelectContent>
                             </Select>
-                          </TableCell>
+                          </td>
                         )}
 
                         {/* Delete */}
-                        <TableCell className="py-1.5 w-[40px]">
+                        <td className="px-3 py-2.5 w-[40px]">
                           <Button
                             variant="ghost"
                             size="icon"
@@ -552,14 +541,14 @@ export function GuestPlanningSection({ projectId, projectStatus, onActivate }: G
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
-                        </TableCell>
-                      </TableRow>
+                        </td>
+                      </tr>
                     );
                   })}
 
                   {addingTask && (
-                    <TableRow className="hover:bg-transparent">
-                      <TableCell colSpan={colCount} className="py-1.5">
+                    <tr>
+                      <td colSpan={colCount} className="px-3 py-2.5">
                         <form
                           className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2"
                           onSubmit={(e) => { e.preventDefault(); handleAddTask(); }}
@@ -582,11 +571,11 @@ export function GuestPlanningSection({ projectId, projectStatus, onActivate }: G
                             {t("common.cancel")}
                           </Button>
                         </form>
-                      </TableCell>
-                    </TableRow>
+                      </td>
+                    </tr>
                   )}
-                </TableBody>
-              </Table>
+                </tbody>
+              </table>
               </div>
 
               {/* Footer: add + column chooser */}
@@ -626,41 +615,39 @@ export function GuestPlanningSection({ projectId, projectStatus, onActivate }: G
               </div>
             </>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* Room planning card */}
-      <Card className="border-l-4 border-l-blue-400" data-tour="room-table">
-        <CardHeader className="pb-3">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-2">
-              <Home className="h-5 w-5 text-blue-500" />
-              <div>
-                <CardTitle className="text-base">{t("planningRooms.title", "Room planning")}</CardTitle>
-                <CardDescription className="text-xs">
-                  {t("planningRooms.description", "Add rooms and dimensions to help estimate work")}
-                </CardDescription>
-              </div>
+      {/* Room planning */}
+      <div className="space-y-3" data-tour="room-table">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-2">
+            <Home className="h-5 w-5 text-blue-500" />
+            <div>
+              <h3 className="text-base font-semibold">{t("planningRooms.title", "Room planning")}</h3>
+              <p className="text-xs text-muted-foreground">
+                {t("planningRooms.description", "Add rooms and dimensions to help estimate work")}
+              </p>
             </div>
-
-            {rooms.length > 0 && (
-              <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                <span>
-                  {t("planningRooms.totalArea", "Total area")}: <strong>{totalArea > 0 ? `${totalArea.toFixed(1)} m²` : "–"}</strong>
-                </span>
-                {showRoom.wallArea && totalWallArea > 0 && (
-                  <span>
-                    {t("rooms.wallArea")}: <strong>{totalWallArea.toFixed(1)} m²</strong>
-                  </span>
-                )}
-                <span className="text-muted-foreground/60">
-                  {roomsWithDimensions}/{rooms.length} {t("planningRooms.measured", "measured")}
-                </span>
-              </div>
-            )}
           </div>
-        </CardHeader>
-        <CardContent className="pt-0">
+
+          {rooms.length > 0 && (
+            <div className="flex items-center gap-4 text-xs text-muted-foreground">
+              <span>
+                {t("planningRooms.totalArea", "Total area")}: <strong>{totalArea > 0 ? `${totalArea.toFixed(1)} m²` : "–"}</strong>
+              </span>
+              {showRoom.wallArea && totalWallArea > 0 && (
+                <span>
+                  {t("rooms.wallArea")}: <strong>{totalWallArea.toFixed(1)} m²</strong>
+                </span>
+              )}
+              <span className="text-muted-foreground/60">
+                {roomsWithDimensions}/{rooms.length} {t("planningRooms.measured", "measured")}
+              </span>
+            </div>
+          )}
+        </div>
+        <div>
           {rooms.length === 0 && !addingRoom ? (
             <div className="text-center py-8">
               <Home className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
@@ -677,18 +664,18 @@ export function GuestPlanningSection({ projectId, projectStatus, onActivate }: G
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0">
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead className="text-xs font-medium w-[180px]">{t("planningRooms.roomName", "Room")}</TableHead>
-                    {showRoom.width && <TableHead className="text-xs font-medium w-[90px]">{t("rooms.width")}</TableHead>}
-                    {showRoom.depth && <TableHead className="text-xs font-medium w-[90px]">{t("rooms.depth")}</TableHead>}
-                    {showRoom.ceilingHeight && <TableHead className="text-xs font-medium w-[90px]">{t("rooms.ceilingHeight")}</TableHead>}
-                    <TableHead className="text-xs font-medium w-[90px]">{t("rooms.area")}</TableHead>
-                    {showRoom.wallArea && <TableHead className="text-xs font-medium w-[90px]">{t("rooms.wallArea")}</TableHead>}
+              <div className="rounded-lg border bg-card overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-muted border-b">
+                    <th className="px-3 py-2.5 kicker text-left w-[180px]">{t("planningRooms.roomName", "Room")}</th>
+                    {showRoom.width && <th className="px-3 py-2.5 kicker text-right w-[90px]">{t("rooms.width")}</th>}
+                    {showRoom.depth && <th className="px-3 py-2.5 kicker text-right w-[90px]">{t("rooms.depth")}</th>}
+                    {showRoom.ceilingHeight && <th className="px-3 py-2.5 kicker text-right w-[90px]">{t("rooms.ceilingHeight")}</th>}
+                    <th className="px-3 py-2.5 kicker text-right w-[90px]">{t("rooms.area")}</th>
+                    {showRoom.wallArea && <th className="px-3 py-2.5 kicker text-right w-[90px]">{t("rooms.wallArea")}</th>}
                     {showRoom.paintEstimate && (
-                      <TableHead className="text-xs font-medium w-[100px]">
+                      <th className="px-3 py-2.5 kicker text-right w-[100px]">
                         <div className="flex items-center gap-1">
                           {t("rooms.paintEstimate")}
                           <TooltipProvider>
@@ -746,12 +733,12 @@ export function GuestPlanningSection({ projectId, projectStatus, onActivate }: G
                             </Tooltip>
                           </TooltipProvider>
                         </div>
-                      </TableHead>
+                      </th>
                     )}
-                    <TableHead className="text-xs font-medium w-[40px]" />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+                    <th className="px-3 py-2.5 kicker w-[40px]" />
+                  </tr>
+                </thead>
+                <tbody>
                   {rooms.map((room) => {
                     const recipe = guestRoomToRecipe(room);
                     const area = computeFloorAreaSqm(recipe);
@@ -790,43 +777,43 @@ export function GuestPlanningSection({ projectId, projectStatus, onActivate }: G
                     };
 
                     return (
-                      <TableRow key={room.id} className="group">
-                        <TableCell className="py-1.5">
+                      <tr key={room.id} className="group border-b last:border-b-0 hover:bg-muted/30 transition-colors">
+                        <td className="px-3 py-2.5">
                           {renderRoomCell("name", room.name, "font-medium")}
-                        </TableCell>
+                        </td>
                         {showRoom.width && (
-                          <TableCell className="py-1.5">
+                          <td className="px-3 py-2.5">
                             {renderRoomCell("width", formatMm(room.width_mm), "tabular-nums")}
-                          </TableCell>
+                          </td>
                         )}
                         {showRoom.depth && (
-                          <TableCell className="py-1.5">
+                          <td className="px-3 py-2.5">
                             {renderRoomCell("depth", formatMm(room.height_mm), "tabular-nums")}
-                          </TableCell>
+                          </td>
                         )}
                         {showRoom.ceilingHeight && (
-                          <TableCell className="py-1.5">
+                          <td className="px-3 py-2.5">
                             {renderRoomCell("ceilingHeight", formatMm(room.ceiling_height_mm), "tabular-nums")}
-                          </TableCell>
+                          </td>
                         )}
-                        <TableCell className="py-1.5">
+                        <td className="px-3 py-2.5">
                           {renderRoomCell("area", area !== null ? area.toFixed(1) : "", "tabular-nums")}
-                        </TableCell>
+                        </td>
                         {showRoom.wallArea && (
-                          <TableCell className="py-1.5">
+                          <td className="px-3 py-2.5">
                             <span className="text-sm tabular-nums text-muted-foreground">
                               {wallArea !== null ? `${wallArea.toFixed(1)} m²` : "–"}
                             </span>
-                          </TableCell>
+                          </td>
                         )}
                         {showRoom.paintEstimate && (
-                          <TableCell className="py-1.5">
+                          <td className="px-3 py-2.5">
                             <span className="text-sm tabular-nums text-muted-foreground">
                               {paintLiters !== null ? `~${paintLiters} L` : "–"}
                             </span>
-                          </TableCell>
+                          </td>
                         )}
-                        <TableCell className="py-1.5 w-[40px]">
+                        <td className="px-3 py-2.5 w-[40px]">
                           <Button
                             variant="ghost"
                             size="icon"
@@ -835,13 +822,13 @@ export function GuestPlanningSection({ projectId, projectStatus, onActivate }: G
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
-                        </TableCell>
-                      </TableRow>
+                        </td>
+                      </tr>
                     );
                   })}
                   {addingRoom && (
-                    <TableRow className="hover:bg-transparent">
-                      <TableCell colSpan={roomColCount} className="py-1.5">
+                    <tr>
+                      <td colSpan={roomColCount} className="px-3 py-2.5">
                         <form
                           className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2"
                           onSubmit={(e) => { e.preventDefault(); handleAddRoom(); }}
@@ -864,11 +851,11 @@ export function GuestPlanningSection({ projectId, projectStatus, onActivate }: G
                             {t("common.cancel")}
                           </Button>
                         </form>
-                      </TableCell>
-                    </TableRow>
+                      </td>
+                    </tr>
                   )}
-                </TableBody>
-              </Table>
+                </tbody>
+              </table>
               </div>
 
               <div className="flex items-center gap-2 mt-2 pt-2 border-t">
@@ -901,8 +888,8 @@ export function GuestPlanningSection({ projectId, projectStatus, onActivate }: G
               </div>
             </>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Soft sign-up nudge */}
       <div className="flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-muted/50 text-sm text-muted-foreground" data-tour="signup-nudge">

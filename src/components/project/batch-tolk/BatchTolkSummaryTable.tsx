@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+
+
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -172,40 +173,40 @@ export function BatchTolkSummaryTable({
   };
 
   return (
-    <div className="overflow-auto max-h-[55vh]">
-      <Table className="text-xs">
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-8"><Checkbox /></TableHead>
-            <TableHead className="w-8" />
-            <TableHead>{t('common.name')}</TableHead>
-            <TableHead>{t('batchTolk.suggestedName', 'Nytt namn')}</TableHead>
-            <TableHead>{t('batchTolk.category', 'Kategori')}</TableHead>
-            <TableHead>{t('batchTolk.vendor', 'Leverantör')}</TableHead>
-            <TableHead className="text-right">{t('batchTolk.amount', 'Belopp')}</TableHead>
-            <TableHead>{t('batchTolk.date', 'Datum')}</TableHead>
-            <TableHead>{t('batchTolk.link', 'Koppling')}</TableHead>
-            <TableHead className="w-8" />
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+    <div className="rounded-lg border bg-card overflow-auto max-h-[55vh]">
+      <table className="w-full text-xs">
+        <thead>
+          <tr className="bg-muted border-b">
+            <th className="px-3 py-2.5 kicker w-8"><Checkbox /></th>
+            <th className="px-3 py-2.5 kicker w-8" />
+            <th className="px-3 py-2.5 kicker text-left">{t('common.name')}</th>
+            <th className="px-3 py-2.5 kicker text-left">{t('batchTolk.suggestedName', 'Nytt namn')}</th>
+            <th className="px-3 py-2.5 kicker text-left">{t('batchTolk.category', 'Kategori')}</th>
+            <th className="px-3 py-2.5 kicker text-left">{t('batchTolk.vendor', 'Leverantör')}</th>
+            <th className="px-3 py-2.5 kicker text-right">{t('batchTolk.amount', 'Belopp')}</th>
+            <th className="px-3 py-2.5 kicker text-left">{t('batchTolk.date', 'Datum')}</th>
+            <th className="px-3 py-2.5 kicker text-left">{t('batchTolk.link', 'Koppling')}</th>
+            <th className="px-3 py-2.5 kicker w-8" />
+          </tr>
+        </thead>
+        <tbody>
           {items.map(item => {
             const r = item.result;
             const linked = getLinked(item.file.path);
             return (
-              <TableRow key={item.file.path} className={item.status === 'error' ? 'bg-destructive/5' : ''}>
-                <TableCell>
+              <tr key={item.file.path} className={`border-b last:border-b-0 hover:bg-muted/30 transition-colors ${item.status === 'error' ? 'bg-destructive/5' : ''}`}>
+                <td className="px-3 py-2.5">
                   <Checkbox
                     checked={selectedForRename.has(item.file.path)}
                     onCheckedChange={() => onToggleRename(item.file.path)}
                     disabled={!item.suggestedName}
                   />
-                </TableCell>
-                <TableCell><StatusIcon status={item.status} /></TableCell>
-                <TableCell className="max-w-[160px] truncate" title={item.file.name}>
+                </td>
+                <td className="px-3 py-2.5"><StatusIcon status={item.status} /></td>
+                <td className="px-3 py-2.5 max-w-[160px] truncate" title={item.file.name}>
                   {item.file.name}
-                </TableCell>
-                <TableCell className="max-w-[180px]">
+                </td>
+                <td className="px-3 py-2.5 max-w-[180px]">
                   {item.suggestedName ? (
                     <Input
                       value={item.suggestedName}
@@ -215,16 +216,16 @@ export function BatchTolkSummaryTable({
                   ) : item.status === 'classifying' ? (
                     <span className="text-muted-foreground italic">{t('batchTolk.classifying', 'Tolkar...')}</span>
                   ) : null}
-                </TableCell>
-                <TableCell>
+                </td>
+                <td className="px-3 py-2.5">
                   {r?.type && <Badge variant="outline" className="text-[10px]">{CATEGORY_MAP[r.type] || r.type}</Badge>}
-                </TableCell>
-                <TableCell className="truncate max-w-[100px]">{r?.vendor_name || '–'}</TableCell>
-                <TableCell className="text-right tabular-nums">
+                </td>
+                <td className="px-3 py-2.5 truncate max-w-[100px]">{r?.vendor_name || '–'}</td>
+                <td className="px-3 py-2.5 text-right tabular-nums">
                   {r?.invoice_amount != null ? `${r.invoice_amount.toLocaleString('sv-SE')} kr` : '–'}
-                </TableCell>
-                <TableCell>{r?.invoice_date || '–'}</TableCell>
-                <TableCell>
+                </td>
+                <td className="px-3 py-2.5">{r?.invoice_date || '–'}</td>
+                <td className="px-3 py-2.5">
                   {item.status === 'done' && (
                     <div className="flex gap-0.5">
                       <EntityLinkPopover
@@ -253,18 +254,18 @@ export function BatchTolkSummaryTable({
                       />
                     </div>
                   )}
-                </TableCell>
-                <TableCell>
+                </td>
+                <td className="px-3 py-2.5">
                   <Button variant="ghost" size="sm" className="h-6 w-6 p-0"
                     onClick={() => onPreviewFile(item.file)}>
                     <Eye className="h-3 w-3" />
                   </Button>
-                </TableCell>
-              </TableRow>
+                </td>
+              </tr>
             );
           })}
-        </TableBody>
-      </Table>
+        </tbody>
+      </table>
     </div>
   );
 }
