@@ -274,17 +274,21 @@ export function WorkerTaskList({
   const { t } = useTranslation();
 
   const toggleTask = (taskId: string) => {
-    const newSelected = data.selectedTaskIds.includes(taskId)
+    const wasSelected = data.selectedTaskIds.includes(taskId);
+    const newSelected = wasSelected
       ? data.selectedTaskIds.filter((id) => id !== taskId)
       : [...data.selectedTaskIds, taskId];
 
-    if (!newSelected.includes(taskId)) {
+    if (wasSelected) {
+      // Deselecting — remove override and close preview if this task was previewed
       const newOverrides = new Map(data.taskOverrides);
       newOverrides.delete(taskId);
       onChange({ selectedTaskIds: newSelected, taskOverrides: newOverrides });
       if (previewTaskId === taskId) onPreviewTask(null);
     } else {
+      // Selecting — auto-open preview for this task
       onChange({ selectedTaskIds: newSelected });
+      onPreviewTask(taskId);
     }
   };
 

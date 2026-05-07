@@ -1142,8 +1142,8 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
                       />
                     </div>
 
-                    {/* Task selection + Preview: 2-col layout */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Task selection + Preview: tasks narrow, preview wide */}
+                    <div className="grid grid-cols-1 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-6">
                       {/* Task list */}
                       <WorkerTaskList
                         tasks={workerTasks}
