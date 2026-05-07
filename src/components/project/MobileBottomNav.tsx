@@ -28,6 +28,7 @@ const ALL_TABS: TabConfig[] = [
   { tab: "spaceplanner", icon: PenTool, labelKey: "nav.mobileNav.plans", subTab: "floorplan" },
   { tab: "files", icon: FolderOpen, labelKey: "nav.mobileNav.files" },
   { tab: "team", icon: Users, labelKey: "nav.mobileNav.team" },
+  { tab: "customer", icon: LayoutDashboard, labelKey: "nav.mobileNav.clientView" },
 ];
 
 const CLIENT_TABS: TabConfig[] = [

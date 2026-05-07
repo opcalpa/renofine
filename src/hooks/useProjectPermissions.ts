@@ -33,7 +33,7 @@ const ALL_EDIT: Omit<ProjectPermissions, "loading"> = {
   isClient: false,
   isPlanningContributor: false,
   roleType: null,
-  customerView: "none",
+  customerView: "view",
   overview: "edit",
   timeline: "edit",
   tasks: "edit",

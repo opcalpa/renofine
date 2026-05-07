@@ -895,8 +895,8 @@ const ProjectDetail = () => {
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div className="hidden md:flex items-center gap-0.5 flex-nowrap overflow-visible">
-              {/* Client-only: Kundvy tab */}
-              {!isTabBlocked("customer") && (
+              {/* Kundvy — first tab for clients, hidden here for owners (shown after Team instead) */}
+              {!isTabBlocked("customer") && permissions.isClient && (
                 <div
                   className={cn(
                     "px-2.5 py-1.5 text-[13px] tracking-[-0.002em] cursor-pointer rounded-md transition-colors",
@@ -1063,6 +1063,19 @@ const ProjectDetail = () => {
                 onMainClick={() => handleMenuSelect('team', 'team')}
                 activeValue={activeTab === "team" ? activeSubTab || "team" : undefined}
               />
+
+              {/* Kundvy — for project owners/proffs: preview what clients see */}
+              {!isTabBlocked("customer") && !permissions.isClient && (
+                <div
+                  className={cn(
+                    "px-2.5 py-1.5 text-[13px] tracking-[-0.002em] cursor-pointer rounded-md transition-colors",
+                    activeTab === "customer" ? "bg-accent/60 text-foreground font-medium" : "text-muted-foreground hover:text-foreground font-normal"
+                  )}
+                  onClick={() => handleMenuSelect('customer', 'customer')}
+                >
+                  {t("customerView.tabTitle")}
+                </div>
+              )}
 
               {/* 8. Kontroll (contractor only) */}
               {effectiveUserType === "contractor" && isTabEnabled("inspections") && (
