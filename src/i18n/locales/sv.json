@@ -4600,7 +4600,35 @@
     "rotDeduction": "ROT-avdrag",
     "afterRot": "Efter ROT-avdrag",
     "remaining": "Återstående",
-    "quoteDetails": "Offertdetaljer"
+    "quoteDetails": "Offertdetaljer",
+    "hero": {
+      "kicker": "Rapport . vecka {{week}} . {{date}}",
+      "progressPrefix": "Vi \u00e4r",
+      "progressMid": "igenom ert projekt",
+      "progressAnd": "och ligger",
+      "onSchedule": "enligt plan",
+      "daysAhead": "{{count}} dagar f\u00f6re plan",
+      "daysBehind": "{{count}} dagar efter plan"
+    },
+    "ribbon": {
+      "label": "Tidslinje",
+      "dayCount": "Dag {{current}} / {{total}} . klart {{date}}"
+    },
+    "thisWeek": {
+      "label": "Denna vecka",
+      "noTasks": "Inga aktiva arbeten just nu."
+    },
+    "sitePhotos": {
+      "label": "Bilder fr\u00e5n platsen",
+      "noPhotos": "Inga bilder \u00e4nnu."
+    },
+    "budgetSummary": {
+      "label": "Er budget",
+      "unit": "anv\u00e4nda av total",
+      "onTrack": "Budgeten \u00e4r i fas. Ni har \u00e4nnu {{remaining}} kvar f\u00f6r resterande arbeten.",
+      "warning": "Budgeten n\u00e4rmar sig taket. {{remaining}} kvar av {{total}}."
+    },
+    "detailedTimeline": "Detaljerad tidslinje"
   },
   "unifiedTable": {
     "tabTitle": "Tabell",

@@ -1414,6 +1414,11 @@ const ProjectDetail = () => {
                 projectFinishDate={project.finish_goal_date}
                 currency={project.currency}
                 userType={effectiveUserType}
+                address={project.address}
+                description={project.description}
+                status={project.status}
+                totalBudget={project.total_budget}
+                coverImageUrl={project.cover_image_url}
               />
             </div>
           )}

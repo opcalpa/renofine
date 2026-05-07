@@ -4603,7 +4603,35 @@
     "rotDeduction": "ROT deduction",
     "afterRot": "After ROT deduction",
     "remaining": "Remaining",
-    "quoteDetails": "Quote details"
+    "quoteDetails": "Quote details",
+    "hero": {
+      "kicker": "Report . week {{week}} . {{date}}",
+      "progressPrefix": "We are",
+      "progressMid": "through your project",
+      "progressAnd": "and are",
+      "onSchedule": "on schedule",
+      "daysAhead": "{{count}} days ahead of schedule",
+      "daysBehind": "{{count}} days behind schedule"
+    },
+    "ribbon": {
+      "label": "Timeline",
+      "dayCount": "Day {{current}} / {{total}} . done {{date}}"
+    },
+    "thisWeek": {
+      "label": "This week",
+      "noTasks": "No active tasks right now."
+    },
+    "sitePhotos": {
+      "label": "Site photos",
+      "noPhotos": "No photos yet."
+    },
+    "budgetSummary": {
+      "label": "Your budget",
+      "unit": "spent of total",
+      "onTrack": "The budget is on track. You still have {{remaining}} left for remaining work.",
+      "warning": "The budget is approaching its limit. {{remaining}} left of {{total}}."
+    },
+    "detailedTimeline": "Detailed timeline"
   },
   "unifiedTable": {
     "tabTitle": "Table",
