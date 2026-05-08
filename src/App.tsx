@@ -25,7 +25,13 @@ import Changelog from "./pages/Changelog";
 import Feedback from "./pages/Feedback";
 import FindProfessionals from "./pages/FindProfessionals";
 import CreateQuote from "./pages/contractor/CreateQuote";
+import CreateQuoteV2 from "./pages/contractor/CreateQuoteV2";
 import ViewQuote from "./pages/ViewQuote";
+import ViewQuoteV2 from "./pages/ViewQuoteV2";
+
+// Flip to false to fall back to v1 versions.
+const USE_QUOTE_VIEW_V2 = true;
+const USE_QUOTE_CREATE_V2 = true;
 import CreateInvoice from "./pages/contractor/CreateInvoice";
 import ViewInvoice from "./pages/ViewInvoice";
 import ClientRegistry from "./pages/contractor/ClientRegistry";
@@ -38,6 +44,7 @@ import { lazy, Suspense } from "react";
 const WorkerView = lazy(() => import("./pages/WorkerView"));
 const AtaApproval = lazy(() => import("./pages/AtaApproval"));
 const AttendanceCheckIn = lazy(() => import("./pages/AttendanceCheckIn"));
+const DocPlayground = lazy(() => import("./pages/_DocPlayground"));
 import { HelpBot } from "./components/HelpBot";
 import { BetaBanner } from "./components/BetaBanner";
 
@@ -83,6 +90,7 @@ const App = () => (
             <Routes>
               {/* ── Public routes ── */}
               <Route path="/" element={<Index />} />
+              <Route path="/_doc-playground" element={<Suspense fallback={null}><DocPlayground /></Suspense>} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/invitation" element={<InvitationResponse />} />
               <Route path="/about" element={<About />} />
@@ -104,11 +112,11 @@ const App = () => (
               <Route path="/projects" element={<Navigate to="/start" replace />} />
               <Route path="/projects/:projectId" element={<RequireAuth><ProjectDetail /></RequireAuth>} />
               <Route path="/profile" element={<RequireAuth allowGuest={false}><Profile /></RequireAuth>} />
-              <Route path="/quotes/:quoteId" element={<ViewQuote />} />
+              <Route path="/quotes/:quoteId" element={USE_QUOTE_VIEW_V2 ? <ViewQuoteV2 /> : <ViewQuote />} />
               <Route path="/invoices/:invoiceId" element={<ViewInvoice />} />
 
               {/* ── Contractor-only routes ── */}
-              <Route path="/quotes/new" element={<RequireAuth allowGuest={false}><RequireRole allow="contractor"><CreateQuote /></RequireRole></RequireAuth>} />
+              <Route path="/quotes/new" element={<RequireAuth allowGuest={false}><RequireRole allow="contractor">{USE_QUOTE_CREATE_V2 ? <CreateQuoteV2 /> : <CreateQuote />}</RequireRole></RequireAuth>} />
               <Route path="/invoices/new" element={<RequireAuth allowGuest={false}><RequireRole allow="contractor"><CreateInvoice /></RequireRole></RequireAuth>} />
               <Route path="/clients" element={<RequireAuth allowGuest={false}><RequireRole allow="contractor"><ClientRegistry /></RequireRole></RequireAuth>} />
               <Route path="/intake-requests" element={<RequireAuth allowGuest={false}><RequireRole allow="contractor"><IntakeRequests /></RequireRole></RequireAuth>} />
