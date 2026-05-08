@@ -14,14 +14,27 @@ import {
   SheetPortal,
   SheetTitle,
 } from "@/components/ui/sheet";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerOverlay,
+  DrawerPortal,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Button } from "@/components/ui/button";
 import { Loader2, Save, X, Trash2, Plus, Eye } from "lucide-react";
 import { RoomDetailForm } from "./RoomDetailForm";
+import { RoomDetailFormV2 } from "./v2/RoomDetailFormV2";
 import { useRoomForm } from "./hooks/useRoomForm";
 import { useTranslation } from "react-i18next";
 import { useState, useEffect } from "react";
 import type { RoomDetailDialogProps } from "./types";
+
+// Feature flag — flip to false to fall back to the accordion-based v1 form.
+// Once v2 is validated in production, remove RoomDetailForm and this toggle.
+const USE_V2 = true;
 
 function useIsDesktop() {
   const [isDesktop, setIsDesktop] = useState(
@@ -169,8 +182,84 @@ export function RoomDetailDialog({
               </div>
             )}
 
-            <div className="flex-1 overflow-y-auto px-6 py-4">
-              <RoomDetailForm
+            {USE_V2 ? (
+              <div className="flex-1 overflow-hidden">
+                <RoomDetailFormV2
+                  room={room}
+                  projectId={projectId}
+                  formData={formData}
+                  updateFormData={updateFormData}
+                  updateSpec={updateSpec}
+                  showPinterest={showPinterest}
+                />
+              </div>
+            ) : (
+              <div className="flex-1 overflow-y-auto px-6 py-4">
+                <RoomDetailForm
+                  room={room}
+                  projectId={projectId}
+                  formData={formData}
+                  updateFormData={updateFormData}
+                  updateSpec={updateSpec}
+                  showPinterest={showPinterest}
+                />
+              </div>
+            )}
+
+            <div className="px-6 pb-5">{actionBar}</div>
+          </SheetContent>
+        </SheetPortal>
+      </Sheet>
+    );
+  }
+
+  // ── Mobile (V2): bottom-sheet drawer ──
+  if (USE_V2) {
+    if (isLoading) {
+      return (
+        <Drawer open={open} onOpenChange={onOpenChange}>
+          <DrawerPortal>
+            <DrawerOverlay />
+            <DrawerContent className="h-[92vh] p-0">
+              <VisuallyHidden>
+                <DrawerTitle>{t("rooms.loadingRoomData", "Loading room data")}</DrawerTitle>
+                <DrawerDescription>{t("rooms.waitingForRoomData", "Waiting")}</DrawerDescription>
+              </VisuallyHidden>
+              <div className="flex flex-1 flex-col items-center justify-center py-12">
+                <Loader2 className="mb-4 h-8 w-8 animate-spin text-primary" />
+                <p className="text-muted-foreground">{t("rooms.loadingRoomData", "Loading room data")}...</p>
+              </div>
+            </DrawerContent>
+          </DrawerPortal>
+        </Drawer>
+      );
+    }
+
+    return (
+      <Drawer open={open} onOpenChange={onOpenChange}>
+        <DrawerPortal>
+          <DrawerOverlay />
+          <DrawerContent className="flex h-[92vh] flex-col p-0">
+            <VisuallyHidden>
+              <DrawerTitle>
+                {isNewRoom ? t("floormap.createRoom") : t("floormap.roomDetails", "Rumsdetaljer")}
+              </DrawerTitle>
+              <DrawerDescription>
+                {isNewRoom
+                  ? t("rooms.fillInNewRoomDetails", "Fyll i detaljer för det nya rummet")
+                  : t("rooms.editRoomInfoAndComments", "Redigera ruminformation")}
+              </DrawerDescription>
+            </VisuallyHidden>
+
+            {isNewRoom && (
+              <div className="flex flex-shrink-0 items-center gap-2 border-b px-5 pt-2 pb-3">
+                <Plus className="h-5 w-5 text-primary" />
+                <span className="font-semibold">{t("floormap.createRoom")}</span>
+              </div>
+            )}
+
+            <div className="flex-1 overflow-hidden">
+              <RoomDetailFormV2
                 room={room}
                 projectId={projectId}
                 formData={formData}
@@ -180,14 +269,15 @@ export function RoomDetailDialog({
               />
             </div>
 
-            <div className="px-6 pb-5">{actionBar}</div>
-          </SheetContent>
-        </SheetPortal>
-      </Sheet>
+            {/* Sticky CTA */}
+            <div className="flex-shrink-0 px-4 pb-5">{actionBar}</div>
+          </DrawerContent>
+        </DrawerPortal>
+      </Drawer>
     );
   }
 
-  // ── Mobile: centered dialog (unchanged) ──
+  // ── Mobile (V1 legacy): centered dialog ──
   if (isLoading) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>

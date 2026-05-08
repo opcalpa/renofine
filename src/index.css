@@ -2,6 +2,63 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Rum v2 — paper-warm scope (matches brand v2). Scoped to .rf-paper to not
+   affect rest of app. Use on a wrapper around RoomDetailDialog/Hero/Tabs. */
+.rf-paper {
+  --rf-paper: #FAFAF7;
+  --rf-paper-2: #FFFFFC;
+  --rf-ink: #1A140A;
+  --rf-fg-muted: #6B6357;
+  --rf-fg-subtle: #8A8276;
+  --rf-hairline: rgba(20, 15, 5, 0.10);
+  --rf-surface: #FFFFFC;
+  --rf-surface-2: #F5F2E8;
+  --rf-bg-sunken: #EFEAE0;
+  --rf-green: #2F5D4E;
+  --rf-green-soft: #DCE5DC;
+  --rf-green-soft-fg: #3F5A3F;
+  --rf-warn: #B86040;
+  --rf-warn-soft: #F2E2DA;
+  --rf-warn-soft-fg: #7A3D26;
+  --rf-amber: #C9A87A;
+  --rf-amber-soft: #F0E7D7;
+  --rf-amber-soft-fg: #6B5A3A;
+  --rf-sand: #E8DDD0;
+  --rf-sand-fg: #7A4F1F;
+  --rf-stone: #EFEAE0;
+  --rf-stone-fg: #6B5A3A;
+  --rf-danger: #B5341E;
+
+  --ff-display: "Fraunces", Georgia, serif;
+  --ff-ui: "Inter Tight", ui-sans-serif, system-ui, sans-serif;
+  --ff-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  font-family: var(--ff-ui);
+  color: var(--rf-ink);
+  background: var(--rf-paper);
+}
+
+.rf-paper .rf-display { font-family: var(--ff-display); font-weight: 300; letter-spacing: -0.022em; }
+.rf-paper .rf-num { font-family: var(--ff-mono); font-feature-settings: "tnum"; }
+.rf-paper .rf-eyebrow { font-size: 11px; font-weight: 500; color: var(--rf-fg-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.rf-paper .rf-section-label { font-size: 10px; font-weight: 500; color: var(--rf-fg-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+
+/* Map shadcn HSL semantic tokens to paper-warm equivalents inside .rf-paper.
+   Lets Tailwind utilities (bg-card, bg-muted, border, text-muted-foreground)
+   resolve to paper colors automatically — used by RoomsTableView et al. */
+.rf-paper {
+  --background: 54 23% 97%;       /* #FAFAF7 paper */
+  --foreground: 30 47% 8%;         /* #1A140A ink */
+  --card: 54 33% 99%;              /* #FFFFFC surface */
+  --card-foreground: 30 47% 8%;
+  --muted: 36 27% 91%;             /* #EFEAE0 stone */
+  --muted-foreground: 33 11% 38%;  /* #6B6357 fg-muted */
+  --border: 36 27% 88%;            /* hairline approx */
+  --input: 36 27% 88%;
+  --accent: 36 27% 91%;            /* hover surface */
+  --accent-foreground: 30 47% 8%;
+}
+
 /* Landing page — shared Paper theme tokens (oklch, matches brand v2) */
 [data-page="landing"] {
   --lp-bg: oklch(97.4% 0.004 85);

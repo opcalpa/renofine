@@ -42,6 +42,8 @@ interface RoomsTableViewProps {
   onRoomUpdated?: () => void;
   onOptimisticUpdate?: (roomId: string, updates: Partial<Room>) => void;
   formatDate: (dateString: string) => string;
+  /** When false, hide the selection checkbox column. Defaults to true to preserve v1 behavior. */
+  bulkMode?: boolean;
 }
 
 export function RoomsTableView({
@@ -57,6 +59,7 @@ export function RoomsTableView({
   onRoomUpdated,
   onOptimisticUpdate,
   formatDate,
+  bulkMode = true,
 }: RoomsTableViewProps) {
   const { t } = useTranslation();
   const ms = useMeasurement();
@@ -343,7 +346,7 @@ export function RoomsTableView({
       <table className="w-full text-sm">
         <thead>
           <tr className="bg-muted border-b">
-            <th className="w-10 px-3 py-2.5" />
+            {bulkMode && <th className="w-10 px-3 py-2.5" />}
             <th className="px-3 py-2.5 text-left kicker">{t("rooms.roomName", "Namn")}</th>
             {visibleFields.map((field) => {
               const def = fieldDefinitions.find((f) => f.key === field);
@@ -366,12 +369,14 @@ export function RoomsTableView({
               }`}
               onClick={() => onRoomClick(room)}
             >
-              <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
-                <Checkbox
-                  checked={selectedRoomIds.has(room.id)}
-                  onCheckedChange={() => onToggleSelection(room.id)}
-                />
-              </td>
+              {bulkMode && (
+                <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
+                  <Checkbox
+                    checked={selectedRoomIds.has(room.id)}
+                    onCheckedChange={() => onToggleSelection(room.id)}
+                  />
+                </td>
+              )}
               <td className="px-3 py-2.5">
                 <span className="font-medium truncate block max-w-[200px]">{room.name}</span>
               </td>

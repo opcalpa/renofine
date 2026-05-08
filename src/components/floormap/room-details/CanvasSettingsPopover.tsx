@@ -55,12 +55,15 @@ interface CanvasSettingsPopoverProps {
   roomId: string | null;
   color: string;
   onColorChange: (color: string) => void;
+  /** When set, replaces the default Settings2 ghost button. Use for a colored-dot trigger in v2 hero. */
+  customTrigger?: React.ReactNode;
 }
 
 export function CanvasSettingsPopover({
   roomId,
   color,
   onColorChange,
+  customTrigger,
 }: CanvasSettingsPopoverProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -115,10 +118,21 @@ export function CanvasSettingsPopover({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-8 w-8">
-          <Settings2 className="h-4 w-4" />
-          <span className="sr-only">{t("rooms.canvasSettings")}</span>
-        </Button>
+        {customTrigger ? (
+          <button
+            type="button"
+            title={t("rooms.canvasSettings")}
+            aria-label={t("rooms.canvasSettings")}
+            className="cursor-pointer border-0 bg-transparent p-0"
+          >
+            {customTrigger}
+          </button>
+        ) : (
+          <Button variant="ghost" size="icon" className="h-8 w-8">
+            <Settings2 className="h-4 w-4" />
+            <span className="sr-only">{t("rooms.canvasSettings")}</span>
+          </Button>
+        )}
       </PopoverTrigger>
       <PopoverContent className="w-80" align="end">
         <div className="space-y-4">
