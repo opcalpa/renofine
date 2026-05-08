@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { AppHeader } from "@/components/AppHeader";
 import { updateInvoiceStatus, markInvoiceViewed, getDisplayStatus } from "@/services/invoiceService";
+import { downloadInvoicePdf } from "@/services/invoicePdfService";
 import { CommentsSection } from "@/components/comments/CommentsSection";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -280,248 +281,27 @@ export default function ViewInvoice() {
   };
 
   const handleDownloadPdf = async () => {
-    const { default: jsPDF } = await import("jspdf");
-    const doc = new jsPDF({ unit: "mm", format: "a4" });
-    const contentLimit = 255;
-    let y = 20;
-
-    const drawFooter = () => {
-      if (!creator) return;
-      const footerY = 275;
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(7);
-      doc.line(15, footerY - 3, 195, footerY - 3);
-      const leftParts: string[] = [];
-      if (creator.company_name) leftParts.push(creator.company_name);
-      if (creator.org_number) leftParts.push(`Org.nr: ${creator.org_number}`);
-      if (creator.company_address) leftParts.push(creator.company_address);
-      if (creator.company_postal_code || creator.company_city) {
-        leftParts.push(
-          [creator.company_postal_code, creator.company_city]
-            .filter(Boolean)
-            .join(" ")
-        );
-      }
-      doc.text(leftParts.join("  |  "), 15, footerY);
-      const rightParts: string[] = [];
-      if (creator.company_website) rightParts.push(creator.company_website);
-      if (creator.phone) rightParts.push(creator.phone);
-      if (creator.email) rightParts.push(creator.email);
-      doc.text(rightParts.join("  |  "), 195, footerY, { align: "right" });
-    };
-
-    const newPageIfNeeded = (needed: number) => {
-      if (y + needed > contentLimit) {
-        drawFooter();
-        doc.addPage();
-        y = 20;
-      }
-    };
-
-    // Logo
-    if (creator?.company_logo_url) {
-      try {
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        await new Promise<void>((resolve, reject) => {
-          img.onload = () => resolve();
-          img.onerror = () => reject();
-          img.src = creator.company_logo_url!;
-        });
-        const canvas = document.createElement("canvas");
-        canvas.width = img.width;
-        canvas.height = img.height;
-        canvas.getContext("2d")?.drawImage(img, 0, 0);
-        const dataUrl = canvas.toDataURL("image/png");
-        const ratio = img.width / img.height;
-        const logoH = 12;
-        const logoW = logoH * ratio;
-        doc.addImage(dataUrl, "PNG", 15, y, logoW, logoH);
-        y += logoH + 3;
-      } catch {
-        // continue without logo
-      }
-    }
-
-    // Company name + date
-    doc.setFontSize(12);
-    doc.text(
-      creator?.company_name || creator?.name || "Renofine",
-      15,
-      y
-    );
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
-    doc.text(
-      new Date(invoice.created_at).toLocaleDateString("sv-SE"),
-      195,
-      y,
-      { align: "right" }
-    );
-    y += 5;
-    if (creator?.org_number) {
-      doc.setFontSize(8);
-      doc.text(`Org.nr: ${creator.org_number}`, 15, y);
-      y += 4;
-    }
-    if (creator?.company_address || creator?.company_city) {
-      doc.setFontSize(8);
-      doc.text(
-        [creator.company_address, [creator.company_postal_code, creator.company_city].filter(Boolean).join(" ")]
-          .filter(Boolean)
-          .join(", "),
-        15,
-        y
-      );
-      y += 4;
-    }
-    y += 6;
-
-    // "FAKTURA" structured title
-    doc.setFontSize(20);
-    doc.setFont("helvetica", "bold");
-    doc.text(t("invoices.invoiceLabel", "Faktura").toUpperCase(), 15, y);
-    y += 7;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    if (projectName) {
-      doc.text(`${t("invoices.projectLabel", "Projekt")}: ${projectName}`, 15, y);
-      y += 5;
-    }
-    if (clientName) {
-      doc.text(`${t("invoices.recipient", "Mottagare")}: ${clientName}`, 15, y);
-      y += 5;
-    }
-    if (invoice.invoice_number) {
-      doc.text(`${t("invoices.invoiceNumberLabel", "Fakturanr")}: ${invoice.invoice_number}`, 15, y);
-      y += 5;
-    }
-    if (invoice.due_date) {
-      doc.text(
-        `${t("invoices.dueDate")}: ${new Date(invoice.due_date).toLocaleDateString("sv-SE")}`,
-        15,
-        y
-      );
-      y += 5;
-    }
-    y += 6;
-
-    // Free text (above items)
-    if (invoice.free_text) {
-      doc.setFontSize(9);
-      const lines = doc.splitTextToSize(invoice.free_text, 180);
-      newPageIfNeeded(lines.length * 4 + 4);
-      doc.text(lines, 15, y);
-      y += lines.length * 4 + 4;
-    }
-
-    // Table header
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "bold");
-    doc.text(t("quotes.description"), 15, y);
-    doc.text(t("quotes.quantity"), 105, y, { align: "right" });
-    doc.text(t("quotes.unitPrice"), 135, y, { align: "right" });
-    doc.text(t("quotes.totalAmount"), 195, y, { align: "right" });
-    y += 2;
-    doc.line(15, y, 195, y);
-    y += 5;
-    doc.setFont("helvetica", "normal");
-
-    for (const item of items) {
-      const lineHeight = item.comment ? 10 : 6;
-      newPageIfNeeded(lineHeight);
-      doc.text(item.description || "\u2014", 15, y, { maxWidth: 80 });
-      doc.text(`${item.quantity} ${item.unit}`, 105, y, { align: "right" });
-      doc.text(`${item.unit_price.toLocaleString()} kr`, 135, y, {
-        align: "right",
-      });
-      doc.text(`${item.total_price.toLocaleString()} kr`, 195, y, {
-        align: "right",
-      });
-      y += 6;
-      if (item.comment) {
-        doc.setFontSize(7);
-        doc.setTextColor(130, 130, 130);
-        doc.text(item.comment, 15, y, { maxWidth: 80 });
-        doc.setTextColor(0, 0, 0);
-        doc.setFontSize(9);
-        y += 4;
-      }
-    }
-
-    // Summary
-    newPageIfNeeded(40);
-    y += 4;
-    doc.line(15, y, 195, y);
-    y += 6;
-    doc.text(t("quotes.subtotal"), 15, y);
-    doc.text(`${subtotal.toLocaleString()} kr`, 195, y, { align: "right" });
-    y += 5;
-    doc.text(t("quotes.vat"), 15, y);
-    doc.text(`${vat.toLocaleString()} kr`, 195, y, { align: "right" });
-    y += 5;
-    if (totalRot > 0) {
-      doc.text(t("quotes.rotDeduction"), 15, y);
-      doc.text(`-${totalRot.toLocaleString()} kr`, 195, y, {
-        align: "right",
-      });
-      y += 5;
-    }
-    doc.setFont("helvetica", "bold");
-    doc.text(t("quotes.totalToPay"), 15, y);
-    doc.text(`${totalToPay.toLocaleString()} kr`, 195, y, {
-      align: "right",
-    });
-    y += 8;
-
-    // Payment details
-    const bankgiroVal = invoice.bankgiro || creator?.bankgiro;
-    const accountVal = invoice.bank_account_number || creator?.bank_account_number;
-    if (bankgiroVal || accountVal || invoice.ocr_reference) {
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-      newPageIfNeeded(25);
-      doc.line(15, y, 195, y);
-      y += 5;
-      doc.setFont("helvetica", "bold");
-      doc.text(t("invoices.paymentDetails"), 15, y);
-      y += 5;
-      doc.setFont("helvetica", "normal");
-      if (bankgiroVal) {
-        doc.text(`${t("invoices.bankgiro")}: ${bankgiroVal}`, 15, y);
-        y += 5;
-      }
-      if (accountVal) {
-        doc.text(`${t("invoices.bankAccountNumber")}: ${accountVal}`, 15, y);
-        y += 5;
-      }
-      if (invoice.ocr_reference) {
-        doc.text(`${t("invoices.ocrReference")}: ${invoice.ocr_reference}`, 15, y);
-        y += 5;
-      }
-    }
-
-    // Paid watermark
-    if (invoice.status === "paid") {
-      doc.setFontSize(60);
-      doc.setTextColor(0, 180, 0);
-      doc.setFont("helvetica", "bold");
-      doc.text("BETALD", 105, 160, { align: "center", angle: 45 });
-      doc.setTextColor(0, 0, 0);
-    }
-
-    drawFooter();
-    doc.save(
-      `${(invoice.invoice_number || invoice.title).replace(/[^a-zåäö0-9]/gi, "_")}.pdf`
-    );
-
-    if (invoice.status === "draft") {
-      const result = await updateInvoiceStatus(invoiceId!, "sent");
-      if (result) {
+    if (!invoice || !invoiceId) return;
+    await downloadInvoicePdf({
+      invoice,
+      items: items.map((i) => ({
+        description: i.description,
+        quantity: i.quantity,
+        unit: i.unit,
+        unit_price: i.unit_price,
+        total_price: i.total_price,
+        rot_deduction: i.rot_deduction,
+        comment: i.comment,
+      })),
+      creator,
+      projectName,
+      clientName,
+      t,
+      onDraftFinalized: () => {
         setInvoice({ ...invoice, status: "sent" });
         toast.success(t("invoices.invoiceFinalizedOnPdf"));
-      }
-    }
+      },
+    });
   };
 
   const handleSignOut = async () => {
