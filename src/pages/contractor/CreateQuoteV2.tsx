@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { AlertTriangle, ArrowLeft, ChevronDown, ChevronUp, Eye, Maximize2, Plus, Settings2, ZoomIn, ZoomOut } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ChevronDown, ChevronUp, Eye, GripVertical, Maximize2, Plus, Settings2, ZoomIn, ZoomOut } from "lucide-react";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,6 +22,7 @@ import { CreateClientDialog, type Client } from "@/components/quotes/CreateClien
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createQuote, addQuoteItem, updateQuoteDraft, replaceQuoteItems, generateQuoteNumber, recalculateQuoteTotals, calculateRotDeduction } from "@/services/quoteService";
+import { cn } from "@/lib/utils";
 
 interface SimpleProject {
   id: string;
@@ -124,6 +125,11 @@ export default function CreateQuoteV2() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [importRoomItemId, setImportRoomItemId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  // V2 drag-reorder state — used to manually reorder line items in the editor.
+  // Disabled when grouping by room (section headers would break the index math).
+  const [dragItemIdx, setDragItemIdx] = useState<number | null>(null);
+  const [dragOverItemIdx, setDragOverItemIdx] = useState<number | null>(null);
   const [companyName, setCompanyName] = useState<string | undefined>();
   const [companyLogoUrl, setCompanyLogoUrl] = useState<string | undefined>();
   const [companyInfo, setCompanyInfo] = useState<{
@@ -731,6 +737,40 @@ export default function CreateQuoteV2() {
     setImportRoomItemId(itemId);
   }, [projectId, t]);
 
+  // Drag-reorder handlers — operate on items array indices (not displayItems
+  // which contains generated section-headers). sort_order is recomputed from
+  // array position on save, so no extra persistence is needed here.
+  const handleItemDragStart = useCallback((idx: number) => {
+    setDragItemIdx(idx);
+  }, []);
+
+  const handleItemDragOver = useCallback((e: React.DragEvent, idx: number) => {
+    e.preventDefault();
+    setDragOverItemIdx(idx);
+  }, []);
+
+  const handleItemDrop = useCallback(() => {
+    if (dragItemIdx === null || dragOverItemIdx === null || dragItemIdx === dragOverItemIdx) {
+      setDragItemIdx(null);
+      setDragOverItemIdx(null);
+      return;
+    }
+    setItems((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(dragItemIdx, 1);
+      next.splice(dragOverItemIdx, 0, moved);
+      return next;
+    });
+    setHasManualEdits(true);
+    setDragItemIdx(null);
+    setDragOverItemIdx(null);
+  }, [dragItemIdx, dragOverItemIdx]);
+
+  const handleItemDragEnd = useCallback(() => {
+    setDragItemIdx(null);
+    setDragOverItemIdx(null);
+  }, []);
+
   const handleRoomSelect = useCallback((roomId: string, _areaSqm: number, roomName: string) => {
     if (!importRoomItemId) return;
     setItems((prev) =>
@@ -1189,14 +1229,53 @@ export default function CreateQuoteV2() {
                       </div>
                     );
                   }
+                  // Drag is disabled in byRoom mode because section headers in
+                  // displayItems would force the user to figure out cross-room moves.
+                  const dragEnabled = groupByType !== "byRoom";
+                  const itemsIdx = items.findIndex((i) => i.id === item.id);
+                  const isDragging = dragItemIdx === itemsIdx;
+                  const isDragTarget =
+                    dragOverItemIdx === itemsIdx &&
+                    dragItemIdx !== null &&
+                    dragItemIdx !== itemsIdx;
                   return (
-                    <QuoteItemRow
+                    <div
                       key={item.id}
-                      item={item}
-                      onChange={handleChange}
-                      onDelete={handleDelete}
-                      onImportRoom={handleImportRoom}
-                    />
+                      className={cn(
+                        "group flex items-stretch gap-1.5",
+                        isDragging && "opacity-40",
+                      )}
+                      onDragOver={dragEnabled ? (e) => handleItemDragOver(e, itemsIdx) : undefined}
+                      onDrop={dragEnabled ? handleItemDrop : undefined}
+                    >
+                      {dragEnabled && (
+                        <div
+                          draggable
+                          onDragStart={() => handleItemDragStart(itemsIdx)}
+                          onDragEnd={handleItemDragEnd}
+                          className="flex items-center cursor-grab active:cursor-grabbing px-1 rounded opacity-0 group-hover:opacity-50 hover:!opacity-100 transition-opacity"
+                          style={{ color: "var(--rf-fg-muted, #6B6357)" }}
+                          title={t("quotes.dragToReorder", "Drag to reorder")}
+                          aria-label={t("quotes.dragToReorder", "Drag to reorder")}
+                        >
+                          <GripVertical className="h-4 w-4" />
+                        </div>
+                      )}
+                      <div
+                        className={cn(
+                          "flex-1 transition-shadow",
+                          isDragTarget && "rounded-lg ring-2",
+                        )}
+                        style={isDragTarget ? { boxShadow: "0 0 0 2px var(--rf-green, #2F5D4E)" } : undefined}
+                      >
+                        <QuoteItemRow
+                          item={item}
+                          onChange={handleChange}
+                          onDelete={handleDelete}
+                          onImportRoom={handleImportRoom}
+                        />
+                      </div>
+                    </div>
                   );
                 })}
               </div>

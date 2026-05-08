@@ -1,4 +1,5 @@
 import { Trash2, DoorOpen, AlertCircle, Hammer, Handshake, ShoppingCart, Sparkles } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -66,12 +67,27 @@ export function QuoteItemRow({ item, onChange, onDelete, onImportRoom }: QuoteIt
 
   const lineTotal = item.quantity * item.unitPrice * (1 - (item.discountPercent ?? 0) / 100);
   const isMissing = item.source === "missing";
+  // Expand-on-focus: comment textarea stays hidden until the row gets focus,
+  // and stays visible while it has content. Removes visual noise when most rows
+  // don't carry a comment (the common case).
+  const [hasFocus, setHasFocus] = useState(false);
+  const showComment = hasFocus || !!(item.comment && item.comment.length > 0);
 
   return (
-    <div className={cn(
-      "rounded-lg border bg-card p-4 space-y-3",
-      isMissing && "border-red-300 dark:border-red-800"
-    )}>
+    <div
+      onFocus={() => setHasFocus(true)}
+      onBlur={(e) => {
+        // Only collapse when focus leaves the row entirely — moving between
+        // inputs within the row keeps the comment expanded.
+        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+          setHasFocus(false);
+        }
+      }}
+      className={cn(
+        "rounded-lg border bg-card p-4 space-y-3",
+        isMissing && "border-red-300 dark:border-red-800"
+      )}
+    >
       <div className="flex items-center gap-2">
         <Input
           placeholder={t("quotes.description")}
@@ -151,12 +167,14 @@ export function QuoteItemRow({ item, onChange, onDelete, onImportRoom }: QuoteIt
         />
       </div>
 
-      <Input
-        placeholder={t("quotes.commentPlaceholder", "Add a note for this line...")}
-        value={item.comment || ""}
-        onChange={(e) => onChange(item.id, { comment: e.target.value })}
-        className="min-h-[40px] text-sm text-muted-foreground"
-      />
+      {showComment && (
+        <Input
+          placeholder={t("quotes.commentPlaceholder", "Add a note for this line...")}
+          value={item.comment || ""}
+          onChange={(e) => onChange(item.id, { comment: e.target.value })}
+          className="min-h-[40px] text-sm text-muted-foreground"
+        />
+      )}
 
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-4">

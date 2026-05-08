@@ -3683,6 +3683,7 @@
     "presentationSettings": "Presentationsinställningar",
     "settingsResetWarning": "Ändring av inställningar återställer de importerade raderna",
     "manualEdits": "Manuella ändringar",
+    "dragToReorder": "Dra för att ändra ordning",
     "aiGenerated": "AI",
     "aiGeneratedHint": "Importerat från AI-förslag — granska innan du skickar",
     "itemsImportedAi": "{{count}} rader importerade från AI",
