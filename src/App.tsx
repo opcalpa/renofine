@@ -33,10 +33,12 @@ import ViewQuoteV2 from "./pages/ViewQuoteV2";
 const USE_QUOTE_VIEW_V2 = true;
 const USE_QUOTE_CREATE_V2 = true;
 import CreateInvoice from "./pages/contractor/CreateInvoice";
+import CreateInvoiceV2 from "./pages/contractor/CreateInvoiceV2";
 import ViewInvoice from "./pages/ViewInvoice";
 import ViewInvoiceV2 from "./pages/ViewInvoiceV2";
 
 const USE_INVOICE_VIEW_V2 = true;
+const USE_INVOICE_CREATE_V2 = true;
 import ClientRegistry from "./pages/contractor/ClientRegistry";
 import CustomerIntake from "./pages/CustomerIntake";
 import IntakeRequests from "./pages/contractor/IntakeRequests";
@@ -120,7 +122,7 @@ const App = () => (
 
               {/* ── Contractor-only routes ── */}
               <Route path="/quotes/new" element={<RequireAuth allowGuest={false}><RequireRole allow="contractor">{USE_QUOTE_CREATE_V2 ? <CreateQuoteV2 /> : <CreateQuote />}</RequireRole></RequireAuth>} />
-              <Route path="/invoices/new" element={<RequireAuth allowGuest={false}><RequireRole allow="contractor"><CreateInvoice /></RequireRole></RequireAuth>} />
+              <Route path="/invoices/new" element={<RequireAuth allowGuest={false}><RequireRole allow="contractor">{USE_INVOICE_CREATE_V2 ? <CreateInvoiceV2 /> : <CreateInvoice />}</RequireRole></RequireAuth>} />
               <Route path="/clients" element={<RequireAuth allowGuest={false}><RequireRole allow="contractor"><ClientRegistry /></RequireRole></RequireAuth>} />
               <Route path="/intake-requests" element={<RequireAuth allowGuest={false}><RequireRole allow="contractor"><IntakeRequests /></RequireRole></RequireAuth>} />
 

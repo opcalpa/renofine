@@ -3847,7 +3847,10 @@
     "paidThanks": "Betald — tack!",
     "paidSoFar": "Betalt: {{amount}}",
     "dateLabel": "Datum",
-    "confirmDeleteHint": "Det går inte att ångra."
+    "confirmDeleteHint": "Det går inte att ångra.",
+    "changeOrderInvoiceTitle": "Tilläggsfaktura",
+    "editInvoice": "Redigera faktura",
+    "ataMode": "ÄTA — utanför ursprunglig offert"
   },
   "welcome": {
     "chooseLanguage": "Välj ditt språk",

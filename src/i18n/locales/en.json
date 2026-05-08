@@ -3850,7 +3850,10 @@
     "paidThanks": "Paid — thank you!",
     "paidSoFar": "Paid: {{amount}}",
     "dateLabel": "Date",
-    "confirmDeleteHint": "This cannot be undone."
+    "confirmDeleteHint": "This cannot be undone.",
+    "changeOrderInvoiceTitle": "Change-order invoice",
+    "editInvoice": "Edit invoice",
+    "ataMode": "ÄTA — outside the original quote"
   },
   "welcome": {
     "chooseLanguage": "Choose your language",
