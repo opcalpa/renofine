@@ -527,7 +527,7 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
           .eq("exclude_from_budget", true),
         supabase
           .from("projects")
-          .select("total_budget")
+          .select("contract_value")
           .eq("id", projectId)
           .single(),
         supabase
@@ -546,7 +546,7 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
       if (materialsRes.error) throw materialsRes.error;
       if (extraRes.error) throw extraRes.error;
 
-      setProjectBudget(projectRes.data?.total_budget ?? 0);
+      setProjectBudget(projectRes.data?.contract_value ?? 0);
 
       // Build ÄTA rows from both tasks (is_ata) and materials (exclude_from_budget)
       const ataTasks = (tasksRes.data || []).filter((t) => t.is_ata);

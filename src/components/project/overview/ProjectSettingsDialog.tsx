@@ -61,13 +61,11 @@ export function ProjectSettingsDialog({
   const [propertyDesignation, setPropertyDesignation] = useState(project.property_designation || "");
   const [startDate, setStartDate] = useState(project.start_date || "");
   const [goalDate, setGoalDate] = useState(project.finish_goal_date || "");
-  const [budgetValue, setBudgetValue] = useState(project.total_budget?.toString() || "");
   const [currency, setCurrency] = useState(project.currency || "SEK");
   const [projectStatusValue, setProjectStatusValue] = useState<ProjectStatus>(
     normalizeStatus(project.status)
   );
   const [saving, setSaving] = useState(false);
-  const [hasAcceptedQuote, setHasAcceptedQuote] = useState(false);
 
   const currentStatus = normalizeStatus(project.status);
   const allowedTransitions = ALLOWED_TRANSITIONS[currentStatus];
@@ -80,69 +78,35 @@ export function ProjectSettingsDialog({
       setPropertyDesignation(project.property_designation || "");
       setStartDate(project.start_date || "");
       setGoalDate(project.finish_goal_date || "");
-      setBudgetValue(project.total_budget?.toString() || "");
       setCurrency(project.currency || "SEK");
       setProjectStatusValue(normalizeStatus(project.status));
-
-      // Check if project has an accepted quote (budget is derived from quote)
-      if (isGuest) return;
-      supabase
-        .from("quotes")
-        .select("id, total_amount")
-        .eq("project_id", project.id)
-        .eq("status", "accepted")
-        .limit(1)
-        .then(({ data }) => {
-          const acceptedQuote = data?.[0];
-          setHasAcceptedQuote(!!acceptedQuote);
-          if (acceptedQuote?.total_amount != null) {
-            // Show the quote-derived budget (and sync project if it differs)
-            setBudgetValue(acceptedQuote.total_amount.toString());
-            if (project.total_budget !== acceptedQuote.total_amount) {
-              supabase
-                .from("projects")
-                .update({ total_budget: acceptedQuote.total_amount })
-                .eq("id", project.id)
-                .then(() => onProjectUpdate?.());
-            }
-          }
-        });
     }
   }, [open, project]);
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      const budgetNumber = budgetValue ? parseFloat(budgetValue) : null;
-
       if (isGuest) {
-        // Guest mode: save to localStorage
         updateGuestProject(project.id, {
           name: projectName.trim(),
           description: projectDescription.trim() || null,
           address: projectAddress.trim() || null,
           status: projectStatusValue,
-          total_budget: budgetNumber,
           start_date: startDate || null,
         });
       } else {
-        const updateData: Record<string, unknown> = {
-          name: projectName.trim(),
-          description: projectDescription.trim() || null,
-          address: projectAddress.trim() || null,
-          property_designation: propertyDesignation.trim() || null,
-          start_date: startDate || null,
-          finish_goal_date: goalDate || null,
-          currency,
-          status: projectStatusValue,
-        };
-        // Only allow budget editing if not derived from an accepted quote
-        if (!hasAcceptedQuote) {
-          updateData.total_budget = budgetNumber;
-        }
         const { error } = await supabase
           .from("projects")
-          .update(updateData)
+          .update({
+            name: projectName.trim(),
+            description: projectDescription.trim() || null,
+            address: projectAddress.trim() || null,
+            property_designation: propertyDesignation.trim() || null,
+            start_date: startDate || null,
+            finish_goal_date: goalDate || null,
+            currency,
+            status: projectStatusValue,
+          })
           .eq("id", project.id);
 
         if (error) throw error;
@@ -234,30 +198,6 @@ export function ProjectSettingsDialog({
               }
               placeholder={t("overview.selectGoalDate")}
             />
-          </div>
-          <div className="space-y-2">
-            <Label>{t("overview.settings.totalBudget")}</Label>
-            {hasAcceptedQuote ? (
-              <div>
-                <Input
-                  type="number"
-                  value={budgetValue}
-                  disabled
-                  className="bg-muted"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  {t("overview.settings.budgetFromQuote", "Budget set from accepted quote")}
-                </p>
-              </div>
-            ) : (
-              <Input
-                type="number"
-                step="0.01"
-                placeholder={t("overview.enterTotalBudget")}
-                value={budgetValue}
-                onChange={(e) => setBudgetValue(e.target.value)}
-              />
-            )}
           </div>
           <div className="space-y-2">
             <Label>{t("overview.settings.currency")}</Label>

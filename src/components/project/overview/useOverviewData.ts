@@ -177,7 +177,9 @@ export function useOverviewData(project: OverviewProject, skip?: boolean): Overv
         .reduce((sum, m) => sum + (m.price_total || 0), 0);
 
       const spent = linkedSpend + unlinkedTaskBudget + unlinkedMaterialCost;
-      const totalBudget = project.total_budget;
+      // contract_value = SUM(accepted quotes) incl. ÄTAor (auto-synced by DB trigger).
+      // NULL until first quote is accepted — Kundvy/PulseCards hide budget UI in that state.
+      const totalBudget = project.contract_value ?? null;
       const budgetPercentage = totalBudget && totalBudget > 0
         ? Math.round((spent / totalBudget) * 100)
         : 0;
@@ -240,7 +242,7 @@ export function useOverviewData(project: OverviewProject, skip?: boolean): Overv
     } finally {
       setLoading(false);
     }
-  }, [project.id, project.total_budget, project.finish_goal_date, project.start_date]);
+  }, [project.id, project.contract_value, project.finish_goal_date, project.start_date]);
 
   useEffect(() => {
     if (!skip) fetchData();

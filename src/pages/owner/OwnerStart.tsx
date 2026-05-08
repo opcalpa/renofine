@@ -27,7 +27,7 @@ interface OwnerProject {
   address: string | null;
   city: string | null;
   status: string | null;
-  total_budget: number | null;
+  contract_value: number | null;
   created_at: string;
 }
 
@@ -79,7 +79,7 @@ export default function OwnerStart() {
       const profileId = profileData?.id;
       const { data: ownProjects } = await supabase
         .from("projects")
-        .select("id, name, address, city, status, total_budget, created_at")
+        .select("id, name, address, city, status, contract_value, created_at")
         .eq("owner_id", profileId)
         .is("deleted_at", null)
         .order("created_at", { ascending: false });
@@ -95,7 +95,7 @@ export default function OwnerStart() {
           const sharedIds = shares.map(s => s.project_id);
           const { data: sp } = await supabase
             .from("projects")
-            .select("id, name, address, city, status, total_budget, created_at")
+            .select("id, name, address, city, status, contract_value, created_at")
             .in("id", sharedIds)
             .is("deleted_at", null);
           sharedProjects = sp || [];
@@ -155,7 +155,7 @@ export default function OwnerStart() {
   const firstName = profile?.name?.split(" ")[0] || "";
   const activeProjects = projects.filter(p => p.status !== "completed" && p.status !== "archived");
   const completedProjects = projects.filter(p => p.status === "completed");
-  const totalInvested = projects.reduce((s, p) => s + (p.total_budget || 0), 0);
+  const totalInvested = projects.reduce((s, p) => s + (p.contract_value || 0), 0);
 
   const handleProjectCreated = (projectId: string) => {
     navigate(`/projects/${projectId}`);
@@ -315,7 +315,7 @@ export default function OwnerStart() {
                   {activeProjects.map(project => {
                     const prog = progress[project.id];
                     const pct = prog && prog.total > 0 ? Math.round((prog.done / prog.total) * 100) : 0;
-                    const budgetTkr = project.total_budget ? Math.round(project.total_budget / 1000) : 0;
+                    const budgetTkr = project.contract_value ? Math.round(project.contract_value / 1000) : 0;
 
                     return (
                       <div
@@ -371,9 +371,9 @@ export default function OwnerStart() {
                     >
                       <div className="min-w-0">
                         <span className="text-sm font-medium">{project.name}</span>
-                        {project.total_budget && project.total_budget > 0 && (
+                        {project.contract_value && project.contract_value > 0 && (
                           <span className="font-mono text-[10px] text-muted-foreground ml-2 tnum">
-                            {formatCurrency(project.total_budget)}
+                            {formatCurrency(project.contract_value)}
                           </span>
                         )}
                       </div>

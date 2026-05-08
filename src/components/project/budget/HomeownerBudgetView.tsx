@@ -100,7 +100,7 @@ export function HomeownerBudgetView({ projectId, currency }: HomeownerBudgetView
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
-  const [projectBudget, setProjectBudget] = useState(0);
+  const [privateBudgetCap, setPrivateBudgetCap] = useState(0);
   const [quotes, setQuotes] = useState<QuoteData[]>([]);
   const [quoteItems, setQuoteItems] = useState<QuoteItemData[]>([]);
   const [invoices, setInvoices] = useState<InvoiceData[]>([]);
@@ -118,8 +118,8 @@ export function HomeownerBudgetView({ projectId, currency }: HomeownerBudgetView
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [projectRes, quotesRes, invoicesRes, materialsRes, extraMatRes] = await Promise.all([
-          supabase.from("projects").select("total_budget").eq("id", projectId).single(),
+        const [privateBudgetRes, quotesRes, invoicesRes, materialsRes, extraMatRes] = await Promise.all([
+          supabase.from("project_private_budget").select("private_budget_cap").eq("project_id", projectId).maybeSingle(),
           supabase
             .from("quotes")
             .select("id, title, quote_number, total_amount, total_rot_deduction, total_after_rot, status, is_ata")
@@ -143,9 +143,9 @@ export function HomeownerBudgetView({ projectId, currency }: HomeownerBudgetView
             .eq("exclude_from_budget", true),
         ]);
 
-        const budget = projectRes.data?.total_budget ?? 0;
-        setProjectBudget(budget);
-        setBudgetInput(String(budget));
+        const cap = privateBudgetRes.data?.private_budget_cap ?? 0;
+        setPrivateBudgetCap(cap);
+        setBudgetInput(String(cap));
 
         const allQuotes = (quotesRes.data || []) as QuoteData[];
         const allInvoices = (invoicesRes.data || []) as InvoiceData[];
@@ -198,8 +198,8 @@ export function HomeownerBudgetView({ projectId, currency }: HomeownerBudgetView
     const ownPurchasesTotal = ownPurchases.reduce((sum, m) => sum + (m.price_total || 0), 0);
 
     const totalCommitted = acceptedQuoteTotal + ownPurchasesTotal + ataTotal;
-    const disposableFunds = projectBudget - totalCommitted;
-    const usedPct = projectBudget > 0 ? Math.round((totalCommitted / projectBudget) * 100) : 0;
+    const disposableFunds = privateBudgetCap - totalCommitted;
+    const usedPct = privateBudgetCap > 0 ? Math.round((totalCommitted / privateBudgetCap) * 100) : 0;
 
     return {
       acceptedQuoteTotal,
@@ -213,9 +213,9 @@ export function HomeownerBudgetView({ projectId, currency }: HomeownerBudgetView
       totalCommitted,
       disposableFunds,
       usedPercent: Math.min(usedPct, 100),
-      isOverBudget: totalCommitted > projectBudget && projectBudget > 0,
+      isOverBudget: totalCommitted > privateBudgetCap && privateBudgetCap > 0,
     };
-  }, [quotes, invoices, ownPurchases, projectBudget, extraMaterialTotal]);
+  }, [quotes, invoices, ownPurchases, privateBudgetCap, extraMaterialTotal]);
 
   // --- Budget edit ---
 
@@ -224,30 +224,29 @@ export function HomeownerBudgetView({ projectId, currency }: HomeownerBudgetView
     if (isNaN(val) || val < 0) return;
 
     const { error } = await supabase
-      .from("projects")
-      .update({ total_budget: val })
-      .eq("id", projectId);
+      .from("project_private_budget")
+      .upsert({ project_id: projectId, private_budget_cap: val }, { onConflict: "project_id" });
 
     if (error) {
       toast.error(t("homeownerBudget.failedToUpdateBudget", "Could not update budget"));
       return;
     }
 
-    setProjectBudget(val);
+    setPrivateBudgetCap(val);
     setEditingBudget(false);
     toast.success(t("homeownerBudget.budgetUpdated", "Budget updated"));
   };
 
   const handleCancelEdit = () => {
-    setBudgetInput(String(projectBudget));
+    setBudgetInput(String(privateBudgetCap));
     setEditingBudget(false);
   };
 
   // --- Disposition color ---
 
   const getDisposableColor = () => {
-    if (projectBudget <= 0) return "";
-    const pct = computed.disposableFunds / projectBudget;
+    if (privateBudgetCap <= 0) return "";
+    const pct = computed.disposableFunds / privateBudgetCap;
     if (pct < 0.05) return "text-destructive";
     if (pct < 0.2) return "text-amber-500";
     return "text-green-600";
@@ -263,7 +262,6 @@ export function HomeownerBudgetView({ projectId, currency }: HomeownerBudgetView
     );
   }
 
-  const budgetMatchesQuote = projectBudget > 0 && projectBudget === computed.acceptedQuoteTotal;
   const sentInvoices = invoices.filter((inv) => inv.status !== "draft");
 
   return (
@@ -272,11 +270,11 @@ export function HomeownerBudgetView({ projectId, currency }: HomeownerBudgetView
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-6 md:gap-3">
-        {/* Min budget */}
-        <div className="bg-muted/50 rounded-lg p-4 text-center space-y-1">
+        {/* Min privata gräns — homeowner only, RLS-protected */}
+        <div className="bg-muted/50 rounded-lg p-4 text-center space-y-1" title={t("homeownerBudget.privateCapTooltip", "Endast du ser denna siffra. Den delas aldrig med projektledare eller hantverkare.")}>
           <div className="flex items-center justify-center gap-1.5">
             <Wallet className="h-3.5 w-3.5 text-blue-600" />
-            <p className="text-xs text-muted-foreground">{t("homeownerBudget.myBudget", "Min budget")}</p>
+            <p className="text-xs text-muted-foreground">{t("homeownerBudget.privateCap", "Min privata gräns")}</p>
           </div>
           {editingBudget ? (
             <div className="flex items-center gap-1 justify-center">
@@ -303,19 +301,17 @@ export function HomeownerBudgetView({ projectId, currency }: HomeownerBudgetView
               type="button"
               className="text-lg font-bold group flex items-center gap-1 justify-center mx-auto hover:text-primary transition-colors"
               onClick={() => {
-                setBudgetInput(String(projectBudget));
+                setBudgetInput(String(privateBudgetCap));
                 setEditingBudget(true);
               }}
             >
-              {projectBudget > 0
-                ? formatCurrency(projectBudget, currency)
+              {privateBudgetCap > 0
+                ? formatCurrency(privateBudgetCap, currency)
                 : t("homeownerBudget.setBudget", "Ange budget")}
               <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-50" />
             </button>
           )}
-          {budgetMatchesQuote && (
-            <p className="text-[10px] text-muted-foreground">{t("homeownerBudget.budgetFromQuote", "Från offert")}</p>
-          )}
+          <p className="text-[10px] text-muted-foreground">{t("homeownerBudget.privateOnly", "Endast du ser detta")}</p>
         </div>
 
         {/* Offererat — clickable popover with quote items */}
@@ -493,26 +489,26 @@ export function HomeownerBudgetView({ projectId, currency }: HomeownerBudgetView
         </div>
       </div>
 
-      {/* Budget progress bar */}
-      {projectBudget > 0 && (
+      {/* Budget progress bar — uses private cap as denominator (homeowner-only view) */}
+      {privateBudgetCap > 0 && (
         <div className="space-y-1.5">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>{t("homeownerBudget.budgetUsed", "Förbrukat av budget")}</span>
-            <span>{Math.round((computed.invoicedTotal / projectBudget) * 100)}%</span>
+            <span>{Math.round((computed.invoicedTotal / privateBudgetCap) * 100)}%</span>
           </div>
           <div className="h-2 bg-muted rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full transition-all ${
-                computed.invoicedTotal > projectBudget ? "bg-red-500" : computed.invoicedTotal > projectBudget * 0.8 ? "bg-amber-500" : "bg-green-500"
+                computed.invoicedTotal > privateBudgetCap ? "bg-red-500" : computed.invoicedTotal > privateBudgetCap * 0.8 ? "bg-amber-500" : "bg-green-500"
               }`}
-              style={{ width: `${Math.min(100, (computed.invoicedTotal / projectBudget) * 100)}%` }}
+              style={{ width: `${Math.min(100, (computed.invoicedTotal / privateBudgetCap) * 100)}%` }}
             />
           </div>
         </div>
       )}
 
       {/* No budget prompt */}
-      {projectBudget <= 0 && computed.acceptedQuoteTotal <= 0 && sentInvoices.length === 0 && (
+      {privateBudgetCap <= 0 && computed.acceptedQuoteTotal <= 0 && sentInvoices.length === 0 && (
         <div className="rounded-xl border border-dashed bg-muted/30 p-8 text-center space-y-3">
           <Wallet className="h-8 w-8 text-muted-foreground mx-auto" />
           <p className="text-muted-foreground">

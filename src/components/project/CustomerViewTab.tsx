@@ -27,7 +27,7 @@ interface CustomerViewTabProps {
   address?: string | null;
   description?: string | null;
   status?: string | null;
-  totalBudget?: number | null;
+  contractValue?: number | null;
   coverImageUrl?: string | null;
 }
 
@@ -43,7 +43,7 @@ export default function CustomerViewTab({
   address,
   description,
   status,
-  totalBudget,
+  contractValue,
   coverImageUrl,
 }: CustomerViewTabProps) {
   const { t } = useTranslation();
@@ -64,7 +64,8 @@ export default function CustomerViewTab({
     id: projectId,
     name: projectName,
     status: status || "active",
-    total_budget: totalBudget ?? null,
+    total_budget: null,
+    contract_value: contractValue ?? null,
     spent_amount: null,
     start_date: projectStartDate ?? null,
     finish_goal_date: projectFinishDate ?? null,

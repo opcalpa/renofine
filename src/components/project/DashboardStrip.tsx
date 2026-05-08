@@ -70,7 +70,7 @@ export function DashboardStrip({ projectIds, currency = "SEK" }: DashboardStripP
           .eq("status", "to_order"),
         supabase
           .from("projects")
-          .select("id, name, total_budget, spent_amount")
+          .select("id, name, contract_value, spent_amount")
           .in("id", projectIds),
       ]);
 
@@ -104,7 +104,7 @@ export function DashboardStrip({ projectIds, currency = "SEK" }: DashboardStripP
       let totalBudget = 0;
       let totalSpent = 0;
       for (const p of budgetRes.data || []) {
-        const b = p.total_budget || 0;
+        const b = p.contract_value || 0;
         const s = p.spent_amount || 0;
         if (b > 0 || s > 0) {
           budgetByProject.push({ projectName: p.name, budget: b, spent: s });

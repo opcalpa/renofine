@@ -67,6 +67,7 @@ interface Project {
   description: string | null;
   status: string;
   total_budget: number | null;
+  contract_value: number | null;
   spent_amount: number | null;
   start_date: string | null;
   finish_goal_date: string | null;
@@ -365,6 +366,7 @@ const ProjectDetail = () => {
         description: guestProject.description,
         status: guestProject.status,
         total_budget: guestProject.total_budget || null,
+        contract_value: null,
         spent_amount: null,
         start_date: guestProject.start_date || null,
         finish_goal_date: null,
@@ -1417,7 +1419,7 @@ const ProjectDetail = () => {
                 address={project.address}
                 description={project.description}
                 status={project.status}
-                totalBudget={project.total_budget}
+                contractValue={project.contract_value}
                 coverImageUrl={project.cover_image_url}
                 isClient={permissions.isClient}
               />

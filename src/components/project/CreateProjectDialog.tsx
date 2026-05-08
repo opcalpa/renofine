@@ -138,9 +138,16 @@ export function CreateProjectDialog({
         name, description: description || null, owner_id: profile.id,
         address: address || null, postal_code: postalCode || null, city: city || null,
         project_type: projectType || null, start_date: startDate || null,
-        total_budget: budget ? Number(budget) : null,
       }).select().single();
       if (error) throw error;
+
+      // Initial budget entered at creation = homeowner's private cap (RLS owner-only)
+      if (budget) {
+        await supabase.from("project_private_budget").insert({
+          project_id: data.id,
+          private_budget_cap: Number(budget),
+        });
+      }
 
       analytics.capture(AnalyticsEvents.PROJECT_CREATED, {
         has_description: Boolean(description), has_address: Boolean(address),

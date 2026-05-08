@@ -64,6 +64,7 @@ export interface OverviewProject {
   description?: string | null;
   status: string;
   total_budget: number | null;
+  contract_value: number | null;
   spent_amount: number | null;
   start_date: string | null;
   finish_goal_date: string | null;

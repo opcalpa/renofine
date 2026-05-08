@@ -89,7 +89,7 @@ export function useDashboardData(userId: string | undefined): DashboardData {
 
       const { data } = await supabase
         .from("projects")
-        .select("id, name, address, status, total_budget, spent_amount")
+        .select("id, name, address, status, contract_value, spent_amount")
         .in("id", projectIds)
         .is("deleted_at", null)
         .order("created_at", { ascending: false });
@@ -177,7 +177,7 @@ export function useDashboardData(userId: string | undefined): DashboardData {
   ).length;
 
   const totalBudget = (projects || []).reduce(
-    (sum, p) => sum + (p.total_budget || 0),
+    (sum, p) => sum + (p.contract_value || 0),
     0
   );
   const totalSpent = (projects || []).reduce(
@@ -193,7 +193,7 @@ export function useDashboardData(userId: string | undefined): DashboardData {
       name: p.name,
       address: p.address,
       status: p.status,
-      totalBudget: p.total_budget || 0,
+      totalBudget: p.contract_value || 0,
       spentAmount: p.spent_amount || 0,
       tasksDone: tasks.done,
       tasksTotal: tasks.total,

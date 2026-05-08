@@ -69,7 +69,7 @@ export function useUnifiedTableData(projectId: string): UseUnifiedTableDataResul
           .eq("exclude_from_budget", true),
         supabase
           .from("projects")
-          .select("total_budget")
+          .select("contract_value")
           .eq("id", projectId)
           .single(),
         supabase
@@ -101,7 +101,7 @@ export function useUnifiedTableData(projectId: string): UseUnifiedTableDataResul
       if (materialsRes.error) throw materialsRes.error;
       if (extraMaterialsRes.error) throw extraMaterialsRes.error;
 
-      setProjectBudget(projectRes.data?.total_budget ?? 0);
+      setProjectBudget(projectRes.data?.contract_value ?? 0);
 
       // ATA total
       const materialAtaTotal = (extraMaterialsRes.data || []).reduce(

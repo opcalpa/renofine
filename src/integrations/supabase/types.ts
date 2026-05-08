@@ -2025,6 +2025,32 @@ export type Database = {
           },
         ]
       }
+      project_private_budget: {
+        Row: {
+          private_budget_cap: number | null
+          project_id: string
+          updated_at: string
+        }
+        Insert: {
+          private_budget_cap?: number | null
+          project_id: string
+          updated_at?: string
+        }
+        Update: {
+          private_budget_cap?: number | null
+          project_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_private_budget_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_rot_persons: {
         Row: {
           created_at: string | null
@@ -2198,6 +2224,7 @@ export type Database = {
           address: string | null
           city: string | null
           client_id: string | null
+          contract_value: number | null
           country: string
           cover_image_position: number | null
           cover_image_url: string | null
@@ -2228,6 +2255,7 @@ export type Database = {
           address?: string | null
           city?: string | null
           client_id?: string | null
+          contract_value?: number | null
           country?: string
           cover_image_position?: number | null
           cover_image_url?: string | null
@@ -2258,6 +2286,7 @@ export type Database = {
           address?: string | null
           city?: string | null
           client_id?: string | null
+          contract_value?: number | null
           country?: string
           cover_image_position?: number | null
           cover_image_url?: string | null
@@ -3411,6 +3440,7 @@ export type Database = {
           created_at: string | null
           description_override: string | null
           id: string
+          photo_override: Json | null
           task_id: string
           worker_token_id: string
         }
@@ -3419,6 +3449,7 @@ export type Database = {
           created_at?: string | null
           description_override?: string | null
           id?: string
+          photo_override?: Json | null
           task_id: string
           worker_token_id: string
         }
@@ -3427,6 +3458,7 @@ export type Database = {
           created_at?: string | null
           description_override?: string | null
           id?: string
+          photo_override?: Json | null
           task_id?: string
           worker_token_id?: string
         }
@@ -3773,4 +3805,3 @@ export const Constants = {
     },
   },
 } as const
-<claude-code-hint v="1" type="plugin" value="supabase@claude-plugins-official" />

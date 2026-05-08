@@ -261,7 +261,7 @@ const OverviewTab = ({
     showTaxDeduction,
     taskCount: taskStats?.total ?? 0,
     completionPct: taskStats?.percentage ?? 0,
-    hasBudget: (project.total_budget ?? 0) > 0,
+    hasBudget: (project.contract_value ?? 0) > 0,
     hasDeadline: !!project.finish_goal_date,
     hasTeam: hasClient,
   };
@@ -272,7 +272,7 @@ const OverviewTab = ({
     projectId: project.id,
     taskCount: taskStats?.total ?? 0,
     completionPct: taskStats?.percentage ?? 0,
-    hasBudget: (project.total_budget ?? 0) > 0,
+    hasBudget: (project.contract_value ?? 0) > 0,
     budgetPct: budgetStats?.percentage ?? 0,
     hasStartDate: !!project.start_date,
     hasFinishDate: !!project.finish_goal_date,

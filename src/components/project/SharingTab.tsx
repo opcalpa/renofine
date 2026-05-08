@@ -24,7 +24,7 @@ interface SharingTabProps {
   address?: string | null;
   description?: string | null;
   status?: string | null;
-  totalBudget?: number | null;
+  contractValue?: number | null;
   coverImageUrl?: string | null;
   isClient?: boolean;
 }
@@ -48,7 +48,7 @@ export default function SharingTab({
   address,
   description,
   status,
-  totalBudget,
+  contractValue,
   coverImageUrl,
   isClient,
 }: SharingTabProps) {
@@ -95,7 +95,7 @@ export default function SharingTab({
         address={address}
         description={description}
         status={status}
-        totalBudget={totalBudget}
+        contractValue={contractValue}
         coverImageUrl={coverImageUrl}
       />
     );
@@ -153,7 +153,7 @@ export default function SharingTab({
           address={address}
           description={description}
           status={status}
-          totalBudget={totalBudget}
+          contractValue={contractValue}
           coverImageUrl={coverImageUrl}
         />
       ) : selectedWorker ? (
