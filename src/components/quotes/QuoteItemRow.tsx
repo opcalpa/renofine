@@ -1,4 +1,4 @@
-import { Trash2, DoorOpen, AlertCircle, Hammer, Handshake, ShoppingCart } from "lucide-react";
+import { Trash2, DoorOpen, AlertCircle, Hammer, Handshake, ShoppingCart, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -29,6 +29,8 @@ export interface QuoteItem {
   roomName?: string;
   /** Section header — rendered as a divider row, not a line item */
   sectionHeader?: string;
+  /** Imported from AI source (QuickQuote / Intake). Surfaces a small pill on the row. */
+  aiGenerated?: boolean;
 }
 
 interface QuoteItemRowProps {
@@ -77,6 +79,16 @@ export function QuoteItemRow({ item, onChange, onDelete, onImportRoom }: QuoteIt
           onChange={(e) => onChange(item.id, { description: e.target.value })}
           className="min-h-[48px] flex-1"
         />
+        {item.aiGenerated && (
+          <Badge
+            variant="secondary"
+            className="text-xs font-normal shrink-0 h-6 gap-1 bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300"
+            title={t("quotes.aiGeneratedHint", "Imported from AI suggestion — review before sending")}
+          >
+            <Sparkles className="h-3 w-3" />
+            {t("quotes.aiGenerated", "AI")}
+          </Badge>
+        )}
         {item.source && (
           <Badge
             variant="secondary"
