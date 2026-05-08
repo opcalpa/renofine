@@ -3836,7 +3836,21 @@
     "invoiceLabel": "Invoice",
     "projectLabel": "Project",
     "invoiceNumberLabel": "Invoice no",
-    "recipient": "Recipient"
+    "recipient": "Recipient",
+    "statusLabel": "Status",
+    "activity": "Activity",
+    "created": "Created",
+    "sentToCustomer": "Sent to customer",
+    "openedByCustomer": "Opened by customer",
+    "notSentYet": "Not sent yet",
+    "pending": "Pending",
+    "byCustomer": "By customer",
+    "linkedProject": "Linked",
+    "openProject": "Open project",
+    "paidThanks": "Paid — thank you!",
+    "paidSoFar": "Paid: {{amount}}",
+    "dateLabel": "Date",
+    "confirmDeleteHint": "This cannot be undone."
   },
   "welcome": {
     "chooseLanguage": "Choose your language",

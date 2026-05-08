@@ -34,6 +34,9 @@ const USE_QUOTE_VIEW_V2 = true;
 const USE_QUOTE_CREATE_V2 = true;
 import CreateInvoice from "./pages/contractor/CreateInvoice";
 import ViewInvoice from "./pages/ViewInvoice";
+import ViewInvoiceV2 from "./pages/ViewInvoiceV2";
+
+const USE_INVOICE_VIEW_V2 = true;
 import ClientRegistry from "./pages/contractor/ClientRegistry";
 import CustomerIntake from "./pages/CustomerIntake";
 import IntakeRequests from "./pages/contractor/IntakeRequests";
@@ -113,7 +116,7 @@ const App = () => (
               <Route path="/projects/:projectId" element={<RequireAuth><ProjectDetail /></RequireAuth>} />
               <Route path="/profile" element={<RequireAuth allowGuest={false}><Profile /></RequireAuth>} />
               <Route path="/quotes/:quoteId" element={USE_QUOTE_VIEW_V2 ? <ViewQuoteV2 /> : <ViewQuote />} />
-              <Route path="/invoices/:invoiceId" element={<ViewInvoice />} />
+              <Route path="/invoices/:invoiceId" element={USE_INVOICE_VIEW_V2 ? <ViewInvoiceV2 /> : <ViewInvoice />} />
 
               {/* ── Contractor-only routes ── */}
               <Route path="/quotes/new" element={<RequireAuth allowGuest={false}><RequireRole allow="contractor">{USE_QUOTE_CREATE_V2 ? <CreateQuoteV2 /> : <CreateQuote />}</RequireRole></RequireAuth>} />

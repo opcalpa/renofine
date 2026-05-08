@@ -3833,7 +3833,21 @@
     "invoiceLabel": "Faktura",
     "projectLabel": "Projekt",
     "invoiceNumberLabel": "Fakturanr",
-    "recipient": "Mottagare"
+    "recipient": "Mottagare",
+    "statusLabel": "Status",
+    "activity": "Aktivitet",
+    "created": "Skapad",
+    "sentToCustomer": "Skickad till kund",
+    "openedByCustomer": "Öppnad av kund",
+    "notSentYet": "Inte skickad än",
+    "pending": "Väntar",
+    "byCustomer": "Av kund",
+    "linkedProject": "Koppling",
+    "openProject": "Öppna projekt",
+    "paidThanks": "Betald — tack!",
+    "paidSoFar": "Betalt: {{amount}}",
+    "dateLabel": "Datum",
+    "confirmDeleteHint": "Det går inte att ångra."
   },
   "welcome": {
     "chooseLanguage": "Välj ditt språk",
