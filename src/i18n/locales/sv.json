@@ -4650,6 +4650,17 @@
     },
     "detailedTimeline": "Detaljerad tidslinje"
   },
+  "customer": {
+    "projectCustomer": "Projektets kund",
+    "manageRegistry": "Hantera kundregister",
+    "selectPlaceholder": "Välj en kund från registret…",
+    "noClients": "Inga kunder registrerade än",
+    "newClient": "Ny kund",
+    "linked": "Kund kopplad",
+    "unlinked": "Kund avkopplad",
+    "linkError": "Kunde inte koppla kund",
+    "unlinkError": "Kunde inte avkoppla kund"
+  },
   "sharing": {
     "tabTitle": "Delning",
     "viewAs": "Visa som",

@@ -4653,6 +4653,17 @@
     },
     "detailedTimeline": "Detailed timeline"
   },
+  "customer": {
+    "projectCustomer": "Project customer",
+    "manageRegistry": "Manage client registry",
+    "selectPlaceholder": "Pick a client from the registry…",
+    "noClients": "No clients registered yet",
+    "newClient": "New client",
+    "linked": "Customer linked",
+    "unlinked": "Customer unlinked",
+    "linkError": "Could not link customer",
+    "unlinkError": "Could not unlink customer"
+  },
   "sharing": {
     "tabTitle": "Sharing",
     "viewAs": "View as",
