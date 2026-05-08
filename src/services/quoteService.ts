@@ -104,7 +104,13 @@ export async function addQuoteItem(quoteId: string, item: { description: string;
   return data;
 }
 
-export async function updateQuoteDraft(quoteId: string, updates: { title?: string; free_text?: string | null; client_id_ref?: string | null }) {
+export async function updateQuoteDraft(quoteId: string, updates: {
+  title?: string;
+  free_text?: string | null;
+  client_id_ref?: string | null;
+  ata_reason?: string | null;
+  ata_time_shift_days?: number | null;
+}) {
   const { data, error } = await supabase
     .from("quotes")
     .update(updates)

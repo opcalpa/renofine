@@ -92,6 +92,15 @@ interface QuoteData {
   viewed_at: string | null;
   revised_from: string | null;
   quote_number?: string | null;
+  is_ata?: boolean | null;
+  ata_reason?: string | null;
+  ata_time_shift_days?: number | null;
+}
+
+interface AtaPhoto {
+  id: string;
+  storage_path: string;
+  caption: string | null;
 }
 
 interface QuoteItem {
@@ -172,6 +181,8 @@ export default function ViewQuoteV2() {
   const [rotPropertyDesignation, setRotPropertyDesignation] = useState<string | null>(null);
   const [revisedFromQuote, setRevisedFromQuote] = useState<{ id: string; quote_number: string | null } | null>(null);
   const [latestRevision, setLatestRevision] = useState<{ id: string; quote_number: string | null } | null>(null);
+  // ÄTA-specific: site-visit photos for the change-order grid (only fetched when is_ata)
+  const [ataPhotos, setAtaPhotos] = useState<AtaPhoto[]>([]);
 
   // ─── effects ───────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -259,6 +270,17 @@ export default function ViewQuoteV2() {
       .limit(1)
       .maybeSingle();
     setLatestRevision(revision as { id: string; quote_number: string | null } | null);
+
+    // ÄTA — fetch site-visit photos for the dedicated change-order grid
+    if (q.is_ata) {
+      const { data: photos } = await supabase
+        .from("photos")
+        .select("id, storage_path, caption")
+        .eq("entity_type", "quote")
+        .eq("entity_id", quoteId)
+        .order("created_at", { ascending: true });
+      if (photos) setAtaPhotos(photos as AtaPhoto[]);
+    }
 
     setLoading(false);
   };
@@ -645,9 +667,224 @@ export default function ViewQuoteV2() {
 
       {/* Document */}
       <div className="container mx-auto max-w-6xl px-4 py-6">
-        <DocumentLayout
-          title={docTitle}
-          meta={docMeta}
+        {quote.is_ata ? (
+          // ─── ÄTA grid ───────────────────────────────────────────────────
+          // Change-order layout per design spec: full-width 2-col grid with
+          // change details, reason, photos on the left and price/time-shift/
+          // approval on the right. Replaces DocumentLayout entirely.
+          <div className="space-y-6 rf-paper">
+            {/* Header card */}
+            <div
+              className="rounded-lg border p-4"
+              style={{ background: "var(--rf-surface)", borderColor: "var(--rf-hairline)" }}
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <div className="rf-eyebrow">{t("quotes.ataLabel", "Ändring & tillägg")}</div>
+                  <h1
+                    className="rf-display mt-1"
+                    style={{ fontSize: 22, lineHeight: 1.15, color: "var(--rf-ink)" }}
+                  >
+                    {t("quotes.ataNumberPrefix", "ÄTA")} {quote.quote_number ?? quote.id.slice(0, 8)}
+                  </h1>
+                  <div className="mt-1 text-sm" style={{ color: "var(--rf-fg-muted)" }}>{projectName}</div>
+                </div>
+                <div className="text-right">
+                  <StatusPill tone={STATUS_TONE[quote.status] ?? "neutral"} label={t(`quotes.${quote.status}`)} />
+                  {quote.ata_time_shift_days != null && quote.ata_time_shift_days > 0 && (
+                    <div className="mt-2 text-sm" style={{ color: "var(--rf-amber-soft-fg)" }}>
+                      +{quote.ata_time_shift_days} {t("quotes.daysDelay", "dagar tidsförskjutning")}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* 2-col grid */}
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              {/* Left column: Ändring + Skäl + Foton */}
+              <div className="space-y-6">
+                <SidebarCard label={t("quotes.ataChange", "Ändring")}>
+                  <div className="rf-display" style={{ fontSize: 16, fontWeight: 500 }}>
+                    {quote.title}
+                  </div>
+                  {quote.free_text && (
+                    <div
+                      className="mt-2 whitespace-pre-wrap text-sm"
+                      style={{ color: "var(--rf-fg-muted)", lineHeight: 1.5 }}
+                    >
+                      {quote.free_text}
+                    </div>
+                  )}
+                  <div className="mt-3 text-xs" style={{ color: "var(--rf-fg-subtle)" }}>
+                    {t("quotes.created", "Skapad")} {creator?.name ? `${t("quotes.by", "av")} ${creator.name}` : ""} ·{" "}
+                    {new Date(quote.created_at).toLocaleDateString("sv-SE", { day: "numeric", month: "short" })}
+                  </div>
+                </SidebarCard>
+
+                {quote.ata_reason && (
+                  <div
+                    className="rounded-lg p-4"
+                    style={{
+                      background: "var(--rf-green-soft, #DCE5DC)",
+                      borderLeft: "3px solid var(--rf-green, #2F5D4E)",
+                    }}
+                  >
+                    <div className="rf-eyebrow" style={{ color: "var(--rf-green)" }}>
+                      {t("quotes.ataReason", "Skäl till ändring")}
+                    </div>
+                    <div
+                      className="mt-2 whitespace-pre-wrap text-sm"
+                      style={{ color: "var(--rf-green-soft-fg)", lineHeight: 1.5 }}
+                    >
+                      {quote.ata_reason}
+                    </div>
+                  </div>
+                )}
+
+                {ataPhotos.length > 0 && (
+                  <SidebarCard label={t("quotes.ataSitePhotos", "Foton från platsbesök")}>
+                    <div className="grid grid-cols-3 gap-2">
+                      {ataPhotos.map((p) => {
+                        const { data: { publicUrl } } = supabase.storage
+                          .from("project-files")
+                          .getPublicUrl(p.storage_path);
+                        return (
+                          <a
+                            key={p.id}
+                            href={publicUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block overflow-hidden rounded-md"
+                            style={{ border: "1px solid var(--rf-hairline)" }}
+                          >
+                            <img
+                              src={publicUrl}
+                              alt={p.caption ?? ""}
+                              className="aspect-square w-full object-cover"
+                            />
+                          </a>
+                        );
+                      })}
+                    </div>
+                  </SidebarCard>
+                )}
+              </div>
+
+              {/* Right column: Prisjustering + Tidsförskjutning + Godkännande */}
+              <div className="space-y-6">
+                <SidebarCard label={t("quotes.ataPriceAdjustment", "Prisjustering")}>
+                  <div className="space-y-1.5 text-sm">
+                    {items.map((it) => (
+                      <div key={it.id} className="flex items-baseline justify-between gap-3">
+                        <span style={{ color: "var(--rf-ink)" }}>
+                          {it.description}
+                          {it.quantity !== 1 && (
+                            <span style={{ color: "var(--rf-fg-muted)" }}> × {it.quantity}</span>
+                          )}
+                        </span>
+                        <span className="rf-num">{fmtKr(it.total_price)}</span>
+                      </div>
+                    ))}
+                    <div
+                      className="flex justify-between pt-1.5"
+                      style={{ color: "var(--rf-fg-muted)" }}
+                    >
+                      <span>{t("quotes.vat", "Moms")} 25%</span>
+                      <span className="rf-num">{fmtKr(vat)}</span>
+                    </div>
+                    {totalRot > 0 && (
+                      <div className="flex justify-between" style={{ color: "var(--rf-green)" }}>
+                        <span>{t("quotes.rotDeduction", "ROT-avdrag")}</span>
+                        <span className="rf-num">−{fmtKr(totalRot)}</span>
+                      </div>
+                    )}
+                    <div
+                      className="flex justify-between pt-2 mt-2"
+                      style={{
+                        borderTop: "1px solid var(--rf-hairline)",
+                        fontWeight: 600,
+                      }}
+                    >
+                      <span>{t("quotes.ataTotal", "Total ÄTA")}</span>
+                      <span className="rf-num" style={{ fontSize: 16 }}>{fmtKr(totalToPay)}</span>
+                    </div>
+                  </div>
+                </SidebarCard>
+
+                <SidebarCard label={t("quotes.ataTimeShift", "Tidsförskjutning")}>
+                  {quote.ata_time_shift_days != null && quote.ata_time_shift_days > 0 ? (
+                    <div className="text-sm">
+                      <span style={{ color: "var(--rf-fg-muted)" }}>
+                        {t("quotes.ataAdditionalDays", "Tillägg")}:{" "}
+                      </span>
+                      <span className="rf-num" style={{ fontWeight: 500 }}>
+                        +{quote.ata_time_shift_days} {t("quotes.days", "dagar")}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="text-sm" style={{ color: "var(--rf-fg-muted)" }}>
+                      {t("quotes.ataNoTimeShift", "Ingen tidsförskjutning")}
+                    </div>
+                  )}
+                </SidebarCard>
+
+                <SidebarCard label={t("quotes.ataApproval", "Godkännande")}>
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="flex h-9 w-9 items-center justify-center rounded-full text-sm"
+                      style={{
+                        background: "var(--rf-stone, #EFEAE0)",
+                        color: "var(--rf-stone-fg, #6B5A3A)",
+                        fontWeight: 500,
+                      }}
+                    >
+                      {(clientName ?? "?").slice(0, 1).toUpperCase()}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 500 }}>
+                        {clientName ?? t("quotes.recipient", "Mottagare")}
+                      </div>
+                      <div className="mt-0.5">
+                        <StatusPill
+                          tone={STATUS_TONE[quote.status] ?? "neutral"}
+                          label={t(`quotes.${quote.status}`)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </SidebarCard>
+
+                {/* Owner actions row — sits at the bottom of the right column */}
+                {isOwner && ownerActions.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {ownerActions.map((a) => (
+                      <Button
+                        key={a.label}
+                        variant={a.variant === "primary" ? "default" : "outline"}
+                        size="sm"
+                        onClick={a.onClick}
+                        disabled={a.disabled}
+                        className="gap-1.5"
+                        style={
+                          a.variant === "primary"
+                            ? { background: "var(--rf-green)", color: "var(--rf-paper)" }
+                            : undefined
+                        }
+                      >
+                        {a.icon}
+                        {a.label}
+                      </Button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <DocumentLayout
+            title={docTitle}
+            meta={docMeta}
           stamp={
             STAMP_FOR_STATUS[quote.status] ? (
               <DocumentStatusStamp label={t(`quotes.${quote.status}`)} tone={STAMP_FOR_STATUS[quote.status]!} />
@@ -718,6 +955,7 @@ export default function ViewQuoteV2() {
           }
           sidebar={sidebar}
         />
+        )}
 
         {/* Owner chat (collapsible) — below document */}
         {showOwnerChat && (

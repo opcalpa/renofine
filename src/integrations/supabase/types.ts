@@ -696,6 +696,27 @@ export type Database = {
           },
         ]
       }
+      edge_rate_limits: {
+        Row: {
+          created_at: string
+          fingerprint: string
+          id: number
+          scope: string
+        }
+        Insert: {
+          created_at?: string
+          fingerprint: string
+          id?: number
+          scope: string
+        }
+        Update: {
+          created_at?: string
+          fingerprint?: string
+          id?: number
+          scope?: string
+        }
+        Relationships: []
+      }
       external_quote_assignments: {
         Row: {
           allocated_amount: number
@@ -2484,6 +2505,8 @@ export type Database = {
       }
       quotes: {
         Row: {
+          ata_reason: string | null
+          ata_time_shift_days: number | null
           client_id: string | null
           client_id_ref: string | null
           created_at: string | null
@@ -2507,6 +2530,8 @@ export type Database = {
           viewed_at: string | null
         }
         Insert: {
+          ata_reason?: string | null
+          ata_time_shift_days?: number | null
           client_id?: string | null
           client_id_ref?: string | null
           created_at?: string | null
@@ -2530,6 +2555,8 @@ export type Database = {
           viewed_at?: string | null
         }
         Update: {
+          ata_reason?: string | null
+          ata_time_shift_days?: number | null
           client_id?: string | null
           client_id_ref?: string | null
           created_at?: string | null
@@ -3805,3 +3832,5 @@ export const Constants = {
     },
   },
 } as const
+A new version of Supabase CLI is available: v2.98.2 (currently installed v2.72.7)
+We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli

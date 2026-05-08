@@ -151,6 +151,10 @@ export default function CreateQuoteV2() {
   const [createClientOpen, setCreateClientOpen] = useState(false);
   const [freeText, setFreeText] = useState("");
   const [quoteNumber, setQuoteNumber] = useState("");
+  // ÄTA-specific fields — only persisted when isAta=true. Stored as plain
+  // strings here so the inputs feel natural; coerced to typed values on save.
+  const [ataReason, setAtaReason] = useState("");
+  const [ataTimeShiftDays, setAtaTimeShiftDays] = useState("");
   const [objectDescription, setObjectDescription] = useState("");
   const [previewScale, setPreviewScale] = useState(0.75);
   const previewContainerRef = useRef<HTMLDivElement>(null);
@@ -276,7 +280,7 @@ export default function CreateQuoteV2() {
       const [quoteRes, itemsRes] = await Promise.all([
         supabase
           .from("quotes")
-          .select("title, free_text, client_id_ref, project_id, quote_number")
+          .select("title, free_text, client_id_ref, project_id, quote_number, ata_reason, ata_time_shift_days")
           .eq("id", editQuoteId)
           .single(),
         supabase
@@ -292,6 +296,10 @@ export default function CreateQuoteV2() {
         if (quoteRes.data.project_id) setProjectId(quoteRes.data.project_id);
         const qn = (quoteRes.data as Record<string, unknown>).quote_number as string | null;
         if (qn) setQuoteNumber(qn);
+        const ar = (quoteRes.data as Record<string, unknown>).ata_reason as string | null;
+        if (ar) setAtaReason(ar);
+        const ts = (quoteRes.data as Record<string, unknown>).ata_time_shift_days as number | null;
+        if (ts != null) setAtaTimeShiftDays(String(ts));
       }
 
       if (itemsRes.data && itemsRes.data.length > 0) {
@@ -817,6 +825,12 @@ export default function CreateQuoteV2() {
         title: autoTitle,
         free_text: freeText.trim() || null,
         client_id_ref: clientId || null,
+        ...(isAta
+          ? {
+              ata_reason: ataReason.trim() || null,
+              ata_time_shift_days: ataTimeShiftDays ? parseInt(ataTimeShiftDays, 10) || null : null,
+            }
+          : {}),
       });
       if (!updated) {
         setSaving(false);
@@ -847,6 +861,13 @@ export default function CreateQuoteV2() {
       if (!quote) {
         setSaving(false);
         return;
+      }
+      // Persist ÄTA-specific fields after creation (createQuote doesn't take them)
+      if (isAta) {
+        await updateQuoteDraft(quote.id, {
+          ata_reason: ataReason.trim() || null,
+          ata_time_shift_days: ataTimeShiftDays ? parseInt(ataTimeShiftDays, 10) || null : null,
+        });
       }
       for (const item of itemPayloads) {
         await addQuoteItem(quote.id, item);
@@ -923,6 +944,49 @@ export default function CreateQuoteV2() {
                 </span>
               )}
             </div>
+
+            {/* V2: ÄTA-specific fields — reason + time-shift, only shown when isAta */}
+            {isAta && (
+              <div
+                className="rounded-lg p-4 space-y-3"
+                style={{
+                  background: "var(--rf-green-soft, #DCE5DC)",
+                  borderLeft: "3px solid var(--rf-green, #2F5D4E)",
+                }}
+              >
+                <div className="space-y-1.5">
+                  <Label
+                    className="text-[11px] font-medium uppercase tracking-wide"
+                    style={{ color: "var(--rf-green)" }}
+                  >
+                    {t("quotes.ataReason", "Skäl till ändring")}
+                  </Label>
+                  <Textarea
+                    value={ataReason}
+                    onChange={(e) => setAtaReason(e.target.value)}
+                    rows={2}
+                    placeholder={t("quotes.ataReasonPlaceholder", "Varför uppstod detta tillägg?")}
+                    className="rounded-md text-sm"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label
+                    className="text-[11px] font-medium uppercase tracking-wide"
+                    style={{ color: "var(--rf-green)" }}
+                  >
+                    {t("quotes.ataTimeShiftLabel", "Tidsförskjutning (dagar)")}
+                  </Label>
+                  <Input
+                    type="number"
+                    value={ataTimeShiftDays}
+                    onChange={(e) => setAtaTimeShiftDays(e.target.value)}
+                    placeholder="0"
+                    min={0}
+                    className="h-10 max-w-[120px]"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* V2: Prepopulate banner — shows what was imported from project */}
             {shouldPrepopulate && (importedTaskCount > 0 || importedMaterialCount > 0) && (
