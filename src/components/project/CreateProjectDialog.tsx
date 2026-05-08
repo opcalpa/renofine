@@ -180,7 +180,7 @@ export function CreateProjectDialog({
       if (guestProject) {
         handleOpenChange(false);
         refreshStorageUsage?.();
-        navigate(`/projects/${guestProject.id}`);
+        navigate(`/projects/${guestProject.id}?tab=planning`);
       }
     } else {
       setCreating(true);
@@ -194,7 +194,7 @@ export function CreateProjectDialog({
         }).select("id").single();
         if (error) throw error;
         handleOpenChange(false);
-        navigate(`/projects/${data.id}`);
+        navigate(`/projects/${data.id}?tab=planning`);
       } catch (err) {
         toast({ title: t("common.error"), description: (err as Error).message, variant: "destructive" });
       } finally {
@@ -320,100 +320,6 @@ export function CreateProjectDialog({
    * Extracts rooms + tasks + budget metadata via process-document(mode="quote"),
    * then creates project, rooms, tasks, and private_budget_cap in one shot.
    */
-  const handleAuthQuoteUpload = async (file: File) => {
-    setExtracting(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-      const { data: profile } = await supabase.from("profiles").select("id").eq("user_id", user.id).single();
-      if (!profile) throw new Error("Profile not found");
-
-      // 1. Extract via process-document mode=quote
-      const base64 = await new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve((reader.result as string).split(",")[1]);
-        reader.readAsDataURL(file);
-      });
-      const { data: result, error: fnError } = await supabase.functions.invoke("process-document", {
-        body: { fileBase64: base64, mimeType: file.type, fileName: file.name, mode: "quote" },
-      });
-      if (fnError) throw fnError;
-      if (result?.error) throw new Error(result.error);
-
-      const rooms = (result.rooms || []).filter((r: { confidence: number }) => r.confidence >= 0.7);
-      const tasks = (result.tasks || []).filter((t: { confidence: number }) => t.confidence >= 0.5);
-      const meta = result.quoteMetadata || {};
-      const suggestedName = meta.vendorName
-        ? `Renovering — ${meta.vendorName}`
-        : (result.documentSummary?.substring(0, 60) || file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " "));
-
-      // 2. Create project
-      const { data: project, error: projErr } = await supabase.from("projects").insert({
-        name: suggestedName,
-        description: result.documentSummary || null,
-        owner_id: profile.id,
-      }).select().single();
-      if (projErr) throw projErr;
-
-      // 3. Private budget cap from quote total (if present)
-      if (meta.totalAmount && Number(meta.totalAmount) > 0) {
-        await supabase.from("project_private_budget").insert({
-          project_id: project.id,
-          private_budget_cap: Number(meta.totalAmount),
-        });
-      }
-
-      // 4. Create rooms — keep name→id map for task linking
-      const roomNameToId: Record<string, string> = {};
-      for (const room of rooms) {
-        const { data: savedRoom } = await supabase.from("rooms").insert({
-          project_id: project.id,
-          name: room.name,
-          notes: room.description || null,
-          dimensions: room.estimatedAreaSqm ? { estimatedAreaSqm: room.estimatedAreaSqm } : null,
-        }).select("id").single();
-        if (savedRoom) roomNameToId[room.name.toLowerCase()] = savedRoom.id;
-      }
-
-      // 5. Create tasks linked to rooms by name
-      for (const task of tasks) {
-        const roomId = task.roomName ? roomNameToId[task.roomName.toLowerCase()] || null : null;
-        await supabase.from("tasks").insert({
-          project_id: project.id,
-          room_id: roomId,
-          title: task.title,
-          description: task.description || null,
-          status: "to_do",
-          subcontractor_cost: task.estimatedCost || task.laborCost || null,
-          material_estimate: task.materialCost || null,
-          rot_eligible: task.rotEligible ?? null,
-          rot_amount: task.rotAmount || null,
-          is_ata: false,
-          created_by_user_id: profile.id,
-        });
-      }
-
-      analytics.capture(AnalyticsEvents.PROJECT_CREATED, {
-        method: "ai_quote_upload",
-        rooms_extracted: rooms.length,
-        tasks_extracted: tasks.length,
-        has_budget: !!meta.totalAmount,
-      });
-
-      handleOpenChange(false);
-      navigate(`/projects/${project.id}`);
-      toast({
-        title: t("projects.aiImportSuccess", "Document analyzed"),
-        description: t("projects.aiImportSuccessDesc", "{{tasks}} tasks and {{rooms}} rooms extracted", { tasks: tasks.length, rooms: rooms.length }),
-      });
-    } catch (err) {
-      console.error("Quote AI upload error:", err);
-      toast({ title: t("common.error"), description: (err as Error).message, variant: "destructive" });
-    } finally {
-      setExtracting(false);
-    }
-  };
-
   // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
@@ -433,7 +339,8 @@ export function CreateProjectDialog({
         {/* Step 0: Choose creation method */}
         {method === "choose" && (
           <div className="flex flex-col gap-3 py-2">
-            {/* Hidden quote file picker — drives handleAuthQuoteUpload / handleGuestAIUpload */}
+            {/* Hidden quote file picker — only used by guest fast-lane.
+                Auth users open AIProjectImportModal instead, which has its own file picker. */}
             <input
               ref={quoteFileInputRef}
               type="file"
@@ -444,14 +351,22 @@ export function CreateProjectDialog({
                 if (!file) return;
                 e.target.value = "";
                 if (isGuest) handleGuestAIUpload(file);
-                else handleAuthQuoteUpload(file);
               }}
             />
 
-            <button type="button"
-              onClick={() => quoteFileInputRef.current?.click()}
+            <button
+              type="button"
+              onClick={() => {
+                if (isGuest) {
+                  quoteFileInputRef.current?.click();
+                } else {
+                  handleOpenChange(false);
+                  setTimeout(onOpenAIImport, 150);
+                }
+              }}
               disabled={extracting}
-              className="flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left hover:border-primary/50 hover:bg-accent/50 active:scale-[0.98] border-purple-300 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/40 dark:to-purple-900/20 disabled:opacity-50">
+              className="flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left hover:border-primary/50 hover:bg-accent/50 active:scale-[0.98] border-purple-300 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/40 dark:to-purple-900/20 disabled:opacity-50"
+            >
               <div className="h-12 w-12 rounded-full bg-purple-200 dark:bg-purple-800/50 flex items-center justify-center flex-shrink-0">
                 {extracting ? (
                   <Loader2 className="h-6 w-6 text-purple-700 dark:text-purple-300 animate-spin" />
@@ -468,17 +383,6 @@ export function CreateProjectDialog({
                 <p className="text-sm text-muted-foreground mt-0.5">
                   {t("projects.methodQuoteDesc", "AI extraherar arbeten, rum och budget från en PDF-offert")}
                 </p>
-              </div>
-            </button>
-
-            <button type="button" onClick={() => { handleOpenChange(false); setTimeout(onOpenAIImport, 150); }}
-              className="flex items-center gap-4 p-4 rounded-xl border-2 transition-all text-left hover:border-primary/50 hover:bg-accent/50 active:scale-[0.98] border-border">
-              <div className="h-12 w-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0">
-                <Sparkles className="h-6 w-6 text-purple-600 dark:text-purple-400" />
-              </div>
-              <div className="flex-1">
-                <p className="font-medium text-base">{t("projects.methodUpload", "Upload description")}</p>
-                <p className="text-sm text-muted-foreground mt-0.5">{t("projects.methodUploadDesc", "Let AI extract project details from a document")}</p>
               </div>
             </button>
 

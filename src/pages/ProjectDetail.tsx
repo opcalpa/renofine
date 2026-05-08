@@ -29,6 +29,9 @@ import ProjectFeedTab from "@/components/project/ProjectFeedTab";
 import ProjectFilesTab from "@/components/project/ProjectFilesTab";
 import SharingTab from "@/components/project/SharingTab";
 import { HomeownerPlanningView } from "@/components/project/overview/HomeownerPlanningView";
+import { PlanningTaskList } from "@/components/project/overview/PlanningTaskList";
+import { PlanningRoomList } from "@/components/project/overview/PlanningRoomList";
+import { CreateQuoteDialog } from "@/components/project/CreateQuoteDialog";
 import { CommentsSection } from "@/components/comments/CommentsSection";
 import { ProjectChatSection } from "@/components/project/overview/ProjectChatSection";
 import { UnifiedTableTab } from "@/components/project/unified-table";
@@ -38,6 +41,10 @@ import { MobileBottomNav } from "@/components/project/MobileBottomNav";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { HoverTabMenu } from "@/components/ui/HoverTabMenu";
 import { RoomsList } from "@/components/floormap/RoomsList";
+import { RoomsListV2 } from "@/components/floormap/rooms-list-v2/RoomsListV2";
+
+// Feature flag — flip to false to fall back to v1 list
+const USE_ROOMS_LIST_V2 = true;
 import { RoomDetailDialog } from "@/components/floormap/RoomDetailDialog";
 import { useFloorMapStore } from "@/components/floormap/store";
 import { useEnabledModules } from "@/hooks/useEnabledModules";
@@ -100,6 +107,9 @@ const ProjectDetail = () => {
   const isGuest = isPublicDemoProject ? false : isGuestFromContext;
   const demoPrefs = useDemoPreferences();
   const [showDemoRoleModal, setShowDemoRoleModal] = useState(false);
+  // Planning tab — contractor-side "Create quote" dialog
+  const [quoteDialogOpen, setQuoteDialogOpen] = useState(false);
+  const [roomsVersion, setRoomsVersion] = useState(0);
   useProfileLanguage();
   const { t } = useTranslation();
   const [market] = useMarket();
@@ -1255,6 +1265,17 @@ const ProjectDetail = () => {
                     <div className="flex items-center justify-center h-64">
                       <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     </div>
+                  ) : USE_ROOMS_LIST_V2 ? (
+                    <RoomsListV2
+                      projectId={project.id}
+                      rooms={roomsData}
+                      onRoomClick={handleRoomClick}
+                      onAddRoom={handleAddRoom}
+                      onDeleteRoom={handleDeleteRoom}
+                      onNavigateToRoom={handleNavigateToRoom}
+                      onPlaceRoom={handlePlaceRoom}
+                      onRoomUpdated={handleRoomDeleted}
+                    />
                   ) : (
                     <RoomsList
                       projectId={project.id}
@@ -1388,16 +1409,43 @@ const ProjectDetail = () => {
             <NoAccessPlaceholder />
           ) : (
             <div className="container py-4 md:py-8">
-              <HomeownerPlanningView
-                projectId={project.id}
-                projectName={project.name}
-                projectAddress={project.address}
-                currency={project.currency}
-                onActivate={permissions.isPlanningContributor ? undefined : (isGuest ? loadGuestData : loadData)}
-                contributorMode={permissions.isPlanningContributor}
-                locked={!isQuotePhase}
-                onNavigateTab={(tab) => setActiveTab(tab)}
-              />
+              {/* Role split (mirrors OverviewTab.planningSection):
+                  - Homeowner project-owner OR planning contributor → wizard + estimate-friendly view
+                  - Everyone else (contractor, project manager, RFQ builder) → task/room tables with "Create quote" CTA */}
+              {((effectiveUserType === "homeowner" && permissions.isOwner) || permissions.isPlanningContributor) ? (
+                <HomeownerPlanningView
+                  projectId={project.id}
+                  projectName={project.name}
+                  projectAddress={project.address}
+                  currency={project.currency}
+                  onActivate={permissions.isPlanningContributor ? undefined : (isGuest ? loadGuestData : loadData)}
+                  contributorMode={permissions.isPlanningContributor}
+                  locked={!isQuotePhase}
+                  onNavigateTab={(tab) => setActiveTab(tab)}
+                />
+              ) : (
+                <div className="space-y-6">
+                  <PlanningTaskList
+                    projectId={project.id}
+                    currency={project.currency}
+                    isHomeowner={false}
+                    onCreateQuote={() => setQuoteDialogOpen(true)}
+                    onActivateProject={isGuest ? loadGuestData : loadData}
+                    locked={!isQuotePhase}
+                    roomsVersion={roomsVersion}
+                  />
+                  <PlanningRoomList
+                    projectId={project.id}
+                    locked={!isQuotePhase}
+                    onRoomChange={() => setRoomsVersion((v) => v + 1)}
+                  />
+                  <CreateQuoteDialog
+                    projectId={project.id}
+                    open={quoteDialogOpen}
+                    onOpenChange={setQuoteDialogOpen}
+                  />
+                </div>
+              )}
             </div>
           )}
           </ErrorBoundary>

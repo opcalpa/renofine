@@ -2693,6 +2693,32 @@ export function PlanningTaskList({
                       })()}
                       {!effectiveLock && (
                         <td className="px-3 py-2.5">
+                          <div className="flex items-center gap-0.5">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleAutoEstimate(task);
+                                    }}
+                                    disabled={estimatingTaskId === task.id}
+                                  >
+                                    {estimatingTaskId === task.id ? (
+                                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                    ) : (
+                                      <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                                    )}
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  {t("planningTasks.autoEstimate", "Auto-estimate")}
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => e.stopPropagation()}>
@@ -2738,6 +2764,7 @@ export function PlanningTaskList({
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
+                          </div>
                         </td>
                       )}
                     </tr>

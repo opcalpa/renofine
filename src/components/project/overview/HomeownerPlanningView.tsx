@@ -672,36 +672,9 @@ export function HomeownerPlanningView({
     return items;
   }, [tasksWithRoomNames, groupByCategory, collapsedGroups]);
 
-  // Push header actions to parent (for ProjectHeader integration)
-  useEffect(() => {
-    if (!onHeaderActions || contributorMode || totalTasks === 0) {
-      onHeaderActions?.(null);
-      return;
-    }
-    onHeaderActions(
-      <div className="flex flex-wrap items-center gap-2">
-        <Button
-          size="sm"
-          variant="outline"
-          className="gap-1.5"
-          onClick={() => isGuest ? setLoginPromptAction("share_rfq") : setShareDialogOpen(true)}
-        >
-          <Send className="h-3.5 w-3.5" />
-          {t("homeownerPlanning.requestQuote", "Be om offert")}
-        </Button>
-        <Button
-          size="sm"
-          variant="default"
-          className="gap-1.5"
-          onClick={() => isGuest ? setLoginPromptAction("activate") : setShowStartModal(true)}
-          disabled={activating}
-        >
-          <Play className="h-3.5 w-3.5" />
-          {t("homeownerPlanning.activateProject", "Start project")}
-        </Button>
-      </div>
-    );
-  }, [onHeaderActions, contributorMode, totalTasks, activating, isGuest, t]);
+  // Note: actions live inline in the intro card now (see render).
+  // The legacy onHeaderActions pipeline was never wired in ProjectDetail and
+  // hid the buttons entirely. Keep the prop for API compatibility but don't use it.
 
   // ---------- Render ----------
   if (loading) {
@@ -711,7 +684,7 @@ export function HomeownerPlanningView({
   // Show wizard when project has no tasks (empty state)
   // Once shown, latch it — don't yank away on background re-fetches that
   // temporarily make tasks.length > 0 or cause a remount.
-  const shouldShowWizard = tasks.length === 0 && !wizardDismissed && !contributorMode && !isGuest;
+  const shouldShowWizard = tasks.length === 0 && !wizardDismissed && !contributorMode;
   if (shouldShowWizard) wizardShownRef.current = true;
   const showWizard = wizardShownRef.current && !wizardDismissed;
 
@@ -758,9 +731,9 @@ export function HomeownerPlanningView({
         </div>
       )}
 
-      {/* Intro card — explains what Planning is for */}
+      {/* Intro card — explains what Planning is for + primary CTAs */}
       {!locked && (
-      <div className="rounded-xl border border-border/60 bg-card p-5 flex flex-col sm:flex-row gap-4 items-start">
+      <div className="rounded-xl border border-border/60 bg-card p-5 flex flex-col gap-4 sm:flex-row sm:items-start">
         <div className="w-10 h-10 rounded-lg bg-primary/10 grid place-items-center shrink-0 mt-0.5">
           <ClipboardList className="h-5 w-5 text-primary" />
         </div>
@@ -772,6 +745,29 @@ export function HomeownerPlanningView({
             {t("homeownerPlanning.introDescription", "Lägg till rum, beskriv arbetsuppgifter och uppskatta kostnader. När du är nöjd kan du skapa en offert eller aktivera projektet.")}
           </p>
         </div>
+        {!contributorMode && totalTasks > 0 && (
+          <div className="flex flex-wrap items-center gap-2 sm:flex-shrink-0">
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5"
+              onClick={() => isGuest ? setLoginPromptAction("share_rfq") : setShareDialogOpen(true)}
+            >
+              <Send className="h-3.5 w-3.5" />
+              {t("homeownerPlanning.requestQuote", "Be om offert")}
+            </Button>
+            <Button
+              size="sm"
+              variant="default"
+              className="gap-1.5"
+              onClick={() => isGuest ? setLoginPromptAction("activate") : setShowStartModal(true)}
+              disabled={activating}
+            >
+              <Play className="h-3.5 w-3.5" />
+              {t("homeownerPlanning.activateProject", "Starta projekt")}
+            </Button>
+          </div>
+        )}
       </div>
       )}
 

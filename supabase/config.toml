@@ -34,3 +34,8 @@ entrypoint = "./functions/send-project-invitation/index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/send-quote-email/index.ts"
+
+[functions.parse-renovation-description]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/parse-renovation-description/index.ts"

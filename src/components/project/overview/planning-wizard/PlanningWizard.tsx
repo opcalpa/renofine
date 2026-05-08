@@ -5,7 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { populateProjectFromPlanningWizard } from "@/services/planningWizardService";
+import {
+  populateProjectFromPlanningWizard,
+  populateGuestProjectFromPlanningWizard,
+} from "@/services/planningWizardService";
+import { useGuestMode } from "@/hooks/useGuestMode";
 import { DescribeStep } from "./DescribeStep";
 import { RoomsStep } from "./RoomsStep";
 import { GlobalWorkTypesStep } from "./GlobalWorkTypesStep";
@@ -21,6 +25,7 @@ interface PlanningWizardProps {
 
 export function PlanningWizard({ projectId, onComplete, onSkip }: PlanningWizardProps) {
   const { t } = useTranslation();
+  const { isGuest } = useGuestMode();
   const storageKey = `planning-wizard-${projectId}`;
 
   // Restore draft from localStorage (survives unmount/remount)
@@ -71,6 +76,22 @@ export function PlanningWizard({ projectId, onComplete, onSkip }: PlanningWizard
       const { data, error } = await supabase.functions.invoke("parse-renovation-description", {
         body: { description: formData.description, language: "sv" },
       });
+      // Edge function returns 429 with { error, message } when rate-limited.
+      // supabase-js bubbles non-2xx as `error` (FunctionsHttpError) but still
+      // exposes `data` on body — test for both.
+      const rateLimited =
+        (typeof data === "object" && data !== null && (data as { error?: string }).error === "Rate limit exceeded") ||
+        (error && /429|rate limit/i.test(error.message || ""));
+      if (rateLimited) {
+        toast.error(
+          t(
+            "planningWizard.rateLimited",
+            "För många försök på kort tid. Vänta en stund eller fyll i manuellt."
+          )
+        );
+        setAnalyzing(false);
+        return;
+      }
       if (error) throw error;
 
       const parsed = data as AIParsedResult;
@@ -109,22 +130,37 @@ export function PlanningWizard({ projectId, onComplete, onSkip }: PlanningWizard
   const handleSubmit = useCallback(async () => {
     setCreating(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      let roomCount: number;
+      let taskCount: number;
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("user_id", user.id)
-        .single();
-      if (!profile) throw new Error("No profile");
+      if (isGuest) {
+        const result = populateGuestProjectFromPlanningWizard(
+          projectId,
+          formData,
+          (wt) => t(`intake.workType.${wt}`, wt)
+        );
+        roomCount = result.roomCount;
+        taskCount = result.taskCount;
+      } else {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("Not authenticated");
 
-      const { roomCount, taskCount } = await populateProjectFromPlanningWizard(
-        projectId,
-        formData,
-        profile.id,
-        (wt) => t(`intake.workType.${wt}`, wt)
-      );
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("user_id", user.id)
+          .single();
+        if (!profile) throw new Error("No profile");
+
+        const result = await populateProjectFromPlanningWizard(
+          projectId,
+          formData,
+          profile.id,
+          (wt) => t(`intake.workType.${wt}`, wt)
+        );
+        roomCount = result.roomCount;
+        taskCount = result.taskCount;
+      }
 
       toast.success(
         t("planningWizard.created", "Created {{rooms}} rooms and {{tasks}} tasks!", {
@@ -138,7 +174,7 @@ export function PlanningWizard({ projectId, onComplete, onSkip }: PlanningWizard
       toast.error(t("common.errorSaving", "Could not save"));
     }
     setCreating(false);
-  }, [projectId, formData, onComplete, t]);
+  }, [projectId, formData, onComplete, t, isGuest, clearDraft]);
 
   const progress = (step / TOTAL_STEPS) * 100;
 

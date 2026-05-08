@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { workTypeToCostCenter, getWorkTypeLabel } from "./workTypeUtils";
 import type { WorkType } from "./workTypeUtils";
 import type { PlanningWizardData } from "@/components/project/overview/planning-wizard/types";
+import { saveGuestRoom, saveGuestTask } from "./guestStorageService";
 import {
   detectRecipeKey,
   suggestMaterialsMultiRoom,
@@ -131,6 +132,95 @@ export async function populateProjectFromPlanningWizard(
 
   // 4. Auto-generate material estimates for recipe-eligible tasks
   await autoGenerateMaterials(projectId, profileId);
+
+  return { roomCount: data.rooms.length, taskCount };
+}
+
+/**
+ * Guest-mode variant: populate a localStorage-backed project from the planning wizard.
+ * Mirrors populateProjectFromPlanningWizard but uses guestStorageService helpers.
+ * No materials auto-generation (guest model has no materials table) and no checklists
+ * (GuestTask doesn't carry that field).
+ */
+export function populateGuestProjectFromPlanningWizard(
+  projectId: string,
+  data: PlanningWizardData,
+  translateWorkType?: (wt: WorkType) => string
+): { roomCount: number; taskCount: number } {
+  const wtLabel = (wt: WorkType) => translateWorkType?.(wt) ?? getWorkTypeLabel(wt);
+  const roomNameToId = new Map<string, string>();
+  let taskCount = 0;
+
+  // 1. Create rooms
+  for (const room of data.rooms) {
+    const saved = saveGuestRoom(projectId, {
+      name: room.name,
+      room_type: null,
+      status: "existing",
+      area_sqm: room.area_sqm ?? null,
+      floor_number: null,
+      notes: null,
+      width_mm: room.width_m ? Math.round(room.width_m * 1000) : null,
+      height_mm: room.depth_m ? Math.round(room.depth_m * 1000) : null,
+      ceiling_height_mm: room.ceiling_height_m ? Math.round(room.ceiling_height_m * 1000) : null,
+    });
+    if (saved) roomNameToId.set(room.id, saved.id);
+  }
+
+  // 2. Global work types → ONE task per type (guest model can't link to multiple rooms,
+  //    so we put applicable rooms in the description and link to the first one)
+  for (const workType of data.globalWorkTypes) {
+    const applicableRooms = data.rooms.filter((room) => {
+      const excluded = data.roomSpecificWork[room.id]?.excludedGlobals ?? [];
+      return !excluded.includes(workType);
+    });
+    if (applicableRooms.length === 0) continue;
+
+    const primaryRoomId = roomNameToId.get(applicableRooms[0].id) ?? null;
+    const saved = saveGuestTask(projectId, {
+      room_id: primaryRoomId,
+      title: wtLabel(workType),
+      description: applicableRooms.map((r) => r.name).join(", "),
+      status: "to_do",
+      priority: "medium",
+      due_date: null,
+    });
+    if (saved) taskCount++;
+  }
+
+  // 3. Room-specific work types → one task per room-workType combo
+  for (const room of data.rooms) {
+    const guestRoomId = roomNameToId.get(room.id);
+    if (!guestRoomId) continue;
+
+    const specific = data.roomSpecificWork[room.id];
+    if (!specific) continue;
+
+    for (const workType of specific.workTypes) {
+      if (data.globalWorkTypes.includes(workType)) continue;
+      const saved = saveGuestTask(projectId, {
+        room_id: guestRoomId,
+        title: `${wtLabel(workType)} - ${room.name}`,
+        description: null,
+        status: "to_do",
+        priority: "medium",
+        due_date: null,
+      });
+      if (saved) taskCount++;
+    }
+
+    if (specific.description?.trim()) {
+      const saved = saveGuestTask(projectId, {
+        room_id: guestRoomId,
+        title: room.name,
+        description: specific.description.trim(),
+        status: "to_do",
+        priority: "medium",
+        due_date: null,
+      });
+      if (saved) taskCount++;
+    }
+  }
 
   return { roomCount: data.rooms.length, taskCount };
 }
