@@ -7,7 +7,7 @@ import { analytics, AnalyticsEvents } from "@/lib/analytics";
 import { usePersistedPreference } from "@/hooks/usePersistedPreference";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -880,9 +880,152 @@ const TasksTab = ({ projectId, projectName, projectStatus, tasksScope = 'all', t
     );
   };
 
+  const filterCount = filterStatuses.size + filterAssignees.size + filterRooms.size + filterCostCenters.size;
+
+  const filterPopover = (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="outline" size="sm" className="h-9 gap-1.5 relative">
+          <Filter className="h-4 w-4" />
+          <span className="hidden sm:inline">{t('tasks.filter', 'Filter')}</span>
+          {filterCount > 0 && (
+            <span className="ml-0.5 h-4 min-w-4 px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-medium flex items-center justify-center">
+              {filterCount}
+            </span>
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-72 p-0 max-h-[70vh] overflow-y-auto" align="start">
+        <div className="max-h-[70vh] overflow-y-auto">
+          {/* Status */}
+          <div className="px-3 pt-3 pb-1">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t('tasks.status')}</p>
+          </div>
+          <div className="px-1 pb-2">
+            {statusOrder.map(status => {
+              const count = getStatusCount(status);
+              const label = statusLabels[status as keyof typeof statusLabels] || status;
+              return (
+                <label key={status} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer text-sm">
+                  <Checkbox checked={filterStatuses.has(status)} onCheckedChange={() => toggleFilterValue(setFilterStatuses, status)} />
+                  <span className="flex-1">{label}</span>
+                  <span className="text-xs text-muted-foreground">{count}</span>
+                </label>
+              );
+            })}
+          </div>
+          <div className="border-t" />
+          {/* Assignee */}
+          <div className="px-3 pt-3 pb-1">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t('tasks.assignee')}</p>
+          </div>
+          <div className="px-1 pb-2">
+            <label className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer text-sm">
+              <Checkbox checked={filterAssignees.has("unassigned")} onCheckedChange={() => toggleFilterValue(setFilterAssignees, "unassigned")} />
+              <span className="flex-1">{t('common.unassigned')}</span>
+              <span className="text-xs text-muted-foreground">{getAssigneeCount("unassigned")}</span>
+            </label>
+            {teamMembers.map(member => (
+              <label key={member.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer text-sm">
+                <Checkbox checked={filterAssignees.has(member.id)} onCheckedChange={() => toggleFilterValue(setFilterAssignees, member.id)} />
+                <span className="flex-1">{member.name}</span>
+                <span className="text-xs text-muted-foreground">{getAssigneeCount(member.id)}</span>
+              </label>
+            ))}
+          </div>
+          <div className="border-t" />
+          {/* Room */}
+          <div className="px-3 pt-3 pb-1">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t('tasks.room')}</p>
+          </div>
+          <div className="px-1 pb-2">
+            <label className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer text-sm">
+              <Checkbox checked={filterRooms.has("unassigned")} onCheckedChange={() => toggleFilterValue(setFilterRooms, "unassigned")} />
+              <span className="flex-1">{t('tasks.noRoom')}</span>
+              <span className="text-xs text-muted-foreground">{getRoomCount("unassigned")}</span>
+            </label>
+            {rooms.map(room => (
+              <label key={room.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer text-sm">
+                <Checkbox checked={filterRooms.has(room.id)} onCheckedChange={() => toggleFilterValue(setFilterRooms, room.id)} />
+                <span className="flex-1">{room.name}</span>
+                <span className="text-xs text-muted-foreground">{getRoomCount(room.id)}</span>
+              </label>
+            ))}
+          </div>
+          <div className="border-t" />
+          {/* Cost Center */}
+          <div className="px-3 pt-3 pb-1">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t('tasks.costCenter')}</p>
+          </div>
+          <div className="px-1 pb-2">
+            <label className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer text-sm">
+              <Checkbox checked={filterCostCenters.has("none")} onCheckedChange={() => toggleFilterValue(setFilterCostCenters, "none")} />
+              <span className="flex-1">{t('common.none')}</span>
+              <span className="text-xs text-muted-foreground">{getCostCenterCount("none")}</span>
+            </label>
+            {DEFAULT_COST_CENTERS.map(cc => {
+              const Icon = cc.icon;
+              return (
+                <label key={cc.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer text-sm">
+                  <Checkbox checked={filterCostCenters.has(cc.id)} onCheckedChange={() => toggleFilterValue(setFilterCostCenters, cc.id)} />
+                  <Icon className="h-3 w-3 flex-shrink-0" />
+                  <span className="flex-1">{t(cc.labelKey, cc.label)}</span>
+                  <span className="text-xs text-muted-foreground">{getCostCenterCount(cc.id)}</span>
+                </label>
+              );
+            })}
+            {customCcIds.map(ccId => (
+              <label key={ccId} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer text-sm">
+                <Checkbox checked={filterCostCenters.has(ccId)} onCheckedChange={() => toggleFilterValue(setFilterCostCenters, ccId)} />
+                <Tag className="h-3 w-3 flex-shrink-0" />
+                <span className="flex-1">{getCostCenterLabel(ccId)}</span>
+                <span className="text-xs text-muted-foreground">{getCostCenterCount(ccId)}</span>
+              </label>
+            ))}
+          </div>
+          {filterCount > 0 && (
+            <>
+              <div className="border-t" />
+              <div className="p-2">
+                <Button variant="ghost" size="sm" className="w-full" onClick={() => {
+                  setFilterStatuses(new Set());
+                  setFilterAssignees(new Set());
+                  setFilterRooms(new Set());
+                  setFilterCostCenters(new Set());
+                }}>
+                  {t('tasks.clearFilters')}
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+
   return (
     <div className="space-y-6">
       <ProjectLockBanner lockStatus={lockStatus} />
+
+      {/* ===== TOP TOOLBAR (applies to all views: timeline, calendar, table, kanban) ===== */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {filterPopover}
+        <div className="flex-1" />
+        {!loading && tasks.length > 0 && (
+          <span className="hidden sm:inline font-mono text-[11px] text-muted-foreground tnum mr-2">
+            {tasks.length} {t('tasks.tasks', 'arbeten')} · {tasks.filter(t => t.status === 'completed' || t.status === 'done').length} {t('statuses.completed', 'klara')}
+            {tasks.filter(t => t.due_date && new Date(t.due_date) < new Date() && t.status !== 'completed' && t.status !== 'done').length > 0 && (
+              <> · {tasks.filter(t => t.due_date && new Date(t.due_date) < new Date() && t.status !== 'completed' && t.status !== 'done').length} {t('tasks.overdue', 'försenade')}</>
+            )}
+          </span>
+        )}
+        {canEditTasks && (
+          <Button size="sm" className="h-9" onClick={() => setDialogOpen(true)}>
+            <Plus className="h-4 w-4 sm:mr-1" />
+            <span className="hidden sm:inline">{t('tasks.addTask')}</span>
+          </Button>
+        )}
+      </div>
 
       {/* ===== SCHEDULE SECTION (collapsible): Timeline | Calendar ===== */}
       <section className="mb-0">
@@ -958,162 +1101,6 @@ const TasksTab = ({ projectId, projectName, projectStatus, tasksScope = 'all', t
               </button>
             ))}
           </div>
-
-          {/* Unified Filter Popover */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="icon" className="h-9 w-9 relative">
-                <Filter className="h-4 w-4" />
-                {(filterStatuses.size + filterAssignees.size + filterRooms.size + filterCostCenters.size) > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 h-4 min-w-4 px-0.5 rounded-full bg-primary text-primary-foreground text-[10px] font-medium flex items-center justify-center">
-                    {filterStatuses.size + filterAssignees.size + filterRooms.size + filterCostCenters.size}
-                  </span>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-72 p-0 max-h-[70vh] overflow-y-auto" align="start">
-              <div className="max-h-[70vh] overflow-y-auto">
-                {/* Status */}
-                <div className="px-3 pt-3 pb-1">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t('tasks.status')}</p>
-                </div>
-                <div className="px-1 pb-2">
-                  {statusOrder.map(status => {
-                    const count = getStatusCount(status);
-                    const label = statusLabels[status as keyof typeof statusLabels] || status;
-                    return (
-                      <label key={status} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer text-sm">
-                        <Checkbox
-                          checked={filterStatuses.has(status)}
-                          onCheckedChange={() => toggleFilterValue(setFilterStatuses, status)}
-                        />
-                        <span className="flex-1">{label}</span>
-                        <span className="text-xs text-muted-foreground">{count}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-
-                <div className="border-t" />
-
-                {/* Assignee */}
-                <div className="px-3 pt-3 pb-1">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t('tasks.assignee')}</p>
-                </div>
-                <div className="px-1 pb-2">
-                  <label className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer text-sm">
-                    <Checkbox
-                      checked={filterAssignees.has("unassigned")}
-                      onCheckedChange={() => toggleFilterValue(setFilterAssignees, "unassigned")}
-                    />
-                    <span className="flex-1">{t('common.unassigned')}</span>
-                    <span className="text-xs text-muted-foreground">{getAssigneeCount("unassigned")}</span>
-                  </label>
-                  {teamMembers.map(member => (
-                    <label key={member.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer text-sm">
-                      <Checkbox
-                        checked={filterAssignees.has(member.id)}
-                        onCheckedChange={() => toggleFilterValue(setFilterAssignees, member.id)}
-                      />
-                      <span className="flex-1">{member.name}</span>
-                      <span className="text-xs text-muted-foreground">{getAssigneeCount(member.id)}</span>
-                    </label>
-                  ))}
-                </div>
-
-                <div className="border-t" />
-
-                {/* Room */}
-                <div className="px-3 pt-3 pb-1">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t('tasks.room')}</p>
-                </div>
-                <div className="px-1 pb-2">
-                  <label className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer text-sm">
-                    <Checkbox
-                      checked={filterRooms.has("unassigned")}
-                      onCheckedChange={() => toggleFilterValue(setFilterRooms, "unassigned")}
-                    />
-                    <span className="flex-1">{t('tasks.noRoom')}</span>
-                    <span className="text-xs text-muted-foreground">{getRoomCount("unassigned")}</span>
-                  </label>
-                  {rooms.map(room => (
-                    <label key={room.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer text-sm">
-                      <Checkbox
-                        checked={filterRooms.has(room.id)}
-                        onCheckedChange={() => toggleFilterValue(setFilterRooms, room.id)}
-                      />
-                      <span className="flex-1">{room.name}</span>
-                      <span className="text-xs text-muted-foreground">{getRoomCount(room.id)}</span>
-                    </label>
-                  ))}
-                </div>
-
-                <div className="border-t" />
-
-                {/* Cost Center */}
-                <div className="px-3 pt-3 pb-1">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t('tasks.costCenter')}</p>
-                </div>
-                <div className="px-1 pb-2">
-                  <label className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer text-sm">
-                    <Checkbox
-                      checked={filterCostCenters.has("none")}
-                      onCheckedChange={() => toggleFilterValue(setFilterCostCenters, "none")}
-                    />
-                    <span className="flex-1">{t('common.none')}</span>
-                    <span className="text-xs text-muted-foreground">{getCostCenterCount("none")}</span>
-                  </label>
-                  {DEFAULT_COST_CENTERS.map(cc => {
-                    const Icon = cc.icon;
-                    return (
-                      <label key={cc.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer text-sm">
-                        <Checkbox
-                          checked={filterCostCenters.has(cc.id)}
-                          onCheckedChange={() => toggleFilterValue(setFilterCostCenters, cc.id)}
-                        />
-                        <Icon className="h-3 w-3 flex-shrink-0" />
-                        <span className="flex-1">{t(cc.labelKey, cc.label)}</span>
-                        <span className="text-xs text-muted-foreground">{getCostCenterCount(cc.id)}</span>
-                      </label>
-                    );
-                  })}
-                  {customCcIds.map(ccId => (
-                    <label key={ccId} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer text-sm">
-                      <Checkbox
-                        checked={filterCostCenters.has(ccId)}
-                        onCheckedChange={() => toggleFilterValue(setFilterCostCenters, ccId)}
-                      />
-                      <Tag className="h-3 w-3 flex-shrink-0" />
-                      <span className="flex-1">{getCostCenterLabel(ccId)}</span>
-                      <span className="text-xs text-muted-foreground">{getCostCenterCount(ccId)}</span>
-                    </label>
-                  ))}
-                </div>
-
-                {/* Clear all */}
-                {(filterStatuses.size > 0 || filterAssignees.size > 0 || filterRooms.size > 0 || filterCostCenters.size > 0) && (
-                  <>
-                    <div className="border-t" />
-                    <div className="p-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="w-full"
-                        onClick={() => {
-                          setFilterStatuses(new Set());
-                          setFilterAssignees(new Set());
-                          setFilterRooms(new Set());
-                          setFilterCostCenters(new Set());
-                        }}
-                      >
-                        {t('tasks.clearFilters')}
-                      </Button>
-                    </div>
-                  </>
-                )}
-              </div>
-            </PopoverContent>
-          </Popover>
 
           {/* Kanban column visibility toggle */}
           {viewMode === 'kanban' && (
@@ -1217,26 +1204,9 @@ const TasksTab = ({ projectId, projectName, projectStatus, tasksScope = 'all', t
             </Popover>
           )}
 
-          {/* Stats + Spacer */}
-          <div className="flex-1" />
-          {!loading && tasks.length > 0 && (
-            <span className="hidden sm:inline font-mono text-[11px] text-muted-foreground tnum">
-              {tasks.length} {t('tasks.tasks', 'arbeten')} · {tasks.filter(t => t.status === 'completed' || t.status === 'done').length} {t('statuses.completed', 'klara')}
-              {tasks.filter(t => t.due_date && new Date(t.due_date) < new Date() && t.status !== 'completed' && t.status !== 'done').length > 0 && (
-                <> · {tasks.filter(t => t.due_date && new Date(t.due_date) < new Date() && t.status !== 'completed' && t.status !== 'done').length} {t('tasks.overdue', 'försenade')}</>
-              )}
-            </span>
-          )}
-
-          {/* Add Task button */}
+          {/* Add Task dialog (trigger lives in top toolbar) */}
           {canEditTasks && (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm" className="h-9">
-                <Plus className="h-4 w-4 sm:mr-1" />
-                <span className="hidden sm:inline">{t('tasks.addTask')}</span>
-              </Button>
-            </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
             <DialogHeader className="flex-shrink-0">
               <DialogTitle>{t('tasks.addNewTask')}</DialogTitle>
