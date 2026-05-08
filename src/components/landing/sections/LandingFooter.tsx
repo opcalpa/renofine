@@ -1,35 +1,24 @@
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 import { Logo } from "../Logo";
 
 export function LandingFooter() {
   const { t } = useTranslation();
 
+  // Only ship links that actually work. No placeholder labels.
   const columns = [
     {
       title: t("landingV2.footer.product", "Produkt"),
       links: [
-        { label: t("landingV2.footer.features", "Funktioner") },
-        { label: t("landingV2.footer.pricing", "Priser") },
-        { label: t("landingV2.footer.whatsNew", "Vad \u00e4r nytt") },
-        { label: "Demo" },
+        { label: t("landingV2.footer.features", "Funktioner"), href: "#features" },
+        { label: t("landingV2.footer.whatsNew", "Vad \u00e4r nytt"), href: "/changelog" },
       ],
     },
     {
       title: t("landingV2.footer.company", "F\u00f6retag"),
       links: [
-        { label: t("landingV2.footer.about", "Om oss") },
-        { label: t("landingV2.footer.customers", "Kunder") },
-        { label: t("landingV2.footer.careers", "Karri\u00e4r") },
-        { label: "Press" },
-      ],
-    },
-    {
-      title: t("landingV2.footer.resources", "Resurser"),
-      links: [
-        { label: t("landingV2.footer.helpCenter", "Hj\u00e4lpcenter") },
-        { label: t("landingV2.footer.blog", "Blogg") },
-        { label: t("landingV2.footer.rotGuide", "ROT-guide") },
-        { label: "API" },
+        { label: t("landingV2.footer.about", "Om oss"), href: "/about" },
+        { label: t("landingV2.footer.contact", "Kontakt"), href: "/contact" },
       ],
     },
     {
@@ -37,8 +26,6 @@ export function LandingFooter() {
       links: [
         { label: t("landingV2.footer.terms", "Villkor"), href: "/terms" },
         { label: t("landingV2.footer.privacy", "Integritet"), href: "/privacy" },
-        { label: "GDPR" },
-        { label: t("landingV2.footer.security", "S\u00e4kerhet") },
       ],
     },
   ];
@@ -51,7 +38,7 @@ export function LandingFooter() {
           maxWidth: 1280,
           margin: "0 auto",
           padding: "40px 40px 32px",
-          gridTemplateColumns: "2fr 1fr 1fr 1fr 1fr",
+          gridTemplateColumns: "2fr 1fr 1fr 1fr",
           gap: 40,
         }}
       >
@@ -77,14 +64,14 @@ export function LandingFooter() {
             </div>
             <div className="flex flex-col gap-2">
               {col.links.map((l) => (
-                l.href ? (
+                l.href.startsWith("#") || l.href.startsWith("http") ? (
                   <a key={l.label} href={l.href} className="cursor-pointer hover:underline" style={{ fontSize: 13, color: "var(--lp-fg-muted)" }}>
                     {l.label}
                   </a>
                 ) : (
-                  <span key={l.label} className="cursor-pointer" style={{ fontSize: 13, color: "var(--lp-fg-muted)" }}>
+                  <Link key={l.label} to={l.href} className="cursor-pointer hover:underline" style={{ fontSize: 13, color: "var(--lp-fg-muted)" }}>
                     {l.label}
-                  </span>
+                  </Link>
                 )
               ))}
             </div>
