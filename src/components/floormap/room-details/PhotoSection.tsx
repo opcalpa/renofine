@@ -46,6 +46,7 @@ export function PhotoSection({ roomId, showPinterest = false }: PhotoSectionProp
   const [loadingPhotos, setLoadingPhotos] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [projectId, setProjectId] = useState<string | null>(null);
+  const [projectRooms, setProjectRooms] = useState<{ id: string; name: string }[]>([]);
   const [pinterestDialogOpen, setPinterestDialogOpen] = useState(false);
   const [pinterestUrlInput, setPinterestUrlInput] = useState("");
   const [pinterestUrlError, setPinterestUrlError] = useState<string | null>(null);
@@ -67,6 +68,13 @@ export function PhotoSection({ roomId, showPinterest = false }: PhotoSectionProp
     supabase.from("rooms").select("project_id").eq("id", roomId).single()
       .then(({ data }) => { if (data) setProjectId(data.project_id); });
   }, [roomId]);
+
+  // Fetch all rooms in the project for the carousel room-link picker
+  useEffect(() => {
+    if (!projectId) return;
+    supabase.from("rooms").select("id, name").eq("project_id", projectId).order("name")
+      .then(({ data }) => { if (data) setProjectRooms(data); });
+  }, [projectId]);
 
   const loadPhotos = useCallback(async () => {
     setLoadingPhotos(true);
@@ -662,6 +670,25 @@ export function PhotoSection({ roomId, showPinterest = false }: PhotoSectionProp
         open={carouselOpen}
         onOpenChange={setCarouselOpen}
         showMetadata
+        projectId={projectId || undefined}
+        rooms={projectRooms}
+        linkedRoomId={roomId}
+        onRoomChange={async (photo, newRoomId) => {
+          // Unlinking a room photo isn't supported here — it would disappear from this view.
+          // Only allow re-linking to a different room.
+          if (!newRoomId || newRoomId === roomId) return;
+          const { error } = await supabase
+            .from("photos")
+            .update({ linked_to_id: newRoomId })
+            .eq("id", photo.id);
+          if (error) {
+            toast.error(t('rooms.couldNotMovePhoto', 'Kunde inte flytta foto'));
+            return;
+          }
+          toast.success(t('rooms.photoMoved', 'Foto flyttat'));
+          setCarouselOpen(false);
+          loadPhotos();
+        }}
         onDelete={(photo) => handleDeletePhoto(photo.id, photo.url)}
         onSourceChange={async (photo, source) => {
           await supabase.from("photos").update({ source }).eq("id", photo.id);

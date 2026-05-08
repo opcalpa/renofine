@@ -296,6 +296,12 @@ export function ShapePhotoSection({ shapeId, projectId, compact = false }: Shape
         open={carouselOpen}
         onOpenChange={setCarouselOpen}
         showMetadata
+        projectId={projectId}
+        onDelete={(photo) => handleDeletePhoto(photo.id, photo.url)}
+        onCaptionChange={async (photo, caption) => {
+          await supabase.from("photos").update({ caption }).eq("id", photo.id);
+          loadPhotos();
+        }}
       />
     </div>
   );

@@ -64,9 +64,17 @@ export function EntityPhotoGallery({ entityId, entityType, projectId, storagePat
   const [carouselOpen, setCarouselOpen] = useState(false);
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [unclassifiedPhotos, setUnclassifiedPhotos] = useState<Photo[]>([]);
+  const [projectRooms, setProjectRooms] = useState<{ id: string; name: string }[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const sourceOptions = getSourceOptions(entityType);
+
+  // Only fetch rooms when re-linking is meaningful (entity is itself a room)
+  useEffect(() => {
+    if (!projectId || entityType !== "room") return;
+    supabase.from("rooms").select("id, name").eq("project_id", projectId).order("name")
+      .then(({ data }) => { if (data) setProjectRooms(data); });
+  }, [projectId, entityType]);
 
   const bucket = storagePath || "project-files";
   const useProjectPath = !!projectId;
@@ -475,6 +483,23 @@ export function EntityPhotoGallery({ entityId, entityType, projectId, storagePat
         open={carouselOpen}
         onOpenChange={setCarouselOpen}
         showMetadata
+        projectId={projectId}
+        rooms={entityType === "room" ? projectRooms : undefined}
+        linkedRoomId={entityType === "room" ? entityId : undefined}
+        onRoomChange={entityType === "room" ? async (photo, newRoomId) => {
+          if (!newRoomId || newRoomId === entityId) return;
+          const { error } = await supabase
+            .from("photos")
+            .update({ linked_to_id: newRoomId })
+            .eq("id", photo.id);
+          if (error) {
+            toast.error(t('entityPhotos.moveError', 'Kunde inte flytta foto'));
+            return;
+          }
+          toast.success(t('entityPhotos.photoMoved', 'Foto flyttat'));
+          setCarouselOpen(false);
+          loadPhotos();
+        } : undefined}
         onDelete={(photo) => handleDeletePhoto(photo.id, photo.url)}
         onSourceChange={async (photo, source) => {
           await supabase.from("photos").update({ source }).eq("id", photo.id);

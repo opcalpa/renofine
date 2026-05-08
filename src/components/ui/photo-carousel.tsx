@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { X, ChevronLeft, ChevronRight, ExternalLink, Trash2, Pencil, Check, MapPin } from "lucide-react";
 import { Button } from "./button";
 import { Textarea } from "./textarea";
+import { CommentsSection } from "@/components/comments/CommentsSection";
 import { cn } from "@/lib/utils";
 
 interface Photo {
@@ -37,6 +38,19 @@ interface PhotoCarouselProps {
   linkedRoomId?: string | null;
   /** Called when user changes room link */
   onRoomChange?: (photo: Photo, roomId: string | null) => void;
+  /** Project ID — enables comments thread per photo */
+  projectId?: string;
+}
+
+// Stable comment thread per physical file: same image gets same thread everywhere.
+// Mirrors ImageLightbox.stableEntityId so threads are shared across both surfaces.
+function stableEntityId(photo: Photo): string {
+  try {
+    const url = new URL(photo.url);
+    const match = url.pathname.match(/\/projects\/[a-f0-9-]+\/(.+)/);
+    if (match) return `photo:${match[1]}`;
+  } catch { /* not a URL */ }
+  return photo.id;
 }
 
 const SOURCE_LABELS: Record<string, { labelKey: string; icon: string }> = {
@@ -63,6 +77,7 @@ export function PhotoCarousel({
   rooms,
   linkedRoomId,
   onRoomChange,
+  projectId,
 }: PhotoCarouselProps) {
   const { t } = useTranslation();
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
@@ -380,6 +395,18 @@ export function PhotoCarousel({
                   <ExternalLink className="h-3 w-3" />
                   {t("common.openLink", "Open link")}
                 </a>
+              </div>
+            )}
+
+            {/* Comments — shared thread per physical file across all surfaces */}
+            {projectId && (
+              <div className="border-t pt-3">
+                <CommentsSection
+                  entityId={stableEntityId(currentPhoto)}
+                  entityType="photo"
+                  projectId={projectId}
+                  compact
+                />
               </div>
             )}
           </div>
