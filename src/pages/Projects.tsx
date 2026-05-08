@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo, lazy, Suspense } from "react";
+import { useEffect, useState, useCallback, useMemo, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthSession } from "@/hooks/useAuthSession";
@@ -46,11 +46,17 @@ import {
   deleteGuestProject,
 } from "@/services/guestStorageService";
 
-const DashboardRedesign = lazy(() => import("@/components/dashboard/DashboardRedesign"));
+import { lazyWithRetry } from "@/lib/lazyWithRetry";
+// On permanent chunk-load failure (stale build), clear the A/B sticky flag so
+// the user isn't trapped in a broken redesigned dashboard after page reload.
+const DashboardRedesign = lazyWithRetry(
+  () => import("@/components/dashboard/DashboardRedesign"),
+  () => localStorage.removeItem("rf_dashboard_v2"),
+);
 import { CreateProjectDialog } from "@/components/project/CreateProjectDialog";
 import { useProjectsData } from "@/hooks/useProjectsData";
-const OwnerStart = lazy(() => import("@/pages/owner/OwnerStart"));
-const ContractorStart = lazy(() => import("@/pages/contractor/ContractorStart"));
+const OwnerStart = lazyWithRetry(() => import("@/pages/owner/OwnerStart"));
+const ContractorStart = lazyWithRetry(() => import("@/pages/contractor/ContractorStart"));
 import { ResourcePlanningView } from "@/components/project/ResourcePlanningView";
 import { useEnabledModules } from "@/hooks/useEnabledModules";
 import { useMarket } from "@/hooks/useMarket";
