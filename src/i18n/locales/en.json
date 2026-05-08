@@ -5646,7 +5646,12 @@
     "pendingApproval": "Waiting for customer approval",
     "sendForApproval": "Send for customer approval",
     "linkCreated": "Approval link created",
-    "sendLinkInstruction": "Send this link to your customer via SMS, email or chat."
+    "sendLinkInstruction": "Send this link to your customer via SMS, email or chat.",
+    "privateCapWarning": {
+      "title": "This takes you over your private cap",
+      "body": "Accepting this quote would take you {{overage}} over your private cap of {{cap}}.",
+      "privateNote": "Only you see this warning. The project manager is never shown this number."
+    }
   },
   "timeTracking": {
     "title": "Time",

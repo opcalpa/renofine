@@ -5643,7 +5643,12 @@
     "pendingApproval": "Väntar på kundens godkännande",
     "sendForApproval": "Skicka för kundens godkännande",
     "linkCreated": "Godkännande-länk skapad",
-    "sendLinkInstruction": "Skicka denna länk till din kund via SMS, e-post eller chatt."
+    "sendLinkInstruction": "Skicka denna länk till din kund via SMS, e-post eller chatt.",
+    "privateCapWarning": {
+      "title": "Detta tar dig över din privata gräns",
+      "body": "Att godkänna denna offert skulle ta dig {{overage}} över din privata gräns på {{cap}}.",
+      "privateNote": "Endast du ser denna varning. Projektledaren delas aldrig denna siffra."
+    }
   },
   "timeTracking": {
     "title": "Tid",

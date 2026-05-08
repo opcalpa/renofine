@@ -12,6 +12,7 @@ import { Loader2, CheckCircle, Download, Trash2, ArrowLeft, Pencil, Send, Messag
 import { createInvoiceFromQuote } from "@/services/invoiceService";
 import { ShareQuoteDialog } from "@/components/quotes/ShareQuoteDialog";
 import { RotDetailsDialog } from "@/components/project/RotDetailsDialog";
+import { AtaBudgetWarningSection } from "@/components/project/AtaBudgetWarningSection";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -1065,6 +1066,11 @@ export default function ViewQuote() {
             <div className="border-t py-3 space-y-2">
               {isSent && (
                 <>
+                  <AtaBudgetWarningSection
+                    projectId={quote.project_id}
+                    pendingQuoteAmount={quote.total_amount}
+                    excludeQuoteId={quote.id}
+                  />
                   <Button
                     className="w-full min-h-[48px] bg-green-600 hover:bg-green-700 text-base"
                     onClick={handleAccept}
