@@ -166,17 +166,37 @@ export function AIProjectImportModal({ open, onOpenChange, onProjectCreated }: A
       for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
       const fileBase64 = btoa(binary);
 
-      const { data, error } = await supabase.functions.invoke('process-document', {
-        body: {
+      // Use fetch instead of functions.invoke so the server-side error body
+      // surfaces on 4xx (invoke swallows the body and returns a generic
+      // "non-2xx status code" message). Auth header still added since the
+      // function defaults to verify_jwt=true.
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const { data: { session } } = await supabase.auth.getSession();
+      const authToken = session?.access_token ?? supabaseAnonKey;
+      const response = await fetch(`${supabaseUrl}/functions/v1/process-document`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+          apikey: supabaseAnonKey,
+        },
+        body: JSON.stringify({
           fileBase64,
           mimeType: file.type,
           fileType: file.type,
           fileName: file.name,
           mode: 'quote',
-        },
+        }),
       });
-
-      if (error) throw new Error(error.message);
+      const data = await response.json().catch(() => null);
+      if (!response.ok || data?.error) {
+        // Surface the real server-side message so the user can act on it
+        // (e.g. "Kunde inte läsa PDF-filen", "Dokumentet verkar vara tomt", etc.)
+        const serverMessage = data?.error || `HTTP ${response.status}`;
+        console.error('AI extraction error:', serverMessage);
+        throw new Error(serverMessage);
+      }
 
       // Keep file reference to upload into project after creation
       setUploadedFile({ tempPath: '', name: file.name, file });
