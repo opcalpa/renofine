@@ -270,4 +270,38 @@ Filen innehåller:
 4. **Ingen kod:** Personas analyserar och föreslår — de skriver aldrig kod
 
 ---
-*Last Updated: 2026-02-09*
+
+## Renofine handoff workflow
+
+Designerns paket finns i `Design Test/handoff v2 2/` (semver-versionerat).
+Om en senare version finns (`handoff v3/`, etc.), använd den nyaste —
+kolla `find . -maxdepth 3 -type d -iname "handoff v*"`.
+
+Innan implementation av en modul:
+
+1. Läs `CHANGELOG.md` (nuvarande version)
+2. Läs `STATUS.md` (modul-status: 🟢 Klar / 🟡 Delvis / 🔴 Saknas)
+3. För varje modul jag jobbar på, läs `02-pages/<Modul>/parity.html`
+   som auktoritativ spec — den listar varje feature i koden och var
+   den är mockad. Designen i `design.html` ska tolkas genom parity.
+
+**Implementera ENDAST 🟢-moduler.** Be om ny version av paketet om
+`STATUS.md` visar 🔴 eller 🟡 för en modul jag behöver bygga — den
+är då inte färdig-designad ännu.
+
+Mappkonvention:
+- `00-roadmap/` — prioritering + komplett feature-inventory
+- `01-brand/` — logotyp, tokens.css, brand-guide
+- `02-pages/<Modul>/` — `design.html` + `parity.html` per sida
+- `03-source/` — JSX-källor till canvas-mockups
+
+Versionssystem (semver):
+- MAJOR — strukturomläggning av paketet
+- MINOR — ny modul klar (en 🔴/🟡 → 🟢)
+- PATCH — justeringar inom en redan-klar modul
+
+Äldre paket i `Design Test/Tidigare/handoff/` och `Design Test/20260508/Handoff /`
+är **ersatta** av v2.0.0 och bör inte användas vidare.
+
+---
+*Last Updated: 2026-05-09*
