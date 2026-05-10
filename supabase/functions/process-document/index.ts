@@ -342,7 +342,9 @@ async function extractWithOpenAI(documentContent: string, mode: 'scope' | 'quote
   const systemPrompt = isQuote ? QUOTE_PROMPT : SYSTEM_PROMPT;
   // Use gpt-4o for quotes (more complex extraction), gpt-4o-mini for scope
   const model = isQuote ? 'gpt-4o' : 'gpt-4o-mini';
-  const maxTokens = isQuote ? 8192 : 4096;
+  // gpt-4o + gpt-4o-mini both support 16384 output tokens — needed so large
+  // multi-room quotes don't get truncated mid-JSON.
+  const maxTokens = isQuote ? 16384 : 8192;
 
   console.log('Sending to OpenAI, mode:', mode, 'model:', model, 'content length:', documentContent.length);
 
@@ -368,6 +370,7 @@ async function extractWithOpenAI(documentContent: string, mode: 'scope' | 'quote
       messages,
       max_tokens: maxTokens,
       temperature: 0.2,
+      response_format: { type: 'json_object' },
     }),
   });
 
@@ -379,9 +382,15 @@ async function extractWithOpenAI(documentContent: string, mode: 'scope' | 'quote
 
   const data = await response.json();
 
-  const content = data.choices?.[0]?.message?.content;
+  const choice = data.choices?.[0];
+  const content = choice?.message?.content;
   if (!content) {
     throw new Error('No content in OpenAI response');
+  }
+
+  if (choice.finish_reason === 'length') {
+    console.error('OpenAI response truncated at max_tokens');
+    throw new Error('Dokumentet är för stort för att tolkas i ett svep. Försök dela upp det eller ladda upp en mindre version.');
   }
 
   console.log('OpenAI response received, length:', content.length);
@@ -439,8 +448,9 @@ async function extractWithOpenAI(documentContent: string, mode: 'scope' | 'quote
       quoteMetadata,
     };
   } catch (parseError) {
+    const preview = jsonText.substring(0, 200).replace(/\s+/g, ' ');
     console.error('Failed to parse OpenAI response:', jsonText.substring(0, 500));
-    throw new Error('Kunde inte tolka AI-svaret. Försök igen.');
+    throw new Error(`Kunde inte tolka AI-svaret. AI svarade: "${preview}"`);
   }
 }
 
