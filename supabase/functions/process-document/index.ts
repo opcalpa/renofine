@@ -76,12 +76,25 @@ const SYSTEM_PROMPT = `Du är en expert på att analysera svenska renoveringsdok
 
 Analysera dokumentet och extrahera:
 
-1. RUM - Alla rum som nämns i dokumentet
-   - name: Rumsnamn (t.ex. "Kök", "Vardagsrum", "Master bedroom")
+1. RUM - Fysiska utrymmen eller byggnader där arbetena utförs
+
+   Vad räknas som ett rum:
+   ✅ Utrymmen i en byggnad: Kök, Sovrum, Badrum, Hall, Vardagsrum, Källare, Tvättstuga, Kontor
+   ✅ Egna byggnader/grupperingar: Attefallshus, Garage, Förråd, Komplementbyggnad, Carport, Altan, Pool, Trädgård, Uteplats
+
+   Vad räknas INTE som rum (extrahera dem INTE som rum):
+   ❌ Byggnadskomponenter: Bjälklag, Yttervägg, Innervägg, Tak, Grund, Takstol, Bärlina, Fasad
+   ❌ Material- eller kostnadskategorier: Material, Förbrukning, Övrigt
+   ❌ Arbetsmoment: Rivning, Målning, El, VVS — dessa hör till tasks, inte rooms
+
+   Fält per rum:
+   - name: Rumsnamn eller byggnadsnamn (t.ex. "Kök", "Attefallshus", "Garage")
    - estimatedAreaSqm: Uppskattad storlek i m² om det nämns, annars null
    - description: Kort beskrivning av rummet baserat på dokumentet
    - confidence: Din konfidens i extraheringen (0.0-1.0)
    - sourceText: Exakt text från dokumentet som nämnde rummet
+
+   Om dokumentet inte namnger något fysiskt utrymme eller byggnad, returnera en TOM rooms-array ([]). Det är bättre än att hitta på rum.
 
 2. UPPGIFTER/ARBETEN - Alla arbeten eller åtgärder som ska utföras
    - title: Kort titel för uppgiften (t.ex. "Riva vägg mellan kök och vardagsrum")
@@ -128,26 +141,59 @@ const QUOTE_PROMPT = `Du är en expert på att analysera svenska bygofferter, pr
 
 Analysera dokumentet och extrahera ALL information:
 
-1. RUM - Alla rum som nämns
-   - name: Rumsnamn (t.ex. "Kök", "Badrum")
+1. RUM - Fysiska utrymmen eller byggnader där arbetena utförs
+
+   Vad räknas som ett rum:
+   ✅ Utrymmen i en byggnad: Kök, Sovrum, Badrum, Hall, Vardagsrum, Källare, Tvättstuga, Kontor
+   ✅ Egna byggnader/grupperingar: Attefallshus, Garage, Förråd, Komplementbyggnad, Carport, Altan, Pool, Trädgård, Uteplats
+
+   Vad räknas INTE som rum (extrahera dem INTE som rum):
+   ❌ Byggnadskomponenter: Bjälklag, Yttervägg, Innervägg, Tak, Grund, Takstol, Bärlina, Fasad
+   ❌ Material- eller kostnadskategorier: Material, Förbrukning, Övrigt
+   ❌ Arbetsmoment: Rivning, Målning, El, VVS — hör till tasks
+
+   Fält per rum:
+   - name: Rumsnamn eller byggnadsnamn (t.ex. "Kök", "Attefallshus", "Garage")
    - estimatedAreaSqm: Storlek i m² om det nämns, annars null
    - description: Kort beskrivning baserat på dokumentet
    - confidence: Din konfidens (0.0-1.0)
    - sourceText: Exakt text från dokumentet
 
+   Om offerten inte namnger något fysiskt utrymme/byggnad utan bara listar arbeten, returnera TOM rooms-array ([]). Sätt då roomName=null på alla tasks. Hellre tom än uppfunnen.
+
 2. ARBETEN OCH MATERIALPOSTER - Varje arbetsmoment eller offertrad
 
-   För varje rad, avgör om det är en ARBETSPOST eller en MATERIALPOST:
+   Avgör vilket av tre fall raden tillhör (spegla offertens struktur, tvinga inte separation):
 
-   ARBETSPOST (isMaterialBudget: false):
-   - Utför ett arbete (rivning, målning, rörarbete, etc.)
-   - Kan ha egen materialkostnad specificerad (materialCost)
+   FALL 1 — ARBETSPOST utan separat material (isMaterialBudget: false):
+   - Bara arbete, inget material specificerat (t.ex. "Rivning av kök 15 000 kr")
+   - estimatedCost = arbetskostnad
+   - materialCost = null
+   - rotEligible kan vara true
 
-   MATERIALPOST (isMaterialBudget: true):
-   - En separat rad som enbart beskriver material (t.ex. "Material för målning", "Golvmaterial")
-   - Ska INTE bli en egen arbetsuppgift
-   - Ska kopplas till närmaste arbetspost via parentTaskName
+   FALL 2 — ARBETSPOST inkl. material (isMaterialBudget: false):
+   - Arbete + material i samma rad (t.ex. "Målning inkl. material 30 000 kr")
+   - estimatedCost = totalpriset
+   - Sätt materialCost om beloppet kan utläsas (t.ex. "varav material 8 000 kr"), annars null
+   - Skapa INTE en separat materialpost — det vore dubbelräkning
+   - rotEligible räknas på laborCost (eller estimatedCost minus materialCost)
+
+   FALL 3 — SEPARAT MATERIALPOST (isMaterialBudget: true):
+   - Egen rad som beskriver material/produkt, INTE ett arbete
    - estimatedCost = materialbeloppet
+   - parentTaskName = EXAKT titel på arbetsposten material hör till, t.ex. "Målning"
+   - Om ingen tillhörande arbetspost finns i offerten (fristående material), sätt parentTaskName = null
+   - Skapa INTE en arbetsuppgift av denna rad
+   - rotEligible = false ALLTID (ROT gäller aldrig material)
+
+   Hur du känner igen FALL 3 — raden är materialpost om titeln är:
+   ✅ "Material för målning", "Golvmaterial", "Material för väggar"
+   ✅ Specifika produktnamn/dimensioner: "K-virke C24 45x170", "Takplåt", "Trallskruv", "PAROC Isoleringsskiva", "Underlagsspont", "Hyvlad regel gran"
+   ✅ Varumärken: "Moelven Trend", "DalaFloda Softpine", "T-Vap Ångbroms"
+   ❌ Däremot är följande arbeten (FALL 1 eller 2): "Rivning av kök", "Målning av hall", "Demontering", "Installation av el", "Montering av kök"
+
+   VIKTIGT — rena materialoffert från bygghandlare:
+   Offerter från bygghandlare (Vindö Byggvaror, Beijer, Optimera, Woody, Bauhaus, XL-Bygg, K-Rauta, etc.) består ofta UTESLUTANDE av produktrader utan ett enda arbete. Om hela offerten består av produktnamn/dimensioner och INGEN rad beskriver ett arbete med verb (rivning, montering, målning, installation), klassa ALLA rader som isMaterialBudget=true med parentTaskName=null. rotEligible=false på alla. Det är då användarens jobb att senare lägga till en separat arbetsoffert.
 
    Fält per post:
    - title: Kort titel (t.ex. "Rivning av befintligt kök")
@@ -182,15 +228,12 @@ Analysera dokumentet och extrahera ALL information:
 
 VIKTIGT:
 - Extrahera ALLA prisposter, även om de saknar detaljerad beskrivning
-- Om priset inkluderar arbete + material men inte specificeras separat, sätt estimatedCost och lämna laborCost/materialCost som null
 - Om ROT-avdrag nämns, extrahera priset FÖRE avdrag (bruttopris)
 - Belopp ska vara tal (number), INTE strängar
-- KRITISKT FÖR BELOPP: Använd EXAKT det belopp som står på raden i dokumentet. Beräkna ALDRIG egna belopp genom att multiplicera eller summera andra värden. Om en rad säger "Material för väggar 15 100 kr", ska estimatedCost vara exakt 15100, INTE ett beräknat värde.
-- MATERIALRADER (t.ex. "Material för målning 20 000 kr") ska ha isMaterialBudget: true och parentTaskName satt till närmaste arbetspost (t.ex. "Målning"). Dessa blir materialbudgetar, INTE arbetsuppgifter.
-- Om material ingår i en arbetspost (t.ex. "Målning inkl. material") — sätt materialCost på arbetsposten istället, INTE som separat materialrad. Undvik dubbelräkning.
-- ROT gäller BARA arbetskostnad, aldrig material. Sätt rotEligible: false på materialrader.
-- Confidence max 0.7 om det inte ordagrant nämns i texten
+- KRITISKT FÖR BELOPP: Använd EXAKT det belopp som står på raden. Beräkna ALDRIG egna belopp genom att multiplicera eller summera andra värden. Om en rad säger "Material för väggar 15 100 kr", ska estimatedCost vara exakt 15100, INTE ett beräknat värde.
 - Om en rad har mängd (antal) OCH á-pris, extrahera TOTALBELOPPET (mängd × á-pris) som estimatedCost, INTE á-priset ensamt.
+- Confidence max 0.7 om det inte ordagrant nämns i texten
+- roomName: bara fysiskt utrymme/byggnad enligt regeln ovan. Sätt null om dokumentet bara har komponent-kategorier (Bjälklag, Yttervägg, Tak) eller arbets-kategorier som rubriker.
 
 Svara ENDAST med giltig JSON:
 {
