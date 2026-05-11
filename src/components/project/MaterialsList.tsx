@@ -671,12 +671,12 @@ const MaterialsList = ({ taskId, currency }: MaterialsListProps) => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="new">{t('materialStatuses.new')}</SelectItem>
+                        <SelectItem value="to_order">{t('materialStatuses.to_order')}</SelectItem>
                         <SelectItem value="ordered">{t('materialStatuses.ordered')}</SelectItem>
-                        <SelectItem value="delivered">{t('materialStatuses.delivered')}</SelectItem>
                         <SelectItem value="paid">{t('materialStatuses.paid')}</SelectItem>
-                        <SelectItem value="installed">{t('materialStatuses.installed')}</SelectItem>
-                        <SelectItem value="done">{t('materialStatuses.done')}</SelectItem>
+                        <SelectItem value="paused">{t('materialStatuses.paused')}</SelectItem>
                         <SelectItem value="declined">{t('materialStatuses.declined')}</SelectItem>
+                        <SelectItem value="done">{t('materialStatuses.done')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </td>

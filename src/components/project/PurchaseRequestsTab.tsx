@@ -1301,7 +1301,7 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
                                         <SelectValue placeholder={t("purchases.bulkStatus", "Status...")} />
                                       </SelectTrigger>
                                       <SelectContent>
-                                        {["new", "ordered", "delivered", "paid", "installed", "done", "declined"].map((s) => (
+                                        {["new", "to_order", "ordered", "paid", "paused", "declined", "done"].map((s) => (
                                           <SelectItem key={s} value={s}>{t(`materialStatuses.${s}`, s)}</SelectItem>
                                         ))}
                                       </SelectContent>
