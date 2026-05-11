@@ -38,6 +38,7 @@ import {
 import { CommentsSection } from "@/components/comments/CommentsSection";
 import { EntityPhotoGallery } from "@/components/shared/EntityPhotoGallery";
 import { QuickReceiptCaptureModal } from "./QuickReceiptCaptureModal";
+import { QuoteReviewDialog } from "./QuoteReviewDialog";
 import { TaskFilesList } from "./TaskFilesList";
 import {
   Select,
@@ -81,6 +82,7 @@ interface Material {
   created_by_user_id: string | null;
   assigned_to_user_id: string | null;
   source_material_id?: string | null;
+  purchase_order_id?: string | null;
   rot_amount?: number | null;
   paid_date?: string | null;
   creator?: {
@@ -99,6 +101,20 @@ interface Material {
   attachmentCount?: number;
 }
 
+interface PurchaseOrder {
+  id: string;
+  vendor_name: string;
+  total: number;
+  status: string;
+  ordered_at: string | null;
+  delivered_at: string | null;
+  receipt_total: number | null;
+  receipt_matched_at: string | null;
+  source: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
 interface PurchaseRequestsTabProps {
   projectId: string;
   openEntityId?: string | null;
@@ -110,8 +126,12 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
   const { t } = useTranslation();
   const { showTaxDeduction } = useTaxDeductionVisible();
   const [materials, setMaterials] = useState<Material[]>([]);
+  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedPOIds, setExpandedPOIds] = useState<Set<string>>(new Set());
+  const [allocatingPOId, setAllocatingPOId] = useState<string | null>(null);
   const [receiptModalOpen, setReceiptModalOpen] = useState(false);
+  const [quoteReviewFile, setQuoteReviewFile] = useState<File | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [budgetPurchaseDialog, setBudgetPurchaseDialog] = useState<{ open: boolean; planned: Material | null; usedAmount: number }>({ open: false, planned: null, usedAmount: 0 });
   const [budgetExtraColsArr, setBudgetExtraColsArr] = usePersistedPreference<string[]>(`budget-cols-${projectId}`, []);
@@ -158,13 +178,16 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
       .channel('purchase_orders_changes')
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'materials'
-        },
+        { event: '*', schema: 'public', table: 'materials' },
         () => {
           fetchMaterials();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'purchase_orders' },
+        () => {
+          fetchPurchaseOrders();
         }
       )
       .subscribe();
@@ -178,6 +201,7 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
   useEffect(() => {
     if (currentProfileId !== null || permissionsResolved) {
       fetchMaterials();
+      fetchPurchaseOrders();
     }
   }, [currentProfileId, projectId, isProjectOwner, permissionsResolved]);
 
@@ -456,6 +480,46 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
     }
   };
 
+  const fetchPurchaseOrders = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("purchase_orders")
+        .select("id, vendor_name, total, status, ordered_at, delivered_at, receipt_total, receipt_matched_at, source, notes, created_at")
+        .eq("project_id", projectId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      setPurchaseOrders(data || []);
+    } catch (error: unknown) {
+      console.error("Error fetching purchase orders:", error);
+    }
+  };
+
+  const allocateOrderToTask = useCallback(async (poId: string, taskId: string | null) => {
+    setAllocatingPOId(poId);
+    try {
+      const { error } = await supabase
+        .from("materials")
+        .update({ task_id: taskId })
+        .eq("purchase_order_id", poId)
+        .eq("project_id", projectId);
+      if (error) throw error;
+      toast({
+        description: taskId
+          ? t("purchases.orderAllocated", "Ordern tilldelad")
+          : t("purchases.orderUnallocated", "Ordern är nu oallokerad"),
+      });
+      fetchMaterials();
+    } catch (error: unknown) {
+      console.error("Allocate error:", error);
+      toast({
+        variant: "destructive",
+        description: t("purchases.allocateFailed", "Kunde inte tilldela ordern"),
+      });
+    } finally {
+      setAllocatingPOId(null);
+    }
+  }, [projectId, t, toast]);
+
   const handleEditMaterial = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingMaterial) return;
@@ -585,7 +649,28 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
 
   // Split planned (budget references) from real orders — exclude subcontractor rows from budget
   const plannedMaterials = materials.filter(m => m.status === "planned" && m.description !== "__subcontractor__");
-  const orderMaterials = materials.filter(m => m.status !== "planned");
+  // Flat orders = non-planned materials NOT linked to a purchase_order
+  // (PO-linked materials are rendered under their PO card instead, to avoid duplication)
+  const orderMaterials = materials.filter(m => m.status !== "planned" && !m.purchase_order_id);
+
+  // Group PO-linked materials by their purchase_order_id for the PO section
+  const materialsByPOId = new Map<string, Material[]>();
+  for (const m of materials) {
+    if (m.purchase_order_id) {
+      const list = materialsByPOId.get(m.purchase_order_id) || [];
+      list.push(m);
+      materialsByPOId.set(m.purchase_order_id, list);
+    }
+  }
+
+  const togglePOExpanded = (poId: string) => {
+    setExpandedPOIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(poId)) next.delete(poId);
+      else next.add(poId);
+      return next;
+    });
+  };
 
   // Paid per planned row: only counts when purchase order status = "paid"
   const paidByPlannedId = new Map<string, number>();
@@ -678,6 +763,7 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
               open={receiptModalOpen}
               onOpenChange={setReceiptModalOpen}
               onSuccess={() => fetchMaterials()}
+              onSwitchToQuoteImport={(file) => setQuoteReviewFile(file)}
             />
           </>
         )}
@@ -738,10 +824,140 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
         );
       })()}
 
+      {/* Inköpsorder — grouped by purchase_order_id */}
+      {purchaseOrders.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-display font-normal flex items-center gap-2">
+              <ShoppingCart className="h-4 w-4" />
+              {t("purchases.purchaseOrdersTitle", "Inköpsorder")}
+              <Badge variant="secondary" className="ml-1 text-xs">{purchaseOrders.length}</Badge>
+            </CardTitle>
+            <CardDescription className="text-xs">
+              {t(
+                "purchases.purchaseOrdersDescription",
+                "Beställningar från leverantörer. Tilldela rader till tasks för budgetuppföljning.",
+              )}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2 pt-0">
+            {purchaseOrders.map((po) => {
+              const rows = materialsByPOId.get(po.id) || [];
+              const isExpanded = expandedPOIds.has(po.id);
+              const isAllocating = allocatingPOId === po.id;
+              const allocatedTaskIds = new Set(rows.map(r => r.task_id).filter((id): id is string => !!id));
+              const bulkValue = allocatedTaskIds.size === 1
+                ? Array.from(allocatedTaskIds)[0]
+                : allocatedTaskIds.size > 1 ? "mixed" : "none";
+              const statusColor =
+                po.status === "delivered" ? "bg-emerald-100 text-emerald-700 border-emerald-200" :
+                po.status === "ordered" ? "bg-amber-100 text-amber-700 border-amber-200" :
+                po.status === "cancelled" ? "bg-red-100 text-red-700 border-red-200" :
+                "bg-muted text-muted-foreground border-border";
+              return (
+                <div key={po.id} className="rounded-lg border bg-card overflow-hidden">
+                  <div className="flex items-center gap-3 p-3 hover:bg-accent/30">
+                    <button
+                      type="button"
+                      onClick={() => togglePOExpanded(po.id)}
+                      className="flex-shrink-0"
+                      title={isExpanded ? t("common.collapse", "Fäll ihop") : t("common.expand", "Expandera")}
+                    >
+                      <ChevronDown className={cn("h-4 w-4 transition-transform", !isExpanded && "-rotate-90")} />
+                    </button>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium text-sm truncate">{po.vendor_name}</span>
+                        <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 capitalize", statusColor)}>
+                          {t(`purchaseOrderStatus.${po.status}`, po.status)}
+                        </Badge>
+                        {po.source && (
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                            {t(`purchaseOrderSource.${po.source}`, po.source)}
+                          </Badge>
+                        )}
+                        {po.notes && (
+                          <span className="text-[11px] text-muted-foreground">{po.notes}</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 mt-0.5 text-[11px] text-muted-foreground tnum">
+                        <span className="font-medium text-foreground">{formatCurrency(po.total, currency)}</span>
+                        <span>{t("purchases.linesCount", { defaultValue: "{{count}} rader", count: rows.length })}</span>
+                        {po.delivered_at && <span>{t("purchases.delivered", "Levererad")}: {new Date(po.delivered_at).toLocaleDateString()}</span>}
+                      </div>
+                    </div>
+                    {/* Allocate-all dropdown */}
+                    <div className="flex-shrink-0">
+                      <Select
+                        value={bulkValue}
+                        disabled={isAllocating || rows.length === 0}
+                        onValueChange={(v) => allocateOrderToTask(po.id, v === "none" ? null : v)}
+                      >
+                        <SelectTrigger className="h-8 text-xs w-[200px]">
+                          {isAllocating ? (
+                            <span className="flex items-center gap-1.5"><Loader2 className="h-3 w-3 animate-spin" /> {t("common.saving", "Sparar...")}</span>
+                          ) : (
+                            <SelectValue
+                              placeholder={t("purchases.allocateAllTo", "Tilldela alla till...")}
+                            />
+                          )}
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">{t("purchases.unallocated", "Oallokerat")}</SelectItem>
+                          {bulkValue === "mixed" && (
+                            <SelectItem value="mixed" disabled>
+                              {t("purchases.mixedAllocation", "Olika tasks")}
+                            </SelectItem>
+                          )}
+                          {tasks.map((task) => (
+                            <SelectItem key={task.id} value={task.id}>{task.title}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  {isExpanded && rows.length > 0 && (
+                    <div className="border-t bg-muted/20 px-3 py-2 space-y-1">
+                      {rows.map((row) => (
+                        <button
+                          key={row.id}
+                          type="button"
+                          onClick={() => openEditDialog(row)}
+                          className="w-full grid grid-cols-[1fr_auto_auto] gap-3 text-left text-xs py-1.5 px-2 rounded hover:bg-accent transition-colors"
+                        >
+                          <span className="truncate">{row.name}</span>
+                          {row.task_id ? (
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 whitespace-nowrap">
+                              {row.task?.title || t("purchases.linkedToTask", "Task")}
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground whitespace-nowrap">
+                              {t("purchases.unallocated", "Oallokerat")}
+                            </Badge>
+                          )}
+                          <span className="tnum text-muted-foreground whitespace-nowrap">
+                            {formatCurrency(row.price_total || 0, currency)}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {isExpanded && rows.length === 0 && (
+                    <div className="border-t bg-muted/20 px-3 py-2 text-xs text-muted-foreground italic">
+                      {t("purchases.poNoLines", "Inga radnivå-material — ordern är endast registrerad som totalsumma.")}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Purchase orders section */}
       <Card>
         <CardContent className="pt-4">
-          {materials.length === 0 ? (
+          {materials.length === 0 && purchaseOrders.length === 0 ? (
             <div className="text-center py-12">
               <ShoppingCart className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium mb-2">{t('purchases.noPurchaseOrders')}</h3>
@@ -751,6 +967,10 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
                 {t('purchases.emptyStateTip', 'Tip: Link purchases to tasks to track costs per work item')}
               </p>
             </div>
+          ) : orderMaterials.length === 0 ? (
+            <p className="text-xs text-muted-foreground text-center py-6 italic">
+              {t('purchases.allOrdersAreGrouped', 'Alla inköp visas grupperade ovanför.')}
+            </p>
           ) : (
             <>
               {/* Toolbar: View Toggle + Filter + Results count */}
@@ -1307,6 +1527,17 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
         currency={currency}
         usedAmount={budgetPurchaseDialog.usedAmount}
         onCreated={fetchMaterials}
+      />
+      <QuoteReviewDialog
+        projectId={projectId}
+        open={quoteReviewFile !== null}
+        onOpenChange={(o) => { if (!o) setQuoteReviewFile(null); }}
+        file={quoteReviewFile}
+        onImportComplete={() => {
+          fetchMaterials();
+          fetchPurchaseOrders();
+          fetchTasks();
+        }}
       />
     </div>
   );

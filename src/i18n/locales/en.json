@@ -2417,6 +2417,22 @@
   "purchases": {
     "title": "Purchase Orders",
     "description": "Manage all purchase orders for this project",
+    "kicker": "Purchases & material",
+    "orders": "purchases",
+    "purchaseOrdersTitle": "Purchase Orders",
+    "purchaseOrdersDescription": "Orders from suppliers. Allocate lines to tasks for budget tracking.",
+    "orderAllocated": "Order allocated",
+    "orderUnallocated": "Order is now unallocated",
+    "allocateFailed": "Could not allocate order",
+    "allocateAllTo": "Allocate all to…",
+    "unallocated": "Unallocated",
+    "mixedAllocation": "Mixed tasks",
+    "linesCount": "{{count}} lines",
+    "linkedToTask": "Task",
+    "delivered": "Delivered",
+    "poNoLines": "No line-item materials — only registered as total.",
+    "allOrdersAreGrouped": "All purchases are shown grouped above.",
+    "importQuote": "Import quote (PDF)",
     "addOrder": "Add Purchase Order",
     "addOrderDescription": "Create a new purchase order for materials needed for this project",
     "editOrder": "Edit Purchase Order",
@@ -2712,6 +2728,7 @@
     "linkedTo": "Linked to",
     "analyzeDocument": "Analyze Document",
     "analyzing": "Analyzing...",
+    "skipAndFillManually": "Fill in manually",
     "analysisComplete": "Document analyzed",
     "analysisError": "Could not analyze document. Please fill in the details manually.",
     "saveReceipt": "Save Receipt",
@@ -5500,7 +5517,43 @@
     "labor": "Labor",
     "material": "Material",
     "tasksSelected": "tasks",
-    "roomsSelected": "rooms"
+    "roomsSelected": "rooms",
+    "modeTitle": "Import as",
+    "aiDetected": "AI detected",
+    "modeA": {
+      "title": "Purchase order",
+      "desc": "1 order + line-item materials. For building-supplier quotes."
+    },
+    "modeB": {
+      "title": "Combined material budget",
+      "desc": "1 task with budget — materials are consumed from it."
+    },
+    "modeC": {
+      "title": "Separate tasks",
+      "desc": "Each line becomes its own task. Advanced."
+    },
+    "linkToLabel": "Link to task",
+    "linkToUnallocated": "Unallocated (assign later)",
+    "linkToNewBucket": "Create new budget task",
+    "materialBudgetTitle": "Material budget — {{vendor}}",
+    "materialBudgetTitleFallback": "Material budget",
+    "timeoutHint": "(Large documents can time out — try again or split the document)",
+    "source": {
+      "building_supplier": "Building supplier",
+      "contractor": "Contractor",
+      "mixed": "Mixed"
+    }
+  },
+  "purchaseOrderStatus": {
+    "pending": "Pending",
+    "ordered": "Ordered",
+    "delivered": "Delivered",
+    "cancelled": "Cancelled"
+  },
+  "purchaseOrderSource": {
+    "ai_quote": "AI quote",
+    "ai_receipt": "AI receipt",
+    "manual": "Manual"
   },
   "dm": {
     "openChat": "Send message",

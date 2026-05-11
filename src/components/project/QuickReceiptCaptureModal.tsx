@@ -57,6 +57,9 @@ interface QuickReceiptCaptureModalProps {
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
   currency?: string | null;
+  /** Called when user uploads a PDF in the scan flow — PDFs go through process-document
+   * (quote import), not process-receipt. Parent should open QuoteReviewDialog with the file. */
+  onSwitchToQuoteImport?: (file: File) => void;
 }
 
 // Check if file is a supported receipt file (images + PDF)
@@ -193,6 +196,7 @@ export function QuickReceiptCaptureModal({
   onOpenChange,
   onSuccess,
   currency,
+  onSwitchToQuoteImport,
 }: QuickReceiptCaptureModalProps) {
   const { t } = useTranslation();
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -210,6 +214,9 @@ export function QuickReceiptCaptureModal({
   const [analysisResult, setAnalysisResult] =
     useState<DocumentAnalysisResult | null>(null);
   const [analysisError, setAnalysisError] = useState(false);
+  // Ref so the running handleAnalyze closure can detect mid-flight abort.
+  // (state wouldn't work — the async function captures the old value.)
+  const aiAbortedRef = useRef(false);
 
   // Form state
   const [vendorName, setVendorName] = useState("");
@@ -264,6 +271,7 @@ export function QuickReceiptCaptureModal({
     setAnalyzing(false);
     setAnalysisResult(null);
     setAnalysisError(false);
+    aiAbortedRef.current = false;
     setVendorName("");
     setTotalAmount("");
     setVatAmount("");
@@ -415,10 +423,15 @@ export function QuickReceiptCaptureModal({
 
     setAnalyzing(true);
     setAnalysisError(false);
+    aiAbortedRef.current = false;
 
     try {
       const base64 = await fileToBase64(selectedFile);
       const result = await analyzeDocument(base64);
+
+      // If user pressed "Fyll i själv" mid-flight, discard the result — they
+      // may already be typing values that the AI would overwrite.
+      if (aiAbortedRef.current) return;
 
       setAnalysisResult(result);
 
@@ -450,12 +463,22 @@ export function QuickReceiptCaptureModal({
 
       toast.success(t("document.analysisComplete"));
     } catch (error) {
+      if (aiAbortedRef.current) return; // user aborted — silent
       console.error("Document analysis failed:", error);
       setAnalysisError(true);
       toast.error(t("document.analysisError"));
     } finally {
-      setAnalyzing(false);
+      if (!aiAbortedRef.current) setAnalyzing(false);
     }
+  };
+
+  // User pressed "Fyll i själv" — drop out of the loading state and show
+  // the form with empty fields. File stays attached. Any in-flight AI result
+  // is discarded when it eventually returns.
+  const handleSkipAi = () => {
+    aiAbortedRef.current = true;
+    setAnalyzing(false);
+    setAnalysisError(true); // triggers form to render with empty fields
   };
 
   const handleSave = async () => {
@@ -506,7 +529,47 @@ export function QuickReceiptCaptureModal({
       let entityId: string | null = null;
       let entityType: "task" | "material" = "material";
 
-      if (linkOption === "link" && linkedEntity) {
+      // Manual flow → create 1 purchase_order (status=delivered, source=manual).
+      // If user picked a task / budget post, also create a bulk material row so the
+      // task budget link is preserved. Otherwise the order sits in "Att allokera".
+      if (flowStep === "manual") {
+        const { data: po, error: poError } = await supabase
+          .from("purchase_orders")
+          .insert({
+            project_id: projectId,
+            vendor_name: vendorName,
+            total: amount,
+            status: "delivered",
+            source: "manual",
+            delivered_at: dateStr,
+            created_by_user_id: profile.id,
+          })
+          .select("id")
+          .single();
+
+        if (poError) throw poError;
+
+        if (selectedTaskId || sourceMaterialId) {
+          const { error: matError } = await supabase
+            .from("materials")
+            .insert({
+              project_id: projectId,
+              purchase_order_id: po.id,
+              name: vendorName,
+              vendor_name: vendorName,
+              price_per_unit: amount,
+              price_total: amount,
+              quantity: 1,
+              unit: "st",
+              status: "ordered",
+              created_by_user_id: profile.id,
+              room_id: roomId !== "none" ? roomId : null,
+              task_id: selectedTaskId || null,
+              source_material_id: sourceMaterialId || null,
+            });
+          if (matError) console.error("Error linking manual PO to task:", matError);
+        }
+      } else if (linkOption === "link" && linkedEntity) {
         // Link to existing entity
         entityId = linkedEntity.id;
         entityType = linkedEntity.type;
@@ -782,25 +845,62 @@ export function QuickReceiptCaptureModal({
                 </button>
               </div>
 
-              {/* Analyze button */}
-              {!analysisResult && !analysisError && (
-                <Button
-                  onClick={handleAnalyze}
-                  disabled={analyzing}
-                  className="w-full gap-2"
-                >
-                  {analyzing ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      {t("document.analyzing")}
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-4 w-4" />
-                      {t("document.analyzeDocument")}
-                    </>
+              {/* PDF → route to quote import (process-receipt doesn't accept PDFs) */}
+              {!analysisResult && !analysisError && selectedFile && isPdfFile(selectedFile) && onSwitchToQuoteImport && (
+                <div className="space-y-2 p-3 rounded-lg border bg-amber-50 border-amber-200">
+                  <p className="text-sm text-amber-800">
+                    {t(
+                      "receipt.pdfNeedsQuoteFlow",
+                      "PDF-format hanteras via offert-importen (rad-för-rad extraktion).",
+                    )}
+                  </p>
+                  <Button
+                    onClick={() => {
+                      const file = selectedFile;
+                      onOpenChange(false);
+                      resetForm();
+                      onSwitchToQuoteImport(file);
+                    }}
+                    className="w-full gap-2"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    {t("receipt.openQuoteImport", "Öppna offert-import")}
+                  </Button>
+                </div>
+              )}
+
+              {/* Analyze button + skip-AI escape hatch */}
+              {!analysisResult && !analysisError && !(selectedFile && isPdfFile(selectedFile) && onSwitchToQuoteImport) && (
+                <div className="space-y-2">
+                  <Button
+                    onClick={handleAnalyze}
+                    disabled={analyzing}
+                    className="w-full gap-2"
+                  >
+                    {analyzing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        {t("document.analyzing")}
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-4 w-4" />
+                        {t("document.analyzeDocument")}
+                      </>
+                    )}
+                  </Button>
+                  {analyzing && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleSkipAi}
+                      className="w-full text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      {t("document.skipAndFillManually", "Fyll i själv")}
+                    </Button>
                   )}
-                </Button>
+                </div>
               )}
 
               {/* Analysis error warning */}

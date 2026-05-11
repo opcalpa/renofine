@@ -1877,6 +1877,22 @@
   "purchases": {
     "title": "Inköpsordrar",
     "description": "Hantera alla inköpsordrar för detta projekt",
+    "kicker": "Inköp & material",
+    "orders": "inköp",
+    "purchaseOrdersTitle": "Inköpsorder",
+    "purchaseOrdersDescription": "Beställningar från leverantörer. Tilldela rader till tasks för budgetuppföljning.",
+    "orderAllocated": "Ordern tilldelad",
+    "orderUnallocated": "Ordern är nu oallokerad",
+    "allocateFailed": "Kunde inte tilldela ordern",
+    "allocateAllTo": "Tilldela alla till…",
+    "unallocated": "Oallokerat",
+    "mixedAllocation": "Olika tasks",
+    "linesCount": "{{count}} rader",
+    "linkedToTask": "Task",
+    "delivered": "Levererad",
+    "poNoLines": "Inga radnivå-material — endast registrerad som totalsumma.",
+    "allOrdersAreGrouped": "Alla inköp visas grupperade ovanför.",
+    "importQuote": "Importera offert (PDF)",
     "addOrder": "Lägg till inköpsorder",
     "addOrderDescription": "Skapa en ny inköpsorder för material som behövs för detta projekt",
     "editOrder": "Redigera inköpsorder",
@@ -2172,6 +2188,7 @@
     "linkedTo": "Kopplat till",
     "analyzeDocument": "Analysera dokument",
     "analyzing": "Analyserar...",
+    "skipAndFillManually": "Fyll i själv",
     "analysisComplete": "Dokument analyserat",
     "analysisError": "Kunde inte analysera dokumentet. Fyll i uppgifterna manuellt.",
     "saveReceipt": "Spara kvitto",
@@ -5497,7 +5514,43 @@
     "labor": "Arbete",
     "material": "Material",
     "tasksSelected": "arbeten",
-    "roomsSelected": "rum"
+    "roomsSelected": "rum",
+    "modeTitle": "Importera som",
+    "aiDetected": "AI-detekterat",
+    "modeA": {
+      "title": "Inköpsorder",
+      "desc": "1 order + radnivå-material. För byggvaror-offerter."
+    },
+    "modeB": {
+      "title": "Samlad materialbudget",
+      "desc": "1 task med budget — material konsumeras därifrån."
+    },
+    "modeC": {
+      "title": "Separata tasks",
+      "desc": "Varje rad blir egen task. Avancerat."
+    },
+    "linkToLabel": "Koppla till task",
+    "linkToUnallocated": "Oallokerat (välj senare)",
+    "linkToNewBucket": "Skapa ny budget-task",
+    "materialBudgetTitle": "Materialbudget — {{vendor}}",
+    "materialBudgetTitleFallback": "Materialbudget",
+    "timeoutHint": "(Stora dokument kan timeouta — pröva igen eller dela upp dokumentet)",
+    "source": {
+      "building_supplier": "Byggvaruhandlare",
+      "contractor": "Hantverkare",
+      "mixed": "Blandad"
+    }
+  },
+  "purchaseOrderStatus": {
+    "pending": "Avvaktar",
+    "ordered": "Beställd",
+    "delivered": "Levererad",
+    "cancelled": "Avbruten"
+  },
+  "purchaseOrderSource": {
+    "ai_quote": "AI-offert",
+    "ai_receipt": "AI-kvitto",
+    "manual": "Manuell"
   },
   "dm": {
     "openChat": "Skicka meddelande",

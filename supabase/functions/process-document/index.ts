@@ -391,10 +391,11 @@ async function extractWithOpenAI(documentContent: string, mode: 'scope' | 'quote
 
   const isQuote = mode === 'quote';
   const systemPrompt = isQuote ? QUOTE_PROMPT : SYSTEM_PROMPT;
-  // Use gpt-4o for quotes (more complex extraction), gpt-4o-mini for scope
-  const model = isQuote ? 'gpt-4o' : 'gpt-4o-mini';
-  // gpt-4o + gpt-4o-mini both support 16384 output tokens — needed so large
-  // multi-room quotes don't get truncated mid-JSON.
+  // gpt-4o-mini for both modes: 3-5x faster output, ~15-20x cheaper, and
+  // sufficient accuracy for structured extraction. Avoids edge worker timeout
+  // (546) on big multi-row quotes like Vindö Z20875.
+  const model = 'gpt-4o-mini';
+  // Both modes need headroom — quotes have many rows, scope can have many tasks.
   const maxTokens = isQuote ? 16384 : 8192;
 
   console.log('Sending to OpenAI, mode:', mode, 'model:', model, 'content length:', documentContent.length);

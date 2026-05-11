@@ -3,10 +3,16 @@
  *
  * Shows extracted tasks with pricing, rooms, and quote metadata.
  * User can edit, select/deselect items before importing.
- * Follows the same pattern as PlanningSmartImportDialog.
+ *
+ * Import modes (driven by quoteSource):
+ *   - purchase_order (A): 1 purchase_orders row + N materials linked to it.
+ *     Default for building_supplier quotes (Vindö, Bauhaus, etc).
+ *   - material_budget (B): 1 stub task (budget=sum) + N materials under it.
+ *     Default for contractor quotes (snickare etc).
+ *   - separate_tasks (C): each item → its own task. Legacy / power-user.
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Dialog,
@@ -38,7 +44,10 @@ import {
   Receipt,
   Calendar,
   Building2,
+  ShoppingCart,
+  Layers,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCurrency } from "@/lib/currency";
 import {
@@ -52,6 +61,14 @@ import type {
   QuoteMetadata,
   DocumentExtractionResult,
 } from "@/services/smartUploadService";
+
+type ImportMode = "purchase_order" | "material_budget" | "separate_tasks";
+
+const DEFAULT_MODE_BY_SOURCE: Record<NonNullable<QuoteMetadata["quoteSource"]>, ImportMode> = {
+  building_supplier: "purchase_order",
+  contractor: "material_budget",
+  mixed: "separate_tasks",
+};
 
 // ---------------------------------------------------------------------------
 // Types
@@ -113,6 +130,9 @@ export function QuoteReviewDialog({
   const [editingRoomIndex, setEditingRoomIndex] = useState<number | null>(null);
   const [tempPath, setTempPath] = useState<string | null>(null);
   const [extracted, setExtracted] = useState(false);
+  const [mode, setMode] = useState<ImportMode>("separate_tasks");
+  const [linkToTaskId, setLinkToTaskId] = useState<string>("none");
+  const [existingTasks, setExistingTasks] = useState<{ id: string; title: string }[]>([]);
 
   const resetState = useCallback(() => {
     setStep("extracting");
@@ -123,7 +143,26 @@ export function QuoteReviewDialog({
     setEditingTaskIndex(null);
     setEditingRoomIndex(null);
     setExtracted(false);
+    setMode("separate_tasks");
+    setLinkToTaskId("none");
   }, []);
+
+  // Load existing tasks for the "Link to task" dropdown when dialog opens.
+  useEffect(() => {
+    if (!open || !projectId) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("tasks")
+        .select("id, title")
+        .eq("project_id", projectId)
+        .order("created_at", { ascending: true });
+      if (!cancelled) setExistingTasks(data || []);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, projectId]);
 
   // ---- Start extraction when dialog opens with file ----
   const startExtraction = useCallback(async () => {
@@ -132,11 +171,13 @@ export function QuoteReviewDialog({
     setStep("extracting");
 
     try {
-      // Upload to temp
-      const path = `temp/quote-import-${Date.now()}-${file.name}`;
+      // Upload directly under projects/{projectId}/ so the storage RLS policy
+      // (user_can_manage_project_files) accepts it. Path is kept around so we
+      // can clean up the file on cancel.
+      const path = `projects/${projectId}/quote-imports/${Date.now()}-${file.name}`;
       const { error: uploadErr } = await supabase.storage
         .from("project-files")
-        .upload(path, file);
+        .upload(path, file, { upsert: true });
       if (uploadErr) throw new Error(uploadErr.message);
       setTempPath(path);
 
@@ -144,28 +185,60 @@ export function QuoteReviewDialog({
         .from("project-files")
         .getPublicUrl(path);
 
-      // Call process-document with quote mode
-      const { data, error } = await supabase.functions.invoke(
-        "process-document",
-        {
-          body: {
+      // Call process-document via fetch (not invoke) so we surface the real
+      // server-side error body on non-2xx. Auto-retry once on edge worker
+      // timeout codes (546 = WORKER_LIMIT, 504 = gateway timeout) which large
+      // PDFs hit transiently — they usually succeed on the retry.
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const { data: { session } } = await supabase.auth.getSession();
+      const authToken = session?.access_token ?? supabaseAnonKey;
+
+      const callExtraction = async () => {
+        const r = await fetch(`${supabaseUrl}/functions/v1/process-document`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${authToken}`,
+            apikey: supabaseAnonKey,
+          },
+          body: JSON.stringify({
             fileUrl: urlData.publicUrl,
             fileType: file.type,
             fileName: file.name,
-            mode: "quote",
-          },
-        }
-      );
+            mode: 'quote',
+          }),
+        });
+        const body = await r.json().catch(() => null);
+        return { status: r.status, ok: r.ok, body };
+      };
 
-      if (error) {
-        supabase.storage.from("project-files").remove([path]);
-        throw new Error(error.message);
+      let attempt = await callExtraction();
+      const isRetryable = [546, 504, 524].includes(attempt.status);
+      if (!attempt.ok && isRetryable) {
+        console.warn(`process-document attempt 1 failed (${attempt.status}) — retrying once`);
+        attempt = await callExtraction();
       }
 
-      const result = data as DocumentExtractionResult;
+      if (!attempt.ok || attempt.body?.error) {
+        supabase.storage.from("project-files").remove([path]);
+        const serverMessage = attempt.body?.error || `HTTP ${attempt.status}`;
+        const timeoutHint = isRetryable
+          ? ` ${t("quoteReview.timeoutHint", "(Stora dokument kan timeouta — pröva igen eller dela upp dokumentet)")}`
+          : "";
+        throw new Error(`${serverMessage}${timeoutHint}`);
+      }
+
+      const result = attempt.body as DocumentExtractionResult;
 
       setSummary(result.documentSummary || "");
       setQuoteMetadata(result.quoteMetadata || null);
+
+      // Default import mode from AI's quoteSource classification.
+      const source = result.quoteMetadata?.quoteSource;
+      if (source && DEFAULT_MODE_BY_SOURCE[source]) {
+        setMode(DEFAULT_MODE_BY_SOURCE[source]);
+      }
 
       setRooms(
         (result.rooms || []).map((room, index) => ({
@@ -237,12 +310,8 @@ export function QuoteReviewDialog({
         .single();
       if (!profile) throw new Error("Profil hittades inte");
 
-      // Move file to project folder
-      if (tempPath && file) {
-        const destPath = `projects/${projectId}/${Date.now()}-${file.name}`;
-        await supabase.storage.from("project-files").upload(destPath, file);
-        supabase.storage.from("project-files").remove([tempPath]);
-      }
+      // File was already uploaded to projects/{projectId}/quote-imports/ during
+      // extraction — no need to move it. tempPath stays as the canonical location.
 
       // Create rooms
       const createdRoomIds = new Map<string, string>();
@@ -267,48 +336,143 @@ export function QuoteReviewDialog({
         createdRoomIds.set(room.name.toLowerCase(), roomData.id);
       }
 
-      // Create tasks with budget data
-      for (const task of selectedTasks) {
-        let roomId: string | null = null;
-        if (task.roomName) {
-          roomId = createdRoomIds.get(task.roomName.toLowerCase()) || null;
+      const linkTaskId = linkToTaskId === "none" ? null : linkToTaskId;
+
+      // Insert one purchase_order + N materials. Used by mode A.
+      // Returns the new purchase_order id or null on failure.
+      const createPurchaseOrder = async (): Promise<string | null> => {
+        const totalAmount = quoteMetadata?.totalAmount
+          ?? selectedTasks.reduce((s, tk) => s + (tk.estimatedCost || tk.materialCost || 0), 0);
+        const vendorName = quoteMetadata?.vendorName || t("quoteReview.unknownVendor", "Okänd leverantör");
+
+        const { data: po, error: poErr } = await supabase
+          .from("purchase_orders")
+          .insert({
+            project_id: projectId,
+            vendor_name: vendorName,
+            total: totalAmount,
+            status: "ordered",
+            ordered_at: quoteMetadata?.quoteDate || new Date().toISOString(),
+            source: "ai_quote",
+            created_by_user_id: profile.id,
+            notes: quoteMetadata?.quoteNumber ? `#${quoteMetadata.quoteNumber}` : null,
+          })
+          .select("id")
+          .single();
+
+        if (poErr) {
+          console.error("Error creating purchase_order:", poErr);
+          throw new Error(poErr.message);
         }
+        return po.id;
+      };
 
-        const costCenter =
-          TASK_CATEGORY_TO_COST_CENTER[task.category as TaskCategory] || "construction";
-
-        // Map extracted costs to existing DB columns:
-        // estimatedCost → subcontractor_cost (total labor from external quote)
-        // materialCost → material_estimate
-        // estimatedCost (total) → budget
-        // startDate → start_date, endDate → finish_date
-        const totalCost = (task.estimatedCost || 0) + (task.materialCost || 0);
-
-        const { error: taskErr } = await supabase.from("tasks").insert({
+      // Insert one material row per extracted task. Used by mode A + B.
+      const insertMaterialRow = async (task: EditableTask, opts: { purchaseOrderId?: string | null; taskId?: string | null }) => {
+        const cost = task.estimatedCost || task.materialCost || 0;
+        const roomId = task.roomName ? createdRoomIds.get(task.roomName.toLowerCase()) || null : null;
+        const { error: matErr } = await supabase.from("materials").insert({
           project_id: projectId,
-          room_id: roomId,
-          title: task.title,
+          name: task.title,
           description: task.description,
-          status: "to_do",
-          priority: "medium",
+          quantity: 1,
+          unit: "st",
+          price_per_unit: cost > 0 ? cost : null,
+          price_total: cost > 0 ? cost : null,
+          status: opts.purchaseOrderId ? "ordered" : "planned",
+          purchase_order_id: opts.purchaseOrderId || null,
+          task_id: opts.taskId || null,
+          room_id: roomId,
+          vendor_name: quoteMetadata?.vendorName || null,
           created_by_user_id: profile.id,
-          cost_center: costCenter,
-          task_cost_type: "subcontractor",
-          subcontractor_cost: task.laborCost || task.estimatedCost || null,
-          material_estimate: task.materialCost || null,
-          budget: totalCost > 0 ? totalCost : null,
-          start_date: task.startDate || null,
-          finish_date: task.endDate || null,
-          rot_eligible: task.rotEligible || false,
-          rot_amount: task.rotAmount || null,
         });
+        if (matErr) console.error("Error creating material:", matErr);
+      };
 
-        if (taskErr) {
-          console.error("Error creating task:", taskErr);
+      if (mode === "purchase_order") {
+        // ----- Mode A: 1 purchase_order + N materials, optionally linked to a task -----
+        const poId = await createPurchaseOrder();
+        for (const tk of selectedTasks) {
+          await insertMaterialRow(tk, { purchaseOrderId: poId, taskId: linkTaskId });
+        }
+      } else if (mode === "material_budget") {
+        // ----- Mode B: 1 stub task (or use linked task) + N materials -----
+        let bucketTaskId = linkTaskId;
+        if (!bucketTaskId) {
+          const totalBudget = selectedTasks.reduce(
+            (s, tk) => s + ((tk.estimatedCost || 0) + (tk.materialCost || 0)),
+            0,
+          );
+          const stubTitle = quoteMetadata?.vendorName
+            ? t("quoteReview.materialBudgetTitle", {
+                defaultValue: "Materialbudget — {{vendor}}",
+                vendor: quoteMetadata.vendorName,
+              })
+            : t("quoteReview.materialBudgetTitleFallback", "Materialbudget");
+          const { data: stub, error: stubErr } = await supabase
+            .from("tasks")
+            .insert({
+              project_id: projectId,
+              title: stubTitle,
+              description: summary || null,
+              status: "to_do",
+              priority: "medium",
+              created_by_user_id: profile.id,
+              cost_center: "construction",
+              task_cost_type: "subcontractor",
+              budget: totalBudget > 0 ? totalBudget : null,
+              material_estimate: totalBudget > 0 ? totalBudget : null,
+            })
+            .select("id")
+            .single();
+          if (stubErr) {
+            console.error("Error creating stub task:", stubErr);
+            throw new Error(stubErr.message);
+          }
+          bucketTaskId = stub.id;
+        }
+        for (const tk of selectedTasks) {
+          await insertMaterialRow(tk, { taskId: bucketTaskId, purchaseOrderId: null });
+        }
+      } else {
+        // ----- Mode C (separate_tasks): legacy behavior — each item → its own task -----
+        for (const task of selectedTasks) {
+          let roomId: string | null = null;
+          if (task.roomName) {
+            roomId = createdRoomIds.get(task.roomName.toLowerCase()) || null;
+          }
+
+          const costCenter =
+            TASK_CATEGORY_TO_COST_CENTER[task.category as TaskCategory] || "construction";
+
+          const totalCost = (task.estimatedCost || 0) + (task.materialCost || 0);
+
+          const { error: taskErr } = await supabase.from("tasks").insert({
+            project_id: projectId,
+            room_id: roomId,
+            title: task.title,
+            description: task.description,
+            status: "to_do",
+            priority: "medium",
+            created_by_user_id: profile.id,
+            cost_center: costCenter,
+            task_cost_type: "subcontractor",
+            subcontractor_cost: task.laborCost || task.estimatedCost || null,
+            material_estimate: task.materialCost || null,
+            budget: totalCost > 0 ? totalCost : null,
+            start_date: task.startDate || null,
+            finish_date: task.endDate || null,
+            rot_eligible: task.rotEligible || false,
+            rot_amount: task.rotAmount || null,
+          });
+
+          if (taskErr) {
+            console.error("Error creating task:", taskErr);
+          }
         }
       }
 
-      // Create external quote record if metadata exists
+      // Create external quote record if metadata exists (kept for all modes)
       if (quoteMetadata?.vendorName && quoteMetadata?.totalAmount) {
         await supabase.from("external_quotes").insert({
           project_id: projectId,
@@ -432,6 +596,101 @@ export function QuoteReviewDialog({
                   </div>
                 </div>
               )}
+
+              {/* Mode selector — drives what the import creates */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-medium">
+                    {t("quoteReview.modeTitle", "Importera som")}
+                  </h4>
+                  {quoteMetadata?.quoteSource && (
+                    <Badge variant="secondary" className="text-[10px]">
+                      {t("quoteReview.aiDetected", "AI-detekterat")}: {t(`quoteReview.source.${quoteMetadata.quoteSource}`, quoteMetadata.quoteSource)}
+                    </Badge>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {([
+                    {
+                      value: "purchase_order" as const,
+                      icon: ShoppingCart,
+                      title: t("quoteReview.modeA.title", "Inköpsorder"),
+                      desc: t("quoteReview.modeA.desc", "1 order + radnivå-material. För byggvaror-offerter."),
+                    },
+                    {
+                      value: "material_budget" as const,
+                      icon: Layers,
+                      title: t("quoteReview.modeB.title", "Samlad materialbudget"),
+                      desc: t("quoteReview.modeB.desc", "1 task med budget — material konsumeras därifrån."),
+                    },
+                    {
+                      value: "separate_tasks" as const,
+                      icon: ClipboardList,
+                      title: t("quoteReview.modeC.title", "Separata tasks"),
+                      desc: t("quoteReview.modeC.desc", "Varje rad blir egen task. Avancerat."),
+                    },
+                  ]).map((opt) => {
+                    const Icon = opt.icon;
+                    const active = mode === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setMode(opt.value)}
+                        className={cn(
+                          "flex flex-col items-start gap-1 rounded-lg border p-2.5 text-left transition-colors",
+                          active
+                            ? "bg-primary/5 border-primary/40 ring-1 ring-primary/30"
+                            : "bg-background hover:bg-accent/40 hover:border-border",
+                        )}
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <Icon className="h-3.5 w-3.5" />
+                          <span className="text-xs font-medium">{opt.title}</span>
+                        </div>
+                        <span className="text-[11px] text-muted-foreground leading-tight">
+                          {opt.desc}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Link-to-task picker for modes A and B */}
+                {mode !== "separate_tasks" && (
+                  <div className="flex items-center gap-2 pt-1">
+                    <label className="text-xs text-muted-foreground whitespace-nowrap">
+                      {t("quoteReview.linkToLabel", "Koppla till task")}:
+                    </label>
+                    <Select value={linkToTaskId} onValueChange={setLinkToTaskId}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue
+                          placeholder={t(
+                            "quoteReview.linkToPlaceholder",
+                            mode === "purchase_order"
+                              ? "Oallokerat (välj senare)"
+                              : "Skapa ny budget-task",
+                          )}
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">
+                          {mode === "purchase_order"
+                            ? t("quoteReview.linkToUnallocated", "Oallokerat (välj senare)")
+                            : t("quoteReview.linkToNewBucket", "Skapa ny budget-task")}
+                        </SelectItem>
+                        {existingTasks.map((task) => (
+                          <SelectItem key={task.id} value={task.id}>
+                            {task.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+
+              <Separator />
 
               {/* Summary */}
               {summary && (
