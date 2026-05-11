@@ -5,13 +5,17 @@ import { formatCurrency } from "@/lib/currency";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  Plus, 
-  ExternalLink, 
+import {
+  Plus,
+  ExternalLink,
   Package,
   Loader2,
-  Pencil
+  Pencil,
+  ShoppingCart,
+  PackagePlus
 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { AllocateFromOrderDialog } from "./AllocateFromOrderDialog";
 import {
   Dialog,
   DialogContent,
@@ -45,9 +49,16 @@ interface Material {
   exclude_from_budget: boolean;
   created_at: string;
   created_by_user_id: string;
+  purchase_order_id: string | null;
   creator?: {
     name: string;
   };
+}
+
+interface PurchaseOrderInfo {
+  id: string;
+  vendor_name: string;
+  status: string;
 }
 
 interface MaterialsListProps {
@@ -57,9 +68,14 @@ interface MaterialsListProps {
 
 const MaterialsList = ({ taskId, currency }: MaterialsListProps) => {
   const [materials, setMaterials] = useState<Material[]>([]);
+  const [poInfoMap, setPoInfoMap] = useState<Map<string, PurchaseOrderInfo>>(new Map());
+  const [taskBudget, setTaskBudget] = useState<number>(0);
+  const [taskMaterialEstimate, setTaskMaterialEstimate] = useState<number>(0);
+  const [projectId, setProjectId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [allocateDialogOpen, setAllocateDialogOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
   
@@ -102,29 +118,60 @@ const MaterialsList = ({ taskId, currency }: MaterialsListProps) => {
 
   const fetchMaterials = async () => {
     try {
-      const { data: materialsData, error } = await supabase
-        .from("materials")
-        .select(`
-          id,
-          name,
-          quantity,
-          unit,
-          price_per_unit,
-          price_total,
-          vendor_name,
-          vendor_link,
-          status,
-          exclude_from_budget,
-          created_at,
-          created_by_user_id
-        `)
-        .eq("task_id", taskId)
-        .order("created_at", { ascending: false });
+      // Fetch task info (budget + project_id) + materials in parallel
+      const [taskRes, materialsRes] = await Promise.all([
+        supabase
+          .from("tasks")
+          .select("project_id, budget, material_estimate")
+          .eq("id", taskId)
+          .single(),
+        supabase
+          .from("materials")
+          .select(`
+            id,
+            name,
+            quantity,
+            unit,
+            price_per_unit,
+            price_total,
+            vendor_name,
+            vendor_link,
+            status,
+            exclude_from_budget,
+            created_at,
+            created_by_user_id,
+            purchase_order_id
+          `)
+          .eq("task_id", taskId)
+          .order("created_at", { ascending: false }),
+      ]);
 
-      if (error) throw error;
+      if (materialsRes.error) throw materialsRes.error;
+
+      if (taskRes.data) {
+        setProjectId(taskRes.data.project_id);
+        setTaskBudget(taskRes.data.budget ?? 0);
+        setTaskMaterialEstimate(taskRes.data.material_estimate ?? 0);
+      }
+
+      const materialsData = materialsRes.data || [];
+
+      // Fetch PO info for any purchase_order_ids referenced by materials
+      const poIds = Array.from(new Set(materialsData.map((m) => m.purchase_order_id).filter((id): id is string => !!id)));
+      const poMap = new Map<string, PurchaseOrderInfo>();
+      if (poIds.length > 0) {
+        const { data: pos } = await supabase
+          .from("purchase_orders")
+          .select("id, vendor_name, status")
+          .in("id", poIds);
+        for (const po of pos || []) {
+          poMap.set(po.id, { id: po.id, vendor_name: po.vendor_name, status: po.status });
+        }
+      }
+      setPoInfoMap(poMap);
 
       // Fetch creator names separately to avoid FK relationship issues
-      const materialsWithCreators = await Promise.all((materialsData || []).map(async (material) => {
+      const materialsWithCreators = await Promise.all(materialsData.map(async (material) => {
         let creatorName = null;
         if (material.created_by_user_id) {
           const { data: creator } = await supabase
@@ -291,14 +338,39 @@ const MaterialsList = ({ taskId, currency }: MaterialsListProps) => {
     );
   }
 
+  // Live budget: prefer task.budget, fall back to material_estimate when task has no main budget set
+  const materialBudget = taskBudget > 0 ? taskBudget : taskMaterialEstimate;
+  const consumed = materials.reduce((sum, m) => sum + (m.price_total ?? 0), 0);
+  const remaining = materialBudget - consumed;
+  const overBudget = remaining < 0 && materialBudget > 0;
+
   return (
     <div className="space-y-3 mt-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
           <Package className="h-4 w-4" />
           {t('purchases.title')} ({materials.length})
         </h4>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        {materialBudget > 0 && (
+          <div className="flex items-center gap-2 text-xs tabular-nums">
+            <span className="text-muted-foreground">{t('purchases.materialBudget', 'Materialbudget')}:</span>
+            <span className="font-medium">{formatCurrency(materialBudget, currency)}</span>
+            <span className="text-muted-foreground">·</span>
+            <span className="text-muted-foreground">{t('purchases.consumed', 'Använt')}:</span>
+            <span className="font-medium">{formatCurrency(consumed, currency)}</span>
+            <span className="text-muted-foreground">·</span>
+            <span className="text-muted-foreground">{t('purchases.remaining', 'Kvar')}:</span>
+            <span className={cn("font-semibold", overBudget ? "text-destructive" : remaining < materialBudget * 0.2 ? "text-amber-600" : "text-green-600")}>
+              {formatCurrency(remaining, currency)}
+            </span>
+          </div>
+        )}
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => setAllocateDialogOpen(true)}>
+            <PackagePlus className="h-3 w-3 mr-1" />
+            {t('purchases.addFromOrder', 'Från befintlig order')}
+          </Button>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button size="sm" variant="outline">
               <Plus className="h-3 w-3 mr-1" />
@@ -413,7 +485,20 @@ const MaterialsList = ({ taskId, currency }: MaterialsListProps) => {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
+
+      {/* Allocate from existing PO Dialog */}
+      {projectId && (
+        <AllocateFromOrderDialog
+          open={allocateDialogOpen}
+          onOpenChange={setAllocateDialogOpen}
+          projectId={projectId}
+          taskId={taskId}
+          currency={currency}
+          onAllocated={fetchMaterials}
+        />
+      )}
 
       {/* Edit Material Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
@@ -544,23 +629,31 @@ const MaterialsList = ({ taskId, currency }: MaterialsListProps) => {
                     {material.price_total ? formatCurrency(material.price_total, currency, { decimals: 2 }) : "-"}
                   </td>
                   <td className="px-3 py-2.5">
-                    {material.vendor_name ? (
-                      material.vendor_link ? (
-                        <a
-                          href={material.vendor_link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary hover:underline flex items-center gap-1"
-                        >
-                          {material.vendor_name}
-                          <ExternalLink className="h-3 w-3" />
-                        </a>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {material.vendor_name ? (
+                        material.vendor_link ? (
+                          <a
+                            href={material.vendor_link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline flex items-center gap-1"
+                          >
+                            {material.vendor_name}
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        ) : (
+                          material.vendor_name
+                        )
                       ) : (
-                        material.vendor_name
-                      )
-                    ) : (
-                      "-"
-                    )}
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                      {material.purchase_order_id && (
+                        <Badge variant="outline" className="text-[10px] gap-1 text-slate-600 border-slate-200 bg-slate-50">
+                          <ShoppingCart className="h-2.5 w-2.5" />
+                          {t('purchases.fromOrder', 'från order')}
+                        </Badge>
+                      )}
+                    </div>
                   </td>
                   <td className="px-3 py-2.5">
                     {material.creator?.name || "Unknown"}
