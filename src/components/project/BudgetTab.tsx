@@ -93,9 +93,13 @@ interface BudgetRow {
   rotAmount?: number;
   // Evidence status
   evidenceStatus?: "verified" | "registered" | "missing" | "na";
+  // Phase: most-specific value tier per row (Block 5 unified purchase+budget)
+  phase?: "budget" | "ordered" | "actual";
+  // Purchase-order grouping (lets the table collapse same-PO orphan lines under one header)
+  purchaseOrderId?: string;
 }
 
-type ColumnKey = "name" | "type" | "status" | "budget" | "consumed" | "paid" | "remaining" | "margin" | "supplier" | "matBudget" | "matConsumed" | "matRemaining" | "room" | "assignee" | "costCenter" | "startDate" | "finishDate" | "attachment" | "evidence" | "estimatedHours" | "hourlyRate" | "subcontractorCost" | "paymentStatus" | "quantity" | "pricePerUnit" | "orderedAmount" | "vendor" | "rotAmount";
+type ColumnKey = "name" | "type" | "status" | "phase" | "budget" | "consumed" | "paid" | "remaining" | "margin" | "supplier" | "matBudget" | "matConsumed" | "matRemaining" | "room" | "assignee" | "costCenter" | "startDate" | "finishDate" | "attachment" | "evidence" | "estimatedHours" | "hourlyRate" | "subcontractorCost" | "paymentStatus" | "quantity" | "pricePerUnit" | "orderedAmount" | "vendor" | "rotAmount";
 
 interface ColumnDef {
   key: ColumnKey;
@@ -292,6 +296,7 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
     { key: "name", label: t('budget.name') },
     { key: "type", label: t('budget.type') },
     { key: "status", label: t('budget.status', 'Status') },
+    { key: "phase", label: t('budget.phase', 'Fas') },
     { key: "budget", label: isBuilder ? t('budget.customerPrice') : t('homeownerBudget.quoted', 'Offert'), align: "right" },
     { key: "consumed", label: t('budget.consumed', 'Förbrukat'), align: "right" },
     { key: "matBudget", label: t('budget.matBudget'), align: "right", extra: true },
@@ -432,6 +437,18 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
     });
   }, []);
 
+  // Purchase-order → orphan-line grouping (collapses same-PO unallocated material rows under one header)
+  const [purchaseOrderInfo, setPurchaseOrderInfo] = useState<Map<string, { status: string; vendor: string; total: number }>>(new Map());
+  const [expandedPurchaseOrders, setExpandedPurchaseOrders] = useState<Set<string>>(new Set());
+  const togglePurchaseOrderExpand = useCallback((poId: string) => {
+    setExpandedPurchaseOrders(prev => {
+      const next = new Set(prev);
+      if (next.has(poId)) next.delete(poId);
+      else next.add(poId);
+      return next;
+    });
+  }, []);
+
   // Inline add row
   const [isAddingRow, setIsAddingRow] = useState(false);
   const [newRowType, setNewRowType] = useState<"task" | "material">("task");
@@ -510,19 +527,19 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
         }
       }
 
-      const [tasksRes, materialsRes, extraRes, projectRes, taskDocsRes, materialDocsRes] = await Promise.all([
+      const [tasksRes, materialsRes, extraRes, projectRes, taskDocsRes, materialDocsRes, purchaseOrdersRes] = await Promise.all([
         supabase
           .from("tasks")
           .select("id, title, status, budget, ordered_amount, payment_status, paid_amount, room_id, cost_center, start_date, finish_date, is_ata, estimated_hours, hourly_rate, labor_cost_percent, subcontractor_cost, markup_percent, material_estimate, material_markup_percent, task_cost_type, rot_amount, supplier_id")
           .eq("project_id", projectId),
         supabase
           .from("materials")
-          .select("id, name, price_total, quantity, price_per_unit, ordered_amount, paid_amount, status, room_id, task_id, vendor_name, source_material_id")
+          .select("id, name, price_total, quantity, price_per_unit, ordered_amount, paid_amount, status, room_id, task_id, vendor_name, source_material_id, purchase_order_id")
           .eq("project_id", projectId)
           .eq("exclude_from_budget", false),
         supabase
           .from("materials")
-          .select("id, name, price_total, quantity, price_per_unit, ordered_amount, paid_amount, status, room_id, task_id, vendor_name, source_material_id")
+          .select("id, name, price_total, quantity, price_per_unit, ordered_amount, paid_amount, status, room_id, task_id, vendor_name, source_material_id, purchase_order_id")
           .eq("project_id", projectId)
           .eq("exclude_from_budget", true),
         supabase
@@ -540,6 +557,10 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
           .select("material_id, file_type")
           .eq("project_id", projectId)
           .not("material_id", "is", null),
+        supabase
+          .from("purchase_orders")
+          .select("id, status, vendor_name, total")
+          .eq("project_id", projectId),
       ]);
 
       if (tasksRes.error) throw tasksRes.error;
@@ -610,6 +631,32 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
         supplierMap.set(s.id, s.name);
       }
 
+      // Build PO info map: purchase_order_id → { status, vendor_name, total }
+      const poInfoMap = new Map<string, { status: string; vendor: string; total: number }>();
+      const poStatusMap = new Map<string, string>();
+      if (!purchaseOrdersRes.error) {
+        for (const po of purchaseOrdersRes.data || []) {
+          poStatusMap.set(po.id, po.status);
+          poInfoMap.set(po.id, {
+            status: po.status,
+            vendor: po.vendor_name,
+            total: po.total ?? 0,
+          });
+        }
+      }
+      setPurchaseOrderInfo(poInfoMap);
+
+      // Phase helper for purchase/material rows
+      const derivePurchasePhase = (m: { paid_amount?: number | null; status?: string | null; purchase_order_id?: string | null }): "budget" | "ordered" | "actual" => {
+        const poStatus = m.purchase_order_id ? poStatusMap.get(m.purchase_order_id) : undefined;
+        if ((m.paid_amount ?? 0) > 0) return "actual";
+        if (poStatus === "delivered") return "actual";
+        if (m.status === "delivered" || m.status === "paid" || m.status === "billed") return "actual";
+        if (poStatus === "ordered") return "ordered";
+        if (m.status === "ordered" || m.status === "approved" || m.status === "submitted" || m.status === "to_order") return "ordered";
+        return "budget";
+      };
+
       // --- P&L row construction ---
       // Split materials into budget posts (planned) vs purchases (actual)
       const allMaterials = materialsRes.data || [];
@@ -642,6 +689,10 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
         const attachmentCount = taskDocCounts.get(t.id) || 0;
         const laborCost = computeTaskLaborCost(t, defaultLaborCostPercent);
         const fullEstCost = computeTaskEstimatedCost(t, defaultLaborCostPercent, materialPlannedMap.get(t.id));
+        const taskPhase: "budget" | "ordered" | "actual" =
+          (t.paid_amount ?? 0) > 0 ? "actual"
+          : (t.ordered_amount ?? 0) > 0 ? "ordered"
+          : "budget";
         return {
           id: t.id,
           name: t.title,
@@ -683,6 +734,7 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
             hasQualifyingFile: taskHasInvoice.get(t.id) ?? false,
             fileCount: attachmentCount,
           }),
+          phase: taskPhase,
         };
       });
 
@@ -723,6 +775,7 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
             hasQualifyingFile: materialHasInvoice.get(m.id) ?? false,
             fileCount: attachmentCount,
           }),
+          phase: "budget",
         };
       });
 
@@ -752,6 +805,7 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
           materialConsumed: 0,
           consumedTotal: 0,
           status: "planned",
+          phase: "budget",
         });
       }
 
@@ -791,6 +845,8 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
             hasQualifyingFile: materialHasInvoice.get(m.id) ?? false,
             fileCount: attachmentCount,
           }),
+          phase: derivePurchasePhase(m),
+          purchaseOrderId: m.purchase_order_id ?? undefined,
         };
       });
 
@@ -819,6 +875,9 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
           status: t.status ?? undefined,
           subcontractorCost: t.subcontractor_cost ?? undefined,
           paymentStatus: t.payment_status ?? undefined,
+          phase: (t.paid_amount ?? 0) > 0 ? "actual"
+            : (t.ordered_amount ?? 0) > 0 ? "ordered"
+            : "budget",
         };
       });
 
@@ -859,6 +918,7 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
           quantity: m.quantity ?? undefined,
           pricePerUnit: m.price_per_unit ?? undefined,
           vendor: m.vendor_name ?? undefined,
+          phase: "budget",
         };
       });
 
@@ -886,6 +946,8 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
           quantity: m.quantity ?? undefined,
           pricePerUnit: m.price_per_unit ?? undefined,
           vendor: m.vendor_name ?? undefined,
+          phase: derivePurchasePhase(m),
+          purchaseOrderId: m.purchase_order_id ?? undefined,
         };
       });
 
@@ -1390,6 +1452,10 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
       } else if (sortKey === "status") {
         av = a.status || "";
         bv = b.status || "";
+      } else if (sortKey === "phase") {
+        const rank: Record<string, number> = { budget: 0, ordered: 1, actual: 2 };
+        av = rank[a.phase ?? "budget"] ?? 0;
+        bv = rank[b.phase ?? "budget"] ?? 0;
       } else if (sortKey === "estimatedHours") {
         av = a.estimatedHours ?? 0;
         bv = b.estimatedHours ?? 0;
@@ -1454,7 +1520,7 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
   const [unlinkedExpanded, setUnlinkedExpanded] = useState(false);
   const [ataExpanded, setAtaExpanded] = useState(true);
 
-  type DisplayRow = BudgetRow & { isChild?: boolean; isPurchaseChild?: boolean; childCount?: number; purchaseCount?: number; isSectionHeader?: boolean };
+  type DisplayRow = BudgetRow & { isChild?: boolean; isPurchaseChild?: boolean; childCount?: number; purchaseCount?: number; isSectionHeader?: boolean; isPoHeader?: boolean };
 
   const displayRows = useMemo(() => {
     // Separate rows by type
@@ -1542,10 +1608,56 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
       }
     }
 
-    // 3. Orphan purchases — shown as regular rows (not a separate section)
+    // 3. Orphan purchases — group by purchase_order (≥2 lines from same PO collapse under one header)
+    const orphansByPo = new Map<string, BudgetRow[]>();
+    const orphansWithoutPo: BudgetRow[] = [];
     for (const p of orphanPurchases) {
-      result.push(p);
+      if (p.purchaseOrderId) {
+        if (!orphansByPo.has(p.purchaseOrderId)) orphansByPo.set(p.purchaseOrderId, []);
+        orphansByPo.get(p.purchaseOrderId)!.push(p);
+      } else {
+        orphansWithoutPo.push(p);
+      }
     }
+    for (const [poId, lines] of orphansByPo) {
+      if (lines.length < 2) {
+        // Singleton: render flat like before
+        for (const p of lines) result.push(p);
+        continue;
+      }
+      const info = purchaseOrderInfo.get(poId);
+      const linesTotal = lines.reduce((sum, l) => sum + l.estimatedCost, 0);
+      const linesPaid = lines.reduce((sum, l) => sum + (l.paid ?? 0), 0);
+      const headerPhase: "budget" | "ordered" | "actual" =
+        info?.status === "delivered" ? "actual"
+        : info?.status === "ordered" ? "ordered"
+        : "budget";
+      result.push({
+        id: `__po_header_${poId}__`,
+        name: info?.vendor ?? t("budget.purchaseOrder", "Inköpsorder"),
+        type: "purchase",
+        budget: 0,
+        paid: linesPaid,
+        estimatedCost: info?.total ?? linesTotal,
+        isEstimated: linesPaid <= 0,
+        materialBudget: 0,
+        materialConsumed: 0,
+        childCount: lines.length,
+        isPoHeader: true,
+        phase: headerPhase,
+        purchaseOrderId: poId,
+        status: info?.status,
+        vendor: info?.vendor,
+        hasAttachment: false,
+        attachmentCount: 0,
+      } as DisplayRow);
+      if (expandedPurchaseOrders.has(poId)) {
+        for (const p of lines) {
+          result.push({ ...p, isChild: true, isPurchaseChild: true });
+        }
+      }
+    }
+    for (const p of orphansWithoutPo) result.push(p);
 
     // 4. ÄTA section — change orders shown in their own block
     if (ataRows.length > 0) {
@@ -1621,10 +1733,56 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
             }
           }
         }
-        // Orphan ÄTA purchases
+        // Orphan ÄTA purchases — same PO-grouping as main section
+        const ataOrphansByPo = new Map<string, BudgetRow[]>();
+        const ataOrphansWithoutPo: BudgetRow[] = [];
         for (const p of ataOrphanPurchases) {
-          result.push({ ...p, isChild: true });
+          if (p.purchaseOrderId) {
+            if (!ataOrphansByPo.has(p.purchaseOrderId)) ataOrphansByPo.set(p.purchaseOrderId, []);
+            ataOrphansByPo.get(p.purchaseOrderId)!.push(p);
+          } else {
+            ataOrphansWithoutPo.push(p);
+          }
         }
+        for (const [poId, lines] of ataOrphansByPo) {
+          if (lines.length < 2) {
+            for (const p of lines) result.push({ ...p, isChild: true });
+            continue;
+          }
+          const info = purchaseOrderInfo.get(poId);
+          const linesTotal = lines.reduce((sum, l) => sum + l.estimatedCost, 0);
+          const linesPaid = lines.reduce((sum, l) => sum + (l.paid ?? 0), 0);
+          const headerPhase: "budget" | "ordered" | "actual" =
+            info?.status === "delivered" ? "actual"
+            : info?.status === "ordered" ? "ordered"
+            : "budget";
+          result.push({
+            id: `__ata_po_header_${poId}__`,
+            name: info?.vendor ?? t("budget.purchaseOrder", "Inköpsorder"),
+            type: "purchase",
+            budget: 0,
+            paid: linesPaid,
+            estimatedCost: info?.total ?? linesTotal,
+            isEstimated: linesPaid <= 0,
+            materialBudget: 0,
+            materialConsumed: 0,
+            childCount: lines.length,
+            isPoHeader: true,
+            phase: headerPhase,
+            purchaseOrderId: poId,
+            status: info?.status,
+            vendor: info?.vendor,
+            isAta: true,
+            hasAttachment: false,
+            attachmentCount: 0,
+          } as DisplayRow);
+          if (expandedPurchaseOrders.has(poId)) {
+            for (const p of lines) {
+              result.push({ ...p, isChild: true, isPurchaseChild: true });
+            }
+          }
+        }
+        for (const p of ataOrphansWithoutPo) result.push({ ...p, isChild: true });
       }
     }
 
@@ -1728,7 +1886,7 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
     grouped.push(...sectionRows);
 
     return grouped;
-  }, [filtered, ataRows, expandedTasks, expandedBudgetPosts, unlinkedExpanded, ataExpanded, groupBy, collapsedGroups, t]);
+  }, [filtered, ataRows, expandedTasks, expandedBudgetPosts, expandedPurchaseOrders, purchaseOrderInfo, unlinkedExpanded, ataExpanded, groupBy, collapsedGroups, t]);
 
   const clearAllFilters = () => {
     setSearchQuery("");
@@ -1754,6 +1912,30 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
     const isMaterialBudgetPost = row.type === "material" && row.isBudgetPost;
     switch (col.key) {
       case "name": {
+        // PO header: chevron + ShoppingCart + vendor + count badge (no openDetail button)
+        if (row.isPoHeader && row.purchaseOrderId) {
+          const isExpanded = expandedPurchaseOrders.has(row.purchaseOrderId);
+          return (
+            <span className="inline-flex items-center gap-1.5">
+              <button
+                type="button"
+                className="inline-flex items-center gap-1.5 hover:bg-muted px-1 -mx-1 rounded transition-colors"
+                onClick={(e) => { e.stopPropagation(); togglePurchaseOrderExpand(row.purchaseOrderId!); }}
+                title={isExpanded ? t('budget.collapse', 'Kollapsa') : t('budget.expand', 'Expandera')}
+              >
+                <ChevronDown className={`h-4 w-4 text-slate-500 transition-transform ${isExpanded ? "" : "-rotate-90"}`} />
+                <ShoppingCart className="h-3.5 w-3.5 text-slate-500" />
+                <span className="font-medium text-slate-700">{row.name}</span>
+              </button>
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                {row.childCount} {t('budget.lineItems', 'rader')}
+              </Badge>
+              {row.isAta && (
+                <Badge variant="outline" className="ml-1 text-[10px] px-1 py-0 text-orange-600 border-orange-300">{t('budget.addition', 'Tillägg')}</Badge>
+              )}
+            </span>
+          );
+        }
         // Indent: purchase children get deepest indent, budget posts under task get medium indent
         const indentClass = isPurchase && row.isChild
           ? " pl-10"
@@ -1809,8 +1991,8 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
                 <span className="text-xs">↳ {row.purchaseCount}</span>
               </button>
             )}
-            {/* Orphan warning for purchases without budget post */}
-            {row.type === "purchase" && !row.parentBudgetPostId && !row.isSectionHeader && (
+            {/* Orphan warning for purchases without budget post (skip aggregate PO header) */}
+            {row.type === "purchase" && !row.parentBudgetPostId && !row.isSectionHeader && !row.isPoHeader && (
               <span className="ml-1.5 text-amber-500" title={t("budget.orphanWarning", "Ej kopplat till budgetpost")}>
                 &#9888;
               </span>
@@ -1855,6 +2037,12 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
         );
       }
       case "status": {
+        // PO header: read-only PO status badge
+        if (row.isPoHeader) {
+          if (!row.status) return null;
+          const label = t(`materialStatuses.${row.status}`, row.status);
+          return <Badge className={cn("border", getStatusBadgeColor(row.status))}>{label}</Badge>;
+        }
         if (row.id.startsWith("__")) return null;
         const isEditingStatus = editingCell?.rowId === row.id && editingCell?.col === "status";
         const statusLabel = row.status
@@ -1901,6 +2089,18 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
               : <span className="text-muted-foreground cursor-pointer hover:text-foreground">{"–"}</span>}
           </button>
         );
+      }
+      case "phase": {
+        // Hide phase on non-PO synthetic headers (standalone-bp / ata-header); PO header keeps it
+        if (row.id.startsWith("__") && !row.isPoHeader) return null;
+        const phase = row.phase;
+        if (!phase) return <span className="text-muted-foreground/30">{"–"}</span>;
+        const phaseConfig = {
+          budget:  { label: t('budget.phaseBudget',  'Budgeterat'), cls: "bg-slate-100 text-slate-600 border-slate-200" },
+          ordered: { label: t('budget.phaseOrdered', 'Beställt'),   cls: "bg-blue-100 text-blue-700 border-blue-200" },
+          actual:  { label: t('budget.phaseActual',  'Verkligt'),   cls: "bg-emerald-100 text-emerald-700 border-emerald-200" },
+        }[phase];
+        return <Badge variant="outline" className={cn("border", phaseConfig.cls)}>{phaseConfig.label}</Badge>;
       }
       case "consumed": {
         // Show consumed total for material budget posts
@@ -1951,6 +2151,16 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
         );
       }
       case "paid": {
+        // PO header: render aggregate cost read-only (builder shows effective, homeowner shows paid)
+        if (row.isPoHeader) {
+          const amount = isBuilder ? getEffectiveCost(row) : row.paid;
+          return (
+            <span className={isBuilder && row.isEstimated ? "text-muted-foreground italic" : ""}>
+              {formatCurrency(amount, currency)}
+              {isBuilder && row.isEstimated && amount > 0 && <span className="ml-0.5">*</span>}
+            </span>
+          );
+        }
         if (row.id.startsWith("__")) return <span className="text-muted-foreground/30">{"–"}</span>;
         const displayAmount = isBuilder ? getEffectiveCost(row) : row.paid;
         const isEditingPaid = editingCell?.rowId === row.id && editingCell?.col === col.key;
@@ -2231,6 +2441,12 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
         );
       }
       case "supplier": {
+        // PO header: read-only vendor (already in name cell but this column may be visible without name expanded)
+        if (row.isPoHeader) {
+          return row.vendor
+            ? <span className="text-xs text-muted-foreground">{row.vendor}</span>
+            : <span className="text-muted-foreground/30">{"–"}</span>;
+        }
         if (row.type !== "task" || row.id.startsWith("__")) return <span className="text-muted-foreground/30">{"–"}</span>;
         const isEditingSupplier = editingCell?.rowId === row.id && editingCell?.col === "supplier";
         if (isEditingSupplier) {
@@ -2968,13 +3184,16 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
                 // Regular row
                 const isPurchaseRow = row.type === "purchase" || (row as DisplayRow).isPurchaseChild;
                 const isBudgetPostRow = row.type === "material" && row.isBudgetPost;
-                const rowBg = isPurchaseRow
-                  ? "bg-muted/20"
-                  : isBudgetPostRow && row.isChild
-                    ? "bg-blue-50/30"
-                    : row.isChild
-                      ? "bg-muted/30"
-                      : "";
+                const isPoHeaderRow = (row as DisplayRow).isPoHeader === true;
+                const rowBg = isPoHeaderRow
+                  ? "bg-slate-50/60 border-t-2 border-slate-200"
+                  : isPurchaseRow
+                    ? "bg-muted/20"
+                    : isBudgetPostRow && row.isChild
+                      ? "bg-blue-50/30"
+                      : row.isChild
+                        ? "bg-muted/30"
+                        : "";
                 return (
                 <tr
                   key={`${row.type}-${row.id}`}
@@ -3005,24 +3224,28 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
                             <Plus className={compactRows ? "h-3 w-3" : "h-4 w-4"} />
                           </Button>
                         )}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className={compactRows ? "h-6 w-6" : "h-8 w-8"}
-                          onClick={() => handleDuplicateRow(row)}
-                          title={t('budget.duplicate')}
-                        >
-                          <Copy className={compactRows ? "h-3 w-3" : "h-4 w-4"} />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className={`${compactRows ? "h-6 w-6" : "h-8 w-8"} text-muted-foreground hover:text-destructive`}
-                          onClick={() => handleDeleteRow(row)}
-                          title={t('budget.deleteRow')}
-                        >
-                          <Trash2 className={compactRows ? "h-3 w-3" : "h-4 w-4"} />
-                        </Button>
+                        {!(row as DisplayRow).isPoHeader && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className={compactRows ? "h-6 w-6" : "h-8 w-8"}
+                              onClick={() => handleDuplicateRow(row)}
+                              title={t('budget.duplicate')}
+                            >
+                              <Copy className={compactRows ? "h-3 w-3" : "h-4 w-4"} />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className={`${compactRows ? "h-6 w-6" : "h-8 w-8"} text-muted-foreground hover:text-destructive`}
+                              onClick={() => handleDeleteRow(row)}
+                              title={t('budget.deleteRow')}
+                            >
+                              <Trash2 className={compactRows ? "h-3 w-3" : "h-4 w-4"} />
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </td>
                   )}
