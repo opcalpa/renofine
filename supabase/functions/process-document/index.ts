@@ -243,6 +243,27 @@ VIKTIGT:
 - Confidence max 0.7 om det inte ordagrant nämns i texten
 - roomName: bara fysiskt utrymme/byggnad enligt regeln ovan. Sätt null om dokumentet bara har komponent-kategorier (Bjälklag, Yttervägg, Tak) eller arbets-kategorier som rubriker.
 
+FULLSTÄNDIG ENUMERATION (kritiskt för stora dokument):
+
+INNAN du svarar:
+1. Räkna antalet prisposter/rader i dokumentet
+2. Notera mentalt: "Detta dokument har N rader"
+3. Försäkra dig om att tasks-arrayen kommer innehålla EXAKT N entries
+
+UNDER extraktionen:
+- Hoppa ALDRIG över en rad oavsett hur tråkig, upprepad, eller liten den ser ut
+- Sammanfatta ALDRIG flera rader till en (t.ex. "...och 30 fler liknande")
+- Använd ALDRIG fraser som "etc.", "och så vidare", "(samt resterande poster)", "...continued"
+- Om listan känns lång — fortsätt ändå. Varje enskild rad räknas. Även rad 71 av 71.
+
+EFTER extraktionen, innan du skriver JSON-svaret:
+- Kontrollera att tasks.length matchar antalet rader du räknade ovan
+- Om det skiljer, gå tillbaka och extrahera de saknade raderna
+
+På små dokument (1-10 rader) är detta trivialt. På stora dokument (50+ rader)
+är detta avgörande — det är bättre att svara fullständigt och långsamt än
+ofullständigt och snabbt. ALLT eller INGET.
+
 Svara ENDAST med giltig JSON:
 {
   "rooms": [...],
@@ -391,11 +412,11 @@ async function extractWithOpenAI(documentContent: string, mode: 'scope' | 'quote
 
   const isQuote = mode === 'quote';
   const systemPrompt = isQuote ? QUOTE_PROMPT : SYSTEM_PROMPT;
-  // gpt-4o-mini for both modes: 3-5x faster output, ~15-20x cheaper, and
-  // sufficient accuracy for structured extraction. Avoids edge worker timeout
-  // (546) on big multi-row quotes like Vindö Z20875.
+  // gpt-4o-mini for both modes — gpt-4o is too slow on Supabase edge workers
+  // (504/546 on 50+ row quotes). Mini's "lazy listing" tendency is mitigated
+  // by an explicit anti-lazy directive in QUOTE_PROMPT — verified to recover
+  // full row count on Vindö-style large quotes.
   const model = 'gpt-4o-mini';
-  // Both modes need headroom — quotes have many rows, scope can have many tasks.
   const maxTokens = isQuote ? 16384 : 8192;
 
   console.log('Sending to OpenAI, mode:', mode, 'model:', model, 'content length:', documentContent.length);
@@ -407,7 +428,10 @@ async function extractWithOpenAI(documentContent: string, mode: 'scope' | 'quote
     },
     {
       role: 'user',
-      content: `Analysera följande dokument:\n\n${documentContent.substring(0, 30000)}`,
+      // Hard cap at 100k chars (~25k input tokens). Both gpt-4o and gpt-4o-mini
+      // support 128k context; 30k was too tight and silently dropped trailing
+      // rows on large quotes (verified: Vindö Z20875 lost ~30 rows past char 30k).
+      content: `Analysera följande dokument:\n\n${documentContent.substring(0, 100000)}`,
     },
   ];
 

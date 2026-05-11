@@ -22,6 +22,7 @@ import {
   Rows3,
   Layers,
   Trash2,
+  ClipboardList,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,6 +36,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { CommentsSection } from "@/components/comments/CommentsSection";
 import { EntityPhotoGallery } from "@/components/shared/EntityPhotoGallery";
 import { QuickReceiptCaptureModal } from "./QuickReceiptCaptureModal";
@@ -57,6 +68,7 @@ import { ProjectLockBanner } from "./ProjectLockBanner";
 import { useProjectLock } from "@/hooks/useProjectLock";
 import { PUBLIC_DEMO_PROJECT_ID } from "@/constants/publicDemo";
 import { NewPurchaseFromBudgetDialog } from "./NewPurchaseFromBudgetDialog";
+import { AddMaterialDialog } from "./overview/AddMaterialDialog";
 import { PurchasesTableView } from "./purchases/PurchasesTableView";
 import { PurchasesKanbanView } from "./purchases/PurchasesKanbanView";
 import { usePurchasesTableView } from "./purchases/usePurchasesTableView";
@@ -131,6 +143,9 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
   const [expandedPOIds, setExpandedPOIds] = useState<Set<string>>(new Set());
   const [allocatingPOId, setAllocatingPOId] = useState<string | null>(null);
   const [receiptModalOpen, setReceiptModalOpen] = useState(false);
+  const [addPlannedDialogOpen, setAddPlannedDialogOpen] = useState(false);
+  const [poToDelete, setPOToDelete] = useState<PurchaseOrder | null>(null);
+  const [deletingPO, setDeletingPO] = useState(false);
   const [quoteReviewFile, setQuoteReviewFile] = useState<File | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [budgetPurchaseDialog, setBudgetPurchaseDialog] = useState<{ open: boolean; planned: Material | null; usedAmount: number }>({ open: false, planned: null, usedAmount: 0 });
@@ -374,6 +389,123 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
     }
   };
 
+  // FK is ON DELETE SET NULL → deleting a PO leaves its materials in place
+  // with purchase_order_id=null. The user can then re-allocate or delete
+  // those rows individually if they wish.
+  const handleDeletePO = useCallback(async () => {
+    if (!poToDelete) return;
+    setDeletingPO(true);
+    try {
+      const { error } = await supabase
+        .from("purchase_orders")
+        .delete()
+        .eq("id", poToDelete.id);
+      if (error) {
+        toast({ title: t("common.error"), description: error.message, variant: "destructive" });
+        return;
+      }
+      toast({
+        title: t("purchases.poDeleted", "Inköpsorder borttagen"),
+        description: t("purchases.poDeletedDesc", "Eventuella radnivå-material finns kvar men är inte längre kopplade till ordern."),
+      });
+      setPOToDelete(null);
+      fetchMaterials();
+    } finally {
+      setDeletingPO(false);
+    }
+  }, [poToDelete, t, toast]);
+
+  // Mirrors handleAddMaterialSubmit in PlanningTaskList so planned-material
+  // creation produces identical DB rows regardless of which surface invoked it.
+  const handleAddPlannedSubmit = useCallback(
+    async (data: {
+      name: string;
+      kind: "material" | "subcontractor";
+      linkMode: "existing" | "create" | "none";
+      existingTaskId?: string;
+      newTaskTitle?: string;
+      quantity?: number;
+      priceTotal?: number;
+      markupPercent?: number;
+      file?: File;
+    }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("id, default_hourly_rate")
+        .eq("user_id", user.id)
+        .single();
+      if (!profile) return;
+
+      let taskId: string | null = null;
+      if (data.linkMode === "existing" && data.existingTaskId) {
+        taskId = data.existingTaskId;
+      } else if (data.linkMode === "create" && data.newTaskTitle) {
+        const { data: newTask, error: taskErr } = await supabase
+          .from("tasks")
+          .insert({
+            project_id: projectId,
+            title: data.newTaskTitle,
+            status: "planned",
+            priority: "medium",
+            created_by_user_id: profile.id,
+            hourly_rate: profile.default_hourly_rate ?? null,
+          })
+          .select("id")
+          .single();
+        if (taskErr || !newTask) {
+          toast({ title: t("common.error"), description: taskErr?.message || "Failed", variant: "destructive" });
+          return;
+        }
+        taskId = newTask.id;
+      }
+
+      const qty = data.quantity ?? 1;
+      const unitPrice = data.priceTotal ?? 0;
+      const { data: newMat, error } = await supabase.from("materials").insert({
+        project_id: projectId,
+        task_id: taskId,
+        name: data.name,
+        quantity: qty,
+        unit: "st",
+        price_per_unit: unitPrice,
+        price_total: qty * unitPrice || null,
+        status: "planned",
+        created_by_user_id: profile.id,
+        description: data.kind === "subcontractor" ? "__subcontractor__" : null,
+        markup_percent: data.markupPercent ?? null,
+      }).select("id").single();
+
+      if (error || !newMat) {
+        toast({ title: t("common.error"), description: error?.message || "Failed", variant: "destructive" });
+        return;
+      }
+
+      if (data.file && newMat.id) {
+        const ext = data.file.name.split(".").pop() || "pdf";
+        const safeName = data.file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+        const storagePath = `projects/${projectId}/underlag/${newMat.id}_${Date.now()}_${safeName}`;
+        await supabase.storage.from("project-files").upload(storagePath, data.file, { upsert: true });
+        await supabase.from("task_file_links").insert({
+          project_id: projectId,
+          material_id: newMat.id,
+          file_path: storagePath,
+          file_name: data.file.name,
+          file_type: ext === "pdf" ? "contract" : "other",
+          file_size: data.file.size,
+          mime_type: data.file.type,
+          linked_by_user_id: profile.id,
+        });
+      }
+
+      fetchMaterials();
+    },
+    // fetchMaterials is defined below; it's stable enough — re-declare deps minimally
+    [projectId, t, toast] // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
   const fetchMaterials = async () => {
     try {
       let query = supabase
@@ -514,6 +646,32 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
       toast({
         variant: "destructive",
         description: t("purchases.allocateFailed", "Kunde inte tilldela ordern"),
+      });
+    } finally {
+      setAllocatingPOId(null);
+    }
+  }, [projectId, t, toast]);
+
+  const allocateOrderToRoom = useCallback(async (poId: string, roomId: string | null) => {
+    setAllocatingPOId(poId);
+    try {
+      const { error } = await supabase
+        .from("materials")
+        .update({ room_id: roomId })
+        .eq("purchase_order_id", poId)
+        .eq("project_id", projectId);
+      if (error) throw error;
+      toast({
+        description: roomId
+          ? t("purchases.orderAllocatedRoom", "Ordern tilldelad rummet")
+          : t("purchases.orderUnallocatedRoom", "Ordern är nu utan rumskoppling"),
+      });
+      fetchMaterials();
+    } catch (error: unknown) {
+      console.error("Allocate-room error:", error);
+      toast({
+        variant: "destructive",
+        description: t("purchases.allocateRoomFailed", "Kunde inte tilldela rummet"),
       });
     } finally {
       setAllocatingPOId(null);
@@ -753,7 +911,15 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
           </h2>
         </div>
         {(isProjectOwner || userPurchasesAccess === 'edit' || userPurchasesAccess === 'create') && (
-          <>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setAddPlannedDialogOpen(true)}
+            >
+              <ClipboardList className="h-4 w-4 mr-2" />
+              {t('purchases.addPlannedMaterial', 'Planerat material')}
+            </Button>
             <Button size="sm" onClick={() => setReceiptModalOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               {t('purchases.addOrder')}
@@ -765,7 +931,15 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
               onSuccess={() => fetchMaterials()}
               onSwitchToQuoteImport={(file) => setQuoteReviewFile(file)}
             />
-          </>
+            <AddMaterialDialog
+              open={addPlannedDialogOpen}
+              onOpenChange={setAddPlannedDialogOpen}
+              tasks={tasks.map((tt) => ({ id: tt.id, title: tt.title }))}
+              hideKindToggle
+              currency={currency}
+              onAdd={handleAddPlannedSubmit}
+            />
+          </div>
         )}
       </div>
 
@@ -849,6 +1023,10 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
               const bulkValue = allocatedTaskIds.size === 1
                 ? Array.from(allocatedTaskIds)[0]
                 : allocatedTaskIds.size > 1 ? "mixed" : "none";
+              const allocatedRoomIds = new Set(rows.map(r => r.room_id).filter((id): id is string => !!id));
+              const bulkRoomValue = allocatedRoomIds.size === 1
+                ? Array.from(allocatedRoomIds)[0]
+                : allocatedRoomIds.size > 1 ? "mixed" : "none";
               const statusColor =
                 po.status === "delivered" ? "bg-emerald-100 text-emerald-700 border-emerald-200" :
                 po.status === "ordered" ? "bg-amber-100 text-amber-700 border-amber-200" :
@@ -915,6 +1093,48 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
                         </SelectContent>
                       </Select>
                     </div>
+                    {/* Allocate-all-to-room dropdown */}
+                    {rooms.length > 0 && (
+                      <div className="flex-shrink-0">
+                        <Select
+                          value={bulkRoomValue}
+                          disabled={isAllocating || rows.length === 0}
+                          onValueChange={(v) => allocateOrderToRoom(po.id, v === "none" ? null : v)}
+                        >
+                          <SelectTrigger className="h-8 text-xs w-[180px]">
+                            {isAllocating ? (
+                              <span className="flex items-center gap-1.5"><Loader2 className="h-3 w-3 animate-spin" /> {t("common.saving", "Sparar...")}</span>
+                            ) : (
+                              <SelectValue
+                                placeholder={t("purchases.allocateAllToRoom", "Tilldela alla till rum...")}
+                              />
+                            )}
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">{t("purchases.noRoom", "Inget rum")}</SelectItem>
+                            {bulkRoomValue === "mixed" && (
+                              <SelectItem value="mixed" disabled>
+                                {t("purchases.mixedRoomAllocation", "Olika rum")}
+                              </SelectItem>
+                            )}
+                            {rooms.map((room) => (
+                              <SelectItem key={room.id} value={room.id}>{room.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                    {(isProjectOwner || userPurchasesAccess === 'edit') && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive flex-shrink-0"
+                        onClick={() => setPOToDelete(po)}
+                        title={t("purchases.deletePO", "Ta bort inköpsorder")}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                   {isExpanded && rows.length > 0 && (
                     <div className="border-t bg-muted/20 px-3 py-2 space-y-1">
@@ -1539,6 +1759,56 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
           fetchTasks();
         }}
       />
+      <AlertDialog open={poToDelete !== null} onOpenChange={(o) => !o && setPOToDelete(null)}>
+        <AlertDialogContent className="max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Trash2 className="h-4 w-4 text-destructive" />
+              {t("purchases.deletePOTitle", "Ta bort inköpsorder?")}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {poToDelete && (() => {
+                const lineCount = (materialsByPOId.get(poToDelete.id) || []).length;
+                return lineCount > 0
+                  ? t(
+                      "purchases.deletePODescWithLines",
+                      "{{vendor}} ({{total}}) tas bort. {{count}} radnivå-material lossas från ordern men finns kvar i projektet — du kan radera eller koppla om dem separat.",
+                      {
+                        vendor: poToDelete.vendor_name,
+                        total: formatCurrency(poToDelete.total, currency),
+                        count: lineCount,
+                      },
+                    )
+                  : t(
+                      "purchases.deletePODescNoLines",
+                      "{{vendor}} ({{total}}) tas bort. Ordern har inga radnivå-material.",
+                      {
+                        vendor: poToDelete.vendor_name,
+                        total: formatCurrency(poToDelete.total, currency),
+                      },
+                    );
+              })()}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingPO}>{t("common.cancel", "Avbryt")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeletePO}
+              disabled={deletingPO}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletingPO ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin mr-2" />
+                  {t("common.deleting", "Tar bort...")}
+                </>
+              ) : (
+                t("common.delete", "Ta bort")
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

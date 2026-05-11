@@ -22,6 +22,8 @@ import {
 } from "@/components/ui/select";
 import { ShoppingCart, Handshake, Info, Paperclip, FileText, X } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useIsProfessional } from "@/hooks/useIsProfessional";
+import { formatCurrency } from "@/lib/currency";
 
 type RowKind = "material" | "subcontractor";
 type LinkMode = "existing" | "create" | "none";
@@ -36,6 +38,12 @@ interface AddMaterialDialogProps {
   onOpenChange: (open: boolean) => void;
   tasks: TaskOption[];
   initialKind?: RowKind;
+  /** When true, hides the material/subcontractor toggle — caller forces material kind.
+   *  Used on surfaces (e.g. Purchases tab) where subcontractor costs don't belong
+   *  to the page's mental model. */
+  hideKindToggle?: boolean;
+  /** Project currency for the live total-preview formatting. Defaults to SEK. */
+  currency?: string | null;
   onAdd: (data: {
     name: string;
     kind: RowKind;
@@ -54,9 +62,14 @@ export function AddMaterialDialog({
   onOpenChange,
   tasks,
   initialKind = "material",
+  hideKindToggle = false,
+  currency,
   onAdd,
 }: AddMaterialDialogProps) {
   const { t } = useTranslation();
+  // Markup is a quote-pricing concept — only relevant for builders/proffs.
+  // Homeowners (DIY project leaders + invited) never set markup, so hide the field.
+  const { isProfessional } = useIsProfessional();
   const [name, setName] = useState("");
   const [kind, setKind] = useState<RowKind>(initialKind);
   const [selectedLink, setSelectedLink] = useState<string>("__none__");
@@ -144,29 +157,31 @@ export function AddMaterialDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-2">
-          {/* Kind toggle */}
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant={kind === "material" ? "default" : "outline"}
-              size="sm"
-              className="gap-1.5"
-              onClick={() => setKind("material")}
-            >
-              <ShoppingCart className="h-3.5 w-3.5" />
-              {t("planningTasks.typeMaterial")}
-            </Button>
-            <Button
-              type="button"
-              variant={kind === "subcontractor" ? "default" : "outline"}
-              size="sm"
-              className="gap-1.5"
-              onClick={() => setKind("subcontractor")}
-            >
-              <Handshake className="h-3.5 w-3.5" />
-              {t("planningTasks.typeSubcontractor")}
-            </Button>
-          </div>
+          {/* Kind toggle — hidden on surfaces that only accept materials */}
+          {!hideKindToggle && (
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant={kind === "material" ? "default" : "outline"}
+                size="sm"
+                className="gap-1.5"
+                onClick={() => setKind("material")}
+              >
+                <ShoppingCart className="h-3.5 w-3.5" />
+                {t("planningTasks.typeMaterial")}
+              </Button>
+              <Button
+                type="button"
+                variant={kind === "subcontractor" ? "default" : "outline"}
+                size="sm"
+                className="gap-1.5"
+                onClick={() => setKind("subcontractor")}
+              >
+                <Handshake className="h-3.5 w-3.5" />
+                {t("planningTasks.typeSubcontractor")}
+              </Button>
+            </div>
+          )}
 
           {/* Name */}
           <div className="space-y-1.5">
@@ -249,17 +264,59 @@ export function AddMaterialDialog({
             </div>
           </div>
 
-          {/* Markup */}
-          <div className="space-y-1.5">
-            <Label>{t("planningTasks.markup", "Markup")} (%)</Label>
-            <Input
-              type="number"
-              className="h-9 text-sm w-28"
-              placeholder="0"
-              value={markupPercent}
-              onChange={(e) => setMarkupPercent(e.target.value)}
-            />
-          </div>
+          {/* Markup — pro-only. Hidden for homeowner profiles since they don't price quotes. */}
+          {isProfessional && (
+            <div className="space-y-1.5">
+              <Label>{t("planningTasks.markup", "Markup")} (%)</Label>
+              <Input
+                type="number"
+                className="h-9 text-sm w-28"
+                placeholder="0"
+                value={markupPercent}
+                onChange={(e) => setMarkupPercent(e.target.value)}
+              />
+            </div>
+          )}
+
+          {/* Live total preview — surfaces the implied sum so users don't have
+              to mentally multiply qty × unit-price × (1+markup). Only shows
+              when there's something non-obvious to compute. */}
+          {(() => {
+            const qty = parseFloat(quantity) || 0;
+            const unit = parseFloat(priceTotal) || 0;
+            const markup = parseFloat(markupPercent) || 0;
+            const showSubtotal = qty > 1 && unit > 0;
+            const showMarkupTotal = isProfessional && markup > 0 && unit > 0;
+            if (!showSubtotal && !showMarkupTotal) return null;
+            const subtotal = qty * unit;
+            const grandTotal = subtotal * (1 + markup / 100);
+            return (
+              <div className="rounded-md border bg-muted/40 px-3 py-2 space-y-0.5 text-sm">
+                {showSubtotal && (
+                  <div className="flex justify-between tnum">
+                    <span className="text-muted-foreground">
+                      {t("planningTasks.subtotal", "Delsumma")} ({qty} × {formatCurrency(unit, currency)})
+                    </span>
+                    <span>{formatCurrency(subtotal, currency)}</span>
+                  </div>
+                )}
+                {showMarkupTotal && (
+                  <div className="flex justify-between tnum font-medium">
+                    <span>
+                      {t("planningTasks.totalWithMarkup", "Totalt inkl. påslag")} ({markup}%)
+                    </span>
+                    <span>{formatCurrency(grandTotal, currency)}</span>
+                  </div>
+                )}
+                {showSubtotal && !showMarkupTotal && (
+                  <div className="flex justify-between tnum font-medium">
+                    <span>{t("planningTasks.total", "Totalt")}</span>
+                    <span>{formatCurrency(subtotal, currency)}</span>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Attach file */}
           <div className="space-y-1.5">

@@ -1,15 +1,21 @@
 /**
  * QuoteReviewDialog — Review and import extracted quote data into project.
  *
- * Shows extracted tasks with pricing, rooms, and quote metadata.
+ * Shows extracted line items with pricing, rooms, and quote metadata.
  * User can edit, select/deselect items before importing.
  *
  * Import modes (driven by quoteSource):
  *   - purchase_order (A): 1 purchase_orders row + N materials linked to it.
- *     Default for building_supplier quotes (Vindö, Bauhaus, etc).
+ *     Default for building_supplier quotes (Vindö, Bauhaus, etc) and mixed
+ *     when AI can't decide — safest fallback since 1 order can be allocated.
  *   - material_budget (B): 1 stub task (budget=sum) + N materials under it.
- *     Default for contractor quotes (snickare etc).
- *   - separate_tasks (C): each item → its own task. Legacy / power-user.
+ *     Default for contractor quotes (snickare etc) where material is a budget
+ *     line rather than a concrete order.
+ *
+ * No "each line → its own task" mode — material rows (skruv, gips) are never
+ * tasks. The task domain is for work items ("Riva vägg", "Måla tak"), not
+ * material rows. If a contractor scope has distinct work items mixed with
+ * material lines, mode B keeps the work-task structure via AI's `parentTaskName`.
  */
 
 import { useState, useCallback, useEffect } from "react";
@@ -53,7 +59,6 @@ import { formatCurrency } from "@/lib/currency";
 import {
   type TaskCategory,
   TASK_CATEGORY_LABELS,
-  TASK_CATEGORY_TO_COST_CENTER,
 } from "@/services/aiDocumentService.types";
 import type {
   ExtractedTask,
@@ -62,12 +67,15 @@ import type {
   DocumentExtractionResult,
 } from "@/services/smartUploadService";
 
-type ImportMode = "purchase_order" | "material_budget" | "separate_tasks";
+type ImportMode = "purchase_order" | "material_budget";
 
 const DEFAULT_MODE_BY_SOURCE: Record<NonNullable<QuoteMetadata["quoteSource"]>, ImportMode> = {
   building_supplier: "purchase_order",
   contractor: "material_budget",
-  mixed: "separate_tasks",
+  // Mixed quotes default to purchase_order — safer because 1 order can be
+  // re-allocated to multiple tasks post-import. Material_budget would lock
+  // the user into 1 task that may not match the scope.
+  mixed: "purchase_order",
 };
 
 // ---------------------------------------------------------------------------
@@ -130,7 +138,7 @@ export function QuoteReviewDialog({
   const [editingRoomIndex, setEditingRoomIndex] = useState<number | null>(null);
   const [tempPath, setTempPath] = useState<string | null>(null);
   const [extracted, setExtracted] = useState(false);
-  const [mode, setMode] = useState<ImportMode>("separate_tasks");
+  const [mode, setMode] = useState<ImportMode>("purchase_order");
   const [linkToTaskId, setLinkToTaskId] = useState<string>("none");
   const [existingTasks, setExistingTasks] = useState<{ id: string; title: string }[]>([]);
 
@@ -143,7 +151,7 @@ export function QuoteReviewDialog({
     setEditingTaskIndex(null);
     setEditingRoomIndex(null);
     setExtracted(false);
-    setMode("separate_tasks");
+    setMode("purchase_order");
     setLinkToTaskId("none");
   }, []);
 
@@ -185,17 +193,17 @@ export function QuoteReviewDialog({
         .from("project-files")
         .getPublicUrl(path);
 
-      // Call process-document via fetch (not invoke) so we surface the real
-      // server-side error body on non-2xx. Auto-retry once on edge worker
-      // timeout codes (546 = WORKER_LIMIT, 504 = gateway timeout) which large
-      // PDFs hit transiently — they usually succeed on the retry.
+      // Call process-document-v2 (Claude Haiku 4.5, 2-pass) via fetch so we
+      // surface the real server-side error body on non-2xx. Auto-retry once
+      // on edge worker timeout codes — v2 stays under 60s reliably but the
+      // retry guards against transient cold-start blips.
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
       const { data: { session } } = await supabase.auth.getSession();
       const authToken = session?.access_token ?? supabaseAnonKey;
 
       const callExtraction = async () => {
-        const r = await fetch(`${supabaseUrl}/functions/v1/process-document`, {
+        const r = await fetch(`${supabaseUrl}/functions/v1/process-document-v2`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -434,45 +442,9 @@ export function QuoteReviewDialog({
         for (const tk of selectedTasks) {
           await insertMaterialRow(tk, { taskId: bucketTaskId, purchaseOrderId: null });
         }
-      } else {
-        // ----- Mode C (separate_tasks): legacy behavior — each item → its own task -----
-        for (const task of selectedTasks) {
-          let roomId: string | null = null;
-          if (task.roomName) {
-            roomId = createdRoomIds.get(task.roomName.toLowerCase()) || null;
-          }
-
-          const costCenter =
-            TASK_CATEGORY_TO_COST_CENTER[task.category as TaskCategory] || "construction";
-
-          const totalCost = (task.estimatedCost || 0) + (task.materialCost || 0);
-
-          const { error: taskErr } = await supabase.from("tasks").insert({
-            project_id: projectId,
-            room_id: roomId,
-            title: task.title,
-            description: task.description,
-            status: "to_do",
-            priority: "medium",
-            created_by_user_id: profile.id,
-            cost_center: costCenter,
-            task_cost_type: "subcontractor",
-            subcontractor_cost: task.laborCost || task.estimatedCost || null,
-            material_estimate: task.materialCost || null,
-            budget: totalCost > 0 ? totalCost : null,
-            start_date: task.startDate || null,
-            finish_date: task.endDate || null,
-            rot_eligible: task.rotEligible || false,
-            rot_amount: task.rotAmount || null,
-          });
-
-          if (taskErr) {
-            console.error("Error creating task:", taskErr);
-          }
-        }
       }
 
-      // Create external quote record if metadata exists (kept for all modes)
+      // Create external quote record if metadata exists (kept for both modes)
       if (quoteMetadata?.vendorName && quoteMetadata?.totalAmount) {
         await supabase.from("external_quotes").insert({
           project_id: projectId,
@@ -609,7 +581,7 @@ export function QuoteReviewDialog({
                     </Badge>
                   )}
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {([
                     {
                       value: "purchase_order" as const,
@@ -622,12 +594,6 @@ export function QuoteReviewDialog({
                       icon: Layers,
                       title: t("quoteReview.modeB.title", "Samlad materialbudget"),
                       desc: t("quoteReview.modeB.desc", "1 task med budget — material konsumeras därifrån."),
-                    },
-                    {
-                      value: "separate_tasks" as const,
-                      icon: ClipboardList,
-                      title: t("quoteReview.modeC.title", "Separata tasks"),
-                      desc: t("quoteReview.modeC.desc", "Varje rad blir egen task. Avancerat."),
                     },
                   ]).map((opt) => {
                     const Icon = opt.icon;
@@ -656,38 +622,35 @@ export function QuoteReviewDialog({
                   })}
                 </div>
 
-                {/* Link-to-task picker for modes A and B */}
-                {mode !== "separate_tasks" && (
-                  <div className="flex items-center gap-2 pt-1">
-                    <label className="text-xs text-muted-foreground whitespace-nowrap">
-                      {t("quoteReview.linkToLabel", "Koppla till task")}:
-                    </label>
-                    <Select value={linkToTaskId} onValueChange={setLinkToTaskId}>
-                      <SelectTrigger className="h-8 text-xs">
-                        <SelectValue
-                          placeholder={t(
-                            "quoteReview.linkToPlaceholder",
-                            mode === "purchase_order"
-                              ? "Oallokerat (välj senare)"
-                              : "Skapa ny budget-task",
-                          )}
-                        />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">
-                          {mode === "purchase_order"
+                {/* Link-to-task picker — always shown for modes A and B */}
+                <div className="flex items-center gap-2 pt-1">
+                  <label className="text-xs text-muted-foreground whitespace-nowrap">
+                    {t("quoteReview.linkToLabel", "Koppla till task")}:
+                  </label>
+                  <Select value={linkToTaskId} onValueChange={setLinkToTaskId}>
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue
+                        placeholder={
+                          mode === "purchase_order"
                             ? t("quoteReview.linkToUnallocated", "Oallokerat (välj senare)")
-                            : t("quoteReview.linkToNewBucket", "Skapa ny budget-task")}
+                            : t("quoteReview.linkToNewBucket", "Skapa ny budget-task")
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">
+                        {mode === "purchase_order"
+                          ? t("quoteReview.linkToUnallocated", "Oallokerat (välj senare)")
+                          : t("quoteReview.linkToNewBucket", "Skapa ny budget-task")}
+                      </SelectItem>
+                      {existingTasks.map((task) => (
+                        <SelectItem key={task.id} value={task.id}>
+                          {task.title}
                         </SelectItem>
-                        {existingTasks.map((task) => (
-                          <SelectItem key={task.id} value={task.id}>
-                            {task.title}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <Separator />
@@ -758,12 +721,16 @@ export function QuoteReviewDialog({
                 </>
               )}
 
-              {/* Tasks with pricing */}
+              {/* Line items extracted from the quote — these become materials,
+                  either under 1 purchase_order (mode A) or 1 budget task (mode B). */}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="text-sm font-medium flex items-center gap-2">
                     <ClipboardList className="h-4 w-4" />
-                    {t("aiDocumentImport.tasksFound", { count: tasks.length })}
+                    {t("quoteReview.lineItemsFound", {
+                      defaultValue: "Materialrader ({{count}})",
+                      count: tasks.length,
+                    })}
                   </h4>
                   <div className="flex gap-1">
                     <Button variant="ghost" size="sm" className="h-7 text-xs"
@@ -867,6 +834,12 @@ export function QuoteReviewDialog({
                                   {task.endDate && <span>{task.endDate}</span>}
                                 </div>
                               )}
+                              {/* Source text — exact line from original document for manual spot-check */}
+                              {task.sourceText && (
+                                <div className="mt-1 text-[10px] text-muted-foreground/70 italic truncate" title={task.sourceText}>
+                                  „{task.sourceText}"
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
@@ -899,7 +872,7 @@ export function QuoteReviewDialog({
         {step === "review" && (
           <div className="flex items-center justify-between pt-4 border-t flex-shrink-0">
             <div className="text-sm text-muted-foreground">
-              {selectedTaskCount} {t("quoteReview.tasksSelected", "arbeten")}
+              {selectedTaskCount} {t("quoteReview.linesSelected", "materialrader")}
               {selectedRoomCount > 0 && `, ${selectedRoomCount} ${t("quoteReview.roomsSelected", "rum")}`}
               {totalSelectedCost > 0 && (
                 <span className="ml-2 font-medium text-foreground">

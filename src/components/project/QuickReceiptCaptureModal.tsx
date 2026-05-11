@@ -188,7 +188,7 @@ const fileToBase64 = (file: File): Promise<string> => {
   });
 };
 
-type LinkOption = "new" | "link";
+type LinkOption = "new" | "link" | "applyBudget";
 
 export function QuickReceiptCaptureModal({
   projectId,
@@ -240,7 +240,7 @@ export function QuickReceiptCaptureModal({
 
   // Budget-post linking state
   const [sourceMaterialId, setSourceMaterialId] = useState<string | null>(null);
-  const [allPlannedMaterials, setAllPlannedMaterials] = useState<Array<{id: string; name: string; amount: number; taskName: string | null}>>([]);
+  const [allPlannedMaterials, setAllPlannedMaterials] = useState<Array<{id: string; name: string; amount: number; taskId: string | null; taskName: string | null}>>([]);
   const [paidBySourceId, setPaidBySourceId] = useState<Map<string, number>>(new Map());
 
   // Data state
@@ -316,7 +316,7 @@ export function QuickReceiptCaptureModal({
 
       const spendMap = new Map<string, number>();
       const plannedMap = new Map<string, Array<{id: string; name: string; amount: number}>>();
-      const allPlanned: Array<{id: string; name: string; amount: number; taskName: string | null}> = [];
+      const allPlanned: Array<{id: string; name: string; amount: number; taskId: string | null; taskName: string | null}> = [];
       const paidMap = new Map<string, number>();
 
       (materialsRes.data || []).forEach(m => {
@@ -326,6 +326,7 @@ export function QuickReceiptCaptureModal({
             id: m.id,
             name: m.name,
             amount: cost,
+            taskId: m.task_id || null,
             taskName: m.task_id ? taskMap.get(m.task_id) || null : null,
           });
           if (m.task_id) {
@@ -599,6 +600,13 @@ export function QuickReceiptCaptureModal({
           entityId = task.id;
           entityType = "task";
         } else {
+          // applyBudget mode: task is implicit from the picked planned material.
+          // Otherwise (mode=new), use the user's task selection if any.
+          const sourceMaterial = linkOption === "applyBudget" && sourceMaterialId
+            ? allPlannedMaterials.find((pm) => pm.id === sourceMaterialId)
+            : null;
+          const resolvedTaskId = sourceMaterial?.taskId ?? selectedTaskId ?? null;
+
           // Create new material for receipt
           const { data: material, error: materialError } = await supabase
             .from("materials")
@@ -612,7 +620,7 @@ export function QuickReceiptCaptureModal({
               status: flowStep === "manual" ? "to_order" : "submitted",
               created_by_user_id: profile.id,
               room_id: roomId !== "none" ? roomId : null,
-              task_id: selectedTaskId || null,
+              task_id: resolvedTaskId,
               source_material_id: sourceMaterialId || null,
             })
             .select("id")
@@ -945,8 +953,10 @@ export function QuickReceiptCaptureModal({
                     <RadioGroup
                       value={linkOption}
                       onValueChange={(v) => {
-                        setLinkOption(v as LinkOption);
-                        if (v === "new") setLinkedEntity(null);
+                        const next = v as LinkOption;
+                        setLinkOption(next);
+                        if (next !== "link") setLinkedEntity(null);
+                        if (next !== "applyBudget") setSourceMaterialId(null);
                       }}
                       className="flex flex-col gap-2"
                     >
@@ -968,6 +978,18 @@ export function QuickReceiptCaptureModal({
                           {t("document.linkToExisting")}
                         </Label>
                       </div>
+                      {documentType !== "invoice" && allPlannedMaterials.length > 0 && (
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="applyBudget" id="applyBudget" />
+                          <Label
+                            htmlFor="applyBudget"
+                            className="cursor-pointer flex items-center gap-1.5"
+                          >
+                            <ClipboardList className="h-4 w-4" />
+                            {t("document.applyToPlannedMaterial", "Koppla mot planerat material")}
+                          </Label>
+                        </div>
+                      )}
                     </RadioGroup>
                   </div>
 
@@ -982,80 +1004,49 @@ export function QuickReceiptCaptureModal({
                     />
                   )}
 
-                  {/* Task picker for new receipts */}
+                  {/* Task picker — visible only in "new" mode. In "applyBudget" the task
+                       is auto-derived from the picked planned material. */}
                   {linkOption === "new" && documentType !== "invoice" && (
                     <div className="space-y-2">
                       <Label className="text-sm font-medium">{t("document.linkToTask")}</Label>
                       <div className="flex flex-col gap-1.5 max-h-48 overflow-y-auto">
                         {tasks.map(task => (
-                          <div key={task.id} className="flex flex-col">
-                            <button
-                              type="button"
-                              onClick={() => { setSelectedTaskId(task.id); setSourceMaterialId(null); }}
-                              className={cn(
-                                "flex items-center justify-between p-2.5 rounded-lg border text-left text-sm transition-colors",
-                                selectedTaskId === task.id
-                                  ? "border-primary bg-primary/5"
-                                  : "border-border hover:border-primary/30 hover:bg-accent/50"
-                              )}
-                            >
-                              <span className="truncate font-medium flex items-center gap-1.5">
-                                {task.title}
-                                {task.is_ata && (
-                                  <Badge variant="outline" className="text-[10px] px-1 py-0 text-orange-600 border-orange-300 shrink-0">{t('budget.addition', 'Tillägg')}</Badge>
-                                )}
-                              </span>
-                              {(() => {
-                                const denom = (task.material_estimate && task.material_estimate > 0)
-                                  ? task.material_estimate : task.budget;
-                                if (!denom || denom <= 0) return null;
-                                const ratio = task.materialSpent / denom;
-                                const color = ratio >= 1 ? "text-destructive" : ratio >= 0.8 ? "text-amber-600" : "text-emerald-600";
-                                const bar = ratio >= 1 ? "bg-destructive" : ratio >= 0.8 ? "bg-amber-500" : "bg-emerald-500";
-                                return (
-                                  <div className="flex flex-col items-end gap-0.5 ml-2 shrink-0">
-                                    <span className={cn("text-xs", color)}>
-                                      {formatCurrency(task.materialSpent, currency)} / {formatCurrency(denom, currency)}
-                                    </span>
-                                    <div className="w-16 h-1 rounded-full bg-muted overflow-hidden">
-                                      <div className={cn("h-full rounded-full", bar)} style={{ width: `${Math.min(ratio * 100, 100)}%` }} />
-                                    </div>
-                                  </div>
-                                );
-                              })()}
-                            </button>
-                            {selectedTaskId === task.id && task.plannedMaterials.length > 0 && (
-                              <div className="ml-4 pl-3 border-l-2 border-muted space-y-1.5 py-1.5">
-                                <span className="text-xs text-muted-foreground font-medium">
-                                  {t("purchases.linkToBudgetPost", "Koppla till budgetpost")}
-                                </span>
-                                {task.plannedMaterials.map((item) => {
-                                  const paid = paidBySourceId.get(item.id) || 0;
-                                  const remaining = item.amount - paid;
-                                  return (
-                                    <button
-                                      key={item.id}
-                                      type="button"
-                                      onClick={() => setSourceMaterialId(sourceMaterialId === item.id ? null : item.id)}
-                                      className={cn(
-                                        "flex items-center justify-between w-full text-xs p-1.5 rounded transition-colors",
-                                        sourceMaterialId === item.id
-                                          ? "bg-primary/10 text-primary font-medium"
-                                          : "text-muted-foreground hover:bg-accent"
-                                      )}
-                                    >
-                                      <span className="truncate">{item.name}</span>
-                                      <span className="shrink-0 ml-2">
-                                        {remaining > 0
-                                          ? t("purchases.budgetRemaining", "Kvar: {{amount}}", { amount: formatCurrency(remaining, currency) })
-                                          : formatCurrency(item.amount, currency)}
-                                      </span>
-                                    </button>
-                                  );
-                                })}
-                              </div>
+                          <button
+                            key={task.id}
+                            type="button"
+                            onClick={() => setSelectedTaskId(task.id)}
+                            className={cn(
+                              "flex items-center justify-between p-2.5 rounded-lg border text-left text-sm transition-colors",
+                              selectedTaskId === task.id
+                                ? "border-primary bg-primary/5"
+                                : "border-border hover:border-primary/30 hover:bg-accent/50"
                             )}
-                          </div>
+                          >
+                            <span className="truncate font-medium flex items-center gap-1.5">
+                              {task.title}
+                              {task.is_ata && (
+                                <Badge variant="outline" className="text-[10px] px-1 py-0 text-orange-600 border-orange-300 shrink-0">{t('budget.addition', 'Tillägg')}</Badge>
+                              )}
+                            </span>
+                            {(() => {
+                              const denom = (task.material_estimate && task.material_estimate > 0)
+                                ? task.material_estimate : task.budget;
+                              if (!denom || denom <= 0) return null;
+                              const ratio = task.materialSpent / denom;
+                              const color = ratio >= 1 ? "text-destructive" : ratio >= 0.8 ? "text-amber-600" : "text-emerald-600";
+                              const bar = ratio >= 1 ? "bg-destructive" : ratio >= 0.8 ? "bg-amber-500" : "bg-emerald-500";
+                              return (
+                                <div className="flex flex-col items-end gap-0.5 ml-2 shrink-0">
+                                  <span className={cn("text-xs", color)}>
+                                    {formatCurrency(task.materialSpent, currency)} / {formatCurrency(denom, currency)}
+                                  </span>
+                                  <div className="w-16 h-1 rounded-full bg-muted overflow-hidden">
+                                    <div className={cn("h-full rounded-full", bar)} style={{ width: `${Math.min(ratio * 100, 100)}%` }} />
+                                  </div>
+                                </div>
+                              );
+                            })()}
+                          </button>
                         ))}
                         <button
                           type="button"
@@ -1073,32 +1064,44 @@ export function QuickReceiptCaptureModal({
                     </div>
                   )}
 
-                  {/* Budget-post picker when no task selected */}
-                  {selectedTaskId === null && allPlannedMaterials.length > 0 && linkOption === "new" && (
+                  {/* Planned-material picker — only in applyBudget mode. Picking a row
+                       auto-assigns the parent task (sent at save). */}
+                  {linkOption === "applyBudget" && (
                     <div className="space-y-2">
-                      <Label className="text-sm">{t("purchases.linkToBudgetPost", "Koppla till budgetpost")}</Label>
-                      <Select
-                        value={sourceMaterialId || "none"}
-                        onValueChange={(v) => setSourceMaterialId(v === "none" ? null : v)}
-                      >
-                        <SelectTrigger className="h-9">
-                          <SelectValue placeholder={t("purchases.noBudgetPost", "Ingen budgetpost")} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">{t("purchases.noBudgetPost", "Ingen budgetpost")}</SelectItem>
-                          {allPlannedMaterials.map((pm) => {
-                            const paid = paidBySourceId.get(pm.id) || 0;
-                            const remaining = pm.amount - paid;
-                            return (
-                              <SelectItem key={pm.id} value={pm.id}>
-                                {pm.name}
-                                {pm.taskName ? ` (${pm.taskName})` : ""}
-                                {remaining > 0 ? ` — ${t("purchases.remaining", "kvar")}: ${formatCurrency(remaining, currency)}` : ""}
-                              </SelectItem>
-                            );
-                          })}
-                        </SelectContent>
-                      </Select>
+                      <Label className="text-sm font-medium">
+                        {t("document.plannedMaterialPickerLabel", "Vilken budgetpost fyller detta inköp?")}
+                      </Label>
+                      <div className="flex flex-col gap-1.5 max-h-64 overflow-y-auto">
+                        {allPlannedMaterials.map((pm) => {
+                          const paid = paidBySourceId.get(pm.id) || 0;
+                          const remaining = pm.amount - paid;
+                          return (
+                            <button
+                              key={pm.id}
+                              type="button"
+                              onClick={() => setSourceMaterialId(sourceMaterialId === pm.id ? null : pm.id)}
+                              className={cn(
+                                "flex items-center justify-between p-2.5 rounded-lg border text-left text-sm transition-colors",
+                                sourceMaterialId === pm.id
+                                  ? "border-primary bg-primary/5"
+                                  : "border-border hover:border-primary/30 hover:bg-accent/50"
+                              )}
+                            >
+                              <div className="flex flex-col min-w-0">
+                                <span className="truncate font-medium">{pm.name}</span>
+                                {pm.taskName && (
+                                  <span className="text-xs text-muted-foreground truncate">{pm.taskName}</span>
+                                )}
+                              </div>
+                              <span className="text-xs shrink-0 ml-2">
+                                {remaining > 0
+                                  ? t("purchases.budgetRemaining", "Kvar: {{amount}}", { amount: formatCurrency(remaining, currency) })
+                                  : formatCurrency(pm.amount, currency)}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
 
@@ -1178,8 +1181,8 @@ export function QuickReceiptCaptureModal({
                     </>
                   )}
 
-                  {/* Room selection - only for new entities */}
-                  {linkOption === "new" && (
+                  {/* Room selection - only when creating a new entity (new or applyBudget). */}
+                  {(linkOption === "new" || linkOption === "applyBudget") && (
                     <div className="space-y-2">
                       <Label>{t("receipt.linkToRoom")}</Label>
                       <Select value={roomId} onValueChange={setRoomId}>
@@ -1290,7 +1293,8 @@ export function QuickReceiptCaptureModal({
               disabled={
                 saving ||
                 !vendorName.trim() ||
-                (linkOption === "link" && !linkedEntity)
+                (linkOption === "link" && !linkedEntity) ||
+                (linkOption === "applyBudget" && !sourceMaterialId)
               }
               className="w-full"
             >

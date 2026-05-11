@@ -3342,6 +3342,7 @@ export function PlanningTaskList({
         onOpenChange={setAddMaterialOpen}
         tasks={tasks.map((t) => ({ id: t.id, title: t.title }))}
         initialKind={addMaterialKind}
+        currency={currency}
         onAdd={handleAddMaterialSubmit}
       />
 
