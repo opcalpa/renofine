@@ -78,9 +78,13 @@ interface ExtractionResult {
 
 const PASS1_SCOPE_SYSTEM = `Du analyserar svenska renoveringsdokument och extraherar rum + uppgifter.
 
-RUM = fysiska utrymmen (Kök, Badrum, Hall, Källare) eller egna byggnader (Attefallshus, Garage, Förråd).
-INTE rum: byggnadskomponenter (Bjälklag, Yttervägg, Tak), material-kategorier, eller arbetsmoment.
-Om dokumentet inte namnger fysiska utrymmen, returnera tom rooms-array.
+RUM = fysiska utrymmen eller egna byggnader där arbeten utförs.
+✅ Räknas som rum: Kök, Sovrum, Badrum, Hall, Vardagsrum, Källare, Tvättstuga, Kontor, Vind, Loft, Attefallshus, Garage, Förråd, Carport, Uterum, Altan.
+❌ Räknas INTE som rum (extrahera INTE som rum, även om de nämns flera gånger):
+   - Byggnadskomponenter: Bjälklag, Loft Bjälklag, Yttervägg, Innervägg, Tak, Yttertak, Innertak, Grund, Takstol, Bärlina, Fasad, Plintar, Sockel, Mellanbjälklag
+   - Material-kategorier: Trä, Isolering, Skivor, Skruv, Spik
+   - Arbetsmoment: Rivning, Målning, El, VVS, Snickeri
+Om dokumentet inte namnger fysiska utrymmen, returnera tom rooms-array. Det är bättre än att hitta på rum.
 
 UPPGIFTER = arbetsmoment som ska utföras. Var specifik. Använd svenska.
 
@@ -88,7 +92,10 @@ Kalla extract_scope-verktyget med resultatet. Extrahera ALLT, sammanfatta aldrig
 
 const PASS1_QUOTE_SYSTEM = `Du analyserar svenska bygofferter och extraherar rader + metadata.
 
-RUM = fysiska utrymmen (Kök, Badrum) eller egna byggnader (Attefallshus, Garage). INTE byggnadskomponenter eller arbetsmoment. Om offerten inte namnger fysiska utrymmen, tom rooms-array.
+RUM = fysiska utrymmen eller egna byggnader.
+✅ Rum: Kök, Sovrum, Badrum, Hall, Vardagsrum, Källare, Tvättstuga, Kontor, Vind, Loft, Attefallshus, Garage, Förråd, Carport, Uterum, Altan.
+❌ INTE rum: Byggnadskomponenter (Bjälklag, Loft Bjälklag, Yttervägg, Innervägg, Tak, Yttertak, Innertak, Grund, Takstol, Bärlina, Fasad, Plintar, Sockel, Mellanbjälklag), material-kategorier eller arbetsmoment.
+Bjälklag och vägg-typer är ALDRIG rum, även om de utgör egna sektioner i offerten. Om offerten bara listar byggnadskomponenter utan att namnge fysiska utrymmen → tom rooms-array.
 
 RADER: varje prispost = en task. Sätt isMaterialBudget=true för rena material-/produktrader (specifika produktnamn, dimensioner, märken som "K-virke C24 45x170", "PAROC Isoleringsskiva", "Moelven Trend"). false för arbetsposter (verb: rivning, montering, målning, installation, demontering).
 
