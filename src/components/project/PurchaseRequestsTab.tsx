@@ -23,6 +23,7 @@ import {
   Layers,
   Trash2,
   ClipboardList,
+  CheckSquare,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -142,6 +143,10 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
   const [loading, setLoading] = useState(true);
   const [expandedPOIds, setExpandedPOIds] = useState<Set<string>>(new Set());
   const [allocatingPOId, setAllocatingPOId] = useState<string | null>(null);
+  // Subset bulk-select: only one PO can be in select mode at a time
+  const [selectModePoId, setSelectModePoId] = useState<string | null>(null);
+  const [selectedLineIds, setSelectedLineIds] = useState<Set<string>>(new Set());
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
   const [receiptModalOpen, setReceiptModalOpen] = useState(false);
   const [addPlannedDialogOpen, setAddPlannedDialogOpen] = useState(false);
   const [poToDelete, setPOToDelete] = useState<PurchaseOrder | null>(null);
@@ -652,6 +657,75 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
     }
   }, [projectId, t, toast]);
 
+  // --- Subset bulk-select handlers (scoped to selectedLineIds) ---
+
+  const exitSelectMode = useCallback(() => {
+    setSelectModePoId(null);
+    setSelectedLineIds(new Set());
+  }, []);
+
+  const toggleLineSelection = useCallback((lineId: string) => {
+    setSelectedLineIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(lineId)) next.delete(lineId);
+      else next.add(lineId);
+      return next;
+    });
+  }, []);
+
+  const bulkUpdateSelectedLines = useCallback(async (patch: { task_id?: string | null; room_id?: string | null; status?: string }) => {
+    if (selectedLineIds.size === 0) return;
+    setBulkActionLoading(true);
+    try {
+      const { error } = await supabase
+        .from("materials")
+        .update(patch)
+        .in("id", Array.from(selectedLineIds))
+        .eq("project_id", projectId);
+      if (error) throw error;
+      toast({
+        description: t("purchases.bulkUpdated", "{{count}} rader uppdaterade", { count: selectedLineIds.size }),
+      });
+      exitSelectMode();
+      fetchMaterials();
+    } catch (error: unknown) {
+      console.error("Bulk update error:", error);
+      toast({
+        variant: "destructive",
+        description: t("purchases.bulkUpdateFailed", "Kunde inte uppdatera markerade rader"),
+      });
+    } finally {
+      setBulkActionLoading(false);
+    }
+  }, [selectedLineIds, projectId, t, toast, exitSelectMode]);
+
+  const bulkDeleteSelectedLines = useCallback(async () => {
+    if (selectedLineIds.size === 0) return;
+    if (!window.confirm(t("purchases.confirmBulkDelete", "Ta bort {{count}} valda rader?", { count: selectedLineIds.size }))) return;
+    setBulkActionLoading(true);
+    try {
+      const { error } = await supabase
+        .from("materials")
+        .delete()
+        .in("id", Array.from(selectedLineIds))
+        .eq("project_id", projectId);
+      if (error) throw error;
+      toast({
+        description: t("purchases.bulkDeleted", "{{count}} rader togs bort", { count: selectedLineIds.size }),
+      });
+      exitSelectMode();
+      fetchMaterials();
+    } catch (error: unknown) {
+      console.error("Bulk delete error:", error);
+      toast({
+        variant: "destructive",
+        description: t("purchases.bulkDeleteFailed", "Kunde inte ta bort markerade rader"),
+      });
+    } finally {
+      setBulkActionLoading(false);
+    }
+  }, [selectedLineIds, projectId, t, toast, exitSelectMode]);
+
   const allocateOrderToRoom = useCallback(async (poId: string, roomId: string | null) => {
     setAllocatingPOId(poId);
     try {
@@ -1136,32 +1210,186 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
                       </Button>
                     )}
                   </div>
-                  {isExpanded && rows.length > 0 && (
-                    <div className="border-t bg-muted/20 px-3 py-2 space-y-1">
-                      {rows.map((row) => (
-                        <button
-                          key={row.id}
-                          type="button"
-                          onClick={() => openEditDialog(row)}
-                          className="w-full grid grid-cols-[1fr_auto_auto] gap-3 text-left text-xs py-1.5 px-2 rounded hover:bg-accent transition-colors"
-                        >
-                          <span className="truncate">{row.name}</span>
-                          {row.task_id ? (
-                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 whitespace-nowrap">
-                              {row.task?.title || t("purchases.linkedToTask", "Task")}
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground whitespace-nowrap">
-                              {t("purchases.unallocated", "Oallokerat")}
-                            </Badge>
-                          )}
-                          <span className="tnum text-muted-foreground whitespace-nowrap">
-                            {formatCurrency(row.price_total || 0, currency)}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                  {isExpanded && rows.length > 0 && (() => {
+                    const inSelectMode = selectModePoId === po.id;
+                    const rowsInThisPo = new Set(rows.map(r => r.id));
+                    const selectedInThisPo = Array.from(selectedLineIds).filter(id => rowsInThisPo.has(id));
+                    const allSelected = rows.length > 0 && selectedInThisPo.length === rows.length;
+                    const someSelected = selectedInThisPo.length > 0;
+                    const canEdit = isProjectOwner || userPurchasesAccess === 'edit';
+                    return (
+                      <div className="border-t bg-muted/20 px-3 py-2 space-y-1">
+                        {/* Toolbar: Välj-toggle or action bar */}
+                        {canEdit && (
+                          <div className="flex items-center gap-2 pb-1 flex-wrap">
+                            {!inSelectMode ? (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 px-2 text-[11px] text-muted-foreground hover:text-foreground"
+                                onClick={() => { setSelectModePoId(po.id); setSelectedLineIds(new Set()); }}
+                              >
+                                <CheckSquare className="h-3 w-3 mr-1" />
+                                {t("purchases.selectRows", "Välj rader")}
+                              </Button>
+                            ) : (
+                              <>
+                                <Checkbox
+                                  checked={allSelected ? true : someSelected ? "indeterminate" : false}
+                                  onCheckedChange={() => {
+                                    if (allSelected) {
+                                      setSelectedLineIds(prev => {
+                                        const next = new Set(prev);
+                                        for (const id of rowsInThisPo) next.delete(id);
+                                        return next;
+                                      });
+                                    } else {
+                                      setSelectedLineIds(prev => {
+                                        const next = new Set(prev);
+                                        for (const id of rowsInThisPo) next.add(id);
+                                        return next;
+                                      });
+                                    }
+                                  }}
+                                />
+                                <span className="text-[11px] text-muted-foreground">
+                                  {t("purchases.linesSelected", "{{count}} valda", { count: selectedInThisPo.length })}
+                                </span>
+                                {selectedInThisPo.length > 0 && (
+                                  <>
+                                    {/* Allocate-subset-to-task */}
+                                    <Select
+                                      value=""
+                                      disabled={bulkActionLoading}
+                                      onValueChange={(v) => bulkUpdateSelectedLines({ task_id: v === "none" ? null : v })}
+                                    >
+                                      <SelectTrigger className="h-7 text-xs w-[160px]">
+                                        <SelectValue placeholder={t("purchases.bulkAllocateTask", "Tilldela task...")} />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="none">{t("purchases.unallocated", "Oallokerat")}</SelectItem>
+                                        {tasks.map((task) => (
+                                          <SelectItem key={task.id} value={task.id}>{task.title}</SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    {/* Allocate-subset-to-room */}
+                                    {rooms.length > 0 && (
+                                      <Select
+                                        value=""
+                                        disabled={bulkActionLoading}
+                                        onValueChange={(v) => bulkUpdateSelectedLines({ room_id: v === "none" ? null : v })}
+                                      >
+                                        <SelectTrigger className="h-7 text-xs w-[140px]">
+                                          <SelectValue placeholder={t("purchases.bulkAllocateRoom", "Tilldela rum...")} />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="none">{t("purchases.noRoom", "Inget rum")}</SelectItem>
+                                          {rooms.map((room) => (
+                                            <SelectItem key={room.id} value={room.id}>{room.name}</SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    )}
+                                    {/* Bulk status */}
+                                    <Select
+                                      value=""
+                                      disabled={bulkActionLoading}
+                                      onValueChange={(v) => bulkUpdateSelectedLines({ status: v })}
+                                    >
+                                      <SelectTrigger className="h-7 text-xs w-[120px]">
+                                        <SelectValue placeholder={t("purchases.bulkStatus", "Status...")} />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {["new", "ordered", "delivered", "paid", "installed", "done", "declined"].map((s) => (
+                                          <SelectItem key={s} value={s}>{t(`materialStatuses.${s}`, s)}</SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    {/* Bulk delete */}
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-7 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                                      disabled={bulkActionLoading}
+                                      onClick={bulkDeleteSelectedLines}
+                                    >
+                                      <Trash2 className="h-3 w-3 mr-1" />
+                                      {t("common.delete", "Ta bort")}
+                                    </Button>
+                                  </>
+                                )}
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 px-2 text-xs ml-auto"
+                                  onClick={exitSelectMode}
+                                  disabled={bulkActionLoading}
+                                >
+                                  {t("common.cancel", "Avbryt")}
+                                </Button>
+                                {bulkActionLoading && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
+                              </>
+                            )}
+                          </div>
+                        )}
+                        {rows.map((row) => {
+                          const isSelected = selectedLineIds.has(row.id);
+                          if (inSelectMode) {
+                            return (
+                              <label
+                                key={row.id}
+                                className={cn(
+                                  "w-full grid grid-cols-[auto_1fr_auto_auto] gap-3 items-center text-xs py-1.5 px-2 rounded cursor-pointer transition-colors",
+                                  isSelected ? "bg-primary/10" : "hover:bg-accent"
+                                )}
+                              >
+                                <Checkbox
+                                  checked={isSelected}
+                                  onCheckedChange={() => toggleLineSelection(row.id)}
+                                />
+                                <span className="truncate">{row.name}</span>
+                                {row.task_id ? (
+                                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 whitespace-nowrap">
+                                    {row.task?.title || t("purchases.linkedToTask", "Task")}
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground whitespace-nowrap">
+                                    {t("purchases.unallocated", "Oallokerat")}
+                                  </Badge>
+                                )}
+                                <span className="tnum text-muted-foreground whitespace-nowrap">
+                                  {formatCurrency(row.price_total || 0, currency)}
+                                </span>
+                              </label>
+                            );
+                          }
+                          return (
+                            <button
+                              key={row.id}
+                              type="button"
+                              onClick={() => openEditDialog(row)}
+                              className="w-full grid grid-cols-[1fr_auto_auto] gap-3 text-left text-xs py-1.5 px-2 rounded hover:bg-accent transition-colors"
+                            >
+                              <span className="truncate">{row.name}</span>
+                              {row.task_id ? (
+                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 whitespace-nowrap">
+                                  {row.task?.title || t("purchases.linkedToTask", "Task")}
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground whitespace-nowrap">
+                                  {t("purchases.unallocated", "Oallokerat")}
+                                </Badge>
+                              )}
+                              <span className="tnum text-muted-foreground whitespace-nowrap">
+                                {formatCurrency(row.price_total || 0, currency)}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
                   {isExpanded && rows.length === 0 && (
                     <div className="border-t bg-muted/20 px-3 py-2 text-xs text-muted-foreground italic">
                       {t("purchases.poNoLines", "Inga radnivå-material — ordern är endast registrerad som totalsumma.")}
