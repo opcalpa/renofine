@@ -24,7 +24,16 @@ import {
   Trash2,
   ClipboardList,
   CheckSquare,
+  Camera,
+  Pencil,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -998,26 +1007,39 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
         </div>
         {(isProjectOwner || userPurchasesAccess === 'edit' || userPurchasesAccess === 'create') && (
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setAddPlannedDialogOpen(true)}
-            >
-              <ClipboardList className="h-4 w-4 mr-2" />
-              {t('purchases.addPlannedMaterial', 'Planerat material')}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setNewPODialogOpen(true)}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              {t('purchases.createOrder', 'Skapa beställning')}
-            </Button>
-            <Button size="sm" onClick={() => setReceiptModalOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              {t('purchases.addOrder')}
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  {t('purchases.newPurchase', 'Nytt inköp')}
+                  <ChevronDown className="h-4 w-4 ml-1 opacity-70" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64">
+                <DropdownMenuItem onClick={() => setReceiptModalOpen(true)}>
+                  <Camera className="h-4 w-4 mr-2 text-muted-foreground" />
+                  <div className="flex flex-col">
+                    <span>{t('purchases.scanReceiptQuote', 'Skanna kvitto/offert')}</span>
+                    <span className="text-[10px] text-muted-foreground">{t('purchases.scanReceiptQuoteHint', 'AI extraherar rader och belopp')}</span>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setNewPODialogOpen(true)}>
+                  <Pencil className="h-4 w-4 mr-2 text-muted-foreground" />
+                  <div className="flex flex-col">
+                    <span>{t('purchases.createOrderManual', 'Skapa beställning manuellt')}</span>
+                    <span className="text-[10px] text-muted-foreground">{t('purchases.createOrderManualHint', 'Antal-först, pris valfritt')}</span>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setAddPlannedDialogOpen(true)}>
+                  <ClipboardList className="h-4 w-4 mr-2 text-muted-foreground" />
+                  <div className="flex flex-col">
+                    <span>{t('purchases.addPlannedMaterial', 'Planerat material')}</span>
+                    <span className="text-[10px] text-muted-foreground">{t('purchases.addPlannedMaterialHint', 'Materialbudget, inte en order än')}</span>
+                  </div>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <QuickReceiptCaptureModal
               projectId={projectId}
               open={receiptModalOpen}
