@@ -1380,6 +1380,7 @@ export type Database = {
           price_per_unit: number | null
           price_total: number | null
           project_id: string | null
+          purchase_order_id: string | null
           quantity: number | null
           room_id: string | null
           room_ids: string[] | null
@@ -1409,6 +1410,7 @@ export type Database = {
           price_per_unit?: number | null
           price_total?: number | null
           project_id?: string | null
+          purchase_order_id?: string | null
           quantity?: number | null
           room_id?: string | null
           room_ids?: string[] | null
@@ -1438,6 +1440,7 @@ export type Database = {
           price_per_unit?: number | null
           price_total?: number | null
           project_id?: string | null
+          purchase_order_id?: string | null
           quantity?: number | null
           room_id?: string | null
           room_ids?: string[] | null
@@ -1485,6 +1488,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "materials_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
             referencedColumns: ["id"]
           },
           {
@@ -2368,6 +2378,92 @@ export type Database = {
             columns: ["source_rfq_project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchase_orders: {
+        Row: {
+          created_at: string
+          created_by_user_id: string | null
+          delivered_at: string | null
+          id: string
+          notes: string | null
+          ordered_at: string | null
+          project_id: string
+          receipt_file_path: string | null
+          receipt_matched_at: string | null
+          receipt_total: number | null
+          source: string | null
+          status: string
+          supplier_id: string | null
+          total: number
+          updated_at: string
+          vendor_name: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_user_id?: string | null
+          delivered_at?: string | null
+          id?: string
+          notes?: string | null
+          ordered_at?: string | null
+          project_id: string
+          receipt_file_path?: string | null
+          receipt_matched_at?: string | null
+          receipt_total?: number | null
+          source?: string | null
+          status?: string
+          supplier_id?: string | null
+          total: number
+          updated_at?: string
+          vendor_name: string
+        }
+        Update: {
+          created_at?: string
+          created_by_user_id?: string | null
+          delivered_at?: string | null
+          id?: string
+          notes?: string | null
+          ordered_at?: string | null
+          project_id?: string
+          receipt_file_path?: string | null
+          receipt_matched_at?: string | null
+          receipt_total?: number | null
+          source?: string | null
+          status?: string
+          supplier_id?: string | null
+          total?: number
+          updated_at?: string
+          vendor_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_orders_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "professional_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_orders_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_orders_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_orders_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
         ]
