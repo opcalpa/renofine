@@ -2487,6 +2487,7 @@
     "materialBudgetEntryHint": "Add a planned item — not an order",
     "showMoreDetails": "Show more options (date, task, notes…)",
     "showLessDetails": "Show less",
+    "productUrlPlaceholder": "link (optional)",
     "orders": "purchases",
     "purchaseOrdersTitle": "Purchase Orders",
     "purchaseOrdersDescription": "Orders from suppliers. Allocate lines to tasks for budget tracking.",

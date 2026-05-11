@@ -39,6 +39,7 @@ interface DraftLine {
   quantity: string;
   unit: string;
   pricePerUnit: string;
+  url: string;
 }
 
 const newDraftLine = (key: number): DraftLine => ({
@@ -47,6 +48,7 @@ const newDraftLine = (key: number): DraftLine => ({
   quantity: "1",
   unit: "st",
   pricePerUnit: "",
+  url: "",
 });
 
 export const NewPurchaseOrderDialog = ({
@@ -162,6 +164,7 @@ export const NewPurchaseOrderDialog = ({
           unit: l.unit.trim() || "st",
           price_per_unit: p,
           vendor_name: vendor.trim(),
+          vendor_link: l.url.trim() || null,
           status: materialStatus,
           task_id: taskId !== "none" ? taskId : null,
           room_id: roomId !== "none" ? roomId : null,
@@ -239,7 +242,7 @@ export const NewPurchaseOrderDialog = ({
             <Label>{t("purchases.lines", "Rader")}</Label>
             <div className="space-y-1 border rounded-md p-2 bg-muted/20 max-h-[260px] overflow-y-auto">
               {lines.map((line, idx) => (
-                <div key={line.key} className="grid grid-cols-[1fr_70px_60px_90px_28px] gap-2 items-center">
+                <div key={line.key} className="grid grid-cols-[1fr_60px_50px_80px_120px_28px] gap-2 items-center">
                   <Input
                     placeholder={idx === 0 ? t("purchases.itemPlaceholder", "T.ex. Spik 50mm") : t("purchases.itemPlaceholderRow", "Artikel")}
                     value={line.name}
@@ -255,7 +258,7 @@ export const NewPurchaseOrderDialog = ({
                     className="h-8 text-xs"
                   />
                   <Input
-                    placeholder={t("common.unit", "Enhet")}
+                    placeholder={t("common.unit", "st")}
                     value={line.unit}
                     onChange={(e) => updateLine(line.key, { unit: e.target.value })}
                     className="h-8 text-xs"
@@ -267,6 +270,13 @@ export const NewPurchaseOrderDialog = ({
                     value={line.pricePerUnit}
                     onChange={(e) => updateLine(line.key, { pricePerUnit: e.target.value })}
                     className="h-8 text-xs text-right"
+                  />
+                  <Input
+                    type="url"
+                    placeholder={t("purchases.productUrlPlaceholder", "länk (valfri)")}
+                    value={line.url}
+                    onChange={(e) => updateLine(line.key, { url: e.target.value })}
+                    className="h-8 text-xs"
                   />
                   <Button
                     variant="ghost"

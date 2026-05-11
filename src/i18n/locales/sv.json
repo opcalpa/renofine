@@ -1947,6 +1947,7 @@
     "materialBudgetEntryHint": "Lägg in en planerad post — inte en order",
     "showMoreDetails": "Visa fler alternativ (datum, task, anteckning…)",
     "showLessDetails": "Visa mindre",
+    "productUrlPlaceholder": "länk (valfri)",
     "orders": "inköp",
     "purchaseOrdersTitle": "Inköpsorder",
     "purchaseOrdersDescription": "Beställningar från leverantörer. Tilldela rader till tasks för budgetuppföljning.",
