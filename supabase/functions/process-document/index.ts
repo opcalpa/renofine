@@ -52,6 +52,8 @@ interface ExtractedTask {
   isIncludingVat: boolean;
 }
 
+type QuoteSource = 'building_supplier' | 'contractor' | 'mixed';
+
 interface QuoteMetadata {
   vendorName: string | null;
   totalAmount: number | null;
@@ -62,6 +64,7 @@ interface QuoteMetadata {
   quoteNumber: string | null;
   isIncludingVat: boolean;
   totalRotAmount: number | null;
+  quoteSource: QuoteSource | null;
 }
 
 interface ExtractionResult {
@@ -223,6 +226,11 @@ Analysera dokumentet och extrahera ALL information:
    - quoteNumber: Offertnummer om angivet, annars null
    - isIncludingVat: true om offerten generellt anger priser inklusive moms
    - totalRotAmount: Totalt ROT-avdrag i SEK om angivet, annars null
+   - quoteSource: Klassificera offertkällan, ett av tre värden:
+     * "building_supplier" — bygghandlare/materialleverantör som säljer produkter (Vindö Byggvaror, Beijer, Optimera, Woody, Bauhaus, XL-Bygg, K-Rauta, Byggmax, Hornbach). 100% materialrader, inga arbeten. Pyramid Business Studio/Mercur/Mascot-genererade dokument är ofta sådana.
+     * "contractor" — entreprenör/snickare/hantverkare som lämnar arbets-offert. Innehåller arbets-rader (rivning, målning, installation, montering). Kan ha embedded eller separat material.
+     * "mixed" — offert som tydligt har BÅDE rena material-batch-rader OCH separata arbets-rader (sällsynt, t.ex. en helhetsoffert där snickaren även säljer en bygghandlar-leverans direkt).
+     Bestäm baserat på radernas innehåll (titlar, kategorier, arbets-verb), inte bara avsändaren.
 
 4. SAMMANFATTNING - Kort sammanfattning (2-3 meningar)
 
@@ -471,6 +479,12 @@ async function extractWithOpenAI(documentContent: string, mode: 'scope' | 'quote
     let quoteMetadata: QuoteMetadata | null = null;
     if (isQuote && result.quoteMetadata) {
       const qm = result.quoteMetadata;
+      const rawSource = typeof qm.quoteSource === 'string' ? qm.quoteSource.toLowerCase() : null;
+      const quoteSource: QuoteSource | null =
+        rawSource === 'building_supplier' || rawSource === 'contractor' || rawSource === 'mixed'
+          ? (rawSource as QuoteSource)
+          : null;
+
       quoteMetadata = {
         vendorName: qm.vendorName || null,
         totalAmount: typeof qm.totalAmount === 'number' ? qm.totalAmount : (typeof qm.totalAmount === 'string' ? parseFloat(qm.totalAmount) || null : null),
@@ -481,6 +495,7 @@ async function extractWithOpenAI(documentContent: string, mode: 'scope' | 'quote
         quoteNumber: qm.quoteNumber || null,
         isIncludingVat: !!qm.isIncludingVat,
         totalRotAmount: typeof qm.totalRotAmount === 'number' ? qm.totalRotAmount : (typeof qm.totalRotAmount === 'string' ? parseFloat(qm.totalRotAmount) || null : null),
+        quoteSource,
       };
     }
 

@@ -56,6 +56,14 @@ export interface ExtractedTask {
 }
 
 /**
+ * Quote source classification — drives default import-mode in the modal.
+ * - building_supplier: pure material quote from a supplier (Vindö, Beijer, Bauhaus, …) → default to inköpsorder
+ * - contractor: labor-driven quote from a snickare/hantverkare → default to materialbudget
+ * - mixed: contains both clearly-material batches AND separate labor items → ask user
+ */
+export type QuoteSource = 'building_supplier' | 'contractor' | 'mixed';
+
+/**
  * Result from AI document analysis
  */
 export interface QuoteMetadata {
@@ -68,6 +76,7 @@ export interface QuoteMetadata {
   paymentTerms: string | null;
   isIncludingVat: boolean;
   totalRotAmount: number | null;
+  quoteSource: QuoteSource | null;
 }
 
 export interface AIDocumentExtractionResult {

@@ -67,6 +67,7 @@ export interface QuoteMetadata {
   quoteNumber: string | null;
   isIncludingVat: boolean;
   totalRotAmount: number | null;
+  quoteSource: 'building_supplier' | 'contractor' | 'mixed' | null;
 }
 
 export interface DocumentExtractionResult {
