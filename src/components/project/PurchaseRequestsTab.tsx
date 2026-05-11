@@ -1034,8 +1034,8 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
                 <DropdownMenuItem onClick={() => setAddPlannedDialogOpen(true)}>
                   <ClipboardList className="h-4 w-4 mr-2 text-muted-foreground" />
                   <div className="flex flex-col">
-                    <span>{t('purchases.addPlannedMaterial', 'Planerat material')}</span>
-                    <span className="text-[10px] text-muted-foreground">{t('purchases.addPlannedMaterialHint', 'Materialbudget, inte en order än')}</span>
+                    <span>{t('purchases.materialBudgetEntry', 'Materialbudget')}</span>
+                    <span className="text-[10px] text-muted-foreground">{t('purchases.materialBudgetEntryHint', 'Lägg in en planerad post — inte en order')}</span>
                   </div>
                 </DropdownMenuItem>
               </DropdownMenuContent>

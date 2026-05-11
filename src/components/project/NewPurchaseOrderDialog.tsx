@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Loader2, Plus, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 
 interface NewPurchaseOrderDialogProps {
   open: boolean;
@@ -70,6 +70,7 @@ export const NewPurchaseOrderDialog = ({
   const [notes, setNotes] = useState("");
   const [lines, setLines] = useState<DraftLine[]>([newDraftLine(0)]);
   const [keyCounter, setKeyCounter] = useState(1);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const resetForm = () => {
     setVendor("");
@@ -80,6 +81,7 @@ export const NewPurchaseOrderDialog = ({
     setNotes("");
     setLines([newDraftLine(0)]);
     setKeyCounter(1);
+    setShowAdvanced(false);
   };
 
   const handleOpenChange = (next: boolean) => {
@@ -194,7 +196,7 @@ export const NewPurchaseOrderDialog = ({
         </DialogHeader>
 
         <div className="space-y-3">
-          <div className="grid grid-cols-[1fr_140px_160px] gap-3">
+          <div className={showAdvanced ? "grid grid-cols-[1fr_140px_160px] gap-3" : ""}>
             <div className="space-y-1.5">
               <Label htmlFor="po-vendor">{t("purchases.vendor", "Leverantör")}*</Label>
               <Input
@@ -205,28 +207,32 @@ export const NewPurchaseOrderDialog = ({
                 autoFocus
               />
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="po-date">{t("purchases.orderedAt", "Datum")}</Label>
-              <Input
-                id="po-date"
-                type="date"
-                value={orderedAt}
-                onChange={(e) => setOrderedAt(e.target.value)}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="po-status">{t("common.status", "Status")}</Label>
-              <Select value={poStatus} onValueChange={(v) => setPoStatus(v as "pending" | "ordered" | "delivered")}>
-                <SelectTrigger id="po-status">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pending">{t("purchaseOrderStatus.pending", "Att beställa")}</SelectItem>
-                  <SelectItem value="ordered">{t("purchaseOrderStatus.ordered", "Beställd")}</SelectItem>
-                  <SelectItem value="delivered">{t("purchaseOrderStatus.delivered", "Levererad")}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {showAdvanced && (
+              <>
+                <div className="space-y-1.5">
+                  <Label htmlFor="po-date">{t("purchases.orderedAt", "Datum")}</Label>
+                  <Input
+                    id="po-date"
+                    type="date"
+                    value={orderedAt}
+                    onChange={(e) => setOrderedAt(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="po-status">{t("common.status", "Status")}</Label>
+                  <Select value={poStatus} onValueChange={(v) => setPoStatus(v as "pending" | "ordered" | "delivered")}>
+                    <SelectTrigger id="po-status">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">{t("purchaseOrderStatus.pending", "Att beställa")}</SelectItem>
+                      <SelectItem value="ordered">{t("purchaseOrderStatus.ordered", "Beställd")}</SelectItem>
+                      <SelectItem value="delivered">{t("purchaseOrderStatus.delivered", "Levererad")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            )}
           </div>
 
           <div className="space-y-1.5">
@@ -289,50 +295,65 @@ export const NewPurchaseOrderDialog = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            {tasks.length > 0 && (
-              <div className="space-y-1.5">
-                <Label htmlFor="po-task">{t("purchases.linkedTask", "Koppla till task")}</Label>
-                <Select value={taskId} onValueChange={setTaskId}>
-                  <SelectTrigger id="po-task">
-                    <SelectValue placeholder={t("purchases.unallocated", "Oallokerat")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">{t("purchases.unallocated", "Oallokerat")}</SelectItem>
-                    {tasks.map((task) => (
-                      <SelectItem key={task.id} value={task.id}>{task.title}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-            {rooms.length > 0 && (
-              <div className="space-y-1.5">
-                <Label htmlFor="po-room">{t("purchases.linkedRoom", "Koppla till rum")}</Label>
-                <Select value={roomId} onValueChange={setRoomId}>
-                  <SelectTrigger id="po-room">
-                    <SelectValue placeholder={t("purchases.noRoom", "Inget rum")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">{t("purchases.noRoom", "Inget rum")}</SelectItem>
-                    {rooms.map((room) => (
-                      <SelectItem key={room.id} value={room.id}>{room.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground -mt-1"
+            onClick={() => setShowAdvanced((v) => !v)}
+          >
+            {showAdvanced ? <ChevronUp className="h-3 w-3 mr-1" /> : <ChevronDown className="h-3 w-3 mr-1" />}
+            {showAdvanced ? t("purchases.showLessDetails", "Visa mindre") : t("purchases.showMoreDetails", "Visa fler alternativ (datum, task, anteckning…)")}
+          </Button>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="po-notes">{t("purchases.notes", "Anteckning")} ({t("common.optional", "valfritt")})</Label>
-            <Input
-              id="po-notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder={t("purchases.notesPlaceholder", "T.ex. Hämtas av Anna fredag")}
-            />
-          </div>
+          {showAdvanced && (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                {tasks.length > 0 && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="po-task">{t("purchases.linkedTask", "Koppla till task")}</Label>
+                    <Select value={taskId} onValueChange={setTaskId}>
+                      <SelectTrigger id="po-task">
+                        <SelectValue placeholder={t("purchases.unallocated", "Oallokerat")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">{t("purchases.unallocated", "Oallokerat")}</SelectItem>
+                        {tasks.map((task) => (
+                          <SelectItem key={task.id} value={task.id}>{task.title}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                {rooms.length > 0 && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="po-room">{t("purchases.linkedRoom", "Koppla till rum")}</Label>
+                    <Select value={roomId} onValueChange={setRoomId}>
+                      <SelectTrigger id="po-room">
+                        <SelectValue placeholder={t("purchases.noRoom", "Inget rum")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">{t("purchases.noRoom", "Inget rum")}</SelectItem>
+                        {rooms.map((room) => (
+                          <SelectItem key={room.id} value={room.id}>{room.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="po-notes">{t("purchases.notes", "Anteckning")} ({t("common.optional", "valfritt")})</Label>
+                <Input
+                  id="po-notes"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder={t("purchases.notesPlaceholder", "T.ex. Hämtas av Anna fredag")}
+                />
+              </div>
+            </>
+          )}
         </div>
 
         <DialogFooter>

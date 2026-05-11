@@ -202,8 +202,10 @@ export function QuickReceiptCaptureModal({
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Flow step: choose → scan (existing) or manual
-  const [flowStep, setFlowStep] = useState<"choose" | "scan" | "manual">("choose");
+  // Flow step: always "scan" by default — the legacy "manual" sub-flow has been
+  // replaced by NewPurchaseOrderDialog (qty-first manual order). "choose" branch
+  // is kept for backward compat but no longer reached from normal entry.
+  const [flowStep, setFlowStep] = useState<"choose" | "scan" | "manual">("scan");
 
   // Image state
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -265,7 +267,7 @@ export function QuickReceiptCaptureModal({
   }, [open]);
 
   const resetForm = () => {
-    setFlowStep("choose");
+    setFlowStep("scan");
     setSelectedFile(null);
     setPreviewUrl(null);
     setAnalyzing(false);
@@ -819,14 +821,6 @@ export function QuickReceiptCaptureModal({
                   {t("receipt.chooseFile")}
                 </Button>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full text-muted-foreground"
-                onClick={() => setFlowStep("choose")}
-              >
-                {t("common.back", "Tillbaka")}
-              </Button>
             </div>
           )}
           {flowStep === "scan" && previewUrl && (
