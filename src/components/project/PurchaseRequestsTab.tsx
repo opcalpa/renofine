@@ -69,6 +69,10 @@ import { ProjectLockBanner } from "./ProjectLockBanner";
 import { useProjectLock } from "@/hooks/useProjectLock";
 import { PUBLIC_DEMO_PROJECT_ID } from "@/constants/publicDemo";
 import { NewPurchaseFromBudgetDialog } from "./NewPurchaseFromBudgetDialog";
+import { EditPurchaseOrderDialog } from "./EditPurchaseOrderDialog";
+import { AddPurchaseLineDialog } from "./AddPurchaseLineDialog";
+import { NewPurchaseOrderDialog } from "./NewPurchaseOrderDialog";
+import { PurchaseOrdersTableView } from "./PurchaseOrdersTableView";
 import { AddMaterialDialog } from "./overview/AddMaterialDialog";
 import { PurchasesTableView } from "./purchases/PurchasesTableView";
 import { PurchasesKanbanView } from "./purchases/PurchasesKanbanView";
@@ -147,6 +151,14 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
   const [selectModePoId, setSelectModePoId] = useState<string | null>(null);
   const [selectedLineIds, setSelectedLineIds] = useState<Set<string>>(new Set());
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
+  // Edit PO dialog
+  const [editingPO, setEditingPO] = useState<PurchaseOrder | null>(null);
+  // Add-line dialog target (the PO we're adding a row to)
+  const [addLinePO, setAddLinePO] = useState<PurchaseOrder | null>(null);
+  // New PO ("Skapa beställning") dialog
+  const [newPODialogOpen, setNewPODialogOpen] = useState(false);
+  // PO view mode: cards or flat table
+  const [poViewMode, setPoViewMode] = usePersistedPreference<'cards' | 'table'>(`po-view-mode-${projectId}`, 'cards');
   const [receiptModalOpen, setReceiptModalOpen] = useState(false);
   const [addPlannedDialogOpen, setAddPlannedDialogOpen] = useState(false);
   const [poToDelete, setPOToDelete] = useState<PurchaseOrder | null>(null);
@@ -994,6 +1006,14 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
               <ClipboardList className="h-4 w-4 mr-2" />
               {t('purchases.addPlannedMaterial', 'Planerat material')}
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setNewPODialogOpen(true)}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              {t('purchases.createOrder', 'Skapa beställning')}
+            </Button>
             <Button size="sm" onClick={() => setReceiptModalOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               {t('purchases.addOrder')}
@@ -1080,6 +1100,23 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
               <ShoppingCart className="h-4 w-4" />
               {t("purchases.purchaseOrdersTitle", "Inköpsorder")}
               <Badge variant="secondary" className="ml-1 text-xs">{purchaseOrders.length}</Badge>
+              <div className="ml-auto flex rounded-md bg-muted/40 border border-border/60 p-0.5">
+                {(['cards', 'table'] as const).map(v => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => setPoViewMode(v)}
+                    className={cn(
+                      "px-2.5 py-0.5 rounded text-xs transition-colors",
+                      poViewMode === v
+                        ? "bg-card shadow-sm font-medium text-foreground border border-border/60"
+                        : "text-muted-foreground hover:text-foreground border border-transparent"
+                    )}
+                  >
+                    {v === 'cards' ? t('purchases.cardsView', 'Kort') : t('purchases.tableView', 'Tabell')}
+                  </button>
+                ))}
+              </div>
             </CardTitle>
             <CardDescription className="text-xs">
               {t(
@@ -1089,7 +1126,24 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2 pt-0">
-            {purchaseOrders.map((po) => {
+            {poViewMode === 'table' ? (
+              <PurchaseOrdersTableView
+                projectId={projectId}
+                purchaseOrders={purchaseOrders}
+                materialsByPOId={materialsByPOId}
+                tasks={tasks}
+                rooms={rooms}
+                currency={currency}
+                canEdit={isProjectOwner || userPurchasesAccess === 'edit'}
+                onEditPO={(po) => setEditingPO(po as PurchaseOrder)}
+                onDeletePO={(po) => setPOToDelete(po as PurchaseOrder)}
+                onAddLine={(po) => setAddLinePO(po as PurchaseOrder)}
+                onEditLine={(lineId) => {
+                  const mat = materials.find((m) => m.id === lineId);
+                  if (mat) openEditDialog(mat);
+                }}
+              />
+            ) : purchaseOrders.map((po) => {
               const rows = materialsByPOId.get(po.id) || [];
               const isExpanded = expandedPOIds.has(po.id);
               const isAllocating = allocatingPOId === po.id;
@@ -1117,7 +1171,12 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
                     >
                       <ChevronDown className={cn("h-4 w-4 transition-transform", !isExpanded && "-rotate-90")} />
                     </button>
-                    <div className="flex-1 min-w-0">
+                    <button
+                      type="button"
+                      onClick={() => setEditingPO(po)}
+                      className="flex-1 min-w-0 text-left rounded px-1 -mx-1 hover:bg-accent/40 transition-colors"
+                      title={t("purchases.editPO", "Redigera inköpsorder")}
+                    >
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-medium text-sm truncate">{po.vendor_name}</span>
                         <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 capitalize", statusColor)}>
@@ -1137,7 +1196,7 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
                         <span>{t("purchases.linesCount", { defaultValue: "{{count}} rader", count: rows.length })}</span>
                         {po.delivered_at && <span>{t("purchases.delivered", "Levererad")}: {new Date(po.delivered_at).toLocaleDateString()}</span>}
                       </div>
-                    </div>
+                    </button>
                     {/* Allocate-all dropdown */}
                     <div className="flex-shrink-0">
                       <Select
@@ -1387,12 +1446,36 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
                             </button>
                           );
                         })}
+                        {!inSelectMode && canEdit && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-[11px] text-muted-foreground hover:text-foreground"
+                            onClick={() => setAddLinePO(po)}
+                          >
+                            <Plus className="h-3 w-3 mr-1" />
+                            {t("purchases.addLine", "Lägg till rad")}
+                          </Button>
+                        )}
                       </div>
                     );
                   })()}
                   {isExpanded && rows.length === 0 && (
-                    <div className="border-t bg-muted/20 px-3 py-2 text-xs text-muted-foreground italic">
-                      {t("purchases.poNoLines", "Inga radnivå-material — ordern är endast registrerad som totalsumma.")}
+                    <div className="border-t bg-muted/20 px-3 py-2 text-xs flex items-center justify-between gap-2">
+                      <span className="text-muted-foreground italic">
+                        {t("purchases.poNoLines", "Inga radnivå-material — ordern är endast registrerad som totalsumma.")}
+                      </span>
+                      {(isProjectOwner || userPurchasesAccess === 'edit') && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 px-2 text-xs"
+                          onClick={() => setAddLinePO(po)}
+                        >
+                          <Plus className="h-3 w-3 mr-1" />
+                          {t("purchases.addLine", "Lägg till rad")}
+                        </Button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1986,6 +2069,40 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
           fetchPurchaseOrders();
           fetchTasks();
         }}
+      />
+      <EditPurchaseOrderDialog
+        open={editingPO !== null}
+        onOpenChange={(o) => { if (!o) setEditingPO(null); }}
+        purchaseOrder={editingPO}
+        currency={currency}
+        onSaved={() => { fetchPurchaseOrders(); fetchMaterials(); }}
+      />
+      {addLinePO && (
+        <AddPurchaseLineDialog
+          open={addLinePO !== null}
+          onOpenChange={(o) => { if (!o) setAddLinePO(null); }}
+          projectId={projectId}
+          purchaseOrderId={addLinePO.id}
+          defaultVendorName={addLinePO.vendor_name}
+          defaultMaterialStatus={
+            addLinePO.status === "ordered" ? "ordered"
+            : addLinePO.status === "delivered" ? "ordered"
+            : "new"
+          }
+          currency={currency}
+          tasks={tasks}
+          rooms={rooms}
+          onAdded={fetchMaterials}
+        />
+      )}
+      <NewPurchaseOrderDialog
+        open={newPODialogOpen}
+        onOpenChange={setNewPODialogOpen}
+        projectId={projectId}
+        currency={currency}
+        tasks={tasks}
+        rooms={rooms}
+        onCreated={() => { fetchPurchaseOrders(); fetchMaterials(); }}
       />
       <AlertDialog open={poToDelete !== null} onOpenChange={(o) => !o && setPOToDelete(null)}>
         <AlertDialogContent className="max-w-sm">
