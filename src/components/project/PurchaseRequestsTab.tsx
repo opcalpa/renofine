@@ -86,9 +86,6 @@ import { PurchaseOrdersTableView } from "./PurchaseOrdersTableView";
 import { PurchaseOrdersGridV2 } from "./po-list-v2/PurchaseOrdersGridV2";
 import type { PO, POMaterial } from "./po-list-v2/types";
 import { AddMaterialDialog } from "./overview/AddMaterialDialog";
-import { PurchasesTableView } from "./purchases/PurchasesTableView";
-import { PurchasesKanbanView } from "./purchases/PurchasesKanbanView";
-import { usePurchasesTableView } from "./purchases/usePurchasesTableView";
 import { EXTRA_COLUMN_KEYS as PURCHASE_EXTRA_COLUMN_KEYS } from "./purchases/purchasesTypes";
 
 interface Material {
@@ -204,19 +201,6 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
   const [userPurchasesAccess, setUserPurchasesAccess] = useState<string>('none');
   const [userPurchasesScope, setUserPurchasesScope] = useState<string>('assigned');
   const [permissionsResolved, setPermissionsResolved] = useState(false);
-
-  // View mode — persisted per project + synced to server
-  const [viewMode, handleSetViewMode] = usePersistedPreference<'kanban' | 'table'>(`purchases-view-mode-${projectId}`, 'table');
-
-  // Table view state (lifted so toolbar renders in parent row)
-  const purchaseTableViewState = usePurchasesTableView(projectId);
-
-  // Filter state (multi-select sets)
-  const [filterStatuses, setFilterStatuses] = useState<Set<string>>(new Set());
-  const [filterRooms, setFilterRooms] = useState<Set<string>>(new Set());
-  const [filterTasks, setFilterTasks] = useState<Set<string>>(new Set());
-  const [filterCreatedBy, setFilterCreatedBy] = useState<Set<string>>(new Set());
-  const [filterAttachment, setFilterAttachment] = useState<Set<string>>(new Set());
 
   const { toast } = useToast();
   const { lockStatus } = useProjectLock(projectId);
@@ -924,35 +908,12 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
     setEditDialogOpen(true);
   }, []);
 
-  // Filter helpers
-  const toggleFilterValue = (setter: React.Dispatch<React.SetStateAction<Set<string>>>, value: string) => {
-    setter(prev => {
-      const next = new Set(prev);
-      if (next.has(value)) next.delete(value);
-      else next.add(value);
-      return next;
-    });
-  };
-
-  const totalFilterCount = filterStatuses.size + filterRooms.size + filterTasks.size + filterCreatedBy.size + filterAttachment.size;
-
-  const clearAllFilters = () => {
-    setFilterStatuses(new Set());
-    setFilterRooms(new Set());
-    setFilterTasks(new Set());
-    setFilterCreatedBy(new Set());
-    setFilterAttachment(new Set());
-  };
-
   // Split planned (budget references) from real orders — exclude subcontractor rows from budget
   const plannedMaterials = materials.filter(m => m.status === "planned" && m.description !== "__subcontractor__");
-  // Flat orders = non-planned materials NOT linked to a purchase_order.
-  // After PO-invariant Fas C (2026-05-13), this list is always empty —
-  // DB CHECK (status='planned') = (purchase_order_id IS NULL) guarantees
-  // every non-planned material has a PO. Keeping the variable + render
-  // path as defensive no-op; safe to remove in a follow-up refactor that
-  // also moves header counts to materialsByPOId.
-  const orderMaterials = materials.filter(m => m.status !== "planned" && !m.purchase_order_id);
+  // All real orders (non-planned). After PO-invariant Fas C (2026-05-13),
+  // every non-planned material is guaranteed to have a purchase_order_id
+  // (DB CHECK enforces it), so they're all rendered grouped under their PO.
+  const allOrderMaterials = materials.filter(m => m.status !== "planned");
 
   // Group PO-linked materials by their purchase_order_id for the PO section
   const materialsByPOId = new Map<string, Material[]>();
@@ -973,11 +934,12 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
     });
   };
 
-  // Paid per planned row: only counts when purchase order status = "paid"
+  // Paid/ordered spend per planned row — iterates ALL non-planned materials
+  // (post-Fas-C, this is the correct source for budget-tracking; previously
+  // only summed orphans, which Fas C eliminates).
   const paidByPlannedId = new Map<string, number>();
-  // Ordered (not yet paid) per planned row: to_order + ordered statuses
   const orderedByPlannedId = new Map<string, number>();
-  for (const m of orderMaterials) {
+  for (const m of allOrderMaterials) {
     if (!m.source_material_id) continue;
     if (m.status === "paid") {
       paidByPlannedId.set(m.source_material_id,
@@ -987,49 +949,6 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
         (orderedByPlannedId.get(m.source_material_id) || 0) + (m.price_total || 0));
     }
   }
-
-  // Filter real orders only
-  const filteredMaterials = orderMaterials.filter((material) => {
-    if (filterStatuses.size > 0 && !filterStatuses.has(material.status)) return false;
-    if (filterRooms.size > 0) {
-      const roomMatch = material.room_id ? filterRooms.has(material.room_id) : filterRooms.has("none");
-      if (!roomMatch) return false;
-    }
-    if (filterTasks.size > 0) {
-      const taskMatch = material.task_id ? filterTasks.has(material.task_id) : filterTasks.has("none");
-      if (!taskMatch) return false;
-    }
-    if (filterCreatedBy.size > 0 && material.created_by_user_id && !filterCreatedBy.has(material.created_by_user_id)) return false;
-    if (filterAttachment.size > 0) {
-      if (filterAttachment.has("has") && !material.hasAttachment) return false;
-      if (filterAttachment.has("missing") && material.hasAttachment) return false;
-    }
-    return true;
-  });
-
-  // Count helpers for filter popover (based on real orders only)
-  const getStatusCount = (status: string) => orderMaterials.filter(m => m.status === status).length;
-  const getRoomCount = (id: string) => orderMaterials.filter(m => id === "none" ? !m.room_id : m.room_id === id).length;
-  const getTaskCount = (id: string) => orderMaterials.filter(m => id === "none" ? !m.task_id : m.task_id === id).length;
-  const getCreatorCount = (id: string) => orderMaterials.filter(m => m.created_by_user_id === id).length;
-
-  // Get unique creators (from real orders)
-  const uniqueCreators = Array.from(
-    new Map(
-      orderMaterials
-        .filter((m) => m.created_by_user_id && m.creator?.name)
-        .map((m) => [m.created_by_user_id, { id: m.created_by_user_id!, name: m.creator!.name }])
-    ).values()
-  );
-
-  const statusOptions = [
-    { value: "submitted", labelKey: "materialStatuses.submitted" },
-    { value: "approved", labelKey: "materialStatuses.approved" },
-    { value: "billed", labelKey: "materialStatuses.billed" },
-    { value: "paid", labelKey: "materialStatuses.paid" },
-    { value: "paused", labelKey: "materialStatuses.paused" },
-    { value: "declined", labelKey: "materialStatuses.declined" },
-  ];
 
   if (loading) {
     return (
@@ -1050,7 +969,7 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
         <div className="min-w-0">
           <span className="kicker">{t('purchases.kicker', 'Inköp & material')}</span>
           <h2 className="font-display text-xl font-normal tracking-tight mt-0.5">
-            {orderMaterials.length} {t('purchases.orders', 'inköp')} · {orderMaterials.filter(m => m.status === 'paid').length} {t('materialStatuses.paid', 'betalda')}
+            {allOrderMaterials.length} {t('purchases.orders', 'inköp')} · {allOrderMaterials.filter(m => m.status === 'paid').length} {t('materialStatuses.paid', 'betalda')}
           </h2>
         </div>
         {(isProjectOwner || userPurchasesAccess === 'edit' || userPurchasesAccess === 'create') && (
@@ -1298,286 +1217,10 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
                 {t('purchases.emptyStateTip', 'Tip: Link purchases to tasks to track costs per work item')}
               </p>
             </div>
-          ) : orderMaterials.length === 0 ? (
+          ) : (
             <p className="text-xs text-muted-foreground text-center py-6 italic">
               {t('purchases.allOrdersAreGrouped', 'Alla inköp visas grupperade ovanför.')}
             </p>
-          ) : (
-            <>
-              {/* Toolbar: View Toggle + Filter + Results count */}
-              <div className="flex items-center gap-3 flex-wrap mb-4">
-                {/* View Toggle */}
-                <div className="flex rounded-md bg-muted/40 border border-border/60 p-0.5">
-                  {(['table', 'kanban'] as const).map(v => (
-                    <button
-                      key={v}
-                      type="button"
-                      onClick={() => handleSetViewMode(v)}
-                      className={cn(
-                        "px-2.5 py-1 rounded text-xs transition-colors",
-                        viewMode === v
-                          ? "bg-card shadow-sm font-medium text-foreground border border-border/60"
-                          : "text-muted-foreground hover:text-foreground border border-transparent"
-                      )}
-                    >
-                      {v === 'table' ? t('tasks.tableView', 'Tabell') : t('tasks.kanbanView', 'Kanban')}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Filter Popover */}
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" size="icon" className="h-8 w-8 relative" title={t('purchases.filters', 'Filter')}>
-                      <Filter className="h-4 w-4" />
-                      {totalFilterCount > 0 && (
-                        <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-[10px] text-primary-foreground flex items-center justify-center font-medium">
-                          {totalFilterCount}
-                        </span>
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-72 p-0" align="start">
-                    <div className="max-h-[70vh] overflow-y-auto">
-                      {/* Status */}
-                      <div className="px-3 pt-3 pb-1">
-                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t('common.status')}</p>
-                      </div>
-                      <div className="px-1 pb-2">
-                        {statusOptions.map(opt => (
-                          <label key={opt.value} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer text-sm">
-                            <Checkbox
-                              checked={filterStatuses.has(opt.value)}
-                              onCheckedChange={() => toggleFilterValue(setFilterStatuses, opt.value)}
-                            />
-                            <span className="flex-1">{t(opt.labelKey)}</span>
-                            <span className="text-xs text-muted-foreground">{getStatusCount(opt.value)}</span>
-                          </label>
-                        ))}
-                      </div>
-
-                      <div className="border-t" />
-
-                      {/* Room */}
-                      <div className="px-3 pt-3 pb-1">
-                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t('purchases.room')}</p>
-                      </div>
-                      <div className="px-1 pb-2">
-                        <label className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer text-sm">
-                          <Checkbox
-                            checked={filterRooms.has("none")}
-                            onCheckedChange={() => toggleFilterValue(setFilterRooms, "none")}
-                          />
-                          <span className="flex-1">{t('purchasesTable.noRoom')}</span>
-                          <span className="text-xs text-muted-foreground">{getRoomCount("none")}</span>
-                        </label>
-                        {rooms.map(room => (
-                          <label key={room.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer text-sm">
-                            <Checkbox
-                              checked={filterRooms.has(room.id)}
-                              onCheckedChange={() => toggleFilterValue(setFilterRooms, room.id)}
-                            />
-                            <span className="flex-1">{room.name}</span>
-                            <span className="text-xs text-muted-foreground">{getRoomCount(room.id)}</span>
-                          </label>
-                        ))}
-                      </div>
-
-                      <div className="border-t" />
-
-                      {/* Task */}
-                      <div className="px-3 pt-3 pb-1">
-                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t('purchases.task')}</p>
-                      </div>
-                      <div className="px-1 pb-2">
-                        <label className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer text-sm">
-                          <Checkbox
-                            checked={filterTasks.has("none")}
-                            onCheckedChange={() => toggleFilterValue(setFilterTasks, "none")}
-                          />
-                          <span className="flex-1">{t('purchasesTable.noTask')}</span>
-                          <span className="text-xs text-muted-foreground">{getTaskCount("none")}</span>
-                        </label>
-                        {tasks.map(task => (
-                          <label key={task.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer text-sm">
-                            <Checkbox
-                              checked={filterTasks.has(task.id)}
-                              onCheckedChange={() => toggleFilterValue(setFilterTasks, task.id)}
-                            />
-                            <span className="flex-1 truncate">{task.title}</span>
-                            <span className="text-xs text-muted-foreground">{getTaskCount(task.id)}</span>
-                          </label>
-                        ))}
-                      </div>
-
-                      <div className="border-t" />
-
-                      {/* Created by */}
-                      {uniqueCreators.length > 0 && (
-                        <>
-                          <div className="px-3 pt-3 pb-1">
-                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t('purchases.addedBy')}</p>
-                          </div>
-                          <div className="px-1 pb-2">
-                            {uniqueCreators.map(creator => (
-                              <label key={creator.id} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer text-sm">
-                                <Checkbox
-                                  checked={filterCreatedBy.has(creator.id)}
-                                  onCheckedChange={() => toggleFilterValue(setFilterCreatedBy, creator.id)}
-                                />
-                                <span className="flex-1">{creator.name}</span>
-                                <span className="text-xs text-muted-foreground">{getCreatorCount(creator.id)}</span>
-                              </label>
-                            ))}
-                          </div>
-                          <div className="border-t" />
-                        </>
-                      )}
-
-                      {/* Attachment */}
-                      <div className="px-3 pt-3 pb-1">
-                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t('purchasesTable.attachment')}</p>
-                      </div>
-                      <div className="px-1 pb-2">
-                        <label className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer text-sm">
-                          <Checkbox
-                            checked={filterAttachment.has("has")}
-                            onCheckedChange={() => toggleFilterValue(setFilterAttachment, "has")}
-                          />
-                          <span className="flex-1">{t('budget.hasAttachment')}</span>
-                        </label>
-                        <label className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer text-sm">
-                          <Checkbox
-                            checked={filterAttachment.has("missing")}
-                            onCheckedChange={() => toggleFilterValue(setFilterAttachment, "missing")}
-                          />
-                          <span className="flex-1">{t('budget.missingAttachment')}</span>
-                        </label>
-                      </div>
-
-                      {/* Clear all */}
-                      {totalFilterCount > 0 && (
-                        <>
-                          <div className="border-t" />
-                          <div className="p-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="w-full"
-                              onClick={clearAllFilters}
-                            >
-                              {t('purchases.clearFilters', 'Clear filters')}
-                            </Button>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  </PopoverContent>
-                </Popover>
-
-                {/* Table view toolbar items (inline) */}
-                {viewMode === 'table' && (
-                  <>
-                    <ColumnToggle
-                      columns={PURCHASE_EXTRA_COLUMN_KEYS}
-                      labels={Object.fromEntries(purchaseTableViewState.ALL_COLUMNS.map(c => [c.key, c.label])) as Record<string, string>}
-                      visible={purchaseTableViewState.visibleExtras}
-                      onChange={(vis) => {
-                        for (const key of PURCHASE_EXTRA_COLUMN_KEYS) {
-                          const isVisible = vis.has(key);
-                          const wasVisible = purchaseTableViewState.visibleExtras.has(key);
-                          if (isVisible !== wasVisible) purchaseTableViewState.toggleExtraColumn(key);
-                        }
-                      }}
-                      align="start"
-                      trigger={
-                        <Button variant="outline" size="icon" className="h-8 w-8" title={t("purchasesTable.columns")}>
-                          <Columns3 className="h-4 w-4" />
-                        </Button>
-                      }
-                    />
-                    <Button
-                      variant={purchaseTableViewState.compactRows ? "default" : "outline"}
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => purchaseTableViewState.setCompactRows(!purchaseTableViewState.compactRows)}
-                      title={t("purchasesTable.compactRows")}
-                    >
-                      <Rows3 className="h-4 w-4" />
-                    </Button>
-                    {/* Group by */}
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant={purchaseTableViewState.groupBy !== "none" ? "default" : "outline"}
-                          size="icon"
-                          className="h-8 w-8"
-                          title={t("budget.groupBy")}
-                        >
-                          <Layers className="h-4 w-4" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-48" align="end">
-                        <div className="space-y-1">
-                          <p className="text-sm font-medium mb-2">{t("budget.groupBy")}</p>
-                          {(["none", "room", "status", "vendor"] as const).map((opt) => (
-                            <label
-                              key={opt}
-                              className={`flex items-center gap-2 text-sm cursor-pointer rounded-md px-2 py-1.5 hover:bg-accent ${purchaseTableViewState.groupBy === opt ? "bg-accent font-medium" : ""}`}
-                              onClick={() => purchaseTableViewState.handleGroupByChange(opt)}
-                            >
-                              {opt === "none" && t("budget.groupNone")}
-                              {opt === "room" && t("budget.groupByRoom")}
-                              {opt === "status" && t("budget.groupByStatus")}
-                              {opt === "vendor" && t("budget.groupByVendor")}
-                            </label>
-                          ))}
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  </>
-                )}
-
-                {/* Active filter count summary */}
-                {totalFilterCount > 0 && (
-                  <span className="text-sm text-muted-foreground">
-                    {t('purchases.showingResults', 'Showing {{count}} of {{total}} orders', {
-                      count: filteredMaterials.length,
-                      total: orderMaterials.length,
-                    })}
-                  </span>
-                )}
-              </div>
-
-              {/* Views */}
-              {viewMode === 'kanban' ? (
-                <PurchasesKanbanView
-                  materials={filteredMaterials}
-                  projectId={projectId}
-                  currency={currency}
-                  isReadOnly={lockStatus.isLocked || (userPurchasesAccess !== 'edit' && !isProjectOwner)}
-                  onMaterialClick={openEditDialog}
-                  onMaterialUpdated={fetchMaterials}
-                  getStatusColor={getStatusColor}
-                />
-              ) : (
-                <PurchasesTableView
-                  materials={filteredMaterials}
-                  projectId={projectId}
-                  rooms={rooms}
-                  tasks={tasks}
-                  teamMembers={teamMembers}
-                  currency={currency}
-                  isReadOnly={lockStatus.isLocked || (userPurchasesAccess !== 'edit' && !isProjectOwner)}
-                  onMaterialClick={openEditDialog}
-                  onMaterialUpdated={fetchMaterials}
-                  canEditMaterial={canEditMaterial}
-                  getStatusColor={getStatusColor}
-                  tableViewState={purchaseTableViewState}
-                  hideToolbar
-                />
-              )}
-            </>
           )}
         </CardContent>
       </Card>
