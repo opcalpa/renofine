@@ -723,11 +723,11 @@ const Projects = () => {
             };
 
             return (
-              <div className="rounded-lg border bg-card">
-                  <table className="w-full text-sm table-fixed">
+              <div className="rounded-lg border bg-card overflow-x-auto">
+                  <table className="min-w-full text-sm">
                     <thead>
                       <tr className="bg-muted border-b">
-                        <th className="px-3 py-2.5 text-left kicker">{t("projects.colName", "Namn")}</th>
+                        <th className="px-3 py-2.5 text-left kicker whitespace-nowrap">{t("projects.colName", "Namn")}</th>
                         {visibleListCols.map((col) => {
                           // Hide less important columns on smaller viewports
                           const responsiveHide =
@@ -763,7 +763,7 @@ const Projects = () => {
                             className={`border-b last:border-b-0 hover:bg-muted/30 transition-colors cursor-pointer ${isDemo ? "bg-primary/5" : ""}`}
                             onClick={() => navigate(`/projects/${project.id}`)}
                           >
-                            <td className="px-3 py-2.5">
+                            <td className="px-3 py-2.5 max-w-[240px]">
                               <div className="flex items-center gap-2 min-w-0">
                                 {isDemo && <BookOpen className="h-3.5 w-3.5 text-primary shrink-0" />}
                                 <span className="font-medium truncate">{project.name}</span>
@@ -778,7 +778,7 @@ const Projects = () => {
                               return (
                                 <td
                                   key={col}
-                                  className={`px-3 py-2.5 truncate ${colAlign[col] === "right" ? "text-right" : "text-left"} ${responsiveHide}`}
+                                  className={`px-3 py-2.5 whitespace-nowrap ${colAlign[col] === "right" ? "text-right" : "text-left"} ${responsiveHide}`}
                                 >
                                   {renderListCell(col, project)}
                                 </td>
