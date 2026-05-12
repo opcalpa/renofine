@@ -5862,6 +5862,7 @@
     "missing": "Saknar underlag",
     "column": "Underlag",
     "summaryLabel": "verifierade",
+    "summaryTooltip": "Visar hur många poster som har underlag (faktura/kvitto) kopplat. Klicka för lista över saknade.",
     "tooltipVerified": "Har stödjande dokument (faktura/kvitto)",
     "tooltipRegistered": "Belopp registrerat men inget dokument länkat",
     "tooltipMissing": "Slutfört men ingen kostnad eller dokument"

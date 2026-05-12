@@ -5865,6 +5865,7 @@
     "missing": "Missing documentation",
     "column": "Evidence",
     "summaryLabel": "verified",
+    "summaryTooltip": "How many items have supporting documents (invoice/receipt) linked. Click for list of missing.",
     "tooltipVerified": "Has supporting document (invoice/receipt)",
     "tooltipRegistered": "Amount recorded but no document linked",
     "tooltipMissing": "Completed but no cost or document found"

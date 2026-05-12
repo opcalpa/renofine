@@ -2851,8 +2851,12 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
           return (
             <Popover>
               <PopoverTrigger asChild>
-                <button className={cn("text-xs tabular-nums px-2 py-1 rounded-md border hidden sm:inline-flex cursor-pointer hover:opacity-80 transition-opacity", missing > 0 ? "border-amber-300 text-amber-700 bg-amber-50" : "border-green-300 text-green-700 bg-green-50")}>
-                  {verified}/{applicable.length} {t("evidence.summaryLabel")}
+                <button
+                  className={cn("text-xs tabular-nums px-2 py-1 rounded-md border hidden sm:inline-flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity", missing > 0 ? "border-amber-300 text-amber-700 bg-amber-50" : "border-green-300 text-green-700 bg-green-50")}
+                  title={t("evidence.summaryTooltip", "Visar hur många poster som har underlag (faktura/kvitto) kopplat. Klicka för lista.")}
+                >
+                  <span>{verified}/{applicable.length} {t("evidence.summaryLabel")}</span>
+                  <ChevronDown className="h-3 w-3 opacity-60" />
                 </button>
               </PopoverTrigger>
               <PopoverContent align="end" className="w-80 p-0">
