@@ -810,7 +810,7 @@ function SheetBody(props: PurchaseOrderDetailSheetProps) {
                       <SelectValue placeholder={t("purchases.bulkStatus", "Status...")} />
                     </SelectTrigger>
                     <SelectContent>
-                      {["new", "to_order", "ordered", "paid", "paused", "declined", "done"].map((s) => (
+                      {["submitted", "to_order", "ordered", "approved", "billed", "paid", "paused", "declined"].map((s) => (
                         <SelectItem key={s} value={s}>
                           {t(`materialStatuses.${s}`, s)}
                         </SelectItem>

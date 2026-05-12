@@ -388,11 +388,11 @@ const BudgetDashboard = ({ projectId, totalBudget, spentAmount, currency }: Budg
           return;
         }
 
-        // Regular budget items
-        if (mat.status === "new") {
+        // Regular budget items: pending = avvaktande beslut, approved = bekräftade
+        if (mat.status === "submitted" || mat.status === "to_order") {
           pending += cost;
           pendingCnt++;
-        } else if (mat.status === "done") {
+        } else if (mat.status === "approved") {
           approved += cost;
         }
       });

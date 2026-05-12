@@ -73,7 +73,7 @@ export function ProjectGridCard({
           .select("id", { count: "exact", head: true })
           .eq("project_id", project.id)
           .lt("due_date", today)
-          .not("status", "eq", "done"),
+          .not("status", "eq", "completed"),
         supabase
           .from("comments")
           .select("id", { count: "exact", head: true })

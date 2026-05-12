@@ -125,7 +125,7 @@ export function useRoomInstructionsData(projectId: string, profileId: string | n
         const totalItems = rtasks.reduce((sum, t) => sum + t.checklists.reduce((s, cl) => s + cl.items.length, 0), 0);
         const completedItems = rtasks.reduce((sum, t) => sum + t.checklists.reduce((s, cl) => s + cl.items.filter((i) => i.completed).length, 0), 0);
         // Fallback: count done tasks if no checklists
-        const completedTasks = rtasks.filter((t) => t.status === "done" || t.status === "completed").length;
+        const completedTasks = rtasks.filter((t) => t.status === "completed").length;
 
         rooms.push({
           id: rid,
@@ -218,7 +218,7 @@ export function groupWorkerTasksByRoom(
   for (const [key, { room, tasks: rtasks }] of map) {
     const totalItems = rtasks.reduce((sum, t) => sum + t.checklists.reduce((s, cl) => s + cl.items.length, 0), 0);
     const completedItems = rtasks.reduce((sum, t) => sum + t.checklists.reduce((s, cl) => s + cl.items.filter((i) => i.completed).length, 0), 0);
-    const completedTasks = rtasks.filter((t) => t.status === "done" || t.status === "completed").length;
+    const completedTasks = rtasks.filter((t) => t.status === "completed").length;
 
     // Categorize room photos from edge function
     const roomPhotos = room?.photos || [];

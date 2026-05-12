@@ -439,10 +439,10 @@ export function TasksTableView({
           const taskDeps = depsMap.get(task.id) || [];
           const unresolvedDeps = taskDeps.filter(d => {
             const depTask = tasks.find(t => t.id === d.taskId);
-            return depTask && depTask.status !== "done" && depTask.status !== "completed";
+            return depTask && depTask.status !== "completed";
           });
           const isDepBlocked = unresolvedDeps.length > 0;
-          const blockedStatuses = ["in_progress", "completed", "done"];
+          const blockedStatuses = ["in_progress", "completed"];
 
           const handleStatusSave = (v: string) => {
             if (isDepBlocked && blockedStatuses.includes(v)) {

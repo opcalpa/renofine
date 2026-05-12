@@ -1236,8 +1236,8 @@ export const TaskEditDialog = ({
                   <div className="space-y-1.5">
                     <Label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">{t("tasks.status")}</Label>
                     {(() => {
-                      const unresolvedDeps = dependencies.filter(d => d.status !== "done" && d.status !== "completed");
-                      const blockedStatuses = ["in_progress", "completed", "done"];
+                      const unresolvedDeps = dependencies.filter(d => d.status !== "completed");
+                      const blockedStatuses = ["in_progress", "completed"];
                       const isBlocked = unresolvedDeps.length > 0;
                       const handleStatusChange = (value: string) => {
                         if (isBlocked && blockedStatuses.includes(value)) {
@@ -1989,7 +1989,7 @@ export const TaskEditDialog = ({
                     <div className="ml-3 pl-4 pb-3 space-y-2 border-l-2 border-muted">
                       {/* Existing dependencies */}
                       {dependencies.map((dep) => {
-                        const isReady = dep.status === "done" || dep.status === "completed";
+                        const isReady = dep.status === "completed";
                         return (
                           <div key={dep.id} className={`flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm ${isReady ? "border-green-200 bg-green-50/50" : "border-amber-200 bg-amber-50/50"}`}>
                             <div className="flex items-center gap-2 min-w-0">

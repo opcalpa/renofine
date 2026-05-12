@@ -2075,7 +2075,7 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
 
         if (isEditingStatus) {
           const options = row.type === "task"
-            ? ["to_do", "in_progress", "done", "on_hold"]
+            ? ["planned", "to_do", "in_progress", "waiting", "completed", "cancelled"]
             : ["planned", "submitted", "approved", "billed", "paid", "paused"];
           return (
             <Select

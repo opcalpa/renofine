@@ -58,7 +58,7 @@ export const AddPurchaseLineDialog = ({
   const [quantity, setQuantity] = useState("1");
   const [unit, setUnit] = useState("st");
   const [pricePerUnit, setPricePerUnit] = useState("");
-  const [status, setStatus] = useState<string>("new");
+  const [status, setStatus] = useState<string>("submitted");
   const [taskId, setTaskId] = useState<string>("none");
   const [roomId, setRoomId] = useState<string>("none");
 
@@ -68,7 +68,7 @@ export const AddPurchaseLineDialog = ({
     setQuantity("1");
     setUnit("st");
     setPricePerUnit("");
-    setStatus(defaultMaterialStatus ?? "new");
+    setStatus(defaultMaterialStatus ?? "submitted");
     setTaskId("none");
     setRoomId("none");
   }, [open, defaultMaterialStatus]);
@@ -189,7 +189,7 @@ export const AddPurchaseLineDialog = ({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {["new", "to_order", "ordered", "paid", "paused", "declined", "done"].map((s) => (
+                  {["submitted", "to_order", "ordered", "approved", "billed", "paid", "paused", "declined"].map((s) => (
                     <SelectItem key={s} value={s}>{t(`materialStatuses.${s}`, s)}</SelectItem>
                   ))}
                 </SelectContent>

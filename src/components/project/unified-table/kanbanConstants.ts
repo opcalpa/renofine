@@ -54,10 +54,15 @@ export const TASK_STATUS_ORDER = [
   "cancelled",
 ];
 
+// Material lifecycle: budget → request → order → leverans → ekonomi
+// Värden synkade med materials_status_check (migration 20260512150000).
 export const MATERIAL_STATUS_ORDER = [
+  "planned",
   "submitted",
-  "declined",
+  "to_order",
+  "ordered",
   "approved",
+  "declined",
   "billed",
   "paid",
   "paused",
