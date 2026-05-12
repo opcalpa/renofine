@@ -234,7 +234,7 @@ const MaterialsList = ({ taskId, currency }: MaterialsListProps) => {
         vendor_link: newMaterial.vendor_link,
         exclude_from_budget: newMaterial.exclude_from_budget,
         created_by_user_id: profile.id,
-        status: "new",
+        status: "planned",
       });
 
       if (error) throw error;
