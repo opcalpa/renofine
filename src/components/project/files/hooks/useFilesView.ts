@@ -407,5 +407,8 @@ export function useFilesView(
     filteredFolders,
     filteredFiles,
     sortedFiles,
+    preFilterViewMode,
+    setSelectedFiles,
+    setHiddenFileCols,
   };
 }

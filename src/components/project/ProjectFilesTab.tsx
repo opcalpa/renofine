@@ -135,6 +135,8 @@ const ProjectFilesTab = ({ projectId, projectName, canEdit = true, onNavigateToF
     categoryOverrides, setCategoryForFile, customCategories, setCustomCategories,
     guessCategory, getCategoryForPath,
     filteredFolders, filteredFiles, sortedFiles,
+    preFilterViewMode,
+    setSelectedFiles, setHiddenFileCols,
   } = useFilesView(files, folders, allProjectFiles, fileLinksMap, getFileLinksForPath);
   const [uploading, setUploading] = useState(false);
   const [fileToDelete, setFileToDelete] = useState<ProjectFile | null>(null);
