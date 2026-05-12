@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo, Fragment } from "react";
 import type { ProjectFile, FileLink, FileSortKey, FileColKey } from "./files/types";
-import { isImageFile, FILE_TYPE_LABELS } from "./files/types";
+import { isImageFile, FILE_TYPE_LABELS, ALL_FILE_COLS } from "./files/types";
 import { useFilesData } from "./files/hooks/useFilesData";
 import { useFilesView } from "./files/hooks/useFilesView";
 import { ImageLightbox, useLightbox } from "@/components/shared/ImageLightbox";
