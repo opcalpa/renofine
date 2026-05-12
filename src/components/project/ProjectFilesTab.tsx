@@ -259,6 +259,20 @@ const ProjectFilesTab = ({ projectId, projectName, canEdit = true, onNavigateToF
       .eq('receipt_file_path', fromPath)
       .eq('project_id', projectId);
 
+    // photos.url stores a publicUrl containing the storage path. Move the path
+    // portion so room/task photos stay linked after a file move.
+    const { data: matchedPhotos } = await supabase
+      .from('photos')
+      .select('id, url')
+      .like('url', `%/${fromPath}`);
+    if (matchedPhotos && matchedPhotos.length > 0) {
+      await Promise.all(
+        matchedPhotos.map((p) =>
+          supabase.from('photos').update({ url: p.url.replace(fromPath, newPath) }).eq('id', p.id)
+        )
+      );
+    }
+
     // Refresh
     await fetchFiles();
     await fetchFolders();
@@ -657,6 +671,12 @@ const ProjectFilesTab = ({ projectId, projectName, canEdit = true, onNavigateToF
         .delete()
         .eq('file_path', fileToDelete.path)
         .eq('project_id', projectId);
+      // Clear photos referencing this file. photos.url contains the storage
+      // path as a suffix (after the bucket name), so .like('%/path') matches.
+      await supabase
+        .from('photos')
+        .delete()
+        .like('url', `%/${fileToDelete.path}`);
 
       toast({
         title: t('files.fileDeleted'),

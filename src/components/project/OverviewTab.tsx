@@ -17,6 +17,7 @@ import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/component
 import { useTranslation } from "react-i18next";
 import { useOverviewData } from "./overview/useOverviewData";
 import { PulseCards } from "./overview/PulseCards";
+import { UpcomingPaymentsWidget } from "./overview/UpcomingPaymentsWidget";
 import { ProjectDocumentsCard } from "./overview/ProjectDocumentsCard";
 // OverviewFeedSection removed — unified into ProjectChatSection
 import { ProjectSettingsDialog } from "./overview/ProjectSettingsDialog";
@@ -457,6 +458,12 @@ const OverviewTab = ({
           navigation={navigation}
           currency={project.currency}
           isBuilder={!isHomeowner}
+      />
+
+      <UpcomingPaymentsWidget
+        projectId={project.id}
+        currency={project.currency}
+        onNavigateToPurchases={onNavigateToPurchases ? () => onNavigateToPurchases() : undefined}
       />
 
       {/* Quick action buttons — contractor only */}

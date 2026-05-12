@@ -175,6 +175,7 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
   const [newPODialogOpen, setNewPODialogOpen] = useState(false);
   // PO view mode: cards or flat table
   const [poViewMode, setPoViewMode] = usePersistedPreference<'cards' | 'table'>(`po-view-mode-${projectId}`, 'cards');
+  const [showOnlyUnpaidInvoices, setShowOnlyUnpaidInvoices] = useState(false);
   const [receiptModalOpen, setReceiptModalOpen] = useState(false);
   const [addPlannedDialogOpen, setAddPlannedDialogOpen] = useState(false);
   const [poToDelete, setPOToDelete] = useState<PurchaseOrder | null>(null);
@@ -1122,50 +1123,82 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
       })()}
 
       {/* Inköpsorder — grid of cards + drawer */}
-      {purchaseOrders.length > 0 && (
+      {purchaseOrders.length > 0 && (() => {
+        const unpaidInvoiceCount = purchaseOrders.filter(
+          (po) => po.source === 'ai_invoice' && !po.paid_at,
+        ).length;
+        const filteredPOs = showOnlyUnpaidInvoices
+          ? purchaseOrders.filter((po) => po.source === 'ai_invoice' && !po.paid_at)
+          : purchaseOrders;
+        return (
         <div className="space-y-3">
           {/* Section heading + view toggle */}
-          <div className="flex items-baseline justify-between gap-3">
+          <div className="flex items-baseline justify-between gap-3 flex-wrap">
             <div className="flex items-baseline gap-2">
               <ShoppingCart className="h-4 w-4 self-center" style={{ color: 'var(--rf-fg-muted)' }} />
               <h3 className="font-display text-lg font-normal tracking-tight" style={{ color: 'var(--rf-ink)' }}>
                 {t('purchases.purchaseOrdersTitle', 'Inköpsorder')}
               </h3>
               <span className="rf-num text-xs" style={{ color: 'var(--rf-fg-muted)' }}>
-                {purchaseOrders.length}
+                {showOnlyUnpaidInvoices ? `${filteredPOs.length}/${purchaseOrders.length}` : purchaseOrders.length}
               </span>
             </div>
-            <div
-              className="flex p-0.5 rounded-md"
-              style={{ background: 'var(--rf-bg-sunken)', border: '1px solid var(--rf-hairline)' }}
-            >
-              {(['cards', 'table'] as const).map((v) => (
+            <div className="flex items-center gap-2 flex-wrap">
+              {unpaidInvoiceCount > 0 && (
                 <button
-                  key={v}
                   type="button"
-                  onClick={() => setPoViewMode(v)}
+                  onClick={() => setShowOnlyUnpaidInvoices((v) => !v)}
                   className={cn(
-                    'px-2.5 py-0.5 rounded text-xs transition-colors',
-                    poViewMode === v
+                    'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs transition-colors',
+                    showOnlyUnpaidInvoices
                       ? 'font-medium'
-                      : 'text-muted-foreground hover:text-foreground'
+                      : 'hover:bg-accent/50'
                   )}
                   style={
-                    poViewMode === v
-                      ? { background: 'var(--rf-surface)', border: '1px solid var(--rf-hairline)', color: 'var(--rf-ink)' }
-                      : { border: '1px solid transparent' }
+                    showOnlyUnpaidInvoices
+                      ? { background: 'var(--rf-warn-bg, #FEF3C7)', color: 'var(--rf-warn, #92400E)', border: '1px solid var(--rf-warn, #92400E)' }
+                      : { border: '1px solid var(--rf-hairline)', color: 'var(--rf-fg-muted)' }
                   }
+                  title={t('purchases.filterUnpaidInvoicesTitle', 'Visa endast obetalda fakturor')}
                 >
-                  {v === 'cards' ? t('purchases.cardsView', 'Kort') : t('purchases.tableView', 'Tabell')}
+                  <span>
+                    {t('purchases.filterUnpaidInvoices', 'Obetalda fakturor')}
+                  </span>
+                  <span className="rf-num">{unpaidInvoiceCount}</span>
                 </button>
-              ))}
+              )}
+              <div
+                className="flex p-0.5 rounded-md"
+                style={{ background: 'var(--rf-bg-sunken)', border: '1px solid var(--rf-hairline)' }}
+              >
+                {(['cards', 'table'] as const).map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => setPoViewMode(v)}
+                    className={cn(
+                      'px-2.5 py-0.5 rounded text-xs transition-colors',
+                      poViewMode === v
+                        ? 'font-medium'
+                        : 'text-muted-foreground hover:text-foreground'
+                    )}
+                    style={
+                      poViewMode === v
+                        ? { background: 'var(--rf-surface)', border: '1px solid var(--rf-hairline)', color: 'var(--rf-ink)' }
+                        : { border: '1px solid transparent' }
+                    }
+                  >
+                    {v === 'cards' ? t('purchases.cardsView', 'Kort') : t('purchases.tableView', 'Tabell')}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
           {poViewMode === 'table' ? (
             <PurchaseOrdersTableView
               projectId={projectId}
-              purchaseOrders={purchaseOrders}
+              purchaseOrders={filteredPOs}
               materialsByPOId={materialsByPOId}
               tasks={tasks}
               rooms={rooms}
@@ -1181,7 +1214,7 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
             />
           ) : (
             <PurchaseOrdersGridV2
-              purchaseOrders={purchaseOrders as unknown as PO[]}
+              purchaseOrders={filteredPOs as unknown as PO[]}
               materialsByPOId={materialsByPOId as unknown as Map<string, POMaterial[]>}
               tasks={tasks.map((tt) => ({ id: tt.id, title: tt.title }))}
               rooms={rooms.map((r) => ({ id: r.id, name: r.name }))}
@@ -1209,7 +1242,8 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
             />
           )}
         </div>
-      )}
+        );
+      })()}
 
       {/* Purchase orders section */}
       <Card>

@@ -2415,10 +2415,24 @@
     "showAll": "Show all",
     "hideAll": "Hide all"
   },
+  "upcomingPayments": {
+    "title": "To pay",
+    "viewAll": "View all",
+    "noDueDate": "No due date",
+    "overdueDays": "Overdue by {{count}} days",
+    "dueToday": "Due today",
+    "dueTomorrow": "Due tomorrow",
+    "dueInDays": "Due in {{count}} days"
+  },
   "purchases": {
     "title": "Purchase Orders",
     "description": "Manage all purchase orders for this project",
     "kicker": "Purchases & material",
+    "markAsPaid": "Mark as paid",
+    "markedAsPaid": "Marked as paid",
+    "markPaidError": "Could not mark as paid",
+    "filterUnpaidInvoices": "Unpaid invoices",
+    "filterUnpaidInvoicesTitle": "Show only unpaid invoices",
     "materialBudget": "Material budget",
     "consumed": "Used",
     "remaining": "Remaining",

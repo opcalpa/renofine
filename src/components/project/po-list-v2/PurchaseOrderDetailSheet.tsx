@@ -25,7 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { CheckSquare, ExternalLink, FileText, Image as ImageIcon, Loader2, Paperclip, Pencil, Plus, Trash2, X } from "lucide-react";
+import { CheckCircle2, CheckSquare, ExternalLink, FileText, Image as ImageIcon, Loader2, Paperclip, Pencil, Plus, Trash2, X } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -231,6 +231,72 @@ function POExtraAttachments({ poId, projectId }: { poId: string; projectId: stri
         </div>
       )}
     </div>
+  );
+}
+
+function MarkAsPaidButton({ po }: { po: PO }) {
+  const { t } = useTranslation();
+  const [saving, setSaving] = useState(false);
+
+  // Only show when PO has invoice fields and isn't paid yet
+  const hasInvoiceContext =
+    !!po.invoice_number || !!po.ocr_number || !!po.invoice_due_date || po.source === "ai_invoice";
+  if (!hasInvoiceContext || po.paid_at) return null;
+
+  const handleMarkPaid = async () => {
+    setSaving(true);
+    try {
+      const now = new Date().toISOString();
+      const { error: poErr } = await supabase
+        .from("purchase_orders")
+        .update({ paid_at: now })
+        .eq("id", po.id);
+      if (poErr) throw poErr;
+
+      // Mark every line in this PO paid in full
+      const { data: lines } = await supabase
+        .from("materials")
+        .select("id, price_total")
+        .eq("purchase_order_id", po.id);
+      if (lines && lines.length > 0) {
+        await Promise.all(
+          lines.map((l) =>
+            supabase
+              .from("materials")
+              .update({ paid_amount: l.price_total || 0, status: "paid" })
+              .eq("id", l.id)
+          )
+        );
+      }
+
+      toast.success(t("purchases.markedAsPaid", "Markerad som betald"));
+    } catch (err) {
+      console.error("Mark as paid failed:", err);
+      toast.error(t("purchases.markPaidError", "Kunde inte markera som betald"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={handleMarkPaid}
+      disabled={saving}
+      className="gap-1.5"
+      style={{
+        borderColor: "var(--rf-green, #10b981)",
+        color: "var(--rf-green, #059669)",
+      }}
+    >
+      {saving ? (
+        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+      ) : (
+        <CheckCircle2 className="h-3.5 w-3.5" />
+      )}
+      {t("purchases.markAsPaid", "Markera som betald")}
+    </Button>
   );
 }
 
@@ -577,7 +643,7 @@ function SheetBody(props: PurchaseOrderDetailSheetProps) {
         })()}
 
         {canEdit && (
-          <div className="mt-3 flex gap-2">
+          <div className="mt-3 flex flex-wrap gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -587,6 +653,7 @@ function SheetBody(props: PurchaseOrderDetailSheetProps) {
               <Pencil className="h-3.5 w-3.5" />
               {t("purchases.editOrder", "Redigera order")}
             </Button>
+            <MarkAsPaidButton po={po} />
           </div>
         )}
       </div>

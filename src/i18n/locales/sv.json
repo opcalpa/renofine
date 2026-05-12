@@ -1875,10 +1875,24 @@
     "showAll": "Visa alla",
     "hideAll": "Dölj alla"
   },
+  "upcomingPayments": {
+    "title": "Att betala",
+    "viewAll": "Visa alla",
+    "noDueDate": "Inget förfallodatum",
+    "overdueDays": "Förfallen för {{count}} dagar sedan",
+    "dueToday": "Förfaller idag",
+    "dueTomorrow": "Förfaller imorgon",
+    "dueInDays": "Förfaller om {{count}} dagar"
+  },
   "purchases": {
     "title": "Inköpsordrar",
     "description": "Hantera alla inköpsordrar för detta projekt",
     "kicker": "Inköp & material",
+    "markAsPaid": "Markera som betald",
+    "markedAsPaid": "Markerad som betald",
+    "markPaidError": "Kunde inte markera som betald",
+    "filterUnpaidInvoices": "Obetalda fakturor",
+    "filterUnpaidInvoicesTitle": "Visa endast obetalda fakturor",
     "materialBudget": "Materialbudget",
     "consumed": "Använt",
     "remaining": "Kvar",
