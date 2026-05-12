@@ -12,6 +12,7 @@ interface PulseCardsProps {
   navigation: OverviewNavigation;
   currency?: string | null;
   isBuilder?: boolean;
+  loading?: boolean;
 }
 
 function getTaskColor(percentage: number): string {
@@ -66,8 +67,10 @@ export function PulseCards({
   navigation,
   currency,
   isBuilder,
+  loading,
 }: PulseCardsProps) {
   const { t } = useTranslation();
+  const PLACEHOLDER = "—";
 
   return (
     <div className="rounded-xl border bg-card overflow-hidden">
@@ -85,14 +88,14 @@ export function PulseCards({
               {t("overview.pulseCards.tasks")}
             </span>
           </div>
-          <p className={`text-xl sm:text-2xl font-display font-normal ${getTaskColor(taskStats.percentage)}`}>
-            {taskStats.completed}/{taskStats.total}
+          <p className={`text-xl sm:text-2xl font-display font-normal ${loading ? "text-muted-foreground" : getTaskColor(taskStats.percentage)}`}>
+            {loading ? PLACEHOLDER : `${taskStats.completed}/${taskStats.total}`}
           </p>
           <Progress
-            value={taskStats.percentage}
-            className={`h-1 sm:h-1.5 mt-1.5 sm:mt-2 ${getTaskBarColor(taskStats.percentage)}`}
+            value={loading ? 0 : taskStats.percentage}
+            className={`h-1 sm:h-1.5 mt-1.5 sm:mt-2 ${loading ? "" : getTaskBarColor(taskStats.percentage)}`}
           />
-          {(taskStats.overdue.length > 0 || taskStats.blockedOrOnHold.length > 0) && (
+          {!loading && (taskStats.overdue.length > 0 || taskStats.blockedOrOnHold.length > 0) && (
             <div className="flex items-center gap-1 mt-1.5 flex-wrap text-xs">
               <AlertTriangle className="h-3 w-3 shrink-0 text-red-500" />
               {taskStats.overdue.length > 0 && (
@@ -165,7 +168,11 @@ export function PulseCards({
               {t("overview.pulseCards.budget")}
             </span>
           </div>
-          {isBuilder && budgetStats.contractTotal > 0 ? (
+          {loading ? (
+            <p className="text-base sm:text-lg font-display font-normal text-muted-foreground">
+              {PLACEHOLDER}
+            </p>
+          ) : isBuilder && budgetStats.contractTotal > 0 ? (
             <>
               <p className="text-base sm:text-lg font-display font-normal truncate">
                 {formatCurrency(budgetStats.contractTotal, currency, { compact: true })}
@@ -226,11 +233,13 @@ export function PulseCards({
               {t("overview.pulseCards.orders")}
             </span>
           </div>
-          <p className={`text-xl sm:text-2xl font-display font-normal ${getOrderColor(orderStats.pendingCount)}`}>
-            {orderStats.pendingCount}
+          <p className={`text-xl sm:text-2xl font-display font-normal ${loading ? "text-muted-foreground" : getOrderColor(orderStats.pendingCount)}`}>
+            {loading ? PLACEHOLDER : orderStats.pendingCount}
           </p>
           <p className="text-xs sm:text-sm text-muted-foreground mt-1 truncate">
-            {orderStats.pendingCount > 0
+            {loading
+              ? " "
+              : orderStats.pendingCount > 0
               ? t("overview.pulseCards.needsReview")
               : t("overview.pulseCards.noPending")}
           </p>

@@ -212,6 +212,7 @@ const OverviewTab = ({
     budgetStats,
     orderStats,
     timelineStats,
+    loading: overviewLoading,
     refetch,
   } = useOverviewData(project, isGuest);
 
@@ -458,6 +459,7 @@ const OverviewTab = ({
           navigation={navigation}
           currency={project.currency}
           isBuilder={!isHomeowner}
+          loading={overviewLoading}
       />
 
       <UpcomingPaymentsWidget
