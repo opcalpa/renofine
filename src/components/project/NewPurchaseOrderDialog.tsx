@@ -190,7 +190,7 @@ export const NewPurchaseOrderDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle>{t("purchases.createOrder", "Skapa beställning")}</DialogTitle>
           <DialogDescription>
@@ -240,54 +240,56 @@ export const NewPurchaseOrderDialog = ({
 
           <div className="space-y-1.5">
             <Label>{t("purchases.lines", "Rader")}</Label>
-            <div className="space-y-1 border rounded-md p-2 bg-muted/20 max-h-[260px] overflow-y-auto">
+            <div className="space-y-2 border rounded-md p-2 bg-muted/20 max-h-[320px] overflow-y-auto">
               {lines.map((line, idx) => (
-                <div key={line.key} className="grid grid-cols-[1fr_60px_50px_80px_120px_28px] gap-2 items-center">
-                  <Input
-                    placeholder={idx === 0 ? t("purchases.itemPlaceholder", "T.ex. Spik 50mm") : t("purchases.itemPlaceholderRow", "Artikel")}
-                    value={line.name}
-                    onChange={(e) => updateLine(line.key, { name: e.target.value })}
-                    className="h-8 text-xs"
-                  />
-                  <Input
-                    type="number"
-                    step="0.01"
-                    placeholder={t("common.quantity", "Antal")}
-                    value={line.quantity}
-                    onChange={(e) => updateLine(line.key, { quantity: e.target.value })}
-                    className="h-8 text-xs"
-                  />
-                  <Input
-                    placeholder={t("common.unit", "st")}
-                    value={line.unit}
-                    onChange={(e) => updateLine(line.key, { unit: e.target.value })}
-                    className="h-8 text-xs"
-                  />
-                  <Input
-                    type="number"
-                    step="0.01"
-                    placeholder={t("purchases.pricePerUnit", "Á-pris")}
-                    value={line.pricePerUnit}
-                    onChange={(e) => updateLine(line.key, { pricePerUnit: e.target.value })}
-                    className="h-8 text-xs text-right"
-                  />
+                <div key={line.key} className="space-y-1.5 rounded border border-border/40 bg-card/40 p-2">
+                  <div className="grid grid-cols-[1fr_72px_64px_100px_28px] gap-2 items-center">
+                    <Input
+                      placeholder={idx === 0 ? t("purchases.itemPlaceholder", "T.ex. Spik 50mm") : t("purchases.itemPlaceholderRow", "Artikel")}
+                      value={line.name}
+                      onChange={(e) => updateLine(line.key, { name: e.target.value })}
+                      className="h-8 text-sm"
+                    />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder={t("common.quantity", "Antal")}
+                      value={line.quantity}
+                      onChange={(e) => updateLine(line.key, { quantity: e.target.value })}
+                      className="h-8 text-sm"
+                    />
+                    <Input
+                      placeholder={t("common.unit", "st")}
+                      value={line.unit}
+                      onChange={(e) => updateLine(line.key, { unit: e.target.value })}
+                      className="h-8 text-sm"
+                    />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder={t("purchases.pricePerUnit", "Á-pris")}
+                      value={line.pricePerUnit}
+                      onChange={(e) => updateLine(line.key, { pricePerUnit: e.target.value })}
+                      className="h-8 text-sm text-right"
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                      onClick={() => removeLine(line.key)}
+                      disabled={lines.length === 1}
+                      title={t("common.remove", "Ta bort")}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                   <Input
                     type="url"
-                    placeholder={t("purchases.productUrlPlaceholder", "länk (valfri)")}
+                    placeholder={t("purchases.productUrlPlaceholder", "Länk till produkt (valfri)")}
                     value={line.url}
                     onChange={(e) => updateLine(line.key, { url: e.target.value })}
-                    className="h-8 text-xs"
+                    className="h-7 text-xs text-muted-foreground"
                   />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                    onClick={() => removeLine(line.key)}
-                    disabled={lines.length === 1}
-                    title={t("common.remove", "Ta bort")}
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
                 </div>
               ))}
               <Button
