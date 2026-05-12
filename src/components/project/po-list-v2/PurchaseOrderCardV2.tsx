@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Check, Paperclip } from "lucide-react";
+import { Check, HardHat, Paperclip } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import type { PO, POMaterial } from "./types";
 import { getPOStatusStyle } from "./types";
@@ -52,6 +52,7 @@ export function PurchaseOrderCardV2({
   const { t } = useTranslation();
   const statusStyle = getPOStatusStyle(po.status);
   const allocation = deriveAllocation(rows, t);
+  const hasWorkerSubmission = rows.some((r) => !!r.submitted_by_worker_token_id);
 
   // Line preview — first 3 line names, with "+N till" suffix when more exist
   const previewLines = rows.slice(0, 3).map((r) => r.name);
@@ -119,6 +120,20 @@ export function PurchaseOrderCardV2({
             >
               <Paperclip className="h-2.5 w-2.5" />
               {t("purchases.attachmentShort", "Bilaga")}
+            </span>
+          )}
+          {hasWorkerSubmission && (
+            <span
+              className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px]"
+              style={{
+                background: "rgba(255, 255, 255, 0.7)",
+                color: "var(--rf-ink)",
+                border: "1px solid var(--rf-hairline)",
+              }}
+              title={t("worker.fromWorkerTooltip", "Inskickad av arbetare via deras länk")}
+            >
+              <HardHat className="h-2.5 w-2.5" />
+              {t("worker.tag", "Arbetare")}
             </span>
           )}
         </div>

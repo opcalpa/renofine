@@ -5692,6 +5692,7 @@
     "title": "Arbetsinstruktioner",
     "hello": "Hej",
     "tag": "Arbetare",
+    "fromWorkerTooltip": "Inskickad av arbetare via deras länk",
     "workerSuffix": "(arbetare)",
     "purchase": {
       "requestButton": "Be om inköp",

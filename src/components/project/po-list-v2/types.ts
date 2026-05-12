@@ -19,6 +19,7 @@ export interface POMaterial {
   assigned_to_user_id: string | null;
   source_material_id?: string | null;
   purchase_order_id?: string | null;
+  submitted_by_worker_token_id?: string | null;
   task?: { title: string } | null;
   room?: { name: string } | null;
 }

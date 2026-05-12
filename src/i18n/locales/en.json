@@ -5695,6 +5695,7 @@
     "title": "Work Instructions",
     "hello": "Hello",
     "tag": "Worker",
+    "fromWorkerTooltip": "Submitted by a worker via their link",
     "workerSuffix": "(worker)",
     "purchase": {
       "requestButton": "Request purchase",
