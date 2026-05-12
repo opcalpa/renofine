@@ -92,13 +92,12 @@ export function useNotifications() {
 
     const items: NotificationItem[] = [];
 
-    // Shared select for comment queries (includes task/material name + project_id fallback)
+    // PostgREST joins on comments (creator/task/material) trigger combinatorial
+    // RLS evaluation across 4 tables and time out — even with only a few rows.
+    // We select the flat shape only and enrich client-side in enrichComments().
     const commentSelect = `
       id, content, created_at, created_by_user_id, task_id, material_id, project_id,
-      entity_id, entity_type,
-      creator:profiles(name),
-      task:tasks(title, project_id),
-      material:materials(name, project_id)
+      entity_id, entity_type
     `;
 
     type CommentRow = {
@@ -109,6 +108,39 @@ export function useNotifications() {
       task: { title: string; project_id: string } | null;
       material: { name: string; project_id: string } | null;
     };
+
+    async function enrichComments(rows: CommentRow[]): Promise<CommentRow[]> {
+      if (rows.length === 0) return rows;
+      const profileIds = [...new Set(rows.map((r) => r.created_by_user_id).filter(Boolean))];
+      const taskIds = [...new Set(rows.map((r) => r.task_id).filter(Boolean) as string[])];
+      const materialIds = [...new Set(rows.map((r) => r.material_id).filter(Boolean) as string[])];
+
+      const [profilesRes, tasksRes, matsRes] = await Promise.all([
+        profileIds.length > 0
+          ? supabase.from("profiles").select("id, name").in("id", profileIds)
+          : Promise.resolve({ data: [] as { id: string; name: string }[] }),
+        taskIds.length > 0
+          ? supabase.from("tasks").select("id, title, project_id").in("id", taskIds)
+          : Promise.resolve({ data: [] as { id: string; title: string; project_id: string }[] }),
+        materialIds.length > 0
+          ? supabase.from("materials").select("id, name, project_id").in("id", materialIds)
+          : Promise.resolve({ data: [] as { id: string; name: string; project_id: string }[] }),
+      ]);
+
+      const profileMap = new Map((profilesRes.data ?? []).map((p) => [p.id, p]));
+      const taskMap = new Map((tasksRes.data ?? []).map((t) => [t.id, t]));
+      const matMap = new Map((matsRes.data ?? []).map((m) => [m.id, m]));
+
+      for (const r of rows) {
+        const p = profileMap.get(r.created_by_user_id);
+        r.creator = p ? { name: p.name } : null;
+        const t = r.task_id ? taskMap.get(r.task_id) : null;
+        r.task = t ? { title: t.title, project_id: t.project_id } : null;
+        const m = r.material_id ? matMap.get(r.material_id) : null;
+        r.material = m ? { name: m.name, project_id: m.project_id } : null;
+      }
+      return rows;
+    }
 
     function resolveProject(c: CommentRow): string {
       return c.project_id || c.task?.project_id || c.material?.project_id || "";
@@ -137,16 +169,19 @@ export function useNotifications() {
     const mentionCommentIds = mentionRows?.map((r) => r.comment_id) || [];
 
     if (mentionCommentIds.length > 0) {
-      const { data: mentionComments } = await supabase
+      const { data: rawMentionComments } = await supabase
         .from("comments")
         .select(commentSelect)
         .in("id", mentionCommentIds)
         .gte("created_at", sevenDaysAgo)
         .order("created_at", { ascending: false })
         .limit(30);
+      const mentionComments = rawMentionComments
+        ? await enrichComments(rawMentionComments as unknown as CommentRow[])
+        : null;
 
       if (mentionComments) {
-        for (const c of mentionComments as unknown as CommentRow[]) {
+        for (const c of mentionComments) {
           const pId = resolveProject(c);
           // Don't filter mentions by project membership — if a user is mentioned, always show it
           items.push({
@@ -175,7 +210,7 @@ export function useNotifications() {
     }
 
     // 2. Comments by others on user's projects
-    const { data: recentComments } = await supabase
+    const { data: rawRecentComments } = await supabase
       .from("comments")
       .select(commentSelect)
       .in("project_id", projectIds)
@@ -183,9 +218,12 @@ export function useNotifications() {
       .gte("created_at", sevenDaysAgo)
       .order("created_at", { ascending: false })
       .limit(30);
+    const recentComments = rawRecentComments
+      ? await enrichComments(rawRecentComments as unknown as CommentRow[])
+      : null;
 
     if (recentComments) {
-      for (const c of recentComments as unknown as CommentRow[]) {
+      for (const c of recentComments) {
         const pId = resolveProject(c);
         if (items.some((i) => i.id === `mention-${c.id}`)) continue;
 
@@ -242,7 +280,7 @@ export function useNotifications() {
 
     if (userTaskIds.length > 0) {
       try {
-        const { data: taskComments } = await supabase
+        const { data: rawTaskComments } = await supabase
           .from("comments")
           .select(commentSelect)
           .in("task_id", userTaskIds)
@@ -250,9 +288,12 @@ export function useNotifications() {
           .gte("created_at", sevenDaysAgo)
           .order("created_at", { ascending: false })
           .limit(20);
+        const taskComments = rawTaskComments
+          ? await enrichComments(rawTaskComments as unknown as CommentRow[])
+          : null;
 
         if (taskComments) {
-          for (const c of taskComments as unknown as CommentRow[]) {
+          for (const c of taskComments) {
             const key = `comment-${c.id}`;
             if (seenIds.has(key) || seenIds.has(`mention-${c.id}`)) continue;
             seenIds.add(key);
@@ -277,7 +318,7 @@ export function useNotifications() {
 
     if (userMaterialIds.length > 0) {
       try {
-        const { data: matComments } = await supabase
+        const { data: rawMatComments } = await supabase
           .from("comments")
           .select(commentSelect)
           .in("material_id", userMaterialIds)
@@ -285,9 +326,12 @@ export function useNotifications() {
           .gte("created_at", sevenDaysAgo)
           .order("created_at", { ascending: false })
           .limit(20);
+        const matComments = rawMatComments
+          ? await enrichComments(rawMatComments as unknown as CommentRow[])
+          : null;
 
         if (matComments) {
-          for (const c of matComments as unknown as CommentRow[]) {
+          for (const c of matComments) {
             const key = `comment-${c.id}`;
             if (seenIds.has(key) || seenIds.has(`mention-${c.id}`)) continue;
             seenIds.add(key);
