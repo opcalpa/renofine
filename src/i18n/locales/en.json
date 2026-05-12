@@ -5771,6 +5771,10 @@
   "teamWorker": {
     "workers": "Workers",
     "inviteWorker": "Invite Worker",
+    "editPermissions": "Edit permissions",
+    "editPermissionsTitle": "Edit worker permissions",
+    "permissionsUpdated": "Permissions updated",
+    "permissionsUpdatedDescription": "Worker permissions have been saved.",
     "purchasePermissions": "Purchases",
     "canCreatePurchases": "Can request purchases",
     "canCreatePurchasesDesc": "Creates requests that you approve",

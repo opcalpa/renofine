@@ -310,10 +310,15 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
     id: string; token: string; worker_name: string; worker_phone: string | null;
     worker_email: string | null; worker_language: string; assigned_task_ids: string[];
     expires_at: string; last_accessed_at: string | null; revoked_at: string | null;
+    can_create_purchases: boolean; can_log_receipts: boolean;
   }>>([]);
   const [workerTaskNames, setWorkerTaskNames] = useState<Record<string, string>>({});
   const [canCreatePurchases, setCanCreatePurchases] = useState(true);
   const [canLogReceipts, setCanLogReceipts] = useState(false);
+  const [workerEditOpen, setWorkerEditOpen] = useState(false);
+  const [workerEditTarget, setWorkerEditTarget] = useState<{ id: string; name: string } | null>(null);
+  const [workerEditCanCreatePurchases, setWorkerEditCanCreatePurchases] = useState(true);
+  const [workerEditCanLogReceipts, setWorkerEditCanLogReceipts] = useState(false);
 
   // Invite form state
   const [inviteName, setInviteName] = useState("");
@@ -461,7 +466,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
       if (canManageTeam) {
         const { data: wTokens } = await supabase
           .from("worker_access_tokens")
-          .select("id, token, worker_name, worker_phone, worker_email, worker_language, assigned_task_ids, expires_at, last_accessed_at, revoked_at")
+          .select("id, token, worker_name, worker_phone, worker_email, worker_language, assigned_task_ids, expires_at, last_accessed_at, revoked_at, can_create_purchases, can_log_receipts")
           .eq("project_id", projectId)
           .order("created_at", { ascending: false });
         setWorkerTokens((wTokens || []) as typeof workerTokens);
@@ -800,6 +805,38 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
     }
   };
 
+  const openWorkerEditDialog = (tokenId: string) => {
+    const wt = workerTokens.find((w) => w.id === tokenId);
+    if (!wt) return;
+    setWorkerEditTarget({ id: wt.id, name: wt.worker_name });
+    setWorkerEditCanCreatePurchases(wt.can_create_purchases ?? true);
+    setWorkerEditCanLogReceipts(wt.can_log_receipts ?? false);
+    setWorkerEditOpen(true);
+  };
+
+  const handleSaveWorkerEdit = async () => {
+    if (!workerEditTarget) return;
+    try {
+      const { error } = await supabase
+        .from("worker_access_tokens")
+        .update({
+          can_create_purchases: workerEditCanCreatePurchases,
+          can_log_receipts: workerEditCanLogReceipts,
+        })
+        .eq("id", workerEditTarget.id);
+      if (error) throw error;
+      toast({
+        title: t("teamWorker.permissionsUpdated", "Permissions updated"),
+        description: t("teamWorker.permissionsUpdatedDescription", "Worker permissions have been saved."),
+      });
+      setWorkerEditOpen(false);
+      setWorkerEditTarget(null);
+      fetchTeamData();
+    } catch (error: unknown) {
+      toast({ title: t("roles.error"), description: (error as Error).message, variant: "destructive" });
+    }
+  };
+
   const handleRevokeWorker = async (tokenId: string) => {
     try {
       await supabase
@@ -1012,6 +1049,8 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
     } else if (row.type === "invitation") {
       const inv = invitations.find((i) => i.id === row.id);
       if (inv) openEditDialog({ type: "invitation", data: inv });
+    } else if (row.type === "worker") {
+      openWorkerEditDialog(row.id);
     }
   };
 
@@ -1455,6 +1494,63 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
             </Button>
             <Button onClick={handleSaveEdit} disabled={saving} className="flex-1">
               {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {t("roles.saveChanges")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Worker permissions edit dialog */}
+      <Dialog open={workerEditOpen} onOpenChange={setWorkerEditOpen}>
+        <DialogContent className="max-w-md w-[95vw]">
+          <DialogHeader>
+            <DialogTitle>
+              {t("teamWorker.editPermissionsTitle", "Redigera arbetar-behörighet")}
+            </DialogTitle>
+            <DialogDescription>
+              {workerEditTarget?.name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 rounded-lg border bg-muted/20 p-3">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              {t("teamWorker.purchasePermissions", "Inköp")}
+            </p>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <Label htmlFor="worker-edit-can-create-purchases" className="text-sm cursor-pointer">
+                  {t("teamWorker.canCreatePurchases", "Kan föreslå inköp")}
+                </Label>
+                <p className="text-[11px] text-muted-foreground">
+                  {t("teamWorker.canCreatePurchasesDesc", "Skapar förslag som du godkänner")}
+                </p>
+              </div>
+              <Switch
+                id="worker-edit-can-create-purchases"
+                checked={workerEditCanCreatePurchases}
+                onCheckedChange={setWorkerEditCanCreatePurchases}
+              />
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <Label htmlFor="worker-edit-can-log-receipts" className="text-sm cursor-pointer">
+                  {t("teamWorker.canLogReceipts", "Kan logga utförda inköp")}
+                </Label>
+                <p className="text-[11px] text-muted-foreground">
+                  {t("teamWorker.canLogReceiptsDesc", "Workern kan registrera och bifoga kvitto direkt — kringgår godkännande")}
+                </p>
+              </div>
+              <Switch
+                id="worker-edit-can-log-receipts"
+                checked={workerEditCanLogReceipts}
+                onCheckedChange={setWorkerEditCanLogReceipts}
+              />
+            </div>
+          </div>
+          <div className="flex gap-3 pt-4 border-t">
+            <Button variant="outline" onClick={() => setWorkerEditOpen(false)}>
+              {t("roles.cancel")}
+            </Button>
+            <Button onClick={handleSaveWorkerEdit} className="flex-1">
               {t("roles.saveChanges")}
             </Button>
           </div>

@@ -5768,6 +5768,10 @@
   "teamWorker": {
     "workers": "Arbetare",
     "inviteWorker": "Bjud in arbetare",
+    "editPermissions": "Redigera behörighet",
+    "editPermissionsTitle": "Redigera arbetar-behörighet",
+    "permissionsUpdated": "Behörighet uppdaterad",
+    "permissionsUpdatedDescription": "Arbetarens behörigheter har sparats.",
     "purchasePermissions": "Inköp",
     "canCreatePurchases": "Kan föreslå inköp",
     "canCreatePurchasesDesc": "Skapar förslag som du godkänner",

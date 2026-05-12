@@ -215,6 +215,11 @@ export function TeamTable({
                             <Pencil className="h-3.5 w-3.5" />
                           </Button>
                         )}
+                        {row.type === "worker" && row.status === "active" && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(row)} title={t("teamWorker.editPermissions", "Redigera behörighet")}>
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
                         {row.type === "worker" && row.workerToken && row.status === "active" && (
                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onCopyLink(row.workerToken!)} title={t("teamWorker.copyLink")}>
                             <Copy className="h-3.5 w-3.5" />
