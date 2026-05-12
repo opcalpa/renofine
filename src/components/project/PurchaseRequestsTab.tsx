@@ -946,8 +946,12 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
 
   // Split planned (budget references) from real orders — exclude subcontractor rows from budget
   const plannedMaterials = materials.filter(m => m.status === "planned" && m.description !== "__subcontractor__");
-  // Flat orders = non-planned materials NOT linked to a purchase_order
-  // (PO-linked materials are rendered under their PO card instead, to avoid duplication)
+  // Flat orders = non-planned materials NOT linked to a purchase_order.
+  // After PO-invariant Fas C (2026-05-13), this list is always empty —
+  // DB CHECK (status='planned') = (purchase_order_id IS NULL) guarantees
+  // every non-planned material has a PO. Keeping the variable + render
+  // path as defensive no-op; safe to remove in a follow-up refactor that
+  // also moves header counts to materialsByPOId.
   const orderMaterials = materials.filter(m => m.status !== "planned" && !m.purchase_order_id);
 
   // Group PO-linked materials by their purchase_order_id for the PO section
