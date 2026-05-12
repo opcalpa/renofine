@@ -82,6 +82,8 @@ import { EditPurchaseOrderDialog } from "./EditPurchaseOrderDialog";
 import { AddPurchaseLineDialog } from "./AddPurchaseLineDialog";
 import { NewPurchaseOrderDialog } from "./NewPurchaseOrderDialog";
 import { PurchaseOrdersTableView } from "./PurchaseOrdersTableView";
+import { PurchaseOrdersGridV2 } from "./po-list-v2/PurchaseOrdersGridV2";
+import type { PO, POMaterial } from "./po-list-v2/types";
 import { AddMaterialDialog } from "./overview/AddMaterialDialog";
 import { PurchasesTableView } from "./purchases/PurchasesTableView";
 import { PurchasesKanbanView } from "./purchases/PurchasesKanbanView";
@@ -136,9 +138,14 @@ interface PurchaseOrder {
   delivered_at: string | null;
   receipt_total: number | null;
   receipt_matched_at: string | null;
+  receipt_file_path: string | null;
   source: string | null;
   notes: string | null;
   created_at: string;
+  invoice_number?: string | null;
+  ocr_number?: string | null;
+  invoice_due_date?: string | null;
+  paid_at?: string | null;
 }
 
 interface PurchaseRequestsTabProps {
@@ -642,7 +649,7 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
     try {
       const { data, error } = await supabase
         .from("purchase_orders")
-        .select("id, vendor_name, total, status, ordered_at, delivered_at, receipt_total, receipt_matched_at, source, notes, created_at")
+        .select("id, vendor_name, total, status, ordered_at, delivered_at, receipt_total, receipt_matched_at, receipt_file_path, source, notes, created_at, invoice_number, ocr_number, invoice_due_date, paid_at")
         .eq("project_id", projectId)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -1114,397 +1121,94 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
         );
       })()}
 
-      {/* Inköpsorder — grouped by purchase_order_id */}
+      {/* Inköpsorder — grid of cards + drawer */}
       {purchaseOrders.length > 0 && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base font-display font-normal flex items-center gap-2">
-              <ShoppingCart className="h-4 w-4" />
-              {t("purchases.purchaseOrdersTitle", "Inköpsorder")}
-              <Badge variant="secondary" className="ml-1 text-xs">{purchaseOrders.length}</Badge>
-              <div className="ml-auto flex rounded-md bg-muted/40 border border-border/60 p-0.5">
-                {(['cards', 'table'] as const).map(v => (
-                  <button
-                    key={v}
-                    type="button"
-                    onClick={() => setPoViewMode(v)}
-                    className={cn(
-                      "px-2.5 py-0.5 rounded text-xs transition-colors",
-                      poViewMode === v
-                        ? "bg-card shadow-sm font-medium text-foreground border border-border/60"
-                        : "text-muted-foreground hover:text-foreground border border-transparent"
-                    )}
-                  >
-                    {v === 'cards' ? t('purchases.cardsView', 'Kort') : t('purchases.tableView', 'Tabell')}
-                  </button>
-                ))}
-              </div>
-            </CardTitle>
-            <CardDescription className="text-xs">
-              {t(
-                "purchases.purchaseOrdersDescription",
-                "Beställningar från leverantörer. Tilldela rader till tasks för budgetuppföljning.",
-              )}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2 pt-0">
-            {poViewMode === 'table' ? (
-              <PurchaseOrdersTableView
-                projectId={projectId}
-                purchaseOrders={purchaseOrders}
-                materialsByPOId={materialsByPOId}
-                tasks={tasks}
-                rooms={rooms}
-                currency={currency}
-                canEdit={isProjectOwner || userPurchasesAccess === 'edit'}
-                onEditPO={(po) => setEditingPO(po as PurchaseOrder)}
-                onDeletePO={(po) => setPOToDelete(po as PurchaseOrder)}
-                onAddLine={(po) => setAddLinePO(po as PurchaseOrder)}
-                onEditLine={(lineId) => {
-                  const mat = materials.find((m) => m.id === lineId);
-                  if (mat) openEditDialog(mat);
-                }}
-              />
-            ) : purchaseOrders.map((po) => {
-              const rows = materialsByPOId.get(po.id) || [];
-              const isExpanded = expandedPOIds.has(po.id);
-              const isAllocating = allocatingPOId === po.id;
-              const allocatedTaskIds = new Set(rows.map(r => r.task_id).filter((id): id is string => !!id));
-              const bulkValue = allocatedTaskIds.size === 1
-                ? Array.from(allocatedTaskIds)[0]
-                : allocatedTaskIds.size > 1 ? "mixed" : "none";
-              const allocatedRoomIds = new Set(rows.map(r => r.room_id).filter((id): id is string => !!id));
-              const bulkRoomValue = allocatedRoomIds.size === 1
-                ? Array.from(allocatedRoomIds)[0]
-                : allocatedRoomIds.size > 1 ? "mixed" : "none";
-              const statusColor =
-                po.status === "delivered" ? "bg-emerald-100 text-emerald-700 border-emerald-200" :
-                po.status === "ordered" ? "bg-amber-100 text-amber-700 border-amber-200" :
-                po.status === "cancelled" ? "bg-red-100 text-red-700 border-red-200" :
-                "bg-muted text-muted-foreground border-border";
-              return (
-                <div key={po.id} className="rounded-lg border bg-card overflow-hidden">
-                  <div className="flex items-center gap-3 p-3 hover:bg-accent/30">
-                    <button
-                      type="button"
-                      onClick={() => togglePOExpanded(po.id)}
-                      className="flex-shrink-0"
-                      title={isExpanded ? t("common.collapse", "Fäll ihop") : t("common.expand", "Expandera")}
-                    >
-                      <ChevronDown className={cn("h-4 w-4 transition-transform", !isExpanded && "-rotate-90")} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setEditingPO(po)}
-                      className="flex-1 min-w-0 text-left rounded px-1 -mx-1 hover:bg-accent/40 transition-colors"
-                      title={t("purchases.editPO", "Redigera inköpsorder")}
-                    >
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-medium text-sm truncate">{po.vendor_name}</span>
-                        <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 capitalize", statusColor)}>
-                          {t(`purchaseOrderStatus.${po.status}`, po.status)}
-                        </Badge>
-                        {po.source && (
-                          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                            {t(`purchaseOrderSource.${po.source}`, po.source)}
-                          </Badge>
-                        )}
-                        {po.notes && (
-                          <span className="text-[11px] text-muted-foreground">{po.notes}</span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-3 mt-0.5 text-[11px] text-muted-foreground tnum">
-                        <span className="font-medium text-foreground">{formatCurrency(po.total, currency)}</span>
-                        <span>{t("purchases.linesCount", { defaultValue: "{{count}} rader", count: rows.length })}</span>
-                        {po.delivered_at && <span>{t("purchases.delivered", "Levererad")}: {new Date(po.delivered_at).toLocaleDateString()}</span>}
-                      </div>
-                    </button>
-                    {/* Allocate-all dropdown */}
-                    <div className="flex-shrink-0">
-                      <Select
-                        value={bulkValue}
-                        disabled={isAllocating || rows.length === 0}
-                        onValueChange={(v) => allocateOrderToTask(po.id, v === "none" ? null : v)}
-                      >
-                        <SelectTrigger className="h-8 text-xs w-[200px]">
-                          {isAllocating ? (
-                            <span className="flex items-center gap-1.5"><Loader2 className="h-3 w-3 animate-spin" /> {t("common.saving", "Sparar...")}</span>
-                          ) : (
-                            <SelectValue
-                              placeholder={t("purchases.allocateAllTo", "Tilldela alla till...")}
-                            />
-                          )}
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">{t("purchases.unallocated", "Oallokerat")}</SelectItem>
-                          {bulkValue === "mixed" && (
-                            <SelectItem value="mixed" disabled>
-                              {t("purchases.mixedAllocation", "Olika tasks")}
-                            </SelectItem>
-                          )}
-                          {tasks.map((task) => (
-                            <SelectItem key={task.id} value={task.id}>{task.title}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    {/* Allocate-all-to-room dropdown */}
-                    {rooms.length > 0 && (
-                      <div className="flex-shrink-0">
-                        <Select
-                          value={bulkRoomValue}
-                          disabled={isAllocating || rows.length === 0}
-                          onValueChange={(v) => allocateOrderToRoom(po.id, v === "none" ? null : v)}
-                        >
-                          <SelectTrigger className="h-8 text-xs w-[180px]">
-                            {isAllocating ? (
-                              <span className="flex items-center gap-1.5"><Loader2 className="h-3 w-3 animate-spin" /> {t("common.saving", "Sparar...")}</span>
-                            ) : (
-                              <SelectValue
-                                placeholder={t("purchases.allocateAllToRoom", "Tilldela alla till rum...")}
-                              />
-                            )}
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">{t("purchases.noRoom", "Inget rum")}</SelectItem>
-                            {bulkRoomValue === "mixed" && (
-                              <SelectItem value="mixed" disabled>
-                                {t("purchases.mixedRoomAllocation", "Olika rum")}
-                              </SelectItem>
-                            )}
-                            {rooms.map((room) => (
-                              <SelectItem key={room.id} value={room.id}>{room.name}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-                    {(isProjectOwner || userPurchasesAccess === 'edit') && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive flex-shrink-0"
-                        onClick={() => setPOToDelete(po)}
-                        title={t("purchases.deletePO", "Ta bort inköpsorder")}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                  {isExpanded && rows.length > 0 && (() => {
-                    const inSelectMode = selectModePoId === po.id;
-                    const rowsInThisPo = new Set(rows.map(r => r.id));
-                    const selectedInThisPo = Array.from(selectedLineIds).filter(id => rowsInThisPo.has(id));
-                    const allSelected = rows.length > 0 && selectedInThisPo.length === rows.length;
-                    const someSelected = selectedInThisPo.length > 0;
-                    const canEdit = isProjectOwner || userPurchasesAccess === 'edit';
-                    return (
-                      <div className="border-t bg-muted/20 px-3 py-2 space-y-1">
-                        {/* Toolbar: Välj-toggle or action bar */}
-                        {canEdit && (
-                          <div className="flex items-center gap-2 pb-1 flex-wrap">
-                            {!inSelectMode ? (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 px-2 text-[11px] text-muted-foreground hover:text-foreground"
-                                onClick={() => { setSelectModePoId(po.id); setSelectedLineIds(new Set()); }}
-                              >
-                                <CheckSquare className="h-3 w-3 mr-1" />
-                                {t("purchases.selectRows", "Välj rader")}
-                              </Button>
-                            ) : (
-                              <>
-                                <Checkbox
-                                  checked={allSelected ? true : someSelected ? "indeterminate" : false}
-                                  onCheckedChange={() => {
-                                    if (allSelected) {
-                                      setSelectedLineIds(prev => {
-                                        const next = new Set(prev);
-                                        for (const id of rowsInThisPo) next.delete(id);
-                                        return next;
-                                      });
-                                    } else {
-                                      setSelectedLineIds(prev => {
-                                        const next = new Set(prev);
-                                        for (const id of rowsInThisPo) next.add(id);
-                                        return next;
-                                      });
-                                    }
-                                  }}
-                                />
-                                <span className="text-[11px] text-muted-foreground">
-                                  {t("purchases.linesSelected", "{{count}} valda", { count: selectedInThisPo.length })}
-                                </span>
-                                {selectedInThisPo.length > 0 && (
-                                  <>
-                                    {/* Allocate-subset-to-task */}
-                                    <Select
-                                      value=""
-                                      disabled={bulkActionLoading}
-                                      onValueChange={(v) => bulkUpdateSelectedLines({ task_id: v === "none" ? null : v })}
-                                    >
-                                      <SelectTrigger className="h-7 text-xs w-[160px]">
-                                        <SelectValue placeholder={t("purchases.bulkAllocateTask", "Tilldela task...")} />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="none">{t("purchases.unallocated", "Oallokerat")}</SelectItem>
-                                        {tasks.map((task) => (
-                                          <SelectItem key={task.id} value={task.id}>{task.title}</SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
-                                    {/* Allocate-subset-to-room */}
-                                    {rooms.length > 0 && (
-                                      <Select
-                                        value=""
-                                        disabled={bulkActionLoading}
-                                        onValueChange={(v) => bulkUpdateSelectedLines({ room_id: v === "none" ? null : v })}
-                                      >
-                                        <SelectTrigger className="h-7 text-xs w-[140px]">
-                                          <SelectValue placeholder={t("purchases.bulkAllocateRoom", "Tilldela rum...")} />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          <SelectItem value="none">{t("purchases.noRoom", "Inget rum")}</SelectItem>
-                                          {rooms.map((room) => (
-                                            <SelectItem key={room.id} value={room.id}>{room.name}</SelectItem>
-                                          ))}
-                                        </SelectContent>
-                                      </Select>
-                                    )}
-                                    {/* Bulk status */}
-                                    <Select
-                                      value=""
-                                      disabled={bulkActionLoading}
-                                      onValueChange={(v) => bulkUpdateSelectedLines({ status: v })}
-                                    >
-                                      <SelectTrigger className="h-7 text-xs w-[120px]">
-                                        <SelectValue placeholder={t("purchases.bulkStatus", "Status...")} />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {["new", "to_order", "ordered", "paid", "paused", "declined", "done"].map((s) => (
-                                          <SelectItem key={s} value={s}>{t(`materialStatuses.${s}`, s)}</SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
-                                    {/* Bulk delete */}
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-7 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
-                                      disabled={bulkActionLoading}
-                                      onClick={bulkDeleteSelectedLines}
-                                    >
-                                      <Trash2 className="h-3 w-3 mr-1" />
-                                      {t("common.delete", "Ta bort")}
-                                    </Button>
-                                  </>
-                                )}
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-7 px-2 text-xs ml-auto"
-                                  onClick={exitSelectMode}
-                                  disabled={bulkActionLoading}
-                                >
-                                  {t("common.cancel", "Avbryt")}
-                                </Button>
-                                {bulkActionLoading && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
-                              </>
-                            )}
-                          </div>
-                        )}
-                        {rows.map((row) => {
-                          const isSelected = selectedLineIds.has(row.id);
-                          if (inSelectMode) {
-                            return (
-                              <label
-                                key={row.id}
-                                className={cn(
-                                  "w-full grid grid-cols-[auto_1fr_auto_auto] gap-3 items-center text-xs py-1.5 px-2 rounded cursor-pointer transition-colors",
-                                  isSelected ? "bg-primary/10" : "hover:bg-accent"
-                                )}
-                              >
-                                <Checkbox
-                                  checked={isSelected}
-                                  onCheckedChange={() => toggleLineSelection(row.id)}
-                                />
-                                <span className="truncate">{row.name}</span>
-                                {row.task_id ? (
-                                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 whitespace-nowrap">
-                                    {row.task?.title || t("purchases.linkedToTask", "Task")}
-                                  </Badge>
-                                ) : (
-                                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground whitespace-nowrap">
-                                    {t("purchases.unallocated", "Oallokerat")}
-                                  </Badge>
-                                )}
-                                <span className="tnum text-muted-foreground whitespace-nowrap">
-                                  {formatCurrency(row.price_total || 0, currency)}
-                                </span>
-                              </label>
-                            );
-                          }
-                          return (
-                            <button
-                              key={row.id}
-                              type="button"
-                              onClick={() => openEditDialog(row)}
-                              className="w-full grid grid-cols-[1fr_auto_auto] gap-3 text-left text-xs py-1.5 px-2 rounded hover:bg-accent transition-colors"
-                            >
-                              <span className="truncate">{row.name}</span>
-                              {row.task_id ? (
-                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 whitespace-nowrap">
-                                  {row.task?.title || t("purchases.linkedToTask", "Task")}
-                                </Badge>
-                              ) : (
-                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-muted-foreground whitespace-nowrap">
-                                  {t("purchases.unallocated", "Oallokerat")}
-                                </Badge>
-                              )}
-                              <span className="tnum text-muted-foreground whitespace-nowrap">
-                                {formatCurrency(row.price_total || 0, currency)}
-                              </span>
-                            </button>
-                          );
-                        })}
-                        {!inSelectMode && canEdit && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 px-2 text-[11px] text-muted-foreground hover:text-foreground"
-                            onClick={() => setAddLinePO(po)}
-                          >
-                            <Plus className="h-3 w-3 mr-1" />
-                            {t("purchases.addLine", "Lägg till rad")}
-                          </Button>
-                        )}
-                      </div>
-                    );
-                  })()}
-                  {isExpanded && rows.length === 0 && (
-                    <div className="border-t bg-muted/20 px-3 py-2 text-xs flex items-center justify-between gap-2">
-                      <span className="text-muted-foreground italic">
-                        {t("purchases.poNoLines", "Inga radnivå-material — ordern är endast registrerad som totalsumma.")}
-                      </span>
-                      {(isProjectOwner || userPurchasesAccess === 'edit') && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-7 px-2 text-xs"
-                          onClick={() => setAddLinePO(po)}
-                        >
-                          <Plus className="h-3 w-3 mr-1" />
-                          {t("purchases.addLine", "Lägg till rad")}
-                        </Button>
-                      )}
-                    </div>
+        <div className="space-y-3">
+          {/* Section heading + view toggle */}
+          <div className="flex items-baseline justify-between gap-3">
+            <div className="flex items-baseline gap-2">
+              <ShoppingCart className="h-4 w-4 self-center" style={{ color: 'var(--rf-fg-muted)' }} />
+              <h3 className="font-display text-lg font-normal tracking-tight" style={{ color: 'var(--rf-ink)' }}>
+                {t('purchases.purchaseOrdersTitle', 'Inköpsorder')}
+              </h3>
+              <span className="rf-num text-xs" style={{ color: 'var(--rf-fg-muted)' }}>
+                {purchaseOrders.length}
+              </span>
+            </div>
+            <div
+              className="flex p-0.5 rounded-md"
+              style={{ background: 'var(--rf-bg-sunken)', border: '1px solid var(--rf-hairline)' }}
+            >
+              {(['cards', 'table'] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setPoViewMode(v)}
+                  className={cn(
+                    'px-2.5 py-0.5 rounded text-xs transition-colors',
+                    poViewMode === v
+                      ? 'font-medium'
+                      : 'text-muted-foreground hover:text-foreground'
                   )}
-                </div>
-              );
-            })}
-          </CardContent>
-        </Card>
+                  style={
+                    poViewMode === v
+                      ? { background: 'var(--rf-surface)', border: '1px solid var(--rf-hairline)', color: 'var(--rf-ink)' }
+                      : { border: '1px solid transparent' }
+                  }
+                >
+                  {v === 'cards' ? t('purchases.cardsView', 'Kort') : t('purchases.tableView', 'Tabell')}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {poViewMode === 'table' ? (
+            <PurchaseOrdersTableView
+              projectId={projectId}
+              purchaseOrders={purchaseOrders}
+              materialsByPOId={materialsByPOId}
+              tasks={tasks}
+              rooms={rooms}
+              currency={currency}
+              canEdit={isProjectOwner || userPurchasesAccess === 'edit'}
+              onEditPO={(po) => setEditingPO(po as PurchaseOrder)}
+              onDeletePO={(po) => setPOToDelete(po as PurchaseOrder)}
+              onAddLine={(po) => setAddLinePO(po as PurchaseOrder)}
+              onEditLine={(lineId) => {
+                const mat = materials.find((m) => m.id === lineId);
+                if (mat) openEditDialog(mat);
+              }}
+            />
+          ) : (
+            <PurchaseOrdersGridV2
+              purchaseOrders={purchaseOrders as unknown as PO[]}
+              materialsByPOId={materialsByPOId as unknown as Map<string, POMaterial[]>}
+              tasks={tasks.map((tt) => ({ id: tt.id, title: tt.title }))}
+              rooms={rooms.map((r) => ({ id: r.id, name: r.name }))}
+              projectId={projectId}
+              currency={currency}
+              canEdit={isProjectOwner || userPurchasesAccess === 'edit'}
+              onEditMeta={(po) => setEditingPO(po as unknown as PurchaseOrder)}
+              onDelete={(po) => setPOToDelete(po as unknown as PurchaseOrder)}
+              allocatingPOId={allocatingPOId}
+              onAllocateAllToTask={allocateOrderToTask}
+              onAllocateAllToRoom={allocateOrderToRoom}
+              selectModePoId={selectModePoId}
+              selectedLineIds={selectedLineIds}
+              bulkActionLoading={bulkActionLoading}
+              onEnterSelectMode={(poId) => {
+                setSelectModePoId(poId);
+                setSelectedLineIds(new Set());
+              }}
+              onExitSelectMode={exitSelectMode}
+              onToggleLineSelection={toggleLineSelection}
+              onBulkUpdate={bulkUpdateSelectedLines}
+              onBulkDelete={bulkDeleteSelectedLines}
+              onEditLine={(mat) => openEditDialog(mat as unknown as Material)}
+              onAddLine={(po) => setAddLinePO(po as unknown as PurchaseOrder)}
+            />
+          )}
+        </div>
       )}
 
       {/* Purchase orders section */}

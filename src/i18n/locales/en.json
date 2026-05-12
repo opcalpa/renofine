@@ -2527,7 +2527,7 @@
     "editOrder": "Edit Purchase Order",
     "editOrderDescription": "Update purchase order details and view comments",
     "createOrder": "Create Purchase Order",
-    "newPurchase": "+ Purchase",
+    "newPurchase": "New purchase",
     "newPurchaseFrom": "New purchase",
     "budgetLabel": "Budget",
     "remainingLabel": "Remaining",

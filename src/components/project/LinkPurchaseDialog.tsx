@@ -230,26 +230,77 @@ export function LinkPurchaseDialog({
           }),
         });
       } else {
-        // Create new material record
-        const { error: matErr } = await supabase.from("materials").insert({
-          project_id: projectId,
-          name: extraction.vendor_name
-            ? `${extraction.document_type === "invoice" ? "Faktura" : "Kvitto"} — ${extraction.vendor_name}`
-            : smartName,
-          vendor_name: extraction.vendor_name || null,
-          price_total: extraction.total_amount || null,
-          status: extraction.document_type === "invoice" ? "billed" : "paid",
-          created_by_user_id: profile.id,
-        });
+        // Create a purchase_order so every scanned receipt/invoice lives in
+        // Inköp-fliken as a first-class order — not an orphan material row.
+        // The file stays linked via receipt_file_path through its lifecycle.
+        const isInvoiceDoc = extraction.document_type === "invoice";
+        const lineItems = extraction.line_items?.length ? extraction.line_items : null;
+        const total = extraction.total_amount || 0;
+        const purchaseDate = extraction.purchase_date || new Date().toISOString();
 
+        const { data: po, error: poErr } = await supabase
+          .from("purchase_orders")
+          .insert({
+            project_id: projectId,
+            vendor_name: extraction.vendor_name || t("linkPurchase.unknownVendor", "Okänd leverantör"),
+            total,
+            status: "delivered",
+            source: isInvoiceDoc ? "ai_invoice" : "ai_receipt",
+            delivered_at: purchaseDate,
+            ordered_at: purchaseDate,
+            receipt_file_path: storagePath,
+            invoice_number: isInvoiceDoc ? extraction.invoice_number || null : null,
+            ocr_number: isInvoiceDoc ? extraction.ocr_number || null : null,
+            invoice_due_date: isInvoiceDoc ? extraction.due_date || null : null,
+            created_by_user_id: profile.id,
+          })
+          .select("id")
+          .single();
+
+        if (poErr) throw new Error(poErr.message);
+
+        // One material row per line item (or one aggregate if AI didn't extract
+        // line items). Every row points back at the PO via purchase_order_id.
+        const matStatus = isInvoiceDoc ? "billed" : "paid";
+        const matRows = lineItems
+          ? lineItems.map((li) => ({
+              project_id: projectId,
+              purchase_order_id: po.id,
+              name: li.description,
+              vendor_name: extraction.vendor_name || null,
+              quantity: li.quantity || 1,
+              unit: "st",
+              price_per_unit: li.unit_price || null,
+              price_total: li.total || null,
+              paid_amount: isInvoiceDoc ? 0 : li.total || 0,
+              status: matStatus,
+              created_by_user_id: profile.id,
+            }))
+          : [{
+              project_id: projectId,
+              purchase_order_id: po.id,
+              name: extraction.vendor_name
+                ? `${isInvoiceDoc ? "Faktura" : "Kvitto"} — ${extraction.vendor_name}`
+                : smartName,
+              vendor_name: extraction.vendor_name || null,
+              quantity: 1,
+              unit: "st",
+              price_total: total,
+              paid_amount: isInvoiceDoc ? 0 : total,
+              status: matStatus,
+              created_by_user_id: profile.id,
+            }];
+
+        const { error: matErr } = await supabase.from("materials").insert(matRows);
         if (matErr) throw new Error(matErr.message);
 
         toast({
           title: t("linkPurchase.created", "Inköp skapat"),
-          description: t("linkPurchase.createdDesc", {
-            defaultValue: "{{vendor}} — {{amount}}",
+          description: t("linkPurchase.createdDescV2", {
+            defaultValue: "{{vendor}} · {{count}} rader · {{amount}}",
             vendor: extraction.vendor_name || "Okänd",
-            amount: formatCurrency(extraction.total_amount, "SEK"),
+            count: matRows.length,
+            amount: formatCurrency(total, "SEK"),
           }),
         });
       }

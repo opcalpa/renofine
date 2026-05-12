@@ -19,6 +19,7 @@ interface TaskFileLink {
 interface TaskFilesListProps {
   taskId?: string;
   materialId?: string;
+  purchaseOrderId?: string;
   projectId: string;
   readonly?: boolean;
 }
@@ -54,14 +55,18 @@ const fileTypeBadgeVariant = (fileType: string): "default" | "secondary" | "outl
   }
 };
 
-export const TaskFilesList = ({ taskId, materialId, projectId, readonly }: TaskFilesListProps) => {
+export const TaskFilesList = ({ taskId, materialId, purchaseOrderId, projectId, readonly }: TaskFilesListProps) => {
   const { t } = useTranslation();
   const { toast } = useToast();
   const [files, setFiles] = useState<TaskFileLink[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const entityId = taskId || materialId;
-  const entityColumn = taskId ? "task_id" : "material_id";
+  const entityId = taskId || materialId || purchaseOrderId;
+  const entityColumn: "task_id" | "material_id" | "purchase_order_id" = taskId
+    ? "task_id"
+    : materialId
+      ? "material_id"
+      : "purchase_order_id";
 
   useEffect(() => {
     if (entityId) fetchFiles();

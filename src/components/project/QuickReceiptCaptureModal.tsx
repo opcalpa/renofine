@@ -546,6 +546,7 @@ export function QuickReceiptCaptureModal({
             source: "manual",
             delivered_at: dateStr,
             created_by_user_id: profile.id,
+            receipt_file_path: selectedFile ? storagePath : null,
           })
           .select("id")
           .single();
@@ -576,62 +577,147 @@ export function QuickReceiptCaptureModal({
         // Link to existing entity
         entityId = linkedEntity.id;
         entityType = linkedEntity.type;
-      } else if (linkOption === "new") {
-        if (documentType === "invoice") {
-          // Create new task for invoice
-          const { data: task, error: taskError } = await supabase
-            .from("tasks")
-            .insert({
-              project_id: projectId,
-              title: `${t("document.typeInvoice")} - ${vendorName}`,
-              description: `${t("document.invoiceNumber")}: ${invoiceNumber || "-"}\n${t("document.ocrNumber")}: ${ocrNumber || "-"}`,
-              status: "to_do",
-              priority: "medium",
-              budget: amount,
-              room_id: roomId !== "none" ? roomId : null,
-              invoice_number: invoiceNumber || null,
-              ocr_number: ocrNumber || null,
-              invoice_due_date: dueDate
-                ? formatLocalDate(dueDate)
-                : null,
-            })
-            .select("id")
-            .single();
+      } else if (linkOption === "new" && documentType === "invoice") {
+        // Invoice flow → PO + material(s) with invoice fields on the PO.
+        // Status='delivered' (goods/services received), materials='billed' with
+        // paid_amount=0 until the user marks the invoice paid.
+        const lineItems = analysisResult?.line_items?.length ? analysisResult.line_items : null;
+        const resolvedRoomId = roomId !== "none" ? roomId : null;
 
-          if (taskError) throw taskError;
-          entityId = task.id;
-          entityType = "task";
-        } else {
-          // applyBudget mode: task is implicit from the picked planned material.
-          // Otherwise (mode=new), use the user's task selection if any.
-          const sourceMaterial = linkOption === "applyBudget" && sourceMaterialId
-            ? allPlannedMaterials.find((pm) => pm.id === sourceMaterialId)
-            : null;
-          const resolvedTaskId = sourceMaterial?.taskId ?? selectedTaskId ?? null;
+        const { data: po, error: poError } = await supabase
+          .from("purchase_orders")
+          .insert({
+            project_id: projectId,
+            vendor_name: vendorName,
+            total: amount,
+            status: "delivered",
+            source: "ai_invoice",
+            delivered_at: dateStr,
+            ordered_at: dateStr,
+            invoice_number: invoiceNumber || null,
+            ocr_number: ocrNumber || null,
+            invoice_due_date: dueDate ? formatLocalDate(dueDate) : null,
+            receipt_file_path: selectedFile ? storagePath : null,
+            created_by_user_id: profile.id,
+          })
+          .select("id")
+          .single();
 
-          // Create new material for receipt
-          const { data: material, error: materialError } = await supabase
-            .from("materials")
-            .insert({
+        if (poError) throw poError;
+
+        const matRows = lineItems
+          ? lineItems.map((li) => ({
               project_id: projectId,
-              name: flowStep === "manual" ? vendorName : `${t("receipt.receiptPurchase")} - ${vendorName}`,
+              purchase_order_id: po.id,
+              name: li.description,
+              vendor_name: vendorName,
+              quantity: li.quantity || 1,
+              unit: "st",
+              price_per_unit: li.unit_price || null,
+              price_total: li.total || null,
+              paid_amount: 0,
+              status: "billed",
+              room_id: resolvedRoomId,
+              task_id: selectedTaskId || null,
+              created_by_user_id: profile.id,
+            }))
+          : [{
+              project_id: projectId,
+              purchase_order_id: po.id,
+              name: `${t("document.typeInvoice")} - ${vendorName}`,
               vendor_name: vendorName,
               price_per_unit: amount,
+              price_total: amount,
+              paid_amount: 0,
               quantity: 1,
               unit: "st",
-              status: flowStep === "manual" ? "to_order" : "submitted",
+              status: "billed",
+              room_id: resolvedRoomId,
+              task_id: selectedTaskId || null,
               created_by_user_id: profile.id,
-              room_id: roomId !== "none" ? roomId : null,
+            }];
+
+        const { data: createdMats, error: matError } = await supabase
+          .from("materials")
+          .insert(matRows)
+          .select("id");
+
+        if (matError) throw matError;
+        entityId = createdMats?.[0]?.id || null;
+        entityType = "material";
+      } else if (linkOption === "new" || linkOption === "applyBudget") {
+        // Receipt or applyBudget → create 1 PO + N materials so every scanned
+        // receipt lives in Inköp as a first-class order. Line items from AI
+        // extraction become individual material rows. applyBudget inherits
+        // task context from the picked planned material and consumes its
+        // budget via source_material_id.
+        const sourceMaterial = linkOption === "applyBudget" && sourceMaterialId
+          ? allPlannedMaterials.find((pm) => pm.id === sourceMaterialId)
+          : null;
+        const resolvedTaskId = sourceMaterial?.taskId ?? selectedTaskId ?? null;
+        const resolvedRoomId = roomId !== "none" ? roomId : null;
+        const lineItems = analysisResult?.line_items?.length ? analysisResult.line_items : null;
+
+        const { data: po, error: poError } = await supabase
+          .from("purchase_orders")
+          .insert({
+            project_id: projectId,
+            vendor_name: vendorName,
+            total: amount,
+            status: "delivered",
+            source: "ai_receipt",
+            delivered_at: dateStr,
+            ordered_at: dateStr,
+            receipt_file_path: selectedFile ? storagePath : null,
+            created_by_user_id: profile.id,
+          })
+          .select("id")
+          .single();
+
+        if (poError) throw poError;
+
+        const matRows = lineItems
+          ? lineItems.map((li) => ({
+              project_id: projectId,
+              purchase_order_id: po.id,
+              name: li.description,
+              vendor_name: vendorName,
+              quantity: li.quantity || 1,
+              unit: "st",
+              price_per_unit: li.unit_price || null,
+              price_total: li.total || null,
+              paid_amount: li.total || 0,
+              status: "paid",
+              room_id: resolvedRoomId,
               task_id: resolvedTaskId,
               source_material_id: sourceMaterialId || null,
-            })
-            .select("id")
-            .single();
+              created_by_user_id: profile.id,
+            }))
+          : [{
+              project_id: projectId,
+              purchase_order_id: po.id,
+              name: `${t("receipt.receiptPurchase")} - ${vendorName}`,
+              vendor_name: vendorName,
+              price_per_unit: amount,
+              price_total: amount,
+              paid_amount: amount,
+              quantity: 1,
+              unit: "st",
+              status: "paid",
+              room_id: resolvedRoomId,
+              task_id: resolvedTaskId,
+              source_material_id: sourceMaterialId || null,
+              created_by_user_id: profile.id,
+            }];
 
-          if (materialError) throw materialError;
-          entityId = material.id;
-          entityType = "material";
-        }
+        const { data: createdMats, error: matError } = await supabase
+          .from("materials")
+          .insert(matRows)
+          .select("id");
+
+        if (matError) throw matError;
+        entityId = createdMats?.[0]?.id || null;
+        entityType = "material";
       }
 
       // Upload document image (only if file exists — scan flow)

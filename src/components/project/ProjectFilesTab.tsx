@@ -249,6 +249,14 @@ const ProjectFilesTab = ({ projectId, projectName, canEdit = true, onNavigateToF
       .eq('file_path', fromPath)
       .eq('project_id', projectId);
 
+    // Preserve receipt_file_path link on purchase_orders so moves don't orphan
+    // a receipt or quote PDF from its order.
+    await supabase
+      .from('purchase_orders')
+      .update({ receipt_file_path: newPath })
+      .eq('receipt_file_path', fromPath)
+      .eq('project_id', projectId);
+
     // Refresh
     await fetchFiles();
     await fetchFolders();
@@ -633,6 +641,20 @@ const ProjectFilesTab = ({ projectId, projectName, canEdit = true, onNavigateToF
         .remove([fileToDelete.path]);
 
       if (error) throw error;
+
+      // File is gone — clear any references so PO/task records don't point at
+      // a dangling path. Bookkeeping only; ignore errors here so we still
+      // report success for the storage removal.
+      await supabase
+        .from('purchase_orders')
+        .update({ receipt_file_path: null })
+        .eq('receipt_file_path', fileToDelete.path)
+        .eq('project_id', projectId);
+      await supabase
+        .from('task_file_links')
+        .delete()
+        .eq('file_path', fileToDelete.path)
+        .eq('project_id', projectId);
 
       toast({
         title: t('files.fileDeleted'),

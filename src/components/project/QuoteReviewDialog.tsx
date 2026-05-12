@@ -364,6 +364,7 @@ export function QuoteReviewDialog({
             source: "ai_quote",
             created_by_user_id: profile.id,
             notes: quoteMetadata?.quoteNumber ? `#${quoteMetadata.quoteNumber}` : null,
+            receipt_file_path: tempPath || null,
           })
           .select("id")
           .single();
@@ -462,6 +463,9 @@ export function QuoteReviewDialog({
         }),
       });
 
+      // File is now referenced by purchase_orders.receipt_file_path — clear
+      // tempPath so the dialog's onOpenChange cleanup doesn't delete it.
+      setTempPath(null);
       onOpenChange(false);
       resetState();
       onImportComplete?.();
