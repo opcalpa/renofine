@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -77,6 +78,8 @@ export function InviteWorkerDialog({
   const [language, setLanguage] = useState("sv");
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
   const [tasks, setTasks] = useState<TaskOption[]>([]);
+  const [canCreatePurchases, setCanCreatePurchases] = useState(true);
+  const [canLogReceipts, setCanLogReceipts] = useState(false);
   const [saving, setSaving] = useState(false);
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [generatedTokenId, setGeneratedTokenId] = useState<string | null>(null);
@@ -99,6 +102,8 @@ export function InviteWorkerDialog({
     setEmail("");
     setLanguage("sv");
     setSelectedTaskIds([]);
+    setCanCreatePurchases(true);
+    setCanLogReceipts(false);
     setGeneratedLink(null);
   }, [open]);
 
@@ -174,6 +179,8 @@ export function InviteWorkerDialog({
           worker_email: email.trim() || null,
           worker_language: language,
           assigned_task_ids: selectedTaskIds,
+          can_create_purchases: canCreatePurchases,
+          can_log_receipts: canLogReceipts,
         })
         .select("id, token")
         .single();
@@ -548,6 +555,43 @@ export function InviteWorkerDialog({
                 </div>
               );
             })()}
+
+            {/* Purchase permissions */}
+            <div className="space-y-2 rounded-lg border bg-muted/20 p-3">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                {t("teamWorker.purchasePermissions", "Inköp")}
+              </p>
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <Label htmlFor="worker-can-create-purchases" className="text-sm cursor-pointer">
+                    {t("teamWorker.canCreatePurchases", "Kan föreslå inköp")}
+                  </Label>
+                  <p className="text-[11px] text-muted-foreground">
+                    {t("teamWorker.canCreatePurchasesDesc", "Skapar förslag som du godkänner")}
+                  </p>
+                </div>
+                <Switch
+                  id="worker-can-create-purchases"
+                  checked={canCreatePurchases}
+                  onCheckedChange={setCanCreatePurchases}
+                />
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <Label htmlFor="worker-can-log-receipts" className="text-sm cursor-pointer">
+                    {t("teamWorker.canLogReceipts", "Kan logga utförda inköp")}
+                  </Label>
+                  <p className="text-[11px] text-muted-foreground">
+                    {t("teamWorker.canLogReceiptsDesc", "Workern kan registrera och bifoga kvitto direkt — kringgår godkännande")}
+                  </p>
+                </div>
+                <Switch
+                  id="worker-can-log-receipts"
+                  checked={canLogReceipts}
+                  onCheckedChange={setCanLogReceipts}
+                />
+              </div>
+            </div>
 
             <Button
               type="submit"

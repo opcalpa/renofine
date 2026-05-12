@@ -79,6 +79,7 @@ serve(async (req) => {
         canUploadPhotos: tokenRecord.can_upload_photos,
         canToggleChecklist: tokenRecord.can_toggle_checklist,
         canCreatePurchases: tokenRecord.can_create_purchases ?? true,
+        canLogReceipts: tokenRecord.can_log_receipts ?? false,
         tasks: [],
       }, 200, req);
     }
@@ -347,6 +348,7 @@ serve(async (req) => {
       canUploadPhotos: tokenRecord.can_upload_photos,
       canToggleChecklist: tokenRecord.can_toggle_checklist,
       canCreatePurchases: tokenRecord.can_create_purchases ?? true,
+      canLogReceipts: tokenRecord.can_log_receipts ?? false,
       tasks: workerTasks,
       floorPlan: floorPlanShapes.length > 0 ? floorPlanShapes : null,
       floorPlanImage: backgroundImage,
