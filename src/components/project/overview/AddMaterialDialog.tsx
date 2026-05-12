@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -20,8 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ShoppingCart, Handshake, Info, Paperclip, FileText, X } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { ShoppingCart, Handshake, Paperclip, FileText, X } from "lucide-react";
 import { useIsProfessional } from "@/hooks/useIsProfessional";
 import { formatCurrency } from "@/lib/currency";
 
@@ -141,19 +141,10 @@ export function AddMaterialDialog({
     >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            {t("planningTasks.addCost", "Add cost")}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Info className="h-4 w-4 text-muted-foreground" />
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="max-w-[300px]">
-                  <p className="text-xs">{t("planningTasks.addCostHint", "Add materials (tiles, paint, fixtures) or subcontractor costs (electrician, plumber) to your scope.")}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </DialogTitle>
+          <DialogTitle>{t("planningTasks.addCost", "Add cost")}</DialogTitle>
+          <DialogDescription className="text-xs">
+            {t("planningTasks.addCostHint", "Add materials (tiles, paint, fixtures) or subcontractor costs (electrician, plumber) to your scope.")}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
