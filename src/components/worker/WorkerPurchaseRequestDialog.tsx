@@ -242,38 +242,34 @@ export function WorkerPurchaseRequestDialog({
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="purchase-price">
-                {receiptMode
-                  ? t("worker.purchase.priceTotalReceipt", "Pris (totalt, inkl moms)")
-                  : t("worker.purchase.priceTotal", "Uppskattat pris (totalt, inkl moms)")}
-              </Label>
-              <Input
-                id="purchase-price"
-                type="number"
-                inputMode="decimal"
-                value={priceTotal}
-                onChange={(e) => setPriceTotal(e.target.value)}
-                placeholder="0"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="purchase-vendor">
-                {receiptMode
-                  ? t("worker.purchase.vendorReceipt", "Köpt hos")
-                  : t("worker.purchase.vendor", "Leverantör (valfritt)")}
-              </Label>
-              <Input
-                id="purchase-vendor"
-                value={vendorName}
-                onChange={(e) => setVendorName(e.target.value)}
-                placeholder={t("worker.purchase.vendorPlaceholder", "Bauhaus, Beijer...")}
-              />
-            </div>
-
             {receiptMode && (
               <>
+                <div className="space-y-1.5">
+                  <Label htmlFor="purchase-price">
+                    {t("worker.purchase.priceTotalReceipt", "Pris (totalt, inkl moms)")}
+                  </Label>
+                  <Input
+                    id="purchase-price"
+                    type="number"
+                    inputMode="decimal"
+                    value={priceTotal}
+                    onChange={(e) => setPriceTotal(e.target.value)}
+                    placeholder="0"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="purchase-vendor">
+                    {t("worker.purchase.vendorReceipt", "Köpt hos")}
+                  </Label>
+                  <Input
+                    id="purchase-vendor"
+                    value={vendorName}
+                    onChange={(e) => setVendorName(e.target.value)}
+                    placeholder={t("worker.purchase.vendorPlaceholder", "Bauhaus, Beijer...")}
+                  />
+                </div>
+
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1.5">
                     <Label htmlFor="purchase-date">
@@ -337,7 +333,7 @@ export function WorkerPurchaseRequestDialog({
               </>
             )}
 
-            {tasks.length > 0 && (
+            {receiptMode && tasks.length > 0 && (
               <div className="space-y-1.5">
                 <Label htmlFor="purchase-task">
                   {t("worker.purchase.task", "Koppla till uppgift (valfritt)")}
@@ -360,21 +356,23 @@ export function WorkerPurchaseRequestDialog({
               </div>
             )}
 
-            <div className="space-y-1.5">
-              <Label htmlFor="purchase-description">
-                {t("worker.purchase.notes", "Anteckningar (valfritt)")}
-              </Label>
-              <Textarea
-                id="purchase-description"
-                rows={2}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder={t(
-                  "worker.purchase.notesPlaceholder",
-                  "T.ex. om varför, var den ska användas, deadline",
-                )}
-              />
-            </div>
+            {receiptMode && (
+              <div className="space-y-1.5">
+                <Label htmlFor="purchase-description">
+                  {t("worker.purchase.notes", "Anteckningar (valfritt)")}
+                </Label>
+                <Textarea
+                  id="purchase-description"
+                  rows={2}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder={t(
+                    "worker.purchase.notesPlaceholder",
+                    "T.ex. om varför, var den ska användas, deadline",
+                  )}
+                />
+              </div>
+            )}
           </div>
 
           <DrawerFooter>

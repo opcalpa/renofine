@@ -6,6 +6,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { WorkerTaskCard, type WorkerTask } from "@/components/worker/WorkerTaskCard";
 import { SwipeableRoomInstructions, groupWorkerTasksByRoom } from "@/components/room-instructions";
 import { WorkerPurchaseRequestDialog } from "@/components/worker/WorkerPurchaseRequestDialog";
+import {
+  WorkerLanguageSelector,
+  workerLangOverrideKey,
+} from "@/components/worker/WorkerLanguageSelector";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -87,16 +91,18 @@ export default function WorkerView() {
         return;
       }
 
-      // Set language from worker token
-      if (result.language && result.language !== i18n.language) {
-        i18n.changeLanguage(result.language);
+      // Set language from worker token — unless worker has manually overridden it
+      const override = token ? localStorage.getItem(workerLangOverrideKey(token)) : null;
+      const effectiveLang = override || result.language;
+      if (effectiveLang && effectiveLang !== i18n.language) {
+        i18n.changeLanguage(effectiveLang);
       }
 
       const viewData = result as WorkerViewData;
       setData(viewData);
 
-      // Auto-translate non-worker messages if worker language differs from sv/en
-      const lang = result.language;
+      // Auto-translate non-worker messages if effective language differs from sv/en
+      const lang = effectiveLang;
       if (lang && lang !== "sv" && lang !== "en") {
         const allMessages = viewData.tasks.flatMap((t) =>
           t.messages.filter((m) => !m.isWorker && m.content)
@@ -275,6 +281,7 @@ export default function WorkerView() {
               {t("worker.hello", "Hello")}, {data.workerName}
             </p>
           </div>
+          {token && <WorkerLanguageSelector token={token} />}
           {/* View toggle */}
           <div className="flex rounded-md border bg-muted/30 p-0.5">
             <button
