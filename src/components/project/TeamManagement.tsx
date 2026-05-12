@@ -15,6 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import {
   Collapsible,
   CollapsibleContent,
@@ -311,6 +312,8 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
     expires_at: string; last_accessed_at: string | null; revoked_at: string | null;
   }>>([]);
   const [workerTaskNames, setWorkerTaskNames] = useState<Record<string, string>>({});
+  const [canCreatePurchases, setCanCreatePurchases] = useState(true);
+  const [canLogReceipts, setCanLogReceipts] = useState(false);
 
   // Invite form state
   const [inviteName, setInviteName] = useState("");
@@ -621,6 +624,8 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
           worker_language: workerData.language,
           welcome_message: workerData.welcomeMessage.trim() || null,
           assigned_task_ids: workerData.selectedTaskIds,
+          can_create_purchases: canCreatePurchases,
+          can_log_receipts: canLogReceipts,
         })
         .select("id, token")
         .single();
@@ -682,6 +687,8 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
     setPreviewTaskId(null);
     setWorkerStep(1);
     setGeneratedWorkerLink(null);
+    setCanCreatePurchases(true);
+    setCanLogReceipts(false);
   };
 
   const openEditDialog = (
@@ -1278,6 +1285,43 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
                       data={workerData}
                       onChange={(updates) => setWorkerData((prev) => ({ ...prev, ...updates }))}
                     />
+
+                    {/* Purchase permissions */}
+                    <div className="space-y-2 rounded-lg border bg-muted/20 p-3">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        {t("teamWorker.purchasePermissions", "Inköp")}
+                      </p>
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <Label htmlFor="worker-can-create-purchases" className="text-sm cursor-pointer">
+                            {t("teamWorker.canCreatePurchases", "Kan föreslå inköp")}
+                          </Label>
+                          <p className="text-[11px] text-muted-foreground">
+                            {t("teamWorker.canCreatePurchasesDesc", "Skapar förslag som du godkänner")}
+                          </p>
+                        </div>
+                        <Switch
+                          id="worker-can-create-purchases"
+                          checked={canCreatePurchases}
+                          onCheckedChange={setCanCreatePurchases}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <Label htmlFor="worker-can-log-receipts" className="text-sm cursor-pointer">
+                            {t("teamWorker.canLogReceipts", "Kan logga utförda inköp")}
+                          </Label>
+                          <p className="text-[11px] text-muted-foreground">
+                            {t("teamWorker.canLogReceiptsDesc", "Workern kan registrera och bifoga kvitto direkt — kringgår godkännande")}
+                          </p>
+                        </div>
+                        <Switch
+                          id="worker-can-log-receipts"
+                          checked={canLogReceipts}
+                          onCheckedChange={setCanLogReceipts}
+                        />
+                      </div>
+                    </div>
 
                     {/* Back + Submit */}
                     <div className="flex justify-between pt-2">
