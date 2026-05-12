@@ -2496,6 +2496,7 @@
       "newInvoice": "Ny",
       "contractDetails": "Kontraktsdetaljer",
       "invoiceList": "Fakturerat — Detaljer",
+      "unbilledList": "Ej fakturerat — utkast & återstående kontrakt",
       "receivedList": "Mottagna betalningar",
       "overdueList": "Förfallna fakturor",
       "ataList": "Tillägg",

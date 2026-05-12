@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCurrency } from "@/lib/currency";
 import { getDisplayStatus } from "@/services/invoiceService";
-import { FileText, Receipt, Banknote, AlertTriangle, Clock, Plus, ExternalLink } from "lucide-react";
+import { FileText, Receipt, Banknote, AlertTriangle, Clock, Plus, ExternalLink, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -171,6 +171,9 @@ export function BuilderSummaryCards({ projectId, currency, onCreateInvoice }: Bu
   const receivedInvoices = invoices.filter(
     (inv) => (inv.status === "paid" || inv.status === "partially_paid") && (inv.paid_amount || 0) > 0
   );
+  // For Unbilled popover: show draft invoices + non-invoiced contract quotes
+  const unbilledInvoices = invoices.filter((inv) => inv.status === "draft");
+  const unbilledQuotes = acceptedQuotes; // Accepted quotes that aren't fully invoiced yet
   const now = new Date().toISOString().split("T")[0];
   const overdueInvoices = invoices.filter(
     (inv) =>
@@ -306,9 +309,12 @@ export function BuilderSummaryCards({ projectId, currency, onCreateInvoice }: Bu
       value: summary.unbilledTotal,
       icon: Clock,
       color: "text-muted-foreground",
-      clickable: false,
-      popoverTitle: "",
-      popoverItems: [],
+      clickable: unbilledInvoices.length > 0 || unbilledQuotes.length > 0,
+      popoverTitle: t("budget.builder.unbilledList", "Ej fakturerat — utkast & återstående kontrakt"),
+      popoverItems: [
+        ...unbilledInvoices.map((inv) => renderInvoiceRow(inv)),
+        ...unbilledQuotes.map((q) => renderQuoteRow(q)),
+      ],
     },
     {
       label: t("budget.builder.overdue", "Overdue"),
@@ -334,11 +340,18 @@ export function BuilderSummaryCards({ projectId, currency, onCreateInvoice }: Bu
   ];
 
   const renderCard = (card: CardDef) => {
+    // Förfallet får röd accent när belopp > 0 så det visuellt sticker ut som
+    // ett nödläge istället för en neutral KPI.
+    const isOverdueWithAmount = card.label === t("budget.builder.overdue", "Overdue") && card.value > 0;
     const cardContent = (
       <div
-        className={`rounded-lg border bg-card p-3 text-center space-y-1 shadow-sm transition-all duration-200 ${
+        className={`group relative rounded-lg border bg-card p-3 text-center space-y-1 shadow-sm transition-all duration-200 ${
           card.clickable
             ? "cursor-pointer hover:shadow-lg hover:-translate-y-0.5"
+            : ""
+        } ${
+          isOverdueWithAmount
+            ? "border-destructive/40 bg-destructive/5"
             : ""
         }`}
       >
@@ -346,9 +359,12 @@ export function BuilderSummaryCards({ projectId, currency, onCreateInvoice }: Bu
           <card.icon className={`h-3.5 w-3.5 ${card.color}`} />
           <p className="text-xs font-medium text-muted-foreground">{card.label}</p>
         </div>
-        <p className={`text-xl font-display font-normal tabular-nums ${card.value < 0 ? "text-destructive" : ""}`}>
+        <p className={`text-xl font-display font-normal tabular-nums ${card.value < 0 || isOverdueWithAmount ? "text-destructive" : ""}`}>
           {formatCurrency(card.value, currency)}
         </p>
+        {card.clickable && (
+          <ChevronDown className="absolute top-1.5 right-1.5 h-3 w-3 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors" />
+        )}
       </div>
     );
 

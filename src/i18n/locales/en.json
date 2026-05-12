@@ -3036,6 +3036,7 @@
       "newInvoice": "New",
       "contractDetails": "Contract Details",
       "invoiceList": "Invoiced — Details",
+      "unbilledList": "Unbilled — drafts & remaining contract",
       "receivedList": "Received Payments",
       "overdueList": "Overdue Invoices",
       "ataList": "ATA / Change Orders",
