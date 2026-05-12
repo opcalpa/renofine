@@ -1888,6 +1888,8 @@
     "title": "Inköpsordrar",
     "description": "Hantera alla inköpsordrar för detta projekt",
     "kicker": "Inköp & material",
+    "approve": "Godkänn",
+    "decline": "Avböj",
     "markAsPaid": "Markera som betald",
     "markedAsPaid": "Markerad som betald",
     "markPaidError": "Kunde inte markera som betald",

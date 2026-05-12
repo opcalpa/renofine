@@ -38,6 +38,7 @@ import {
   ExternalLink,
   Package,
   CheckCircle,
+  XCircle,
   CreditCard,
 } from "lucide-react";
 import { usePurchasesTableView, type PurchasesTableViewState } from "./usePurchasesTableView";
@@ -612,18 +613,32 @@ export function PurchasesTableView({
         return canEditMaterial(material) ? (
           <div className="flex items-center gap-0.5">
             {material.status === "submitted" && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2 text-green-700 hover:text-green-800 hover:bg-green-50"
-                title={t("purchases.approve", "Godkänn")}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleCellSave(material.id, "status", "approved");
-                }}
-              >
-                <CheckCircle className="h-3.5 w-3.5" />
-              </Button>
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-green-700 hover:text-green-800 hover:bg-green-50"
+                  title={t("purchases.approve", "Godkänn")}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleCellSave(material.id, "status", "approved");
+                  }}
+                >
+                  <CheckCircle className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-red-700 hover:text-red-800 hover:bg-red-50"
+                  title={t("purchases.decline", "Avböj")}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleCellSave(material.id, "status", "declined");
+                  }}
+                >
+                  <XCircle className="h-3.5 w-3.5" />
+                </Button>
+              </>
             )}
             {(material.status === "approved" || material.status === "billed") && (
               <Button

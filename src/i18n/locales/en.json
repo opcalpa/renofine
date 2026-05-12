@@ -2428,6 +2428,8 @@
     "title": "Purchase Orders",
     "description": "Manage all purchase orders for this project",
     "kicker": "Purchases & material",
+    "approve": "Approve",
+    "decline": "Decline",
     "markAsPaid": "Mark as paid",
     "markedAsPaid": "Marked as paid",
     "markPaidError": "Could not mark as paid",
