@@ -25,6 +25,8 @@ import { formatCurrency } from "@/lib/currency";
 import { AttachmentIndicator } from "@/components/shared/AttachmentIndicator";
 import { FilePreviewPopover } from "@/components/shared/FilePreviewPopover";
 import { getStatusBadgeColor } from "@/lib/statusColors";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { getAvatarColor } from "@/lib/avatarColor";
 import {
   Pencil,
   ArrowUpDown,
@@ -67,7 +69,7 @@ interface Material {
   room_ids: string[] | null;
   created_by_user_id: string | null;
   assigned_to_user_id: string | null;
-  creator?: { name: string } | null;
+  creator?: { name: string; avatar_url?: string | null } | null;
   assigned_to?: { name: string } | null;
   task?: { title: string } | null;
   room?: { name: string } | null;
@@ -568,12 +570,24 @@ export function PurchasesTableView({
         );
       }
 
-      case "createdBy":
+      case "createdBy": {
+        const name = material.creator?.name;
+        if (!name) return <span className="text-sm text-muted-foreground/40">–</span>;
+        const initials = name.split(" ").map(w => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
         return (
-          <span className="text-sm">
-            {material.creator?.name || "-"}
-          </span>
+          <div className="flex items-center gap-1.5" title={name}>
+            <Avatar className="h-5 w-5 shrink-0">
+              {material.creator?.avatar_url && (
+                <AvatarImage src={material.creator.avatar_url} alt={name} />
+              )}
+              <AvatarFallback className={cn("text-[9px] text-white", getAvatarColor(name))}>
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            <span className="truncate text-xs">{name}</span>
+          </div>
         );
+      }
 
       case "createdAt":
         return (

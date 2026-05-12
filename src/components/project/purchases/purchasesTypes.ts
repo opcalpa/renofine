@@ -57,6 +57,7 @@ export const DEFAULT_VISIBLE_EXTRAS: PurchaseColumnKey[] = [
   "vendor",
   "room",
   "task",
+  "createdBy",
 ];
 
 export const KANBAN_STATUS_ORDER = [

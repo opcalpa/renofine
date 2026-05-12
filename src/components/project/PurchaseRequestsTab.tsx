@@ -116,6 +116,7 @@ interface Material {
   paid_date?: string | null;
   creator?: {
     name: string;
+    avatar_url?: string | null;
   } | null;
   assigned_to?: {
     name: string;
@@ -588,14 +589,16 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
       )];
 
       const creatorMap = new Map<string, string>();
+      const creatorAvatarMap = new Map<string, string | null>();
       if (creatorIds.length > 0) {
         const { data: profiles } = await supabase
           .from("profiles")
-          .select("id, name")
+          .select("id, name, avatar_url")
           .in("id", creatorIds);
 
         (profiles || []).forEach(p => {
           if (p.name) creatorMap.set(p.id, p.name);
+          creatorAvatarMap.set(p.id, p.avatar_url ?? null);
         });
       }
 
@@ -622,13 +625,16 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
         const creatorName = material.created_by_user_id
           ? creatorMap.get(material.created_by_user_id)
           : null;
+        const creatorAvatar = material.created_by_user_id
+          ? creatorAvatarMap.get(material.created_by_user_id) ?? null
+          : null;
         const assignedName = material.assigned_to_user_id
           ? assignedMap.get(material.assigned_to_user_id)
           : null;
         const attachmentCount = docCounts.get(material.id) || 0;
         return {
           ...material,
-          creator: creatorName ? { name: creatorName } : null,
+          creator: creatorName ? { name: creatorName, avatar_url: creatorAvatar } : null,
           assigned_to: assignedName ? { name: assignedName } : null,
           hasAttachment: attachmentCount > 0,
           attachmentCount,
