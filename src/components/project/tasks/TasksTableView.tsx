@@ -1065,7 +1065,7 @@ export function TasksTableView({
           <PopoverContent className="w-48" align="end">
             <div className="space-y-1">
               <p className="text-sm font-medium mb-2">{t("budget.groupBy")}</p>
-              {(["none", "room", "costCenter", "status"] as GroupByOption[]).map((opt) => (
+              {(["none", "room", "costCenter", "status"] as const).map((opt) => (
                 <label
                   key={opt}
                   className={cn("flex items-center gap-2 text-sm cursor-pointer rounded-md px-2 py-1.5 hover:bg-accent", groupBy === opt && "bg-accent font-medium")}

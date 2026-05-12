@@ -1897,7 +1897,7 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
     setFilterStartDate("");
     setFilterFinishDate("");
     setFilterAttachment("all");
-    setFilterStatus("all");
+    setFilterStatuses(new Set());
   };
 
   const formatDate = (dateStr?: string) => {

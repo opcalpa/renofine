@@ -20,6 +20,7 @@ import { getSymbolComponent, ArchSymbolType, SYMBOL_METADATA } from './SymbolLib
 import { getObjectById } from './ObjectRenderer';
 import { ObjectShape, ObjectDefinition } from './objectLibraryDefinitions';
 import { getTemplateById, placeTemplateShapes, calculateBounds, DEFAULT_TEMPLATES } from './templateDefinitions';
+import { getTemplatePlanId } from './utils/objectTemplates';
 import { getUnifiedObjectById, UnifiedObjectDefinition } from './objectLibrary';
 import { useTranslation } from 'react-i18next';
 
@@ -2931,6 +2932,10 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
       if (activeTool === 'opening_line' && currentDrawingPoints.length >= 1) {
         const defaultOpeningWidthMM = 900; // 90cm default opening width
         const defaultOpeningWidthPx = defaultOpeningWidthMM * scaleSettings.pixelsPerMm;
+        const dx = end.x - start.x;
+        const dy = end.y - start.y;
+        const length = Math.sqrt(dx * dx + dy * dy);
+        const minLength = 50;
 
         let finalEnd = end;
         if (length < minLength) {

@@ -487,7 +487,6 @@ const TasksTab = ({ projectId, projectName, projectStatus, tasksScope = 'all', t
       });
 
       setPoName("");
-      setPoDescription("");
       setPoQuantity("1");
       setPoUnit("pcs");
       setPoPricePerUnit("");

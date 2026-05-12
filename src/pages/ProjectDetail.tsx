@@ -791,7 +791,7 @@ const ProjectDetail = () => {
   };
 
   // Handle navigating to a room that's placed on the floor plan
-  const handleNavigateToRoom = (room: Room) => {
+  const handleNavigateToRoom = (room: { id: string; name: string }) => {
     // Save current tab before navigating to floor planner
     setPreviousTab({ tab: activeTab, subTab: activeSubTab, label: getTabLabelKey(activeTab) });
 
@@ -833,7 +833,7 @@ const ProjectDetail = () => {
   };
 
   // Handle placing an unplaced room on the floor plan
-  const handlePlaceRoom = (room: Room) => {
+  const handlePlaceRoom = (room: { id: string; name: string }) => {
     const { setPendingRoomPlacement } = useFloorMapStore.getState();
 
     // Set the pending room placement
