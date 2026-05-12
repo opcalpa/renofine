@@ -117,7 +117,9 @@ interface Material {
   creator?: {
     name: string;
     avatar_url?: string | null;
+    isWorker?: boolean;
   } | null;
+  submitted_by_worker_token_id?: string | null;
   assigned_to?: {
     name: string;
   } | null;
@@ -602,6 +604,25 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
         });
       }
 
+      // Batch fetch worker-token submitters (workers via /w/:token har inget profile.id)
+      const workerTokenIds = [...new Set(
+        (materialsRes.data || [])
+          .map(m => m.submitted_by_worker_token_id)
+          .filter((id): id is string => id !== null && id !== undefined)
+      )];
+
+      const workerTokenNameMap = new Map<string, string>();
+      if (workerTokenIds.length > 0) {
+        const { data: tokens } = await supabase
+          .from("worker_access_tokens")
+          .select("id, worker_name")
+          .in("id", workerTokenIds);
+
+        (tokens || []).forEach(tk => {
+          if (tk.worker_name) workerTokenNameMap.set(tk.id, tk.worker_name);
+        });
+      }
+
       // Batch fetch assigned-to profiles
       const assignedIds = [...new Set(
         (materialsRes.data || [])
@@ -622,19 +643,24 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
       }
 
       const materialsWithNames = (materialsRes.data || []).map((material) => {
-        const creatorName = material.created_by_user_id
+        // Worker-token submitter trumfar profile-creator (workern föreslog faktiskt)
+        const workerName = material.submitted_by_worker_token_id
+          ? workerTokenNameMap.get(material.submitted_by_worker_token_id)
+          : null;
+        const profileCreatorName = material.created_by_user_id
           ? creatorMap.get(material.created_by_user_id)
           : null;
-        const creatorAvatar = material.created_by_user_id
-          ? creatorAvatarMap.get(material.created_by_user_id) ?? null
-          : null;
+        const creatorName = workerName || profileCreatorName;
+        const creatorAvatar = workerName
+          ? null  // workers har ingen avatar — initial-fallback i UI
+          : (material.created_by_user_id ? creatorAvatarMap.get(material.created_by_user_id) ?? null : null);
         const assignedName = material.assigned_to_user_id
           ? assignedMap.get(material.assigned_to_user_id)
           : null;
         const attachmentCount = docCounts.get(material.id) || 0;
         return {
           ...material,
-          creator: creatorName ? { name: creatorName, avatar_url: creatorAvatar } : null,
+          creator: creatorName ? { name: creatorName, avatar_url: creatorAvatar, isWorker: !!workerName } : null,
           assigned_to: assignedName ? { name: assignedName } : null,
           hasAttachment: attachmentCount > 0,
           attachmentCount,

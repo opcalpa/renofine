@@ -5,6 +5,7 @@ import { Loader2, AlertCircle, Wrench, Layers, List } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { WorkerTaskCard, type WorkerTask } from "@/components/worker/WorkerTaskCard";
 import { SwipeableRoomInstructions, groupWorkerTasksByRoom } from "@/components/room-instructions";
+import { WorkerPurchaseRequestDialog } from "@/components/worker/WorkerPurchaseRequestDialog";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -25,6 +26,7 @@ interface WorkerViewData {
   language: string;
   canUploadPhotos: boolean;
   canToggleChecklist: boolean;
+  canCreatePurchases?: boolean;
   tasks: WorkerTask[];
   floorPlan: FloorPlanShape[] | null;
   floorPlanImage: { url: string; x: number; y: number } | null;
@@ -291,6 +293,16 @@ export default function WorkerView() {
           </div>
         </div>
       </header>
+
+      {/* Action bar — Be om inköp */}
+      {data.canCreatePurchases !== false && token && (
+        <div className="max-w-lg mx-auto px-4 pt-3 flex justify-end">
+          <WorkerPurchaseRequestDialog
+            token={token}
+            tasks={data.tasks.map((task) => ({ id: task.id, title: task.title }))}
+          />
+        </div>
+      )}
 
       {/* Content */}
       {data.tasks.length === 0 ? (

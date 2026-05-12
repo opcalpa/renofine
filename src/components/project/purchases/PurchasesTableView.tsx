@@ -69,7 +69,7 @@ interface Material {
   room_ids: string[] | null;
   created_by_user_id: string | null;
   assigned_to_user_id: string | null;
-  creator?: { name: string; avatar_url?: string | null } | null;
+  creator?: { name: string; avatar_url?: string | null; isWorker?: boolean } | null;
   assigned_to?: { name: string } | null;
   task?: { title: string } | null;
   room?: { name: string } | null;
@@ -573,9 +573,11 @@ export function PurchasesTableView({
       case "createdBy": {
         const name = material.creator?.name;
         if (!name) return <span className="text-sm text-muted-foreground/40">–</span>;
+        const isWorker = !!material.creator?.isWorker;
         const initials = name.split(" ").map(w => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
+        const tooltip = isWorker ? `${name} ${t("worker.workerSuffix", "(arbetare)")}` : name;
         return (
-          <div className="flex items-center gap-1.5" title={name}>
+          <div className="flex items-center gap-1.5" title={tooltip}>
             <Avatar className="h-5 w-5 shrink-0">
               {material.creator?.avatar_url && (
                 <AvatarImage src={material.creator.avatar_url} alt={name} />
@@ -585,6 +587,11 @@ export function PurchasesTableView({
               </AvatarFallback>
             </Avatar>
             <span className="truncate text-xs">{name}</span>
+            {isWorker && (
+              <Badge variant="outline" className="text-[9px] px-1 py-0 leading-tight">
+                {t("worker.tag", "Arbetare")}
+              </Badge>
+            )}
           </div>
         );
       }

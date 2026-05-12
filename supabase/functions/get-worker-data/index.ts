@@ -78,6 +78,7 @@ serve(async (req) => {
         language: tokenRecord.worker_language,
         canUploadPhotos: tokenRecord.can_upload_photos,
         canToggleChecklist: tokenRecord.can_toggle_checklist,
+        canCreatePurchases: tokenRecord.can_create_purchases ?? true,
         tasks: [],
       }, 200, req);
     }
@@ -345,6 +346,7 @@ serve(async (req) => {
       language: tokenRecord.worker_language,
       canUploadPhotos: tokenRecord.can_upload_photos,
       canToggleChecklist: tokenRecord.can_toggle_checklist,
+      canCreatePurchases: tokenRecord.can_create_purchases ?? true,
       tasks: workerTasks,
       floorPlan: floorPlanShapes.length > 0 ? floorPlanShapes : null,
       floorPlanImage: backgroundImage,
