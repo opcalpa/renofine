@@ -25,6 +25,16 @@ import { TaskEditDialog } from "./TaskEditDialog";
 import { MaterialEditDialog } from "./MaterialEditDialog";
 import { NewPurchaseFromBudgetDialog } from "./NewPurchaseFromBudgetDialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectGroup,
@@ -1147,26 +1157,35 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
     }
   };
 
-  const handleDeleteRow = async (row: BudgetRow) => {
-    // Simple confirmation
-    if (!window.confirm(t('budget.confirmDelete', { name: row.name }))) {
-      return;
-    }
+  // Deletion is gated through AlertDialog — native window.confirm is too easy
+  // to dismiss reflexively on a row that may represent significant budget.
+  const [rowToDelete, setRowToDelete] = useState<BudgetRow | null>(null);
+  const [deletingRow, setDeletingRow] = useState(false);
 
+  const handleDeleteRow = (row: BudgetRow) => {
+    setRowToDelete(row);
+  };
+
+  const confirmDeleteRow = async () => {
+    if (!rowToDelete) return;
+    setDeletingRow(true);
     try {
-      if (row.type === "task") {
-        const { error } = await supabase.from("tasks").delete().eq("id", row.id);
+      if (rowToDelete.type === "task") {
+        const { error } = await supabase.from("tasks").delete().eq("id", rowToDelete.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("materials").delete().eq("id", row.id);
+        const { error } = await supabase.from("materials").delete().eq("id", rowToDelete.id);
         if (error) throw error;
       }
 
       toast({ title: t('common.success'), description: t('budget.rowDeleted') });
       await fetchData();
+      setRowToDelete(null);
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : t('budget.failedToDelete');
       toast({ title: t('common.error'), description: msg, variant: "destructive" });
+    } finally {
+      setDeletingRow(false);
     }
   };
 
@@ -2154,10 +2173,15 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
         // PO header: render aggregate cost read-only (builder shows effective, homeowner shows paid)
         if (row.isPoHeader) {
           const amount = isBuilder ? getEffectiveCost(row) : row.paid;
+          const isEstimated = isBuilder && row.isEstimated;
+          const estimatedTitle = t("budget.estimatedCostExplain", "Beräknad kostnad — verkligt belopp inte registrerat ännu");
           return (
-            <span className={isBuilder && row.isEstimated ? "text-muted-foreground italic" : ""}>
+            <span
+              className={isEstimated ? "text-muted-foreground italic" : ""}
+              title={isEstimated && amount > 0 ? estimatedTitle : undefined}
+            >
               {formatCurrency(amount, currency)}
-              {isBuilder && row.isEstimated && amount > 0 && <span className="ml-0.5">*</span>}
+              {isEstimated && amount > 0 && <span className="ml-0.5">*</span>}
             </span>
           );
         }
@@ -2190,7 +2214,12 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
               setEditValue(row.paid > 0 ? String(row.paid) : "");
             }}
           >
-            <span className={isBuilder && row.isEstimated ? "text-muted-foreground italic" : ""}>
+            <span
+              className={isBuilder && row.isEstimated ? "text-muted-foreground italic" : ""}
+              title={isBuilder && row.isEstimated && displayAmount > 0
+                ? t("budget.estimatedCostExplain", "Beräknad kostnad — verkligt belopp inte registrerat ännu")
+                : undefined}
+            >
               {formatCurrency(displayAmount, currency)}
               {isBuilder && row.isEstimated && displayAmount > 0 && <span className="ml-0.5">*</span>}
             </span>
@@ -2238,6 +2267,7 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
         const plannedMarkup = row.markupPercent;
         let colorClass = "text-muted-foreground";
         if (marginPct < 0) colorClass = "text-destructive";
+        else if (marginPct === 0) colorClass = "text-muted-foreground";
         else if (marginPct < 15) colorClass = "text-amber-500";
         else if (marginPct >= 30) colorClass = "text-green-600";
         return (
@@ -2549,6 +2579,7 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
         const totalMargin = totals.budget > 0 ? Math.round((totalResult / totals.budget) * 100) : 0;
         let colorClass = "";
         if (totalMargin < 0) colorClass = "text-destructive";
+        else if (totalMargin === 0) colorClass = "text-muted-foreground";
         else if (totalMargin < 15) colorClass = "text-amber-500";
         else if (totalMargin >= 30) colorClass = "text-green-600";
         return <span className={`font-bold ${colorClass}`}>{totalMargin}%</span>;
@@ -3048,6 +3079,7 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
         </span>
       </div>
       <p className="text-[11px] text-muted-foreground/60 mb-1 text-right">
+        <span className="mr-3">* = {t('budget.estimatedCostLegend', 'Beräknad kostnad')}</span>
         {isBuilder ? t('budget.exMomsNote', 'All amounts ex. VAT') : t('budget.incMomsNote', 'All amounts inc. VAT')}
       </p>
       <div className={cn("border rounded-lg overflow-auto bg-card", isFullscreen ? "max-h-[calc(100vh-8rem)] mx-0 px-0" : "max-h-[calc(100vh-20rem)] -mx-3 px-3 md:mx-0 md:px-0")}>
@@ -3522,6 +3554,27 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
           fetchData();
         }}
       />
+
+      <AlertDialog open={rowToDelete !== null} onOpenChange={(open) => { if (!open && !deletingRow) setRowToDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('budget.confirmDeleteTitle', 'Ta bort raden?')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {rowToDelete && t('budget.confirmDelete', { name: rowToDelete.name })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingRow}>{t('common.cancel', 'Avbryt')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteRow}
+              disabled={deletingRow}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletingRow ? <Loader2 className="h-4 w-4 animate-spin" /> : t('common.delete', 'Ta bort')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
