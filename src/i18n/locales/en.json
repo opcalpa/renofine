@@ -4501,6 +4501,8 @@
     "accepted": "Accepted",
     "awaitingResponse": "awaiting response",
     "needsAction": "needs action",
+    "allHandled": "All handled",
+    "noBudgetYet": "No budget yet",
     "unlinked": "unlinked",
     "draft": "draft",
     "sent": "sent",

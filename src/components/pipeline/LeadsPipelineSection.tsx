@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Mail, FileEdit, Send, CheckCircle } from "lucide-react";
+import { Mail, FileEdit, Send, CheckCircle, ChevronRight } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { useLeadsPipelineData } from "@/hooks/useLeadsPipelineData";
 import { AllIntakeRequestsDialog } from "./AllIntakeRequestsDialog";
@@ -69,25 +69,29 @@ export function LeadsPipelineSection({ onRefetch, userType }: LeadsPipelineSecti
             {hasIntakes && (
               <button
                 onClick={() => setIntakesDialogOpen(true)}
-                className="flex-1 text-left px-3 first:pl-0 last:pr-0 hover:bg-accent/50 rounded-l transition-colors"
+                className="group flex-1 text-left px-3 first:pl-0 last:pr-0 hover:bg-accent/50 rounded-l transition-colors"
               >
                 <div className="flex items-center gap-1.5 mb-2">
                   <Mail className="h-3.5 w-3.5 text-blue-600" />
                   <span className="text-xs font-medium text-muted-foreground">
                     {t("pipeline.intakeRequests")}
                   </span>
+                  <ChevronRight className="h-3 w-3 ml-auto text-muted-foreground/30 group-hover:text-muted-foreground group-hover:translate-x-0.5 transition-all" />
                 </div>
                 <p className="text-lg font-display font-normal">{data.intakeRequests.total}</p>
-                <div className="text-xs text-muted-foreground mt-1 space-y-1">
-                  {data.intakeRequests.pending > 0 && (
+                <div className="text-xs text-muted-foreground mt-1 space-y-1 min-h-[2.25rem]">
+                  {data.intakeRequests.pending > 0 ? (
                     <p>
                       {data.intakeRequests.pending} {t("pipeline.awaitingResponse")}
                     </p>
-                  )}
-                  {data.intakeRequests.submitted > 0 && (
+                  ) : null}
+                  {data.intakeRequests.submitted > 0 ? (
                     <p>
                       {data.intakeRequests.submitted} {t("pipeline.needsAction")}
                     </p>
+                  ) : null}
+                  {data.intakeRequests.pending === 0 && data.intakeRequests.submitted === 0 && (
+                    <p className="text-muted-foreground/60 italic">{t("pipeline.allHandled", "Alla hanterade")}</p>
                   )}
                 </div>
               </button>
@@ -97,21 +101,26 @@ export function LeadsPipelineSection({ onRefetch, userType }: LeadsPipelineSecti
             {hasDrafts && (
               <button
                 onClick={() => setActiveBucketDialog("draft")}
-                className="flex-1 text-left px-3 first:pl-0 last:pr-0 hover:bg-accent/50 transition-colors"
+                className="group flex-1 text-left px-3 first:pl-0 last:pr-0 hover:bg-accent/50 transition-colors"
               >
                 <div className="flex items-center gap-1.5 mb-2">
                   <FileEdit className="h-3.5 w-3.5 text-muted-foreground" />
                   <span className="text-xs font-medium text-muted-foreground">
                     {t("pipeline.drafts")}
                   </span>
+                  <ChevronRight className="h-3 w-3 ml-auto text-muted-foreground/30 group-hover:text-muted-foreground group-hover:translate-x-0.5 transition-all" />
                 </div>
                 <p className="text-lg font-display font-normal">{projectQuotes.draft.count}</p>
-                {projectQuotes.draft.totalAmount > 0 && (
-                  <div className="text-xs text-muted-foreground mt-1 space-y-1">
-                    <p>{t("planningTasks.estimatedBudget", "Estimated budget")}: <span className="font-medium text-foreground">{formatCurrency(projectQuotes.draft.totalAmount)}</span></p>
-                    <p>{t("planningTasks.estimatedProfit", "Est. profit")}: <span className="font-medium text-green-600">{formatCurrency(projectQuotes.draft.totalAfterRot)}</span></p>
-                  </div>
-                )}
+                <div className="text-xs text-muted-foreground mt-1 space-y-1 min-h-[2.25rem]">
+                  {projectQuotes.draft.totalAmount > 0 ? (
+                    <>
+                      <p>{t("planningTasks.estimatedBudget", "Estimated budget")}: <span className="font-medium text-foreground">{formatCurrency(projectQuotes.draft.totalAmount)}</span></p>
+                      <p>{t("planningTasks.estimatedProfit", "Est. profit")}: <span className="font-medium text-green-600">{formatCurrency(projectQuotes.draft.totalAfterRot)}</span></p>
+                    </>
+                  ) : (
+                    <p className="text-muted-foreground/60 italic">{t("pipeline.noBudgetYet", "Ingen budget än")}</p>
+                  )}
+                </div>
               </button>
             )}
 
@@ -119,21 +128,26 @@ export function LeadsPipelineSection({ onRefetch, userType }: LeadsPipelineSecti
             {hasSent && (
               <button
                 onClick={() => setActiveBucketDialog("sent")}
-                className="flex-1 text-left px-3 first:pl-0 last:pr-0 hover:bg-accent/50 transition-colors"
+                className="group flex-1 text-left px-3 first:pl-0 last:pr-0 hover:bg-accent/50 transition-colors"
               >
                 <div className="flex items-center gap-1.5 mb-2">
                   <Send className="h-3.5 w-3.5 text-blue-600" />
                   <span className="text-xs font-medium text-muted-foreground">
                     {t("pipeline.sentQuotes")}
                   </span>
+                  <ChevronRight className="h-3 w-3 ml-auto text-muted-foreground/30 group-hover:text-muted-foreground group-hover:translate-x-0.5 transition-all" />
                 </div>
                 <p className="text-lg font-display font-normal">{projectQuotes.sent.count}</p>
-                {projectQuotes.sent.totalAmount > 0 && (
-                  <div className="text-xs text-muted-foreground mt-1 space-y-1">
-                    <p>{t("planningTasks.estimatedBudget", "Estimated budget")}: <span className="font-medium text-foreground">{formatCurrency(projectQuotes.sent.totalAmount)}</span></p>
-                    <p>{t("planningTasks.estimatedProfit", "Est. profit")}: <span className="font-medium text-green-600">{formatCurrency(projectQuotes.sent.totalAfterRot)}</span></p>
-                  </div>
-                )}
+                <div className="text-xs text-muted-foreground mt-1 space-y-1 min-h-[2.25rem]">
+                  {projectQuotes.sent.totalAmount > 0 ? (
+                    <>
+                      <p>{t("planningTasks.estimatedBudget", "Estimated budget")}: <span className="font-medium text-foreground">{formatCurrency(projectQuotes.sent.totalAmount)}</span></p>
+                      <p>{t("planningTasks.estimatedProfit", "Est. profit")}: <span className="font-medium text-green-600">{formatCurrency(projectQuotes.sent.totalAfterRot)}</span></p>
+                    </>
+                  ) : (
+                    <p className="text-muted-foreground/60 italic">{t("pipeline.noBudgetYet", "Ingen budget än")}</p>
+                  )}
+                </div>
               </button>
             )}
 
@@ -141,21 +155,26 @@ export function LeadsPipelineSection({ onRefetch, userType }: LeadsPipelineSecti
             {hasAccepted && (
               <button
                 onClick={() => setActiveBucketDialog("accepted")}
-                className="flex-1 text-left px-3 first:pl-0 last:pr-0 hover:bg-accent/50 rounded-r transition-colors"
+                className="group flex-1 text-left px-3 first:pl-0 last:pr-0 hover:bg-accent/50 rounded-r transition-colors"
               >
                 <div className="flex items-center gap-1.5 mb-2">
                   <CheckCircle className="h-3.5 w-3.5 text-green-600" />
                   <span className="text-xs font-medium text-muted-foreground">
                     {t("pipeline.accepted")}
                   </span>
+                  <ChevronRight className="h-3 w-3 ml-auto text-muted-foreground/30 group-hover:text-muted-foreground group-hover:translate-x-0.5 transition-all" />
                 </div>
                 <p className="text-lg font-display font-normal">{projectQuotes.accepted.count}</p>
-                {projectQuotes.accepted.totalAmount > 0 && (
-                  <div className="text-xs text-muted-foreground mt-1 space-y-1">
-                    <p>{t("planningTasks.estimatedBudget", "Estimated budget")}: <span className="font-medium text-foreground">{formatCurrency(projectQuotes.accepted.totalAmount)}</span></p>
-                    <p>{t("planningTasks.estimatedProfit", "Est. profit")}: <span className="font-medium text-green-600">{formatCurrency(projectQuotes.accepted.totalAfterRot)}</span></p>
-                  </div>
-                )}
+                <div className="text-xs text-muted-foreground mt-1 space-y-1 min-h-[2.25rem]">
+                  {projectQuotes.accepted.totalAmount > 0 ? (
+                    <>
+                      <p>{t("planningTasks.estimatedBudget", "Estimated budget")}: <span className="font-medium text-foreground">{formatCurrency(projectQuotes.accepted.totalAmount)}</span></p>
+                      <p>{t("planningTasks.estimatedProfit", "Est. profit")}: <span className="font-medium text-green-600">{formatCurrency(projectQuotes.accepted.totalAfterRot)}</span></p>
+                    </>
+                  ) : (
+                    <p className="text-muted-foreground/60 italic">{t("pipeline.noBudgetYet", "Ingen budget än")}</p>
+                  )}
+                </div>
               </button>
             )}
           </div>

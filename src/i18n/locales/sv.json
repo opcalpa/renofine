@@ -4498,6 +4498,8 @@
     "accepted": "Godkända",
     "awaitingResponse": "väntande svar",
     "needsAction": "att agera på",
+    "allHandled": "Alla hanterade",
+    "noBudgetYet": "Ingen budget än",
     "unlinked": "okopplad",
     "draft": "utkast",
     "sent": "skickade",
