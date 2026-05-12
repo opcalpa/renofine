@@ -5668,6 +5668,7 @@
   },
   "purchaseOrderStatus": {
     "pending": "Pending",
+    "requested": "Requested",
     "ordered": "Ordered",
     "delivered": "Delivered",
     "cancelled": "Cancelled"

@@ -551,7 +551,7 @@ function SheetBody(props: PurchaseOrderDetailSheetProps) {
           className="mt-2 truncate"
           style={{ fontSize: 19, fontWeight: 500, color: "var(--rf-ink)", letterSpacing: "-0.015em" }}
         >
-          {po.vendor_name}
+          {po.vendor_name || t("purchases.unknownVendor", "Okänd leverantör")}
         </div>
 
         <div

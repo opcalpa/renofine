@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { createRequestPurchase } from "@/lib/createRequestPurchase";
 import { usePersistedPreference } from "@/hooks/usePersistedPreference";
 import { useTaxDeductionVisible } from "@/hooks/useTaxDeduction";
 import { Button } from "@/components/ui/button";
@@ -131,7 +132,7 @@ interface Material {
 
 interface PurchaseOrder {
   id: string;
-  vendor_name: string;
+  vendor_name: string | null;
   total: number;
   status: string;
   ordered_at: string | null;
@@ -855,24 +856,26 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
 
   const createOrderFromPlanned = useCallback(async (planned: Material) => {
     if (!currentProfileId) return;
-    const { error } = await supabase.from("materials").insert({
-      project_id: projectId,
-      task_id: planned.task_id,
-      room_id: planned.room_id,
-      name: planned.name,
-      quantity: planned.quantity,
-      unit: planned.unit,
-      price_per_unit: planned.price_per_unit,
-      price_total: planned.price_total,
-      status: "to_order",
-      source_material_id: planned.id,
-      created_by_user_id: currentProfileId,
-    });
-    if (error) {
-      toast({ variant: "destructive", description: t("purchases.createOrderFailed", "Kunde inte skapa inköpsorder") });
-    } else {
+    try {
+      await createRequestPurchase({
+        projectId,
+        createdByUserId: currentProfileId,
+        material: {
+          task_id: planned.task_id,
+          room_id: planned.room_id,
+          name: planned.name,
+          quantity: planned.quantity,
+          unit: planned.unit,
+          price_per_unit: planned.price_per_unit,
+          price_total: planned.price_total ?? 0,
+          source_material_id: planned.id,
+          status: "to_order",
+        },
+      });
       toast({ description: t("purchases.orderCreatedFromPlan", "Inköpsorder skapad från offertrad") });
       fetchMaterials();
+    } catch {
+      toast({ variant: "destructive", description: t("purchases.createOrderFailed", "Kunde inte skapa inköpsorder") });
     }
   }, [currentProfileId, projectId, fetchMaterials, t]);
 

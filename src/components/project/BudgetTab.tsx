@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCurrency } from "@/lib/currency";
+import { createRequestPurchase } from "@/lib/createRequestPurchase";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -1051,18 +1052,19 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
         });
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("materials").insert({
-          project_id: projectId,
-          name: newRowName.trim(),
-          price_total: budgetValue,
-          room_id: newRowRoomId || null,
-          status: "submitted",
-          exclude_from_budget: false,
-          quantity: 1,
-          unit: "st",
-          created_by_user_id: profileId,
+        if (!profileId) throw new Error("Missing profile");
+        await createRequestPurchase({
+          projectId,
+          createdByUserId: profileId,
+          material: {
+            name: newRowName.trim(),
+            price_total: budgetValue,
+            room_id: newRowRoomId || null,
+            quantity: 1,
+            unit: "st",
+            exclude_from_budget: false,
+          },
         });
-        if (error) throw error;
       }
 
       toast({ title: t('common.success'), description: t('budget.rowAdded') });
@@ -1132,21 +1134,22 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
           .single();
         if (fetchError) throw fetchError;
 
-        const { error } = await supabase.from("materials").insert({
-          project_id: projectId,
-          name: `${material.name} (${t('budget.copy')})`,
-          price_total: material.price_total,
-          room_id: material.room_id,
-          status: "submitted",
-          quantity: material.quantity,
-          unit: material.unit,
-          vendor_name: material.vendor_name,
-          vendor_link: material.vendor_link,
-          description: material.description,
-          exclude_from_budget: material.exclude_from_budget,
-          created_by_user_id: profileId,
+        if (!profileId) throw new Error("Missing profile");
+        await createRequestPurchase({
+          projectId,
+          createdByUserId: profileId,
+          material: {
+            name: `${material.name} (${t('budget.copy')})`,
+            price_total: material.price_total,
+            room_id: material.room_id,
+            quantity: material.quantity,
+            unit: material.unit,
+            vendor_name: material.vendor_name,
+            vendor_link: material.vendor_link,
+            description: material.description,
+            exclude_from_budget: material.exclude_from_budget,
+          },
         });
-        if (error) throw error;
       }
 
       toast({ title: t('common.success'), description: t('budget.rowDuplicated') });

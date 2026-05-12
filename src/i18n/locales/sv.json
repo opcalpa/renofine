@@ -5665,6 +5665,7 @@
   },
   "purchaseOrderStatus": {
     "pending": "Avvaktar",
+    "requested": "Önskemål",
     "ordered": "Beställd",
     "delivered": "Levererad",
     "cancelled": "Avbruten"

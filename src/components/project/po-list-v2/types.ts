@@ -25,7 +25,7 @@ export interface POMaterial {
 
 export interface PO {
   id: string;
-  vendor_name: string;
+  vendor_name: string | null;
   total: number;
   status: string;
   ordered_at: string | null;
@@ -86,6 +86,14 @@ export const PO_STATUS_STYLES: Record<string, POStatusStyle> = {
     coverBg: "var(--rf-surface-2)",
     stripe: "var(--rf-sand-fg)",
     key: "purchaseOrderStatus.pending",
+  },
+  // Önskemål — stone/neutral (budget-/hemägar-request, ej bekräftad vendor)
+  requested: {
+    bg: "var(--rf-stone)",
+    fg: "var(--rf-stone-fg)",
+    coverBg: "var(--rf-surface-2)",
+    stripe: "var(--rf-stone-fg)",
+    key: "purchaseOrderStatus.requested",
   },
   // Fallback / draft
   draft: {
