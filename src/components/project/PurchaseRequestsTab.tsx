@@ -554,7 +554,8 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
 
       const isPublicDemo = projectId === PUBLIC_DEMO_PROJECT_ID;
       if (!isPublicDemo && !isProjectOwner && userPurchasesScope === 'assigned' && currentProfileId) {
-        query = query.eq("created_by_user_id", currentProfileId);
+        // Matcha canEditMaterial-semantik: assigned = både skapade och tilldelade rader
+        query = query.or(`created_by_user_id.eq.${currentProfileId},assigned_to_user_id.eq.${currentProfileId}`);
       }
 
       const [materialsRes, docsRes] = await Promise.all([
