@@ -40,6 +40,7 @@ import { getContextType } from "@/components/project/feed/utils";
 import { MobileBottomNav } from "@/components/project/MobileBottomNav";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { HoverTabMenu } from "@/components/ui/HoverTabMenu";
+import { ResponsiveTabBar, type ResponsiveTabDefinition } from "@/components/project/ResponsiveTabBar";
 import { RoomsList } from "@/components/floormap/RoomsList";
 import { RoomsListV2 } from "@/components/floormap/rooms-list-v2/RoomsListV2";
 
@@ -901,7 +902,7 @@ const ProjectDetail = () => {
           onGuestRoleChange={isGuest ? handleGuestRoleChange : undefined}
         >
           {/* Navigation: back button + project name + tabs */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0 w-full">
             {/* Back button — always visible */}
             <Button
               variant="ghost"
@@ -917,209 +918,147 @@ const ProjectDetail = () => {
                 {project.name}
               </span>
             )}
-            <div className="hidden md:flex items-center gap-0.5 flex-nowrap overflow-visible">
-              {/* Kundvy — first tab for clients, hidden here for owners (shown after Team instead) */}
-              {!isTabBlocked("sharing") && permissions.isClient && (
-                <div
-                  className={cn(
-                    "px-2.5 py-1.5 text-[13px] tracking-[-0.002em] cursor-pointer rounded-md transition-colors",
-                    activeTab === "sharing" ? "bg-accent/60 text-foreground font-medium" : "text-muted-foreground hover:text-foreground font-normal"
-                  )}
-                  onClick={() => handleMenuSelect('sharing', 'sharing')}
-                >
-                  {t("sharing.tabTitle", "Sharing")}
+            {(() => {
+              const responsiveTabs: ResponsiveTabDefinition[] = [];
+
+              // Kundvy — first tab for clients
+              if (!isTabBlocked("sharing") && permissions.isClient) {
+                responsiveTabs.push({
+                  key: 'sharing-client',
+                  label: t("sharing.tabTitle", "Sharing"),
+                  active: activeTab === "sharing",
+                  onClick: () => handleMenuSelect('sharing', 'sharing'),
+                });
+              }
+
+              // Planering — non-clients
+              if (!isTabBlocked("planning") && !permissions.isClient) {
+                responsiveTabs.push({
+                  key: 'planning',
+                  label: t("projectDetail.planning", "Planering"),
+                  active: activeTab === "planning",
+                  onClick: () => handleMenuSelect('planning', 'planning'),
+                });
+              }
+
+              if (!isTabBlocked("overview")) {
+                responsiveTabs.push({
+                  key: 'overview',
+                  label: t("projectDetail.overview"),
+                  active: activeTab === "overview",
+                  items: menuConfigs.overview,
+                  onMainClick: () => handleMenuSelect('overview', 'overview'),
+                  onSelect: (v) => handleMenuSelect('overview', v),
+                  activeValue: activeTab === "overview" ? (activeSubTab || "overview") : undefined,
+                });
+              }
+
+              if (!isTabBlocked("tasks")) {
+                responsiveTabs.push({
+                  key: 'tasks',
+                  label: t("projectDetail.tasks"),
+                  active: activeTab === "tasks",
+                  items: menuConfigs.tasks,
+                  onMainClick: () => handleMenuSelect('tasks', 'tasks'),
+                  onSelect: (v) => handleMenuSelect('tasks', v),
+                  activeValue: activeTab === "tasks" ? "tasks" : undefined,
+                });
+              }
+
+              if (!isTabBlocked("purchases")) {
+                responsiveTabs.push({
+                  key: 'purchases',
+                  label: t('projectDetail.purchases'),
+                  active: activeTab === "purchases",
+                  items: menuConfigs.purchases,
+                  onMainClick: () => handleMenuSelect('purchases', 'purchases'),
+                  onSelect: (v) => handleMenuSelect('purchases', v),
+                  activeValue: activeTab === "purchases" ? (activeSubTab || "purchases") : undefined,
+                });
+              }
+
+              if (!isTabBlocked("budget")) {
+                responsiveTabs.push({
+                  key: 'budget',
+                  label: t('common.budget'),
+                  active: activeTab === "budget",
+                  items: menuConfigs.budget,
+                  onMainClick: () => handleMenuSelect('budget', 'budget'),
+                  onSelect: (v) => handleMenuSelect('budget', v),
+                  activeValue: activeTab === "budget" ? "budget" : undefined,
+                });
+              }
+
+              if (permissions.timeTracking !== "none" && isTabEnabled("timetracking")) {
+                responsiveTabs.push({
+                  key: 'timetracking',
+                  label: t('timeTracking.tabLabel'),
+                  active: activeTab === "timetracking",
+                  onClick: () => setActiveTab("timetracking"),
+                });
+              }
+
+              if (!isTabBlocked("spaceplanner")) {
+                responsiveTabs.push({
+                  key: 'spaceplanner',
+                  label: t('projectDetail.spacePlanner'),
+                  active: activeTab === "spaceplanner",
+                  items: menuConfigs.spaceplanner,
+                  onMainClick: () => handleMenuSelect('spaceplanner', 'rooms'),
+                  onSelect: (v) => handleMenuSelect('spaceplanner', v),
+                  activeValue: activeTab === "spaceplanner" ? (activeSubTab || "rooms") : undefined,
+                });
+              }
+
+              if (!isTabBlocked("files")) {
+                responsiveTabs.push({
+                  key: 'files',
+                  label: t('projectDetail.files'),
+                  active: activeTab === "files",
+                  items: menuConfigs.files,
+                  onMainClick: () => handleMenuSelect('files', 'files'),
+                  onSelect: (v) => handleMenuSelect('files', v),
+                  activeValue: activeTab === "files" ? "files" : undefined,
+                });
+              }
+
+              if (!isTabBlocked("team")) {
+                responsiveTabs.push({
+                  key: 'team',
+                  label: t('projectDetail.team'),
+                  active: activeTab === "team",
+                  items: menuConfigs.team,
+                  onMainClick: () => handleMenuSelect('team', 'team'),
+                  onSelect: (v) => handleMenuSelect('team', v),
+                  activeValue: activeTab === "team" ? (activeSubTab || "team") : undefined,
+                });
+              }
+
+              // Delning — preview for owners/proffs
+              if (!isTabBlocked("sharing") && !permissions.isClient) {
+                responsiveTabs.push({
+                  key: 'sharing-owner',
+                  label: t("sharing.tabTitle", "Sharing"),
+                  active: activeTab === "sharing",
+                  onClick: () => handleMenuSelect('sharing', 'sharing'),
+                });
+              }
+
+              if (effectiveUserType === "contractor" && isTabEnabled("inspections")) {
+                responsiveTabs.push({
+                  key: 'inspections',
+                  label: t("inspections.tabLabel", "Kontroll"),
+                  active: activeTab === "inspections",
+                  onClick: () => setActiveTab("inspections"),
+                });
+              }
+
+              return (
+                <div className="hidden md:flex flex-1 min-w-0 items-center">
+                  <ResponsiveTabBar tabs={responsiveTabs} />
                 </div>
-              )}
-              {/* Chat tab — mobile: own tab; desktop: navigate to Overview + scroll to chat */}
-              <div
-                className={cn(
-                  "px-2.5 py-1.5 text-[13px] tracking-[-0.002em] cursor-pointer rounded-md transition-colors md:hidden",
-                  activeTab === "chat" ? "bg-accent/60 text-foreground font-medium" : "text-muted-foreground hover:text-foreground font-normal"
-                )}
-                onClick={() => handleMenuSelect('chat', 'chat')}
-              >
-                {t("projectDetail.chat", "Chat")}
-              </div>
-              {/* Chat icon — mobile only (desktop users access chat via Översikt scroll) */}
-              {/* Primary tabs — hidden for clients (they only see Kundvy) */}
-              {/* 0. Planering — always visible for non-clients */}
-              {!isTabBlocked("planning") && !permissions.isClient && (
-                <div
-                  className={cn(
-                    "px-2.5 py-1.5 text-[13px] tracking-[-0.002em] cursor-pointer rounded-md transition-colors",
-                    activeTab === "planning" ? "bg-accent/60 text-foreground font-medium" : "text-muted-foreground hover:text-foreground font-normal",
-                  )}
-                  onClick={() => handleMenuSelect('planning', 'planning')}
-                >
-                  {t("projectDetail.planning", "Planering")}
-                </div>
-              )}
-
-              {/* 1. Översikt */}
-              {!isTabBlocked("overview") && (
-              <HoverTabMenu
-                trigger={
-                  <div className={cn(
-                    "px-2.5 py-1.5 text-[13px] tracking-[-0.002em] cursor-pointer rounded-md transition-colors",
-                    activeTab === "overview" ? "bg-accent/60 text-foreground font-medium" : "text-muted-foreground hover:text-foreground font-normal",
-                  )}>
-                    {t("projectDetail.overview")}
-                  </div>
-                }
-                items={menuConfigs.overview}
-                onSelect={(value) => handleMenuSelect('overview', value)}
-                onMainClick={() => handleMenuSelect('overview', 'overview')}
-                activeValue={activeTab === "overview" ? activeSubTab || "overview" : undefined}
-              />
-              )}
-
-              {/* 2. Uppgifter */}
-              {!isTabBlocked("tasks") && (
-              <HoverTabMenu
-                trigger={
-                  <div className={cn(
-                    "px-2.5 py-1.5 text-[13px] tracking-[-0.002em] cursor-pointer rounded-md transition-colors",
-                    activeTab === "tasks" ? "bg-accent/60 text-foreground font-medium" : "text-muted-foreground hover:text-foreground font-normal",
-                  )}>
-                    {t("projectDetail.tasks")}
-                  </div>
-                }
-                items={menuConfigs.tasks}
-                onSelect={(value) => handleMenuSelect('tasks', value)}
-                onMainClick={() => handleMenuSelect('tasks', 'tasks')}
-                activeValue={activeTab === "tasks" ? "tasks" : undefined}
-              />
-              )}
-
-              {/* 3. Inköp */}
-              {!isTabBlocked("purchases") && (
-              <HoverTabMenu
-                trigger={
-                  <div className={cn(
-                    "px-2.5 py-1.5 text-[13px] tracking-[-0.002em] cursor-pointer rounded-md transition-colors",
-                    activeTab === "purchases" ? "bg-accent/60 text-foreground font-medium" : "text-muted-foreground hover:text-foreground font-normal",
-                  )}>
-                    {t('projectDetail.purchases')}
-                  </div>
-                }
-                items={menuConfigs.purchases}
-                onSelect={(value) => handleMenuSelect('purchases', value)}
-                onMainClick={() => handleMenuSelect('purchases', 'purchases')}
-                activeValue={activeTab === "purchases" ? activeSubTab || "purchases" : undefined}
-              />
-              )}
-
-              {/* 4. Budget */}
-              {!isTabBlocked("budget") && (
-              <HoverTabMenu
-                trigger={
-                  <div className={cn(
-                    "px-2.5 py-1.5 text-[13px] tracking-[-0.002em] cursor-pointer rounded-md transition-colors",
-                    activeTab === "budget" ? "bg-accent/60 text-foreground font-medium" : "text-muted-foreground hover:text-foreground font-normal",
-                  )}>
-                    {t('common.budget')}
-                  </div>
-                }
-                items={menuConfigs.budget}
-                onSelect={(value) => handleMenuSelect('budget', value)}
-                onMainClick={() => handleMenuSelect('budget', 'budget')}
-                activeValue={activeTab === "budget" ? "budget" : undefined}
-              />
-              )}
-
-              {/* 4b. Tid */}
-              {permissions.timeTracking !== "none" && isTabEnabled("timetracking") && (
-                <div
-                  className={cn(
-                    "px-2.5 py-1.5 text-[13px] tracking-[-0.002em] cursor-pointer rounded-md transition-colors",
-                    activeTab === "timetracking" ? "bg-accent/60 text-foreground font-medium" : "text-muted-foreground hover:text-foreground font-normal",
-                  )}
-                  onClick={() => setActiveTab("timetracking")}
-                >
-                  {t('timeTracking.tabLabel')}
-                </div>
-              )}
-
-              {/* 5. Yta */}
-              {!isTabBlocked("spaceplanner") && (
-              <HoverTabMenu
-                trigger={
-                  <div className={cn(
-                    "px-2.5 py-1.5 text-[13px] tracking-[-0.002em] cursor-pointer rounded-md transition-colors",
-                    activeTab === "spaceplanner" ? "bg-accent/60 text-foreground font-medium" : "text-muted-foreground hover:text-foreground font-normal",
-                  )}>
-                    {t('projectDetail.spacePlanner')}
-                  </div>
-                }
-                items={menuConfigs.spaceplanner}
-                onSelect={(value) => handleMenuSelect('spaceplanner', value)}
-                onMainClick={() => handleMenuSelect('spaceplanner', 'rooms')}
-                activeValue={activeTab === "spaceplanner" ? activeSubTab || "rooms" : undefined}
-              />
-              )}
-
-              {/* 6. Filer */}
-              {!isTabBlocked("files") && (
-              <HoverTabMenu
-                trigger={
-                  <div className={cn(
-                    "px-2.5 py-1.5 text-[13px] tracking-[-0.002em] cursor-pointer rounded-md transition-colors",
-                    activeTab === "files" ? "bg-accent/60 text-foreground font-medium" : "text-muted-foreground hover:text-foreground font-normal",
-                  )}>
-                    {t('projectDetail.files')}
-                  </div>
-                }
-                items={menuConfigs.files}
-                onSelect={(value) => handleMenuSelect('files', value)}
-                onMainClick={() => handleMenuSelect('files', 'files')}
-                activeValue={activeTab === "files" ? "files" : undefined}
-              />
-              )}
-
-              {/* 7. Team */}
-              {!isTabBlocked("team") && (
-              <HoverTabMenu
-                trigger={
-                  <div className={cn(
-                    "px-2.5 py-1.5 text-[13px] tracking-[-0.002em] cursor-pointer rounded-md transition-colors",
-                    activeTab === "team" ? "bg-accent/60 text-foreground font-medium" : "text-muted-foreground hover:text-foreground font-normal",
-                  )}>
-                    {t('projectDetail.team')}
-                  </div>
-                }
-                items={menuConfigs.team}
-                onSelect={(value) => handleMenuSelect('team', value)}
-                onMainClick={() => handleMenuSelect('team', 'team')}
-                activeValue={activeTab === "team" ? activeSubTab || "team" : undefined}
-              />
-              )}
-
-              {/* Delning — for project owners/proffs: preview what clients/contractors see */}
-              {!isTabBlocked("sharing") && !permissions.isClient && (
-                <div
-                  className={cn(
-                    "px-2.5 py-1.5 text-[13px] tracking-[-0.002em] cursor-pointer rounded-md transition-colors",
-                    activeTab === "sharing" ? "bg-accent/60 text-foreground font-medium" : "text-muted-foreground hover:text-foreground font-normal"
-                  )}
-                  onClick={() => handleMenuSelect('sharing', 'sharing')}
-                >
-                  {t("sharing.tabTitle", "Sharing")}
-                </div>
-              )}
-
-              {/* 8. Kontroll (contractor only) */}
-              {effectiveUserType === "contractor" && isTabEnabled("inspections") && (
-                <div
-                  className={cn(
-                    "px-2.5 py-1.5 text-[13px] tracking-[-0.002em] cursor-pointer rounded-md transition-colors",
-                    activeTab === "inspections" ? "bg-accent/60 text-foreground font-medium" : "text-muted-foreground hover:text-foreground font-normal",
-                  )}
-                  onClick={() => setActiveTab("inspections")}
-                >
-                  {t("inspections.tabLabel", "Kontroll")}
-                </div>
-              )}
-            </div>
+              );
+            })()}
           </div>
         </AppHeader>
         {/* Public demo banner with role/phase stepper */}
