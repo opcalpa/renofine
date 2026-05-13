@@ -1957,7 +1957,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
         </AlertDialogContent>
       </AlertDialog>
 
-      {import.meta.env.DEV && (
+      {import.meta.env.DEV && wizardV2State.open && (
         <InviteWizard
           open={wizardV2State.open}
           onOpenChange={(open) => setWizardV2State((prev) => ({ ...prev, open }))}

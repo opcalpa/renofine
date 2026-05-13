@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -63,6 +63,11 @@ export function InviteWizard({
 
   const [submitting, setSubmitting] = useState(false);
   const [submitResult, setSubmitResult] = useState<SubmitResult | null>(null);
+
+  // Reset success-state when the dialog reopens so a previous run does not bleed through.
+  useEffect(() => {
+    if (open) setSubmitResult(null);
+  }, [open]);
 
   const totalSteps = 4;
   const showBack = state.step > 1 && !submitResult;

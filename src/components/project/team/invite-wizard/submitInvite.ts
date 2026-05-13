@@ -112,7 +112,6 @@ async function submitMember(
       role,
       role_type: null,
       permissions_snapshot: { ...permDb, role_type: null },
-      ...permDb,
     } as Record<string, unknown>)
     .select("id")
     .single();
