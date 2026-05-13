@@ -17,7 +17,6 @@ import { BudgetChartsSection } from "../BudgetChartsSection";
 import { BuilderSummaryCards } from "./BuilderSummaryCards";
 import { HomeownerBudgetView } from "./HomeownerBudgetView";
 import { HomeownerAnalysisSection } from "./HomeownerAnalysisSection";
-import { InvoiceMethodDialog } from "@/components/invoices/InvoiceMethodDialog";
 import { RotSummaryCard } from "../overview/RotSummaryCard";
 import { useTaxDeductionVisible } from "@/hooks/useTaxDeduction";
 import { TaskEditDialog } from "../TaskEditDialog";
@@ -73,6 +72,8 @@ import { ReadOnlyBudgetView } from "./ReadOnlyBudgetView";
 export interface BudgetTabProps {
   projectId: string;
   currency?: string | null;
+  /** Callback for "Skapa faktura" — set by ContractorBudgetTab to open its InvoiceMethodDialog. Omitted by OwnerBudgetTab. */
+  onCreateInvoice?: () => void;
   isReadOnly?: boolean;
   userType?: string | null;
   country?: string | null;
@@ -83,7 +84,7 @@ export interface BudgetTabProps {
 
 // --- Component ---
 
-export const BudgetTabCore = ({ projectId, currency, isReadOnly, userType, country }: BudgetTabProps) => {
+export const BudgetTabCore = ({ projectId, currency, isReadOnly, userType, country, onCreateInvoice }: BudgetTabProps) => {
   const isBuilder = userType !== "homeowner";
   const { t } = useTranslation();
   const { showTaxDeduction } = useTaxDeductionVisible(country);
@@ -239,7 +240,6 @@ export const BudgetTabCore = ({ projectId, currency, isReadOnly, userType, count
   // Edit dialogs
   const [editTaskId, setEditTaskId] = useState<string | null>(null);
   const [editMaterialId, setEditMaterialId] = useState<string | null>(null);
-  const [invoiceMethodOpen, setInvoiceMethodOpen] = useState(false);
 
   // +Inköp from budget post
   const [purchaseFromBudgetPost, setPurchaseFromBudgetPost] = useState<BudgetRow | null>(null);
@@ -769,7 +769,7 @@ export const BudgetTabCore = ({ projectId, currency, isReadOnly, userType, count
               <h2 className="font-display text-xl font-normal tracking-tight">{t('budget.title')}</h2>
             </div>
             <div className="mb-6">
-              <BuilderSummaryCards projectId={projectId} currency={currency} onCreateInvoice={() => setInvoiceMethodOpen(true)} />
+              <BuilderSummaryCards projectId={projectId} currency={currency} onCreateInvoice={onCreateInvoice} />
             </div>
           </>
         ) : (
@@ -1272,13 +1272,7 @@ export const BudgetTabCore = ({ projectId, currency, isReadOnly, userType, count
         currency={currency}
       />
 
-      {isBuilder && (
-        <InvoiceMethodDialog
-          projectId={projectId}
-          open={invoiceMethodOpen}
-          onOpenChange={setInvoiceMethodOpen}
-        />
-      )}
+      {/* InvoiceMethodDialog rendered by ContractorBudgetTab shell — see commit 9 */}
 
       {/* +Inköp from budget post dialog */}
       <NewPurchaseFromBudgetDialog

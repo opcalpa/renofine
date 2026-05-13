@@ -1,10 +1,27 @@
-// Contractor (proffs) budget view shell. Today this is a thin pass-through to
-// BudgetTabCore (which already branches internally on userType). It exists
-// as a seam: commit 9 will move InlineAddRow + InvoiceMethodDialog out of
-// the shared core and into this shell, since they're contractor-only.
+// Contractor (proffs) budget view shell. Wraps BudgetTabCore with the
+// contractor-only InvoiceMethodDialog so that:
+//   1. The dialog never mounts for homeowners (BudgetTabCore stays role-agnostic)
+//   2. "Skapa faktura" from BuilderSummaryCards routes through onCreateInvoice
+//      prop, opening the dialog at the shell level
+//
+// Per the role-separation memo, dialogs specific to one role belong in the
+// shell, not the shared core.
 
+import { useState } from "react";
+import { InvoiceMethodDialog } from "@/components/invoices/InvoiceMethodDialog";
 import { BudgetTabCore, type BudgetTabProps } from "./BudgetTabCore";
 
 export function ContractorBudgetTab(props: BudgetTabProps) {
-  return <BudgetTabCore {...props} />;
+  const [invoiceMethodOpen, setInvoiceMethodOpen] = useState(false);
+
+  return (
+    <>
+      <BudgetTabCore {...props} onCreateInvoice={() => setInvoiceMethodOpen(true)} />
+      <InvoiceMethodDialog
+        projectId={props.projectId}
+        open={invoiceMethodOpen}
+        onOpenChange={setInvoiceMethodOpen}
+      />
+    </>
+  );
 }
