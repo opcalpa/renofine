@@ -87,7 +87,7 @@ interface TeamMember {
   user_name: string;
   user_email: string;
   role: string;
-  role_type: "contractor" | "client" | "other" | null;
+  role_type: "contractor" | "client" | "co_owner" | "other" | null;
   contractor_category: string | null;
   contractor_role: string | null;
   phone: string | null;
@@ -860,6 +860,13 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
         ? ((target.data as TeamMember & { contractor_role?: string }).contractor_role || "other")
         : ((target.data as Invitation & { contractor_role?: string }).contractor_role || "other");
     setInviteProfession(currentProfession);
+    // Seed co-owner state from existing role_type (members only — invitations don't surface it as a column)
+    if (target.type === "member") {
+      const currentRoleType = (target.data as TeamMember).role_type;
+      setIsCoOwner(currentRoleType === "co_owner");
+    } else {
+      setIsCoOwner(false);
+    }
     setEditDialogOpen(true);
   };
 
@@ -874,9 +881,17 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
       const contractorRole = selectedTemplate === "contractor" ? inviteProfession : "other";
 
       if (editTarget.type === "member") {
+        // Persist co-owner status alongside role/permissions so the Skatteinformation
+        // section in this dialog is the single source of truth post-invite.
+        const roleType = isCoOwner ? "co_owner" : null;
         const { error } = await supabase
           .from("project_shares")
-          .update({ role, contractor_role: contractorRole, ...permDb } as Record<string, unknown>)
+          .update({
+            role,
+            role_type: roleType,
+            contractor_role: contractorRole,
+            ...permDb,
+          } as Record<string, unknown>)
           .eq("id", editTarget.data.id);
         if (error) throw error;
         toast({
@@ -1822,6 +1837,39 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
                 </div>
               </CollapsibleContent>
             </Collapsible>
+
+            {/* Skatteinformation — only on member profile (not invitations).
+                Co-owner toggle moved here from the invite flow so a PL can be
+                marked as ROT-co-owner after accepting; invite step keeps the
+                same toggle until the V2 wizard fully replaces the legacy flow. */}
+            {editTarget?.type === "member" &&
+              selectedTemplate === "project_manager" &&
+              showTaxDeduction &&
+              isOwner && (
+                <div className="space-y-2 rounded-lg border bg-muted/30 p-3">
+                  <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    {t("roles.taxSectionTitle", "Skatteinformation")}
+                  </div>
+                  <label className="flex items-start gap-2 text-sm cursor-pointer">
+                    <Checkbox
+                      checked={isCoOwner}
+                      onCheckedChange={(checked) => setIsCoOwner(!!checked)}
+                      className="mt-0.5"
+                    />
+                    <div>
+                      <span className="font-medium">
+                        {t("roles.coOwnerOption", "Co-owner (double ROT)")}
+                      </span>
+                      <p className="text-xs text-muted-foreground">
+                        {t(
+                          "roles.coOwnerOptionDesc",
+                          "Same access as owner + doubles ROT deduction to 100,000 kr",
+                        )}
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              )}
           </div>
 
           <div className="flex gap-3 pt-4 border-t shrink-0">
