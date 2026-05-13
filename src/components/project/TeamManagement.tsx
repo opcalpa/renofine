@@ -304,6 +304,23 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
     | { kind: "worker"; id: string; label: string }
     | null
   >(null);
+  // Tracks which CTA opened the invite dialog so we can hide irrelevant role cards
+  const [inviteMode, setInviteMode] = useState<"member" | "worker">("member");
+
+  const openInviteAsMember = () => {
+    setInviteMode("member");
+    setSelectedTemplate("contractor");
+    setFeatureAccess({ ...ROLE_TEMPLATES.contractor.access });
+    setDialogOpen(true);
+  };
+
+  const openInviteAsWorker = () => {
+    setInviteMode("worker");
+    setSelectedTemplate("worker");
+    setFeatureAccess({ ...ROLE_TEMPLATES.worker.access });
+    setWorkerStep(1);
+    setDialogOpen(true);
+  };
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<
     | { type: "member"; data: TeamMember }
@@ -1233,13 +1250,21 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
           <h2 className="font-display text-xl font-normal tracking-tight">{t("roles.title")}</h2>
         </div>
         {canManageTeam && (
-          <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetInviteForm(); }}>
-            <DialogTrigger asChild>
-              <Button>
-                <UserPlus className="h-4 w-4 mr-2" />
-                {t("roles.inviteButton")}
-              </Button>
-            </DialogTrigger>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={openInviteAsWorker}>
+              <Wrench className="h-4 w-4 mr-2" />
+              {t("roles.sendJobButton", "Skicka jobb")}
+            </Button>
+            <Button onClick={openInviteAsMember}>
+              <UserPlus className="h-4 w-4 mr-2" />
+              {t("roles.addMemberButton", "Lägg till medlem")}
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {canManageTeam && (
+        <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetInviteForm(); }}>
             <DialogContent className={`w-[95vw] max-h-[90vh] overflow-hidden flex flex-col ${selectedTemplate === "worker" && workerStep === 1 && !generatedWorkerLink ? "md:!max-w-[90vw] lg:!max-w-7xl" : "md:!max-w-2xl"}`}>
               <DialogHeader>
                 <DialogTitle>{t("roles.inviteTitle")}</DialogTitle>
@@ -1274,6 +1299,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
                         selected={selectedTemplate}
                         onSelect={handleTemplateChange}
                         t={t}
+                        hideWorker
                       />
                     </div>
 
@@ -1321,18 +1347,24 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
                       </CollapsibleContent>
                     </Collapsible>
 
-                    {/* Co-owner checkbox */}
+                    {/* Skatteinformation — separate from access permissions */}
                     {selectedTemplate === "project_manager" && showTaxDeduction && (
-                      <label className="flex items-center gap-2 text-sm cursor-pointer p-2 rounded-lg border hover:bg-accent transition-colors">
-                        <Checkbox
-                          checked={isCoOwner}
-                          onCheckedChange={(checked) => setIsCoOwner(!!checked)}
-                        />
-                        <div>
-                          <span className="font-medium">{t("roles.coOwnerOption", "Co-owner (double ROT)")}</span>
-                          <p className="text-xs text-muted-foreground">{t("roles.coOwnerOptionDesc", "Same access as owner + doubles ROT deduction to 100,000 kr")}</p>
+                      <div className="space-y-2 rounded-lg border bg-muted/30 p-3">
+                        <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                          {t("roles.taxSectionTitle", "Skatteinformation")}
                         </div>
-                      </label>
+                        <label className="flex items-start gap-2 text-sm cursor-pointer">
+                          <Checkbox
+                            checked={isCoOwner}
+                            onCheckedChange={(checked) => setIsCoOwner(!!checked)}
+                            className="mt-0.5"
+                          />
+                          <div>
+                            <span className="font-medium">{t("roles.coOwnerOption", "Co-owner (double ROT)")}</span>
+                            <p className="text-xs text-muted-foreground">{t("roles.coOwnerOptionDesc", "Same access as owner + doubles ROT deduction to 100,000 kr")}</p>
+                          </div>
+                        </label>
+                      </div>
                     )}
 
                     {/* Submit */}
@@ -1563,7 +1595,6 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
             </DialogContent>
           </Dialog>
         )}
-      </div>
 
       {/* Unified Team Table */}
       <Card>
@@ -1620,6 +1651,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
                 selected={selectedTemplate}
                 onSelect={handleTemplateChange}
                 t={t}
+                hideWorker
               />
             </div>
 
@@ -1895,13 +1927,18 @@ interface RoleCardGridProps {
   t: (key: string, fallback?: string) => string;
   /** Compact horizontal pills instead of big cards */
   compact?: boolean;
+  /** Hide the worker card (worker invite lives in a separate flow now) */
+  hideWorker?: boolean;
 }
 
-function RoleCardGrid({ selected, onSelect, t, compact }: RoleCardGridProps) {
+function RoleCardGrid({ selected, onSelect, t, compact, hideWorker }: RoleCardGridProps) {
+  const templateKeys = Object.keys(ROLE_TEMPLATES).filter(
+    (k) => !(hideWorker && k === "worker"),
+  );
   if (compact) {
     return (
       <div className="flex flex-wrap gap-2">
-        {Object.keys(ROLE_TEMPLATES).map((key) => {
+        {templateKeys.map((key) => {
           const Icon = ROLE_ICONS[key] || User;
           const isSelected = selected === key;
           return (
@@ -1926,7 +1963,7 @@ function RoleCardGrid({ selected, onSelect, t, compact }: RoleCardGridProps) {
 
   return (
     <div className="grid grid-cols-2 gap-3">
-      {Object.keys(ROLE_TEMPLATES).map((key) => {
+      {templateKeys.map((key) => {
         const Icon = ROLE_ICONS[key] || User;
         const isSelected = selected === key;
         return (

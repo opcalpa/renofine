@@ -1330,6 +1330,9 @@
     "resetToTemplate": "Återställ till {{role}}",
     "templateDiffNotice": "{{count}} behörigheter ändrades av rollvalet",
     "templateDiffNotice_one": "1 behörighet ändrades av rollvalet",
+    "addMemberButton": "Lägg till medlem",
+    "sendJobButton": "Skicka jobb",
+    "taxSectionTitle": "Skatteinformation",
     "duplicateInviteTitle": "E-post finns redan i teamet",
     "duplicateInviteActiveMember": "{{email}} är redan en aktiv medlem i projektet.",
     "duplicateInvitePending": "{{email}} har redan en väntande inbjudan.",
@@ -1342,7 +1345,7 @@
     "cards": {
       "contractor": { "description": "Ser tilldelade arbeten, kan uppdatera status och skapa inköpsordrar" },
       "project_manager": { "description": "Full åtkomst till alla projektfunktioner, kan bjuda in teammedlemmar" },
-      "collaborator": { "description": "Läsbehörighet med filuppladdning — för arkitekter, konsulter och rådgivare" },
+      "collaborator": { "description": "Läsbehörighet + kan ladda upp filer. För revisor, beställarens ombud, arkitekt, konsult, mäklare eller annan extern part" },
       "client": { "description": "Följer projektets framsteg, foton och meddelanden — inga priser synliga" },
       "co_owner": { "description": "Samma åtkomst som ägaren — full kontroll, delad projektledning + dubbelt ROT" },
       "worker": { "description": "Får en länk med arbetsinstruktioner — ingen inloggning krävs. Checklista, foton och meddelanden." }
@@ -1426,24 +1429,7 @@
     "selectRole": "Välj en roll",
     "moreInfo": "Mer info",
     "customizeAccess": "Anpassa behörigheter",
-    "permissions": "Behörigheter",
-    "cards": {
-      "contractor": {
-        "description": "Kan visa tidslinje, redigera tilldelade arbeten och skapa inköpsordrar"
-      },
-      "project_manager": {
-        "description": "Full åtkomst till alla projektfunktioner, kan bjuda in teammedlemmar"
-      },
-      "client": {
-        "description": "Kan visa all projektinformation inklusive budget"
-      },
-      "viewer": {
-        "description": "Skrivskyddad åtkomst till tidslinje, arbeten och översikt"
-      },
-      "co_owner": {
-        "description": "Samma åtkomst som ägaren — full kontroll, delad projektledning + dubbelt ROT"
-      }
-    }
+    "permissions": "Behörigheter"
   },
   "timeline": {
     "unscheduledTasks": "{{count}} oschemalagda arbeten",

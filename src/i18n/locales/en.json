@@ -1332,6 +1332,9 @@
     "resetToTemplate": "Reset to {{role}}",
     "templateDiffNotice": "{{count}} permissions changed by the role swap",
     "templateDiffNotice_one": "1 permission changed by the role swap",
+    "addMemberButton": "Add member",
+    "sendJobButton": "Send job",
+    "taxSectionTitle": "Tax information",
     "duplicateInviteTitle": "Email already in the team",
     "duplicateInviteActiveMember": "{{email}} is already an active member of this project.",
     "duplicateInvitePending": "{{email}} already has a pending invitation.",
@@ -1344,7 +1347,7 @@
     "cards": {
       "contractor": { "description": "Sees assigned tasks, can update status and create purchase orders" },
       "project_manager": { "description": "Full access to all project features, can invite team members" },
-      "collaborator": { "description": "Read-only overview with file upload — for architects, consultants, and advisors" },
+      "collaborator": { "description": "Read access + can upload files. For accountants, client representatives, architects, consultants, brokers, or other external parties" },
       "client": { "description": "Follows project progress, photos, and messages — no pricing visible" },
       "worker": { "description": "Gets a link with work instructions — no login needed. Checklist, photos, and messages." },
       "co_owner": { "description": "Same access as the owner — full control, shared project management + double ROT" }
@@ -1428,24 +1431,7 @@
     "selectRole": "Select a role",
     "moreInfo": "More info",
     "customizeAccess": "Customize permissions",
-    "permissions": "Permissions",
-    "cards": {
-      "contractor": {
-        "description": "Can view timeline, edit assigned tasks, and create purchase orders"
-      },
-      "project_manager": {
-        "description": "Full access to all project features, can invite team members"
-      },
-      "client": {
-        "description": "Can view all project information including budget"
-      },
-      "viewer": {
-        "description": "Read-only access to timeline, tasks, and overview"
-      },
-      "co_owner": {
-        "description": "Same access as owner — full control, shared project management + double ROT"
-      }
-    }
+    "permissions": "Permissions"
   },
   "propertyPanel": {
     "objectDetails": "Object Details",
