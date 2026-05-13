@@ -1325,6 +1325,11 @@
       "worker": "Arbetare"
     },
     "customTooltip": "Behörigheterna matchar inte någon färdig rollmall — denna medlem har individuellt anpassade rättigheter. Klicka på raden för att se exakt vad personen har åtkomst till.",
+    "customStateTitle": "Anpassade behörigheter",
+    "customStateDescription": "Behörigheterna matchar inte någon färdig rollmall. Välj en roll ovan för att börja om från en mall, eller justera fält direkt nedan.",
+    "resetToTemplate": "Återställ till {{role}}",
+    "templateDiffNotice": "{{count}} behörigheter ändrades av rollvalet",
+    "templateDiffNotice_one": "1 behörighet ändrades av rollvalet",
     "duplicateInviteTitle": "E-post finns redan i teamet",
     "duplicateInviteActiveMember": "{{email}} är redan en aktiv medlem i projektet.",
     "duplicateInvitePending": "{{email}} har redan en väntande inbjudan.",

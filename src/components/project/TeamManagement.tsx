@@ -165,15 +165,15 @@ const ROLE_TEMPLATES: Record<string, { access: FeatureAccess }> = {
   client: {
     access: {
       customerView: "view",
-      timeline: "none",
-      tasks: "none",
+      timeline: "view",
+      tasks: "view",
       tasksScope: "all",
-      spacePlanner: "none",
-      purchases: "none",
+      spacePlanner: "view",
+      purchases: "view",
       purchasesScope: "all",
-      overview: "none",
+      overview: "view",
       teams: "none",
-      budget: "none",
+      budget: "view",
       files: "view",
     },
   },
@@ -363,10 +363,32 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
     setPreviewTaskId(selectedTaskIds[next]);
   };
 
+  // Tracks "X behörigheter ändrades" after a role swap. Cleared after a few seconds.
+  const [lastTemplateDiff, setLastTemplateDiff] = useState<{
+    count: number;
+    template: string;
+  } | null>(null);
+
+  const countAccessDiff = (a: FeatureAccess, b: FeatureAccess): number => {
+    let n = 0;
+    (Object.keys(a) as Array<keyof FeatureAccess>).forEach((k) => {
+      if (a[k] !== b[k]) n++;
+    });
+    return n;
+  };
+
   const handleTemplateChange = (templateKey: string) => {
     setSelectedTemplate(templateKey);
     if (templateKey !== "custom" && ROLE_TEMPLATES[templateKey]) {
-      setFeatureAccess({ ...ROLE_TEMPLATES[templateKey].access });
+      const next = ROLE_TEMPLATES[templateKey].access;
+      const diff = countAccessDiff(featureAccess, next);
+      setFeatureAccess({ ...next });
+      if (diff > 0) {
+        setLastTemplateDiff({ count: diff, template: templateKey });
+        setTimeout(() => setLastTemplateDiff(null), 4000);
+      } else {
+        setLastTemplateDiff(null);
+      }
     }
   };
 
@@ -374,6 +396,14 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
     const newAccess = { ...featureAccess, ...updates };
     setFeatureAccess(newAccess);
     setSelectedTemplate(detectTemplate(newAccess));
+    setLastTemplateDiff(null);
+  };
+
+  const handleResetToTemplate = (templateKey: string) => {
+    if (!ROLE_TEMPLATES[templateKey]) return;
+    setFeatureAccess({ ...ROLE_TEMPLATES[templateKey].access });
+    setSelectedTemplate(templateKey);
+    setLastTemplateDiff(null);
   };
 
   useEffect(() => {
@@ -1264,10 +1294,21 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
 
                     {/* Permissions */}
                     <Collapsible>
-                      <CollapsibleTrigger className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                        <ChevronRight className="h-4 w-4 transition-transform [[data-state=open]>&]:rotate-90" />
-                        {t("roles.permissions", "Permissions")}
-                      </CollapsibleTrigger>
+                      <div className="flex items-center justify-between gap-2">
+                        <CollapsibleTrigger className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                          <ChevronRight className="h-4 w-4 transition-transform [[data-state=open]>&]:rotate-90" />
+                          {t("roles.permissions", "Permissions")}
+                        </CollapsibleTrigger>
+                        {lastTemplateDiff && (
+                          <span className="text-xs text-muted-foreground italic animate-in fade-in">
+                            {t("roles.templateDiffNotice", {
+                              count: lastTemplateDiff.count,
+                              defaultValue:
+                                "{{count}} behörigheter ändrades av rollvalet",
+                            })}
+                          </span>
+                        )}
+                      </div>
                       <CollapsibleContent>
                         <div className="pt-2">
                           <FeatureAccessEditor
@@ -1582,12 +1623,52 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
               />
             </div>
 
+            {/* Custom-access reset banner — only shown when permissions don't match any template */}
+            {selectedTemplate === "custom" && isOwner && (
+              <div className="rounded-md border border-amber-200 bg-amber-50/60 dark:border-amber-900/40 dark:bg-amber-950/30 p-3 text-sm">
+                <div className="font-medium text-foreground mb-1">
+                  {t("roles.customStateTitle", "Anpassade behörigheter")}
+                </div>
+                <p className="text-xs text-muted-foreground mb-2">
+                  {t(
+                    "roles.customStateDescription",
+                    "Behörigheterna matchar inte någon färdig rollmall. Välj en roll ovan för att börja om från en mall, eller justera fält direkt nedan.",
+                  )}
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {["contractor", "project_manager", "client", "collaborator"].map((key) => (
+                    <Button
+                      key={key}
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs"
+                      onClick={() => handleResetToTemplate(key)}
+                    >
+                      {t("roles.resetToTemplate", "Återställ till {{role}}", {
+                        role: t(`roles.roleTemplates.${key}`),
+                      })}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Permissions — compact dropdown-per-feature list */}
             <Collapsible defaultOpen={selectedTemplate === "custom"}>
-              <CollapsibleTrigger className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                <ChevronRight className="h-4 w-4 transition-transform [[data-state=open]>&]:rotate-90" />
-                {t("roles.permissions", "Permissions")}
-              </CollapsibleTrigger>
+              <div className="flex items-center justify-between gap-2">
+                <CollapsibleTrigger className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  <ChevronRight className="h-4 w-4 transition-transform [[data-state=open]>&]:rotate-90" />
+                  {t("roles.permissions", "Permissions")}
+                </CollapsibleTrigger>
+                {lastTemplateDiff && (
+                  <span className="text-xs text-muted-foreground italic animate-in fade-in">
+                    {t("roles.templateDiffNotice", {
+                      count: lastTemplateDiff.count,
+                      defaultValue: "{{count}} behörigheter ändrades av rollvalet",
+                    })}
+                  </span>
+                )}
+              </div>
               <CollapsibleContent>
                 <div className="pt-2">
                   <FeatureAccessEditor

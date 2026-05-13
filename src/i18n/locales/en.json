@@ -1327,6 +1327,11 @@
       "worker": "Worker"
     },
     "customTooltip": "Permissions don't match any preset template — this member has individually customized rights. Click the row to see exactly what they can access.",
+    "customStateTitle": "Custom permissions",
+    "customStateDescription": "Permissions don't match any preset template. Pick a role above to start over from a template, or adjust individual fields below.",
+    "resetToTemplate": "Reset to {{role}}",
+    "templateDiffNotice": "{{count}} permissions changed by the role swap",
+    "templateDiffNotice_one": "1 permission changed by the role swap",
     "duplicateInviteTitle": "Email already in the team",
     "duplicateInviteActiveMember": "{{email}} is already an active member of this project.",
     "duplicateInvitePending": "{{email}} already has a pending invitation.",
