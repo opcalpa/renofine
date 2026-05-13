@@ -7,6 +7,7 @@ import { useInviteWizard } from "./useInviteWizard";
 import { WizardStep1Path } from "./WizardStep1Path";
 import { WizardStep2Profession } from "./WizardStep2Profession";
 import { WizardStep3Worker } from "./WizardStep3Worker";
+import { WizardStep3Member } from "./WizardStep3Member";
 
 interface InviteWizardProps {
   open: boolean;
@@ -34,6 +35,10 @@ export function InviteWizard({
     setProfession,
     setWorkerAccess,
     toggleWorkerTask,
+    setPackagePreset,
+    setOnlyAssigned,
+    setAccessField,
+    resetToPackage,
   } = wizard;
 
   const totalSteps = 4;
@@ -94,8 +99,13 @@ export function InviteWizard({
             />
           )}
           {state.step === 3 && state.path === "member" && (
-            <PlaceholderStep
-              label={t("inviteWizard.step3MemberTitle", "Vilken nivå av åtkomst?")}
+            <WizardStep3Member
+              memberAccess={state.memberAccess}
+              onSetPreset={setPackagePreset}
+              onSetOnlyAssigned={setOnlyAssigned}
+              onSetAccessField={setAccessField}
+              onResetToPackage={resetToPackage}
+              personName={state.contact.name}
             />
           )}
           {state.step === 4 && (
