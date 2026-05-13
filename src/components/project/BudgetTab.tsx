@@ -66,6 +66,7 @@ import {
 } from "./budget/shared/budgetCalc";
 import { useBudgetData } from "./budget/shared/useBudgetData";
 import { useBudgetTablePrefs } from "./budget/shared/useBudgetTablePrefs";
+import { useBudgetFilters } from "./budget/shared/useBudgetFilters";
 
 // Status badge colors for combined status column
 // Status badge colors now come from shared getStatusBadgeColor()
@@ -113,9 +114,10 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
     refetch: fetchData,
   } = useBudgetData(projectId);
 
-  // Filters
-  const [searchQuery, setSearchQuery] = useState("");
+  // UI-only toolbar state (kept here, not in the data hook)
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [searchExpanded, setSearchExpanded] = useState(false);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   // Escape key exits fullscreen
   useEffect(() => {
@@ -124,8 +126,6 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, [isFullscreen]);
-  const [searchExpanded, setSearchExpanded] = useState(false);
-  const [filterType, setFilterType] = useState<"all" | "task" | "material" | "purchase">("all");
 
   // Grouping
   const [groupBy, setGroupBy] = useState<GroupByOption>(() =>
@@ -143,16 +143,6 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
       return next;
     });
   };
-
-  // Advanced filters
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-  const [filterRoom, setFilterRoom] = useState("all");
-  const [filterAssignee, setFilterAssignee] = useState("all");
-  const [filterCostCenter, setFilterCostCenter] = useState("all");
-  const [filterStartDate, setFilterStartDate] = useState("");
-  const [filterFinishDate, setFilterFinishDate] = useState("");
-  const [filterAttachment, setFilterAttachment] = useState<"all" | "has" | "missing">("all");
-  const [filterStatuses, setFilterStatuses] = useState<Set<string>>(new Set());
 
   // Collapsible columns — visibleExtras + columns/sort/compact come from
   // useBudgetTablePrefs below. ALL_COLUMNS is built first so we can pass it in.
@@ -219,6 +209,38 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
     dragCol,
     dragOverCol,
   } = useBudgetTablePrefs(projectId, ALL_COLUMNS);
+
+  // Filter state + filtered/sorted rows + totals + distinct lists. Sort key/dir
+  // come from useBudgetTablePrefs above so the persisted sort applies the same
+  // way for both roles.
+  const {
+    searchQuery,
+    setSearchQuery,
+    filterType,
+    setFilterType,
+    filterRoom,
+    setFilterRoom,
+    filterAssignee,
+    setFilterAssignee,
+    filterCostCenter,
+    setFilterCostCenter,
+    filterStartDate,
+    setFilterStartDate,
+    filterFinishDate,
+    setFilterFinishDate,
+    filterAttachment,
+    setFilterAttachment,
+    filterStatuses,
+    setFilterStatuses,
+    hasAdvancedFilter,
+    ataRows,
+    filtered,
+    totals,
+    distinctRooms,
+    distinctAssignees,
+    distinctCostCenters,
+    distinctStatuses,
+  } = useBudgetFilters(rows, sortKey, sortDir, isBuilder);
 
   // Inline editing
   const [editingCell, setEditingCell] = useState<{ rowId: string; col: string } | null>(null);
@@ -525,44 +547,8 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
     }
   };
 
-  // --- Distinct filter options ---
-
-  const distinctRooms = useMemo(() => {
-    const set = new Map<string, string>();
-    for (const r of rows) {
-      if (r.roomId && r.room) set.set(r.roomId, r.room);
-    }
-    return Array.from(set, ([id, name]) => ({ id, name }));
-  }, [rows]);
-
-  const distinctAssignees = useMemo(() => {
-    const set = new Map<string, string>();
-    for (const r of rows) {
-      if (r.assigneeId && r.assignee) set.set(r.assigneeId, r.assignee);
-    }
-    return Array.from(set, ([id, name]) => ({ id, name }));
-  }, [rows]);
-
-  const distinctCostCenters = useMemo(() => {
-    const set = new Set<string>();
-    for (const r of rows) {
-      if (r.costCenter) set.add(r.costCenter);
-    }
-    return Array.from(set);
-  }, [rows]);
-
-  const distinctStatuses = useMemo(() => {
-    const taskStatuses = new Set<string>();
-    const materialStatuses = new Set<string>();
-    for (const r of rows) {
-      if (r.type === "task" && r.status) taskStatuses.add(r.status);
-      if (r.type === "material" && r.status) materialStatuses.add(r.status);
-    }
-    return {
-      task: Array.from(taskStatuses),
-      material: Array.from(materialStatuses),
-    };
-  }, [rows]);
+  // Distinct filter options (distinctRooms/Assignees/CostCenters/Statuses) now
+  // come from useBudgetFilters hook above.
 
   // --- Inline cell save ---
 
@@ -737,139 +723,8 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
     }
   };
 
-  // --- Filtering & Sorting ---
-
-  const hasAdvancedFilter = filterRoom !== "all" || filterAssignee !== "all" || filterCostCenter !== "all" || filterStartDate !== "" || filterFinishDate !== "" || filterAttachment !== "all";
-
-  // Separate ÄTA rows from main rows for distinct display
-  const mainRows = rows.filter(r => !r.isAta);
-  const ataRows = rows.filter(r => r.isAta);
-
-  const filtered = mainRows.filter((r) => {
-    if (filterType !== "all" && r.type !== filterType) return false;
-    if (filterStatuses.size > 0 && (!r.status || !filterStatuses.has(r.status))) return false;
-    if (searchQuery && !r.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-    if (filterRoom !== "all" && r.roomId !== filterRoom) return false;
-    if (filterAssignee !== "all" && r.assigneeId !== filterAssignee) return false;
-    if (filterCostCenter !== "all" && r.costCenter !== filterCostCenter) return false;
-    if (filterStartDate && (!r.startDate || r.startDate < filterStartDate)) return false;
-    if (filterFinishDate && (!r.finishDate || r.finishDate > filterFinishDate)) return false;
-    if (filterAttachment === "has" && !r.hasAttachment) return false;
-    if (filterAttachment === "missing" && r.hasAttachment) return false;
-    return true;
-  });
-
-  if (sortKey) {
-    filtered.sort((a, b) => {
-      let av: string | number;
-      let bv: string | number;
-      if (sortKey === "paid") {
-        av = getEffectiveCost(a);
-        bv = getEffectiveCost(b);
-      } else if (sortKey === "consumed") {
-        av = a.consumedTotal ?? 0;
-        bv = b.consumedTotal ?? 0;
-      } else if (sortKey === "remaining") {
-        if (isBuilder) {
-          av = a.budget - getEffectiveCost(a);
-          bv = b.budget - getEffectiveCost(b);
-        } else {
-          const aq = a.type === "task" ? a.budget : a.estimatedCost;
-          const bq = b.type === "task" ? b.budget : b.estimatedCost;
-          av = aq - a.paid;
-          bv = bq - b.paid;
-        }
-      } else if (sortKey === "margin") {
-        av = a.budget > 0 ? (a.budget - getEffectiveCost(a)) / a.budget : 0;
-        bv = b.budget > 0 ? (b.budget - getEffectiveCost(b)) / b.budget : 0;
-      } else if (sortKey === "matBudget") {
-        av = a.materialBudget; bv = b.materialBudget;
-      } else if (sortKey === "matConsumed") {
-        av = a.materialConsumed; bv = b.materialConsumed;
-      } else if (sortKey === "matRemaining") {
-        av = a.materialBudget - a.materialConsumed;
-        bv = b.materialBudget - b.materialConsumed;
-      } else if (sortKey === "room") {
-        av = a.room || "";
-        bv = b.room || "";
-      } else if (sortKey === "assignee") {
-        av = a.assignee || "";
-        bv = b.assignee || "";
-      } else if (sortKey === "costCenter") {
-        av = a.costCenter || "";
-        bv = b.costCenter || "";
-      } else if (sortKey === "startDate") {
-        av = a.startDate || "";
-        bv = b.startDate || "";
-      } else if (sortKey === "finishDate") {
-        av = a.finishDate || "";
-        bv = b.finishDate || "";
-      } else if (sortKey === "status") {
-        av = a.status || "";
-        bv = b.status || "";
-      } else if (sortKey === "phase") {
-        const rank: Record<string, number> = { budget: 0, ordered: 1, actual: 2 };
-        av = rank[a.phase ?? "budget"] ?? 0;
-        bv = rank[b.phase ?? "budget"] ?? 0;
-      } else if (sortKey === "estimatedHours") {
-        av = a.estimatedHours ?? 0;
-        bv = b.estimatedHours ?? 0;
-      } else if (sortKey === "hourlyRate") {
-        av = a.hourlyRate ?? 0;
-        bv = b.hourlyRate ?? 0;
-      } else if (sortKey === "subcontractorCost") {
-        av = a.subcontractorCost ?? 0;
-        bv = b.subcontractorCost ?? 0;
-      } else if (sortKey === "paymentStatus") {
-        av = a.paymentStatus || "";
-        bv = b.paymentStatus || "";
-      } else if (sortKey === "quantity") {
-        av = a.quantity ?? 0;
-        bv = b.quantity ?? 0;
-      } else if (sortKey === "pricePerUnit") {
-        av = a.pricePerUnit ?? 0;
-        bv = b.pricePerUnit ?? 0;
-      } else if (sortKey === "orderedAmount") {
-        av = a.orderedAmount ?? 0;
-        bv = b.orderedAmount ?? 0;
-      } else if (sortKey === "supplier") {
-        av = a.supplierName || "";
-        bv = b.supplierName || "";
-      } else if (sortKey === "vendor") {
-        av = a.vendor || "";
-        bv = b.vendor || "";
-      } else if (sortKey === "rotAmount") {
-        av = a.rotAmount ?? 0;
-        bv = b.rotAmount ?? 0;
-      } else {
-        av = a[sortKey];
-        bv = b[sortKey];
-      }
-      let cmp: number;
-      if (typeof av === "number" && typeof bv === "number") {
-        cmp = av - bv;
-      } else {
-        cmp = String(av).localeCompare(String(bv));
-      }
-      return sortDir === "asc" ? cmp : -cmp;
-    });
-  }
-
-  const totals = filtered.reduce(
-    (acc, r) => {
-      // Purchase rows are already reflected via consumedTotal on their budget post — skip
-      if (r.type === "purchase") return acc;
-      return {
-        budget: acc.budget + r.budget,
-        paid: acc.paid + r.paid,
-        cost: acc.cost + getEffectiveCost(r),
-        consumed: acc.consumed + (r.consumedTotal ?? 0),
-        matBudget: acc.matBudget + (r.type === "task" ? r.materialBudget : 0),
-        matConsumed: acc.matConsumed + (r.type === "task" ? r.materialConsumed : 0),
-      };
-    },
-    { budget: 0, paid: 0, cost: 0, consumed: 0, matBudget: 0, matConsumed: 0 }
-  );
+  // hasAdvancedFilter / mainRows / ataRows / filtered / totals now come from
+  // useBudgetFilters hook above.
 
   // Group linked materials under their parent task for display
   const [unlinkedExpanded, setUnlinkedExpanded] = useState(false);
