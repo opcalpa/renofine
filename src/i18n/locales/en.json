@@ -1335,6 +1335,17 @@
     "addMemberButton": "Add member",
     "sendJobButton": "Send job",
     "taxSectionTitle": "Tax information",
+    "consequence": {
+      "header": "{{subject}} will be able to see:",
+      "subjectFallback": "The person",
+      "noneGranted": "Nothing — this person will see no part of the project",
+      "noneDenied": "—",
+      "canEdit": "can edit",
+      "canCreate": "can create",
+      "canUpload": "can upload",
+      "canInvite": "can invite",
+      "assignedOnly": "assigned only"
+    },
     "duplicateInviteTitle": "Email already in the team",
     "duplicateInviteActiveMember": "{{email}} is already an active member of this project.",
     "duplicateInvitePending": "{{email}} already has a pending invitation.",

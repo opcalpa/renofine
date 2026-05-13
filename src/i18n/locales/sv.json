@@ -1333,6 +1333,17 @@
     "addMemberButton": "Lägg till medlem",
     "sendJobButton": "Skicka jobb",
     "taxSectionTitle": "Skatteinformation",
+    "consequence": {
+      "header": "{{subject}} kommer kunna se:",
+      "subjectFallback": "Personen",
+      "noneGranted": "Inget — personen ser ingen del av projektet",
+      "noneDenied": "—",
+      "canEdit": "kan ändra",
+      "canCreate": "kan skapa",
+      "canUpload": "kan ladda upp",
+      "canInvite": "kan bjuda in",
+      "assignedOnly": "endast tilldelade"
+    },
     "duplicateInviteTitle": "E-post finns redan i teamet",
     "duplicateInviteActiveMember": "{{email}} är redan en aktiv medlem i projektet.",
     "duplicateInvitePending": "{{email}} har redan en väntande inbjudan.",

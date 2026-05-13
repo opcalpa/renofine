@@ -43,6 +43,7 @@ import { FeatureAccessEditor } from "./team/FeatureAccessEditor";
 import type { FeatureAccess } from "./team/FeatureAccessEditor";
 import { TeamTable } from "./team/TeamTable";
 import type { TeamRow } from "./team/TeamTable";
+import { AccessConsequenceList } from "./team/AccessConsequenceList";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -1318,6 +1319,12 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
                       />
                     </div>
 
+                    {/* Consequence list — what this person will actually see */}
+                    <AccessConsequenceList
+                      access={featureAccess}
+                      personName={inviteName}
+                    />
+
                     {/* Permissions */}
                     <Collapsible>
                       <div className="flex items-center justify-between gap-2">
@@ -1684,6 +1691,16 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
                 </div>
               </div>
             )}
+
+            {/* Consequence list — what this member can actually see */}
+            <AccessConsequenceList
+              access={featureAccess}
+              personName={
+                editTarget?.type === "member"
+                  ? (editTarget.data as TeamMember).user_name
+                  : (editTarget?.data as Invitation)?.email
+              }
+            />
 
             {/* Permissions — compact dropdown-per-feature list */}
             <Collapsible defaultOpen={selectedTemplate === "custom"}>
