@@ -1,4 +1,18 @@
 {
+  "professions": {
+    "carpenter": "Carpenter",
+    "electrician": "Electrician",
+    "plumber": "Plumber",
+    "painter": "Painter",
+    "designer": "Designer",
+    "architect": "Architect",
+    "general_contractor": "General contractor",
+    "supplier": "Supplier",
+    "other": "Other",
+    "selectLabel": "Profession",
+    "selectPlaceholder": "Select profession…",
+    "noneOption": "Not specified"
+  },
   "common": {
     "total": "Total",
     "all": "All",

@@ -21,6 +21,13 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 import {
@@ -44,6 +51,7 @@ import type { FeatureAccess } from "./team/FeatureAccessEditor";
 import { TeamTable } from "./team/TeamTable";
 import type { TeamRow } from "./team/TeamTable";
 import { AccessConsequenceList } from "./team/AccessConsequenceList";
+import { PROFESSION_KEYS } from "./team/professions";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -79,6 +87,7 @@ interface TeamMember {
   role: string;
   role_type: "contractor" | "client" | "other" | null;
   contractor_category: string | null;
+  contractor_role: string | null;
   phone: string | null;
   company: string | null;
   notes: string | null;
@@ -105,6 +114,7 @@ interface Invitation {
   status: string;
   created_at: string;
   token: string;
+  contractor_role?: string;
   customer_view_access?: string;
   timeline_access?: string;
   tasks_access?: string;
@@ -358,6 +368,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
   // Invite form state
   const [inviteName, setInviteName] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteProfession, setInviteProfession] = useState<string>("other");
   const [selectedTemplate, setSelectedTemplate] = useState("contractor");
   const [isCoOwner, setIsCoOwner] = useState(false);
   const [featureAccess, setFeatureAccess] = useState<FeatureAccess>({
@@ -465,7 +476,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
       const { data: sharesData, error: sharesError } = await supabase
         .from("project_shares")
         .select(
-          `id, shared_with_user_id, role, role_type, contractor_category, phone, company, notes,
+          `id, shared_with_user_id, role, role_type, contractor_category, contractor_role, phone, company, notes,
           display_name, display_email, created_at,
           customer_view_access, timeline_access, tasks_access, tasks_scope,
           space_planner_access, purchases_access, purchases_scope,
@@ -491,6 +502,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
               role: share.role as string,
               role_type: share.role_type as TeamMember["role_type"],
               contractor_category: share.contractor_category as string | null,
+              contractor_role: (share.contractor_role as string | null) ?? null,
               phone: share.phone as string | null,
               company: share.company as string | null,
               notes: share.notes as string | null,
@@ -516,7 +528,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
         const { data: invitesData, error: invitesError } = await supabase
           .from("project_invitations")
           .select(
-            `id, email, phone, delivery_method, role, status, created_at, token,
+            `id, email, phone, delivery_method, role, status, created_at, token, contractor_role,
             timeline_access, tasks_access, tasks_scope, space_planner_access,
             purchases_access, purchases_scope, overview_access, teams_access,
             budget_access, files_access`
@@ -647,7 +659,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
           invited_by_user_id: profile.id,
           invited_email: validated.email,
           invited_name: inviteName.trim() || null,
-          contractor_role: "other",
+          contractor_role: selectedTemplate === "contractor" ? inviteProfession : "other",
           role: isCoOwner ? "homeowner" : (selectedTemplate !== "custom" ? selectedTemplate : "collaborator"),
           role_type: isCoOwner ? "co_owner" : null,
           permissions_snapshot: { ...permDb, role_type: isCoOwner ? "co_owner" : null },
@@ -812,6 +824,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
   const resetInviteForm = () => {
     setInviteName("");
     setInviteEmail("");
+    setInviteProfession("other");
     setSelectedTemplate("contractor");
     setIsCoOwner(false);
     setFeatureAccess({ ...ROLE_TEMPLATES.contractor.access });
@@ -835,6 +848,12 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
     );
     setFeatureAccess(access);
     setSelectedTemplate(detectTemplate(access));
+    // Seed profession state from existing contractor_role (only for members; invitations carry it too)
+    const currentProfession =
+      target.type === "member"
+        ? ((target.data as TeamMember & { contractor_role?: string }).contractor_role || "other")
+        : ((target.data as Invitation & { contractor_role?: string }).contractor_role || "other");
+    setInviteProfession(currentProfession);
     setEditDialogOpen(true);
   };
 
@@ -846,10 +865,12 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
       const permDb = accessToDb(featureAccess);
       const role = selectedTemplate !== "custom" ? selectedTemplate : "viewer";
 
+      const contractorRole = selectedTemplate === "contractor" ? inviteProfession : "other";
+
       if (editTarget.type === "member") {
         const { error } = await supabase
           .from("project_shares")
-          .update({ role, ...permDb })
+          .update({ role, contractor_role: contractorRole, ...permDb } as Record<string, unknown>)
           .eq("id", editTarget.data.id);
         if (error) throw error;
         toast({
@@ -861,6 +882,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
           .from("project_invitations")
           .update({
             role,
+            contractor_role: contractorRole,
             ...permDb,
             permissions_snapshot: permDb,
           } as Record<string, unknown>)
@@ -1076,7 +1098,11 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
         profileId: m.profile_id || null,
         featureAccess: access,
         company: m.company,
-        contractorCategory: m.contractor_category,
+        contractorCategory:
+          m.contractor_category ||
+          (m.contractor_role && m.contractor_role !== "other"
+            ? t(`professions.${m.contractor_role}`, m.contractor_role)
+            : null),
         notes: m.notes,
         assignedTaskIds: null,
         assignedTaskNames: null,
@@ -1102,7 +1128,10 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
         profileId: null,
         featureAccess: access,
         company: null,
-        contractorCategory: null,
+        contractorCategory:
+          inv.contractor_role && inv.contractor_role !== "other"
+            ? t(`professions.${inv.contractor_role}`, inv.contractor_role)
+            : null,
         notes: null,
         assignedTaskIds: null,
         assignedTaskNames: null,
@@ -1318,6 +1347,30 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
                         required
                       />
                     </div>
+
+                    {/* Profession — only for the Contractor role */}
+                    {selectedTemplate === "contractor" && (
+                      <div className="space-y-2">
+                        <Label htmlFor="invite-profession">
+                          {t("professions.selectLabel", "Yrke")}
+                        </Label>
+                        <Select
+                          value={inviteProfession}
+                          onValueChange={setInviteProfession}
+                        >
+                          <SelectTrigger id="invite-profession">
+                            <SelectValue placeholder={t("professions.selectPlaceholder", "Välj yrke...")} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {PROFESSION_KEYS.map((key) => (
+                              <SelectItem key={key} value={key}>
+                                {t(`professions.${key}`, key)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
 
                     {/* Consequence list — what this person will actually see */}
                     <AccessConsequenceList
@@ -1661,6 +1714,30 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
                 hideWorker
               />
             </div>
+
+            {/* Profession — only for the Contractor role */}
+            {selectedTemplate === "contractor" && (
+              <div className="space-y-2">
+                <Label htmlFor="edit-profession">
+                  {t("professions.selectLabel", "Yrke")}
+                </Label>
+                <Select
+                  value={inviteProfession}
+                  onValueChange={setInviteProfession}
+                >
+                  <SelectTrigger id="edit-profession">
+                    <SelectValue placeholder={t("professions.selectPlaceholder", "Välj yrke...")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PROFESSION_KEYS.map((key) => (
+                      <SelectItem key={key} value={key}>
+                        {t(`professions.${key}`, key)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {/* Custom-access reset banner — only shown when permissions don't match any template */}
             {selectedTemplate === "custom" && isOwner && (

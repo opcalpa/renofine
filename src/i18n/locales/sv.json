@@ -1,4 +1,18 @@
 {
+  "professions": {
+    "carpenter": "Snickare",
+    "electrician": "Elektriker",
+    "plumber": "Rörmokare",
+    "painter": "Målare",
+    "designer": "Designer",
+    "architect": "Arkitekt",
+    "general_contractor": "Generalentreprenör",
+    "supplier": "Leverantör",
+    "other": "Annat",
+    "selectLabel": "Yrke",
+    "selectPlaceholder": "Välj yrke...",
+    "noneOption": "Ej angivet"
+  },
   "common": {
     "total": "Totalt",
     "all": "Alla",
