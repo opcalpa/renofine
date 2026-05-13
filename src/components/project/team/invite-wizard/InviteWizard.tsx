@@ -6,6 +6,7 @@ import type { InvitePath } from "./types";
 import { useInviteWizard } from "./useInviteWizard";
 import { WizardStep1Path } from "./WizardStep1Path";
 import { WizardStep2Profession } from "./WizardStep2Profession";
+import { WizardStep3Worker } from "./WizardStep3Worker";
 
 interface InviteWizardProps {
   open: boolean;
@@ -19,12 +20,21 @@ export function InviteWizard({
   open,
   onOpenChange,
   initialPath,
-  projectId: _projectId,
+  projectId,
   onInviteSent: _onInviteSent,
 }: InviteWizardProps) {
   const { t } = useTranslation();
   const wizard = useInviteWizard({ initialPath, skipStep1: true });
-  const { state, back, next, canAdvance, setPath, setProfession } = wizard;
+  const {
+    state,
+    back,
+    next,
+    canAdvance,
+    setPath,
+    setProfession,
+    setWorkerAccess,
+    toggleWorkerTask,
+  } = wizard;
 
   const totalSteps = 4;
   const showBack = state.step > 1;
@@ -75,13 +85,17 @@ export function InviteWizard({
               }}
             />
           )}
-          {state.step === 3 && (
+          {state.step === 3 && state.path === "worker" && (
+            <WizardStep3Worker
+              projectId={projectId}
+              workerAccess={state.workerAccess}
+              onToggleTask={toggleWorkerTask}
+              onChange={setWorkerAccess}
+            />
+          )}
+          {state.step === 3 && state.path === "member" && (
             <PlaceholderStep
-              label={
-                state.path === "worker"
-                  ? t("inviteWizard.step3WorkerTitle", "Vilka uppgifter och inköpsrättigheter?")
-                  : t("inviteWizard.step3MemberTitle", "Vilken nivå av åtkomst?")
-              }
+              label={t("inviteWizard.step3MemberTitle", "Vilken nivå av åtkomst?")}
             />
           )}
           {state.step === 4 && (
