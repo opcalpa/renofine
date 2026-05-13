@@ -170,6 +170,8 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
   // Edit PO dialog
   const [editingPO, setEditingPO] = useState<PurchaseOrder | null>(null);
+  // Detail drawer state (lifted from PurchaseOrdersGridV2 so deep-links can open it)
+  const [openPOId, setOpenPOId] = useState<string | null>(null);
   // Add-line dialog target (the PO we're adding a row to)
   const [addLinePO, setAddLinePO] = useState<PurchaseOrder | null>(null);
   // New PO ("Skapa beställning") dialog
@@ -242,15 +244,27 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
     }
   }, [currentProfileId, projectId, isProjectOwner, permissionsResolved]);
 
-  // Auto-open a specific material from notification deep link
+  // Auto-open a specific entity (material OR purchase order) from a deep link
   useEffect(() => {
-    if (!openEntityId || materials.length === 0) return;
+    if (!openEntityId) return;
+    // PO match takes precedence — widgets like UpcomingPaymentsWidget pass po.id
+    const po = purchaseOrders.find((p) => p.id === openEntityId);
+    if (po) {
+      if (poViewMode === 'table') {
+        setEditingPO(po);
+      } else {
+        setOpenPOId(po.id);
+      }
+      onEntityOpened?.();
+      return;
+    }
+    if (materials.length === 0) return;
     const material = materials.find((m) => m.id === openEntityId);
     if (material) {
       openEditDialog(material);
       onEntityOpened?.();
     }
-  }, [openEntityId, materials]);
+  }, [openEntityId, materials, purchaseOrders, poViewMode]);
 
   // Safety timeout: clear openEntityId after 5s if material was never found
   useEffect(() => {
@@ -1179,6 +1193,8 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
               rooms={rooms.map((r) => ({ id: r.id, name: r.name }))}
               projectId={projectId}
               currency={currency}
+              openPOId={openPOId}
+              onOpenPOIdChange={setOpenPOId}
               canEdit={isProjectOwner || userPurchasesAccess === 'edit'}
               onEditMeta={(po) => setEditingPO(po as unknown as PurchaseOrder)}
               onDelete={(po) => setPOToDelete(po as unknown as PurchaseOrder)}

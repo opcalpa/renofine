@@ -16,7 +16,7 @@ interface UnpaidInvoicePO {
 interface UpcomingPaymentsWidgetProps {
   projectId: string;
   currency: string;
-  onNavigateToPurchases?: () => void;
+  onNavigateToPurchases?: (poId?: string) => void;
 }
 
 function daysUntil(dateStr: string): number {
@@ -120,7 +120,7 @@ export function UpcomingPaymentsWidget({ projectId, currency, onNavigateToPurcha
             <button
               key={po.id}
               type="button"
-              onClick={onNavigateToPurchases}
+              onClick={() => onNavigateToPurchases?.(po.id)}
               className="group w-full px-4 py-2.5 text-left hover:bg-accent/50 transition-colors flex items-center gap-3"
             >
               <div

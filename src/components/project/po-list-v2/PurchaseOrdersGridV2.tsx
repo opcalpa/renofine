@@ -34,6 +34,10 @@ interface PurchaseOrdersGridV2Props {
   // line actions
   onEditLine: (mat: POMaterial) => void;
   onAddLine: (po: PO) => void;
+
+  // optional controlled-open (used to deep-link from widgets/notifications)
+  openPOId?: string | null;
+  onOpenPOIdChange?: (id: string | null) => void;
 }
 
 export function PurchaseOrdersGridV2(props: PurchaseOrdersGridV2Props) {
@@ -43,9 +47,23 @@ export function PurchaseOrdersGridV2(props: PurchaseOrdersGridV2Props) {
     currency,
     selectModePoId,
     onExitSelectMode,
+    openPOId: openPOIdProp,
+    onOpenPOIdChange,
   } = props;
 
-  const [openPOId, setOpenPOId] = useState<string | null>(null);
+  const [openPOIdInternal, setOpenPOIdInternal] = useState<string | null>(null);
+  const isControlled = openPOIdProp !== undefined;
+  const openPOId = isControlled ? openPOIdProp : openPOIdInternal;
+  const setOpenPOId = useCallback(
+    (id: string | null) => {
+      if (isControlled) {
+        onOpenPOIdChange?.(id);
+      } else {
+        setOpenPOIdInternal(id);
+      }
+    },
+    [isControlled, onOpenPOIdChange]
+  );
   const openPO = openPOId ? purchaseOrders.find((p) => p.id === openPOId) ?? null : null;
   const openRows = openPO ? materialsByPOId.get(openPO.id) ?? [] : [];
 
@@ -57,7 +75,7 @@ export function PurchaseOrdersGridV2(props: PurchaseOrdersGridV2Props) {
         setOpenPOId(null);
       }
     },
-    [openPOId, selectModePoId, onExitSelectMode]
+    [openPOId, selectModePoId, onExitSelectMode, setOpenPOId]
   );
 
   return (

@@ -465,7 +465,7 @@ const OverviewTab = ({
       <UpcomingPaymentsWidget
         projectId={project.id}
         currency={project.currency}
-        onNavigateToPurchases={onNavigateToPurchases ? () => onNavigateToPurchases() : undefined}
+        onNavigateToPurchases={onNavigateToPurchases ? (poId) => onNavigateToPurchases(poId) : undefined}
       />
 
       {/* Quick action buttons — contractor only */}
