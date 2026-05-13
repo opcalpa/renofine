@@ -52,93 +52,23 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { ColumnToggle } from "@/components/shared/ColumnToggle";
 import { Progress } from "@/components/ui/progress";
-
-// --- Types ---
-
-interface BudgetRow {
-  id: string;
-  name: string;
-  type: "task" | "material" | "purchase";
-  budget: number;
-  paid: number;
-  estimatedCost: number;
-  isEstimated: boolean;
-  taskCostType?: string | null;
-  room?: string;
-  roomId?: string;
-  assignee?: string;
-  assigneeId?: string;
-  costCenter?: string;
-  startDate?: string;
-  finishDate?: string;
-  hasAttachment: boolean;
-  attachmentCount: number;
-  isUnlinked?: boolean;
-  taskId?: string;
-  materialBudget: number;
-  materialConsumed: number;
-  status?: string;
-  // Budget post fields (material budgets)
-  isBudgetPost?: boolean;
-  sourceMaterialId?: string;
-  parentBudgetPostId?: string;
-  consumedTotal?: number;
-  isAta?: boolean;
-  // Task-specific
-  estimatedHours?: number;
-  hourlyRate?: number;
-  subcontractorCost?: number;
-  markupPercent?: number;
-  materialMarkupPercent?: number;
-  laborCostPercent?: number;
-  paymentStatus?: string;
-  // Material-specific
-  quantity?: number;
-  pricePerUnit?: number;
-  orderedAmount?: number;
-  vendor?: string;
-  // Supplier
-  supplierId?: string;
-  supplierName?: string;
-  // ROT
-  rotAmount?: number;
-  // Evidence status
-  evidenceStatus?: "verified" | "registered" | "missing" | "na";
-  // Phase: most-specific value tier per row (Block 5 unified purchase+budget)
-  phase?: "budget" | "ordered" | "actual";
-  // Purchase-order grouping (lets the table collapse same-PO orphan lines under one header)
-  purchaseOrderId?: string;
-}
-
-type ColumnKey = "name" | "type" | "status" | "phase" | "budget" | "consumed" | "paid" | "remaining" | "margin" | "supplier" | "matBudget" | "matConsumed" | "matRemaining" | "room" | "assignee" | "costCenter" | "startDate" | "finishDate" | "attachment" | "evidence" | "estimatedHours" | "hourlyRate" | "subcontractorCost" | "paymentStatus" | "quantity" | "pricePerUnit" | "orderedAmount" | "vendor" | "rotAmount";
-
-interface ColumnDef {
-  key: ColumnKey;
-  label: string;
-  align?: "left" | "right";
-  extra?: boolean;
-}
-
-const EXTRA_COLUMN_KEYS: ColumnKey[] = [
-  "room", "assignee", "costCenter", "startDate", "finishDate", "attachment", "evidence",
-  // Task-specific extras
-  "estimatedHours", "hourlyRate", "subcontractorCost", "paymentStatus",
-  // Material-specific extras
-  "quantity", "pricePerUnit", "orderedAmount", "vendor",
-  // ROT
-  "rotAmount",
-];
-const HOMEOWNER_HIDDEN_COLUMNS = new Set<ColumnKey>([
-  "margin", "matBudget", "matConsumed", "matRemaining",
-  "assignee", "costCenter",
-  // Builder-internal task cost details
-  "estimatedHours", "hourlyRate", "subcontractorCost", "paymentStatus",
-]);
-const HOMEOWNER_EXTRA_KEYS: ColumnKey[] = [
-  "room", "startDate", "finishDate", "attachment", "evidence",
-  "paid", "remaining",
-  "quantity", "pricePerUnit", "orderedAmount", "vendor",
-];
+import type { BudgetRow, ColumnKey, ColumnDef, GroupByOption } from "./budget/shared/types";
+import {
+  EXTRA_COLUMN_KEYS,
+  HOMEOWNER_HIDDEN_COLUMNS,
+  HOMEOWNER_EXTRA_KEYS,
+} from "./budget/shared/budgetColumns";
+import {
+  computeTaskEstimatedCost,
+  computeTaskLaborCost,
+  computeMaterialBudget,
+  getEffectiveCost,
+} from "./budget/shared/budgetCalc";
+import {
+  type BudgetTablePrefs,
+  loadBudgetPrefs,
+  persistBudgetPrefs,
+} from "./budget/shared/budgetPrefs";
 
 // Status badge colors for combined status column
 // Status badge colors now come from shared getStatusBadgeColor()
@@ -160,84 +90,8 @@ interface BudgetTabProps {
   country?: string | null;
 }
 
-// --- Auto-persist table prefs ---
-
-interface BudgetTablePrefs {
-  columnOrder: ColumnKey[];
-  visibleExtras: ColumnKey[];
-  sortKey: ColumnKey | null;
-  sortDir: "asc" | "desc";
-  compactRows?: boolean;
-}
-
-const BUDGET_PREFS_KEY = (projectId: string) => `budget-table-prefs-${projectId}`;
-
-function loadBudgetPrefs(projectId: string): BudgetTablePrefs | null {
-  try {
-    const raw = localStorage.getItem(BUDGET_PREFS_KEY(projectId));
-    if (!raw) return null;
-    return JSON.parse(raw) as BudgetTablePrefs;
-  } catch {
-    return null;
-  }
-}
-
-function persistBudgetPrefs(projectId: string, prefs: BudgetTablePrefs) {
-  const key = BUDGET_PREFS_KEY(projectId);
-  localStorage.setItem(key, JSON.stringify(prefs));
-  import("@/hooks/usePersistedPreference").then(({ scheduleServerSync }) => scheduleServerSync(key, prefs));
-}
-
-// --- Cost helpers ---
-
-function computeTaskEstimatedCost(
-  task: {
-    estimated_hours?: number | null;
-    hourly_rate?: number | null;
-    labor_cost_percent?: number | null;
-    subcontractor_cost?: number | null;
-    material_estimate?: number | null;
-  },
-  defaultLaborCostPercent: number,
-  plannedMaterialCost?: number
-): number {
-  const laborTotal = (task.estimated_hours || 0) * (task.hourly_rate || 0);
-  const laborCost = laborTotal * ((task.labor_cost_percent ?? defaultLaborCostPercent) / 100);
-  const ueCost = task.subcontractor_cost || 0;
-  // Planned materials (from materials table) take priority; fall back to flat estimate for
-  // tasks that predate the migration or were saved without creating materials rows.
-  const materialCost = (plannedMaterialCost != null && plannedMaterialCost > 0)
-    ? plannedMaterialCost
-    : (task.material_estimate || 0);
-  return laborCost + ueCost + materialCost;
-}
-
-/** Labor-only estimated cost for P&L view where materials are separate rows */
-function computeTaskLaborCost(
-  task: {
-    estimated_hours?: number | null;
-    hourly_rate?: number | null;
-    labor_cost_percent?: number | null;
-    subcontractor_cost?: number | null;
-  },
-  defaultLaborCostPercent: number,
-): number {
-  const laborTotal = (task.estimated_hours || 0) * (task.hourly_rate || 0);
-  const laborCost = laborTotal * ((task.labor_cost_percent ?? defaultLaborCostPercent) / 100);
-  const ueCost = task.subcontractor_cost || 0;
-  return laborCost + ueCost;
-}
-
-const getEffectiveCost = (row: BudgetRow) => row.paid > 0 ? row.paid : row.estimatedCost;
-
-function computeMaterialBudget(
-  task: { material_estimate?: number | null },
-  plannedMaterialCost?: number
-): number {
-  // Planned materials (from materials table) take priority; fall back to flat estimate.
-  if (plannedMaterialCost != null && plannedMaterialCost > 0) return plannedMaterialCost;
-  return task.material_estimate || 0;
-}
+// Types, helpers and prefs extracted to ./budget/shared/* during the role-
+// separation refactor. See plan in the unified budget split memo.
 
 // --- Component ---
 
@@ -267,7 +121,6 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
   const [filterType, setFilterType] = useState<"all" | "task" | "material" | "purchase">("all");
 
   // Grouping
-  type GroupByOption = "none" | "room" | "costCenter" | "status";
   const [groupBy, setGroupBy] = useState<GroupByOption>(() =>
     (localStorage.getItem(`budget-groupby-${projectId}`) as GroupByOption) || "none"
   );
