@@ -44,6 +44,16 @@ import type { FeatureAccess } from "./team/FeatureAccessEditor";
 import { TeamTable } from "./team/TeamTable";
 import type { TeamRow } from "./team/TeamTable";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   WorkerContactFields,
   WorkerTaskList,
   useWorkerTasks,
@@ -71,6 +81,7 @@ interface TeamMember {
   phone: string | null;
   company: string | null;
   notes: string | null;
+  created_at: string | null;
   customer_view_access?: string;
   timeline_access?: string;
   tasks_access?: string;
@@ -287,6 +298,12 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
   const [loading, setLoading] = useState(true);
   const [inviting, setInviting] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [pendingDestructive, setPendingDestructive] = useState<
+    | { kind: "member"; id: string; label: string }
+    | { kind: "invitation"; id: string; label: string }
+    | { kind: "worker"; id: string; label: string }
+    | null
+  >(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<
     | { type: "member"; data: TeamMember }
@@ -310,7 +327,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
     id: string; token: string; worker_name: string; worker_phone: string | null;
     worker_email: string | null; worker_language: string; assigned_task_ids: string[];
     expires_at: string; last_accessed_at: string | null; revoked_at: string | null;
-    can_create_purchases: boolean; can_log_receipts: boolean;
+    can_create_purchases: boolean; can_log_receipts: boolean; created_at: string;
   }>>([]);
   const [workerTaskNames, setWorkerTaskNames] = useState<Record<string, string>>({});
   const [canCreatePurchases, setCanCreatePurchases] = useState(true);
@@ -401,7 +418,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
         .from("project_shares")
         .select(
           `id, shared_with_user_id, role, role_type, contractor_category, phone, company, notes,
-          display_name, display_email,
+          display_name, display_email, created_at,
           customer_view_access, timeline_access, tasks_access, tasks_scope,
           space_planner_access, purchases_access, purchases_scope,
           overview_access, teams_access, budget_access, files_access,
@@ -429,6 +446,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
               phone: share.phone as string | null,
               company: share.company as string | null,
               notes: share.notes as string | null,
+              created_at: (share.created_at as string | null) ?? null,
               customer_view_access: share.customer_view_access as string | undefined,
               timeline_access: share.timeline_access as string | undefined,
               tasks_access: share.tasks_access as string | undefined,
@@ -466,7 +484,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
       if (canManageTeam) {
         const { data: wTokens } = await supabase
           .from("worker_access_tokens")
-          .select("id, token, worker_name, worker_phone, worker_email, worker_language, assigned_task_ids, expires_at, last_accessed_at, revoked_at, can_create_purchases, can_log_receipts")
+          .select("id, token, worker_name, worker_phone, worker_email, worker_language, assigned_task_ids, expires_at, last_accessed_at, revoked_at, can_create_purchases, can_log_receipts, created_at")
           .eq("project_id", projectId)
           .order("created_at", { ascending: false });
         setWorkerTokens((wTokens || []) as typeof workerTokens);
@@ -523,6 +541,43 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
 
     try {
       const validated = invitationSchemaEmail.parse({ email: inviteEmail });
+      const normalizedEmail = validated.email.trim().toLowerCase();
+
+      // Duplicate check: existing active member with this email
+      const existingMember = members.find(
+        (m) => (m.user_email || "").trim().toLowerCase() === normalizedEmail,
+      );
+      if (existingMember) {
+        toast({
+          title: t("roles.duplicateInviteTitle", "E-post finns redan i teamet"),
+          description: t(
+            "roles.duplicateInviteActiveMember",
+            "{{email}} är redan en aktiv medlem i projektet.",
+            { email: validated.email },
+          ),
+          variant: "destructive",
+        });
+        setInviting(false);
+        return;
+      }
+
+      // Duplicate check: pending invitation with this email
+      const existingInvite = invitations.find(
+        (inv) => (inv.email || "").trim().toLowerCase() === normalizedEmail,
+      );
+      if (existingInvite) {
+        toast({
+          title: t("roles.duplicateInviteTitle", "E-post finns redan i teamet"),
+          description: t(
+            "roles.duplicateInvitePending",
+            "{{email}} har redan en väntande inbjudan.",
+            { email: validated.email },
+          ),
+          variant: "destructive",
+        });
+        setInviting(false);
+        return;
+      }
 
       const {
         data: { user },
@@ -612,6 +667,30 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
     setInviting(true);
 
     try {
+      // Duplicate check on worker email/phone if provided
+      const normalizedEmail = workerData.email.trim().toLowerCase();
+      const normalizedPhone = workerData.phone.trim();
+      if (normalizedEmail || normalizedPhone) {
+        const activeWorker = workerTokens.find((wt) => {
+          if (wt.revoked_at) return false;
+          if (normalizedEmail && (wt.worker_email || "").trim().toLowerCase() === normalizedEmail) return true;
+          if (normalizedPhone && (wt.worker_phone || "").trim() === normalizedPhone) return true;
+          return false;
+        });
+        if (activeWorker) {
+          toast({
+            title: t("roles.duplicateInviteTitle", "E-post finns redan i teamet"),
+            description: t(
+              "teamWorker.duplicateWorker",
+              "En arbetare med dessa kontaktuppgifter har redan en aktiv länk.",
+            ),
+            variant: "destructive",
+          });
+          setInviting(false);
+          return;
+        }
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
       const { data: profile } = await supabase.from("profiles").select("id").eq("user_id", user.id).single();
@@ -760,7 +839,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
   };
 
   const handleDeleteMember = async (memberId: string) => {
-    if (!isOwner || !confirm(t("roles.confirmRemoveMember"))) return;
+    if (!isOwner) return;
     setDeleting(memberId);
     try {
       const { error } = await supabase
@@ -945,7 +1024,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
         role: getMemberRoleLabel(m),
         roleTemplate: detectTemplate(access),
         status: "active",
-        addedDate: null,
+        addedDate: m.created_at,
         profileId: m.profile_id || null,
         featureAccess: access,
         company: m.company,
@@ -999,7 +1078,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
         role: t("team.roles.worker", "Worker"),
         roleTemplate: "worker",
         status: isRevoked ? "revoked" : isExpired ? "expired" : "active",
-        addedDate: null,
+        addedDate: wt.created_at,
         profileId: null,
         featureAccess: null,
         company: null,
@@ -1056,16 +1135,54 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
 
   const handleTableDelete = async (row: TeamRow) => {
     if (row.type === "member") {
-      handleDeleteMember(row.id);
+      setPendingDestructive({ kind: "member", id: row.id, label: row.name || row.email || "" });
     } else if (row.type === "invitation") {
-      handleCancelInvitation(row.id);
+      setPendingDestructive({ kind: "invitation", id: row.id, label: row.email || "" });
     } else if (row.type === "worker") {
-      handleRevokeWorker(row.id);
+      setPendingDestructive({ kind: "worker", id: row.id, label: row.name || "" });
     } else if (row.type === "rot") {
       await supabase.from("project_rot_persons").delete().eq("id", row.id);
       fetchTeamData();
     }
   };
+
+  const confirmDestructive = async () => {
+    if (!pendingDestructive) return;
+    const action = pendingDestructive;
+    setPendingDestructive(null);
+    if (action.kind === "member") await handleDeleteMember(action.id);
+    else if (action.kind === "invitation") await handleCancelInvitation(action.id);
+    else if (action.kind === "worker") await handleRevokeWorker(action.id);
+  };
+
+  const destructiveCopy = pendingDestructive
+    ? pendingDestructive.kind === "member"
+      ? {
+          title: t("roles.confirmRemoveMemberTitle", "Ta bort medlem från projektet?"),
+          description: t(
+            "roles.confirmRemoveMemberDescription",
+            "Medlemmen tappar all åtkomst till projektet. Tidigare bidrag (kommentarer, filer) finns kvar.",
+          ),
+          action: t("common.remove", "Ta bort"),
+        }
+      : pendingDestructive.kind === "invitation"
+        ? {
+            title: t("roles.confirmCancelInviteTitle", "Avbryta inbjudan?"),
+            description: t(
+              "roles.confirmCancelInviteDescription",
+              "Inbjudningslänken slutar fungera direkt. Du kan skicka en ny inbjudan när som helst.",
+            ),
+            action: t("common.cancel", "Avbryt"),
+          }
+        : {
+            title: t("roles.confirmRevokeWorkerTitle", "Återkalla arbetarens åtkomst?"),
+            description: t(
+              "roles.confirmRevokeWorkerDescription",
+              "Länken slutar fungera direkt. Du kan skapa en ny inbjudan när som helst.",
+            ),
+            action: t("teamWorker.revoke", "Återkalla"),
+          }
+    : null;
 
   if (loading) {
     return (
@@ -1587,6 +1704,35 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
           recipient={dmRecipient}
         />
       )}
+
+      {/* Destructive action confirmation */}
+      <AlertDialog
+        open={!!pendingDestructive}
+        onOpenChange={(o) => { if (!o) setPendingDestructive(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{destructiveCopy?.title}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {destructiveCopy?.description}
+              {pendingDestructive?.label && (
+                <span className="mt-2 block font-medium text-foreground">
+                  {pendingDestructive.label}
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.cancel", "Avbryt")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDestructive}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {destructiveCopy?.action}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

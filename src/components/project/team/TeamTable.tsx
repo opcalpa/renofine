@@ -12,6 +12,13 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Info } from "lucide-react";
 import { FeatureAccessEditor } from "./FeatureAccessEditor";
 import type { FeatureAccess } from "./FeatureAccessEditor";
 
@@ -160,7 +167,24 @@ export function TeamTable({
 
                 {/* Role */}
                 <TableCell>
-                  <span className="text-sm">{row.role}</span>
+                  <span className="inline-flex items-center gap-1.5 text-sm">
+                    {row.role}
+                    {row.roleTemplate === "custom" && (
+                      <TooltipProvider delayDuration={150}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info
+                              className="h-3.5 w-3.5 text-muted-foreground cursor-help"
+                              aria-label={t("roles.customTooltip", "")}
+                            />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-[260px] text-xs leading-snug">
+                            {t("roles.customTooltip", "Behörigheterna matchar inte någon färdig rollmall.")}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                  </span>
                   {row.contractorCategory && (
                     <p className="text-xs text-muted-foreground truncate">{row.contractorCategory}</p>
                   )}

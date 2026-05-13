@@ -398,7 +398,7 @@ export function InviteWorkerDialog({
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="+380 ..."
+                placeholder="+46 ..."
               />
             </div>
 

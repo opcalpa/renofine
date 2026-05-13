@@ -208,7 +208,7 @@ export function WorkerContactFields({ data, onChange }: WorkerContactFieldsProps
             type="tel"
             value={data.phone}
             onChange={(e) => onChange({ phone: e.target.value })}
-            placeholder="+380 ..."
+            placeholder="+46 ..."
           />
         </div>
         <div className="space-y-2">
