@@ -43,7 +43,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Switch } from '@/components/ui/switch';
-import { Package, Shield } from 'lucide-react';
+import { Package, Shield, AlertTriangle } from 'lucide-react';
 import {
   ExtractedRoom,
   ExtractedTask,
@@ -280,15 +280,33 @@ export function AIProjectImportModal({ open, onOpenChange, onProjectCreated }: A
 
       setStep('review');
 
-      toast({
-        title: t('aiDocumentImport.analysisDone'),
-        description: t('aiDocumentImport.analysisResult', { rooms: result.rooms.length, tasks: workItems.length }),
-      });
+      // Empty extraction is not a failure (the file parsed and the call
+      // succeeded) but it's also not "Analysis done" — surface as a warning
+      // so the banner in the review step doesn't feel like a contradiction.
+      if (result.rooms.length === 0 && workItems.length === 0) {
+        toast({
+          title: t('aiDocumentImport.nothingExtractedTitle', 'Inget kunde extraheras'),
+          description: t(
+            'aiDocumentImport.nothingExtractedToast',
+            'AI:n hittade inga rum eller arbeten. Försök med en tydligare offert eller fyll i manuellt.',
+          ),
+        });
+      } else {
+        toast({
+          title: t('aiDocumentImport.analysisDone'),
+          description: t('aiDocumentImport.analysisResult', { rooms: result.rooms.length, tasks: workItems.length }),
+        });
+      }
     } catch (err) {
       console.error('AI extraction error:', err);
+      // The edge function returns user-friendly Swedish error messages
+      // (empty PDF, corrupt file, doc-not-supported, etc.) — surface them
+      // verbatim. Fall back to generic copy for network / HTTP errors.
+      const message = err instanceof Error ? err.message : '';
+      const isNetworkError = !message || /^HTTP \d+/.test(message);
       toast({
         title: t('aiDocumentImport.analysisError'),
-        description: err instanceof Error ? err.message : t('aiDocumentImport.couldNotAnalyze'),
+        description: isNetworkError ? t('aiDocumentImport.couldNotAnalyze') : message,
         variant: 'destructive',
       });
     } finally {
@@ -682,6 +700,33 @@ export function AIProjectImportModal({ open, onOpenChange, onProjectCreated }: A
             {/* Results panel */}
           <div className="flex-1 min-h-0 overflow-y-auto pr-1">
             <div className="space-y-4">
+              {/* Empty-extraction banner — when AI returns 0 rooms AND 0 tasks the
+                  user otherwise gets two passive "not found" lines and a disabled
+                  Create button. Surface the issue + suggested action up front. */}
+              {rooms.length === 0 && tasks.length === 0 && (
+                <div
+                  className="flex gap-2 items-start p-3 rounded-lg border"
+                  style={{
+                    background: 'var(--rf-warn-bg, #FEF3C7)',
+                    borderColor: 'var(--rf-warn, #92400E)',
+                    color: 'var(--rf-warn, #92400E)',
+                  }}
+                >
+                  <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm space-y-1">
+                    <p className="font-medium">
+                      {t('aiDocumentImport.nothingExtractedTitle', 'Inget kunde extraheras')}
+                    </p>
+                    <p className="text-xs opacity-90">
+                      {t(
+                        'aiDocumentImport.nothingExtractedHint',
+                        'Försök ladda upp en tydligare offert eller skapa projektet manuellt.',
+                      )}
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Project name */}
               <div className="space-y-2">
                 <Label>{t('projects.projectName')} *</Label>
@@ -1005,7 +1050,7 @@ export function AIProjectImportModal({ open, onOpenChange, onProjectCreated }: A
                 </Button>
                 <Button
                   onClick={handleImport}
-                  disabled={!projectName.trim()}
+                  disabled={!projectName.trim() || (selectedRoomCount === 0 && selectedTaskCount === 0)}
                 >
                   <CheckCircle2 className="h-4 w-4 mr-2" />
                   {t('aiProjectImport.createProject')}
