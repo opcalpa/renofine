@@ -52,6 +52,8 @@ import { TeamTable } from "./team/TeamTable";
 import type { TeamRow } from "./team/TeamTable";
 import { AccessConsequenceList } from "./team/AccessConsequenceList";
 import { PROFESSION_KEYS } from "./team/professions";
+import { InviteWizard } from "./team/invite-wizard";
+import type { InvitePath } from "./team/invite-wizard";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -309,6 +311,10 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
   const [loading, setLoading] = useState(true);
   const [inviting, setInviting] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [wizardV2State, setWizardV2State] = useState<{ open: boolean; path: InvitePath }>({
+    open: false,
+    path: "member",
+  });
   const [pendingDestructive, setPendingDestructive] = useState<
     | { kind: "member"; id: string; label: string }
     | { kind: "invitation"; id: string; label: string }
@@ -1289,6 +1295,16 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
               <UserPlus className="h-4 w-4 mr-2" />
               {t("roles.addMemberButton", "Lägg till medlem")}
             </Button>
+            {import.meta.env.DEV && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs border border-dashed border-amber-400 text-amber-700"
+                onClick={() => setWizardV2State({ open: true, path: "member" })}
+              >
+                V2 Beta
+              </Button>
+            )}
           </div>
         )}
       </div>
@@ -1940,6 +1956,15 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {import.meta.env.DEV && (
+        <InviteWizard
+          open={wizardV2State.open}
+          onOpenChange={(open) => setWizardV2State((prev) => ({ ...prev, open }))}
+          initialPath={wizardV2State.path}
+          projectId={projectId}
+        />
+      )}
     </div>
   );
 };

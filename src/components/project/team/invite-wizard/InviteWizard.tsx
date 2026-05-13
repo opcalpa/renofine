@@ -8,6 +8,7 @@ import { WizardStep1Path } from "./WizardStep1Path";
 import { WizardStep2Profession } from "./WizardStep2Profession";
 import { WizardStep3Worker } from "./WizardStep3Worker";
 import { WizardStep3Member } from "./WizardStep3Member";
+import { WizardStep4Contact } from "./WizardStep4Contact";
 
 interface InviteWizardProps {
   open: boolean;
@@ -39,6 +40,7 @@ export function InviteWizard({
     setOnlyAssigned,
     setAccessField,
     resetToPackage,
+    setContact,
   } = wizard;
 
   const totalSteps = 4;
@@ -109,7 +111,11 @@ export function InviteWizard({
             />
           )}
           {state.step === 4 && (
-            <PlaceholderStep label={t("inviteWizard.step4Title", "Kontaktuppgifter")} />
+            <WizardStep4Contact
+              path={state.path}
+              contact={state.contact}
+              onChange={setContact}
+            />
           )}
         </div>
 

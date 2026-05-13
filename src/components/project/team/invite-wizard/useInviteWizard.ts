@@ -177,7 +177,11 @@ export function useInviteWizard({ initialPath, skipStep1 = true }: UseInviteWiza
     if (state.step === 4) {
       const hasEmail = state.contact.email.trim().length > 0;
       const hasName = state.contact.name.trim().length > 0;
-      return hasEmail && hasName;
+      const hasPhone = state.contact.phone.trim().length > 0;
+      if (!hasName) return false;
+      // Worker needs phone OR email; member needs email
+      if (state.path === "worker") return hasEmail || hasPhone;
+      return hasEmail;
     }
     return false;
   }, [state]);
