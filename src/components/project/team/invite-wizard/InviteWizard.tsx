@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import type { InvitePath } from "./types";
 import { useInviteWizard } from "./useInviteWizard";
+import { WizardStep1Path } from "./WizardStep1Path";
+import { WizardStep2Profession } from "./WizardStep2Profession";
 
 interface InviteWizardProps {
   open: boolean;
@@ -22,7 +24,7 @@ export function InviteWizard({
 }: InviteWizardProps) {
   const { t } = useTranslation();
   const wizard = useInviteWizard({ initialPath, skipStep1: true });
-  const { state, back, next, canAdvance } = wizard;
+  const { state, back, next, canAdvance, setPath, setProfession } = wizard;
 
   const totalSteps = 4;
   const showBack = state.step > 1;
@@ -61,10 +63,17 @@ export function InviteWizard({
 
         <div className="py-2 min-h-[280px]">
           {state.step === 1 && (
-            <PlaceholderStep label={t("inviteWizard.step1Title", "Vad vill du göra?")} />
+            <WizardStep1Path path={state.path} onChange={setPath} />
           )}
           {state.step === 2 && (
-            <PlaceholderStep label={t("inviteWizard.step2Title", "Vilket yrke / roll har personen?")} />
+            <WizardStep2Profession
+              profession={state.profession}
+              onChange={setProfession}
+              onSkip={() => {
+                setProfession(null);
+                next();
+              }}
+            />
           )}
           {state.step === 3 && (
             <PlaceholderStep
