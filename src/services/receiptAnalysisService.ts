@@ -26,16 +26,46 @@ export interface DocumentAnalysisResult {
 export type ReceiptLineItem = DocumentLineItem;
 export type ReceiptAnalysisResult = DocumentAnalysisResult;
 
+interface UnifiedExtractionResult {
+  document_type?: "receipt" | "invoice" | "quote" | "scope" | "other";
+  receiptData?: {
+    vendor_name: string | null;
+    total_amount: number | null;
+    vat_amount: number | null;
+    purchase_date: string | null;
+    due_date: string | null;
+    invoice_number: string | null;
+    ocr_number: string | null;
+    line_items: DocumentLineItem[];
+    rot_amount: number | null;
+    rot_personnummer: string | null;
+    confidence: number;
+  } | null;
+}
+
 /**
  * Analyzes a document (receipt or invoice) using AI vision to extract structured data.
+ *
+ * Routes through process-document-v2 with mode_hint='receipt'. The v2 endpoint
+ * returns a union schema (rooms/tasks/quoteMetadata/receiptData); we adapter-map
+ * the receipt slice back to the legacy DocumentAnalysisResult shape so existing
+ * call sites keep working.
+ *
  * @param imageBase64 Base64-encoded image data (without the data:image prefix)
- * @returns Extracted document data including document type
+ * @param mimeType Optional image mime type (defaults to image/jpeg)
  */
-export async function analyzeDocument(imageBase64: string): Promise<DocumentAnalysisResult> {
-  const { data, error } = await supabase.functions.invoke<DocumentAnalysisResult>(
-    "process-receipt",
+export async function analyzeDocument(
+  imageBase64: string,
+  mimeType: string = "image/jpeg",
+): Promise<DocumentAnalysisResult> {
+  const { data, error } = await supabase.functions.invoke<UnifiedExtractionResult>(
+    "process-document-v2",
     {
-      body: { image: imageBase64 },
+      body: {
+        imageBase64,
+        mimeType,
+        mode_hint: "receipt",
+      },
     }
   );
 
@@ -44,11 +74,25 @@ export async function analyzeDocument(imageBase64: string): Promise<DocumentAnal
     throw new Error(error.message || "Failed to analyze document");
   }
 
-  if (!data) {
-    throw new Error("No data returned from document analysis");
+  if (!data || !data.receiptData) {
+    throw new Error("No receipt data returned from document analysis");
   }
 
-  return data;
+  const r = data.receiptData;
+  return {
+    document_type: data.document_type === "invoice" ? "invoice" : "receipt",
+    vendor_name: r.vendor_name || "",
+    total_amount: r.total_amount ?? 0,
+    vat_amount: r.vat_amount,
+    purchase_date: r.purchase_date,
+    due_date: r.due_date,
+    invoice_number: r.invoice_number,
+    ocr_number: r.ocr_number,
+    line_items: r.line_items,
+    rot_amount: r.rot_amount,
+    rot_personnummer: r.rot_personnummer,
+    confidence: r.confidence,
+  };
 }
 
 /**

@@ -25,6 +25,36 @@ function getCorsHeaders(req: Request) {
 }
 
 // Output shape — v1-compatible so QuoteReviewDialog needs no rewrite.
+//
+// Receipt/invoice mode adds an optional `receiptData` block to the same
+// output object so callers can branch on `document_type`. Keeping a single
+// union schema means the edge function picks the extraction path (vision API
+// for images, text extraction for PDFs/DOCX) while the wire format stays one
+// shape.
+type DocumentType = 'receipt' | 'invoice' | 'quote' | 'scope' | 'other';
+type ModeHint = 'receipt' | 'invoice' | 'quote' | 'scope';
+
+interface ReceiptLineItem {
+  description: string;
+  quantity: number;
+  unit_price: number;
+  total: number;
+}
+
+interface ReceiptData {
+  vendor_name: string | null;
+  total_amount: number | null;
+  vat_amount: number | null;
+  purchase_date: string | null;
+  due_date: string | null;
+  invoice_number: string | null;
+  ocr_number: string | null;
+  line_items: ReceiptLineItem[];
+  rot_amount: number | null;
+  rot_personnummer: string | null;
+  confidence: number;
+}
+
 interface ExtractedRoom {
   name: string;
   estimatedAreaSqm: number | null;
@@ -72,6 +102,9 @@ interface ExtractionResult {
   tasks: ExtractedTask[];
   documentSummary: string;
   quoteMetadata: QuoteMetadata | null;
+  // Set in receipt/invoice mode. null/undefined otherwise.
+  document_type?: DocumentType;
+  receiptData?: ReceiptData | null;
 }
 
 // ---------- Pass 1: thin extraction (one Anthropic call) ----------
@@ -215,6 +248,155 @@ const QUOTE_TOOL = {
     required: ['rooms', 'tasks', 'quoteMetadata', 'documentSummary'],
   },
 };
+
+// ---------- Receipt / invoice extraction (vision API) ----------
+
+const RECEIPT_SYSTEM = `Du analyserar svenska kvitton och fakturor och extraherar strukturerade fält.
+
+STEG 1 — Bestäm dokumenttyp:
+- KVITTO: kassakvitto, betalat direkt, ingen förfallodag, ingen fakturanr/OCR
+- FAKTURA: "Faktura", "Fakturanummer", "Förfallodatum", "OCR", bankgiro/plusgiro
+
+STEG 2 — Extrahera fält. Belopp i SEK som tal (inte sträng). Datum YYYY-MM-DD.
+
+För KVITTON: due_date, invoice_number, ocr_number ska vara null.
+För FAKTUROR: fyll i due_date + invoice_number + ocr_number om synligt.
+
+ROT-avdrag (vanligt på fakturor från entreprenör):
+- "ROT-avdrag" / "Rutavdrag" → rot_amount (avdraget i SEK, INTE totalbeloppet)
+- Svenskt personnummer (YYYYMMDD-XXXX eller YYMMDD-XXXX) → rot_personnummer
+
+line_items: en entry per rad om synliga. Tom array om oklart.
+
+KRITISKT — när ett fält inte syns eller är oläsligt, returnera **null** (JSON null).
+Använd ALDRIG platshållare som "<UNKNOWN>", "N/A", "okänt", "saknas", "?" eller tom sträng.
+För string-fält som är okända: skriv exakt: null. För number-fält som är okända: skriv exakt: null.
+
+Kalla extract_receipt-verktyget med resultatet.`;
+
+const RECEIPT_TOOL = {
+  name: 'extract_receipt',
+  description: 'Extraherar strukturerade fält från ett kvitto eller en faktura',
+  input_schema: {
+    type: 'object',
+    properties: {
+      document_type: { type: 'string', enum: ['receipt', 'invoice'] },
+      vendor_name: { type: ['string', 'null'] },
+      total_amount: { type: ['number', 'null'] },
+      vat_amount: { type: ['number', 'null'] },
+      purchase_date: { type: ['string', 'null'], description: 'YYYY-MM-DD eller null' },
+      due_date: { type: ['string', 'null'], description: 'YYYY-MM-DD, endast fakturor' },
+      invoice_number: { type: ['string', 'null'] },
+      ocr_number: { type: ['string', 'null'] },
+      line_items: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            description: { type: 'string' },
+            quantity: { type: 'number' },
+            unit_price: { type: 'number' },
+            total: { type: 'number' },
+          },
+          required: ['description', 'quantity', 'unit_price', 'total'],
+        },
+      },
+      rot_amount: { type: ['number', 'null'] },
+      rot_personnummer: { type: ['string', 'null'] },
+      confidence: { type: 'number', description: '0-1' },
+    },
+    required: [
+      'document_type', 'vendor_name', 'total_amount', 'vat_amount', 'purchase_date',
+      'due_date', 'invoice_number', 'ocr_number', 'line_items', 'rot_amount',
+      'rot_personnummer', 'confidence',
+    ],
+  },
+};
+
+interface AnthropicContentBlock {
+  type: 'text' | 'image';
+  text?: string;
+  source?: { type: 'base64'; media_type: string; data: string };
+}
+
+async function callAnthropicVision(
+  apiKey: string,
+  system: string,
+  content: AnthropicContentBlock[],
+  tool: typeof RECEIPT_TOOL,
+  maxTokens: number,
+): Promise<Record<string, unknown>> {
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': ANTHROPIC_VERSION,
+    },
+    body: JSON.stringify({
+      model: ANTHROPIC_MODEL,
+      max_tokens: maxTokens,
+      system,
+      messages: [{ role: 'user', content }],
+      tools: [tool],
+      tool_choice: { type: 'tool', name: tool.name },
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Anthropic Vision API error:', response.status, errorText);
+    throw new Error(`Anthropic Vision API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const toolUse = data.content?.find((c: Record<string, unknown>) => c.type === 'tool_use');
+  if (!toolUse?.input) throw new Error('No tool_use block in Anthropic response');
+  console.log('Vision call: input_tokens', data.usage?.input_tokens, 'output_tokens', data.usage?.output_tokens);
+  return toolUse.input as Record<string, unknown>;
+}
+
+// Strip AI placeholder strings that occasionally slip past the schema —
+// "<UNKNOWN>", "N/A", "okänt" etc. should be treated as null, not as literal data.
+function sanitizeStr(v: unknown): string | null {
+  if (typeof v !== 'string') return null;
+  const trimmed = v.trim();
+  if (!trimmed) return null;
+  const placeholder = /^(<unknown>|<okand>|<okänd>|n\/a|null|none|unknown|okänd|okand|saknas|\?+|-+)$/i;
+  if (placeholder.test(trimmed)) return null;
+  return trimmed;
+}
+
+function expandReceiptResult(raw: Record<string, unknown>): ExtractionResult {
+  const docType = raw.document_type === 'invoice' ? 'invoice' : 'receipt';
+  const receiptData: ReceiptData = {
+    vendor_name: sanitizeStr(raw.vendor_name),
+    total_amount: numOrNull(raw.total_amount),
+    vat_amount: numOrNull(raw.vat_amount),
+    purchase_date: sanitizeStr(raw.purchase_date),
+    due_date: sanitizeStr(raw.due_date),
+    invoice_number: sanitizeStr(raw.invoice_number),
+    ocr_number: sanitizeStr(raw.ocr_number),
+    line_items: ((raw.line_items as Record<string, unknown>[]) || []).map((li) => ({
+      description: String(li.description || ''),
+      quantity: numOrNull(li.quantity) ?? 1,
+      unit_price: numOrNull(li.unit_price) ?? 0,
+      total: numOrNull(li.total) ?? 0,
+    })),
+    rot_amount: numOrNull(raw.rot_amount),
+    rot_personnummer: sanitizeStr(raw.rot_personnummer),
+    confidence: numOrNull(raw.confidence) ?? 0.5,
+  };
+
+  return {
+    rooms: [],
+    tasks: [],
+    documentSummary: '',
+    quoteMetadata: null,
+    document_type: docType,
+    receiptData,
+  };
+}
 
 async function callAnthropic(
   apiKey: string,
@@ -556,15 +738,71 @@ serve(async (req) => {
     const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
     if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not configured');
 
-    const { fileUrl, fileBase64, fileType, mimeType, fileName, mode } = await req.json();
-    const extractionMode: 'scope' | 'quote' = mode === 'quote' ? 'quote' : 'scope';
-    console.log('v2 request:', { fileName, mode: extractionMode, hasBase64: !!fileBase64 });
+    const body = await req.json();
+    const {
+      fileUrl,
+      fileBase64,
+      imageBase64,
+      fileType,
+      mimeType,
+      fileName,
+      mode,
+      mode_hint,
+    } = body as {
+      fileUrl?: string;
+      fileBase64?: string;
+      imageBase64?: string;
+      fileType?: string;
+      mimeType?: string;
+      fileName?: string;
+      mode?: string;
+      mode_hint?: ModeHint;
+    };
+
+    // Receipt/invoice mode: vision path. Triggered by explicit mode_hint OR by
+    // an image input with no other mode signal.
+    const isReceiptMode =
+      mode_hint === 'receipt' || mode_hint === 'invoice' ||
+      (!mode_hint && !mode && !!imageBase64);
+
+    if (isReceiptMode) {
+      if (!imageBase64) {
+        throw new Error('imageBase64 is required for receipt/invoice mode');
+      }
+      const mediaType = (mimeType || 'image/jpeg').toLowerCase();
+      console.log('v2 receipt request:', { fileName, hint: mode_hint, mediaType });
+      const raw = await callAnthropicVision(
+        apiKey,
+        RECEIPT_SYSTEM,
+        [
+          {
+            type: 'image',
+            source: { type: 'base64', media_type: mediaType, data: imageBase64 },
+          },
+          { type: 'text', text: 'Analysera dokumentet och kalla extract_receipt-verktyget.' },
+        ],
+        RECEIPT_TOOL,
+        4096,
+      );
+      const result = expandReceiptResult(raw);
+      console.log('Receipt success — type:', result.document_type, 'vendor:', result.receiptData?.vendor_name);
+      return new Response(JSON.stringify(result), {
+        headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    }
+
+    // Quote/scope mode: text extraction path (PDF/DOCX/TXT).
+    // mode_hint='quote'|'scope' takes precedence; legacy `mode` field still works.
+    const extractionMode: 'scope' | 'quote' =
+      mode_hint === 'quote' || mode === 'quote' ? 'quote' : 'scope';
+    console.log('v2 text request:', { fileName, mode: extractionMode, hasBase64: !!fileBase64 });
 
     if (!fileUrl && !fileBase64) throw new Error('fileUrl or fileBase64 is required');
 
     const documentContent = fileBase64
       ? await extractTextFromBase64(fileBase64, mimeType || fileType || '', fileName || '')
-      : await fetchDocumentContent(fileUrl, fileType || '', fileName || '');
+      : await fetchDocumentContent(fileUrl!, fileType || '', fileName || '');
 
     if (!documentContent || documentContent.trim().length === 0) {
       throw new Error('Dokumentet verkar vara tomt eller kunde inte läsas.');
