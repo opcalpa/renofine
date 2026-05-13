@@ -85,4 +85,7 @@ export type DisplayRow = BudgetRow & {
   purchaseCount?: number;
   isSectionHeader?: boolean;
   isPoHeader?: boolean;
+  // Set on synthetic group-header rows so the toolbar's collapse-toggle knows
+  // which group it controls.
+  _groupKey?: string;
 };

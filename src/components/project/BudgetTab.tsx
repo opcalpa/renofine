@@ -52,7 +52,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { ColumnToggle } from "@/components/shared/ColumnToggle";
 import { Progress } from "@/components/ui/progress";
-import type { BudgetRow, ColumnKey, ColumnDef, GroupByOption } from "./budget/shared/types";
+import type { BudgetRow, ColumnKey, ColumnDef, GroupByOption, DisplayRow } from "./budget/shared/types";
 import {
   EXTRA_COLUMN_KEYS,
   HOMEOWNER_HIDDEN_COLUMNS,
@@ -67,6 +67,7 @@ import {
 import { useBudgetData } from "./budget/shared/useBudgetData";
 import { useBudgetTablePrefs } from "./budget/shared/useBudgetTablePrefs";
 import { useBudgetFilters } from "./budget/shared/useBudgetFilters";
+import { useBudgetTree } from "./budget/shared/useBudgetTree";
 
 // Status badge colors for combined status column
 // Status badge colors now come from shared getStatusBadgeColor()
@@ -276,39 +277,8 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
   // suppliers/purchaseOrderInfo/allRooms now come from useBudgetData hook above
   // compactRows now comes from useBudgetTablePrefs hook above
 
-  // Task → material budget post grouping
-  const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
-  const toggleTaskExpand = useCallback((taskId: string) => {
-    setExpandedTasks(prev => {
-      const next = new Set(prev);
-      if (next.has(taskId)) next.delete(taskId);
-      else next.add(taskId);
-      return next;
-    });
-  }, []);
-
-  // Material budget post → purchase grouping
-  const [expandedBudgetPosts, setExpandedBudgetPosts] = useState<Set<string>>(new Set());
-  const toggleBudgetPostExpand = useCallback((budgetPostId: string) => {
-    setExpandedBudgetPosts(prev => {
-      const next = new Set(prev);
-      if (next.has(budgetPostId)) next.delete(budgetPostId);
-      else next.add(budgetPostId);
-      return next;
-    });
-  }, []);
-
-  // Purchase-order → orphan-line grouping (collapses same-PO unallocated material rows under one header)
-  // purchaseOrderInfo now comes from useBudgetData hook above
-  const [expandedPurchaseOrders, setExpandedPurchaseOrders] = useState<Set<string>>(new Set());
-  const togglePurchaseOrderExpand = useCallback((poId: string) => {
-    setExpandedPurchaseOrders(prev => {
-      const next = new Set(prev);
-      if (next.has(poId)) next.delete(poId);
-      else next.add(poId);
-      return next;
-    });
-  }, []);
+  // Tree expansion state (task/budget-post/PO/unlinked/ÄTA) and displayRows
+  // memo now live in useBudgetTree hook below.
 
   // Inline add row
   const [isAddingRow, setIsAddingRow] = useState(false);
@@ -726,377 +696,22 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
   // hasAdvancedFilter / mainRows / ataRows / filtered / totals now come from
   // useBudgetFilters hook above.
 
-  // Group linked materials under their parent task for display
-  const [unlinkedExpanded, setUnlinkedExpanded] = useState(false);
-  const [ataExpanded, setAtaExpanded] = useState(true);
+  // Tree-hierarchy: 5 expansion states + displayRows memo. Grouping
+  // (groupBy + collapsedGroups) is passed in because the toolbar owns them.
+  const {
+    displayRows,
+    expandedTasks,
+    toggleTaskExpand,
+    expandedBudgetPosts,
+    toggleBudgetPostExpand,
+    expandedPurchaseOrders,
+    togglePurchaseOrderExpand,
+    unlinkedExpanded,
+    setUnlinkedExpanded,
+    ataExpanded,
+    setAtaExpanded,
+  } = useBudgetTree({ filtered, ataRows, purchaseOrderInfo, groupBy, collapsedGroups });
 
-  type DisplayRow = BudgetRow & { isChild?: boolean; isPurchaseChild?: boolean; childCount?: number; purchaseCount?: number; isSectionHeader?: boolean; isPoHeader?: boolean };
-
-  const displayRows = useMemo(() => {
-    // Separate rows by type
-    const taskRows: BudgetRow[] = [];
-    const materialBudgetPosts: BudgetRow[] = [];
-    const purchaseRows: BudgetRow[] = [];
-
-    for (const row of filtered) {
-      if (row.type === "task") taskRows.push(row);
-      else if (row.type === "material" && row.isBudgetPost) materialBudgetPosts.push(row);
-      else if (row.type === "purchase") purchaseRows.push(row);
-      else if (row.type === "material") materialBudgetPosts.push(row); // legacy non-budgetpost materials
-    }
-
-    // Build maps for hierarchy
-    const budgetPostsByTask = new Map<string, BudgetRow[]>();
-    const standaloneBudgetPosts: BudgetRow[] = [];
-    for (const bp of materialBudgetPosts) {
-      if (bp.taskId) {
-        const parentInList = taskRows.some(t => t.id === bp.taskId);
-        if (parentInList) {
-          if (!budgetPostsByTask.has(bp.taskId)) budgetPostsByTask.set(bp.taskId, []);
-          budgetPostsByTask.get(bp.taskId)!.push(bp);
-          continue;
-        }
-      }
-      standaloneBudgetPosts.push(bp);
-    }
-
-    const purchasesByBudgetPost = new Map<string, BudgetRow[]>();
-    const orphanPurchases: BudgetRow[] = [];
-    for (const p of purchaseRows) {
-      if (p.parentBudgetPostId) {
-        if (!purchasesByBudgetPost.has(p.parentBudgetPostId)) purchasesByBudgetPost.set(p.parentBudgetPostId, []);
-        purchasesByBudgetPost.get(p.parentBudgetPostId)!.push(p);
-      } else {
-        orphanPurchases.push(p);
-      }
-    }
-
-    const result: DisplayRow[] = [];
-
-    // Helper: add a budget post + its purchases
-    const addBudgetPostWithPurchases = (bp: BudgetRow, isChild: boolean) => {
-      const purchases = purchasesByBudgetPost.get(bp.id) || [];
-      result.push({ ...bp, isChild, purchaseCount: purchases.length });
-      if (expandedBudgetPosts.has(bp.id)) {
-        for (const p of purchases) {
-          result.push({ ...p, isChild: true, isPurchaseChild: true });
-        }
-      }
-    };
-
-    // 1. Task rows with their material budget posts
-    for (const task of taskRows) {
-      const budgetPosts = budgetPostsByTask.get(task.id) || [];
-      result.push({ ...task, childCount: budgetPosts.length });
-      if (expandedTasks.has(task.id)) {
-        for (const bp of budgetPosts) {
-          addBudgetPostWithPurchases(bp, true);
-        }
-      }
-    }
-
-    // 2. Standalone material budget posts section
-    if (standaloneBudgetPosts.length > 0) {
-      const standaloneTotal = standaloneBudgetPosts.reduce((sum, bp) => sum + bp.budget, 0);
-      result.push({
-        id: "__standalone_bp_header__",
-        name: t("budget.standaloneBudgetPosts", "Fristående materialbudgetar"),
-        type: "material",
-        budget: standaloneTotal,
-        paid: 0,
-        estimatedCost: standaloneTotal,
-        isEstimated: false,
-        materialBudget: 0,
-        materialConsumed: 0,
-        childCount: standaloneBudgetPosts.length,
-        isSectionHeader: true,
-      } as DisplayRow);
-      if (unlinkedExpanded) {
-        for (const bp of standaloneBudgetPosts) {
-          addBudgetPostWithPurchases(bp, true);
-        }
-      }
-    }
-
-    // 3. Orphan purchases — group by purchase_order (≥2 lines from same PO collapse under one header)
-    const orphansByPo = new Map<string, BudgetRow[]>();
-    const orphansWithoutPo: BudgetRow[] = [];
-    for (const p of orphanPurchases) {
-      if (p.purchaseOrderId) {
-        if (!orphansByPo.has(p.purchaseOrderId)) orphansByPo.set(p.purchaseOrderId, []);
-        orphansByPo.get(p.purchaseOrderId)!.push(p);
-      } else {
-        orphansWithoutPo.push(p);
-      }
-    }
-    for (const [poId, lines] of orphansByPo) {
-      if (lines.length < 2) {
-        // Singleton: render flat like before
-        for (const p of lines) result.push(p);
-        continue;
-      }
-      const info = purchaseOrderInfo.get(poId);
-      const linesTotal = lines.reduce((sum, l) => sum + l.estimatedCost, 0);
-      const linesPaid = lines.reduce((sum, l) => sum + (l.paid ?? 0), 0);
-      const headerPhase: "budget" | "ordered" | "actual" =
-        info?.status === "delivered" ? "actual"
-        : info?.status === "ordered" ? "ordered"
-        : "budget";
-      result.push({
-        id: `__po_header_${poId}__`,
-        name: info?.vendor ?? t("budget.purchaseOrder", "Inköpsorder"),
-        type: "purchase",
-        budget: 0,
-        paid: linesPaid,
-        estimatedCost: info?.total ?? linesTotal,
-        isEstimated: linesPaid <= 0,
-        materialBudget: 0,
-        materialConsumed: 0,
-        childCount: lines.length,
-        isPoHeader: true,
-        phase: headerPhase,
-        purchaseOrderId: poId,
-        status: info?.status,
-        vendor: info?.vendor,
-        hasAttachment: false,
-        attachmentCount: 0,
-      } as DisplayRow);
-      if (expandedPurchaseOrders.has(poId)) {
-        for (const p of lines) {
-          result.push({ ...p, isChild: true, isPurchaseChild: true });
-        }
-      }
-    }
-    for (const p of orphansWithoutPo) result.push(p);
-
-    // 4. ÄTA section — change orders shown in their own block
-    if (ataRows.length > 0) {
-      const ataTasksFiltered = ataRows.filter(r => r.type === "task");
-      const ataBudgetPosts = ataRows.filter(r => r.type === "material" && r.isBudgetPost);
-      const ataPurchasesFiltered = ataRows.filter(r => r.type === "purchase");
-
-      const ataBpByTask = new Map<string, BudgetRow[]>();
-      const ataStandaloneBp: BudgetRow[] = [];
-      for (const bp of ataBudgetPosts) {
-        if (bp.taskId && ataTasksFiltered.some(t => t.id === bp.taskId)) {
-          if (!ataBpByTask.has(bp.taskId)) ataBpByTask.set(bp.taskId, []);
-          ataBpByTask.get(bp.taskId)!.push(bp);
-        } else {
-          ataStandaloneBp.push(bp);
-        }
-      }
-
-      const ataPurchasesByBp = new Map<string, BudgetRow[]>();
-      const ataOrphanPurchases: BudgetRow[] = [];
-      for (const p of ataPurchasesFiltered) {
-        if (p.parentBudgetPostId) {
-          if (!ataPurchasesByBp.has(p.parentBudgetPostId)) ataPurchasesByBp.set(p.parentBudgetPostId, []);
-          ataPurchasesByBp.get(p.parentBudgetPostId)!.push(p);
-        } else {
-          ataOrphanPurchases.push(p);
-        }
-      }
-
-      const ataTotal = ataRows.reduce((sum, r) => {
-        if (r.type === "purchase") return sum;
-        return sum + r.budget;
-      }, 0);
-
-      result.push({
-        id: "__ata_header__",
-        name: t("budget.ataSection", "Tillägg"),
-        type: "task",
-        budget: ataTotal,
-        paid: 0,
-        estimatedCost: 0,
-        isEstimated: false,
-        materialBudget: 0,
-        materialConsumed: 0,
-        childCount: ataTasksFiltered.length + ataStandaloneBp.length + ataOrphanPurchases.length,
-        isSectionHeader: true,
-      } as DisplayRow);
-
-      if (ataExpanded) {
-        // Add ÄTA tasks with their budget posts
-        for (const task of ataTasksFiltered) {
-          const bps = ataBpByTask.get(task.id) || [];
-          result.push({ ...task, childCount: bps.length });
-          if (expandedTasks.has(task.id)) {
-            for (const bp of bps) {
-              const purchases = ataPurchasesByBp.get(bp.id) || [];
-              result.push({ ...bp, isChild: true, purchaseCount: purchases.length });
-              if (expandedBudgetPosts.has(bp.id)) {
-                for (const p of purchases) {
-                  result.push({ ...p, isChild: true, isPurchaseChild: true });
-                }
-              }
-            }
-          }
-        }
-        // Standalone ÄTA budget posts
-        for (const bp of ataStandaloneBp) {
-          const purchases = ataPurchasesByBp.get(bp.id) || [];
-          result.push({ ...bp, purchaseCount: purchases.length });
-          if (expandedBudgetPosts.has(bp.id)) {
-            for (const p of purchases) {
-              result.push({ ...p, isChild: true, isPurchaseChild: true });
-            }
-          }
-        }
-        // Orphan ÄTA purchases — same PO-grouping as main section
-        const ataOrphansByPo = new Map<string, BudgetRow[]>();
-        const ataOrphansWithoutPo: BudgetRow[] = [];
-        for (const p of ataOrphanPurchases) {
-          if (p.purchaseOrderId) {
-            if (!ataOrphansByPo.has(p.purchaseOrderId)) ataOrphansByPo.set(p.purchaseOrderId, []);
-            ataOrphansByPo.get(p.purchaseOrderId)!.push(p);
-          } else {
-            ataOrphansWithoutPo.push(p);
-          }
-        }
-        for (const [poId, lines] of ataOrphansByPo) {
-          if (lines.length < 2) {
-            for (const p of lines) result.push({ ...p, isChild: true });
-            continue;
-          }
-          const info = purchaseOrderInfo.get(poId);
-          const linesTotal = lines.reduce((sum, l) => sum + l.estimatedCost, 0);
-          const linesPaid = lines.reduce((sum, l) => sum + (l.paid ?? 0), 0);
-          const headerPhase: "budget" | "ordered" | "actual" =
-            info?.status === "delivered" ? "actual"
-            : info?.status === "ordered" ? "ordered"
-            : "budget";
-          result.push({
-            id: `__ata_po_header_${poId}__`,
-            name: info?.vendor ?? t("budget.purchaseOrder", "Inköpsorder"),
-            type: "purchase",
-            budget: 0,
-            paid: linesPaid,
-            estimatedCost: info?.total ?? linesTotal,
-            isEstimated: linesPaid <= 0,
-            materialBudget: 0,
-            materialConsumed: 0,
-            childCount: lines.length,
-            isPoHeader: true,
-            phase: headerPhase,
-            purchaseOrderId: poId,
-            status: info?.status,
-            vendor: info?.vendor,
-            isAta: true,
-            hasAttachment: false,
-            attachmentCount: 0,
-          } as DisplayRow);
-          if (expandedPurchaseOrders.has(poId)) {
-            for (const p of lines) {
-              result.push({ ...p, isChild: true, isPurchaseChild: true });
-            }
-          }
-        }
-        for (const p of ataOrphansWithoutPo) result.push({ ...p, isChild: true });
-      }
-    }
-
-    // Apply grouping if active
-    if (groupBy === "none") return result;
-
-    const getGroupKey = (row: BudgetRow): string => {
-      switch (groupBy) {
-        case "room": return row.roomId || "__no_room__";
-        case "costCenter": return row.costCenter || "__no_cc__";
-        case "status": return row.status || "__no_status__";
-        default: return "__ungrouped__";
-      }
-    };
-
-    const getGroupLabel = (key: string): string => {
-      if (key === "__no_room__") return t("budget.noRoom", "No room");
-      if (key === "__no_cc__") return t("budget.noCostCenter", "No cost center");
-      if (key === "__no_status__") return t("budget.noStatus", "No status");
-      switch (groupBy) {
-        case "room": {
-          const row = result.find((r) => !r.isSectionHeader && r.roomId === key);
-          return row?.room || key;
-        }
-        case "costCenter": {
-          const ccLabels: Record<string, string> = {
-            demolition: t("costCenters.demolition", "Demolition"),
-            electrical: t("costCenters.electrical", "Electrical"),
-            plumbing: t("costCenters.plumbing", "Plumbing"),
-            tiling: t("costCenters.tiling", "Tiling"),
-            carpentry: t("costCenters.carpentry", "Carpentry"),
-            painting: t("costCenters.painting", "Painting"),
-            flooring: t("costCenters.flooring", "Flooring"),
-            kitchen: t("costCenters.kitchen", "Kitchen"),
-            bathroom: t("costCenters.bathroom", "Bathroom"),
-            other: t("costCenters.other", "Other"),
-          };
-          return ccLabels[key] || key;
-        }
-        case "status": {
-          return t(`statuses.${key}`, t(`materialStatuses.${key}`, key));
-        }
-        default: return key;
-      }
-    };
-
-    // Group rows (skip section headers and children — they'll follow their parents)
-    const groups = new Map<string, Array<typeof result[0]>>();
-    const groupOrder: string[] = [];
-    for (const row of result) {
-      if (row.isSectionHeader || row.isChild || row.isPurchaseChild) continue;
-      const key = getGroupKey(row);
-      if (!groups.has(key)) {
-        groups.set(key, []);
-        groupOrder.push(key);
-      }
-      groups.get(key)!.push(row);
-      // Also add children (budget posts under tasks, purchases under budget posts)
-      if (row.type === "task" && expandedTasks.has(row.id)) {
-        const children = result.filter((r) => r.isChild && r.taskId === row.id && !r.isPurchaseChild);
-        for (const child of children) {
-          groups.get(key)!.push(child);
-          // And purchases under that budget post
-          if (child.isBudgetPost && expandedBudgetPosts.has(child.id)) {
-            const purchases = result.filter((r) => r.isPurchaseChild && r.parentBudgetPostId === child.id);
-            groups.get(key)!.push(...purchases);
-          }
-        }
-      }
-    }
-    // Section rows (standalone budget posts, orphan purchases)
-    const sectionRows = result.filter((r) => r.isSectionHeader || (r.isChild && (r.isUnlinked || r.type === "purchase")));
-
-    const grouped: typeof result = [];
-    for (const key of groupOrder) {
-      const groupRows = groups.get(key)!;
-      const topRows = groupRows.filter((r) => !r.isChild && !r.isPurchaseChild);
-      const groupBudget = topRows.reduce((s, r) => s + r.budget, 0);
-      const groupPaid = topRows.reduce((s, r) => s + r.paid, 0);
-      grouped.push({
-        id: `__group_${key}__`,
-        name: getGroupLabel(key),
-        type: "task",
-        budget: groupBudget,
-        paid: groupPaid,
-        estimatedCost: 0,
-        isEstimated: false,
-        materialBudget: 0,
-        materialConsumed: 0,
-        childCount: topRows.length,
-        isSectionHeader: true,
-        hasAttachment: false,
-        attachmentCount: 0,
-        _groupKey: key,
-      } as typeof result[0] & { _groupKey?: string });
-      if (!collapsedGroups.has(key)) {
-        grouped.push(...groupRows);
-      }
-    }
-    // Append standalone/orphan sections at the end
-    grouped.push(...sectionRows);
-
-    return grouped;
-  }, [filtered, ataRows, expandedTasks, expandedBudgetPosts, expandedPurchaseOrders, purchaseOrderInfo, unlinkedExpanded, ataExpanded, groupBy, collapsedGroups, t]);
 
   const clearAllFilters = () => {
     setSearchQuery("");
