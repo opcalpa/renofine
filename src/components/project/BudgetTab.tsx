@@ -68,6 +68,7 @@ import { useBudgetData } from "./budget/shared/useBudgetData";
 import { useBudgetTablePrefs } from "./budget/shared/useBudgetTablePrefs";
 import { useBudgetFilters } from "./budget/shared/useBudgetFilters";
 import { useBudgetTree } from "./budget/shared/useBudgetTree";
+import { renderFooterCell } from "./budget/shared/cellRenderers";
 
 // Status badge colors for combined status column
 // Status badge colors now come from shared getStatusBadgeColor()
@@ -1346,70 +1347,9 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
     }
   };
 
-  const renderFooterCell = (col: ColumnDef) => {
-    switch (col.key) {
-      case "name":
-        return <span className="font-bold">{t('budget.totals')}</span>;
-      case "budget":
-        return <span className="font-bold">{formatCurrency(totals.budget, currency)}</span>;
-      case "consumed":
-        return totals.consumed > 0
-          ? <span className="font-bold">{formatCurrency(totals.consumed, currency)}</span>
-          : null;
-      case "paid":
-        // Homeowner: sum of actual payments only; Builder: sum of effective costs
-        return <span className="font-bold">{formatCurrency(isBuilder ? totals.cost : totals.paid, currency)}</span>;
-      case "remaining": {
-        if (isBuilder) {
-          const totalResult = totals.budget - totals.cost;
-          return (
-            <span className={`font-bold ${totalResult < 0 ? "text-destructive" : totalResult > 0 ? "text-green-600" : ""}`}>
-              {formatCurrency(totalResult, currency)}
-            </span>
-          );
-        }
-        // Homeowner: sum of (quoted - paid) for tasks + budget posts only — skip purchase rows
-        const totalOutstanding = filtered.reduce((sum, r) => {
-          if (r.type === "purchase") return sum; // purchases are already consumed via budget post
-          const quoted = r.budget > 0 ? r.budget : r.estimatedCost;
-          return sum + (quoted > 0 ? quoted - r.paid : 0);
-        }, 0);
-        return (
-          <span className={`font-bold ${totalOutstanding < 0 ? "text-destructive" : totalOutstanding > 0 ? "text-amber-600" : "text-green-600"}`}>
-            {formatCurrency(totalOutstanding, currency)}
-          </span>
-        );
-      }
-      case "margin": {
-        const totalResult = totals.budget - totals.cost;
-        const totalMargin = totals.budget > 0 ? Math.round((totalResult / totals.budget) * 100) : 0;
-        let colorClass = "";
-        if (totalMargin < 0) colorClass = "text-destructive";
-        else if (totalMargin === 0) colorClass = "text-muted-foreground";
-        else if (totalMargin < 15) colorClass = "text-amber-500";
-        else if (totalMargin >= 30) colorClass = "text-green-600";
-        return <span className={`font-bold ${colorClass}`}>{totalMargin}%</span>;
-      }
-      case "matBudget":
-        return <span className="font-bold">{formatCurrency(totals.matBudget, currency)}</span>;
-      case "matConsumed":
-        return <span className="font-bold">{formatCurrency(totals.matConsumed, currency)}</span>;
-      case "matRemaining": {
-        const totalMatRemaining = totals.matBudget - totals.matConsumed;
-        const matPctLeft = totals.matBudget > 0 ? totalMatRemaining / totals.matBudget : 0;
-        let matFooterColor = "text-green-600";
-        if (matPctLeft <= 0) matFooterColor = "text-destructive";
-        else if (matPctLeft <= 0.2) matFooterColor = "text-amber-500";
-        return <span className={`font-bold ${totals.matBudget > 0 ? matFooterColor : ""}`}>{formatCurrency(totalMatRemaining, currency)}</span>;
-      }
-      case "rotAmount": {
-        const totalRot = rows.filter(r => r.type === "task").reduce((sum, r) => sum + (r.rotAmount ?? 0), 0);
-        return totalRot > 0 ? <span className="font-bold text-green-700">{formatCurrency(totalRot, currency)}</span> : null;
-      }
-      default:
-        return null;
-    }
-  };
+  // renderFooterCell now lives in budget/shared/cellRenderers.tsx. Build the
+  // context once per render so each footer cell shares the same object.
+  const footerCtx = { totals, filtered, rows, isBuilder, currency, t };
 
   // --- Loading state ---
 
@@ -2219,7 +2159,7 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
                     key={col.key}
                     className={`px-3 py-2.5 ${col.align === "right" ? "text-right" : ""}${compactRows ? " py-0.5 px-2 text-xs" : ""}`}
                   >
-                    {renderFooterCell(col)}
+                    {renderFooterCell(col, footerCtx)}
                   </td>
                 ))}
                 {isBuilder && <td className="px-3 py-2.5" />}
