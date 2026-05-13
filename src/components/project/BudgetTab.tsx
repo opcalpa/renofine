@@ -64,12 +64,8 @@ import {
   computeMaterialBudget,
   getEffectiveCost,
 } from "./budget/shared/budgetCalc";
-import {
-  type BudgetTablePrefs,
-  loadBudgetPrefs,
-  persistBudgetPrefs,
-} from "./budget/shared/budgetPrefs";
 import { useBudgetData } from "./budget/shared/useBudgetData";
+import { useBudgetTablePrefs } from "./budget/shared/useBudgetTablePrefs";
 
 // Status badge colors for combined status column
 // Status badge colors now come from shared getStatusBadgeColor()
@@ -158,13 +154,8 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
   const [filterAttachment, setFilterAttachment] = useState<"all" | "has" | "missing">("all");
   const [filterStatuses, setFilterStatuses] = useState<Set<string>>(new Set());
 
-  // Collapsible columns
-  const budgetPrefs = useRef(loadBudgetPrefs(projectId));
-  const [visibleExtras, setVisibleExtras] = useState<Set<ColumnKey>>(
-    () => budgetPrefs.current?.visibleExtras
-      ? new Set(budgetPrefs.current.visibleExtras)
-      : new Set()
-  );
+  // Collapsible columns — visibleExtras + columns/sort/compact come from
+  // useBudgetTablePrefs below. ALL_COLUMNS is built first so we can pass it in.
 
   // Translated column/status definitions
   const ALL_COLUMNS: ColumnDef[] = useMemo(() => [
@@ -212,45 +203,22 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
 
   const effectiveExtraKeys = isBuilder ? EXTRA_COLUMN_KEYS : HOMEOWNER_EXTRA_KEYS;
 
-  // Column order (drag reorder)
-  const [columns, setColumns] = useState<ColumnDef[]>(() => {
-    if (budgetPrefs.current?.columnOrder) {
-      const ordered = budgetPrefs.current.columnOrder
-        .map((key) => ALL_COLUMNS.find((c) => c.key === key))
-        .filter((c): c is ColumnDef => c !== undefined);
-      for (const col of ALL_COLUMNS) {
-        if (!ordered.some((c) => c.key === col.key)) ordered.push(col);
-      }
-      return ordered;
-    }
-    return ALL_COLUMNS;
-  });
-  const dragCol = useRef<number | null>(null);
-  const dragOverCol = useRef<number | null>(null);
-
-  // Keep columns in sync when ALL_COLUMNS changes (language switch)
-  useEffect(() => {
-    setColumns((prev) => {
-      const keyOrder = prev.map((c) => c.key);
-      const updated = keyOrder
-        .map((key) => ALL_COLUMNS.find((c) => c.key === key))
-        .filter((c): c is ColumnDef => c !== undefined);
-      for (const col of ALL_COLUMNS) {
-        if (!updated.some((c) => c.key === col.key)) {
-          updated.push(col);
-        }
-      }
-      return updated;
-    });
-  }, [ALL_COLUMNS]);
-
-  // Sorting
-  const [sortKey, setSortKey] = useState<ColumnKey | null>(
-    () => budgetPrefs.current?.sortKey ?? null
-  );
-  const [sortDir, setSortDir] = useState<"asc" | "desc">(
-    () => budgetPrefs.current?.sortDir ?? "asc"
-  );
+  // Column order + visible extras + sort + compact — all persisted, all in one
+  // hook so the persist-effect's dep list stays correct across role-shells.
+  const {
+    columns,
+    setColumns,
+    visibleExtras,
+    setVisibleExtras,
+    sortKey,
+    setSortKey,
+    sortDir,
+    setSortDir,
+    compactRows,
+    setCompactRows,
+    dragCol,
+    dragOverCol,
+  } = useBudgetTablePrefs(projectId, ALL_COLUMNS);
 
   // Inline editing
   const [editingCell, setEditingCell] = useState<{ rowId: string; col: string } | null>(null);
@@ -284,10 +252,7 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
   }, [colContextMenu]);
 
   // suppliers/purchaseOrderInfo/allRooms now come from useBudgetData hook above
-
-  const [compactRows, setCompactRows] = useState(
-    () => budgetPrefs.current?.compactRows ?? true
-  );
+  // compactRows now comes from useBudgetTablePrefs hook above
 
   // Task → material budget post grouping
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
@@ -333,16 +298,7 @@ const BudgetTab = ({ projectId, currency, isReadOnly, userType, country }: Budge
   // allRooms now comes from useBudgetData hook above
   const newRowNameRef = useRef<HTMLInputElement>(null);
 
-  // Auto-persist table prefs
-  useEffect(() => {
-    persistBudgetPrefs(projectId, {
-      columnOrder: columns.map((c) => c.key),
-      visibleExtras: Array.from(visibleExtras),
-      sortKey,
-      sortDir,
-      compactRows,
-    });
-  }, [columns, visibleExtras, sortKey, sortDir, compactRows, projectId]);
+  // Auto-persist of table prefs now lives in useBudgetTablePrefs hook above
 
   // Visible columns (filter out hidden extras)
   const visibleColumns = useMemo(
