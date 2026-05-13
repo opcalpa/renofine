@@ -1963,6 +1963,23 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
           onOpenChange={(open) => setWizardV2State((prev) => ({ ...prev, open }))}
           initialPath={wizardV2State.path}
           projectId={projectId}
+          existingMemberEmails={members
+            .map((m) => (m.user_email || "").trim().toLowerCase())
+            .filter(Boolean)}
+          existingInvitationEmails={invitations
+            .map((i) => (i.email || "").trim().toLowerCase())
+            .filter(Boolean)}
+          existingWorkerContacts={{
+            emails: workerTokens
+              .filter((w) => !w.revoked_at)
+              .map((w) => (w.worker_email || "").trim().toLowerCase())
+              .filter(Boolean),
+            phones: workerTokens
+              .filter((w) => !w.revoked_at)
+              .map((w) => (w.worker_phone || "").trim())
+              .filter(Boolean),
+          }}
+          onInviteSent={fetchTeamData}
         />
       )}
     </div>
