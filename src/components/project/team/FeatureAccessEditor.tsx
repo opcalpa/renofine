@@ -23,7 +23,7 @@ export interface FeatureAccess {
   files: "none" | "view" | "upload" | "edit";
 }
 
-interface FeatureConfig {
+export interface FeatureConfig {
   key: keyof FeatureAccess;
   labelKey: string;
   options: string[];
@@ -35,7 +35,7 @@ interface FeatureConfig {
   };
 }
 
-const OPTION_ICONS: Record<string, LucideIcon> = {
+export const OPTION_ICONS: Record<string, LucideIcon> = {
   none: Ban,
   view: Eye,
   edit: Edit3,
@@ -44,7 +44,7 @@ const OPTION_ICONS: Record<string, LucideIcon> = {
   invite: UserPlus,
 };
 
-const OPTION_LABEL_KEYS: Record<string, string> = {
+export const OPTION_LABEL_KEYS: Record<string, string> = {
   none: "roles.accessNone",
   view: "roles.accessView",
   edit: "roles.accessEdit",
@@ -53,8 +53,9 @@ const OPTION_LABEL_KEYS: Record<string, string> = {
   invite: "roles.accessInvite",
 };
 
-const FEATURES: FeatureConfig[] = [
+export const FEATURES: FeatureConfig[] = [
   { key: "customerView", labelKey: "roles.featureCustomerView", options: ["none", "view"] },
+  { key: "overview", labelKey: "roles.featureOverview", options: ["none", "view", "edit"] },
   { key: "timeline", labelKey: "roles.featureTimeline", options: ["none", "view", "edit"] },
   {
     key: "tasks",
@@ -85,10 +86,9 @@ const FEATURES: FeatureConfig[] = [
       ],
     },
   },
-  { key: "overview", labelKey: "roles.featureOverview", options: ["none", "view", "edit"] },
-  { key: "teams", labelKey: "roles.featureTeamManagement", options: ["none", "view", "invite"] },
   { key: "budget", labelKey: "roles.featureBudget", options: ["none", "view", "edit"] },
   { key: "files", labelKey: "roles.featureFiles", options: ["none", "view", "upload", "edit"] },
+  { key: "teams", labelKey: "roles.featureTeamManagement", options: ["none", "view", "invite"] },
 ];
 
 interface FeatureAccessEditorProps {

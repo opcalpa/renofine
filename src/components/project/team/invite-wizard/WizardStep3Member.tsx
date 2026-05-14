@@ -1,82 +1,49 @@
 import { useTranslation } from "react-i18next";
-import { useState } from "react";
-import { Eye, Wrench, ChevronDown, RotateCcw, Hammer, Receipt, Wallet, FolderOpen } from "lucide-react";
+import { Eye, Wrench, Check, X as XIcon, RotateCcw } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { AccessConsequenceList } from "../AccessConsequenceList";
-import type { LucideIcon } from "lucide-react";
-import type { FeatureAccess } from "../FeatureAccessEditor";
-import type { MemberAccessConfig, PackagePreset } from "./types";
-import { diffCount } from "./packageToAccess";
 import {
-  AREAS,
-  type AreaKey,
-  type AreaLevel,
-  levelToAccess,
-  readAreaLevel,
-  getAreaAccessField,
-} from "./areaLevel";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+import type { LucideIcon } from "lucide-react";
+import {
+  FEATURES,
+  OPTION_LABEL_KEYS,
+  type FeatureAccess,
+} from "../FeatureAccessEditor";
+import type {
+  MemberAccessConfig,
+  PackagePreset,
+  ProfessionKey,
+} from "./types";
+import { PROFESSION_KEYS } from "./types";
+import { diffCount } from "./packageToAccess";
 
 interface Props {
   memberAccess: MemberAccessConfig;
+  profession: ProfessionKey | null;
+  onSetProfession: (profession: ProfessionKey | null) => void;
   onSetPreset: (preset: Exclude<PackagePreset, "custom">) => void;
   onSetOnlyAssigned: (onlyAssigned: boolean) => void;
   onSetAccessField: (updates: Partial<FeatureAccess>) => void;
   onResetToPackage: () => void;
-  personName?: string;
 }
-
-interface AreaMeta {
-  key: AreaKey;
-  icon: LucideIcon;
-  labelKey: string;
-  fallback: string;
-  levels: AreaLevel[];
-}
-
-const AREA_META: Record<AreaKey, AreaMeta> = {
-  tasks: {
-    key: "tasks",
-    icon: Hammer,
-    labelKey: "inviteWizard.memberStep.areaTasks",
-    fallback: "Arbeten",
-    levels: ["stangd", "insyn", "aktiv"],
-  },
-  purchases: {
-    key: "purchases",
-    icon: Receipt,
-    labelKey: "inviteWizard.memberStep.areaPurchases",
-    fallback: "Inköp & material",
-    levels: ["stangd", "insyn", "aktiv"],
-  },
-  budget: {
-    key: "budget",
-    icon: Wallet,
-    labelKey: "inviteWizard.memberStep.areaBudget",
-    fallback: "Ekonomi",
-    levels: ["stangd", "insyn", "aktiv"],
-  },
-  files: {
-    key: "files",
-    icon: FolderOpen,
-    labelKey: "inviteWizard.memberStep.areaFiles",
-    fallback: "Filer",
-    levels: ["stangd", "insyn", "aktiv"],
-  },
-};
 
 export function WizardStep3Member({
   memberAccess,
+  profession,
+  onSetProfession,
   onSetPreset,
   onSetOnlyAssigned,
   onSetAccessField,
   onResetToPackage,
-  personName,
 }: Props) {
   const { t } = useTranslation();
-  const [adjustOpen, setAdjustOpen] = useState(false);
-
   const { preset, onlyAssigned, access } = memberAccess;
   const isCustom = preset === "custom";
   const baseline: Exclude<PackagePreset, "custom"> = isCustom ? "insyn" : preset;
@@ -84,12 +51,44 @@ export function WizardStep3Member({
 
   return (
     <div className="space-y-4">
-      <div>
-        <h3 className="text-sm font-medium">
-          {t("inviteWizard.memberStep.title", "Vilken nivå av åtkomst?")}
-        </h3>
+      {/* Profession dropdown */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex-1">
+          <div className="text-sm font-medium">
+            {t("inviteWizard.memberStep.professionLabel", "Yrke")}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {t(
+              "inviteWizard.memberStep.professionHelp",
+              "Bara en etikett — påverkar inte åtkomsten.",
+            )}
+          </p>
+        </div>
+        <Select
+          value={profession ?? "none"}
+          onValueChange={(v) =>
+            onSetProfession(v === "none" ? null : (v as ProfessionKey))
+          }
+        >
+          <SelectTrigger className="w-[180px] h-8 text-sm">
+            <SelectValue
+              placeholder={t("inviteWizard.memberStep.professionPlaceholder", "Inget valt")}
+            />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">
+              {t("inviteWizard.memberStep.professionNone", "— Inget valt —")}
+            </SelectItem>
+            {PROFESSION_KEYS.map((key) => (
+              <SelectItem key={key} value={key}>
+                {t(`professions.${key}`, key)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
+      {/* Preset cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <PackageCard
           icon={Eye}
@@ -113,16 +112,17 @@ export function WizardStep3Member({
         />
       </div>
 
+      {/* Bara tilldelat switch */}
       <div className="rounded-md border bg-card/40 p-3">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 space-y-0.5">
             <div className="text-sm font-medium">
-              {t("inviteWizard.memberStep.onlyAssignedLabel", "Bara sina arbeten")}
+              {t("inviteWizard.memberStep.onlyAssignedLabel", "Bara tilldelat")}
             </div>
             <p className="text-xs text-muted-foreground leading-snug">
               {t(
                 "inviteWizard.memberStep.onlyAssignedDescription",
-                "Personen ser bara det den är tilldelad till. Bra för underleverantörer.",
+                "Personen ser bara arbeten och inköp där den står som tilldelad. Bra för underentreprenörer.",
               )}
             </p>
           </div>
@@ -130,71 +130,41 @@ export function WizardStep3Member({
         </div>
       </div>
 
+      {/* Per-feature access list */}
       <div className="rounded-md border">
-        <button
-          type="button"
-          className="w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-accent/50"
-          onClick={() => setAdjustOpen((v) => !v)}
-        >
-          <span className="flex items-center gap-2">
-            <ChevronDown
-              className={cn(
-                "h-4 w-4 transition-transform",
-                adjustOpen ? "rotate-0" : "-rotate-90",
-              )}
-            />
-            <span className="font-medium">
-              {t("inviteWizard.memberStep.adjustHeader", "Justera områden")}
-            </span>
+        <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/30">
+          <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            {t("inviteWizard.memberStep.accessListHeader", "Tillgång per sida")}
             {isCustom && diff > 0 && (
-              <span className="text-xs text-muted-foreground">
-                {t("inviteWizard.memberStep.diffCount", "({{count}} ändringar)", {
-                  count: diff,
-                })}
+              <span className="ml-2 normal-case font-normal tracking-normal">
+                ({t("inviteWizard.memberStep.diffCount", "{{count}} ändringar", { count: diff })})
               </span>
             )}
-          </span>
+          </div>
           {isCustom && (
             <Button
               type="button"
               variant="ghost"
               size="sm"
-              className="h-7 px-2 text-xs"
-              onClick={(e) => {
-                e.stopPropagation();
-                onResetToPackage();
-              }}
+              className="h-6 px-2 text-xs"
+              onClick={onResetToPackage}
             >
               <RotateCcw className="h-3 w-3 mr-1" />
               {t("inviteWizard.memberStep.resetToPackage", "Återställ")}
             </Button>
           )}
-        </button>
-
-        {adjustOpen && (
-          <div className="divide-y border-t">
-            {AREAS.map((area) => {
-              const meta = AREA_META[area];
-              const currentLevel = readAreaLevel(area, access);
-              return (
-                <AreaRow
-                  key={area}
-                  meta={meta}
-                  currentLevel={currentLevel}
-                  onLevelChange={(level) => {
-                    const field = getAreaAccessField(area);
-                    onSetAccessField({
-                      [field]: levelToAccess(area, level),
-                    } as Partial<FeatureAccess>);
-                  }}
-                />
-              );
-            })}
-          </div>
-        )}
+        </div>
+        <div className="divide-y">
+          {FEATURES.map((feature) => (
+            <AccessRow
+              key={feature.key}
+              feature={feature}
+              access={access}
+              onChange={onSetAccessField}
+            />
+          ))}
+        </div>
       </div>
-
-      <AccessConsequenceList access={access} personName={personName} />
     </div>
   );
 }
@@ -238,50 +208,71 @@ function PackageCard({ icon: Icon, title, description, active, onClick }: Packag
   );
 }
 
-interface AreaRowProps {
-  meta: AreaMeta;
-  currentLevel: AreaLevel;
-  onLevelChange: (level: AreaLevel) => void;
+interface AccessRowProps {
+  feature: (typeof FEATURES)[number];
+  access: FeatureAccess;
+  onChange: (updates: Partial<FeatureAccess>) => void;
 }
 
-function AreaRow({ meta, currentLevel, onLevelChange }: AreaRowProps) {
+function AccessRow({ feature, access, onChange }: AccessRowProps) {
   const { t } = useTranslation();
-  const Icon = meta.icon;
+  const currentValue = access[feature.key] as string;
+  const isGranted = currentValue !== "none";
+  const scopeValue = feature.scope ? (access[feature.scope.key] as string) : undefined;
+  const showScope =
+    feature.scope && feature.scope.showWhen.includes(currentValue);
 
   return (
-    <div className="p-3 space-y-2">
-      <div className="flex items-center gap-2">
-        <Icon className="h-4 w-4 text-muted-foreground" />
-        <span className="text-sm font-medium">{t(meta.labelKey, meta.fallback)}</span>
+    <div className="px-3 py-2 flex items-center gap-3">
+      {/* Status icon */}
+      <div className="shrink-0 w-5 flex items-center justify-center">
+        {isGranted ? (
+          <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+        ) : (
+          <XIcon className="h-3.5 w-3.5 text-muted-foreground/60" />
+        )}
       </div>
-      <div className="inline-flex rounded-md border bg-muted/30 p-0.5">
-        {meta.levels.map((level) => (
-          <button
-            key={level}
-            type="button"
-            onClick={() => onLevelChange(level)}
-            className={cn(
-              "px-3 py-1 text-xs rounded transition-colors",
-              currentLevel === level
-                ? "bg-background shadow-sm font-medium"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            {t(`inviteWizard.memberStep.level.${level}`, levelFallback(level))}
-          </button>
-        ))}
+
+      {/* Label */}
+      <div className="flex-1 min-w-0">
+        <div
+          className={cn(
+            "text-sm",
+            isGranted ? "text-foreground font-medium" : "text-muted-foreground",
+          )}
+        >
+          {t(feature.labelKey)}
+        </div>
+        {showScope && scopeValue === "assigned" && (
+          <div className="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5">
+            {t("inviteWizard.memberStep.assignedOnlyNote", "Bara där personen är tilldelad")}
+          </div>
+        )}
       </div>
+
+      {/* Level dropdown */}
+      <Select
+        value={currentValue}
+        onValueChange={(value) =>
+          onChange({ [feature.key]: value } as Partial<FeatureAccess>)
+        }
+      >
+        <SelectTrigger
+          className={cn(
+            "h-7 w-[120px] text-xs",
+            !isGranted && "text-muted-foreground",
+          )}
+        >
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {feature.options.map((opt) => (
+            <SelectItem key={opt} value={opt}>
+              {t(OPTION_LABEL_KEYS[opt], opt)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
-}
-
-function levelFallback(level: AreaLevel): string {
-  switch (level) {
-    case "stangd":
-      return "Stängd";
-    case "insyn":
-      return "Insyn";
-    case "aktiv":
-      return "Aktiv";
-  }
 }

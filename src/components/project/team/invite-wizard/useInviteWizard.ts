@@ -160,7 +160,7 @@ export function useInviteWizard({ initialPath, skipStep1 = true }: UseInviteWiza
   }, []);
 
   const next = useCallback(() => {
-    setState((prev) => ({ ...prev, step: Math.min(4, prev.step + 1) as WizardStep }));
+    setState((prev) => ({ ...prev, step: Math.min(3, prev.step + 1) as WizardStep }));
   }, []);
 
   const back = useCallback(() => {
@@ -169,17 +169,15 @@ export function useInviteWizard({ initialPath, skipStep1 = true }: UseInviteWiza
 
   const canAdvance = useMemo(() => {
     if (state.step === 1) return Boolean(state.path);
-    if (state.step === 2) return true;
-    if (state.step === 3) {
+    if (state.step === 2) {
       if (state.path === "worker") return state.workerAccess.taskIds.length > 0;
       return true;
     }
-    if (state.step === 4) {
+    if (state.step === 3) {
       const hasEmail = state.contact.email.trim().length > 0;
       const hasName = state.contact.name.trim().length > 0;
       const hasPhone = state.contact.phone.trim().length > 0;
       if (!hasName) return false;
-      // Worker needs phone OR email; member needs email
       if (state.path === "worker") return hasEmail || hasPhone;
       return hasEmail;
     }

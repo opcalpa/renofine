@@ -7,7 +7,6 @@ import { useToast } from "@/hooks/use-toast";
 import type { InvitePath } from "./types";
 import { useInviteWizard } from "./useInviteWizard";
 import { WizardStep1Path } from "./WizardStep1Path";
-import { WizardStep2Profession } from "./WizardStep2Profession";
 import { WizardStep3Worker } from "./WizardStep3Worker";
 import { WizardStep3Member } from "./WizardStep3Member";
 import { WizardStep4Contact } from "./WizardStep4Contact";
@@ -69,7 +68,7 @@ export function InviteWizard({
     if (open) setSubmitResult(null);
   }, [open]);
 
-  const totalSteps = 4;
+  const totalSteps = 3;
   const showBack = state.step > 1 && !submitResult;
   const isFinal = state.step === totalSteps;
   const showSuccessScreen = submitResult !== null;
@@ -182,17 +181,7 @@ export function InviteWizard({
               {state.step === 1 && (
                 <WizardStep1Path path={state.path} onChange={setPath} />
               )}
-              {state.step === 2 && (
-                <WizardStep2Profession
-                  profession={state.profession}
-                  onChange={setProfession}
-                  onSkip={() => {
-                    setProfession(null);
-                    next();
-                  }}
-                />
-              )}
-              {state.step === 3 && state.path === "worker" && (
+              {state.step === 2 && state.path === "worker" && (
                 <WizardStep3Worker
                   projectId={projectId}
                   workerAccess={state.workerAccess}
@@ -200,17 +189,18 @@ export function InviteWizard({
                   onChange={setWorkerAccess}
                 />
               )}
-              {state.step === 3 && state.path === "member" && (
+              {state.step === 2 && state.path === "member" && (
                 <WizardStep3Member
                   memberAccess={state.memberAccess}
+                  profession={state.profession}
+                  onSetProfession={setProfession}
                   onSetPreset={setPackagePreset}
                   onSetOnlyAssigned={setOnlyAssigned}
                   onSetAccessField={setAccessField}
                   onResetToPackage={resetToPackage}
-                  personName={state.contact.name}
                 />
               )}
-              {state.step === 4 && (
+              {state.step === 3 && (
                 <WizardStep4Contact
                   path={state.path}
                   contact={state.contact}
