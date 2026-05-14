@@ -338,6 +338,28 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
     setWorkerStep(1);
     setDialogOpen(true);
   };
+
+  const handleReinviteWorker = (row: TeamRow) => {
+    const token = workerTokens.find((wt) => wt.id === row.id);
+    if (!token) return;
+    setInviteMode("worker");
+    setSelectedTemplate("worker");
+    setFeatureAccess({ ...ROLE_TEMPLATES.worker.access });
+    setInviteName(token.worker_name || "");
+    setWorkerData({
+      phone: token.worker_phone || "",
+      email: token.worker_email || "",
+      language: token.worker_language || "sv",
+      welcomeMessage: "",
+      selectedTaskIds: [...(token.assigned_task_ids || [])],
+      taskOverrides: new Map(),
+    });
+    setCanCreatePurchases(token.can_create_purchases);
+    setCanLogReceipts(token.can_log_receipts);
+    setGeneratedWorkerLink(null);
+    setWorkerStep(1);
+    setDialogOpen(true);
+  };
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<
     | { type: "member"; data: TeamMember }
@@ -1262,6 +1284,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
             "Medlemmen tappar all åtkomst till projektet. Tidigare bidrag (kommentarer, filer) finns kvar.",
           ),
           action: t("common.remove", "Ta bort"),
+          cancel: t("roles.confirmRemoveMemberKeep", "Behåll medlem"),
         }
       : pendingDestructive.kind === "invitation"
         ? {
@@ -1270,7 +1293,8 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
               "roles.confirmCancelInviteDescription",
               "Inbjudningslänken slutar fungera direkt. Du kan skicka en ny inbjudan när som helst.",
             ),
-            action: t("common.cancel", "Avbryt"),
+            action: t("roles.cancelInvitation", "Avbryt inbjudan"),
+            cancel: t("roles.confirmCancelInviteKeep", "Behåll inbjudan"),
           }
         : {
             title: t("roles.confirmRevokeWorkerTitle", "Återkalla arbetarens åtkomst?"),
@@ -1279,6 +1303,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
               "Länken slutar fungera direkt. Du kan skapa en ny inbjudan när som helst.",
             ),
             action: t("teamWorker.revoke", "Återkalla"),
+            cancel: t("roles.confirmRevokeWorkerKeep", "Behåll åtkomst"),
           }
     : null;
 
@@ -1699,6 +1724,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
             onDelete={handleTableDelete}
             onCopyLink={handleCopyWorkerLink}
             onDm={(profileId, name) => setDmRecipient({ id: profileId, name })}
+            onReinviteWorker={handleReinviteWorker}
           />
         </CardContent>
       </Card>
@@ -1994,7 +2020,9 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t("common.cancel", "Avbryt")}</AlertDialogCancel>
+            <AlertDialogCancel>
+              {destructiveCopy?.cancel || t("common.cancel", "Avbryt")}
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDestructive}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"

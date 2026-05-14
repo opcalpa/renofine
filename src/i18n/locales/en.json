@@ -1446,10 +1446,13 @@
     "duplicateInvitePending": "{{email}} already has a pending invitation.",
     "confirmCancelInviteTitle": "Cancel invitation?",
     "confirmCancelInviteDescription": "The invitation link will stop working immediately. You can send a new invitation anytime.",
+    "confirmCancelInviteKeep": "Keep invitation",
     "confirmRemoveMemberTitle": "Remove member from project?",
     "confirmRemoveMemberDescription": "The member will lose all access to the project. Their previous contributions (comments, files) will remain.",
+    "confirmRemoveMemberKeep": "Keep member",
     "confirmRevokeWorkerTitle": "Revoke worker access?",
     "confirmRevokeWorkerDescription": "The link will stop working immediately. You can create a new invitation anytime.",
+    "confirmRevokeWorkerKeep": "Keep access",
     "cards": {
       "contractor": { "description": "Sees assigned tasks, can update status and create purchase orders" },
       "project_manager": { "description": "Full access to all project features, can invite team members" },
@@ -5023,6 +5026,12 @@
       "pending": "Pending",
       "expired": "Expired",
       "revoked": "Revoked"
+    },
+    "youBadge": "You",
+    "sections": {
+      "active": "Active",
+      "pending": "Pending invitations",
+      "inactive": "Inactive"
     }
   },
   "unifiedTable": {
@@ -5906,6 +5915,7 @@
     "revokeAccess": "Revoke access",
     "revokeConfirm": "This will prevent the worker from accessing the instructions.",
     "revoked": "Access revoked",
+    "reinvite": "Re-invite",
     "active": "Active",
     "expired": "Expired",
     "lastAccessed": "Last accessed",

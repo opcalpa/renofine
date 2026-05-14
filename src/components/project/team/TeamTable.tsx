@@ -1,6 +1,6 @@
-import { Fragment, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Crown, Pencil, X, ClipboardList, Phone, Mail, ChevronDown, ChevronRight, Copy, MessageCircle } from "lucide-react";
+import { Crown, Pencil, X, Phone, Mail, ChevronDown, ChevronRight, Copy, MessageCircle, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Table,
@@ -57,7 +57,18 @@ interface TeamTableProps {
   onDelete: (row: TeamRow) => void;
   onCopyLink: (token: string) => void;
   onDm: (profileId: string, name: string) => void;
+  onReinviteWorker?: (row: TeamRow) => void;
 }
+
+type SectionKey = "active" | "pending" | "inactive";
+
+function getRowSection(row: TeamRow): SectionKey {
+  if (row.status === "pending") return "pending";
+  if (row.status === "revoked" || row.status === "expired") return "inactive";
+  return "active";
+}
+
+const SECTION_ORDER: SectionKey[] = ["active", "pending", "inactive"];
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -99,9 +110,18 @@ export function TeamTable({
   onDelete,
   onCopyLink,
   onDm,
+  onReinviteWorker,
 }: TeamTableProps) {
   const { t } = useTranslation();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const grouped = useMemo(() => {
+    const map: Record<SectionKey, TeamRow[]> = { active: [], pending: [], inactive: [] };
+    for (const row of rows) {
+      map[getRowSection(row)].push(row);
+    }
+    return map;
+  }, [rows]);
 
   if (rows.length === 0) {
     return (
@@ -110,6 +130,9 @@ export function TeamTable({
       </p>
     );
   }
+
+  const visibleSections = SECTION_ORDER.filter((s) => grouped[s].length > 0);
+  const showSectionHeaders = visibleSections.length > 1;
 
   return (
     <Table>
@@ -124,21 +147,35 @@ export function TeamTable({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {rows.map((row) => {
-          const isExpanded = expandedId === row.id;
-          const canDm = row.profileId && currentProfileId && row.profileId !== currentProfileId;
+        {visibleSections.map((section) => (
+          <Fragment key={`section-${section}`}>
+            {showSectionHeaders && (
+              <TableRow className="hover:bg-transparent border-b-0">
+                <TableCell colSpan={6} className="py-2 pt-4">
+                  <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                    {t(`team.sections.${section}`, section)} · {grouped[section].length}
+                  </span>
+                </TableCell>
+              </TableRow>
+            )}
+            {grouped[section].map((row) => {
+              const isExpanded = expandedId === row.id;
+              const canDm = row.profileId && currentProfileId && row.profileId !== currentProfileId;
+              const isCurrentUser = !!(row.profileId && currentProfileId && row.profileId === currentProfileId);
+              const isInactive = row.status === "revoked" || row.status === "expired";
 
-          return (
-            <Fragment key={row.id}>
-              {/* Main row */}
-              <TableRow
-                className={cn(
-                  "cursor-pointer",
-                  isExpanded && "bg-muted/30",
-                  row.type === "owner" && "bg-primary/[0.03]"
-                )}
-                onClick={() => setExpandedId(isExpanded ? null : row.id)}
-              >
+              return (
+                <Fragment key={row.id}>
+                  {/* Main row */}
+                  <TableRow
+                    className={cn(
+                      "cursor-pointer",
+                      isExpanded && "bg-muted/30",
+                      row.type === "owner" && "bg-primary/[0.03]",
+                      isInactive && "opacity-60"
+                    )}
+                    onClick={() => setExpandedId(isExpanded ? null : row.id)}
+                  >
                 {/* Name */}
                 <TableCell>
                   <div className="flex items-center gap-3">
@@ -152,7 +189,14 @@ export function TeamTable({
                       </div>
                     )}
                     <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">{row.name}</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-sm font-medium truncate">{row.name}</p>
+                        {isCurrentUser && (
+                          <Badge variant="outline" className="text-[10px] h-4 px-1.5 font-medium border-primary/40 bg-primary/10 text-primary shrink-0">
+                            {t("team.youBadge", "You")}
+                          </Badge>
+                        )}
+                      </div>
                       {row.email && (
                         <p className="text-xs text-muted-foreground truncate">{row.email}</p>
                       )}
@@ -249,6 +293,11 @@ export function TeamTable({
                             <Copy className="h-3.5 w-3.5" />
                           </Button>
                         )}
+                        {row.type === "worker" && isInactive && onReinviteWorker && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onReinviteWorker(row)} title={t("teamWorker.reinvite", "Bjud in igen")}>
+                            <Send className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
                         {isOwner && (
                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onDelete(row)} title={t("common.remove")}>
                             <X className="h-3.5 w-3.5 text-destructive" />
@@ -258,19 +307,21 @@ export function TeamTable({
                     )}
                   </div>
                 </TableCell>
-              </TableRow>
+                  </TableRow>
 
-              {/* Expanded detail row */}
-              {isExpanded && (
-                <TableRow key={`${row.id}-detail`} className="bg-muted/20 hover:bg-muted/20">
-                  <TableCell colSpan={6} className="py-4">
-                    <ExpandedRowContent row={row} t={t} />
-                  </TableCell>
-                </TableRow>
-              )}
-            </Fragment>
-          );
-        })}
+                  {/* Expanded detail row */}
+                  {isExpanded && (
+                    <TableRow key={`${row.id}-detail`} className="bg-muted/20 hover:bg-muted/20">
+                      <TableCell colSpan={6} className="py-4">
+                        <ExpandedRowContent row={row} t={t} />
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </Fragment>
+              );
+            })}
+          </Fragment>
+        ))}
       </TableBody>
     </Table>
   );

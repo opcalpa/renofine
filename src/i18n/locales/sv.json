@@ -1444,10 +1444,13 @@
     "duplicateInvitePending": "{{email}} har redan en väntande inbjudan.",
     "confirmCancelInviteTitle": "Avbryta inbjudan?",
     "confirmCancelInviteDescription": "Inbjudningslänken slutar fungera direkt. Du kan skicka en ny inbjudan när som helst.",
+    "confirmCancelInviteKeep": "Behåll inbjudan",
     "confirmRemoveMemberTitle": "Ta bort medlem från projektet?",
     "confirmRemoveMemberDescription": "Medlemmen tappar all åtkomst till projektet. Tidigare bidrag (kommentarer, filer) finns kvar.",
+    "confirmRemoveMemberKeep": "Behåll medlem",
     "confirmRevokeWorkerTitle": "Återkalla arbetarens åtkomst?",
     "confirmRevokeWorkerDescription": "Länken slutar fungera direkt. Du kan skapa en ny inbjudan när som helst.",
+    "confirmRevokeWorkerKeep": "Behåll åtkomst",
     "cards": {
       "contractor": { "description": "Ser tilldelade arbeten, kan uppdatera status och skapa inköpsordrar" },
       "project_manager": { "description": "Full åtkomst till alla projektfunktioner, kan bjuda in teammedlemmar" },
@@ -5020,6 +5023,12 @@
       "pending": "Väntande",
       "expired": "Utgången",
       "revoked": "Återkallad"
+    },
+    "youBadge": "Du",
+    "sections": {
+      "active": "Aktiva",
+      "pending": "Väntande inbjudningar",
+      "inactive": "Inaktiva"
     }
   },
   "unifiedTable": {
@@ -5903,6 +5912,7 @@
     "revokeAccess": "Återkalla åtkomst",
     "revokeConfirm": "Detta hindrar arbetaren från att se instruktionerna.",
     "revoked": "Åtkomst återkallad",
+    "reinvite": "Bjud in igen",
     "active": "Aktiv",
     "expired": "Utgången",
     "lastAccessed": "Senast besökt",
