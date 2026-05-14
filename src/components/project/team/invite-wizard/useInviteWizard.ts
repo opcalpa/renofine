@@ -51,20 +51,56 @@ function buildMemberDefault(preset: PackagePreset, onlyAssigned: boolean): Membe
   };
 }
 
+export interface WorkerPrefill {
+  name?: string;
+  phone?: string;
+  email?: string;
+  language?: string;
+  welcomeMessage?: string;
+  taskIds?: string[];
+  canProposePurchases?: boolean;
+  canLogPurchases?: boolean;
+}
+
 interface UseInviteWizardOptions {
   initialPath: InvitePath;
   /** When true, Step 1 is auto-skipped (user entered via a path-specific CTA) */
   skipStep1?: boolean;
+  /** Optional pre-fill for the worker flow (used by reinvite). */
+  prefillWorker?: WorkerPrefill;
 }
 
-export function useInviteWizard({ initialPath, skipStep1 = true }: UseInviteWizardOptions) {
+export function useInviteWizard({
+  initialPath,
+  skipStep1 = true,
+  prefillWorker,
+}: UseInviteWizardOptions) {
   const [state, setState] = useState<InviteWizardState>(() => ({
     step: skipStep1 ? 2 : 1,
     path: initialPath,
     profession: null,
     memberAccess: buildMemberDefault("insyn", false),
-    workerAccess: { ...DEFAULT_WORKER_ACCESS },
-    contact: { ...DEFAULT_CONTACT },
+    workerAccess: prefillWorker
+      ? {
+          ...DEFAULT_WORKER_ACCESS,
+          taskIds: prefillWorker.taskIds ?? [],
+          canProposePurchases:
+            prefillWorker.canProposePurchases ?? DEFAULT_WORKER_ACCESS.canProposePurchases,
+          canLogPurchases:
+            prefillWorker.canLogPurchases ?? DEFAULT_WORKER_ACCESS.canLogPurchases,
+          taskOverrides: new Map(),
+        }
+      : { ...DEFAULT_WORKER_ACCESS, taskOverrides: new Map() },
+    contact: prefillWorker
+      ? {
+          ...DEFAULT_CONTACT,
+          name: prefillWorker.name ?? "",
+          phone: prefillWorker.phone ?? "",
+          email: prefillWorker.email ?? "",
+          language: prefillWorker.language ?? DEFAULT_CONTACT.language,
+          welcomeMessage: prefillWorker.welcomeMessage ?? "",
+        }
+      : { ...DEFAULT_CONTACT },
   }));
 
   const setPath = useCallback((path: InvitePath) => {

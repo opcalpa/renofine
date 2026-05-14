@@ -1,5 +1,5 @@
 export { InviteWizard } from "./InviteWizard";
-export { useInviteWizard } from "./useInviteWizard";
+export { useInviteWizard, type WorkerPrefill } from "./useInviteWizard";
 export { applyPackage, detectPackage, diffCount } from "./packageToAccess";
 export type {
   ContactInfo,

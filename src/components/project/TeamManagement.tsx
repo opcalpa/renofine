@@ -53,7 +53,7 @@ import type { TeamRow } from "./team/TeamTable";
 import { AccessConsequenceList } from "./team/AccessConsequenceList";
 import { PROFESSION_KEYS } from "./team/professions";
 import { InviteWizard } from "./team/invite-wizard";
-import type { InvitePath } from "./team/invite-wizard";
+import type { InvitePath, WorkerPrefill } from "./team/invite-wizard";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -315,6 +315,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
     open: false,
     path: "member",
   });
+  const [wizardPrefill, setWizardPrefill] = useState<WorkerPrefill | undefined>(undefined);
   const [pendingDestructive, setPendingDestructive] = useState<
     | { kind: "member"; id: string; label: string }
     | { kind: "invitation"; id: string; label: string }
@@ -325,40 +326,26 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
   const [inviteMode, setInviteMode] = useState<"member" | "worker">("member");
 
   const openInviteAsMember = () => {
-    setInviteMode("member");
-    setSelectedTemplate("contractor");
-    setFeatureAccess({ ...ROLE_TEMPLATES.contractor.access });
-    setDialogOpen(true);
+    setWizardV2State({ open: true, path: "member" });
   };
 
   const openInviteAsWorker = () => {
-    setInviteMode("worker");
-    setSelectedTemplate("worker");
-    setFeatureAccess({ ...ROLE_TEMPLATES.worker.access });
-    setWorkerStep(1);
-    setDialogOpen(true);
+    setWizardV2State({ open: true, path: "worker" });
   };
 
   const handleReinviteWorker = (row: TeamRow) => {
     const token = workerTokens.find((wt) => wt.id === row.id);
     if (!token) return;
-    setInviteMode("worker");
-    setSelectedTemplate("worker");
-    setFeatureAccess({ ...ROLE_TEMPLATES.worker.access });
-    setInviteName(token.worker_name || "");
-    setWorkerData({
+    setWizardPrefill({
+      name: token.worker_name || "",
       phone: token.worker_phone || "",
       email: token.worker_email || "",
       language: token.worker_language || "sv",
-      welcomeMessage: "",
-      selectedTaskIds: [...(token.assigned_task_ids || [])],
-      taskOverrides: new Map(),
+      taskIds: [...(token.assigned_task_ids || [])],
+      canProposePurchases: token.can_create_purchases,
+      canLogPurchases: token.can_log_receipts,
     });
-    setCanCreatePurchases(token.can_create_purchases);
-    setCanLogReceipts(token.can_log_receipts);
-    setGeneratedWorkerLink(null);
-    setWorkerStep(1);
-    setDialogOpen(true);
+    setWizardV2State({ open: true, path: "worker" });
   };
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<
@@ -1335,16 +1322,6 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
               <UserPlus className="h-4 w-4 mr-2" />
               {t("roles.addMemberButton", "Lägg till medlem")}
             </Button>
-            {import.meta.env.DEV && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-xs border border-dashed border-amber-400 text-amber-700"
-                onClick={() => setWizardV2State({ open: true, path: "member" })}
-              >
-                V2 Beta
-              </Button>
-            )}
           </div>
         )}
       </div>
@@ -2033,12 +2010,16 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
         </AlertDialogContent>
       </AlertDialog>
 
-      {import.meta.env.DEV && wizardV2State.open && (
+      {wizardV2State.open && (
         <InviteWizard
           open={wizardV2State.open}
-          onOpenChange={(open) => setWizardV2State((prev) => ({ ...prev, open }))}
+          onOpenChange={(open) => {
+            setWizardV2State((prev) => ({ ...prev, open }));
+            if (!open) setWizardPrefill(undefined);
+          }}
           initialPath={wizardV2State.path}
           projectId={projectId}
+          prefillWorker={wizardPrefill}
           existingMemberEmails={members
             .map((m) => (m.user_email || "").trim().toLowerCase())
             .filter(Boolean)}

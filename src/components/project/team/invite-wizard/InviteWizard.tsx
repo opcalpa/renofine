@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Check, Copy, Loader2, MessageCircle, Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { InvitePath } from "./types";
-import { useInviteWizard } from "./useInviteWizard";
+import { useInviteWizard, type WorkerPrefill } from "./useInviteWizard";
 import { WizardStep1Path } from "./WizardStep1Path";
 import { WizardStep3Worker } from "./WizardStep3Worker";
 import { WizardStep3Member } from "./WizardStep3Member";
@@ -28,6 +28,8 @@ interface InviteWizardProps {
   existingInvitationEmails?: string[];
   /** Existing active worker contacts. */
   existingWorkerContacts?: { emails: string[]; phones: string[] };
+  /** Optional pre-fill for worker reinvite. */
+  prefillWorker?: WorkerPrefill;
   onInviteSent?: () => void;
 }
 
@@ -39,11 +41,12 @@ export function InviteWizard({
   existingMemberEmails = [],
   existingInvitationEmails = [],
   existingWorkerContacts = { emails: [], phones: [] },
+  prefillWorker,
   onInviteSent,
 }: InviteWizardProps) {
   const { t } = useTranslation();
   const { toast } = useToast();
-  const wizard = useInviteWizard({ initialPath, skipStep1: true });
+  const wizard = useInviteWizard({ initialPath, skipStep1: true, prefillWorker });
   const {
     state,
     back,
