@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, ArrowUp, ArrowDown, ArrowUpDown, Columns3, Plus, Layers, Copy, ChevronDown, ChevronRight, FileText, Trash2, Minimize2, Wallet } from "lucide-react";
+import { Loader2, ArrowUp, ArrowDown, ArrowUpDown, Columns3, Plus, Layers, Copy, ChevronDown, ChevronRight, FileText, Trash2, Minimize2, Wallet, ShoppingCart } from "lucide-react";
 import { AttachmentIndicator } from "@/components/shared/AttachmentIndicator";
 import { FilePreviewPopover } from "@/components/shared/FilePreviewPopover";
 import { getStatusBadgeColor } from "@/lib/statusColors";
