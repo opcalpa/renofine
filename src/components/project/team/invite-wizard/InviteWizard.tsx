@@ -53,6 +53,9 @@ export function InviteWizard({
     setProfession,
     setWorkerAccess,
     toggleWorkerTask,
+    setWorkerOverride,
+    toggleChecklistItem,
+    isChecklistItemIncluded,
     setPackagePreset,
     setOnlyAssigned,
     setAccessField,
@@ -129,12 +132,21 @@ export function InviteWizard({
     }
   };
 
+  const wideLayout =
+    !showSuccessScreen && state.step === 2 && state.path === "worker";
+
   return (
     <Dialog open={open} onOpenChange={(o) => {
       onOpenChange(o);
       if (!o) setSubmitResult(null);
     }}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent
+        className={
+          wideLayout
+            ? "w-[95vw] md:!max-w-[90vw] lg:!max-w-6xl max-h-[90vh] overflow-hidden flex flex-col"
+            : "max-w-2xl"
+        }
+      >
         <DialogHeader>
           <div className="flex items-center gap-2">
             {showBack && (
@@ -187,6 +199,9 @@ export function InviteWizard({
                   workerAccess={state.workerAccess}
                   onToggleTask={toggleWorkerTask}
                   onChange={setWorkerAccess}
+                  onSetOverride={setWorkerOverride}
+                  onToggleChecklistItem={toggleChecklistItem}
+                  isChecklistItemIncluded={isChecklistItemIncluded}
                 />
               )}
               {state.step === 2 && state.path === "member" && (

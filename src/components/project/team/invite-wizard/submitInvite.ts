@@ -196,6 +196,25 @@ async function submitWorker(
 
   if (error) throw error;
 
+  // Persist instruction overrides for any task the owner customized.
+  const overrides = Array.from(state.workerAccess.taskOverrides.values()).filter(
+    (o) =>
+      o.descriptionOverride !== null ||
+      o.checklistOverride !== null ||
+      o.photoOverride !== null,
+  );
+  if (overrides.length > 0) {
+    await supabase.from("worker_instruction_overrides").insert(
+      overrides.map((o) => ({
+        worker_token_id: tokenRecord.id,
+        task_id: o.taskId,
+        description_override: o.descriptionOverride,
+        checklist_override: o.checklistOverride,
+        photo_override: o.photoOverride,
+      })),
+    );
+  }
+
   const language = state.contact.language || "sv";
   if (language !== "en" && language !== "sv") {
     supabase.functions

@@ -10,12 +10,28 @@ import type {
   WizardStep,
   WorkerAccessConfig,
 } from "./types";
+import type { TaskOption, TaskOverride } from "../WorkerInviteFields";
 import { applyPackage, detectPackage } from "./packageToAccess";
+
+function ensureOverride(
+  map: Map<string, TaskOverride>,
+  taskId: string,
+): TaskOverride {
+  return (
+    map.get(taskId) || {
+      taskId,
+      descriptionOverride: null,
+      checklistOverride: null,
+      photoOverride: null,
+    }
+  );
+}
 
 const DEFAULT_WORKER_ACCESS: WorkerAccessConfig = {
   taskIds: [],
   canProposePurchases: true,
   canLogPurchases: false,
+  taskOverrides: new Map(),
 };
 
 const DEFAULT_CONTACT: ContactInfo = {
@@ -151,6 +167,76 @@ export function useInviteWizard({ initialPath, skipStep1 = true }: UseInviteWiza
     });
   }, []);
 
+  const setWorkerOverride = useCallback(
+    (taskId: string, updates: Partial<TaskOverride>) => {
+      setState((prev) => {
+        const current = ensureOverride(prev.workerAccess.taskOverrides, taskId);
+        const next = new Map(prev.workerAccess.taskOverrides);
+        next.set(taskId, { ...current, ...updates });
+        return {
+          ...prev,
+          workerAccess: { ...prev.workerAccess, taskOverrides: next },
+        };
+      });
+    },
+    [],
+  );
+
+  const toggleChecklistItem = useCallback(
+    (task: TaskOption, checklistId: string, itemId: string) => {
+      setState((prev) => {
+        const current = ensureOverride(prev.workerAccess.taskOverrides, task.id);
+        const allItems = task.checklists.flatMap((cl) =>
+          cl.items.map((item) => ({ checklistId: cl.id, itemId: item.id })),
+        );
+        const next = new Map(prev.workerAccess.taskOverrides);
+
+        if (!current.checklistOverride) {
+          // "all included" → switch to "all minus this one"
+          const filtered = allItems.filter(
+            (i) => !(i.checklistId === checklistId && i.itemId === itemId),
+          );
+          next.set(task.id, { ...current, checklistOverride: filtered });
+        } else {
+          const exists = current.checklistOverride.some(
+            (o) => o.checklistId === checklistId && o.itemId === itemId,
+          );
+          if (exists) {
+            const filtered = current.checklistOverride.filter(
+              (o) => !(o.checklistId === checklistId && o.itemId === itemId),
+            );
+            next.set(task.id, { ...current, checklistOverride: filtered });
+          } else {
+            next.set(task.id, {
+              ...current,
+              checklistOverride: [
+                ...current.checklistOverride,
+                { checklistId, itemId },
+              ],
+            });
+          }
+        }
+
+        return {
+          ...prev,
+          workerAccess: { ...prev.workerAccess, taskOverrides: next },
+        };
+      });
+    },
+    [],
+  );
+
+  const isChecklistItemIncluded = useCallback(
+    (taskId: string, checklistId: string, itemId: string): boolean => {
+      const override = state.workerAccess.taskOverrides.get(taskId);
+      if (!override?.checklistOverride) return true;
+      return override.checklistOverride.some(
+        (o) => o.checklistId === checklistId && o.itemId === itemId,
+      );
+    },
+    [state.workerAccess.taskOverrides],
+  );
+
   const setContact = useCallback((updates: Partial<ContactInfo>) => {
     setState((prev) => ({ ...prev, contact: { ...prev.contact, ...updates } }));
   }, []);
@@ -194,6 +280,9 @@ export function useInviteWizard({ initialPath, skipStep1 = true }: UseInviteWiza
     resetToPackage,
     setWorkerAccess,
     toggleWorkerTask,
+    setWorkerOverride,
+    toggleChecklistItem,
+    isChecklistItemIncluded,
     setContact,
     goToStep,
     next,

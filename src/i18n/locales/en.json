@@ -36,6 +36,7 @@
       "description": "Pick one or more tasks. The worker only sees what you check.",
       "selectedCount": "{{count}} selected",
       "noTasks": "No tasks in the project yet.",
+      "previewEmpty": "Pick a task to see how the worker will see it.",
       "purchaseHeader": "Purchases",
       "canProposeLabel": "Can propose purchases",
       "canProposeDescription": "Creates proposals that you approve before the purchase is made.",

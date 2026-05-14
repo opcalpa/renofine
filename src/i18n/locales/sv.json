@@ -36,6 +36,7 @@
       "description": "Välj en eller flera uppgifter. Workern ser bara det du markerar.",
       "selectedCount": "{{count}} valda",
       "noTasks": "Inga uppgifter i projektet ännu.",
+      "previewEmpty": "Välj en uppgift för att se hur arbetaren ser den.",
       "purchaseHeader": "Inköp",
       "canProposeLabel": "Kan föreslå inköp",
       "canProposeDescription": "Skapar förslag som du godkänner innan inköpet görs.",

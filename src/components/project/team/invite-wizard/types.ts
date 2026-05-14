@@ -1,4 +1,5 @@
 import type { FeatureAccess } from "../FeatureAccessEditor";
+import type { TaskOverride } from "../WorkerInviteFields";
 
 export type InvitePath = "worker" | "member";
 
@@ -33,6 +34,8 @@ export interface WorkerAccessConfig {
   taskIds: string[];
   canProposePurchases: boolean;
   canLogPurchases: boolean;
+  /** Per-task customizations (description/checklist/photos). Empty Map = use defaults. */
+  taskOverrides: Map<string, TaskOverride>;
 }
 
 export interface ContactInfo {
