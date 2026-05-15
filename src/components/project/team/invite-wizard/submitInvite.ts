@@ -40,6 +40,8 @@ export interface SubmitContext {
   existingInvitationEmails: Set<string>;
   /** Active worker emails+phones for dup-check */
   existingWorkerContacts: { emails: Set<string>; phones: Set<string> };
+  /** Revoked worker token being re-invited — deleted once the new one is live. */
+  replacesWorkerTokenId?: string;
 }
 
 export class DuplicateContactError extends Error {
@@ -221,6 +223,19 @@ async function submitWorker(
     tokenRecord.id,
     ctx.projectId,
   );
+
+  // Re-invite: the new token is fully live, so drop the revoked one it
+  // replaces. Child rows cascade (ON DELETE CASCADE). Best-effort — a
+  // failure here only leaves a harmless duplicate in the Inactive list.
+  if (ctx.replacesWorkerTokenId) {
+    const { error: delError } = await supabase
+      .from("worker_access_tokens")
+      .delete()
+      .eq("id", ctx.replacesWorkerTokenId);
+    if (delError) {
+      console.error("Failed to remove replaced worker token:", delError);
+    }
+  }
 
   const language = state.contact.language || "sv";
   if (language !== "en" && language !== "sv") {

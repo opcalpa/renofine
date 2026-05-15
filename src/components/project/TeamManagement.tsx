@@ -329,6 +329,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
       taskIds: [...(token.assigned_task_ids || [])],
       canProposePurchases: token.can_create_purchases,
       canLogPurchases: token.can_log_receipts,
+      replacesTokenId: token.id,
     });
     setWizardV2State({ open: true, path: "worker" });
   };

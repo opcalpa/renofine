@@ -139,7 +139,9 @@ export function InstructionImagePicker({
       source: "existing",
       photoId: photo.id,
       previewUrl: photo.url,
-      description: photo.caption ?? "",
+      // Start empty — the photo's own caption is not an instruction, and
+      // pre-filling it made typing concatenate onto the caption string.
+      description: "",
     });
     onOpenChange(false);
   };

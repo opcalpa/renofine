@@ -93,9 +93,9 @@ export function InviteWizard({
           emails: new Set(existingWorkerContacts.emails),
           phones: new Set(existingWorkerContacts.phones),
         },
+        replacesWorkerTokenId: prefillWorker?.replacesTokenId,
       });
 
-      setSubmitResult(result);
       onInviteSent?.();
 
       if (result.kind === "member") {
@@ -114,10 +114,14 @@ export function InviteWizard({
               ),
           variant: result.emailSendFailed ? "destructive" : undefined,
         });
-        // Member-flödet stänger automatiskt — det finns inget länk-state att visa
-        setTimeout(() => onOpenChange(false), 1500);
+        // Member-flödet har inget länk-state att visa — stäng direkt så ingen
+        // tom success-modal blinkar till. Toasten kvarstår efter stängning.
+        onOpenChange(false);
+        return;
       }
+
       // Worker-flödet visar success-screen med länken; user stänger själv.
+      setSubmitResult(result);
     } catch (err) {
       if (err instanceof DuplicateContactError) {
         toast({

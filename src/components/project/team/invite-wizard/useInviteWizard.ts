@@ -62,6 +62,8 @@ export interface WorkerPrefill {
   taskIds?: string[];
   canProposePurchases?: boolean;
   canLogPurchases?: boolean;
+  /** When set, the revoked token being re-invited — replaced on submit. */
+  replacesTokenId?: string;
 }
 
 interface UseInviteWizardOptions {
