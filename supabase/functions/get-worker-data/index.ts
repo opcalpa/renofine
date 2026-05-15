@@ -252,6 +252,45 @@ serve(async (req) => {
       };
     }
 
+    // 6c2. Fetch instruction images for this worker token, grouped by task
+    const { data: instructionImagesRaw } = await sb
+      .from("worker_invite_instruction_images")
+      .select("task_id, photo_id, uploaded_url, description, sort_order")
+      .eq("worker_token_id", tokenRecord.id)
+      .order("sort_order", { ascending: true });
+
+    const referencedPhotoIds = Array.from(
+      new Set(
+        (instructionImagesRaw || [])
+          .map((i) => i.photo_id)
+          .filter((id): id is string => !!id),
+      ),
+    );
+
+    const referencedPhotosById: Record<string, { url: string; caption: string | null }> = {};
+    if (referencedPhotoIds.length > 0) {
+      const { data: refPhotos } = await sb
+        .from("photos")
+        .select("id, url, caption")
+        .in("id", referencedPhotoIds);
+      for (const p of refPhotos || []) {
+        referencedPhotosById[p.id] = { url: p.url, caption: p.caption };
+      }
+    }
+
+    const instructionImagesByTask: Record<string, Array<{ url: string; description: string }>> = {};
+    for (const row of instructionImagesRaw || []) {
+      const url = row.photo_id
+        ? referencedPhotosById[row.photo_id]?.url
+        : row.uploaded_url;
+      if (!url) continue;
+      if (!instructionImagesByTask[row.task_id]) instructionImagesByTask[row.task_id] = [];
+      instructionImagesByTask[row.task_id].push({
+        url,
+        description: row.description,
+      });
+    }
+
     // 6d. Resolve before-photos per task (task-linked + room fallback)
     // Task-linked before-photos
     const { data: taskBeforePhotos } = await sb
@@ -320,6 +359,7 @@ serve(async (req) => {
         checklists: taskOverride?.checklists || tr?.checklists || task.checklists || [],
         photos: photosByTask[task.id] || [],
         beforePhotos: filteredBeforePhotos,
+        instructionImages: instructionImagesByTask[task.id] || [],
         messages: messagesByTask[task.id] || [],
         roomId: task.room_id || null,
         room: room

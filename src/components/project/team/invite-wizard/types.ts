@@ -30,12 +30,31 @@ export interface MemberAccessConfig {
   access: FeatureAccess;
 }
 
+export interface InstructionImage {
+  /** Temp local id (React key + identifier before insert). */
+  localId: string;
+  /** "existing" = reference to photos.id; "upload" = new file. */
+  source: "existing" | "upload";
+  /** Set when source = "existing". */
+  photoId?: string;
+  /** Set when source = "upload" (resolved after upload during submit). */
+  uploadedUrl?: string;
+  /** File pending upload — kept only in wizard state, not serialized. */
+  file?: File;
+  /** Preview URL (object URL for uploads, photo URL for existing). */
+  previewUrl: string;
+  /** Owner-authored instruction shown to the worker. */
+  description: string;
+}
+
 export interface WorkerAccessConfig {
   taskIds: string[];
   canProposePurchases: boolean;
   canLogPurchases: boolean;
   /** Per-task customizations (description/checklist/photos). Empty Map = use defaults. */
   taskOverrides: Map<string, TaskOverride>;
+  /** Per-task instruction images (selected existing + uploaded). */
+  instructionImages: Map<string, InstructionImage[]>;
 }
 
 export interface ContactInfo {

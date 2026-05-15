@@ -5817,12 +5817,28 @@
     "placeholder": "Write a message...",
     "delete": "Delete"
   },
+  "instructionImages": {
+    "sectionHeader": "Instruction images",
+    "addButton": "Add image",
+    "emptyHint": "Add images with descriptive text to explain the work visually.",
+    "pickerTitle": "Add instruction image",
+    "existingTab": "Existing",
+    "uploadTab": "Upload",
+    "noExistingPhotos": "No images to choose from in this project yet.",
+    "uploadCta": "Choose an image to upload",
+    "uploadHint": "JPG, PNG or WebP",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "What should the worker do or note here?",
+    "addToList": "Add"
+  },
   "worker": {
     "title": "Work Instructions",
     "hello": "Hello",
     "tag": "Worker",
     "fromWorkerTooltip": "Submitted by a worker via their link",
     "workerSuffix": "(worker)",
+    "instructionImages": "Instructions",
+    "beforePhotos": "Before photos",
     "purchase": {
       "requestButton": "Request purchase",
       "logButton": "Log purchase",

@@ -5814,12 +5814,28 @@
     "placeholder": "Skriv ett meddelande...",
     "delete": "Ta bort"
   },
+  "instructionImages": {
+    "sectionHeader": "Instruktionsbilder",
+    "addButton": "Lägg till bild",
+    "emptyHint": "Lägg till bilder med beskrivande text för att förklara arbetet visuellt.",
+    "pickerTitle": "Lägg till instruktionsbild",
+    "existingTab": "Befintliga",
+    "uploadTab": "Ladda upp",
+    "noExistingPhotos": "Inga bilder att välja från i detta projekt än.",
+    "uploadCta": "Välj en bild att ladda upp",
+    "uploadHint": "JPG, PNG eller WebP",
+    "descriptionLabel": "Beskrivning",
+    "descriptionPlaceholder": "Vad ska arbetaren göra eller notera här?",
+    "addToList": "Lägg till"
+  },
   "worker": {
     "title": "Arbetsinstruktioner",
     "hello": "Hej",
     "tag": "Arbetare",
     "fromWorkerTooltip": "Inskickad av arbetare via deras länk",
     "workerSuffix": "(arbetare)",
+    "instructionImages": "Instruktioner",
+    "beforePhotos": "Före-bilder",
     "purchase": {
       "requestButton": "Be om inköp",
       "logButton": "Logga inköp",

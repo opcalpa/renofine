@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CheckSquare } from "lucide-react";
+import { CheckSquare, Plus, Trash2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
 import { useWorkerTasks, type TaskOption, type TaskOverride } from "../WorkerInviteFields";
 import { WorkerInvitePreview } from "../WorkerInvitePreview";
+import { InstructionImagePicker } from "./InstructionImagePicker";
 import { cn } from "@/lib/utils";
-import type { WorkerAccessConfig } from "./types";
+import type { InstructionImage, WorkerAccessConfig } from "./types";
 
 interface Props {
   projectId: string;
@@ -17,6 +19,9 @@ interface Props {
   onSetOverride: (taskId: string, updates: Partial<TaskOverride>) => void;
   onToggleChecklistItem: (task: TaskOption, checklistId: string, itemId: string) => void;
   isChecklistItemIncluded: (taskId: string, checklistId: string, itemId: string) => boolean;
+  onAddInstructionImage: (taskId: string, image: InstructionImage) => void;
+  onUpdateInstructionImage: (taskId: string, localId: string, updates: Partial<InstructionImage>) => void;
+  onRemoveInstructionImage: (taskId: string, localId: string) => void;
 }
 
 export function WizardStep3Worker({
@@ -27,11 +32,15 @@ export function WizardStep3Worker({
   onSetOverride,
   onToggleChecklistItem,
   isChecklistItemIncluded,
+  onAddInstructionImage,
+  onUpdateInstructionImage,
+  onRemoveInstructionImage,
 }: Props) {
   const { t } = useTranslation();
   const tasks = useWorkerTasks(projectId);
   const selectedCount = workerAccess.taskIds.length;
   const [previewTaskId, setPreviewTaskId] = useState<string | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   // Auto-select first task when something is selected and nothing previewed yet
   useEffect(() => {
@@ -150,22 +159,37 @@ export function WizardStep3Worker({
         </div>
 
         {/* Preview */}
-        <div className="border-l-0 md:border-l md:pl-4 max-h-[420px] overflow-y-auto">
+        <div className="border-l-0 md:border-l md:pl-4 max-h-[420px] overflow-y-auto space-y-3">
           {previewTask ? (
-            <WorkerInvitePreview
-              task={previewTask}
-              override={previewOverride}
-              onOverrideChange={(updates) => onSetOverride(previewTask.id, updates)}
-              onChecklistToggle={(checklistId, itemId) =>
-                onToggleChecklistItem(previewTask, checklistId, itemId)
-              }
-              isChecklistItemIncluded={(checklistId, itemId) =>
-                isChecklistItemIncluded(previewTask.id, checklistId, itemId)
-              }
-              currentIndex={previewIdx}
-              totalCount={workerAccess.taskIds.length}
-              onNavigate={navigatePreview}
-            />
+            <>
+              <WorkerInvitePreview
+                task={previewTask}
+                override={previewOverride}
+                onOverrideChange={(updates) => onSetOverride(previewTask.id, updates)}
+                onChecklistToggle={(checklistId, itemId) =>
+                  onToggleChecklistItem(previewTask, checklistId, itemId)
+                }
+                isChecklistItemIncluded={(checklistId, itemId) =>
+                  isChecklistItemIncluded(previewTask.id, checklistId, itemId)
+                }
+                currentIndex={previewIdx}
+                totalCount={workerAccess.taskIds.length}
+                onNavigate={navigatePreview}
+              />
+
+              <InstructionImagesSection
+                projectId={projectId}
+                task={previewTask}
+                images={workerAccess.instructionImages.get(previewTask.id) ?? []}
+                onAdd={(image) => onAddInstructionImage(previewTask.id, image)}
+                onUpdate={(localId, updates) =>
+                  onUpdateInstructionImage(previewTask.id, localId, updates)
+                }
+                onRemove={(localId) => onRemoveInstructionImage(previewTask.id, localId)}
+                pickerOpen={pickerOpen}
+                setPickerOpen={setPickerOpen}
+              />
+            </>
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-center p-6 text-xs text-muted-foreground">
               {t(
@@ -238,4 +262,108 @@ function groupByRoom(tasks: TaskOption[]): Record<string, TaskOption[]> {
     groups[key].push(task);
   }
   return groups;
+}
+
+interface InstructionImagesSectionProps {
+  projectId: string;
+  task: TaskOption;
+  images: InstructionImage[];
+  onAdd: (image: InstructionImage) => void;
+  onUpdate: (localId: string, updates: Partial<InstructionImage>) => void;
+  onRemove: (localId: string) => void;
+  pickerOpen: boolean;
+  setPickerOpen: (open: boolean) => void;
+}
+
+function InstructionImagesSection({
+  projectId,
+  task,
+  images,
+  onAdd,
+  onUpdate,
+  onRemove,
+  pickerOpen,
+  setPickerOpen,
+}: InstructionImagesSectionProps) {
+  const { t } = useTranslation();
+  const alreadyChosenPhotoIds = images
+    .filter((img) => img.source === "existing" && img.photoId)
+    .map((img) => img.photoId as string);
+
+  return (
+    <div className="border rounded-md p-3 space-y-2.5 bg-card/40">
+      <div className="flex items-center justify-between">
+        <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          {t("instructionImages.sectionHeader", "Instruktionsbilder")}
+          {images.length > 0 && (
+            <span className="ml-1.5 text-foreground/60">({images.length})</span>
+          )}
+        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-7 px-2 text-xs"
+          onClick={() => setPickerOpen(true)}
+        >
+          <Plus className="h-3.5 w-3.5 mr-1" />
+          {t("instructionImages.addButton", "Lägg till bild")}
+        </Button>
+      </div>
+
+      {images.length === 0 ? (
+        <p className="text-xs text-muted-foreground italic">
+          {t(
+            "instructionImages.emptyHint",
+            "Lägg till bilder med beskrivande text för att förklara arbetet visuellt.",
+          )}
+        </p>
+      ) : (
+        <ul className="space-y-2">
+          {images.map((img) => (
+            <li key={img.localId} className="flex gap-2 items-start rounded-md border bg-background p-2">
+              <img
+                src={img.previewUrl}
+                alt=""
+                className="h-16 w-16 object-cover rounded shrink-0"
+              />
+              <div className="flex-1 min-w-0">
+                <textarea
+                  value={img.description}
+                  onChange={(e) =>
+                    onUpdate(img.localId, { description: e.target.value })
+                  }
+                  placeholder={t(
+                    "instructionImages.descriptionPlaceholder",
+                    "Vad ska arbetaren göra eller notera här?",
+                  )}
+                  rows={2}
+                  className="w-full text-xs border rounded px-2 py-1.5 resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                onClick={() => onRemove(img.localId)}
+                title={t("common.remove", "Ta bort")}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <InstructionImagePicker
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        projectId={projectId}
+        taskId={task.id}
+        alreadyChosenPhotoIds={alreadyChosenPhotoIds}
+        onAdd={onAdd}
+      />
+    </div>
+  );
 }

@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import type { FeatureAccess } from "../FeatureAccessEditor";
 import type {
   ContactInfo,
+  InstructionImage,
   InvitePath,
   InviteWizardState,
   MemberAccessConfig,
@@ -32,6 +33,7 @@ const DEFAULT_WORKER_ACCESS: WorkerAccessConfig = {
   canProposePurchases: true,
   canLogPurchases: false,
   taskOverrides: new Map(),
+  instructionImages: new Map(),
 };
 
 const DEFAULT_CONTACT: ContactInfo = {
@@ -273,6 +275,60 @@ export function useInviteWizard({
     [state.workerAccess.taskOverrides],
   );
 
+  const addInstructionImage = useCallback(
+    (taskId: string, image: InstructionImage) => {
+      setState((prev) => {
+        const next = new Map(prev.workerAccess.instructionImages);
+        const existing = next.get(taskId) ?? [];
+        next.set(taskId, [...existing, image]);
+        return {
+          ...prev,
+          workerAccess: { ...prev.workerAccess, instructionImages: next },
+        };
+      });
+    },
+    [],
+  );
+
+  const updateInstructionImage = useCallback(
+    (taskId: string, localId: string, updates: Partial<InstructionImage>) => {
+      setState((prev) => {
+        const existing = prev.workerAccess.instructionImages.get(taskId);
+        if (!existing) return prev;
+        const next = new Map(prev.workerAccess.instructionImages);
+        next.set(
+          taskId,
+          existing.map((img) =>
+            img.localId === localId ? { ...img, ...updates } : img,
+          ),
+        );
+        return {
+          ...prev,
+          workerAccess: { ...prev.workerAccess, instructionImages: next },
+        };
+      });
+    },
+    [],
+  );
+
+  const removeInstructionImage = useCallback(
+    (taskId: string, localId: string) => {
+      setState((prev) => {
+        const existing = prev.workerAccess.instructionImages.get(taskId);
+        if (!existing) return prev;
+        const next = new Map(prev.workerAccess.instructionImages);
+        const filtered = existing.filter((img) => img.localId !== localId);
+        if (filtered.length === 0) next.delete(taskId);
+        else next.set(taskId, filtered);
+        return {
+          ...prev,
+          workerAccess: { ...prev.workerAccess, instructionImages: next },
+        };
+      });
+    },
+    [],
+  );
+
   const setContact = useCallback((updates: Partial<ContactInfo>) => {
     setState((prev) => ({ ...prev, contact: { ...prev.contact, ...updates } }));
   }, []);
@@ -319,6 +375,9 @@ export function useInviteWizard({
     setWorkerOverride,
     toggleChecklistItem,
     isChecklistItemIncluded,
+    addInstructionImage,
+    updateInstructionImage,
+    removeInstructionImage,
     setContact,
     goToStep,
     next,

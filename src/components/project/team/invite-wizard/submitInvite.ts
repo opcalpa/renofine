@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { FeatureAccess } from "../FeatureAccessEditor";
-import type { InviteWizardState } from "./types";
+import type { InstructionImage, InviteWizardState } from "./types";
 
 function accessToDb(access: FeatureAccess) {
   return {
@@ -215,6 +215,13 @@ async function submitWorker(
     );
   }
 
+  // Persist per-task instruction images (upload new files first, then insert rows).
+  await persistInstructionImages(
+    state.workerAccess.instructionImages,
+    tokenRecord.id,
+    ctx.projectId,
+  );
+
   const language = state.contact.language || "sv";
   if (language !== "en" && language !== "sv") {
     supabase.functions
@@ -237,6 +244,64 @@ async function submitWorker(
     tokenId: tokenRecord.id,
     workerLink: `${appOrigin}/w/${tokenRecord.token}`,
   };
+}
+
+async function persistInstructionImages(
+  imageMap: Map<string, InstructionImage[]>,
+  tokenId: string,
+  projectId: string,
+): Promise<void> {
+  type Row = {
+    worker_token_id: string;
+    task_id: string;
+    photo_id: string | null;
+    uploaded_url: string | null;
+    description: string;
+    sort_order: number;
+  };
+  const rows: Row[] = [];
+
+  for (const [taskId, images] of imageMap.entries()) {
+    for (let i = 0; i < images.length; i++) {
+      const img = images[i];
+      let uploadedUrl: string | null = img.uploadedUrl ?? null;
+
+      if (img.source === "upload" && img.file && !uploadedUrl) {
+        const ext = img.file.name.split(".").pop()?.toLowerCase() ?? "jpg";
+        const path = `projects/${projectId}/worker-instructions/${tokenId}/${img.localId}.${ext}`;
+        const { error: uploadErr } = await supabase.storage
+          .from("project-files")
+          .upload(path, img.file, { upsert: true });
+        if (uploadErr) {
+          console.error("Failed to upload instruction image:", uploadErr);
+          continue;
+        }
+        const { data: urlData } = supabase.storage
+          .from("project-files")
+          .getPublicUrl(path);
+        uploadedUrl = urlData.publicUrl;
+      }
+
+      rows.push({
+        worker_token_id: tokenId,
+        task_id: taskId,
+        photo_id: img.source === "existing" ? img.photoId ?? null : null,
+        uploaded_url: img.source === "upload" ? uploadedUrl : null,
+        description: img.description.trim(),
+        sort_order: i,
+      });
+    }
+  }
+
+  if (rows.length === 0) return;
+
+  const { error } = await supabase
+    .from("worker_invite_instruction_images" as never)
+    .insert(rows as never);
+
+  if (error) {
+    console.error("Failed to insert instruction images:", error);
+  }
 }
 
 function mapProfessionToContractorEnum(profession: string | null): string {

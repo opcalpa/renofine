@@ -60,6 +60,7 @@ export interface RoomTask {
   progress: number;
   checklists: Checklist[];
   photos: Photo[];
+  instructionImages: Array<{ url: string; description: string }>;
   messages: TaskMessage[];
 }
 

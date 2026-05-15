@@ -104,6 +104,7 @@ export function useRoomInstructionsData(projectId: string, profileId: string | n
           progress: t.progress || 0,
           checklists,
           photos: taskPhotoMap.get(t.id) || [],
+          instructionImages: [],
           messages: [],
         };
         for (const rid of ids) {
@@ -178,6 +179,7 @@ export function groupWorkerTasksByRoom(
     progress: number;
     checklists: Array<{ id: string; title: string; items: Array<{ id: string; title: string; completed: boolean }> }>;
     photos: Array<{ id: string; url: string; caption: string | null; source?: string }>;
+    instructionImages?: Array<{ url: string; description: string }>;
     roomId: string | null;
     room: {
       name: string;
@@ -210,6 +212,7 @@ export function groupWorkerTasksByRoom(
       progress: t.progress,
       checklists: t.checklists,
       photos: t.photos,
+      instructionImages: t.instructionImages || [],
       messages: (t as unknown as { messages?: RoomTask["messages"] }).messages || [],
     });
   }

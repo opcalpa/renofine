@@ -59,6 +59,9 @@ export function InviteWizard({
     setWorkerOverride,
     toggleChecklistItem,
     isChecklistItemIncluded,
+    addInstructionImage,
+    updateInstructionImage,
+    removeInstructionImage,
     setPackagePreset,
     setOnlyAssigned,
     setAccessField,
@@ -205,6 +208,9 @@ export function InviteWizard({
                   onSetOverride={setWorkerOverride}
                   onToggleChecklistItem={toggleChecklistItem}
                   isChecklistItemIncluded={isChecklistItemIncluded}
+                  onAddInstructionImage={addInstructionImage}
+                  onUpdateInstructionImage={updateInstructionImage}
+                  onRemoveInstructionImage={removeInstructionImage}
                 />
               )}
               {state.step === 2 && state.path === "member" && (

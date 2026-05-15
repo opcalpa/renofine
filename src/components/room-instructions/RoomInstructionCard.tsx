@@ -254,6 +254,28 @@ function TaskSection({
             <p className="text-xs text-muted-foreground pt-2 whitespace-pre-line">{task.description}</p>
           )}
 
+          {task.instructionImages.length > 0 && (
+            <div className="space-y-2 pt-1">
+              {task.instructionImages.map((img, i) => (
+                <div key={i} className="rounded-lg border bg-card overflow-hidden">
+                  <a href={img.url} target="_blank" rel="noopener noreferrer" className="block">
+                    <img
+                      src={img.url}
+                      alt=""
+                      className="w-full max-h-60 object-cover bg-muted"
+                      loading="lazy"
+                    />
+                  </a>
+                  {img.description && (
+                    <p className="px-2.5 py-2 text-xs whitespace-pre-wrap text-foreground/90 border-t bg-muted/30">
+                      {img.description}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
           {task.checklists.map((cl) => (
             <div key={cl.id} className="space-y-1">
               {cl.title && <p className="text-xs font-medium">{cl.title}</p>}

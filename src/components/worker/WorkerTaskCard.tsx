@@ -103,6 +103,7 @@ export interface WorkerTask {
   checklists: Checklist[];
   photos: Photo[];
   beforePhotos?: Photo[];
+  instructionImages?: Array<{ url: string; description: string }>;
   messages: WorkerMessage[];
   roomId: string | null;
   room: WorkerRoom | null;
@@ -348,6 +349,37 @@ export function WorkerTaskCard({
             ceilingSpec={room.ceilingSpec}
             joinerySpec={room.joinerySpec}
           />
+        </div>
+      )}
+
+      {/* Instruction images (per-task, sent with the invite) */}
+      {task.instructionImages && task.instructionImages.length > 0 && (
+        <div className="px-4 pb-3 space-y-3">
+          <div className="flex items-center gap-2">
+            <Camera className="h-4 w-4 text-muted-foreground" />
+            <span className="text-xs font-medium text-muted-foreground">
+              {t("worker.instructionImages", "Instruktioner")}
+            </span>
+          </div>
+          <ul className="space-y-3">
+            {task.instructionImages.map((img, i) => (
+              <li key={i} className="rounded-lg border bg-card overflow-hidden">
+                <a href={img.url} target="_blank" rel="noopener noreferrer" className="block">
+                  <img
+                    src={img.url}
+                    alt=""
+                    className="w-full max-h-72 object-cover bg-muted"
+                    loading="lazy"
+                  />
+                </a>
+                {img.description && (
+                  <p className="px-3 py-2 text-sm whitespace-pre-wrap text-foreground/90 border-t bg-muted/30">
+                    {img.description}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
