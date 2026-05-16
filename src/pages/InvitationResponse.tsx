@@ -10,6 +10,8 @@ import { cloneRfqForBuilder } from "@/lib/rfqClone";
 
 interface PermissionsSnapshot {
   role_type?: string;
+  /** v2: ISO timestamp the share auto-expires at, or null = permanent. */
+  expires_at?: string | null;
   timeline_access?: string;
   tasks_access?: string;
   tasks_scope?: string;
@@ -206,15 +208,22 @@ const InvitationResponse = () => {
       const isRfqBuilder = perms.role_type === "rfq_builder" || invitation.role_type === "rfq_builder";
       const isPlanningContributor = perms.role_type === "planning_contributor" || invitation.role_type === "planning_contributor";
       const isCoOwner = perms.role_type === "co_owner" || invitation.role_type === "co_owner";
+      // v2 personas
+      const isPmHired = perms.role_type === "pm_hired" || invitation.role_type === "pm_hired";
+      const isMember = perms.role_type === "member" || invitation.role_type === "member";
       const roleType = isRfqBuilder
         ? "rfq_builder"
         : isPlanningContributor
           ? "planning_contributor"
           : isCoOwner
             ? "co_owner"
-            : invitation.role === "client"
-              ? "client"
-              : (isContractor ? 'contractor' : 'other');
+            : isPmHired
+              ? "pm_hired"
+              : invitation.role === "client"
+                ? "client"
+                : isMember
+                  ? "member"
+                  : (isContractor ? 'contractor' : 'other');
       const contractorCategory = isContractor ? contractorRole : null;
 
       const isClientInvite = invitation.role === "client";
@@ -237,8 +246,11 @@ const InvitationResponse = () => {
       const dbRole = dbRoleMap[invitation.role || ""] || "viewer";
 
       const sharePayload = {
-        role: isCoOwner ? "admin" : dbRole,
+        role: isCoOwner || isPmHired ? "admin" : dbRole,
         role_type: roleType,
+        // v2: time-bounded shares (PM/specialist). Snapshot-carried; legacy
+        // invites have no expires_at → null = permanent (unchanged behaviour).
+        expires_at: perms.expires_at ?? null,
         contractor_role: contractorCategory,
         timeline_access: coOwnerAccess || perms.timeline_access || invitation.timeline_access || 'view',
         tasks_access: coOwnerAccess || (isClientInvite ? (perms.tasks_access || 'none') : (perms.tasks_access || invitation.tasks_access || 'view')),

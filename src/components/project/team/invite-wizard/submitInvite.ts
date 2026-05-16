@@ -387,7 +387,8 @@ function mapProfessionToContractorEnum(profession: string | null): string {
 function roleForPersona(state: InviteWizardState): string {
   switch (state.persona) {
     case "client":
-      return "customer";
+      // "client" so the accept-invitation path's isClientInvite branch fires.
+      return "client";
     case "pm":
       return "projectManager";
     default:
