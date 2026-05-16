@@ -1,7 +1,24 @@
-import type { FeatureAccess } from "../FeatureAccessEditor";
 import type { TaskOverride } from "../WorkerInviteFields";
 
-export type InvitePath = "worker" | "member";
+/** Who the invited person is — the wizard's first (human) question. */
+export type InvitePersona = "worker" | "client" | "member" | "pm";
+
+/** PM sub-type — purely a label, no functional access difference. */
+export type PmSubType = "co_owner" | "pm_hired";
+
+/** Economy visibility mode. Maps deterministically onto FeatureAccess. */
+export type EconomyMode = "none" | "own" | "full";
+
+/** What slice of the project a member/PM can act on. */
+export type ScopeRule = "assigned" | "all" | "by_room" | "by_tag";
+
+export interface ScopeConfig {
+  rule: ScopeRule;
+  /** Set when rule = "by_room". */
+  roomIds?: string[];
+  /** Set when rule = "by_tag". */
+  tags?: string[];
+}
 
 export const PROFESSION_KEYS = [
   "carpenter",
@@ -21,14 +38,6 @@ export const PROFESSION_KEYS = [
 ] as const;
 
 export type ProfessionKey = (typeof PROFESSION_KEYS)[number];
-
-export type PackagePreset = "insyn" | "aktiv" | "custom";
-
-export interface MemberAccessConfig {
-  preset: PackagePreset;
-  onlyAssigned: boolean;
-  access: FeatureAccess;
-}
 
 export interface InstructionImage {
   /** Temp local id (React key + identifier before insert). */
@@ -69,9 +78,17 @@ export type WizardStep = 1 | 2 | 3;
 
 export interface InviteWizardState {
   step: WizardStep;
-  path: InvitePath;
+  persona: InvitePersona;
+  /** Label only — does not affect access. Used for member/PM. */
   profession: ProfessionKey | null;
-  memberAccess: MemberAccessConfig;
+  /** Economy mode (member: none/own, pm: none/own/full). */
+  mode: EconomyMode;
+  /** Task/purchase scope for member/PM. */
+  scope: ScopeConfig;
+  /** Only set when persona = "pm". */
+  pmSubType: PmSubType | null;
+  /** ISO timestamp when the share auto-expires, or null = permanent. */
+  expiresAt: string | null;
   workerAccess: WorkerAccessConfig;
   contact: ContactInfo;
 }

@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { ContactInfo, InvitePath } from "./types";
+import type { ContactInfo, InvitePersona } from "./types";
 
 const LANGUAGES = [
   { code: "sv", name: "Svenska", flag: "🇸🇪" },
@@ -25,14 +25,14 @@ const LANGUAGES = [
 ];
 
 interface Props {
-  path: InvitePath;
+  persona: InvitePersona;
   contact: ContactInfo;
   onChange: (updates: Partial<ContactInfo>) => void;
 }
 
-export function WizardStep4Contact({ path, contact, onChange }: Props) {
+export function WizardStep4Contact({ persona, contact, onChange }: Props) {
   const { t } = useTranslation();
-  const isWorker = path === "worker";
+  const isWorker = persona === "worker";
 
   return (
     <div className="space-y-4">

@@ -53,7 +53,7 @@ import type { TeamRow } from "./team/TeamTable";
 import { AccessConsequenceList } from "./team/AccessConsequenceList";
 import { PROFESSION_KEYS } from "./team/professions";
 import { InviteWizard } from "./team/invite-wizard";
-import type { InvitePath, WorkerPrefill } from "./team/invite-wizard";
+import type { InvitePersona, WorkerPrefill } from "./team/invite-wizard";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -298,9 +298,14 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [rotPersons, setRotPersons] = useState<{ id: string; name: string; personnummerLast4: string | null; profileId: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
-  const [wizardV2State, setWizardV2State] = useState<{ open: boolean; path: InvitePath }>({
+  const [wizardV2State, setWizardV2State] = useState<{
+    open: boolean;
+    persona: InvitePersona;
+    skipStep1: boolean;
+  }>({
     open: false,
-    path: "member",
+    persona: "member",
+    skipStep1: false,
   });
   const [wizardPrefill, setWizardPrefill] = useState<WorkerPrefill | undefined>(undefined);
   const [pendingDestructive, setPendingDestructive] = useState<
@@ -310,12 +315,14 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
     | null
   >(null);
 
+  // Generic "add member" — let the user pick the persona in Step 1.
   const openInviteAsMember = () => {
-    setWizardV2State({ open: true, path: "member" });
+    setWizardV2State({ open: true, persona: "member", skipStep1: false });
   };
 
+  // "Send job" — persona is fixed to worker, skip the picker.
   const openInviteAsWorker = () => {
-    setWizardV2State({ open: true, path: "worker" });
+    setWizardV2State({ open: true, persona: "worker", skipStep1: true });
   };
 
   const handleReinviteWorker = (row: TeamRow) => {
@@ -331,7 +338,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
       canLogPurchases: token.can_log_receipts,
       replacesTokenId: token.id,
     });
-    setWizardV2State({ open: true, path: "worker" });
+    setWizardV2State({ open: true, persona: "worker", skipStep1: true });
   };
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<
@@ -1371,7 +1378,8 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
             setWizardV2State((prev) => ({ ...prev, open }));
             if (!open) setWizardPrefill(undefined);
           }}
-          initialPath={wizardV2State.path}
+          initialPersona={wizardV2State.persona}
+          skipStep1={wizardV2State.skipStep1}
           projectId={projectId}
           prefillWorker={wizardPrefill}
           existingMemberEmails={members

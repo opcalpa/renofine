@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { FeatureAccess } from "../FeatureAccessEditor";
 import type { InstructionImage, InviteWizardState } from "./types";
+import { personaToAccess } from "./personaToAccess";
 
 /**
  * Normalize a phone number to E.164-ish form so storage and duplicate
@@ -85,7 +86,7 @@ export async function submitInvite(
   state: InviteWizardState,
   ctx: SubmitContext,
 ): Promise<SubmitResult> {
-  if (state.path === "worker") {
+  if (state.persona === "worker") {
     return submitWorker(state, ctx);
   }
   return submitMember(state, ctx);
@@ -122,14 +123,18 @@ async function submitMember(
     .single();
   if (!profile) throw new Error("Profile not found");
 
-  const permDb = accessToDb(state.memberAccess.access);
+  // V2: access is derived deterministically from persona + mode + scope.
+  const permDb = accessToDb(
+    personaToAccess(state.persona, state.mode, state.scope, state.pmSubType),
+  );
 
   // Map profession to contractor_role enum compatibility.
   // The enum only knows utförar-yrken; for customer/auditor/agent/broker we
   // store "other" until the enum is extended in a future migration.
   const contractorEnum = mapProfessionToContractorEnum(state.profession);
 
-  const role = roleForMember(state);
+  const role = roleForPersona(state);
+  const roleType = roleTypeForPersona(state);
 
   const { data: invitationData, error } = await supabase
     .from("project_invitations")
@@ -140,8 +145,14 @@ async function submitMember(
       invited_name: state.contact.name.trim() || null,
       contractor_role: contractorEnum,
       role,
-      role_type: null,
-      permissions_snapshot: { ...permDb, role_type: null },
+      role_type: roleType,
+      // expires_at lands on project_shares at acceptance time — carried in
+      // the snapshot so the accept-invitation path can apply it.
+      permissions_snapshot: {
+        ...permDb,
+        role_type: roleType,
+        expires_at: state.expiresAt,
+      },
     } as Record<string, unknown>)
     .select("id")
     .single();
@@ -372,17 +383,23 @@ function mapProfessionToContractorEnum(profession: string | null): string {
   return "other";
 }
 
-function roleForMember(state: InviteWizardState): string {
-  // Map profession to a role string compatible with TeamManagement's existing
-  // detectTemplate() logic: contractor / projectManager / customer / collaborator.
-  // For the new flat profession list we route everyone to "contractor" unless
-  // they're clearly a manager or customer-facing role. This keeps the DB schema
-  // happy without forcing a separate role-type field decision into this PR.
-  const profession = state.profession;
-  if (profession === "general_contractor") return "projectManager";
-  if (profession === "customer") return "customer";
-  if (profession === "auditor" || profession === "agent" || profession === "broker") {
-    return "collaborator";
+/** Legacy `role` column — kept for backward compat with detectTemplate(). */
+function roleForPersona(state: InviteWizardState): string {
+  switch (state.persona) {
+    case "client":
+      return "customer";
+    case "pm":
+      return "projectManager";
+    default:
+      return "contractor";
   }
-  return "contractor";
+}
+
+/** V2 `role_type` — the canonical persona signal (used by detectPersonaMode). */
+function roleTypeForPersona(state: InviteWizardState): string {
+  if (state.persona === "client") return "client";
+  if (state.persona === "pm") {
+    return state.pmSubType === "pm_hired" ? "pm_hired" : "co_owner";
+  }
+  return "member";
 }

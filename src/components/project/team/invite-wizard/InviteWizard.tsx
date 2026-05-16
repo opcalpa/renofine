@@ -2,13 +2,14 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Check, Copy, Loader2, MessageCircle, Mail } from "lucide-react";
+import { ArrowLeft, Check, Copy, Loader2, MessageCircle, MessageSquare, Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { InvitePath } from "./types";
+import type { InvitePersona } from "./types";
 import { useInviteWizard, type WorkerPrefill } from "./useInviteWizard";
-import { WizardStep1Path } from "./WizardStep1Path";
+import { WizardStep1Persona } from "./WizardStep1Persona";
+import { WizardStep2Member } from "./WizardStep2Member";
+import { WizardStep2PM } from "./WizardStep2PM";
 import { WizardStep3Worker } from "./WizardStep3Worker";
-import { WizardStep3Member } from "./WizardStep3Member";
 import { WizardStep4Contact } from "./WizardStep4Contact";
 import {
   submitInvite,
@@ -20,7 +21,9 @@ import {
 interface InviteWizardProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  initialPath: InvitePath;
+  initialPersona: InvitePersona;
+  /** When true the persona is fixed and Step 1 is skipped (CTA entry). */
+  skipStep1?: boolean;
   projectId: string;
   /** Existing active member emails — lowercased. Used for dup-check. */
   existingMemberEmails?: string[];
@@ -36,7 +39,8 @@ interface InviteWizardProps {
 export function InviteWizard({
   open,
   onOpenChange,
-  initialPath,
+  initialPersona,
+  skipStep1 = false,
   projectId,
   existingMemberEmails = [],
   existingInvitationEmails = [],
@@ -46,15 +50,19 @@ export function InviteWizard({
 }: InviteWizardProps) {
   const { t } = useTranslation();
   const { toast } = useToast();
-  const wizard = useInviteWizard({ initialPath, skipStep1: true, prefillWorker });
+  const wizard = useInviteWizard({ initialPersona, skipStep1, prefillWorker });
   const {
     state,
     minStep,
     back,
     next,
     canAdvance,
-    setPath,
+    setPersona,
     setProfession,
+    setMode,
+    setScope,
+    setPmSubType,
+    setExpiresAt,
     setWorkerAccess,
     toggleWorkerTask,
     setWorkerOverride,
@@ -63,10 +71,6 @@ export function InviteWizard({
     addInstructionImage,
     updateInstructionImage,
     removeInstructionImage,
-    setPackagePreset,
-    setOnlyAssigned,
-    setAccessField,
-    resetToPackage,
     setContact,
   } = wizard;
 
@@ -79,8 +83,8 @@ export function InviteWizard({
   }, [open]);
 
   const totalSteps = 3;
-  // Step 1 is skipped when entered via a CTA, so present the remaining steps
-  // as a 1-based sequence ("Steg 1 av 2") instead of "Steg 2 av 3".
+  // Step 1 is skipped on CTA entry, so present remaining steps as a 1-based
+  // sequence ("Steg 1 av 2") instead of "Steg 2 av 3".
   const displayTotal = totalSteps - (minStep - 1);
   const displayStep = state.step - (minStep - 1);
   const showBack = state.step > minStep && !submitResult;
@@ -148,7 +152,7 @@ export function InviteWizard({
   };
 
   const wideLayout =
-    !showSuccessScreen && state.step === 2 && state.path === "worker";
+    !showSuccessScreen && state.step === 2 && state.persona === "worker";
 
   return (
     <Dialog open={open} onOpenChange={(o) => {
@@ -206,9 +210,10 @@ export function InviteWizard({
           {!showSuccessScreen && (
             <>
               {state.step === 1 && (
-                <WizardStep1Path path={state.path} onChange={setPath} />
+                <WizardStep1Persona persona={state.persona} onChange={setPersona} />
               )}
-              {state.step === 2 && state.path === "worker" && (
+
+              {state.step === 2 && state.persona === "worker" && (
                 <WizardStep3Worker
                   projectId={projectId}
                   workerAccess={state.workerAccess}
@@ -222,20 +227,46 @@ export function InviteWizard({
                   onRemoveInstructionImage={removeInstructionImage}
                 />
               )}
-              {state.step === 2 && state.path === "member" && (
-                <WizardStep3Member
-                  memberAccess={state.memberAccess}
+
+              {state.step === 2 && state.persona === "member" && (
+                <WizardStep2Member
                   profession={state.profession}
+                  scope={state.scope}
+                  mode={state.mode}
                   onSetProfession={setProfession}
-                  onSetPreset={setPackagePreset}
-                  onSetOnlyAssigned={setOnlyAssigned}
-                  onSetAccessField={setAccessField}
-                  onResetToPackage={resetToPackage}
+                  onSetScope={setScope}
+                  onSetMode={setMode}
                 />
               )}
+
+              {state.step === 2 && state.persona === "pm" && (
+                <WizardStep2PM
+                  pmSubType={state.pmSubType}
+                  mode={state.mode}
+                  expiresAt={state.expiresAt}
+                  onSetPmSubType={setPmSubType}
+                  onSetMode={setMode}
+                  onSetExpiresAt={setExpiresAt}
+                />
+              )}
+
+              {state.step === 2 && state.persona === "client" && (
+                <div className="rounded-lg border bg-muted/30 p-4 text-sm text-muted-foreground space-y-2">
+                  <p className="font-medium text-foreground">
+                    {t("inviteWizard.clientStep.title", "Kunden får en kundvy")}
+                  </p>
+                  <p>
+                    {t(
+                      "inviteWizard.clientStep.description",
+                      "Beställaren ser projektets status, tidsplan och kontraktssumma — men inga interna priser, marginaler eller andra leverantörers belopp.",
+                    )}
+                  </p>
+                </div>
+              )}
+
               {state.step === 3 && (
                 <WizardStep4Contact
-                  path={state.path}
+                  persona={state.persona}
                   contact={state.contact}
                   onChange={setContact}
                 />
@@ -362,6 +393,22 @@ function WorkerSuccess({ result, phone, email }: WorkerSuccessProps) {
           <Button type="button" variant="outline" size="sm" onClick={sendSms}>
             <MessageCircle className="h-4 w-4 mr-1.5" />
             {t("inviteWizard.success.sendSms", "Skicka SMS")}
+          </Button>
+        )}
+        {phone && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              window.open(
+                `https://wa.me/${phone.replace(/\D/g, "")}?text=${encodeURIComponent(result.workerLink)}`,
+                "_blank",
+              )
+            }
+          >
+            <MessageSquare className="h-4 w-4 mr-1.5" />
+            {t("inviteWizard.success.sendWhatsApp", "Dela via WhatsApp")}
           </Button>
         )}
         {email && (

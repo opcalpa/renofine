@@ -1,13 +1,15 @@
 export { InviteWizard } from "./InviteWizard";
 export { useInviteWizard, type WorkerPrefill } from "./useInviteWizard";
-export { applyPackage, detectPackage, diffCount } from "./packageToAccess";
+export { personaToAccess, detectPersonaMode } from "./personaToAccess";
 export type {
   ContactInfo,
-  InvitePath,
+  EconomyMode,
+  InvitePersona,
   InviteWizardState,
-  MemberAccessConfig,
-  PackagePreset,
+  PmSubType,
   ProfessionKey,
+  ScopeConfig,
+  ScopeRule,
   WizardStep,
   WorkerAccessConfig,
 } from "./types";

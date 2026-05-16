@@ -1,18 +1,17 @@
 import { useCallback, useMemo, useState } from "react";
-import type { FeatureAccess } from "../FeatureAccessEditor";
 import type {
   ContactInfo,
+  EconomyMode,
   InstructionImage,
-  InvitePath,
+  InvitePersona,
   InviteWizardState,
-  MemberAccessConfig,
-  PackagePreset,
+  PmSubType,
   ProfessionKey,
+  ScopeConfig,
   WizardStep,
   WorkerAccessConfig,
 } from "./types";
 import type { TaskOption, TaskOverride } from "../WorkerInviteFields";
-import { applyPackage, detectPackage } from "./packageToAccess";
 
 function ensureOverride(
   map: Map<string, TaskOverride>,
@@ -44,13 +43,11 @@ const DEFAULT_CONTACT: ContactInfo = {
   welcomeMessage: "",
 };
 
-function buildMemberDefault(preset: PackagePreset, onlyAssigned: boolean): MemberAccessConfig {
-  const resolvedPreset = preset === "custom" ? "insyn" : preset;
-  return {
-    preset,
-    onlyAssigned,
-    access: applyPackage(resolvedPreset, onlyAssigned),
-  };
+/** Persona-appropriate default economy mode. */
+function defaultModeFor(persona: InvitePersona): EconomyMode {
+  if (persona === "pm") return "full";
+  if (persona === "client") return "own";
+  return "own"; // member → Egna by default
 }
 
 export interface WorkerPrefill {
@@ -67,28 +64,28 @@ export interface WorkerPrefill {
 }
 
 interface UseInviteWizardOptions {
-  initialPath: InvitePath;
-  /** When true, Step 1 is auto-skipped (user entered via a path-specific CTA) */
+  initialPersona: InvitePersona;
+  /** When true, Step 1 (persona picker) is auto-skipped. */
   skipStep1?: boolean;
   /** Optional pre-fill for the worker flow (used by reinvite). */
   prefillWorker?: WorkerPrefill;
 }
 
 export function useInviteWizard({
-  initialPath,
-  skipStep1 = true,
+  initialPersona,
+  skipStep1 = false,
   prefillWorker,
 }: UseInviteWizardOptions) {
-  // When entered via a path-specific CTA, Step 1 (the path picker) is dead UI:
-  // the path is already decided, so the wizard starts at step 2 and that
-  // becomes the floor for back-navigation.
   const minStep: WizardStep = skipStep1 ? 2 : 1;
 
   const [state, setState] = useState<InviteWizardState>(() => ({
     step: skipStep1 ? 2 : 1,
-    path: initialPath,
+    persona: initialPersona,
     profession: null,
-    memberAccess: buildMemberDefault("insyn", false),
+    mode: defaultModeFor(initialPersona),
+    scope: { rule: "assigned" },
+    pmSubType: initialPersona === "pm" ? "co_owner" : null,
+    expiresAt: null,
     workerAccess: prefillWorker
       ? {
           ...DEFAULT_WORKER_ACCESS,
@@ -112,14 +109,16 @@ export function useInviteWizard({
       : { ...DEFAULT_CONTACT },
   }));
 
-  const setPath = useCallback((path: InvitePath) => {
+  const setPersona = useCallback((persona: InvitePersona) => {
     setState((prev) => {
-      if (prev.path === path) return prev;
+      if (prev.persona === persona) return prev;
       return {
         ...prev,
-        path,
-        memberAccess: buildMemberDefault("insyn", false),
-        workerAccess: { ...DEFAULT_WORKER_ACCESS },
+        persona,
+        mode: defaultModeFor(persona),
+        scope: { rule: "assigned" },
+        pmSubType: persona === "pm" ? "co_owner" : null,
+        expiresAt: null,
       };
     });
   }, []);
@@ -128,66 +127,20 @@ export function useInviteWizard({
     setState((prev) => ({ ...prev, profession }));
   }, []);
 
-  const setPackagePreset = useCallback((preset: Exclude<PackagePreset, "custom">) => {
-    setState((prev) => ({
-      ...prev,
-      memberAccess: {
-        preset,
-        onlyAssigned: prev.memberAccess.onlyAssigned,
-        access: applyPackage(preset, prev.memberAccess.onlyAssigned),
-      },
-    }));
+  const setMode = useCallback((mode: EconomyMode) => {
+    setState((prev) => ({ ...prev, mode }));
   }, []);
 
-  const setOnlyAssigned = useCallback((onlyAssigned: boolean) => {
-    setState((prev) => {
-      const resolvedPreset = prev.memberAccess.preset === "custom" ? "insyn" : prev.memberAccess.preset;
-      const nextAccess = prev.memberAccess.preset === "custom"
-        ? {
-            ...prev.memberAccess.access,
-            tasksScope: onlyAssigned ? "assigned" : "all",
-            purchasesScope: onlyAssigned ? "assigned" : "all",
-          } as FeatureAccess
-        : applyPackage(resolvedPreset, onlyAssigned);
-
-      return {
-        ...prev,
-        memberAccess: {
-          ...prev.memberAccess,
-          onlyAssigned,
-          access: nextAccess,
-        },
-      };
-    });
+  const setScope = useCallback((scope: ScopeConfig) => {
+    setState((prev) => ({ ...prev, scope }));
   }, []);
 
-  const setAccessField = useCallback((updates: Partial<FeatureAccess>) => {
-    setState((prev) => {
-      const nextAccess = { ...prev.memberAccess.access, ...updates };
-      const detected = detectPackage(nextAccess);
-      return {
-        ...prev,
-        memberAccess: {
-          preset: detected,
-          onlyAssigned: nextAccess.tasksScope === "assigned",
-          access: nextAccess,
-        },
-      };
-    });
+  const setPmSubType = useCallback((pmSubType: PmSubType) => {
+    setState((prev) => ({ ...prev, pmSubType }));
   }, []);
 
-  const resetToPackage = useCallback(() => {
-    setState((prev) => {
-      const fallback = prev.memberAccess.preset === "custom" ? "insyn" : prev.memberAccess.preset;
-      return {
-        ...prev,
-        memberAccess: {
-          preset: fallback,
-          onlyAssigned: prev.memberAccess.onlyAssigned,
-          access: applyPackage(fallback, prev.memberAccess.onlyAssigned),
-        },
-      };
-    });
+  const setExpiresAt = useCallback((expiresAt: string | null) => {
+    setState((prev) => ({ ...prev, expiresAt }));
   }, []);
 
   const setWorkerAccess = useCallback((updates: Partial<WorkerAccessConfig>) => {
@@ -237,7 +190,6 @@ export function useInviteWizard({
         const next = new Map(prev.workerAccess.taskOverrides);
 
         if (!current.checklistOverride) {
-          // "all included" → switch to "all minus this one"
           const filtered = allItems.filter(
             (i) => !(i.checklistId === checklistId && i.itemId === itemId),
           );
@@ -356,9 +308,9 @@ export function useInviteWizard({
   }, [minStep]);
 
   const canAdvance = useMemo(() => {
-    if (state.step === 1) return Boolean(state.path);
+    if (state.step === 1) return Boolean(state.persona);
     if (state.step === 2) {
-      if (state.path === "worker") return state.workerAccess.taskIds.length > 0;
+      if (state.persona === "worker") return state.workerAccess.taskIds.length > 0;
       return true;
     }
     if (state.step === 3) {
@@ -366,7 +318,7 @@ export function useInviteWizard({
       const hasName = state.contact.name.trim().length > 0;
       const hasPhone = state.contact.phone.trim().length > 0;
       if (!hasName) return false;
-      if (state.path === "worker") return hasEmail || hasPhone;
+      if (state.persona === "worker") return hasEmail || hasPhone;
       return hasEmail;
     }
     return false;
@@ -375,12 +327,12 @@ export function useInviteWizard({
   return {
     state,
     minStep,
-    setPath,
+    setPersona,
     setProfession,
-    setPackagePreset,
-    setOnlyAssigned,
-    setAccessField,
-    resetToPackage,
+    setMode,
+    setScope,
+    setPmSubType,
+    setExpiresAt,
     setWorkerAccess,
     toggleWorkerTask,
     setWorkerOverride,
