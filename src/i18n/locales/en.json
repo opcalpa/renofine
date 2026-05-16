@@ -24,7 +24,7 @@
     "titleSuccess": "Invitation created",
     "stepIndicator": "Step {{step}} of {{total}}",
     "sendInvite": "Send invitation",
-    "step1Description": "Choose how the person should participate in the project.",
+    "step1Description": "Who is the person you want to invite?",
     "pathWorkerTitle": "Send instructions",
     "pathWorkerDescription": "A ready-made job via SMS or link. No account needed.",
     "pathMemberTitle": "Invite to the project",

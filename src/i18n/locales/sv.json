@@ -24,7 +24,7 @@
     "titleSuccess": "Inbjudan skapad",
     "stepIndicator": "Steg {{step}} av {{total}}",
     "sendInvite": "Skicka inbjudan",
-    "step1Description": "Välj hur personen ska delta i projektet.",
+    "step1Description": "Vem är personen du vill bjuda in?",
     "pathWorkerTitle": "Skicka instruktioner",
     "pathWorkerDescription": "Ett färdigt jobb via SMS eller länk. Personen behöver inget konto.",
     "pathMemberTitle": "Bjud in till projektet",
