@@ -6,6 +6,7 @@ import { useGuestMode } from "@/hooks/useGuestMode";
 import { useProfileLanguage } from "@/hooks/useProfileLanguage";
 import { PUBLIC_DEMO_PROJECT_ID, PUBLIC_DEMO_PROJECT_TYPE } from "@/constants/publicDemo";
 import { useProjectPermissions } from "@/hooks/useProjectPermissions";
+import { isTeamV2MaskingEnabled } from "@/lib/featureFlags";
 import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -161,6 +162,10 @@ const ProjectDetail = () => {
     setGuestRole(role);
   }, []);
 
+  // L4: economy tabs allowed only for "full" viewers when masking is on.
+  // Fail-safe: blocked while viewerMode resolves. Flag off → unchanged.
+  const economyTabAllowed = !isTeamV2MaskingEnabled() || permissions.viewerMode === "full";
+
   // Map tab keys to permission keys
   // Guest users: planning-only when status=planning, more tabs when active
   const guestProjectActive = isGuest && project?.status && project.status !== "planning";
@@ -183,8 +188,10 @@ const ProjectDetail = () => {
     // "tasks" parent tab is accessible if either tasks or timeline has access
     tasks: (permissions.tasks !== 'none' || permissions.timeline !== 'none') ? 'view' : 'none',
     purchases: permissions.purchases,
-    budget: permissions.budget,
-    table: permissions.budget,
+    // L4: Budget/Table expose profit & cost-centers — masked viewers must
+    // not reach the tab even with a legacy budget grant. Flag off → unchanged.
+    budget: economyTabAllowed ? permissions.budget : "none",
+    table: economyTabAllowed ? permissions.budget : "none",
     team: permissions.teams,
     sharing: (isPublicDemoProject && demoPrefs.preferences.role === "homeowner")
       ? "view"
