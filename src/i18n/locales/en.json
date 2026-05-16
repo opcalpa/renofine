@@ -5041,6 +5041,13 @@
       "active": "Active",
       "pending": "Pending invitations",
       "inactive": "Inactive"
+    },
+    "filter": {
+      "all": "All",
+      "active": "Active",
+      "workers": "Workers",
+      "expired": "Expired",
+      "empty": "No members match the filter."
     }
   },
   "unifiedTable": {

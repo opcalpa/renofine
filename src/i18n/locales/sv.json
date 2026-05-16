@@ -5038,6 +5038,13 @@
       "active": "Aktiva",
       "pending": "Väntande inbjudningar",
       "inactive": "Inaktiva"
+    },
+    "filter": {
+      "all": "Alla",
+      "active": "Aktiva",
+      "workers": "Workers",
+      "expired": "Utgångna",
+      "empty": "Inga medlemmar matchar filtret."
     }
   },
   "unifiedTable": {

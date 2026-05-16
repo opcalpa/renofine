@@ -106,6 +106,32 @@ function getRowSection(row: TeamRow): SectionKey {
 
 const SECTION_ORDER: SectionKey[] = ["active", "pending", "inactive"];
 
+// v2 filter pills — gated, display-only. Narrows which rows feed the
+// section grouping; counts always derived from the full row set.
+type FilterKey = "all" | "active" | "workers" | "expired";
+
+const FILTER_ORDER: FilterKey[] = ["all", "active", "workers", "expired"];
+
+const FILTER_LABEL: Record<FilterKey, [string, string]> = {
+  all: ["team.filter.all", "Alla"],
+  active: ["team.filter.active", "Aktiva"],
+  workers: ["team.filter.workers", "Workers"],
+  expired: ["team.filter.expired", "Utgångna"],
+};
+
+function matchesFilter(row: TeamRow, filter: FilterKey): boolean {
+  switch (filter) {
+    case "active":
+      return row.status === "active";
+    case "workers":
+      return row.type === "worker";
+    case "expired":
+      return row.status === "expired" || row.status === "revoked";
+    default:
+      return true;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -150,14 +176,23 @@ export function TeamTable({
 }: TeamTableProps) {
   const { t } = useTranslation();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [filter, setFilter] = useState<FilterKey>("all");
+  const filterEnabled = isTeamV2MaskingEnabled();
+
+  const filterCounts = useMemo(() => {
+    const counts: Record<FilterKey, number> = { all: 0, active: 0, workers: 0, expired: 0 };
+    for (const f of FILTER_ORDER) counts[f] = rows.filter((r) => matchesFilter(r, f)).length;
+    return counts;
+  }, [rows]);
 
   const grouped = useMemo(() => {
     const map: Record<SectionKey, TeamRow[]> = { active: [], pending: [], inactive: [] };
-    for (const row of rows) {
+    const source = filterEnabled ? rows.filter((r) => matchesFilter(r, filter)) : rows;
+    for (const row of source) {
       map[getRowSection(row)].push(row);
     }
     return map;
-  }, [rows]);
+  }, [rows, filter, filterEnabled]);
 
   if (rows.length === 0) {
     return (
@@ -169,8 +204,47 @@ export function TeamTable({
 
   const visibleSections = SECTION_ORDER.filter((s) => grouped[s].length > 0);
   const showSectionHeaders = visibleSections.length > 1;
+  const filteredEmpty = filterEnabled && visibleSections.length === 0;
+
+  const filterBar = filterEnabled && (
+    <div className="flex flex-wrap items-center gap-1.5">
+      {FILTER_ORDER.map((f) => {
+        const [key, fallback] = FILTER_LABEL[f];
+        const isActive = filter === f;
+        return (
+          <button
+            key={f}
+            type="button"
+            onClick={() => setFilter(f)}
+            className={cn(
+              "rounded-full px-3 py-1 text-xs font-medium transition-colors",
+              isActive
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground hover:bg-muted/70"
+            )}
+          >
+            {t(key, fallback)}
+            <span className="ml-1.5 tabular-nums opacity-70">{filterCounts[f]}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  if (filteredEmpty) {
+    return (
+      <div className="space-y-3">
+        {filterBar}
+        <p className="text-sm text-muted-foreground py-8 text-center">
+          {t("team.filter.empty", "Inga medlemmar matchar filtret.")}
+        </p>
+      </div>
+    );
+  }
 
   return (
+    <div className="space-y-3">
+      {filterBar}
     <Table>
       <TableHeader>
         <TableRow>
@@ -379,6 +453,7 @@ export function TeamTable({
         ))}
       </TableBody>
     </Table>
+    </div>
   );
 }
 
