@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { isDemoProject } from "@/services/demoProjectService";
 import { PUBLIC_DEMO_PROJECT_ID } from "@/constants/publicDemo";
+import { isTeamV2MaskingEnabled } from "@/lib/featureFlags";
+import { getViewerMode, type ViewerMode } from "@/services/projectDataService";
 
 export interface ProjectPermissions {
   isOwner: boolean;
@@ -24,9 +26,15 @@ export interface ProjectPermissions {
   teams: string;
   timeTracking: string;
   loading: boolean;
+  /**
+   * v2 economy mode from the DB (Team v2 masking). null when the
+   * feature flag is off or not yet resolved — consumers must treat
+   * null as "feature unavailable, use existing permission fields".
+   */
+  viewerMode: ViewerMode | null;
 }
 
-const ALL_EDIT: Omit<ProjectPermissions, "loading"> = {
+const ALL_EDIT: Omit<ProjectPermissions, "loading" | "viewerMode"> = {
   isOwner: true,
   isSystemAdmin: false,
   isDemoProject: false,
@@ -49,7 +57,7 @@ const ALL_EDIT: Omit<ProjectPermissions, "loading"> = {
 
 // View-only permissions for demo project (non-admin users)
 // Note: budget is "edit" to showcase full features in demo
-const DEMO_VIEW_ONLY: Omit<ProjectPermissions, "loading"> = {
+const DEMO_VIEW_ONLY: Omit<ProjectPermissions, "loading" | "viewerMode"> = {
   isOwner: false,
   isSystemAdmin: false,
   isDemoProject: true,
@@ -70,7 +78,7 @@ const DEMO_VIEW_ONLY: Omit<ProjectPermissions, "loading"> = {
   timeTracking: "view",
 };
 
-const ALL_NONE: Omit<ProjectPermissions, "loading"> = {
+const ALL_NONE: Omit<ProjectPermissions, "loading" | "viewerMode"> = {
   isOwner: false,
   isSystemAdmin: false,
   isDemoProject: false,
@@ -93,8 +101,29 @@ const ALL_NONE: Omit<ProjectPermissions, "loading"> = {
 
 export function useProjectPermissions(projectId: string | undefined): ProjectPermissions {
   const { user } = useAuthSession();
-  const [perms, setPerms] = useState<Omit<ProjectPermissions, "loading">>(ALL_NONE);
+  const [perms, setPerms] = useState<Omit<ProjectPermissions, "loading" | "viewerMode">>(ALL_NONE);
   const [loading, setLoading] = useState(true);
+  // Additive, feature-gated. Stays null when the flag is off → no consumer
+  // behaviour changes until one explicitly opts into viewerMode.
+  const [viewerMode, setViewerMode] = useState<ViewerMode | null>(null);
+
+  useEffect(() => {
+    if (!isTeamV2MaskingEnabled() || !user || !projectId) {
+      setViewerMode(null);
+      return;
+    }
+    let cancelled = false;
+    getViewerMode(projectId)
+      .then((m) => {
+        if (!cancelled) setViewerMode(m);
+      })
+      .catch(() => {
+        if (!cancelled) setViewerMode(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user, projectId]);
 
   useEffect(() => {
     // Handle public demo project for anonymous users
@@ -215,5 +244,8 @@ export function useProjectPermissions(projectId: string | undefined): ProjectPer
     };
   }, [user, projectId]);
 
-  return useMemo(() => ({ ...perms, loading }), [perms, loading]);
+  return useMemo(
+    () => ({ ...perms, loading, viewerMode }),
+    [perms, loading, viewerMode],
+  );
 }
