@@ -49,6 +49,7 @@ export function InviteWizard({
   const wizard = useInviteWizard({ initialPath, skipStep1: true, prefillWorker });
   const {
     state,
+    minStep,
     back,
     next,
     canAdvance,
@@ -78,7 +79,11 @@ export function InviteWizard({
   }, [open]);
 
   const totalSteps = 3;
-  const showBack = state.step > 1 && !submitResult;
+  // Step 1 is skipped when entered via a CTA, so present the remaining steps
+  // as a 1-based sequence ("Steg 1 av 2") instead of "Steg 2 av 3".
+  const displayTotal = totalSteps - (minStep - 1);
+  const displayStep = state.step - (minStep - 1);
+  const showBack = state.step > minStep && !submitResult;
   const isFinal = state.step === totalSteps;
   const showSuccessScreen = submitResult !== null;
 
@@ -154,10 +159,10 @@ export function InviteWizard({
         className={
           wideLayout
             ? "w-[95vw] md:!max-w-[90vw] lg:!max-w-6xl max-h-[90vh] overflow-hidden flex flex-col"
-            : "max-w-2xl"
+            : "max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
         }
       >
-        <DialogHeader>
+        <DialogHeader className="shrink-0">
           <div className="flex items-center gap-2">
             {showBack && (
               <Button
@@ -181,15 +186,15 @@ export function InviteWizard({
                 {showSuccessScreen
                   ? null
                   : t("inviteWizard.stepIndicator", "Steg {{step}} av {{total}}", {
-                      step: state.step,
-                      total: totalSteps,
+                      step: displayStep,
+                      total: displayTotal,
                     })}
               </DialogDescription>
             </div>
           </div>
         </DialogHeader>
 
-        <div className="py-2 min-h-[280px]">
+        <div className="py-2 min-h-[280px] flex-1 overflow-y-auto">
           {showSuccessScreen && submitResult.kind === "worker" && (
             <WorkerSuccess
               result={submitResult}
@@ -239,7 +244,7 @@ export function InviteWizard({
           )}
         </div>
 
-        <div className="flex justify-end gap-2 pt-2 border-t">
+        <div className="flex justify-end gap-2 pt-2 border-t shrink-0">
           {showSuccessScreen ? (
             <Button type="button" onClick={() => onOpenChange(false)}>
               {t("common.close", "Stäng")}

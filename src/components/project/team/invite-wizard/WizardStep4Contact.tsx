@@ -95,7 +95,7 @@ export function WizardStep4Contact({ path, contact, onChange }: Props) {
             type="tel"
             value={contact.phone}
             onChange={(e) => onChange({ phone: e.target.value })}
-            placeholder="+46 ..."
+            placeholder="070-123 45 67"
           />
         </Field>
 

@@ -79,6 +79,11 @@ export function useInviteWizard({
   skipStep1 = true,
   prefillWorker,
 }: UseInviteWizardOptions) {
+  // When entered via a path-specific CTA, Step 1 (the path picker) is dead UI:
+  // the path is already decided, so the wizard starts at step 2 and that
+  // becomes the floor for back-navigation.
+  const minStep: WizardStep = skipStep1 ? 2 : 1;
+
   const [state, setState] = useState<InviteWizardState>(() => ({
     step: skipStep1 ? 2 : 1,
     path: initialPath,
@@ -344,8 +349,11 @@ export function useInviteWizard({
   }, []);
 
   const back = useCallback(() => {
-    setState((prev) => ({ ...prev, step: Math.max(1, prev.step - 1) as WizardStep }));
-  }, []);
+    setState((prev) => ({
+      ...prev,
+      step: Math.max(minStep, prev.step - 1) as WizardStep,
+    }));
+  }, [minStep]);
 
   const canAdvance = useMemo(() => {
     if (state.step === 1) return Boolean(state.path);
@@ -366,6 +374,7 @@ export function useInviteWizard({
 
   return {
     state,
+    minStep,
     setPath,
     setProfession,
     setPackagePreset,

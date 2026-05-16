@@ -2,6 +2,34 @@ import { supabase } from "@/integrations/supabase/client";
 import type { FeatureAccess } from "../FeatureAccessEditor";
 import type { InstructionImage, InviteWizardState } from "./types";
 
+/**
+ * Normalize a phone number to E.164-ish form so storage and duplicate
+ * detection are consistent. Swedish-first: a bare or 0-prefixed number is
+ * assumed Swedish (+46). Explicit international input (leading + or 00) is
+ * preserved. Non-numeric junk is returned trimmed rather than mangled.
+ */
+export function normalizeSwedishPhone(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return "";
+  const cleaned = trimmed.replace(/[\s\-().]/g, "");
+  if (!/\d/.test(cleaned)) return trimmed;
+
+  if (cleaned.startsWith("+")) {
+    return "+" + cleaned.slice(1).replace(/\D/g, "");
+  }
+  const digits = cleaned.replace(/\D/g, "");
+  if (digits.startsWith("00")) {
+    return "+" + digits.slice(2);
+  }
+  if (digits.startsWith("0")) {
+    return "+46" + digits.slice(1);
+  }
+  if (digits.startsWith("46")) {
+    return "+" + digits;
+  }
+  return "+46" + digits;
+}
+
 function accessToDb(access: FeatureAccess) {
   return {
     customer_view_access: access.customerView,
@@ -147,7 +175,7 @@ async function submitWorker(
   ctx: SubmitContext,
 ): Promise<WorkerSubmitResult> {
   const normalizedEmail = state.contact.email.trim().toLowerCase();
-  const normalizedPhone = state.contact.phone.trim();
+  const normalizedPhone = normalizeSwedishPhone(state.contact.phone);
 
   if (!normalizedEmail && !normalizedPhone) {
     throw new Error("Worker needs an email or phone number");
@@ -162,7 +190,12 @@ async function submitWorker(
       "En arbetare med denna e-post har redan en aktiv länk.",
     );
   }
-  if (normalizedPhone && ctx.existingWorkerContacts.phones.has(normalizedPhone)) {
+  // Normalize the existing set too — legacy rows may have been stored
+  // before normalization, so compare apples to apples.
+  const existingPhones = new Set(
+    Array.from(ctx.existingWorkerContacts.phones).map(normalizeSwedishPhone),
+  );
+  if (normalizedPhone && existingPhones.has(normalizedPhone)) {
     throw new DuplicateContactError(
       "active_worker",
       "En arbetare med detta telefonnummer har redan en aktiv länk.",
