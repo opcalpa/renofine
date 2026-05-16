@@ -2,6 +2,13 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchProjectActivities } from "../feed/utils";
 import { differenceInDays, parseISO, startOfDay } from "date-fns";
+import { isTeamV2MaskingEnabled } from "@/lib/featureFlags";
+import {
+  getViewerMode,
+  getProjectOverview,
+  type MaskedTask,
+  type ProjectOverviewData,
+} from "@/services/projectDataService";
 import type { OverviewTask, TaskStats, BudgetStats, OrderStats, TimelineStats, OverviewData, OverviewProject } from "./types";
 
 interface RawTask {
@@ -38,6 +45,60 @@ interface Material {
   task_id: string | null;
 }
 
+// Team v2 masked path. For non-"full" viewers the DB-masking RPC never sends
+// sensitive economics over the wire, so profit/contract/invoiced are not
+// derivable here — they are reported as zero by design. Owner/"full" never
+// reaches this branch (handled by the raw path for zero regression).
+function buildMaskedOverview(od: ProjectOverviewData, today: Date) {
+  const mapTask = (t: MaskedTask): OverviewTask => ({
+    id: t.id,
+    title: t.title,
+    status: t.status || "",
+    priority: "",
+    due_date: t.finish_date,
+    progress: t.progress || 0,
+    assigned_to_contractor_id: null,
+    assignee_name: null,
+  });
+
+  const tasks = od.tasks;
+  const total = tasks.length;
+  const completed = tasks.filter((t) => t.status === "completed").length;
+  const inProgressCount = tasks.filter((t) => t.status === "in_progress").length;
+  const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+  const overdue = tasks
+    .filter((t) => t.finish_date && t.status !== "completed" && startOfDay(parseISO(t.finish_date)) < today)
+    .map(mapTask);
+  const blockedOrOnHold = tasks
+    .filter((t) => t.status && ["on_hold", "blocked", "waiting"].includes(t.status))
+    .map(mapTask);
+  const inProgressTasks = tasks.filter((t) => t.status === "in_progress").slice(0, 5).map(mapTask);
+
+  const totalBudget = od.project.total_budget;
+  const spent = od.project.spent_amount ?? 0;
+  const budgetPercentage = totalBudget && totalBudget > 0 ? Math.round((spent / totalBudget) * 100) : 0;
+
+  const taskStats: TaskStats = {
+    total, completed, inProgress: inProgressCount, overdue, blockedOrOnHold, percentage,
+  };
+  const budgetStats: BudgetStats = {
+    total: totalBudget,
+    spent,
+    percentage: budgetPercentage,
+    isWarning: budgetPercentage > 80,
+    contractTotal: od.project.contract_value ?? 0,
+    invoicedTotal: 0,
+    invoicedPercent: 0,
+    estimatedProfit: 0,
+  };
+  const orderStats: OrderStats = {
+    pendingCount: od.materials.filter((m) => m.status === "submitted").length,
+  };
+
+  return { taskStats, budgetStats, orderStats, inProgressTasks };
+}
+
 export function useOverviewData(project: OverviewProject, skip?: boolean): OverviewData {
   const [loading, setLoading] = useState(!skip);
   const [taskStats, setTaskStats] = useState<TaskStats>({
@@ -57,6 +118,32 @@ export function useOverviewData(project: OverviewProject, skip?: boolean): Overv
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
+      // Team v2: masked viewers read through the DB-masking RPC so sensitive
+      // economics never cross the wire. Owner/"full" falls through to the raw
+      // path below unchanged (zero regression on the core read path).
+      if (isTeamV2MaskingEnabled()) {
+        const mode = await getViewerMode(project.id);
+        if (mode !== "full") {
+          const od = await getProjectOverview(project.id);
+          const today = startOfDay(new Date());
+          const masked = buildMaskedOverview(od, today);
+          setTaskStats(masked.taskStats);
+          setBudgetStats(masked.budgetStats);
+          setOrderStats(masked.orderStats);
+          setInProgressTasks(masked.inProgressTasks);
+          setTimelineStats({
+            finishGoalDate: project.finish_goal_date,
+            startDate: project.start_date,
+            daysRemaining: project.finish_goal_date
+              ? differenceInDays(parseISO(project.finish_goal_date), today)
+              : null,
+          });
+          const activities = await fetchProjectActivities(project.id);
+          setRecentActivities(activities.slice(0, 8));
+          return;
+        }
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
 
       const [tasksRes, stakeholdersRes, materialsRes, activitiesData, quotesRes, invoicesRes, profileRes] = await Promise.all([
