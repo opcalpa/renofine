@@ -21,6 +21,7 @@ import {
 import { Info } from "lucide-react";
 import { FeatureAccessEditor } from "./FeatureAccessEditor";
 import type { FeatureAccess } from "./FeatureAccessEditor";
+import { isTeamV2MaskingEnabled } from "@/lib/featureFlags";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -58,6 +59,41 @@ interface TeamTableProps {
   onCopyLink: (token: string) => void;
   onDm: (profileId: string, name: string) => void;
   onReinviteWorker?: (row: TeamRow) => void;
+}
+
+// v2 persona/mode pills — derived from data already on the row (no pipeline
+// change). Display-only and feature-gated; best-effort labels.
+interface Pill {
+  label: string;
+  cls: string;
+}
+
+function personaPill(row: TeamRow): Pill | null {
+  if (row.type === "owner") return { label: "Ägare", cls: "bg-stone-200 text-stone-700" };
+  if (row.type === "worker") return { label: "Worker", cls: "bg-amber-100 text-amber-800" };
+  if (row.type === "rot") return null;
+  if (row.role === "client" || row.roleTemplate === "client")
+    return { label: "Klient", cls: "bg-emerald-100 text-emerald-800" };
+  if (
+    row.featureAccess?.teams === "invite" ||
+    row.role === "admin" ||
+    row.roleTemplate === "projectManager"
+  )
+    return { label: "PM / Co-owner", cls: "bg-rose-100 text-rose-800" };
+  return { label: "UE-medlem", cls: "bg-sky-100 text-sky-800" };
+}
+
+function modePill(row: TeamRow): Pill | null {
+  if (row.type === "owner") return { label: "Full ekonomi", cls: "bg-rose-50 text-rose-700" };
+  if (row.type === "worker" || row.type === "rot") return null;
+  if (row.role === "client" || row.roleTemplate === "client")
+    return { label: "Klientvy", cls: "bg-emerald-50 text-emerald-700" };
+  const fa = row.featureAccess;
+  if (!fa) return null;
+  if (fa.budget === "edit") return { label: "Full ekonomi", cls: "bg-rose-50 text-rose-700" };
+  if (fa.purchases === "create" || fa.purchases === "edit")
+    return { label: "Egna belopp", cls: "bg-emerald-50 text-emerald-700" };
+  return { label: "Inga belopp", cls: "bg-muted text-muted-foreground" };
 }
 
 type SectionKey = "active" | "pending" | "inactive";
@@ -232,6 +268,25 @@ export function TeamTable({
                   {row.contractorCategory && (
                     <p className="text-xs text-muted-foreground truncate">{row.contractorCategory}</p>
                   )}
+                  {isTeamV2MaskingEnabled() && (() => {
+                    const p = personaPill(row);
+                    const m = modePill(row);
+                    if (!p && !m) return null;
+                    return (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {p && (
+                          <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-medium", p.cls)}>
+                            {p.label}
+                          </span>
+                        )}
+                        {m && (
+                          <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-mono", m.cls)}>
+                            {m.label}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </TableCell>
 
                 {/* Contact */}
