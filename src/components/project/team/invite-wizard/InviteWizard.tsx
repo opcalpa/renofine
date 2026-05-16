@@ -2,10 +2,12 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Check, Copy, Loader2, MessageCircle, MessageSquare, Mail } from "lucide-react";
+import { ArrowLeft, Check, Copy, Loader2, MessageCircle, MessageSquare, Mail, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { isTeamV2MaskingEnabled } from "@/lib/featureFlags";
 import type { InvitePersona } from "./types";
 import { useInviteWizard, type WorkerPrefill } from "./useInviteWizard";
+import { InvitePreviewOverlay } from "./InvitePreviewOverlay";
 import { WizardStep1Persona } from "./WizardStep1Persona";
 import { WizardStep2Member } from "./WizardStep2Member";
 import { WizardStep2PM } from "./WizardStep2PM";
@@ -76,6 +78,9 @@ export function InviteWizard({
 
   const [submitting, setSubmitting] = useState(false);
   const [submitResult, setSubmitResult] = useState<SubmitResult | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const canPreview =
+    isTeamV2MaskingEnabled() && state.persona !== "worker";
 
   // Reset success-state when the dialog reopens so a previous run does not bleed through.
   useEffect(() => {
@@ -155,6 +160,7 @@ export function InviteWizard({
     !showSuccessScreen && state.step === 2 && state.persona === "worker";
 
   return (
+    <>
     <Dialog open={open} onOpenChange={(o) => {
       onOpenChange(o);
       if (!o) setSubmitResult(null);
@@ -265,11 +271,25 @@ export function InviteWizard({
               )}
 
               {state.step === 3 && (
-                <WizardStep4Contact
-                  persona={state.persona}
-                  contact={state.contact}
-                  onChange={setContact}
-                />
+                <>
+                  <WizardStep4Contact
+                    persona={state.persona}
+                    contact={state.contact}
+                    onChange={setContact}
+                  />
+                  {canPreview && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="mt-4"
+                      onClick={() => setPreviewOpen(true)}
+                    >
+                      <Eye className="h-4 w-4 mr-1.5" />
+                      {t("inviteWizard.preview.cta", "Förhandsgranska som denna person")}
+                    </Button>
+                  )}
+                </>
               )}
             </>
           )}
@@ -297,6 +317,16 @@ export function InviteWizard({
         </div>
       </DialogContent>
     </Dialog>
+    {canPreview && (
+      <InvitePreviewOverlay
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        projectId={projectId}
+        persona={state.persona}
+        mode={state.mode}
+      />
+    )}
+    </>
   );
 }
 
