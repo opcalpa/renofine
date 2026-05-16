@@ -7,6 +7,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Check, X, Clock, Pencil, Trash2, Download, Loader2 } from "lucide-react";
 import { LogTimeDialog } from "./LogTimeDialog";
+import { isTeamV2MaskingEnabled } from "@/lib/featureFlags";
+import { getViewerMode, type ViewerMode } from "@/services/projectDataService";
 
 interface TimeTrackingTabProps {
   projectId: string;
@@ -50,9 +52,18 @@ export function TimeTrackingTab({ projectId, isReadOnly, userType }: TimeTrackin
 
   const isHomeowner = userType === "homeowner";
   const [exporting, setExporting] = useState(false);
+  // L5: rate-derived costs (own + others') must not show to masked viewers.
+  // null = flag off / resolving. Flag off → unchanged (isHomeowner only).
+  const [viewerMode, setViewerMode] = useState<ViewerMode | null>(null);
+  const economyVisible =
+    !isHomeowner && (!isTeamV2MaskingEnabled() || viewerMode === "full");
 
   const fetchData = useCallback(async () => {
     if (!user) { setLoading(false); return; }
+
+    if (isTeamV2MaskingEnabled()) {
+      try { setViewerMode(await getViewerMode(projectId)); } catch { setViewerMode("none"); }
+    }
 
     const { data: profile } = await supabase
       .from("profiles")
@@ -215,7 +226,7 @@ export function TimeTrackingTab({ projectId, isReadOnly, userType }: TimeTrackin
                   </span>
                 )}
               </div>
-              {!isHomeowner && totalLoggedCost > 0 && (
+              {economyVisible && totalLoggedCost > 0 && (
                 <div className="text-sm text-muted-foreground mt-1 tabular-nums">
                   {Math.round(totalLoggedCost).toLocaleString("sv-SE")} kr
                   {totalEstimatedCost > 0 && (
@@ -301,7 +312,7 @@ export function TimeTrackingTab({ projectId, isReadOnly, userType }: TimeTrackin
                   <span>v.{getWeekNumber(new Date(weekKey))} · {weekLabel}</span>
                   <span className="tabular-nums font-medium">
                     {weekTotal}{t("timeTracking.hoursShort")}
-                    {!isHomeowner && weekCost > 0 && (
+                    {economyVisible && weekCost > 0 && (
                       <span className="ml-2">{Math.round(weekCost).toLocaleString("sv-SE")} kr</span>
                     )}
                   </span>
@@ -333,7 +344,7 @@ export function TimeTrackingTab({ projectId, isReadOnly, userType }: TimeTrackin
                       {/* Hours + cost */}
                       <div className="w-20 shrink-0 text-right tabular-nums">
                         <div className="font-medium">{Number(entry.hours)}{t("timeTracking.hoursShort")}</div>
-                        {!isHomeowner && entry.hourly_rate && (
+                        {economyVisible && entry.hourly_rate && (
                           <div className="text-xs text-muted-foreground">
                             {Math.round(Number(entry.hours) * entry.hourly_rate).toLocaleString("sv-SE")} kr
                           </div>
