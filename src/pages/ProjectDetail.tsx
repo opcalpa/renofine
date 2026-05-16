@@ -1242,7 +1242,7 @@ const ProjectDetail = () => {
             <ProjectFilesTab
               projectId={project.id}
               projectName={project.name}
-              canEdit={permissions.files === "edit"}
+              filesAccess={permissions.files as "none" | "view" | "upload" | "edit"}
               onNavigateToFloorPlan={() => {
                 // Save current tab before navigating to floor planner
                 setPreviousTab({ tab: activeTab, subTab: activeSubTab, label: getTabLabelKey(activeTab) });

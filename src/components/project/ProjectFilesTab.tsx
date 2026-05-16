@@ -105,12 +105,17 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 interface ProjectFilesTabProps {
   projectId: string;
   projectName: string;
-  canEdit?: boolean;
+  filesAccess?: "none" | "view" | "upload" | "edit";
   onNavigateToFloorPlan?: () => void;
   onUseAsBackground?: (imageUrl: string, fileName: string) => void;
 }
 
-const ProjectFilesTab = ({ projectId, projectName, canEdit = true, onNavigateToFloorPlan, onUseAsBackground }: ProjectFilesTabProps) => {
+const ProjectFilesTab = ({ projectId, projectName, filesAccess = "view", onNavigateToFloorPlan, onUseAsBackground }: ProjectFilesTabProps) => {
+  // L1: "upload" was dead — only edit gated anything. Upload enables the
+  // upload affordances; full management (rename/move/delete/new folder)
+  // still requires "edit".
+  const canUpload = filesAccess === "upload" || filesAccess === "edit";
+  const canManage = filesAccess === "edit";
   const imageLightbox = useLightbox();
   const [currentFolder, setCurrentFolder] = useState<string>('');
 
@@ -819,13 +824,13 @@ const ProjectFilesTab = ({ projectId, projectName, canEdit = true, onNavigateToF
     // Ignore internal drag-and-drop (handled by folder drop targets)
     if (e.dataTransfer.types.includes('text/x-internal-path')) return;
 
-    if (!canEdit) return;
+    if (!canUpload) return;
     const droppedFiles = await readDroppedItems(e.dataTransfer);
     if (droppedFiles.length === 0) return;
 
     setBatchFiles(droppedFiles);
     setShowBatchUpload(true);
-  }, [canEdit]);
+  }, [canUpload]);
 
   return (
     <div
@@ -852,7 +857,7 @@ const ProjectFilesTab = ({ projectId, projectName, canEdit = true, onNavigateToF
 
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Hidden file inputs */}
-        {canEdit && (
+        {canUpload && (
           <>
             <Input
               ref={fileInputRef}
@@ -917,7 +922,7 @@ const ProjectFilesTab = ({ projectId, projectName, canEdit = true, onNavigateToF
             </div>
 
             {/* Upload button */}
-            {canEdit && (
+            {canUpload && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button size="sm" className="h-7 px-2" disabled={uploading}>
@@ -950,7 +955,7 @@ const ProjectFilesTab = ({ projectId, projectName, canEdit = true, onNavigateToF
             )}
 
             {/* More actions */}
-            {canEdit && (
+            {canManage && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
@@ -1083,22 +1088,26 @@ const ProjectFilesTab = ({ projectId, projectName, canEdit = true, onNavigateToF
               <div className="text-center py-12">
                 <FolderOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-muted-foreground mb-4">{t('files.noFilesOrFolders')}</p>
-                {canEdit && (
+                {(canUpload || canManage) && (
                   <div className="flex gap-2 justify-center">
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowNewFolderDialog(true)}
-                    >
-                      <FolderPlus className="h-4 w-4 mr-2" />
-                      {t('files.createFolder')}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      {t('files.uploadFile')}
-                    </Button>
+                    {canManage && (
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowNewFolderDialog(true)}
+                      >
+                        <FolderPlus className="h-4 w-4 mr-2" />
+                        {t('files.createFolder')}
+                      </Button>
+                    )}
+                    {canUpload && (
+                      <Button
+                        variant="outline"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        {t('files.uploadFile')}
+                      </Button>
+                    )}
                   </div>
                 )}
               </div>
@@ -1116,7 +1125,7 @@ const ProjectFilesTab = ({ projectId, projectName, canEdit = true, onNavigateToF
                   onSmartTolk={(file) => runSmartTolk(file as ProjectFile)}
                   onLinkFile={(file) => setLinkFile(file as ProjectFile)}
                   formatFileSize={formatFileSize}
-                  canEdit={canEdit}
+                  canEdit={canManage}
                   onDragStart={handleInternalDragStart}
                   onDragEnd={handleInternalDragEnd}
                   onFolderDragOver={handleFolderDragOver}
@@ -1413,7 +1422,7 @@ const ProjectFilesTab = ({ projectId, projectName, canEdit = true, onNavigateToF
                             <TableCell className="text-right sticky right-0 bg-white dark:bg-card z-10">
                               <FileActionMenu
                                 file={sf}
-                                canEdit={canEdit}
+                                canEdit={canManage}
                                 onPreview={handlePreview}
                                 onDownload={handleDownload}
                                 onSmartTolk={runSmartTolk}
@@ -1483,7 +1492,7 @@ const ProjectFilesTab = ({ projectId, projectName, canEdit = true, onNavigateToF
                       <TableCell className="text-right sticky right-0 bg-white dark:bg-card z-10">
                         <FileActionMenu
                           file={file}
-                          canEdit={canEdit}
+                          canEdit={canManage}
                           onPreview={handlePreview}
                           onDownload={handleDownload}
                           onSmartTolk={runSmartTolk}
