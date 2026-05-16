@@ -8,6 +8,7 @@ import {
   getProjectOverview,
   type MaskedTask,
   type ProjectOverviewData,
+  type ViewerMode,
 } from "@/services/projectDataService";
 import type { OverviewTask, TaskStats, BudgetStats, OrderStats, TimelineStats, OverviewData, OverviewProject } from "./types";
 
@@ -114,6 +115,8 @@ export function useOverviewData(project: OverviewProject, skip?: boolean): Overv
   });
   const [inProgressTasks, setInProgressTasks] = useState<OverviewTask[]>([]);
   const [recentActivities, setRecentActivities] = useState<import("../feed/types").ActivityLogItem[]>([]);
+  // null = masking flag off / not resolved. Consumers gate economy UI on this.
+  const [viewerMode, setViewerMode] = useState<ViewerMode | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -123,6 +126,7 @@ export function useOverviewData(project: OverviewProject, skip?: boolean): Overv
       // path below unchanged (zero regression on the core read path).
       if (isTeamV2MaskingEnabled()) {
         const mode = await getViewerMode(project.id);
+        setViewerMode(mode);
         if (mode !== "full") {
           const od = await getProjectOverview(project.id);
           const today = startOfDay(new Date());
@@ -342,6 +346,7 @@ export function useOverviewData(project: OverviewProject, skip?: boolean): Overv
     timelineStats,
     inProgressTasks,
     recentActivities,
+    viewerMode,
     loading,
     refetch: fetchData,
   };

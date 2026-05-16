@@ -1,4 +1,5 @@
 import type { ActivityLogItem } from "../feed/types";
+import type { ViewerMode } from "@/services/projectDataService";
 
 export interface OverviewTask {
   id: string;
@@ -84,6 +85,7 @@ export interface OverviewData {
   timelineStats: TimelineStats;
   inProgressTasks: OverviewTask[];
   recentActivities: ActivityLogItem[];
+  viewerMode: ViewerMode | null;
   loading: boolean;
   refetch: () => void;
 }

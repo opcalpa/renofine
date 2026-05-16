@@ -39,6 +39,7 @@ import { useTaxDeductionVisible } from "@/hooks/useTaxDeduction";
 import { ReminderSection } from "./overview/ReminderSection";
 import { InspirationSection } from "./overview/InspirationSection";
 import { normalizeStatus, isQuotePhase } from "@/lib/projectStatus";
+import { isTeamV2MaskingEnabled } from "@/lib/featureFlags";
 import { supabase } from "@/integrations/supabase/client";
 import { updateGuestProject } from "@/services/guestStorageService";
 import { useContextualTips } from "@/hooks/useContextualTips";
@@ -212,9 +213,15 @@ const OverviewTab = ({
     budgetStats,
     orderStats,
     timelineStats,
+    viewerMode,
     loading: overviewLoading,
     refetch,
   } = useOverviewData(project, isGuest);
+
+  // L9: economy quick-actions (invoice/quote/purchase/payment) must not
+  // show to masked viewers. Flag off → unchanged. Flag on → only "full"
+  // (owner/co-owner); hidden while viewerMode resolves (fail safe).
+  const economyActionsAllowed = !isTeamV2MaskingEnabled() || viewerMode === "full";
 
   const navigation: OverviewNavigation = {
     onNavigateToTasks: (taskId?: string) => onNavigateToTasks?.(taskId),
@@ -469,7 +476,7 @@ const OverviewTab = ({
       />
 
       {/* Quick action buttons — contractor only */}
-      {!isHomeowner && (
+      {!isHomeowner && economyActionsAllowed && (
         <div className="flex items-center gap-2 flex-wrap -mt-2">
           <Button
             variant="outline"
