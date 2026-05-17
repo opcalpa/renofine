@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
+import { isTeamV2MaskingEnabled } from "@/lib/featureFlags";
+import { getViewerMode, getProjectMaterials } from "@/services/projectDataService";
 import { formatCurrency } from "@/lib/currency";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -154,7 +156,34 @@ const MaterialsList = ({ taskId, currency }: MaterialsListProps) => {
         setTaskMaterialEstimate(taskRes.data.material_estimate ?? 0);
       }
 
-      const materialsData = materialsRes.data || [];
+      let materialsData = materialsRes.data || [];
+
+      // L3: masked viewers read materials through the DB-masking RPC so
+      // supplier prices/vendors never cross the wire. Owner/"full" keeps
+      // the raw query above (zero regression). Flag off → skipped entirely.
+      if (taskRes.data?.project_id && isTeamV2MaskingEnabled()) {
+        const mode = await getViewerMode(taskRes.data.project_id);
+        if (mode !== "full") {
+          const masked = await getProjectMaterials(taskRes.data.project_id);
+          materialsData = masked
+            .filter((m) => m.task_id === taskId)
+            .map((m) => ({
+              id: m.id,
+              name: m.name,
+              quantity: m.quantity ?? 0,
+              unit: m.unit ?? "",
+              price_per_unit: m.price_per_unit,
+              price_total: m.price_total,
+              vendor_name: m.vendor_name,
+              vendor_link: m.vendor_link,
+              status: m.status,
+              exclude_from_budget: m.exclude_from_budget,
+              created_at: m.created_at,
+              created_by_user_id: m.created_by_user_id,
+              purchase_order_id: m.purchase_order_id,
+            }));
+        }
+      }
 
       // Fetch PO info for any purchase_order_ids referenced by materials
       const poIds = Array.from(new Set(materialsData.map((m) => m.purchase_order_id).filter((id): id is string => !!id)));

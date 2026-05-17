@@ -53,6 +53,9 @@ export interface MaskedMaterial {
   room_id: string | null;
   created_by_user_id: string;
   exclude_from_budget: boolean;
+  task_id: string | null;
+  purchase_order_id: string | null;
+  created_at: string;
   price_per_unit: number | null;
   price_total: number | null;
   vendor_name: string | null;
