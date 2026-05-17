@@ -75,6 +75,8 @@ export const CommentsSection = ({ taskId, materialId, entityId, entityType, draw
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [replyingTo, setReplyingTo] = useState<Comment | null>(null);
   const [expandedThreads, setExpandedThreads] = useState<Set<string>>(new Set());
+  // L7: opt-in internal comment (hidden from clients/shared via RLS).
+  const [internalComment, setInternalComment] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { translationsEnabled, translating, toggleTranslations, getTranslatedContent, targetLang } = useCommentTranslation();
 
@@ -432,6 +434,7 @@ export const CommentsSection = ({ taskId, materialId, entityId, entityType, draw
         content: newComment.trim(),
         created_by_user_id: profile.id,
         images: uploadedImages.length > 0 ? uploadedImages : null,
+        visible_to_client: !internalComment,
       };
 
       if (replyingTo) {
@@ -480,6 +483,7 @@ export const CommentsSection = ({ taskId, materialId, entityId, entityType, draw
 
       setNewComment("");
       setReplyingTo(null);
+      setInternalComment(false);
       // Clear selected images
       selectedImages.forEach((_, index) => {
         URL.revokeObjectURL(imagePreviews[index]);
@@ -1128,6 +1132,19 @@ export const CommentsSection = ({ taskId, materialId, entityId, entityType, draw
                 </button>
               </PopoverContent>
             </Popover>
+            <Button
+              type="button"
+              variant={internalComment ? "secondary" : "ghost"}
+              size="sm"
+              className="h-7 px-2 text-xs"
+              onClick={() => setInternalComment((v) => !v)}
+              title={t('comments.internalHint', 'Intern kommentar syns inte för kund eller delade användare')}
+            >
+              <Lock className="h-3 w-3 mr-1" />
+              {internalComment
+                ? t('comments.internalOn', 'Intern')
+                : t('comments.internalToggle', 'Markera intern')}
+            </Button>
           </div>
           <Button
             onClick={handlePostComment}
