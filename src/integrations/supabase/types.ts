@@ -14,6 +14,74 @@ export type Database = {
   }
   public: {
     Tables: {
+      access_log: {
+        Row: {
+          action: string
+          created_at: string
+          denied: boolean | null
+          id: string
+          metadata: Json | null
+          profile_id: string | null
+          project_id: string
+          target: string | null
+          target_type: string | null
+          worker_token_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          denied?: boolean | null
+          id?: string
+          metadata?: Json | null
+          profile_id?: string | null
+          project_id: string
+          target?: string | null
+          target_type?: string | null
+          worker_token_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          denied?: boolean | null
+          id?: string
+          metadata?: Json | null
+          profile_id?: string | null
+          project_id?: string
+          target?: string | null
+          target_type?: string | null
+          worker_token_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "access_log_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "professional_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_log_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_log_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_log_worker_token_id_fkey"
+            columns: ["worker_token_id"]
+            isOneToOne: false
+            referencedRelation: "worker_access_tokens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       activity_log: {
         Row: {
           action: string
@@ -373,6 +441,7 @@ export type Database = {
           project_id: string | null
           task_id: string | null
           updated_at: string
+          visible_to_client: boolean
         }
         Insert: {
           author_display_name?: string | null
@@ -390,6 +459,7 @@ export type Database = {
           project_id?: string | null
           task_id?: string | null
           updated_at?: string
+          visible_to_client?: boolean
         }
         Update: {
           author_display_name?: string | null
@@ -407,6 +477,7 @@ export type Database = {
           project_id?: string | null
           task_id?: string | null
           updated_at?: string
+          visible_to_client?: boolean
         }
         Relationships: [
           {
@@ -1376,6 +1447,7 @@ export type Database = {
           name: string
           ordered_amount: number | null
           paid_amount: number | null
+          paid_by: string | null
           paid_date: string | null
           price_per_unit: number | null
           price_total: number | null
@@ -1387,6 +1459,7 @@ export type Database = {
           rot_amount: number | null
           source_material_id: string | null
           status: string
+          submitted_by_worker_token_id: string | null
           supplier_id: string | null
           task_id: string | null
           unit: string | null
@@ -1406,6 +1479,7 @@ export type Database = {
           name: string
           ordered_amount?: number | null
           paid_amount?: number | null
+          paid_by?: string | null
           paid_date?: string | null
           price_per_unit?: number | null
           price_total?: number | null
@@ -1417,6 +1491,7 @@ export type Database = {
           rot_amount?: number | null
           source_material_id?: string | null
           status?: string
+          submitted_by_worker_token_id?: string | null
           supplier_id?: string | null
           task_id?: string | null
           unit?: string | null
@@ -1436,6 +1511,7 @@ export type Database = {
           name?: string
           ordered_amount?: number | null
           paid_amount?: number | null
+          paid_by?: string | null
           paid_date?: string | null
           price_per_unit?: number | null
           price_total?: number | null
@@ -1447,6 +1523,7 @@ export type Database = {
           rot_amount?: number | null
           source_material_id?: string | null
           status?: string
+          submitted_by_worker_token_id?: string | null
           supplier_id?: string | null
           task_id?: string | null
           unit?: string | null
@@ -1484,6 +1561,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "materials_paid_by_fkey"
+            columns: ["paid_by"]
+            isOneToOne: false
+            referencedRelation: "professional_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "materials_paid_by_fkey"
+            columns: ["paid_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "materials_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
@@ -1509,6 +1600,13 @@ export type Database = {
             columns: ["source_material_id"]
             isOneToOne: false
             referencedRelation: "materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "materials_submitted_by_worker_token_id_fkey"
+            columns: ["submitted_by_worker_token_id"]
+            isOneToOne: false
+            referencedRelation: "worker_access_tokens"
             referencedColumns: ["id"]
           },
           {
@@ -2148,6 +2246,7 @@ export type Database = {
           customer_view_access: string | null
           display_email: string | null
           display_name: string | null
+          expires_at: string | null
           files_access: string | null
           id: string
           notes: string | null
@@ -2178,6 +2277,7 @@ export type Database = {
           customer_view_access?: string | null
           display_email?: string | null
           display_name?: string | null
+          expires_at?: string | null
           files_access?: string | null
           id?: string
           notes?: string | null
@@ -2208,6 +2308,7 @@ export type Database = {
           customer_view_access?: string | null
           display_email?: string | null
           display_name?: string | null
+          expires_at?: string | null
           files_access?: string | null
           id?: string
           notes?: string | null
@@ -2272,6 +2373,7 @@ export type Database = {
           locked_for_quote: boolean | null
           name: string
           owner_id: string
+          owner_user_type: string | null
           postal_code: string | null
           project_type: string | null
           property_designation: string | null
@@ -2280,6 +2382,8 @@ export type Database = {
           start_date: string | null
           status: string | null
           total_budget: number | null
+          tracks_economy: boolean
+          tracks_rot: boolean
           updated_at: string
         }
         Insert: {
@@ -2303,6 +2407,7 @@ export type Database = {
           locked_for_quote?: boolean | null
           name: string
           owner_id: string
+          owner_user_type?: string | null
           postal_code?: string | null
           project_type?: string | null
           property_designation?: string | null
@@ -2311,6 +2416,8 @@ export type Database = {
           start_date?: string | null
           status?: string | null
           total_budget?: number | null
+          tracks_economy?: boolean
+          tracks_rot?: boolean
           updated_at?: string
         }
         Update: {
@@ -2334,6 +2441,7 @@ export type Database = {
           locked_for_quote?: boolean | null
           name?: string
           owner_id?: string
+          owner_user_type?: string | null
           postal_code?: string | null
           project_type?: string | null
           property_designation?: string | null
@@ -2342,6 +2450,8 @@ export type Database = {
           start_date?: string | null
           status?: string | null
           total_budget?: number | null
+          tracks_economy?: boolean
+          tracks_rot?: boolean
           updated_at?: string
         }
         Relationships: [
@@ -2388,8 +2498,12 @@ export type Database = {
           created_by_user_id: string | null
           delivered_at: string | null
           id: string
+          invoice_due_date: string | null
+          invoice_number: string | null
           notes: string | null
+          ocr_number: string | null
           ordered_at: string | null
+          paid_at: string | null
           project_id: string
           receipt_file_path: string | null
           receipt_matched_at: string | null
@@ -2399,15 +2513,19 @@ export type Database = {
           supplier_id: string | null
           total: number
           updated_at: string
-          vendor_name: string
+          vendor_name: string | null
         }
         Insert: {
           created_at?: string
           created_by_user_id?: string | null
           delivered_at?: string | null
           id?: string
+          invoice_due_date?: string | null
+          invoice_number?: string | null
           notes?: string | null
+          ocr_number?: string | null
           ordered_at?: string | null
+          paid_at?: string | null
           project_id: string
           receipt_file_path?: string | null
           receipt_matched_at?: string | null
@@ -2417,15 +2535,19 @@ export type Database = {
           supplier_id?: string | null
           total: number
           updated_at?: string
-          vendor_name: string
+          vendor_name?: string | null
         }
         Update: {
           created_at?: string
           created_by_user_id?: string | null
           delivered_at?: string | null
           id?: string
+          invoice_due_date?: string | null
+          invoice_number?: string | null
           notes?: string | null
+          ocr_number?: string | null
           ordered_at?: string | null
+          paid_at?: string | null
           project_id?: string
           receipt_file_path?: string | null
           receipt_matched_at?: string | null
@@ -2435,7 +2557,7 @@ export type Database = {
           supplier_id?: string | null
           total?: number
           updated_at?: string
-          vendor_name?: string
+          vendor_name?: string | null
         }
         Relationships: [
           {
@@ -3005,6 +3127,7 @@ export type Database = {
           material_id: string | null
           mime_type: string | null
           project_id: string
+          purchase_order_id: string | null
           room_id: string | null
           rot_amount: number | null
           task_id: string | null
@@ -3024,6 +3147,7 @@ export type Database = {
           material_id?: string | null
           mime_type?: string | null
           project_id: string
+          purchase_order_id?: string | null
           room_id?: string | null
           rot_amount?: number | null
           task_id?: string | null
@@ -3043,6 +3167,7 @@ export type Database = {
           material_id?: string | null
           mime_type?: string | null
           project_id?: string
+          purchase_order_id?: string | null
           room_id?: string | null
           rot_amount?: number | null
           task_id?: string | null
@@ -3075,6 +3200,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_file_links_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
             referencedColumns: ["id"]
           },
           {
@@ -3481,6 +3613,8 @@ export type Database = {
       worker_access_tokens: {
         Row: {
           assigned_task_ids: string[]
+          can_create_purchases: boolean
+          can_log_receipts: boolean
           can_toggle_checklist: boolean
           can_upload_photos: boolean
           created_at: string
@@ -3499,6 +3633,8 @@ export type Database = {
         }
         Insert: {
           assigned_task_ids?: string[]
+          can_create_purchases?: boolean
+          can_log_receipts?: boolean
           can_toggle_checklist?: boolean
           can_upload_photos?: boolean
           created_at?: string
@@ -3517,6 +3653,8 @@ export type Database = {
         }
         Update: {
           assigned_task_ids?: string[]
+          can_create_purchases?: boolean
+          can_log_receipts?: boolean
           can_toggle_checklist?: boolean
           can_upload_photos?: boolean
           created_at?: string
@@ -3602,6 +3740,61 @@ export type Database = {
           },
         ]
       }
+      worker_invite_instruction_images: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          photo_id: string | null
+          sort_order: number
+          task_id: string
+          uploaded_url: string | null
+          worker_token_id: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          photo_id?: string | null
+          sort_order?: number
+          task_id: string
+          uploaded_url?: string | null
+          worker_token_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          photo_id?: string | null
+          sort_order?: number
+          task_id?: string
+          uploaded_url?: string | null
+          worker_token_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "worker_invite_instruction_images_photo_id_fkey"
+            columns: ["photo_id"]
+            isOneToOne: false
+            referencedRelation: "photos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "worker_invite_instruction_images_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "worker_invite_instruction_images_worker_token_id_fkey"
+            columns: ["worker_token_id"]
+            isOneToOne: false
+            referencedRelation: "worker_access_tokens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       entity_document_counts: {
@@ -3674,6 +3867,11 @@ export type Database = {
       }
     }
     Functions: {
+      _project_data_masked: {
+        Args: { p_mode: string; p_project_id: string; p_viewer: string }
+        Returns: Json
+      }
+      derive_viewer_mode: { Args: { p_project_id: string }; Returns: string }
       get_intake_request_by_token: {
         Args: { p_token: string }
         Returns: {
@@ -3708,6 +3906,13 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      get_project_as_persona: {
+        Args: { p_mode: string; p_persona: string; p_project_id: string }
+        Returns: Json
+      }
+      get_project_materials: { Args: { p_project_id: string }; Returns: Json }
+      get_project_overview: { Args: { p_project_id: string }; Returns: Json }
+      get_project_tasks: { Args: { p_project_id: string }; Returns: Json }
       get_user_profile_id: { Args: never; Returns: string }
       get_visible_profile_ids: { Args: never; Returns: string[] }
       is_public_demo_project: {
@@ -3735,8 +3940,49 @@ export type Database = {
         Returns: boolean
       }
       user_can_manage_team: { Args: { project_uuid: string }; Returns: boolean }
+      user_can_view_budget: { Args: { p_project_id: string }; Returns: boolean }
+      user_can_view_comment:
+        | {
+            Args: {
+              p_entity_id: string
+              p_entity_type: string
+              p_material_id: string
+              p_project_id: string
+              p_task_id: string
+            }
+            Returns: boolean
+          }
+        | {
+            Args: {
+              p_entity_id: string
+              p_entity_type: string
+              p_material_id: string
+              p_project_id: string
+              p_task_id: string
+              p_visible_to_client: boolean
+            }
+            Returns: boolean
+          }
+      user_can_view_overview: {
+        Args: { p_project_id: string }
+        Returns: boolean
+      }
       user_can_view_project_files: {
         Args: { file_path: string }
+        Returns: boolean
+      }
+      user_can_view_purchases: {
+        Args: { p_project_id: string }
+        Returns: boolean
+      }
+      user_can_view_rooms: { Args: { p_project_id: string }; Returns: boolean }
+      user_can_view_tasks: { Args: { p_project_id: string }; Returns: boolean }
+      user_can_view_time_tracking: {
+        Args: { p_project_id: string }
+        Returns: boolean
+      }
+      user_can_view_timeline: {
+        Args: { p_project_id: string }
         Returns: boolean
       }
       user_has_project_access: {
@@ -3744,6 +3990,8 @@ export type Database = {
         Returns: boolean
       }
       user_owns_project: { Args: { project_id: string }; Returns: boolean }
+      user_purchases_scope: { Args: { p_project_id: string }; Returns: string }
+      user_tasks_scope: { Args: { p_project_id: string }; Returns: string }
     }
     Enums: {
       contractor_role:

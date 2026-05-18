@@ -70,7 +70,9 @@
         "stangd": "Off",
         "insyn": "View",
         "aktiv": "Active"
-      }
+      },
+      "modeLabel": "Financial access",
+      "scopeLabel": "Which parts of the project?"
     },
     "contactStep": {
       "titleWorker": "Contact details for the worker",
@@ -100,7 +102,93 @@
       "sendSms": "Send SMS",
       "sendEmail": "Send email",
       "smsSent": "SMS sent",
-      "emailSent": "Email sent"
+      "emailSent": "Email sent",
+      "sendWhatsApp": "Share via WhatsApp"
+    },
+    "clientStep": {
+      "title": "The client gets a client view",
+      "description": "The client sees the project status, schedule and contract sum — but no internal prices, margins or other suppliers' amounts."
+    },
+    "mode": {
+      "full": {
+        "title": "Full financials",
+        "descShort": "Everything, incl. margin."
+      },
+      "none": {
+        "title": "No amounts",
+        "descShort": "No prices.",
+        "description": "No prices or budgets are shown."
+      },
+      "own": {
+        "title": "Own amounts",
+        "descShort": "Own only.",
+        "description": "Only own materials and time reports."
+      }
+    },
+    "persona": {
+      "client": {
+        "title": "Client / customer",
+        "description": "Your end customer. Gets a client view of the project.",
+        "surface": "Client view"
+      },
+      "member": {
+        "title": "Subcontractor / specialist",
+        "description": "Recurring tradesperson or specialist. Own account.",
+        "surface": "Full app"
+      },
+      "pm": {
+        "title": "Project manager / partner",
+        "description": "Partner or hired PM with extended rights.",
+        "surface": "Full app · admin"
+      },
+      "worker": {
+        "title": "Tradesperson with a job",
+        "description": "Gets a day job via SMS link. No account needed.",
+        "surface": "Worker view"
+      }
+    },
+    "pm": {
+      "coOwner": {
+        "title": "My partner / co-owner",
+        "description": "Co-owner with full rights."
+      },
+      "hired": {
+        "title": "My hired project manager",
+        "description": "Hired PM, admin rights."
+      }
+    },
+    "pmStep": {
+      "modeLabel": "Financial access",
+      "relationLabel": "Relationship",
+      "timeHelp": "Access expires automatically on the chosen date.",
+      "timeLabel": "Time limit"
+    },
+    "preview": {
+      "contract": "Contract sum",
+      "cta": "Preview as this person",
+      "economy": "Financials",
+      "maskedNote": "“—” means the amount is hidden for this person at the selected access level.",
+      "more": "more",
+      "purchases": "Purchases",
+      "spent": "Spent",
+      "subtitle": "This is how the project looks for the person with the selected access.",
+      "tasks": "Tasks",
+      "title": "Preview as this person",
+      "totalBudget": "Total budget"
+    },
+    "scope": {
+      "all": {
+        "title": "All tasks",
+        "description": "The whole project's tasks and purchases."
+      },
+      "assigned": {
+        "title": "My tasks",
+        "description": "Only where the person is assigned."
+      }
+    },
+    "time": {
+      "days90": "90 days",
+      "permanent": "Permanent"
     }
   },
   "common": {
@@ -189,31 +277,17 @@
     "feedbackLink": "Give feedback"
   },
   "guest": {
-    "tryWithoutAccount": "Create test",
-    "guestUser": "Guest",
-    "visitor": "Visitor",
-    "localMode": "Local mode",
-    "publicDemo": "Public demo",
-    "localStorageTitle": "Guest Mode",
-    "banner": "Your project is saved locally. Sign in to save permanently.",
-    "bannerAction": "Sign in",
-    "storageUsage": "{{used}} of {{limit}} used",
-    "limitWarning": "You're approaching the storage limit. Sign in for more space.",
-    "projectLimit": "Guest mode is limited to {{max}} projects.",
-    "featureDisabled": "This feature requires an account",
-    "teamFeatureDescription": "Sign in to invite team members and collaborate on your project.",
-    "migrationTitle": "Migrate your projects",
-    "migrationDescription": "You have projects saved locally. Would you like to move them to your account?",
-    "migrateAll": "Migrate all",
-    "migrateSelected": "Migrate selected ({{count}})",
-    "skip": "Skip",
-    "migrating": "Migrating...",
-    "migrationSuccess": "Projects migrated successfully",
-    "migrationSuccessDescription": "{{count}} project(s) have been saved to your account.",
-    "migrationPartial": "Some projects migrated",
-    "migrationPartialDescription": "{{count}} project(s) were migrated. Some errors occurred.",
-    "signUpNudge": "Create a free account to save your project, get estimates, and invite collaborators.",
-    "signUpLink": "Sign up"
+    "loginToActivate": "Sign in to activate your project",
+    "loginToActivateDesc": "Create a free account to activate your project and start collaborating with your team.",
+    "loginToShare": "Sign in to share your renovation plan",
+    "loginToShareDesc": "Create a free account to send your renovation plan to contractors and get quotes.",
+    "loginToSaveQuote": "Sign in to save your quote",
+    "loginToSaveQuoteDesc": "Create a free account to save, send, and track your quotes.",
+    "loginToSave": "Sign in to save your project",
+    "loginToSaveDesc": "Create a free account to save your project and access it from any device.",
+    "createAccount": "Create free account",
+    "signIn": "I already have an account",
+    "dataKept": "Your planning data will be saved to your account."
   },
   "guestEstimate": {
     "detectedType": "Detected work type",
@@ -305,7 +379,6 @@
       "photos": "Photos",
       "chat": "Chat",
       "showAllTabs": "Show all tabs",
-      "planning": "Planning",
       "clientView": "My Project",
       "customerView": "My Project",
       "sharing": "Sharing"
@@ -361,16 +434,16 @@
       "pricing": "Pricing",
       "homeowner": "For homeowners",
       "login": "Log in",
-      "cta": "Get started \u2014 free"
+      "cta": "Get started — free"
     },
     "hero": {
       "pill": "For the renovation industry",
       "h1": "Your entire renovation in one app.",
-      "body": "Quotes, tax deductions, timelines, purchasing and client\u00adcommunication — in one tool built for those who actually do the work, not for the Excel consultant.",
-      "bodyMobile": "Quotes, tax deductions, timelines, purchasing and client\u00adcommunication — in one tool built for those who actually do the work.",
-      "cta": "Get started \u2014 free",
+      "body": "Quotes, tax deductions, timelines, purchasing and client­communication — in one tool built for those who actually do the work, not for the Excel consultant.",
+      "bodyMobile": "Quotes, tax deductions, timelines, purchasing and client­communication — in one tool built for those who actually do the work.",
+      "cta": "Get started — free",
       "ctaSecondary": "See demo project",
-      "micro": "No account required \u00b7 Import a project in 2 minutes \u00b7 Cancel anytime"
+      "micro": "No account required · Import a project in 2 minutes · Cancel anytime"
     },
     "logos": {
       "label": "Built for everyone who renovates",
@@ -431,9 +504,9 @@
     },
     "testimonial": {
       "kicker": "From the founder",
-      "quote": "\u201cI built Renofine because I was tired of chasing receipts in email and budgets in Excel. If that sounds familiar — welcome, we're not many yet, but the tool is here.\u201d",
-      "quoteMobile": "\u201cI built this because I was tired of Excel and email. Welcome — the tool is here.\u201d",
-      "role": "Founder \u00b7 Renofine"
+      "quote": "“I built Renofine because I was tired of chasing receipts in email and budgets in Excel. If that sounds familiar — welcome, we're not many yet, but the tool is here.”",
+      "quoteMobile": "“I built this because I was tired of Excel and email. Welcome — the tool is here.”",
+      "role": "Founder · Renofine"
     },
     "pricing": {
       "pill": "Pricing",
@@ -449,7 +522,7 @@
       "f4": "Mobile app",
       "f5": "Unlimited projects",
       "f6": "All future features",
-      "footnote": "No credit card \u00b7 Cancel anytime \u00b7 Early adopters get a favorable price at launch"
+      "footnote": "No credit card · Cancel anytime · Early adopters get a favorable price at launch"
     },
     "faq": {
       "h2": "Frequently asked questions",
@@ -499,19 +572,6 @@
     "selfManageDesc": "Start the project and invite contractors to collaborate on tasks, timeline and budget.",
     "sendRfq": "Get quotes first",
     "sendRfqDesc": "Share your renovation plan with builders and compare price estimates before starting."
-  },
-  "guest": {
-    "loginToActivate": "Sign in to activate your project",
-    "loginToActivateDesc": "Create a free account to activate your project and start collaborating with your team.",
-    "loginToShare": "Sign in to share your renovation plan",
-    "loginToShareDesc": "Create a free account to send your renovation plan to contractors and get quotes.",
-    "loginToSaveQuote": "Sign in to save your quote",
-    "loginToSaveQuoteDesc": "Create a free account to save, send, and track your quotes.",
-    "loginToSave": "Sign in to save your project",
-    "loginToSaveDesc": "Create a free account to save your project and access it from any device.",
-    "createAccount": "Create free account",
-    "signIn": "I already have an account",
-    "dataKept": "Your planning data will be saved to your account."
   },
   "auth": {
     "signInTitle": "Welcome Back",
@@ -972,7 +1032,7 @@
     "addRoom": "Add Room",
     "addRoomTitle": "Add New Room",
     "addRoomDescription": "Create a new room in your renovation project",
-    "roomName": "Room Name",
+    "roomName": "Name",
     "roomNamePlaceholder": "Kitchen",
     "roomDescription": "Description (Optional)",
     "roomDescriptionPlaceholder": "Additional details about this room",
@@ -1083,7 +1143,6 @@
     "sortCreatedAsc": "Oldest first",
     "fields": "Fields",
     "visibleFields": "Visible fields",
-    "roomName": "Name",
     "floorMaterial": "Floor material",
     "wallColor": "Wall color",
     "ceilingHeight": "Ceiling height (m)",
@@ -1152,9 +1211,6 @@
     "noSpecsYet": "No specifications yet",
     "electricalShort": "Electrical",
     "heatingShort": "Heating",
-    "floorLabel": "Floor",
-    "ceiling": "Ceiling",
-    "walls": "Walls",
     "volume": "Volume",
     "tabOverview": "Overview",
     "tabMaterial": "Material",
@@ -1166,9 +1222,6 @@
     "quickInfo": "Quick info",
     "createdAt": "Created",
     "updatedAt": "Updated",
-    "floorAndCeiling": "Floor & Ceiling",
-    "wallsAndJoinery": "Walls & Joinery",
-    "electricalAndHeating": "Electrical & Heating",
     "tasksProgress": "{{done}}/{{total}} tasks",
     "noTasksYet": "No tasks yet",
     "allRooms": "All rooms",
@@ -1183,8 +1236,7 @@
     "viewCards": "Cards",
     "viewTable": "Table",
     "searchPlaceholderV2": "Search rooms, notes, materials…",
-    "photoCover": "Photo",
-    "fields": "Fields"
+    "photoCover": "Photo"
   },
   "spacePlanner": {
     "title": "Area",
@@ -1463,12 +1515,24 @@
     "confirmRevokeWorkerDescription": "The link will stop working immediately. You can create a new invitation anytime.",
     "confirmRevokeWorkerKeep": "Keep access",
     "cards": {
-      "contractor": { "description": "Sees assigned tasks, can update status and create purchase orders" },
-      "project_manager": { "description": "Full access to all project features, can invite team members" },
-      "collaborator": { "description": "Read access + can upload files. For accountants, client representatives, architects, consultants, brokers, or other external parties" },
-      "client": { "description": "Follows project progress, photos, and messages — no pricing visible" },
-      "worker": { "description": "Gets a link with work instructions — no login needed. Checklist, photos, and messages." },
-      "co_owner": { "description": "Same access as the owner — full control, shared project management + double ROT" }
+      "contractor": {
+        "description": "Sees assigned tasks, can update status and create purchase orders"
+      },
+      "project_manager": {
+        "description": "Full access to all project features, can invite team members"
+      },
+      "collaborator": {
+        "description": "Read access + can upload files. For accountants, client representatives, architects, consultants, brokers, or other external parties"
+      },
+      "client": {
+        "description": "Follows project progress, photos, and messages — no pricing visible"
+      },
+      "worker": {
+        "description": "Gets a link with work instructions — no login needed. Checklist, photos, and messages."
+      },
+      "co_owner": {
+        "description": "Same access as the owner — full control, shared project management + double ROT"
+      }
     },
     "coOwnerOption": "Co-owner (double ROT)",
     "coOwnerOptionDesc": "Same access as owner + doubles the ROT deduction to 100,000 kr",
@@ -1562,7 +1626,7 @@
     "wallScalesProportionally": "The wall scales proportionally from the start point",
     "thicknessMm": "Thickness (mm):",
     "thicknessStandard": "Standard: 150mm (interior walls), 200mm (exterior walls)",
-    "heightMm": "Height (mm):",
+    "heightMm": "Height (mm)",
     "heightStandard": "Standard: 2400mm (normal ceiling height)",
     "saveChanges": "Save changes",
     "appearance": "Appearance",
@@ -1617,7 +1681,6 @@
     "templateGroupDimensions": "Group Dimensions",
     "resize": "Resize",
     "widthMm": "Width (mm)",
-    "heightMm": "Height (mm)",
     "groupScaleHint": "All shapes in the group will scale proportionally",
     "applyResize": "Apply Resize",
     "depth": "Depth/Height",
@@ -2002,21 +2065,33 @@
     "importResult": "{{tasks}} tasks and {{materials}} material budgets imported"
   },
   "rot": {
-    "summary": "ROT deduction",
-    "person": "person",
-    "persons": "persons",
-    "overLimit": "Exceeds ROT limit by {{amount}} kr",
-    "plannedTotal": "Planned ROT deduction",
-    "actualTotal": "Actual ROT deduction",
-    "addPerson": "Add person",
-    "addError": "Could not add ROT person",
-    "namePlaceholder": "Name",
-    "pnrPlaceholder": "Personal ID (optional)",
-    "used": "Used",
-    "remainingThisYear": "Remaining {{year}}: {{amount}}",
-    "missingInvoices": "{{count}} ROT task(s) lack verified invoice",
-    "plannedShort": "plan",
-    "noInvoicesYet": "No invoices paid yet — showing planned deduction"
+    "detailsTitle": "ROT Tax Deduction Details",
+    "detailsDescription": "These details are needed for the builder to apply for ROT tax deduction on your behalf.",
+    "personnummer": "Personal identity number",
+    "personnummerPlaceholder": "YYYYMMDD-XXXX",
+    "personnummerInvalid": "Invalid personal identity number",
+    "propertyAddress": "Property address",
+    "propertyAddressHint": "The address where work is being performed",
+    "propertyDesignation": "Property designation",
+    "propertyDesignationPlaceholder": "e.g. Stockholm Södermalm 1:23",
+    "propertyDesignationHint": "Found on your property tax notice",
+    "propertyDesignationRotInfo": "Required for ROT tax deduction applications. Found on your property tax notice (taxeringsbeslut).",
+    "saved": "ROT details saved",
+    "savedDescription": "The builder can now apply for ROT on your behalf",
+    "skipForNow": "Skip for now",
+    "cardTitle": "ROT Deduction",
+    "customerPersonnummer": "Customer personnummer",
+    "masked": "Masked for privacy",
+    "readiness": {
+      "ready": "ROT deduction — ready",
+      "incomplete": "ROT deduction — details missing",
+      "personnummer": "Personnummer",
+      "designation": "Property designation",
+      "homeownerAddPersonnummer": "Add your personnummer in profile settings",
+      "homeownerAddDesignation": "Add property designation in project settings",
+      "builderAskClient": "Ask your customer to fill in the missing details",
+      "builderInviteClient": "Invite the homeowner to the project to collect ROT details"
+    }
   },
   "rotRules": {
     "title": "How we calculate ROT",
@@ -2158,7 +2233,6 @@
     "calendarSat": "Sat",
     "calendarSun": "Sun",
     "categories": "Categories",
-    "groupBy": "Group by",
     "milestones": "Milestones",
     "noMilestones": "No milestones yet",
     "milestoneTitle": "Title...",
@@ -2605,10 +2679,10 @@
     "linkedTask": "Link to task",
     "linkedRoom": "Link to room",
     "totalPreview": "Total",
-    "createOrder": "Create order",
+    "createOrder": "Create Purchase Order",
     "createOrderDesc": "Add an order to be placed or already placed. Price is optional — quantity is enough.",
     "atLeastOneLine": "At least one named row required",
-    "orderCreated": "Order created ({{count}} rows)",
+    "orderCreated": "Order created",
     "lines": "Rows",
     "tasks": "Tasks",
     "rooms": "Rooms",
@@ -2651,7 +2725,6 @@
     "flowOrder": "Order",
     "flowOrderDesc": "To be bought — amount optional",
     "completedPurchaseSaved": "Completed purchase saved",
-    "orderCreated": "Order created",
     "allocateAllToRoom": "Allocate all to room...",
     "noRoom": "No room",
     "mixedRoomAllocation": "Mixed rooms",
@@ -2667,8 +2740,6 @@
     "addOrderDescription": "Create a new purchase order for materials needed for this project",
     "editOrder": "Edit Purchase Order",
     "editOrderDescription": "Update purchase order details and view comments",
-    "createOrder": "Create Purchase Order",
-    "newPurchase": "New purchase",
     "newPurchaseFrom": "New purchase",
     "budgetLabel": "Budget",
     "remainingLabel": "Remaining",
@@ -2700,15 +2771,12 @@
     "manualNote": "You can attach a receipt or invoice later from the Purchases list.",
     "addReceiptLater": "You can attach documentation later",
     "requestCreated": "Purchase request created",
-    "approve": "Approve",
     "markPaid": "Mark as paid",
     "quoteLineItems": "Quote line items",
-    "materialBudget": "Material budget",
     "budgetPost": "Budget post",
     "selectBudgetPost": "Select budget post...",
     "noBudgetPost": "No budget post",
     "budgetRemaining": "Remaining: {{amount}}",
-    "remaining": "remaining",
     "noBudgetPostWarning": "This order is not linked to any budget post.",
     "markOutsideBudget": "Mark as outside budget",
     "markedOutsideBudget": "Marked as outside budget",
@@ -2717,7 +2785,6 @@
     "quoteBudget": "Budget",
     "ordered": "Ordered",
     "paid": "Paid",
-    "remaining": "Remaining",
     "updateOrder": "Update Purchase Order",
     "materialName": "Item",
     "estimatedCost": "Estimated Cost",
@@ -2730,7 +2797,6 @@
     "room": "Room",
     "linkToTask": "Link to Task",
     "assignTo": "Assign To",
-    "noRoom": "No room",
     "noTask": "No task",
     "excludeFromBudget": "Addition (outside original quote)",
     "ataTooltip": "Costs added beyond the original quote. Tracked separately in the budget.",
@@ -2767,7 +2833,6 @@
     "clearFilters": "Clear filters",
     "allUsers": "All",
     "showingResults": "Showing {{count}} of {{total}} orders",
-    "vendor": "Vendor",
     "task": "Task",
     "assignedTo": "Assigned To",
     "statusChangedTo": "Status changed to {{status}}",
@@ -2990,7 +3055,7 @@
     "estimatedHours": "Est. hours",
     "hourlyRate": "Hourly rate",
     "subcontractorCost": "Subcontractor",
-    "paymentStatus": "Payment",
+    "paymentStatus": "Payment Status",
     "quantity": "Quantity",
     "pricePerUnit": "Price/unit",
     "orderedAmount": "Ordered",
@@ -3065,7 +3130,6 @@
     "purchaseOrderDetails": "Purchase Order Details",
     "noData": "No data available",
     "title2": "Title",
-    "paymentStatus": "Payment Status",
     "dueDate": "Due Date",
     "excludeFromBudget": "Addition (outside original quote)",
     "created": "Created",
@@ -3113,7 +3177,6 @@
     "addRow": "Add row",
     "enterName": "Enter name...",
     "selectRoom": "Select room",
-    "noRoom": "No room",
     "rowAdded": "Row added successfully",
     "failedToAddRow": "Failed to add row",
     "nameRequired": "Name is required",
@@ -3902,12 +3965,10 @@
     "quoteLabel": "Quote",
     "projectLabel": "Project",
     "quoteNumberLabel": "Quote no",
-    "recipient": "Recipient",
     "chatAboutQuote": "Questions about this quote",
     "saved": "Saved",
     "shared": "Shared",
     "noSavedQuotes": "No saved quotes",
-    "recipient": "Recipient",
     "selectRecipient": "Select recipient",
     "createNewClient": "Create new...",
     "freeTextPlaceholder": "Additional notes, terms or conditions...",
@@ -4374,18 +4435,15 @@
     "title": "Tell us about your project",
     "subtitle": "Fill in the form below to help us understand your renovation needs",
     "poweredBy": "Powered by Renofine",
-
     "step1Title": "Your details",
     "step2Title": "The property",
     "step3Title": "Rooms and wishes",
     "step4Title": "Summary",
     "stepOf": "Step {{current}} of {{total}}",
-
     "describeStepTitle": "Describe your renovation",
     "roomsStepTitle": "Rooms",
     "photosStepTitle": "Photos",
     "contactStepTitle": "Your details",
-
     "describeTitle": "Tell us about your renovation",
     "describeSubtitle": "Describe in your own words what you want done. Our AI will help organize your wishes.",
     "describePlaceholder": "e.g. We want to renovate the bathroom — new tiles, new faucets and a walk-in shower. The kitchen needs new cabinet fronts and countertop. We'd also like to repaint the entire apartment...",
@@ -4399,7 +4457,6 @@
     "aiFoundTitle": "AI found:",
     "aiRooms": "rooms",
     "aiWorkTypes": "work types",
-
     "roomsTitle": "Which rooms are included?",
     "roomsSubtitle": "Select rooms and optionally add dimensions. The builder can adjust later.",
     "roomDimensionsHint": "Add dimensions if you know them (optional)",
@@ -4407,39 +4464,33 @@
     "depth": "Depth",
     "showWorkTypes": "Work types",
     "noRoomsForPhotos": "Add rooms in the previous step to upload photos per room",
-
     "photosTitle": "Add photos",
     "photosSubtitle": "Photos of the current state help the builder understand the scope. You can also add them later.",
     "generalAttachments": "General files",
     "generalAttachmentsHint": "Floor plans, certificates, or other documents",
     "totalPhotos": "{{count}} photos/files attached",
-
     "contactTitle": "Your details",
     "contactSubtitle": "So the builder can reach you",
     "summaryOfRequest": "Your request includes:",
     "descriptionLabel": "Description",
-
     "name": "Name",
     "namePlaceholder": "Your full name",
     "email": "Email",
     "emailPlaceholder": "your@email.com",
     "phone": "Phone",
     "phonePlaceholder": "070-123 45 67",
-
     "address": "Address",
     "addressPlaceholder": "Street address",
     "postalCode": "Postal code",
     "postalCodePlaceholder": "123 45",
     "city": "City",
     "cityPlaceholder": "City",
-
     "propertyType": "Property type",
     "villa": "House",
     "lagenhet": "Apartment",
     "radhus": "Townhouse",
     "fritidshus": "Vacation home",
     "annat": "Other",
-
     "selectRooms": "Which rooms do you want to renovate?",
     "selectRoomsDescription": "Click on the rooms you want to include",
     "addCustomRoom": "Add custom room",
@@ -4447,7 +4498,6 @@
     "customRoomPlaceholder": "e.g. Wine cellar, Studio...",
     "noRoomsSelected": "No rooms selected yet",
     "roomsSelected": "{{count}} room(s) selected",
-
     "roomDescription": "Describe what you want to do",
     "roomDescriptionPlaceholder": "E.g., Complete renovation with new tiles, fixtures, and lighting...",
     "workTypes": "What type of work is needed?",
@@ -4462,7 +4512,6 @@
     "editRoom": "Edit",
     "removeRoom": "Remove",
     "saveRoom": "Save room",
-
     "workType": {
       "rivning": "Demolition",
       "el": "Electrical",
@@ -4479,7 +4528,6 @@
       "tradgard": "Landscaping",
       "annat": "Other"
     },
-
     "room": {
       "kitchen": "Kitchen",
       "bathroom": "Bathroom",
@@ -4496,7 +4544,6 @@
       "garage": "Garage",
       "patio": "Patio"
     },
-
     "summary": "Review your request",
     "summaryDescription": "Make sure everything looks correct before submitting",
     "yourDetails": "Your details",
@@ -4505,23 +4552,19 @@
     "additionalComments": "Additional comments",
     "additionalCommentsPlaceholder": "Anything else we should know?",
     "images": "{{count}} image(s)",
-
     "submit": "Submit request",
     "submitting": "Submitting...",
     "submitted": "Thank you!",
     "submittedTitle": "Your request has been sent",
     "submittedDescription": "{{company}} will review your request and get back to you with a quote.",
     "submittedNote": "You will receive a confirmation email at {{email}}",
-
     "back": "Back",
     "next": "Next",
     "required": "Required",
-
     "expired": "This request has expired",
     "expiredDescription": "Please contact the contractor for a new link",
     "notFound": "Request not found",
     "notFoundDescription": "The link may be invalid or expired",
-
     "requests": "Customer requests",
     "newRequest": "New request",
     "createRequest": "Create request",
@@ -4534,7 +4577,6 @@
     "greetingLabel": "Personal greeting",
     "greetingPlaceholder": "Hi! Thanks for your interest in our services. Please fill in the form and I'll get back to you with a quote.",
     "greetingHint": "Your greeting will be shown to the customer when they open the form.",
-
     "optionalFieldsHint": "You can leave these fields empty. The customer fills in their details in the form.",
     "requestCreated": "Request created! Share the link with your customer.",
     "sendVia": "Send this link to your customer via:",
@@ -4544,7 +4586,6 @@
     "linkValidity": "The link is valid for 30 days. You will be notified when the customer submits the form.",
     "roomCount": "{{count}} room",
     "roomCount_plural": "{{count}} rooms",
-
     "preview": {
       "title": "Form preview",
       "description": "This is how the form looks to your customer.",
@@ -4573,28 +4614,23 @@
       "fieldComments": "Additional comments",
       "fieldAttachments": "Attach files (drawings, inspiration, etc.)"
     },
-
     "statusPending": "Awaiting response",
     "statusSubmitted": "Submitted",
     "statusConverted": "Converted to quote",
     "statusExpired": "Expired",
     "statusCancelled": "Cancelled",
-
     "viewDetails": "View details",
     "createQuote": "Create quote",
     "sendReminder": "Send reminder",
     "cancel": "Cancel request",
     "cancelConfirm": "Are you sure you want to cancel this request?",
-
     "noRequests": "No customer requests yet",
     "noRequestsDescription": "Create a request to get started",
-
     "convertToQuote": "Convert to quote",
     "convertToQuoteDescription": "Create rooms, tasks, and a quote from this request",
     "converting": "Converting...",
     "converted": "Request converted",
     "convertedDescription": "Rooms and tasks have been created. You can now edit the quote.",
-
     "sendCustomerForm": "Send customer form",
     "sendCustomerFormDescription": "Send a form to your customer to gather project information for {{project}}",
     "emailRequired": "Email is required",
@@ -4617,7 +4653,6 @@
     },
     "sending": "Sending...",
     "sendForm": "Send form",
-
     "takePhoto": "Take photo",
     "chooseFile": "Choose file",
     "chooseFiles": "Choose files",
@@ -4629,11 +4664,9 @@
     "noFilesYet": "No files uploaded yet",
     "filesCount": "{{count}} of {{max}} files",
     "optional": "optional",
-
     "roomPhotos": "Room photos",
     "roomPhotosDescription": "Take or select photos showing the current condition",
     "photosAttached": "{{count}} photo(s) attached",
-
     "attachments": "Attach files",
     "attachmentsDescription": "Upload floor plans, certificates, photos, or other relevant documents",
     "uploadedRoomPhotos": "Uploaded room photos"
@@ -4730,7 +4763,7 @@
     "unlocked": "Editing enabled — changes won't affect the sent quote",
     "unlock": "Unlock editing",
     "relock": "Lock",
-    "autoPriceEnabled": "Customer price is now auto-calculated from hours \u00d7 hourly rate",
+    "autoPriceEnabled": "Customer price is now auto-calculated from hours × hourly rate",
     "estimatedProfit": "Est. profit",
     "profitTooltip": "Estimated profit per task, based on your cost %",
     "newRoom": "New room...",
@@ -4764,7 +4797,7 @@
     "subtotal": "Subtotal",
     "total": "Total",
     "totalWithMarkup": "Total incl. markup",
-    "quantity": "Qty",
+    "quantity": "Quantity",
     "unitPrice": "Unit price",
     "unit": "Unit",
     "materialCount": "{{count}} material(s)",
@@ -4779,8 +4812,6 @@
     "unlinkFromTask": "Make standalone",
     "moveToTask": "Move to another task",
     "attachFile": "Attach file",
-    "quantity": "Quantity",
-    "unitPrice": "Unit price",
     "hoursQty": "Hours / Qty",
     "rateUnitPrice": "Rate / Unit price",
     "addCost": "Cost",
@@ -5098,35 +5129,6 @@
     "kanbanReadOnly": "Read-only — drag disabled",
     "linkedPurchases": "{{count}} purchases",
     "linkedPurchases_one": "{{count}} purchase"
-  },
-  "rot": {
-    "detailsTitle": "ROT Tax Deduction Details",
-    "detailsDescription": "These details are needed for the builder to apply for ROT tax deduction on your behalf.",
-    "personnummer": "Personal identity number",
-    "personnummerPlaceholder": "YYYYMMDD-XXXX",
-    "personnummerInvalid": "Invalid personal identity number",
-    "propertyAddress": "Property address",
-    "propertyAddressHint": "The address where work is being performed",
-    "propertyDesignation": "Property designation",
-    "propertyDesignationPlaceholder": "e.g. Stockholm Södermalm 1:23",
-    "propertyDesignationHint": "Found on your property tax notice",
-    "propertyDesignationRotInfo": "Required for ROT tax deduction applications. Found on your property tax notice (taxeringsbeslut).",
-    "saved": "ROT details saved",
-    "savedDescription": "The builder can now apply for ROT on your behalf",
-    "skipForNow": "Skip for now",
-    "cardTitle": "ROT Deduction",
-    "customerPersonnummer": "Customer personnummer",
-    "masked": "Masked for privacy",
-    "readiness": {
-      "ready": "ROT deduction — ready",
-      "incomplete": "ROT deduction — details missing",
-      "personnummer": "Personnummer",
-      "designation": "Property designation",
-      "homeownerAddPersonnummer": "Add your personnummer in profile settings",
-      "homeownerAddDesignation": "Add property designation in project settings",
-      "builderAskClient": "Ask your customer to fill in the missing details",
-      "builderInviteClient": "Invite the homeowner to the project to collect ROT details"
-    }
   },
   "financialAnalysis": {
     "title": "Financial Analysis",
@@ -5920,8 +5922,7 @@
     "sendEmail": "Send email",
     "emailSent": "Email sent",
     "emailSubject": "Your work instructions",
-    "shareViaWhatsApp": "Share via WhatsApp",
-    "beforePhotos": "Before photos"
+    "shareViaWhatsApp": "Share via WhatsApp"
   },
   "teamWorker": {
     "workers": "Workers",
