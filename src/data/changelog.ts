@@ -13,6 +13,12 @@ export const changelog: ChangelogEntry[] = [
   // ── 2026-05-18 ──
   {
     date: "2026-05-18",
+    title: "Dela en materialrad på flera uppgifter",
+    description: "I redigeringsvyn för en materialrad finns nu \"Dela raden\" — dela upp beloppet på flera delar där varje del kan kopplas till olika uppgift (t.ex. 70 % kök, 30 % badrum). Totalsumman bevaras exakt. Nås från Budget-fliken och den samlade tabellen.",
+    tags: ["Budget", "Förbättring"],
+  },
+  {
+    date: "2026-05-18",
     title: "Jobb-inbjudan visar laddningsläge",
     description: "När du öppnar \"Skicka jobb\" visas nu \"Laddar uppgifter…\" medan listan hämtas, i stället för att kort blinka till \"Inga uppgifter i projektet ännu\" innan uppgifterna dyker upp.",
     tags: ["Team", "Buggfix"],
