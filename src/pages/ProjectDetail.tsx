@@ -22,6 +22,7 @@ import SpacePlannerTab from "@/components/project/SpacePlannerTab";
 import TasksTab from "@/components/project/TasksTab";
 import OverviewTab from "@/components/project/OverviewTab";
 import TeamManagement from "@/components/project/TeamManagement";
+import { TeamSharingSwitcher } from "@/components/project/TeamSharingSwitcher";
 import PurchaseRequestsTab from "@/components/project/PurchaseRequestsTab";
 import BudgetTab from "@/components/project/BudgetTab";
 import { TimeTrackingTab } from "@/components/project/TimeTrackingTab";
@@ -1436,6 +1437,12 @@ const ProjectDetail = () => {
             <NoAccessPlaceholder />
           ) : (
             <div className="container py-4 md:py-8">
+              {!permissions.isClient && (
+                <TeamSharingSwitcher
+                  active="sharing"
+                  onChange={(v) => handleMenuSelect(v, v)}
+                />
+              )}
               <SharingTab
                 projectId={project.id}
                 projectName={project.name}
@@ -1484,6 +1491,12 @@ const ProjectDetail = () => {
             )
           ) : (
             <div className="container py-4 md:py-8">
+              {!permissions.isClient && (
+                <TeamSharingSwitcher
+                  active="team"
+                  onChange={(v) => handleMenuSelect(v, v)}
+                />
+              )}
               <TeamManagement projectId={project.id} isOwner={permissions.isOwner} canManageTeam={permissions.isOwner || permissions.teams === "invite"} />
             </div>
           )}
