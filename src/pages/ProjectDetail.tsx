@@ -1549,6 +1549,7 @@ const ProjectDetail = () => {
             setActiveSubTab(subTab ?? null);
           }}
           isTabBlocked={isTabBlocked}
+          isQuotePhase={isQuotePhase}
           userRole={
             permissions.isOwner
               ? "owner"

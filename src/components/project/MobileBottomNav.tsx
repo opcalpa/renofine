@@ -16,6 +16,8 @@ interface MobileBottomNavProps {
   onTabChange: (tab: string, subTab?: string | null) => void;
   isTabBlocked: (tab: string) => boolean;
   userRole?: "owner" | "editor" | "viewer" | "client";
+  /** Planering is a primary tab only during the quote phase, mirroring desktop. */
+  isQuotePhase?: boolean;
 }
 
 const ALL_TABS: TabConfig[] = [
@@ -37,7 +39,7 @@ const CLIENT_TABS: TabConfig[] = [
   { tab: "files", icon: FolderOpen, labelKey: "nav.mobileNav.files" },
 ];
 
-export function MobileBottomNav({ activeTab, onTabChange, isTabBlocked, userRole }: MobileBottomNavProps) {
+export function MobileBottomNav({ activeTab, onTabChange, isTabBlocked, userRole, isQuotePhase }: MobileBottomNavProps) {
   const { t } = useTranslation();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showFadeRight, setShowFadeRight] = useState(false);
@@ -45,7 +47,16 @@ export function MobileBottomNav({ activeTab, onTabChange, isTabBlocked, userRole
 
   const isClientRole = userRole === "client";
   const baseTabs = isClientRole ? CLIENT_TABS : ALL_TABS;
-  const tabs = useMemo(() => baseTabs.filter((item) => !isTabBlocked(item.tab)), [baseTabs, isTabBlocked]);
+  const tabs = useMemo(
+    () =>
+      baseTabs.filter(
+        (item) =>
+          !isTabBlocked(item.tab) &&
+          // Planering folds away once the project is active (desktop parity).
+          (item.tab !== "planning" || isQuotePhase),
+      ),
+    [baseTabs, isTabBlocked, isQuotePhase],
+  );
 
   // Scroll active tab into view on mount/tab change
   useEffect(() => {
