@@ -938,8 +938,15 @@ const ProjectDetail = () => {
                 });
               }
 
-              // Planering — non-clients
-              if (!isTabBlocked("planning") && !permissions.isClient) {
+              // Planering is a free-standing top-level tab only during the
+              // planning/quote phase. Once the project is active it folds into
+              // the Översikt dropdown (still one click away, less top clutter).
+              const planningStandalone =
+                !isTabBlocked("planning") && !permissions.isClient && isQuotePhase;
+              const planningInOverview =
+                !isTabBlocked("planning") && !permissions.isClient && !isQuotePhase;
+
+              if (planningStandalone) {
                 responsiveTabs.push({
                   key: 'planning',
                   label: t("projectDetail.planning", "Planering"),
@@ -949,14 +956,30 @@ const ProjectDetail = () => {
               }
 
               if (!isTabBlocked("overview")) {
+                const overviewItems = planningInOverview
+                  ? [
+                      { label: t("projectDetail.overview"), value: "overview" },
+                      { label: t("projectDetail.planning", "Planering"), value: "planning" },
+                    ]
+                  : menuConfigs.overview;
                 responsiveTabs.push({
                   key: 'overview',
                   label: t("projectDetail.overview"),
-                  active: activeTab === "overview",
-                  items: menuConfigs.overview,
+                  active:
+                    activeTab === "overview" ||
+                    (planningInOverview && activeTab === "planning"),
+                  items: overviewItems,
                   onMainClick: () => handleMenuSelect('overview', 'overview'),
-                  onSelect: (v) => handleMenuSelect('overview', v),
-                  activeValue: activeTab === "overview" ? (activeSubTab || "overview") : undefined,
+                  onSelect: (v) =>
+                    v === "planning"
+                      ? handleMenuSelect('planning', 'planning')
+                      : handleMenuSelect('overview', v),
+                  activeValue:
+                    activeTab === "planning"
+                      ? "planning"
+                      : activeTab === "overview"
+                        ? (activeSubTab || "overview")
+                        : undefined,
                 });
               }
 
@@ -1030,24 +1053,34 @@ const ProjectDetail = () => {
               }
 
               if (!isTabBlocked("team")) {
+                // Delning lives as a sub-item under Team for owners/proffs.
+                // Clients keep their own top-level Kundvy entry (sharing-client).
+                const showSharingInTeam =
+                  !isTabBlocked("sharing") && !permissions.isClient;
+                const teamItems = showSharingInTeam
+                  ? [
+                      { label: t('projectDetail.team'), value: 'team' },
+                      { label: t('sharing.tabTitle', 'Sharing'), value: 'sharing' },
+                    ]
+                  : menuConfigs.team;
                 responsiveTabs.push({
                   key: 'team',
                   label: t('projectDetail.team'),
-                  active: activeTab === "team",
-                  items: menuConfigs.team,
+                  active:
+                    activeTab === "team" ||
+                    (showSharingInTeam && activeTab === "sharing"),
+                  items: teamItems,
                   onMainClick: () => handleMenuSelect('team', 'team'),
-                  onSelect: (v) => handleMenuSelect('team', v),
-                  activeValue: activeTab === "team" ? (activeSubTab || "team") : undefined,
-                });
-              }
-
-              // Delning — preview for owners/proffs
-              if (!isTabBlocked("sharing") && !permissions.isClient) {
-                responsiveTabs.push({
-                  key: 'sharing-owner',
-                  label: t("sharing.tabTitle", "Sharing"),
-                  active: activeTab === "sharing",
-                  onClick: () => handleMenuSelect('sharing', 'sharing'),
+                  onSelect: (v) =>
+                    v === 'sharing'
+                      ? handleMenuSelect('sharing', 'sharing')
+                      : handleMenuSelect('team', 'team'),
+                  activeValue:
+                    activeTab === "sharing"
+                      ? "sharing"
+                      : activeTab === "team"
+                        ? (activeSubTab || "team")
+                        : undefined,
                 });
               }
 
