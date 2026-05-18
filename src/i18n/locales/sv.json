@@ -5846,7 +5846,9 @@
   "instructionImages": {
     "sectionHeader": "Instruktionsbilder",
     "addButton": "Lägg till bild",
-    "emptyHint": "Lägg till bilder med beskrivande text för att förklara arbetet visuellt.",
+    "emptyHint": "Lägg till bilder som visar exakt vad som ska göras — välj befintliga projektbilder eller ladda upp nya med förklarande text. Extra hjälpsamt för inbjudna hantverkare (målare, elektriker …).",
+    "thisTaskGroup": "Den här uppgiftens bilder",
+    "otherPhotosGroup": "Övriga projektbilder",
     "pickerTitle": "Lägg till instruktionsbild",
     "existingTab": "Befintliga",
     "uploadTab": "Ladda upp",

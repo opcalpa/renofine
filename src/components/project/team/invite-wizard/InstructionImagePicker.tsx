@@ -171,6 +171,48 @@ export function InstructionImagePicker({
   const filteredPhotos = (photos ?? []).filter(
     (p) => !alreadyChosenPhotoIds.includes(p.id),
   );
+  // Surface the current task's own photos first — owners often just want to
+  // pick from what's already on this task regardless of how it was tagged.
+  const thisTaskPhotos = filteredPhotos.filter(
+    (p) => p.linkedToType === "task" && p.linkedToId === taskId,
+  );
+  const otherPhotos = filteredPhotos.filter(
+    (p) => !(p.linkedToType === "task" && p.linkedToId === taskId),
+  );
+
+  const renderPhotoGrid = (list: ProjectPhoto[]) => (
+    <div className="grid grid-cols-3 gap-2">
+      {list.map((photo) => (
+        <button
+          key={photo.id}
+          type="button"
+          onClick={() => handlePickExisting(photo)}
+          className={cn(
+            "relative aspect-square rounded-md overflow-hidden bg-muted",
+            "ring-1 ring-border hover:ring-2 hover:ring-primary transition-all",
+            "text-left",
+          )}
+        >
+          <img
+            src={photo.url}
+            alt={photo.caption ?? ""}
+            className="w-full h-full object-cover"
+            loading="lazy"
+          />
+          {(photo.roomName || photo.taskName) && (
+            <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent p-1.5">
+              <p className="text-[10px] font-medium text-white truncate">
+                {photo.taskName ?? photo.roomName}
+              </p>
+              {photo.source && (
+                <p className="text-[9px] text-white/70 truncate">{photo.source}</p>
+              )}
+            </div>
+          )}
+        </button>
+      ))}
+    </div>
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -206,38 +248,25 @@ export function InstructionImagePicker({
                 )}
               </p>
             ) : (
-              <div className="grid grid-cols-3 gap-2 max-h-[420px] overflow-y-auto">
-                {filteredPhotos.map((photo) => (
-                  <button
-                    key={photo.id}
-                    type="button"
-                    onClick={() => handlePickExisting(photo)}
-                    className={cn(
-                      "relative aspect-square rounded-md overflow-hidden bg-muted",
-                      "ring-1 ring-border hover:ring-2 hover:ring-primary transition-all",
-                      "text-left",
+              <div className="max-h-[420px] overflow-y-auto space-y-3">
+                {thisTaskPhotos.length > 0 && (
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-medium text-muted-foreground">
+                      {t("instructionImages.thisTaskGroup", "Den här uppgiftens bilder")}
+                    </p>
+                    {renderPhotoGrid(thisTaskPhotos)}
+                  </div>
+                )}
+                {otherPhotos.length > 0 && (
+                  <div className="space-y-1.5">
+                    {thisTaskPhotos.length > 0 && (
+                      <p className="text-xs font-medium text-muted-foreground">
+                        {t("instructionImages.otherPhotosGroup", "Övriga projektbilder")}
+                      </p>
                     )}
-                  >
-                    <img
-                      src={photo.url}
-                      alt={photo.caption ?? ""}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                    {(photo.roomName || photo.taskName) && (
-                      <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent p-1.5">
-                        <p className="text-[10px] font-medium text-white truncate">
-                          {photo.taskName ?? photo.roomName}
-                        </p>
-                        {photo.source && (
-                          <p className="text-[9px] text-white/70 truncate">
-                            {photo.source}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </button>
-                ))}
+                    {renderPhotoGrid(otherPhotos)}
+                  </div>
+                )}
               </div>
             )}
           </TabsContent>

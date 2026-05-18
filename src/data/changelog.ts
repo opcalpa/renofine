@@ -13,6 +13,12 @@ export const changelog: ChangelogEntry[] = [
   // ── 2026-05-18 ──
   {
     date: "2026-05-18",
+    title: "Tydligare instruktionsbilder vid jobb-inbjudan",
+    description: "När du skickar ut ett jobb syns nu \"Instruktionsbilder\" direkt under uppgiftens titel i förhandsvisningen — inte gömt längst ner. Du kan välja befintliga projektbilder (uppgiftens egna visas först) eller ladda upp nya med förklarande text. Extra användbart för inbjudna hantverkare som målare och elektriker.",
+    tags: ["Team", "Förbättring"],
+  },
+  {
+    date: "2026-05-18",
     title: "Teamlistan funkar på mobil",
     description: "Teamlistan visas nu som kort på telefon i stället för en bred tabell som åkte utanför skärmen. Varje medlem är ett kort med namn, roll och status — tryck för att se åtkomstdetaljer. Knapparna \"Skicka jobb\" och \"Lägg till medlem\" radbryts snyggt i stället för att kapas.",
     tags: ["Team", "Mobil", "Förbättring"],

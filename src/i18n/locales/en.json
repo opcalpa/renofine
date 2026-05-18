@@ -5847,7 +5847,9 @@
   "instructionImages": {
     "sectionHeader": "Instruction images",
     "addButton": "Add image",
-    "emptyHint": "Add images with descriptive text to explain the work visually.",
+    "emptyHint": "Add images that show exactly what to do — pick existing project photos or upload new ones with explanatory text. Especially helpful for invited tradespeople (painter, electrician …).",
+    "thisTaskGroup": "This task's photos",
+    "otherPhotosGroup": "Other project photos",
     "pickerTitle": "Add instruction image",
     "existingTab": "Existing",
     "uploadTab": "Upload",

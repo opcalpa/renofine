@@ -175,19 +175,20 @@ export function WizardStep3Worker({
                 currentIndex={previewIdx}
                 totalCount={workerAccess.taskIds.length}
                 onNavigate={navigatePreview}
-              />
-
-              <InstructionImagesSection
-                projectId={projectId}
-                task={previewTask}
-                images={workerAccess.instructionImages.get(previewTask.id) ?? []}
-                onAdd={(image) => onAddInstructionImage(previewTask.id, image)}
-                onUpdate={(localId, updates) =>
-                  onUpdateInstructionImage(previewTask.id, localId, updates)
+                headerSlot={
+                  <InstructionImagesSection
+                    projectId={projectId}
+                    task={previewTask}
+                    images={workerAccess.instructionImages.get(previewTask.id) ?? []}
+                    onAdd={(image) => onAddInstructionImage(previewTask.id, image)}
+                    onUpdate={(localId, updates) =>
+                      onUpdateInstructionImage(previewTask.id, localId, updates)
+                    }
+                    onRemove={(localId) => onRemoveInstructionImage(previewTask.id, localId)}
+                    pickerOpen={pickerOpen}
+                    setPickerOpen={setPickerOpen}
+                  />
                 }
-                onRemove={(localId) => onRemoveInstructionImage(previewTask.id, localId)}
-                pickerOpen={pickerOpen}
-                setPickerOpen={setPickerOpen}
               />
             </>
           ) : (
@@ -312,10 +313,10 @@ function InstructionImagesSection({
       </div>
 
       {images.length === 0 ? (
-        <p className="text-xs text-muted-foreground italic">
+        <p className="text-xs text-muted-foreground">
           {t(
             "instructionImages.emptyHint",
-            "Lägg till bilder med beskrivande text för att förklara arbetet visuellt.",
+            "Lägg till bilder som visar exakt vad som ska göras — välj befintliga projektbilder eller ladda upp nya med förklarande text. Extra hjälpsamt för inbjudna hantverkare (målare, elektriker …).",
           )}
         </p>
       ) : (
