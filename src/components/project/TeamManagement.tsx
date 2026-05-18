@@ -83,6 +83,7 @@ interface TeamMember {
   company: string | null;
   notes: string | null;
   created_at: string | null;
+  expires_at?: string | null;
   customer_view_access?: string;
   timeline_access?: string;
   tasks_access?: string;
@@ -100,6 +101,7 @@ interface Invitation {
   id: string;
   email: string;
   invited_name?: string | null;
+  expires_at?: string | null;
   phone?: string;
   delivery_method: string;
   role: string;
@@ -463,7 +465,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
         .from("project_shares")
         .select(
           `id, shared_with_user_id, role, role_type, contractor_category, contractor_role, phone, company, notes,
-          display_name, display_email, created_at,
+          display_name, display_email, created_at, expires_at,
           customer_view_access, timeline_access, tasks_access, tasks_scope,
           space_planner_access, purchases_access, purchases_scope,
           overview_access, teams_access, budget_access, files_access,
@@ -493,6 +495,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
               company: share.company as string | null,
               notes: share.notes as string | null,
               created_at: (share.created_at as string | null) ?? null,
+              expires_at: (share.expires_at as string | null) ?? null,
               customer_view_access: share.customer_view_access as string | undefined,
               timeline_access: share.timeline_access as string | undefined,
               tasks_access: share.tasks_access as string | undefined,
@@ -514,7 +517,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
         const { data: invitesData, error: invitesError } = await supabase
           .from("project_invitations")
           .select(
-            `id, email, invited_name, phone, delivery_method, role, status, created_at, token, contractor_role,
+            `id, email, invited_name, phone, delivery_method, role, status, created_at, token, contractor_role, expires_at,
             timeline_access, tasks_access, tasks_scope, space_planner_access,
             purchases_access, purchases_scope, overview_access, teams_access,
             budget_access, files_access`
@@ -835,6 +838,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
         addedDate: null,
         profileId: projectOwner.id,
         featureAccess: null,
+        expiresAt: null,
         company: projectOwner.company,
         contractorCategory: null,
         notes: null,
@@ -861,6 +865,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
         addedDate: m.created_at,
         profileId: m.profile_id || null,
         featureAccess: access,
+        expiresAt: m.expires_at ?? null,
         company: m.company,
         contractorCategory:
           m.contractor_category ||
@@ -891,6 +896,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
         addedDate: inv.created_at,
         profileId: null,
         featureAccess: access,
+        expiresAt: inv.expires_at ?? null,
         company: null,
         contractorCategory:
           inv.contractor_role && inv.contractor_role !== "other"
@@ -922,6 +928,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
         addedDate: wt.created_at,
         profileId: null,
         featureAccess: null,
+        expiresAt: null,
         company: null,
         contractorCategory: null,
         notes: null,
@@ -947,6 +954,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
         addedDate: null,
         profileId: null,
         featureAccess: null,
+        expiresAt: null,
         company: null,
         contractorCategory: null,
         notes: null,

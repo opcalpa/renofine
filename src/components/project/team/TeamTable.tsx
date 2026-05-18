@@ -1,6 +1,6 @@
 import { Fragment, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Crown, Pencil, X, Phone, Mail, ChevronDown, ChevronRight, Copy, MessageCircle, Send } from "lucide-react";
+import { Crown, Pencil, X, Phone, Mail, ChevronDown, ChevronRight, Copy, MessageCircle, Send, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Table,
@@ -39,6 +39,7 @@ export interface TeamRow {
   addedDate: string | null;
   profileId: string | null;
   featureAccess: FeatureAccess | null;
+  expiresAt: string | null;
   company: string | null;
   contractorCategory: string | null;
   notes: string | null;
@@ -509,6 +510,15 @@ function ExpandedRowContent({ row, t }: { row: TeamRow; t: (key: string, fallbac
             />
           </div>
         </div>
+      )}
+
+      {/* Time-bounded access (specialist / auditor invites) */}
+      {row.expiresAt && (
+        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Clock className="h-3.5 w-3.5 shrink-0" />
+          {t("roles.accessExpires", "Tidsbegränsad åtkomst – upphör")}{" "}
+          {new Date(row.expiresAt).toLocaleDateString()}
+        </p>
       )}
 
       {/* Worker-specific: assigned tasks + language */}

@@ -1602,6 +1602,7 @@
     "featureBudget": "Budget",
     "featureFiles": "Filer",
     "featureCustomerView": "Kundvy",
+    "accessExpires": "Tidsbegränsad åtkomst – upphör",
     "accessNone": "Ingen",
     "accessView": "Visa",
     "accessEdit": "Redigera",

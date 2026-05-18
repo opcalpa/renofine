@@ -147,25 +147,36 @@ export function FeatureAccessEditor({ featureAccess, onChange, readOnly }: Featu
               )}
             </div>
 
-            {/* Scope sub-option */}
-            {feature.scope && feature.scope.showWhen.includes(currentValue) && !readOnly && (
+            {/* Scope sub-option — shown in both edit and read-only modes
+                so the team table reveals own/assigned vs all, not just level. */}
+            {feature.scope && feature.scope.showWhen.includes(currentValue) && (
               <div className="ml-4 mt-1 flex items-center gap-2">
                 <span className="text-[11px] text-muted-foreground">{t(feature.scope.labelKey)}:</span>
-                <Select
-                  value={featureAccess[feature.scope.key]}
-                  onValueChange={(value) => onChange({ [feature.scope!.key]: value } as Partial<FeatureAccess>)}
-                >
-                  <SelectTrigger className="h-6 w-auto text-[11px] px-2">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {feature.scope.options.map((scopeOpt) => (
-                      <SelectItem key={scopeOpt.value} value={scopeOpt.value}>
-                        {t(scopeOpt.labelKey)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {readOnly ? (
+                  <span className="text-[11px] text-foreground">
+                    {t(
+                      feature.scope.options.find(
+                        (o) => o.value === featureAccess[feature.scope!.key],
+                      )?.labelKey ?? feature.scope.options[0].labelKey,
+                    )}
+                  </span>
+                ) : (
+                  <Select
+                    value={featureAccess[feature.scope.key]}
+                    onValueChange={(value) => onChange({ [feature.scope!.key]: value } as Partial<FeatureAccess>)}
+                  >
+                    <SelectTrigger className="h-6 w-auto text-[11px] px-2">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {feature.scope.options.map((scopeOpt) => (
+                        <SelectItem key={scopeOpt.value} value={scopeOpt.value}>
+                          {t(scopeOpt.labelKey)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
             )}
           </div>

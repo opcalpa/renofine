@@ -19,8 +19,8 @@ export const changelog: ChangelogEntry[] = [
   },
   {
     date: "2026-05-18",
-    title: "Namn i teamlistan",
-    description: "Namnet du skriver in när du bjuder in någon visas nu i teamlistan i stället för bara e-postadressen — lättare att se vem som är vem. E-posten visas som underrad. Du kan också sätta eller ändra visningsnamn på befintliga medlemmar via \"Redigera medlem\".",
+    title: "Namn och tydligare åtkomst i teamlistan",
+    description: "Namnet du skriver in när du bjuder in någon visas nu i teamlistan i stället för bara e-postadressen — lättare att se vem som är vem. E-posten visas som underrad. Du kan också sätta eller ändra visningsnamn på befintliga medlemmar via \"Redigera medlem\". När du fäller ut en rad ser du dessutom omfattningen (om personen ser alla arbeten/ordrar eller bara sina egna/tilldelade) och om åtkomsten är tidsbegränsad.",
     tags: ["Team", "Förbättring"],
   },
   // ── 2026-04-29 ──

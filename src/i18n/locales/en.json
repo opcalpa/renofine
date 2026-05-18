@@ -1602,6 +1602,7 @@
     "featureBudget": "Budget",
     "featureFiles": "Files",
     "featureCustomerView": "Client view",
+    "accessExpires": "Time-limited access – ends",
     "accessNone": "None",
     "accessView": "View",
     "accessEdit": "Edit",
