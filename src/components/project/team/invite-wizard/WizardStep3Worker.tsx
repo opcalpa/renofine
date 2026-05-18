@@ -37,7 +37,7 @@ export function WizardStep3Worker({
   onRemoveInstructionImage,
 }: Props) {
   const { t } = useTranslation();
-  const tasks = useWorkerTasks(projectId);
+  const { tasks, loading: tasksLoading } = useWorkerTasks(projectId);
   const selectedCount = workerAccess.taskIds.length;
   const [previewTaskId, setPreviewTaskId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -107,7 +107,12 @@ export function WizardStep3Worker({
       <div className="grid grid-cols-1 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-4">
         {/* Task list */}
         <div className="border rounded-md max-h-[420px] overflow-y-auto divide-y">
-          {tasks.length === 0 ? (
+          {tasksLoading ? (
+            <div className="p-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground" />
+              {t("inviteWizard.workerStep.loadingTasks", "Laddar uppgifter…")}
+            </div>
+          ) : tasks.length === 0 ? (
             <div className="p-4 text-center text-xs text-muted-foreground">
               {t("inviteWizard.workerStep.noTasks", "Inga uppgifter i projektet ännu.")}
             </div>

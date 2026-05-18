@@ -37,6 +37,7 @@
       "selectedCount_one": "{{count}} selected",
       "selectedCount_other": "{{count}} selected",
       "noTasks": "No tasks in the project yet.",
+      "loadingTasks": "Loading tasks…",
       "previewEmpty": "Pick a task to see how the worker will see it.",
       "purchaseHeader": "Purchases",
       "canProposeLabel": "Can propose purchases",

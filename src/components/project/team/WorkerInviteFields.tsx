@@ -80,43 +80,59 @@ export interface WorkerInviteData {
 
 export function useWorkerTasks(projectId: string) {
   const [tasks, setTasks] = useState<TaskOption[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!projectId) return;
+    if (!projectId) {
+      setLoading(false);
+      return;
+    }
 
+    let cancelled = false;
     const load = async () => {
-      const { data: taskRows } = await supabase
-        .from("tasks")
-        .select("id, title, description, room_id, room_ids, checklists")
-        .eq("project_id", projectId)
-        .order("created_at", { ascending: true });
+      setLoading(true);
+      try {
+        const { data: taskRows } = await supabase
+          .from("tasks")
+          .select("id, title, description, room_id, room_ids, checklists")
+          .eq("project_id", projectId)
+          .order("created_at", { ascending: true });
 
-      if (!taskRows) return;
+        if (cancelled) return;
+        if (!taskRows) {
+          setTasks([]);
+          return;
+        }
 
-      const roomIds = [...new Set(taskRows.map((t) => t.room_id).filter(Boolean))] as string[];
-      const roomMap: Record<string, string> = {};
-      if (roomIds.length > 0) {
-        const { data: rooms } = await supabase.from("rooms").select("id, name").in("id", roomIds);
-        for (const r of rooms || []) roomMap[r.id] = r.name;
+        const roomIds = [...new Set(taskRows.map((t) => t.room_id).filter(Boolean))] as string[];
+        const roomMap: Record<string, string> = {};
+        if (roomIds.length > 0) {
+          const { data: rooms } = await supabase.from("rooms").select("id, name").in("id", roomIds);
+          if (cancelled) return;
+          for (const r of rooms || []) roomMap[r.id] = r.name;
+        }
+
+        setTasks(
+          taskRows.map((t) => ({
+            id: t.id,
+            title: t.title,
+            description: t.description,
+            roomId: t.room_id,
+            roomIds: (t.room_ids && (t.room_ids as string[]).length > 0) ? t.room_ids as string[] : t.room_id ? [t.room_id] : [],
+            roomName: t.room_id ? roomMap[t.room_id] || null : null,
+            checklists: Array.isArray(t.checklists) ? (t.checklists as Checklist[]) : [],
+          }))
+        );
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-
-      setTasks(
-        taskRows.map((t) => ({
-          id: t.id,
-          title: t.title,
-          description: t.description,
-          roomId: t.room_id,
-          roomIds: (t.room_ids && (t.room_ids as string[]).length > 0) ? t.room_ids as string[] : t.room_id ? [t.room_id] : [],
-          roomName: t.room_id ? roomMap[t.room_id] || null : null,
-          checklists: Array.isArray(t.checklists) ? (t.checklists as Checklist[]) : [],
-        }))
-      );
     };
 
     load();
+    return () => { cancelled = true; };
   }, [projectId]);
 
-  return tasks;
+  return { tasks, loading };
 }
 
 // ---------------------------------------------------------------------------

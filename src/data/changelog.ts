@@ -13,6 +13,12 @@ export const changelog: ChangelogEntry[] = [
   // ── 2026-05-18 ──
   {
     date: "2026-05-18",
+    title: "Jobb-inbjudan visar laddningsläge",
+    description: "När du öppnar \"Skicka jobb\" visas nu \"Laddar uppgifter…\" medan listan hämtas, i stället för att kort blinka till \"Inga uppgifter i projektet ännu\" innan uppgifterna dyker upp.",
+    tags: ["Team", "Buggfix"],
+  },
+  {
+    date: "2026-05-18",
     title: "Toppmenyn stannar kvar när du scrollar",
     description: "Tidigare kunde projektets toppmeny glida iväg uppåt vid scroll på grund av två krockande rullningslager. Nu sitter den stabilt kvar och göms/visas mjukt när du scrollar ner respektive upp — på både desktop och mobil.",
     tags: ["Navigation", "Buggfix"],

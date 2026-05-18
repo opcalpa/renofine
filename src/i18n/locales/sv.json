@@ -37,6 +37,7 @@
       "selectedCount_one": "{{count}} vald",
       "selectedCount_other": "{{count}} valda",
       "noTasks": "Inga uppgifter i projektet ännu.",
+      "loadingTasks": "Laddar uppgifter…",
       "previewEmpty": "Välj en uppgift för att se hur arbetaren ser den.",
       "purchaseHeader": "Inköp",
       "canProposeLabel": "Kan föreslå inköp",
