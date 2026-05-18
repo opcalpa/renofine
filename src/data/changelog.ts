@@ -13,6 +13,12 @@ export const changelog: ChangelogEntry[] = [
   // ── 2026-05-18 ──
   {
     date: "2026-05-18",
+    title: "Granskare ser nu Kontroll-fliken",
+    description: "Personer du bjuder in som \"Granskare\" (t.ex. besiktningsman eller kontrollansvarig) kommer direkt in i en avskalad vy: Översikt, Filer och Kontroll — inget av det ekonomiska eller övriga arbetsflödet. Tidigare kunde en inbjuden granskare inte se Kontroll-fliken de bjudits in för.",
+    tags: ["Team", "Förbättring"],
+  },
+  {
+    date: "2026-05-18",
     title: "Tydligare instruktionsbilder vid jobb-inbjudan",
     description: "När du skickar ut ett jobb syns nu \"Instruktionsbilder\" direkt under uppgiftens titel i förhandsvisningen — inte gömt längst ner. Du kan välja befintliga projektbilder (uppgiftens egna visas först) eller ladda upp nya med förklarande text. Extra användbart för inbjudna hantverkare som målare och elektriker.",
     tags: ["Team", "Förbättring"],

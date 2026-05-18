@@ -154,11 +154,18 @@ const ProjectDetail = () => {
           // Project-driven role: if user has a share with role_type, use that
           const rt = permissions.roleType;
           if (rt === "client" || rt === "planning_contributor") return "homeowner";
+          // Reviewer (Granskare): runs the normal contractor app shell
+          // read-only (persona strips economy); visible tabs narrowed below.
+          if (rt === "reviewer") return "contractor";
           if (rt === "contractor" || rt === "project_manager" || rt === "rfq_builder") return "contractor";
           if (rt === "collaborator" || rt === "other") return profile?.onboarding_user_type || "contractor";
           // Project owner, co_owner, or no share (null) — use profile preference
           return profile?.onboarding_user_type || "contractor";
         })();
+
+  // Granskare: invited reviewer (read-only inspector). Sees only
+  // Översikt + Filer + Kontroll — explicit per-role gating.
+  const isReviewer = !isPublicDemoProject && !isGuest && permissions.roleType === "reviewer";
 
   const handleGuestRoleChange = useCallback((role: string) => {
     localStorage.setItem("guest_user_type", role);
@@ -202,6 +209,17 @@ const ProjectDetail = () => {
     planning: permissions.overview,
     chat: "view",
   };
+
+  // Granskare sees a narrow set: Översikt + Filer + Chatt (+ Kontroll,
+  // gated separately below). Everything else is hidden regardless of the
+  // persona's broader DB grants — UI is the authoritative role gate.
+  if (isReviewer) {
+    Object.keys(tabPermissionMap).forEach((k) => {
+      if (k !== "overview" && k !== "files" && k !== "chat") {
+        tabPermissionMap[k] = "none";
+      }
+    });
+  }
 
   // Module system: determine profile size for defaults
   const profileSize = effectiveUserType === "homeowner" ? "homeowner" as const : "small" as const;
@@ -1092,7 +1110,7 @@ const ProjectDetail = () => {
                 });
               }
 
-              if (effectiveUserType === "contractor" && isTabEnabled("inspections")) {
+              if (effectiveUserType === "contractor" && (isTabEnabled("inspections") || isReviewer)) {
                 responsiveTabs.push({
                   key: 'inspections',
                   label: t("inspections.tabLabel", "Kontroll"),
