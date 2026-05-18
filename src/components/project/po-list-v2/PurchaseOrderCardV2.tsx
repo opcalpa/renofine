@@ -8,6 +8,7 @@ interface PurchaseOrderCardV2Props {
   po: PO;
   rows: POMaterial[];
   currency: string;
+  maskEconomy?: boolean;
   selected: boolean;
   bulkMode: boolean;
   onClick: () => void;
@@ -44,6 +45,7 @@ export function PurchaseOrderCardV2({
   po,
   rows,
   currency,
+  maskEconomy = false,
   selected,
   bulkMode,
   onClick,
@@ -165,7 +167,7 @@ export function PurchaseOrderCardV2({
               lineHeight: 1.25,
             }}
           >
-            {po.vendor_name || t("purchases.unknownVendor", "Okänd leverantör")}
+            {maskEconomy ? "—" : (po.vendor_name || t("purchases.unknownVendor", "Okänd leverantör"))}
           </div>
           <div
             className="rf-num mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5"
@@ -193,7 +195,7 @@ export function PurchaseOrderCardV2({
               lineHeight: 1.1,
             }}
           >
-            {formatCurrency(po.total, currency)}
+            {maskEconomy ? "—" : formatCurrency(po.total, currency)}
           </div>
           <div className="rf-num" style={{ fontSize: 11, color: "var(--rf-fg-muted)" }}>
             {rows.length === 0

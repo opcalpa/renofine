@@ -1,5 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { isTeamV2MaskingEnabled } from "@/lib/featureFlags";
+import { getViewerMode, type ViewerMode } from "@/services/projectDataService";
 import { createRequestPurchase } from "@/lib/createRequestPurchase";
 import { usePersistedPreference } from "@/hooks/usePersistedPreference";
 import { useTaxDeductionVisible } from "@/hooks/useTaxDeduction";
@@ -203,6 +205,19 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
   const [userPurchasesAccess, setUserPurchasesAccess] = useState<string>('none');
   const [userPurchasesScope, setUserPurchasesScope] = useState<string>('assigned');
   const [permissionsResolved, setPermissionsResolved] = useState(false);
+  // P0#2/L3: mask supplier prices+vendor for non-"full" viewers. Flag off →
+  // false (byte-identical). Fail-safe: masked while viewerMode resolves.
+  const [viewerMode, setViewerMode] = useState<ViewerMode | null>(null);
+  const maskEconomy = isTeamV2MaskingEnabled() && viewerMode !== "full";
+
+  useEffect(() => {
+    if (!isTeamV2MaskingEnabled()) return;
+    let alive = true;
+    getViewerMode(projectId)
+      .then((m) => { if (alive) setViewerMode(m); })
+      .catch(() => { if (alive) setViewerMode("none"); });
+    return () => { alive = false; };
+  }, [projectId]);
 
   const { toast } = useToast();
   const { lockStatus } = useProjectLock(projectId);
@@ -1176,6 +1191,7 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
               tasks={tasks}
               rooms={rooms}
               currency={currency}
+              maskEconomy={maskEconomy}
               canEdit={isProjectOwner || userPurchasesAccess === 'edit'}
               onEditPO={(po) => setEditingPO(po as PurchaseOrder)}
               onDeletePO={(po) => setPOToDelete(po as PurchaseOrder)}
@@ -1193,6 +1209,7 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
               rooms={rooms.map((r) => ({ id: r.id, name: r.name }))}
               projectId={projectId}
               currency={currency}
+              maskEconomy={maskEconomy}
               openPOId={openPOId}
               onOpenPOIdChange={setOpenPOId}
               canEdit={isProjectOwner || userPurchasesAccess === 'edit'}

@@ -419,6 +419,7 @@ interface PurchaseOrderDetailSheetProps {
   rooms: Array<{ id: string; name: string }>;
   projectId: string;
   currency: string;
+  maskEconomy?: boolean;
   canEdit: boolean;
 
   // header actions
@@ -453,6 +454,7 @@ function SheetBody(props: PurchaseOrderDetailSheetProps) {
     tasks,
     rooms,
     currency,
+    maskEconomy = false,
     canEdit,
     onEditMeta,
     onDelete,
@@ -551,7 +553,7 @@ function SheetBody(props: PurchaseOrderDetailSheetProps) {
           className="mt-2 truncate"
           style={{ fontSize: 19, fontWeight: 500, color: "var(--rf-ink)", letterSpacing: "-0.015em" }}
         >
-          {po.vendor_name || t("purchases.unknownVendor", "Okänd leverantör")}
+          {maskEconomy ? "—" : (po.vendor_name || t("purchases.unknownVendor", "Okänd leverantör"))}
         </div>
 
         <div
@@ -564,7 +566,7 @@ function SheetBody(props: PurchaseOrderDetailSheetProps) {
             lineHeight: 1.1,
           }}
         >
-          {formatCurrency(po.total, currency)}
+          {maskEconomy ? "—" : formatCurrency(po.total, currency)}
         </div>
 
         <div
@@ -884,7 +886,7 @@ function SheetBody(props: PurchaseOrderDetailSheetProps) {
                         </Badge>
                       )}
                       <span className="tnum whitespace-nowrap text-muted-foreground">
-                        {formatCurrency(row.price_total || 0, currency)}
+                        {maskEconomy ? "—" : formatCurrency(row.price_total || 0, currency)}
                       </span>
                     </label>
                   );
@@ -910,7 +912,7 @@ function SheetBody(props: PurchaseOrderDetailSheetProps) {
                       </Badge>
                     )}
                     <span className="tnum whitespace-nowrap text-muted-foreground">
-                      {formatCurrency(row.price_total || 0, currency)}
+                      {maskEconomy ? "—" : formatCurrency(row.price_total || 0, currency)}
                     </span>
                   </button>
                 );
@@ -961,7 +963,10 @@ function SheetBody(props: PurchaseOrderDetailSheetProps) {
 export function PurchaseOrderDetailSheet(props: PurchaseOrderDetailSheetProps) {
   const { t } = useTranslation();
   const isDesktop = useIsDesktop();
-  const { po, open, onOpenChange } = props;
+  const { po, open, onOpenChange, maskEconomy = false } = props;
+  const titleText = maskEconomy
+    ? t("purchases.purchaseOrder", "Inköpsorder")
+    : (po?.vendor_name ?? t("purchases.purchaseOrder", "Inköpsorder"));
 
   if (isDesktop) {
     return (
@@ -972,7 +977,7 @@ export function PurchaseOrderDetailSheet(props: PurchaseOrderDetailSheetProps) {
           className="rf-paper flex w-[540px] max-w-[92vw] flex-col gap-0 p-0 overflow-hidden"
         >
           <VisuallyHidden>
-            <SheetTitle>{po?.vendor_name ?? t("purchases.purchaseOrder", "Inköpsorder")}</SheetTitle>
+            <SheetTitle>{titleText}</SheetTitle>
             <SheetDescription>
               {t("purchases.detailSheetDescription", "Redigera order, rader och tilldelning")}
             </SheetDescription>
@@ -989,7 +994,7 @@ export function PurchaseOrderDetailSheet(props: PurchaseOrderDetailSheetProps) {
         <DrawerOverlay />
         <DrawerContent className="rf-paper flex h-[92vh] flex-col p-0">
           <VisuallyHidden>
-            <DrawerTitle>{po?.vendor_name ?? t("purchases.purchaseOrder", "Inköpsorder")}</DrawerTitle>
+            <DrawerTitle>{titleText}</DrawerTitle>
             <DrawerDescription>
               {t("purchases.detailSheetDescription", "Redigera order, rader och tilldelning")}
             </DrawerDescription>

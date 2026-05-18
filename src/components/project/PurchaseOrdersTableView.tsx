@@ -52,6 +52,7 @@ interface PurchaseOrdersTableViewProps {
   tasks: { id: string; title: string }[];
   rooms: { id: string; name: string }[];
   currency?: string | null;
+  maskEconomy?: boolean;
   canEdit: boolean;
   onEditPO: (po: PurchaseOrderRow) => void;
   onDeletePO: (po: PurchaseOrderRow) => void;
@@ -66,6 +67,7 @@ export const PurchaseOrdersTableView = ({
   tasks,
   rooms,
   currency,
+  maskEconomy = false,
   canEdit,
   onEditPO,
   onDeletePO,
@@ -168,6 +170,7 @@ export const PurchaseOrdersTableView = ({
                   statusColor={statusColor(po.status)}
                   tasksLabel={tasksLabel}
                   roomsLabel={roomsLabel}
+                  maskEconomy={maskEconomy}
                   canEdit={canEdit}
                   onEditPO={() => onEditPO(po)}
                   onDeletePO={() => onDeletePO(po)}
@@ -201,6 +204,7 @@ interface RowProps {
   statusColor: string;
   tasksLabel: React.ReactNode;
   roomsLabel: React.ReactNode;
+  maskEconomy?: boolean;
   canEdit: boolean;
   onEditPO: () => void;
   onDeletePO: () => void;
@@ -211,7 +215,7 @@ interface RowProps {
 
 const Row = ({
   po, rows, isExpanded, togglePO, visibleCols, currency, statusColor,
-  tasksLabel, roomsLabel, canEdit, onEditPO, onDeletePO, onAddLine, onEditLine, taskMap,
+  tasksLabel, roomsLabel, maskEconomy = false, canEdit, onEditPO, onDeletePO, onAddLine, onEditLine, taskMap,
 }: RowProps) => {
   const { t } = useTranslation();
   const visibleColCount = visibleCols.size + 1 + (canEdit ? 1 : 0);
@@ -228,7 +232,7 @@ const Row = ({
           <td className="px-2 py-1.5">
             <button type="button" onClick={onEditPO} className="font-medium hover:underline text-left flex items-center gap-1.5">
               <ShoppingCart className="h-3 w-3 text-muted-foreground" />
-              {po.vendor_name}
+              {maskEconomy ? "—" : po.vendor_name}
             </button>
           </td>
         )}
@@ -241,7 +245,7 @@ const Row = ({
         )}
         {visibleCols.has("total") && (
           <td className="px-2 py-1.5 text-right tabular-nums font-medium">
-            {formatCurrency(po.total, currency)}
+            {maskEconomy ? "—" : formatCurrency(po.total, currency)}
           </td>
         )}
         {visibleCols.has("lines") && (
@@ -322,7 +326,7 @@ const Row = ({
                       </Badge>
                     )}
                     <span className="tabular-nums text-muted-foreground">
-                      {line.price_total != null ? formatCurrency(line.price_total, currency) : "–"}
+                      {maskEconomy ? "—" : (line.price_total != null ? formatCurrency(line.price_total, currency) : "–")}
                     </span>
                   </button>
                 ))}

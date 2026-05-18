@@ -10,6 +10,7 @@ interface PurchaseOrdersGridV2Props {
   rooms: Array<{ id: string; name: string }>;
   projectId: string;
   currency: string;
+  maskEconomy?: boolean;
   canEdit: boolean;
 
   // header actions (delegated to existing dialogs in parent)
@@ -89,6 +90,7 @@ export function PurchaseOrdersGridV2(props: PurchaseOrdersGridV2Props) {
               po={po}
               rows={rows}
               currency={currency}
+              maskEconomy={props.maskEconomy}
               selected={openPOId === po.id}
               bulkMode={false}
               onClick={() => setOpenPOId(po.id)}
