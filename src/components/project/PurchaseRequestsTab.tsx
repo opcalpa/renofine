@@ -1078,17 +1078,19 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
                     onClick={() => setBudgetPurchaseDialog({ open: true, planned: m, usedAmount: paid })}
                   >
                     <span className="kicker truncate block">{m.name}</span>
-                    <p className={cn("text-2xl font-display font-normal tnum mt-1", overBudget && "text-destructive")}>
-                      {formatCurrency(budget, currency)}
+                    <p className={cn("text-2xl font-display font-normal tnum mt-1", !maskEconomy && overBudget && "text-destructive")}>
+                      {maskEconomy ? "—" : formatCurrency(budget, currency)}
                     </p>
-                    <div className="h-[3px] mt-2 rounded-full bg-muted overflow-hidden">
-                      <div
-                        className={cn("h-full rounded-full transition-all", overBudget ? "bg-destructive" : pct >= 80 ? "bg-amber-500" : "bg-emerald-500")}
-                        style={{ width: `${Math.min(pct, 100)}%` }}
-                      />
-                    </div>
+                    {!maskEconomy && (
+                      <div className="h-[3px] mt-2 rounded-full bg-muted overflow-hidden">
+                        <div
+                          className={cn("h-full rounded-full transition-all", overBudget ? "bg-destructive" : pct >= 80 ? "bg-amber-500" : "bg-emerald-500")}
+                          style={{ width: `${Math.min(pct, 100)}%` }}
+                        />
+                      </div>
+                    )}
                     <p className="text-[11px] text-muted-foreground mt-1.5 tnum">
-                      {t("purchases.ordered", "Beställt")}: {formatCurrency(ordered, currency)}
+                      {t("purchases.ordered", "Beställt")}: {maskEconomy ? "—" : formatCurrency(ordered, currency)}
                     </p>
                   </button>
                 );
@@ -1097,12 +1099,12 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
               <div className="p-4">
                 <span className="kicker">{t("purchases.totalBudget", "Totalbudget")}</span>
                 <p className="text-2xl font-display font-normal tnum mt-1">
-                  {formatCurrency(totalBudget, currency)}
+                  {maskEconomy ? "—" : formatCurrency(totalBudget, currency)}
                 </p>
                 <div className="flex flex-col gap-0.5 mt-2 text-[11px] tnum">
-                  <span className="text-amber-600">{t("purchases.ordered", "Beställt")}: {formatCurrency(totalOrdered, currency)}</span>
-                  <span className="text-emerald-600">{t("purchases.paid", "Betalt")}: {formatCurrency(totalPaid, currency)}</span>
-                  <span className="font-medium">{t("purchases.remaining", "Kvar")}: {formatCurrency(totalBudget - totalPaid, currency)}</span>
+                  <span className="text-amber-600">{t("purchases.ordered", "Beställt")}: {maskEconomy ? "—" : formatCurrency(totalOrdered, currency)}</span>
+                  <span className="text-emerald-600">{t("purchases.paid", "Betalt")}: {maskEconomy ? "—" : formatCurrency(totalPaid, currency)}</span>
+                  <span className="font-medium">{t("purchases.remaining", "Kvar")}: {maskEconomy ? "—" : formatCurrency(totalBudget - totalPaid, currency)}</span>
                 </div>
               </div>
             </div>
