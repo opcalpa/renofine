@@ -6,6 +6,7 @@ import { useGuestMode } from "@/hooks/useGuestMode";
 import { useProfileLanguage } from "@/hooks/useProfileLanguage";
 import { PUBLIC_DEMO_PROJECT_ID, PUBLIC_DEMO_PROJECT_TYPE } from "@/constants/publicDemo";
 import { useProjectPermissions } from "@/hooks/useProjectPermissions";
+import { useScrollDirection } from "@/hooks/useScrollDirection";
 import { isTeamV2MaskingEnabled } from "@/lib/featureFlags";
 import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/ui/button";
@@ -131,6 +132,7 @@ const ProjectDetail = () => {
     team: [],
   };
   const permissions = useProjectPermissions(projectId);
+  const headerHidden = useScrollDirection();
   const [profile, setProfile] = useState<any>(null);
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
@@ -899,7 +901,12 @@ const ProjectDetail = () => {
     <div className={cn("bg-background md:pb-0", isHeaderVisible ? "pb-[calc(4rem+env(safe-area-inset-bottom))]" : "pb-0")}>
       {/* Unified Header - Hidden in Floor Plan edit mode */}
       {isHeaderVisible && (
-        <div className="sticky top-0 z-50">
+        <div
+          className={cn(
+            "sticky top-0 z-50 transition-transform duration-200 will-change-transform",
+            headerHidden ? "-translate-y-full" : "translate-y-0",
+          )}
+        >
         <AppHeader
           userName={isPublicDemoProject && !user ? t('guest.visitor', 'Visitor') : isGuest ? t('guest.guestUser', 'Guest') : profile?.name}
           userEmail={isPublicDemoProject && !user ? t('guest.publicDemo', 'Public demo') : isGuest ? t('guest.localMode', 'Local mode') : (profile?.email || user?.email)}
