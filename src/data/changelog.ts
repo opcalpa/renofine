@@ -13,6 +13,12 @@ export const changelog: ChangelogEntry[] = [
   // ── 2026-05-18 ──
   {
     date: "2026-05-18",
+    title: "Toppmenyn stannar kvar när du scrollar",
+    description: "Tidigare kunde projektets toppmeny glida iväg uppåt vid scroll på grund av två krockande rullningslager. Nu sitter den stabilt kvar och göms/visas mjukt när du scrollar ner respektive upp — på både desktop och mobil.",
+    tags: ["Navigation", "Buggfix"],
+  },
+  {
+    date: "2026-05-18",
     title: "Välj bort enskilda före-bilder per jobb-inbjudan",
     description: "Före-bilder för uppgiftens egna foton och rum visas automatiskt för den du bjuder in — men nu kan du enkelt klicka bort vilka enskilda bilder som helst direkt i förhandsvisningen om något inte ska delas. Gäller per inbjudan; ändrar inget för andra.",
     tags: ["Team", "Förbättring"],

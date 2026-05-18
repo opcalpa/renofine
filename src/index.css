@@ -194,8 +194,14 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
-  html, body, #root {
-    @apply h-full overflow-x-hidden;
+  /* `html` is the single scroll container. `overflow-x:hidden` is kept
+     ONLY here: putting it on body/#root forces their overflow-y to
+     compute to `auto`, which makes them a `position: sticky` boundary
+     even though they never scroll — so sticky headers resolve against
+     a non-scrolling ancestor and slide away. No fixed height anywhere
+     (a fixed height would turn html/body/#root into nested scrollers). */
+  html {
+    @apply overflow-x-hidden;
   }
 
   body {
