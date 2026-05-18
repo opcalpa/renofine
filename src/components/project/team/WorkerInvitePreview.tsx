@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { supabase } from "@/integrations/supabase/client";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import {
   Check,
   Eye,
   HardHat,
+  Camera,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -42,6 +44,13 @@ interface PreviewTask {
   roomIds: string[];
   roomName: string | null;
   checklists: Checklist[];
+}
+
+interface BeforePhoto {
+  id: string;
+  url: string;
+  caption: string | null;
+  origin: "task" | "room";
 }
 
 interface WorkerInvitePreviewProps {
@@ -75,6 +84,72 @@ export function WorkerInvitePreview({
 }: WorkerInvitePreviewProps) {
   const { t } = useTranslation();
   const [editingDesc, setEditingDesc] = useState(false);
+  const [beforePhotos, setBeforePhotos] = useState<BeforePhoto[]>([]);
+
+  // Resolve before-photos when the task changes: task-linked first, then
+  // room-linked fallback (mirrors the worker-facing get-worker-data logic).
+  useEffect(() => {
+    let cancelled = false;
+    const fetchBeforePhotos = async () => {
+      const resolved: BeforePhoto[] = [];
+      const seenIds = new Set<string>();
+
+      const { data: taskPhotos } = await supabase
+        .from("photos")
+        .select("id, url, caption")
+        .eq("linked_to_type", "task")
+        .eq("linked_to_id", task.id)
+        .eq("source", "before")
+        .order("created_at", { ascending: true });
+
+      for (const p of taskPhotos || []) {
+        resolved.push({ id: p.id, url: p.url, caption: p.caption, origin: "task" });
+        seenIds.add(p.id);
+      }
+
+      if (task.roomIds.length > 0) {
+        const { data: roomPhotos } = await supabase
+          .from("photos")
+          .select("id, url, caption")
+          .eq("linked_to_type", "room")
+          .eq("source", "before")
+          .in("linked_to_id", task.roomIds)
+          .order("created_at", { ascending: true });
+
+        for (const p of roomPhotos || []) {
+          if (!seenIds.has(p.id)) {
+            resolved.push({ id: p.id, url: p.url, caption: p.caption, origin: "room" });
+          }
+        }
+      }
+
+      if (!cancelled) setBeforePhotos(resolved);
+    };
+    setBeforePhotos([]);
+    fetchBeforePhotos();
+    return () => { cancelled = true; };
+  }, [task.id, task.roomIds]);
+
+  // null override = all photos included; an array = only those IDs.
+  const isPhotoIncluded = (photoId: string): boolean => {
+    if (!override.photoOverride) return true;
+    return override.photoOverride.includes(photoId);
+  };
+
+  const togglePhoto = (photoId: string) => {
+    if (!override.photoOverride) {
+      // Currently "all" → switch to "all minus this one"
+      const allIds = beforePhotos.map((p) => p.id);
+      onOverrideChange({ photoOverride: allIds.filter((id) => id !== photoId) });
+    } else {
+      const exists = override.photoOverride.includes(photoId);
+      if (exists) {
+        onOverrideChange({ photoOverride: override.photoOverride.filter((id) => id !== photoId) });
+      } else {
+        onOverrideChange({ photoOverride: [...override.photoOverride, photoId] });
+      }
+    }
+  };
 
   const displayDescription = override.descriptionOverride ?? task.description ?? "";
   const isOverridden = override.descriptionOverride !== null;
@@ -82,6 +157,7 @@ export function WorkerInvitePreview({
     cl.items.filter((item) => isChecklistItemIncluded(cl.id, item.id))
   );
   const totalItems = task.checklists.reduce((s, cl) => s + cl.items.length, 0);
+  const includedPhotos = beforePhotos.filter((p) => isPhotoIncluded(p.id));
 
   return (
     <div className="flex flex-col h-full">
@@ -136,6 +212,71 @@ export function WorkerInvitePreview({
           {task.roomIds.length > 0 && (
             <div className="px-4 pb-3">
               <TaskRoomDetails roomIds={task.roomIds} compact />
+            </div>
+          )}
+
+          {/* Before-photos — auto-included; tap any to exclude it from
+              what this worker sees (per-invite, scoped to this task/room). */}
+          {beforePhotos.length > 0 && (
+            <div className="px-4 pb-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Camera className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-xs font-medium text-muted-foreground">
+                    {t("teamWorker.beforePhotos", "Before photos")}
+                  </span>
+                </div>
+                <span className="text-[10px] tabular-nums text-muted-foreground">
+                  {includedPhotos.length}/{beforePhotos.length}
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-1.5">
+                {beforePhotos.map((photo) => {
+                  const included = isPhotoIncluded(photo.id);
+                  return (
+                    <button
+                      key={photo.id}
+                      type="button"
+                      onClick={() => togglePhoto(photo.id)}
+                      className={cn(
+                        "relative aspect-square rounded-lg overflow-hidden bg-muted transition-all",
+                        !included && "opacity-40 ring-1 ring-inset ring-muted-foreground/20"
+                      )}
+                    >
+                      <img
+                        src={photo.url}
+                        alt={photo.caption || ""}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                      <div className={cn(
+                        "absolute top-1 left-1 h-5 w-5 rounded-full flex items-center justify-center text-[10px]",
+                        included
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-background/80 text-muted-foreground border"
+                      )}>
+                        {included ? <Check className="h-3 w-3" /> : null}
+                      </div>
+                      {photo.origin === "room" && (
+                        <div className="absolute bottom-1 right-1 bg-background/80 text-[9px] px-1 rounded text-muted-foreground">
+                          {t("teamWorker.fromRoom", "room")}
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              {override.photoOverride !== null && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 text-xs text-muted-foreground"
+                  onClick={() => onOverrideChange({ photoOverride: null })}
+                >
+                  {t("common.reset", "Reset")}
+                </Button>
+              )}
             </div>
           )}
 
