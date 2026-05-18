@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Send, Users, HardHat, Crown } from "lucide-react";
+import { Send, Users, HardHat, Crown, ClipboardCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { InvitePersona } from "./types";
 
@@ -57,6 +57,16 @@ const PERSONAS: Array<{
     descFallback: "Partner eller anlitad PM med utökade rättigheter.",
     surfaceKey: "inviteWizard.persona.pm.surface",
     surfaceFallback: "Full app · admin",
+  },
+  {
+    key: "reviewer",
+    icon: ClipboardCheck,
+    titleKey: "inviteWizard.persona.reviewer.title",
+    titleFallback: "Granskare",
+    descKey: "inviteWizard.persona.reviewer.description",
+    descFallback: "Besiktningsman, KA eller annan kontrollant. Ser allt utom ekonomi, kan inte ändra.",
+    surfaceKey: "inviteWizard.persona.reviewer.surface",
+    surfaceFallback: "Läs + anmärkningar",
   },
 ];
 

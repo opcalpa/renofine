@@ -47,6 +47,7 @@ const DEFAULT_CONTACT: ContactInfo = {
 function defaultModeFor(persona: InvitePersona): EconomyMode {
   if (persona === "pm") return "full";
   if (persona === "client") return "own";
+  if (persona === "reviewer") return "none"; // no economy (mode unused)
   return "own"; // member → Egna by default
 }
 

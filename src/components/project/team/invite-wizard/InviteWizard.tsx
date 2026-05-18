@@ -270,6 +270,20 @@ export function InviteWizard({
                 </div>
               )}
 
+              {state.step === 2 && state.persona === "reviewer" && (
+                <div className="rounded-lg border bg-muted/30 p-4 text-sm text-muted-foreground space-y-2">
+                  <p className="font-medium text-foreground">
+                    {t("inviteWizard.reviewerStep.title", "Granskaren får läsbehörighet")}
+                  </p>
+                  <p>
+                    {t(
+                      "inviteWizard.reviewerStep.description",
+                      "Granskaren ser arbeten, rum, ritningar, foton, filer, kontroll och tidsplan — men inga priser, budget eller vinst. Kan skriva anmärkningar men inte ändra något.",
+                    )}
+                  </p>
+                </div>
+              )}
+
               {state.step === 3 && (
                 <>
                   <WizardStep4Contact

@@ -1,7 +1,7 @@
 import type { TaskOverride } from "../WorkerInviteFields";
 
 /** Who the invited person is — the wizard's first (human) question. */
-export type InvitePersona = "worker" | "client" | "member" | "pm";
+export type InvitePersona = "worker" | "client" | "member" | "pm" | "reviewer";
 
 /** PM sub-type — purely a label, no functional access difference. */
 export type PmSubType = "co_owner" | "pm_hired";

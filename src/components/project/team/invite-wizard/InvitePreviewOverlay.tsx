@@ -44,8 +44,10 @@ export function InvitePreviewOverlay({
     let cancelled = false;
     setLoading(true);
     setError(null);
-    // Worker has no FeatureAccess preview; backend coerces persona/mode.
-    const apiPersona = persona === "worker" ? "member" : persona;
+    // Worker has no FeatureAccess preview; reviewer = no-economy read-only,
+    // equivalent to member+none for the preview. Backend coerces mode.
+    const apiPersona =
+      persona === "worker" || persona === "reviewer" ? "member" : persona;
     getProjectAsPersona(projectId, apiPersona, mode)
       .then((d) => {
         if (!cancelled) setData(d);

@@ -399,6 +399,7 @@ function roleForPersona(state: InviteWizardState): string {
 /** V2 `role_type` — the canonical persona signal (used by detectPersonaMode). */
 function roleTypeForPersona(state: InviteWizardState): string {
   if (state.persona === "client") return "client";
+  if (state.persona === "reviewer") return "reviewer";
   if (state.persona === "pm") {
     return state.pmSubType === "pm_hired" ? "pm_hired" : "co_owner";
   }

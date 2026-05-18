@@ -145,6 +145,11 @@
         "title": "Tradesperson with a job",
         "description": "Gets a day job via SMS link. No account needed.",
         "surface": "Worker view"
+      },
+      "reviewer": {
+        "title": "Reviewer",
+        "description": "Inspector, control officer or other reviewer. Sees everything except economy, cannot edit.",
+        "surface": "Read + remarks"
       }
     },
     "pm": {
@@ -189,6 +194,10 @@
     "time": {
       "days90": "90 days",
       "permanent": "Permanent"
+    },
+    "reviewerStep": {
+      "title": "The reviewer gets read access",
+      "description": "The reviewer sees tasks, rooms, drawings, photos, files, inspections and the schedule — but no prices, budget or profit. Can leave remarks but cannot change anything."
     }
   },
   "common": {

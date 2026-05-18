@@ -145,6 +145,11 @@
         "title": "Hantverkare med jobb",
         "description": "Får ett dagsjobb via SMS-länk. Behöver inget konto.",
         "surface": "Arbetarvy"
+      },
+      "reviewer": {
+        "title": "Granskare",
+        "description": "Besiktningsman, KA eller annan kontrollant. Ser allt utom ekonomi, kan inte ändra.",
+        "surface": "Läs + anmärkningar"
       }
     },
     "pm": {
@@ -189,6 +194,10 @@
     "time": {
       "days90": "90 dagar",
       "permanent": "Permanent"
+    },
+    "reviewerStep": {
+      "title": "Granskaren får läsbehörighet",
+      "description": "Granskaren ser arbeten, rum, ritningar, foton, filer, kontroll och tidsplan — men inga priser, budget eller vinst. Kan skriva anmärkningar men inte ändra något."
     }
   },
   "common": {

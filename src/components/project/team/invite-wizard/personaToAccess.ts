@@ -29,6 +29,25 @@ export function personaToAccess(
     throw new Error("Worker uses worker_access_tokens, not FeatureAccess");
   }
 
+  // Reviewer (granskare) → read-only across the operational app, zero
+  // economy. Can comment (comment access derives from section view), but
+  // cannot edit anything. Maps to economy mode "none" downstream.
+  if (persona === "reviewer") {
+    return {
+      customerView: "none",
+      timeline: "view",
+      tasks: "view",
+      tasksScope: "all",
+      spacePlanner: "view",
+      purchases: "none",
+      purchasesScope: "all",
+      overview: "view",
+      teams: "none",
+      budget: "none",
+      files: "view",
+    };
+  }
+
   // Client → CustomerView, minimal share permissions.
   if (persona === "client") {
     return {
@@ -108,6 +127,9 @@ export function detectPersonaMode(
 ): DetectedAccess {
   if (roleType === "client") {
     return { persona: "client", mode: "own", scope: { rule: "all" }, isCustom: false };
+  }
+  if (roleType === "reviewer") {
+    return { persona: "reviewer", mode: "none", scope: { rule: "all" }, isCustom: false };
   }
   if (roleType === "co_owner" || roleType === "pm_hired") {
     const pmSubType: PmSubType = roleType === "co_owner" ? "co_owner" : "pm_hired";
