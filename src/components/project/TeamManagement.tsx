@@ -99,6 +99,7 @@ interface TeamMember {
 interface Invitation {
   id: string;
   email: string;
+  invited_name?: string | null;
   phone?: string;
   delivery_method: string;
   role: string;
@@ -341,6 +342,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
     setWizardV2State({ open: true, persona: "worker", skipStep1: true });
   };
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [displayNameDraft, setDisplayNameDraft] = useState("");
   const [editTarget, setEditTarget] = useState<
     | { type: "member"; data: TeamMember }
     | { type: "invitation"; data: Invitation }
@@ -512,7 +514,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
         const { data: invitesData, error: invitesError } = await supabase
           .from("project_invitations")
           .select(
-            `id, email, phone, delivery_method, role, status, created_at, token, contractor_role,
+            `id, email, invited_name, phone, delivery_method, role, status, created_at, token, contractor_role,
             timeline_access, tasks_access, tasks_scope, space_planner_access,
             purchases_access, purchases_scope, overview_access, teams_access,
             budget_access, files_access`
@@ -580,6 +582,13 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
       | { type: "invitation"; data: Invitation }
   ) => {
     setEditTarget(target);
+    if (target.type === "member") {
+      const m = target.data as TeamMember;
+      // Prefill only if a real name exists — not the email fallback.
+      setDisplayNameDraft(m.user_name && m.user_name !== m.user_email ? m.user_name : "");
+    } else {
+      setDisplayNameDraft((target.data as Invitation).invited_name?.trim() || "");
+    }
     const access = dbToAccess(
       target.data,
       target.type === "invitation" ? "view" : "none"
@@ -622,6 +631,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
             role,
             role_type: roleType,
             contractor_role: contractorRole,
+            display_name: displayNameDraft.trim() || null,
             ...permDb,
           } as Record<string, unknown>)
           .eq("id", editTarget.data.id);
@@ -636,6 +646,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
           .update({
             role,
             contractor_role: contractorRole,
+            invited_name: displayNameDraft.trim() || null,
             ...permDb,
             permissions_snapshot: permDb,
           } as Record<string, unknown>)
@@ -871,7 +882,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
       rows.push({
         id: inv.id,
         type: "invitation",
-        name: inv.email,
+        name: inv.invited_name?.trim() || inv.email,
         email: inv.email,
         phone: inv.phone || null,
         role: t(`roles.roleTemplates.${detectTemplate(access)}`),
@@ -1099,6 +1110,26 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-5 overflow-y-auto flex-1 pr-2">
+            {/* Display name — shown in the team table instead of the email */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-display-name">
+                {t("roles.displayNameLabel", "Visningsnamn")}
+              </Label>
+              <Input
+                id="edit-display-name"
+                value={displayNameDraft}
+                onChange={(e) => setDisplayNameDraft(e.target.value)}
+                placeholder={
+                  editTarget?.type === "member"
+                    ? (editTarget.data as TeamMember).user_email || t("roles.displayNamePlaceholder", "T.ex. förnamn")
+                    : (editTarget?.data as Invitation)?.email || t("roles.displayNamePlaceholder", "T.ex. förnamn")
+                }
+              />
+              <p className="text-xs text-muted-foreground">
+                {t("roles.displayNameHint", "Visas i teamlistan i stället för e-postadressen. Lämna tomt för att visa e-post.")}
+              </p>
+            </div>
+
             {/* Role Cards */}
             <div className="space-y-2">
               <Label>{t("roles.selectRole")}</Label>

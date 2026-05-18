@@ -27,6 +27,7 @@ interface PermissionsSnapshot {
 interface InvitationDetails {
   id: string;
   email: string;
+  invited_name?: string | null;
   role: string;
   role_type?: string | null;
   status: string;
@@ -248,6 +249,9 @@ const InvitationResponse = () => {
       const sharePayload = {
         role: isCoOwner || isPmHired ? "admin" : dbRole,
         role_type: roleType,
+        // Carry the name entered during invite so the Team table can show a
+        // human name instead of a cryptic email. Null = fall back to profile.
+        display_name: invitation.invited_name?.trim() || null,
         // v2: time-bounded shares (PM/specialist). Snapshot-carried; legacy
         // invites have no expires_at → null = permanent (unchanged behaviour).
         expires_at: perms.expires_at ?? null,
