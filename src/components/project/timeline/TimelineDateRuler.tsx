@@ -54,16 +54,27 @@ const TimelineDateRulerComponent: React.FC<TimelineDateRulerProps> = ({
       const monthKey = `${date.getFullYear()}-${date.getMonth()}`;
       if (!renderedMonths.has(monthKey)) {
         renderedMonths.add(monthKey);
-        const label = format(date, "MMMM yyyy", { locale: sv }).toUpperCase();
+        const fullLabel = format(date, "MMMM yyyy", { locale: sv }).toUpperCase();
+        const shortLabel = format(date, "MMM yy", { locale: sv }).toUpperCase();
         const monthStartX = x + 6;
         // Calculate where next month starts to prevent overlap
         const nextMonthDate = new Date(date.getFullYear(), date.getMonth() + 1, 1);
         const nextMonthX = dateToX(nextMonthDate, originDate, pixelsPerDay, panX);
-        const labelWidth = label.length * 7; // approximate width
-        // Clamp: don't go left of viewport (sticky), but don't overlap next month
-        const clampedX = Math.max(6, Math.min(monthStartX, nextMonthX - labelWidth - 12));
-        // Only render if there's enough room
-        if (nextMonthX - Math.max(6, monthStartX) > 40) {
+        const colWidth = nextMonthX - Math.max(6, monthStartX);
+        // Pick the widest label that fits the month column; skip entirely if
+        // even the short form would collide with the next month (anti-overlap
+        // guard — keeps labels readable at any zoom level).
+        const approx = (s: string) => s.length * 7 + 12;
+        const label =
+          colWidth >= approx(fullLabel)
+            ? fullLabel
+            : colWidth >= approx(shortLabel)
+              ? shortLabel
+              : null;
+        if (label) {
+          const labelWidth = label.length * 7;
+          // Clamp: don't go left of viewport (sticky), but don't overlap next month
+          const clampedX = Math.max(6, Math.min(monthStartX, nextMonthX - labelWidth - 12));
           items.push(
             <KonvaText
               key={`m-${monthKey}`}

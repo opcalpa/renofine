@@ -19,6 +19,14 @@ export const DEFAULT_PIXELS_PER_DAY = 120;
 export const MIN_PIXELS_PER_DAY = 4;
 export const MAX_PIXELS_PER_DAY = 300;
 
+/**
+ * Floor for the auto-fit zoom on phones. Fitting a whole multi-month project
+ * into a ~360px screen yields ~2px/day, which collapses month/week labels
+ * into an unreadable smear. Clamping the default to this keeps columns wide
+ * enough to read; the user can still pinch-zoom out for the full overview.
+ */
+export const MOBILE_MIN_PIXELS_PER_DAY = 6;
+
 /** Hex colors mapped to task statuses for Konva rendering */
 export const STATUS_HEX: Record<string, string> = {
   to_do: "#f59e0b",

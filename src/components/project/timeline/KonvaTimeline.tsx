@@ -9,7 +9,8 @@ import { TimelineDateRuler } from "./TimelineDateRuler";
 import { TimelineCanvas } from "./TimelineCanvas";
 import { TimelineHoverCard } from "./TimelineHoverCard";
 import { TimelineToolbar } from "./TimelineToolbar";
-import { DEFAULT_PIXELS_PER_DAY, MIN_PIXELS_PER_DAY, MAX_PIXELS_PER_DAY } from "./utils";
+import { DEFAULT_PIXELS_PER_DAY, MIN_PIXELS_PER_DAY, MAX_PIXELS_PER_DAY, MOBILE_MIN_PIXELS_PER_DAY } from "./utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface KonvaTimelineProps {
   projectId: string;
@@ -38,6 +39,8 @@ export const KonvaTimeline: React.FC<KonvaTimelineProps> = ({
 
   const { tasks, allTasks, dependencies, milestones, teamMembers, rooms, projectStartDate, projectFinishDate, setProjectDates, loading, refetch } =
     useTimelineData(projectId, filteredTaskIds);
+
+  const isMobile = useIsMobile();
 
   const {
     panX,
@@ -123,13 +126,18 @@ export const KonvaTimeline: React.FC<KonvaTimelineProps> = ({
     const span = Math.max(differenceInDays(latest, earliest) + 1, 7);
     // Read actual width from DOM to avoid stale containerWidth
     const actualWidth = containerRef.current?.clientWidth || containerWidth;
-    // Calculate exact ppd to fit project in viewport
-    const fitPpd = Math.max(1, actualWidth / span);
+    // Calculate exact ppd to fit project in viewport. On phones, don't shrink
+    // below a readable floor — instead anchor at the project start and show a
+    // limited window (user can pinch-zoom out for the full span).
+    const rawFitPpd = Math.max(1, actualWidth / span);
+    const fitPpd = isMobile
+      ? Math.max(rawFitPpd, MOBILE_MIN_PIXELS_PER_DAY)
+      : rawFitPpd;
     // Set zoom + pan atomically
     const daysFromOrigin = differenceInDays(earliest, originDate);
     const panX = -(daysFromOrigin * fitPpd);
     useTimelineStore.setState({ pixelsPerDay: fitPpd, panX });
-  }, [tasks, projectStartDate, projectFinishDate, originDate, containerWidth]);
+  }, [tasks, projectStartDate, projectFinishDate, originDate, containerWidth, isMobile]);
 
   const handleZoomIn = useCallback(() => {
     const s = useTimelineStore.getState();
