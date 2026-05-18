@@ -17,6 +17,12 @@ export const changelog: ChangelogEntry[] = [
     description: "Toppmenyn är uppstädad. \"Delning\" ligger nu som ett val under \"Team\" istället för en egen flik — och inne i Team- och Delningsvyerna finns en tydlig väljare så du enkelt växlar mellan dem. \"Planering\" ligger kvar högst upp medan projektet planeras, men flyttas in under \"Översikt\" när projektet blivit pågående — ett klick bort, men mindre rörigt. Menyn glider dessutom undan när du scrollar ner och kommer tillbaka direkt när du scrollar upp, så du får mer läsyta. Kundvyn för dina kunder är oförändrad.",
     tags: ["Navigation", "Förbättring"],
   },
+  {
+    date: "2026-05-18",
+    title: "Namn i teamlistan",
+    description: "Namnet du skriver in när du bjuder in någon visas nu i teamlistan i stället för bara e-postadressen — lättare att se vem som är vem. E-posten visas som underrad. Du kan också sätta eller ändra visningsnamn på befintliga medlemmar via \"Redigera medlem\".",
+    tags: ["Team", "Förbättring"],
+  },
   // ── 2026-04-29 ──
   {
     date: "2026-04-29",
