@@ -1478,7 +1478,11 @@ const ProjectDetail = () => {
                 address={project.address}
                 description={project.description}
                 status={project.status}
-                contractValue={project.contract_value}
+                contractValue={
+                  permissions.isClient || economyTabAllowed
+                    ? project.contract_value
+                    : null
+                }
                 coverImageUrl={project.cover_image_url}
                 isClient={permissions.isClient}
               />
