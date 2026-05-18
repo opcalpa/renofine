@@ -133,6 +133,14 @@ export default function OwnerStart() {
     load();
   }, [user]);
 
+  // Single accessible project → go straight to it. Must run as an effect,
+  // not during render (render-phase navigate() warns + can race the router).
+  useEffect(() => {
+    if (!loading && projects.length === 1) {
+      navigate(`/projects/${projects[0].id}`, { replace: true });
+    }
+  }, [loading, projects, navigate]);
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     navigate("/auth");
@@ -146,9 +154,9 @@ export default function OwnerStart() {
     );
   }
 
-  // 1 project → redirect
+  // 1 project → redirect (handled by the effect above; render nothing
+  // while the navigation is in flight to avoid flashing the list).
   if (projects.length === 1) {
-    navigate(`/projects/${projects[0].id}`, { replace: true });
     return null;
   }
 
