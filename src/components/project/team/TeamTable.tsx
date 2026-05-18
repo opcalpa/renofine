@@ -246,6 +246,126 @@ export function TeamTable({
   return (
     <div className="space-y-3">
       {filterBar}
+
+    {/* Mobile: stacked cards (a wide table can't fit a phone) */}
+    <div className="md:hidden space-y-2">
+      {visibleSections.map((section) => (
+        <div key={`m-section-${section}`} className="space-y-2">
+          {showSectionHeaders && (
+            <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground pt-2">
+              {t(`team.sections.${section}`, section)} · {grouped[section].length}
+            </p>
+          )}
+          {grouped[section].map((row) => {
+            const isExpanded = expandedId === row.id;
+            const canDm = row.profileId && currentProfileId && row.profileId !== currentProfileId;
+            const isCurrentUser = !!(row.profileId && currentProfileId && row.profileId === currentProfileId);
+            const isInactive = row.status === "revoked" || row.status === "expired";
+            return (
+              <div
+                key={`m-${row.id}`}
+                className={cn(
+                  "rounded-lg border bg-card",
+                  row.type === "owner" && "bg-primary/[0.03]",
+                  isInactive && "opacity-60",
+                )}
+              >
+                <button
+                  type="button"
+                  className="w-full flex items-start gap-3 p-3 text-left"
+                  onClick={() => setExpandedId(isExpanded ? null : row.id)}
+                >
+                  {row.type === "owner" ? (
+                    <div className="h-9 w-9 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+                      <Crown className="h-4 w-4 text-primary" />
+                    </div>
+                  ) : (
+                    <div className={cn("h-9 w-9 rounded-full flex items-center justify-center text-xs font-medium shrink-0", getAvatarColor(row.name))}>
+                      {row.name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-sm font-medium truncate">{row.name}</p>
+                      {isCurrentUser && (
+                        <Badge variant="outline" className="text-[10px] h-4 px-1.5 font-medium border-primary/40 bg-primary/10 text-primary shrink-0">
+                          {t("team.youBadge", "You")}
+                        </Badge>
+                      )}
+                    </div>
+                    {row.email && (
+                      <p className="text-xs text-muted-foreground truncate">{row.email}</p>
+                    )}
+                    <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                      <span className="text-xs text-foreground">{row.role}</span>
+                      {row.contractorCategory && (
+                        <span className="text-xs text-muted-foreground">· {row.contractorCategory}</span>
+                      )}
+                      <Badge variant="outline" className={cn("text-[10px] font-medium", STATUS_STYLES[row.status])}>
+                        {t(`team.status.${row.status}`, row.status)}
+                      </Badge>
+                    </div>
+                  </div>
+                  {isExpanded ? (
+                    <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                  )}
+                </button>
+
+                {(canDm || (canManageTeam && row.type !== "owner")) && (
+                  <div className="flex items-center gap-1 px-3 pb-2 -mt-1">
+                    {canDm && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onDm(row.profileId!, row.name)} title={t("dm.openChat")}>
+                        <MessageCircle className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {canManageTeam && row.type !== "owner" && (
+                      <>
+                        {(row.type === "member" || row.type === "invitation") && (
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(row)} title={t("roles.editMember")}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {row.type === "worker" && row.status === "active" && (
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(row)} title={t("teamWorker.editPermissions", "Redigera behörighet")}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {row.type === "worker" && row.workerToken && row.status === "active" && (
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onCopyLink(row.workerToken!)} title={t("teamWorker.copyLink")}>
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {row.type === "worker" && isInactive && onReinviteWorker && (
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onReinviteWorker(row)} title={t("teamWorker.reinvite", "Bjud in igen")}>
+                            <Send className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {isOwner && (
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onDelete(row)} title={t("common.remove")}>
+                            <X className="h-4 w-4 text-destructive" />
+                          </Button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {isExpanded && (
+                  <div className="border-t px-3 py-3">
+                    <ExpandedRowContent row={row} t={t} />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ))}
+    </div>
+
+    {/* Desktop: full table */}
+    <div className="hidden md:block">
     <Table>
       <TableHeader>
         <TableRow>
@@ -454,6 +574,7 @@ export function TeamTable({
         ))}
       </TableBody>
     </Table>
+    </div>
     </div>
   );
 }

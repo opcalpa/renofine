@@ -1049,18 +1049,18 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2.5">
           <Users className="h-5 w-5 text-primary shrink-0" />
           <h2 className="font-display text-xl font-normal tracking-tight">{t("roles.title")}</h2>
         </div>
         {canManageTeam && (
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={openInviteAsWorker}>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" className="flex-1 sm:flex-none" onClick={openInviteAsWorker}>
               <Wrench className="h-4 w-4 mr-2" />
               {t("roles.sendJobButton", "Skicka jobb")}
             </Button>
-            <Button onClick={openInviteAsMember}>
+            <Button className="flex-1 sm:flex-none" onClick={openInviteAsMember}>
               <UserPlus className="h-4 w-4 mr-2" />
               {t("roles.addMemberButton", "Lägg till medlem")}
             </Button>

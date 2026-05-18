@@ -13,6 +13,12 @@ export const changelog: ChangelogEntry[] = [
   // ── 2026-05-18 ──
   {
     date: "2026-05-18",
+    title: "Teamlistan funkar på mobil",
+    description: "Teamlistan visas nu som kort på telefon i stället för en bred tabell som åkte utanför skärmen. Varje medlem är ett kort med namn, roll och status — tryck för att se åtkomstdetaljer. Knapparna \"Skicka jobb\" och \"Lägg till medlem\" radbryts snyggt i stället för att kapas.",
+    tags: ["Team", "Mobil", "Förbättring"],
+  },
+  {
+    date: "2026-05-18",
     title: "Läsbar tidslinje på mobil",
     description: "Tidslinjen på mobil öppnar nu i ett rimligt tidsfönster i stället för att pressa in hela projektet på en liten skärm. Månads- och veckorubriker krockar inte längre — de förkortas eller hoppas över när utrymmet är litet. Zooma ut för hela projektöversikten som vanligt.",
     tags: ["Tidslinje", "Mobil", "Förbättring"],
