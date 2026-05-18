@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
+import { getViewerMode, type ViewerMode } from "@/services/projectDataService";
 import { compressImage } from "@/lib/compressImage";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -77,6 +78,9 @@ export const CommentsSection = ({ taskId, materialId, entityId, entityType, draw
   const [expandedThreads, setExpandedThreads] = useState<Set<string>>(new Set());
   // L7: opt-in internal comment (hidden from clients/shared via RLS).
   const [internalComment, setInternalComment] = useState(false);
+  // L7-polish: don't show the "mark internal" control to client-role
+  // viewers (RLS already enforces; this is purely to avoid a confusing UI).
+  const [viewerMode, setViewerMode] = useState<ViewerMode | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { translationsEnabled, translating, toggleTranslations, getTranslatedContent, targetLang } = useCommentTranslation();
 
@@ -188,6 +192,15 @@ export const CommentsSection = ({ taskId, materialId, entityId, entityType, draw
   const [cursorPosition, setCursorPosition] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (!projectId) return;
+    let alive = true;
+    getViewerMode(projectId)
+      .then((m) => { if (alive) setViewerMode(m); })
+      .catch(() => { /* leave null → toggle stays visible (default) */ });
+    return () => { alive = false; };
+  }, [projectId]);
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -1132,19 +1145,21 @@ export const CommentsSection = ({ taskId, materialId, entityId, entityType, draw
                 </button>
               </PopoverContent>
             </Popover>
-            <Button
-              type="button"
-              variant={internalComment ? "secondary" : "ghost"}
-              size="sm"
-              className="h-7 px-2 text-xs"
-              onClick={() => setInternalComment((v) => !v)}
-              title={t('comments.internalHint', 'Intern kommentar syns inte för kund eller delade användare')}
-            >
-              <Lock className="h-3 w-3 mr-1" />
-              {internalComment
-                ? t('comments.internalOn', 'Intern')
-                : t('comments.internalToggle', 'Markera intern')}
-            </Button>
+            {viewerMode !== 'client' && (
+              <Button
+                type="button"
+                variant={internalComment ? "secondary" : "ghost"}
+                size="sm"
+                className="h-7 px-2 text-xs"
+                onClick={() => setInternalComment((v) => !v)}
+                title={t('comments.internalHint', 'Intern kommentar syns inte för kund eller delade användare')}
+              >
+                <Lock className="h-3 w-3 mr-1" />
+                {internalComment
+                  ? t('comments.internalOn', 'Intern')
+                  : t('comments.internalToggle', 'Markera intern')}
+              </Button>
+            )}
           </div>
           <Button
             onClick={handlePostComment}
