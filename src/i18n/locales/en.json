@@ -362,6 +362,9 @@
     },
     "finish": "Get started!"
   },
+  "changelog": {
+    "subtitle": "Latest updates in Renofine"
+  },
   "nav": {
     "home": "Home",
     "start": "Start",

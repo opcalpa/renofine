@@ -41,10 +41,41 @@
     "vendor": "Lieferant",
     "search": "Suchen"
   },
+  "changelog": {
+    "subtitle": "Neueste Updates in Renofine"
+  },
   "nav": {
     "home": "Startseite",
+    "start": "Start",
+    "myStart": "Mein Dashboard",
+    "myProjects": "Meine Projekte",
+    "myQuotes": "Meine Angebote",
     "projects": "Projekte",
-    "profile": "Profil"
+    "quotes": "Angebote",
+    "profile": "Profil",
+    "tips": "Tipps",
+    "changelog": "Neuigkeiten",
+    "feedback": "Kontakt",
+    "declaration": "Steuerübersicht",
+    "language": "Sprache",
+    "mobileNav": {
+      "planning": "Planung",
+      "overview": "Übersicht",
+      "plans": "Pläne",
+      "tasks": "Aufgaben",
+      "purchases": "Einkäufe",
+      "more": "Mehr",
+      "files": "Dateien",
+      "budget": "Budget",
+      "team": "Team",
+      "feed": "Feed",
+      "photos": "Fotos",
+      "chat": "Chat",
+      "showAllTabs": "Alle Tabs anzeigen",
+      "clientView": "Mein Projekt",
+      "customerView": "Mein Projekt",
+      "sharing": "Freigabe"
+    }
   },
   "landing": {
     "heroTitle": "Übernehmen Sie die Kontrolle über Ihr",

@@ -41,10 +41,41 @@
     "vendor": "Fournisseur",
     "search": "Rechercher"
   },
+  "changelog": {
+    "subtitle": "Dernières mises à jour de Renofine"
+  },
   "nav": {
     "home": "Accueil",
+    "start": "Démarrer",
+    "myStart": "Mon tableau de bord",
+    "myProjects": "Mes projets",
+    "myQuotes": "Mes devis",
     "projects": "Projets",
-    "profile": "Profil"
+    "quotes": "Devis",
+    "profile": "Profil",
+    "tips": "Conseils",
+    "changelog": "Nouveautés",
+    "feedback": "Contact",
+    "declaration": "Récapitulatif fiscal",
+    "language": "Langue",
+    "mobileNav": {
+      "planning": "Planification",
+      "overview": "Aperçu",
+      "plans": "Plans",
+      "tasks": "Tâches",
+      "purchases": "Achats",
+      "more": "Plus",
+      "files": "Fichiers",
+      "budget": "Budget",
+      "team": "Équipe",
+      "feed": "Flux",
+      "photos": "Photos",
+      "chat": "Chat",
+      "showAllTabs": "Afficher tous les onglets",
+      "clientView": "Mon projet",
+      "customerView": "Mon projet",
+      "sharing": "Partage"
+    }
   },
   "landing": {
     "heroTitle": "Prenez le contrôle de votre",

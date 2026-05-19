@@ -80,7 +80,7 @@ export default function Changelog() {
               <Sparkles className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{t("nav.changelog", "Nyheter")}</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{t("nav.changelog", "What's new")}</h1>
               <p className="text-muted-foreground text-sm mt-0.5">{t("changelog.subtitle", "Senaste uppdateringarna i Renofine")}</p>
             </div>
           </div>

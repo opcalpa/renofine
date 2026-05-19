@@ -362,6 +362,9 @@
     },
     "finish": "Sätt igång!"
   },
+  "changelog": {
+    "subtitle": "Senaste uppdateringarna i Renofine"
+  },
   "nav": {
     "home": "Hem",
     "start": "Start",
