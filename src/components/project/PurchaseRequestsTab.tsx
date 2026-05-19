@@ -208,10 +208,11 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
   // P0#2/L3: mask supplier prices+vendor for non-"full" viewers. Flag off →
   // false (byte-identical). Fail-safe: masked while viewerMode resolves.
   const [viewerMode, setViewerMode] = useState<ViewerMode | null>(null);
-  const maskEconomy = isTeamV2MaskingEnabled() && viewerMode !== "full";
+  // Public demo is public read-only with no viewer concept — never mask it.
+  const maskEconomy = isTeamV2MaskingEnabled() && viewerMode !== "full" && projectId !== PUBLIC_DEMO_PROJECT_ID;
 
   useEffect(() => {
-    if (!isTeamV2MaskingEnabled()) return;
+    if (!isTeamV2MaskingEnabled() || projectId === PUBLIC_DEMO_PROJECT_ID) return;
     let alive = true;
     getViewerMode(projectId)
       .then((m) => { if (alive) setViewerMode(m); })

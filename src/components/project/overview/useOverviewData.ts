@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { fetchProjectActivities } from "../feed/utils";
 import { differenceInDays, parseISO, startOfDay } from "date-fns";
 import { isTeamV2MaskingEnabled } from "@/lib/featureFlags";
+import { PUBLIC_DEMO_PROJECT_ID } from "@/constants/publicDemo";
 import {
   getViewerMode,
   getProjectOverview,
@@ -124,7 +125,10 @@ export function useOverviewData(project: OverviewProject, skip?: boolean): Overv
       // Team v2: masked viewers read through the DB-masking RPC so sensitive
       // economics never cross the wire. Owner/"full" falls through to the raw
       // path below unchanged (zero regression on the core read path).
-      if (isTeamV2MaskingEnabled()) {
+      // The public demo has no membership/viewer concept — it is public
+      // read-only — so it must skip the masking RPCs (which hard-reject
+      // non-members) and use the raw RLS path that permits public_demo.
+      if (isTeamV2MaskingEnabled() && project.id !== PUBLIC_DEMO_PROJECT_ID) {
         const mode = await getViewerMode(project.id);
         setViewerMode(mode);
         if (mode !== "full") {

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { isTeamV2MaskingEnabled } from "@/lib/featureFlags";
 import { getViewerMode, getProjectMaterials } from "@/services/projectDataService";
+import { PUBLIC_DEMO_PROJECT_ID } from "@/constants/publicDemo";
 import { formatCurrency } from "@/lib/currency";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -161,7 +162,7 @@ const MaterialsList = ({ taskId, currency }: MaterialsListProps) => {
       // L3: masked viewers read materials through the DB-masking RPC so
       // supplier prices/vendors never cross the wire. Owner/"full" keeps
       // the raw query above (zero regression). Flag off → skipped entirely.
-      if (taskRes.data?.project_id && isTeamV2MaskingEnabled()) {
+      if (taskRes.data?.project_id && taskRes.data.project_id !== PUBLIC_DEMO_PROJECT_ID && isTeamV2MaskingEnabled()) {
         const mode = await getViewerMode(taskRes.data.project_id);
         if (mode !== "full") {
           const masked = await getProjectMaterials(taskRes.data.project_id);

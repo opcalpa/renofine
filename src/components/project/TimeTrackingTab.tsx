@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, Check, X, Clock, Pencil, Trash2, Download, Loader2 } from "lucide-react";
 import { LogTimeDialog } from "./LogTimeDialog";
 import { isTeamV2MaskingEnabled } from "@/lib/featureFlags";
+import { PUBLIC_DEMO_PROJECT_ID } from "@/constants/publicDemo";
 import { getViewerMode, type ViewerMode } from "@/services/projectDataService";
 
 interface TimeTrackingTabProps {
@@ -56,12 +57,15 @@ export function TimeTrackingTab({ projectId, isReadOnly, userType }: TimeTrackin
   // null = flag off / resolving. Flag off → unchanged (isHomeowner only).
   const [viewerMode, setViewerMode] = useState<ViewerMode | null>(null);
   const economyVisible =
-    !isHomeowner && (!isTeamV2MaskingEnabled() || viewerMode === "full");
+    !isHomeowner &&
+    (!isTeamV2MaskingEnabled() ||
+      viewerMode === "full" ||
+      projectId === PUBLIC_DEMO_PROJECT_ID);
 
   const fetchData = useCallback(async () => {
     if (!user) { setLoading(false); return; }
 
-    if (isTeamV2MaskingEnabled()) {
+    if (isTeamV2MaskingEnabled() && projectId !== PUBLIC_DEMO_PROJECT_ID) {
       try { setViewerMode(await getViewerMode(projectId)); } catch { setViewerMode("none"); }
     }
 
