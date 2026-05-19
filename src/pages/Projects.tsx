@@ -59,6 +59,7 @@ const OwnerStart = lazyWithRetry(() => import("@/pages/owner/OwnerStart"));
 const ContractorStart = lazyWithRetry(() => import("@/pages/contractor/ContractorStart"));
 import { ResourcePlanningView } from "@/components/project/ResourcePlanningView";
 import { useEnabledModules } from "@/hooks/useEnabledModules";
+import { useTaxDeductionVisible } from "@/hooks/useTaxDeduction";
 import { useMarket } from "@/hooks/useMarket";
 
 interface Project {
@@ -349,6 +350,7 @@ const Projects = () => {
 
   const isContractor = (profile?.onboarding_user_type as string) === "contractor";
   const { isSectionEnabled } = useEnabledModules(isContractor ? "small" : "homeowner", market);
+  const { showTaxDeduction } = useTaxDeductionVisible();
 
   // Homeowners should never see resource planning — clamp to list
   const effectiveViewMode = (!isContractor && viewMode === "resource") || (viewMode === "resource" && !isSectionEnabled("resource_planning")) ? "list" : viewMode;
@@ -851,7 +853,7 @@ const Projects = () => {
           </section>
         )}
 
-        {!isGuest && !isContractor && isSectionEnabled("rot") && nonDemoProjects.length > 0 && (
+        {!isGuest && !isContractor && showTaxDeduction && nonDemoProjects.length > 0 && (
           <section id="deklaration" className="mt-10 sm:mt-14 scroll-mt-20">
             <HomeownerYearlyAnalysis
               projects={nonDemoProjects}
