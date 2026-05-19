@@ -39,6 +39,8 @@ interface QuoteItemRowProps {
   onChange: (id: string, updates: Partial<QuoteItem>) => void;
   onDelete: (id: string) => void;
   onImportRoom: (id: string) => void;
+  /** Show the ROT-eligible toggle (Swedish-market only). Defaults true. */
+  showRot?: boolean;
 }
 
 const SOURCE_STYLES: Record<QuoteItemSource, string> = {
@@ -49,7 +51,7 @@ const SOURCE_STYLES: Record<QuoteItemSource, string> = {
   missing: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
 };
 
-export function QuoteItemRow({ item, onChange, onDelete, onImportRoom }: QuoteItemRowProps) {
+export function QuoteItemRow({ item, onChange, onDelete, onImportRoom, showRot = true }: QuoteItemRowProps) {
   const { t } = useTranslation();
 
   // Section header — render as a simple divider
@@ -178,7 +180,7 @@ export function QuoteItemRow({ item, onChange, onDelete, onImportRoom }: QuoteIt
 
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-4">
-          {item.source !== "material" && (
+          {item.source !== "material" && showRot && (
             <label className="flex items-center gap-2 min-h-[48px]">
               <Checkbox
                 checked={item.isRotEligible}

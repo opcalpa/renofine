@@ -12,6 +12,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthSession } from "@/hooks/useAuthSession";
+import { useTaxDeductionVisible } from "@/hooks/useTaxDeduction";
 import { AppHeader } from "@/components/AppHeader";
 import { QuoteItemRow, type QuoteItem } from "@/components/quotes/QuoteItemRow";
 import { QuoteSummary } from "@/components/quotes/QuoteSummary";
@@ -55,6 +56,7 @@ function newItem(): QuoteItem {
 export default function CreateQuoteV2() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { showTaxDeduction } = useTaxDeductionVisible();
   const [searchParams] = useSearchParams();
   const { user, loading: authLoading } = useAuthSession();
 
@@ -1337,6 +1339,7 @@ export default function CreateQuoteV2() {
                           onChange={handleChange}
                           onDelete={handleDelete}
                           onImportRoom={handleImportRoom}
+                          showRot={showTaxDeduction}
                         />
                       </div>
                     </div>
