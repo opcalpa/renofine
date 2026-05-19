@@ -24,6 +24,7 @@ import { CreateIntakeDialog } from "@/components/intake/CreateIntakeDialog";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Loader2, Plus, Home, Sparkles, MessageSquare, ArrowRight } from "lucide-react";
 import { PUBLIC_DEMO_PROJECT_TYPE } from "@/constants/publicDemo";
+import { seedDemoProject, isDemoProject } from "@/services/demoProjectService";
 import { formatCurrency } from "@/lib/currency";
 
 interface OwnerProject {
@@ -34,6 +35,7 @@ interface OwnerProject {
   status: string | null;
   contract_value: number | null;
   created_at: string;
+  project_type: string | null;
 }
 
 interface ProjectProgress {
@@ -59,7 +61,7 @@ function getGreeting(): string {
 export default function OwnerStart() {
   const { user } = useAuthSession();
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const [projects, setProjects] = useState<OwnerProject[]>([]);
   const [progress, setProgress] = useState<Record<string, ProjectProgress>>({});
@@ -82,9 +84,18 @@ export default function OwnerStart() {
       setProfile(profileData);
 
       const profileId = profileData?.id;
+
+      // Every user gets a personal, owned demo project to explore (own row,
+      // not the shared global public_demo). The RPC is idempotent and
+      // SECURITY DEFINER — it returns the existing demo if one exists, so
+      // this also self-heals users created before seeding was wired.
+      if (profileId) {
+        await seedDemoProject(profileId, i18n.language);
+      }
+
       const { data: ownProjects } = await supabase
         .from("projects")
-        .select("id, name, address, city, status, contract_value, created_at")
+        .select("id, name, address, city, status, contract_value, created_at, project_type")
         .eq("owner_id", profileId)
         .is("deleted_at", null)
         .neq("project_type", PUBLIC_DEMO_PROJECT_TYPE)
@@ -101,7 +112,7 @@ export default function OwnerStart() {
           const sharedIds = shares.map(s => s.project_id);
           const { data: sp } = await supabase
             .from("projects")
-            .select("id, name, address, city, status, contract_value, created_at")
+            .select("id, name, address, city, status, contract_value, created_at, project_type")
             .in("id", sharedIds)
             .is("deleted_at", null)
             .neq("project_type", PUBLIC_DEMO_PROJECT_TYPE);
@@ -326,7 +337,14 @@ export default function OwnerStart() {
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
-                            <h3 className="text-[15px] font-medium tracking-[-0.003em]">{project.name}</h3>
+                            <div className="flex items-center gap-2">
+                              <h3 className="text-[15px] font-medium tracking-[-0.003em]">{project.name}</h3>
+                              {isDemoProject(project.project_type) && (
+                                <span className="rf-chip chip-primary" style={{ flexShrink: 0 }}>
+                                  {t("demoProject.badge", "Demo")}
+                                </span>
+                              )}
+                            </div>
                             {(project.address || project.city) && (
                               <p className="font-mono text-[10px] text-muted-foreground mt-1 uppercase tracking-wider">
                                 {[project.address, project.city].filter(Boolean).join(", ")}
@@ -385,10 +403,13 @@ export default function OwnerStart() {
               </section>
             )}
 
-            {/* ROT/cost yearly analysis */}
-            {projects.filter(p => p.status !== "demo").length > 0 && (
+            {/* ROT/cost yearly analysis — exclude demo so it never pollutes
+                the user's real tax/ROT figures */}
+            {projects.filter(p => p.status !== "demo" && !isDemoProject(p.project_type)).length > 0 && (
               <HomeownerYearlyAnalysis
-                projects={projects.filter(p => p.status !== "demo").map(p => ({ id: p.id, name: p.name }))}
+                projects={projects
+                  .filter(p => p.status !== "demo" && !isDemoProject(p.project_type))
+                  .map(p => ({ id: p.id, name: p.name }))}
               />
             )}
           </>

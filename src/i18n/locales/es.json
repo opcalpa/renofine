@@ -44,6 +44,9 @@
   "changelog": {
     "subtitle": "Últimas novedades de Renofine"
   },
+  "demoProject": {
+    "badge": "Proyecto de ejemplo"
+  },
   "nav": {
     "home": "Inicio",
     "start": "Comenzar",

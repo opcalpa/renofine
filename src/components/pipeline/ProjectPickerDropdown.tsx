@@ -10,10 +10,12 @@ import { Button } from "@/components/ui/button";
 import { Loader2, FileText, ChevronDown, FolderOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PUBLIC_DEMO_PROJECT_TYPE } from "@/constants/publicDemo";
+import { isDemoProject } from "@/services/demoProjectService";
 
 interface Project {
   id: string;
   name: string;
+  project_type: string | null;
 }
 
 interface ProjectPickerDropdownProps {
@@ -34,7 +36,7 @@ export function ProjectPickerDropdown({
     const fetchProjects = async () => {
       const { data, error } = await supabase
         .from("projects")
-        .select("id, name")
+        .select("id, name, project_type")
         .is("deleted_at", null)
         .neq("project_type", PUBLIC_DEMO_PROJECT_TYPE)
         .order("created_at", { ascending: false });
@@ -45,9 +47,10 @@ export function ProjectPickerDropdown({
         return;
       }
 
-      // Filter out demo projects
+      // Never offer any demo (public or personal) as a quote/pipeline
+      // target — selecting one would attach billing data to demo data.
       const filteredProjects = (data || []).filter(
-        (p) => !p.name?.toLowerCase().includes("demo")
+        (p) => !isDemoProject(p.project_type)
       );
       setProjects(filteredProjects);
       setLoading(false);

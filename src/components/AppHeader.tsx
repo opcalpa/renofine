@@ -8,6 +8,7 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { supabase } from "@/integrations/supabase/client";
 import { PUBLIC_DEMO_PROJECT_ID, PUBLIC_DEMO_PROJECT_TYPE } from "@/constants/publicDemo";
+import { isDemoProject } from "@/services/demoProjectService";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import {
   DropdownMenu,
@@ -42,6 +43,7 @@ const LANGUAGES = [
 interface SimpleProject {
   id: string;
   name: string;
+  project_type: string | null;
 }
 
 interface SimpleQuote {
@@ -93,7 +95,7 @@ export const AppHeader = ({ userName, userEmail, avatarUrl, onSignOut, children,
     // for everyone (OwnerStart already filters to owned/shared only).
     supabase
       .from("projects")
-      .select("id, name")
+      .select("id, name, project_type")
       .is("deleted_at", null)
       .neq("project_type", PUBLIC_DEMO_PROJECT_TYPE)
       .order("created_at", { ascending: false })
@@ -194,6 +196,11 @@ export const AppHeader = ({ userName, userEmail, avatarUrl, onSignOut, children,
                 >
                   <FolderOpen className="mr-2 h-4 w-4" />
                   <span className="truncate">{proj.name}</span>
+                  {isDemoProject(proj.project_type) && (
+                    <span className="ml-2 shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary">
+                      {t("demoProject.badge", "Demo")}
+                    </span>
+                  )}
                 </DropdownMenuItem>
               ))}
             </>
