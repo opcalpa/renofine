@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { NotificationBell } from "@/components/NotificationBell";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import { supabase } from "@/integrations/supabase/client";
+import { PUBLIC_DEMO_PROJECT_ID, PUBLIC_DEMO_PROJECT_TYPE } from "@/constants/publicDemo";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import {
   DropdownMenu,
@@ -87,20 +88,25 @@ export const AppHeader = ({ userName, userEmail, avatarUrl, onSignOut, children,
     // Skip data fetching for guest users
     if (!user || isGuest) return;
 
-    // Fetch projects
+    // Fetch projects. RLS exposes the global public demo to every logged-in
+    // user, so it must be excluded here or it shows up under "My Projects"
+    // for everyone (OwnerStart already filters to owned/shared only).
     supabase
       .from("projects")
       .select("id, name")
       .is("deleted_at", null)
+      .neq("project_type", PUBLIC_DEMO_PROJECT_TYPE)
       .order("created_at", { ascending: false })
       .then(({ data }) => {
         if (data) setProjects(data);
       });
 
-    // Fetch quotes with project names
+    // Fetch quotes with project names (exclude the public demo's quotes —
+    // RLS exposes them to every logged-in user, same as the demo project).
     supabase
       .from("quotes")
       .select("id, title, project:projects(name)")
+      .neq("project_id", PUBLIC_DEMO_PROJECT_ID)
       .order("updated_at", { ascending: false })
       .limit(10)
       .then(({ data }) => {
@@ -144,7 +150,7 @@ export const AppHeader = ({ userName, userEmail, avatarUrl, onSignOut, children,
         className={`px-2.5 py-1.5 text-[13px] tracking-[-0.002em] rounded-md transition-colors ${isActive("/changelog") ? "bg-accent/60 text-foreground font-medium" : "text-muted-foreground hover:text-foreground font-normal"}`}
         onClick={() => navigate("/changelog")}
       >
-        {t('nav.changelog', 'Nyheter')}
+        {t('nav.changelog', "What's new")}
       </button>
       <button
         type="button"
@@ -299,7 +305,7 @@ export const AppHeader = ({ userName, userEmail, avatarUrl, onSignOut, children,
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate("/changelog")} className="cursor-pointer">
                   <Sparkles className="mr-2 h-4 w-4" />
-                  <span>{t('nav.changelog', 'Nyheter')}</span>
+                  <span>{t('nav.changelog', "What's new")}</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate("/feedback")} className="cursor-pointer">
                   <MessageSquare className="mr-2 h-4 w-4" />
@@ -331,7 +337,7 @@ export const AppHeader = ({ userName, userEmail, avatarUrl, onSignOut, children,
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate("/changelog")} className="cursor-pointer">
                     <Sparkles className="mr-2 h-4 w-4" />
-                    <span>{t('nav.changelog', 'Nyheter')}</span>
+                    <span>{t('nav.changelog', "What's new")}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate("/feedback")} className="cursor-pointer">
                     <MessageSquare className="mr-2 h-4 w-4" />

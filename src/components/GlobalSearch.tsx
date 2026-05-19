@@ -7,6 +7,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { PUBLIC_DEMO_PROJECT_TYPE } from "@/constants/publicDemo";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Input } from "@/components/ui/input";
@@ -153,6 +154,7 @@ export function GlobalSearch() {
         .from("projects")
         .select("id, name, description")
         .ilike("name", searchPattern)
+        .neq("project_type", PUBLIC_DEMO_PROJECT_TYPE)
         .limit(3);
 
       if (projects) {

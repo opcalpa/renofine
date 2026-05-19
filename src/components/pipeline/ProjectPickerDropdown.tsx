@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Loader2, FileText, ChevronDown, FolderOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { PUBLIC_DEMO_PROJECT_TYPE } from "@/constants/publicDemo";
 
 interface Project {
   id: string;
@@ -35,6 +36,7 @@ export function ProjectPickerDropdown({
         .from("projects")
         .select("id, name")
         .is("deleted_at", null)
+        .neq("project_type", PUBLIC_DEMO_PROJECT_TYPE)
         .order("created_at", { ascending: false });
 
       if (error) {
