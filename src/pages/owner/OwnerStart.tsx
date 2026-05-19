@@ -26,6 +26,7 @@ import { Loader2, Plus, Home, Sparkles, MessageSquare, ArrowRight } from "lucide
 import { PUBLIC_DEMO_PROJECT_TYPE } from "@/constants/publicDemo";
 import { seedDemoProject, hasDemoProject, isDemoProject } from "@/services/demoProjectService";
 import { formatCurrency } from "@/lib/currency";
+import { useRotEnabled } from "@/hooks/useRotEnabled";
 
 interface OwnerProject {
   id: string;
@@ -62,6 +63,7 @@ export default function OwnerStart() {
   const { user } = useAuthSession();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
+  const rotEnabled = useRotEnabled("homeowner");
 
   const [projects, setProjects] = useState<OwnerProject[]>([]);
   const [progress, setProgress] = useState<Record<string, ProjectProgress>>({});
@@ -404,8 +406,8 @@ export default function OwnerStart() {
             )}
 
             {/* ROT/cost yearly analysis — exclude demo so it never pollutes
-                the user's real tax/ROT figures */}
-            {projects.filter(p => p.status !== "demo" && !isDemoProject(p.project_type)).length > 0 && (
+                the user's real tax/ROT figures. Swedish-market only. */}
+            {rotEnabled && projects.filter(p => p.status !== "demo" && !isDemoProject(p.project_type)).length > 0 && (
               <HomeownerYearlyAnalysis
                 projects={projects
                   .filter(p => p.status !== "demo" && !isDemoProject(p.project_type))
