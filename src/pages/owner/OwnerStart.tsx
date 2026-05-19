@@ -1,9 +1,13 @@
 /**
  * OwnerStart — Homeowner start page (handoff design).
  *
- * - 1 project → redirect straight into it
  * - 0 projects → welcome with onboarding CTA
- * - 2+ projects → editorial cards with progress + ROT summary
+ * - 1+ projects → editorial cards with progress + ROT summary
+ *
+ * No auto-redirect on a single project: the start page is the only home
+ * for "create another project" and the ROT yearly analysis, so a
+ * single-project user must still land here. Applies to invited
+ * reviewers/controllers too — they may be invited to several projects.
  */
 
 import { useEffect, useState } from "react";
@@ -19,6 +23,7 @@ import { AIProjectImportModal } from "@/components/project/AIProjectImportModal"
 import { CreateIntakeDialog } from "@/components/intake/CreateIntakeDialog";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Loader2, Plus, Home, Sparkles, MessageSquare, ArrowRight } from "lucide-react";
+import { PUBLIC_DEMO_PROJECT_TYPE } from "@/constants/publicDemo";
 import { formatCurrency } from "@/lib/currency";
 
 interface OwnerProject {
@@ -82,6 +87,7 @@ export default function OwnerStart() {
         .select("id, name, address, city, status, contract_value, created_at")
         .eq("owner_id", profileId)
         .is("deleted_at", null)
+        .neq("project_type", PUBLIC_DEMO_PROJECT_TYPE)
         .order("created_at", { ascending: false });
 
       let sharedProjects: OwnerProject[] = [];
@@ -97,7 +103,8 @@ export default function OwnerStart() {
             .from("projects")
             .select("id, name, address, city, status, contract_value, created_at")
             .in("id", sharedIds)
-            .is("deleted_at", null);
+            .is("deleted_at", null)
+            .neq("project_type", PUBLIC_DEMO_PROJECT_TYPE);
           sharedProjects = sp || [];
         }
       }
@@ -133,14 +140,6 @@ export default function OwnerStart() {
     load();
   }, [user]);
 
-  // Single accessible project → go straight to it. Must run as an effect,
-  // not during render (render-phase navigate() warns + can race the router).
-  useEffect(() => {
-    if (!loading && projects.length === 1) {
-      navigate(`/projects/${projects[0].id}`, { replace: true });
-    }
-  }, [loading, projects, navigate]);
-
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     navigate("/auth");
@@ -152,12 +151,6 @@ export default function OwnerStart() {
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
-  }
-
-  // 1 project → redirect (handled by the effect above; render nothing
-  // while the navigation is in flight to avoid flashing the list).
-  if (projects.length === 1) {
-    return null;
   }
 
   const firstName = profile?.name?.split(" ")[0] || "";
@@ -295,8 +288,8 @@ export default function OwnerStart() {
           </div>
         )}
 
-        {/* 2+ projects */}
-        {projects.length > 1 && (
+        {/* 1+ projects */}
+        {projects.length >= 1 && (
           <>
             {/* Greeting */}
             <div className="mb-6 md:mb-8 pb-5 border-b border-border/60">
