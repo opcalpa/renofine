@@ -1,3 +1,7 @@
+// DEPRECATED — superseded by process-document-v2 (unified extraction,
+// scope/quote path). No remaining callers in the app. Kept deployed for
+// a short parallel-run window; safe to delete this function once
+// confirmed unused in logs.
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 // @ts-ignore - pdf-parse types
 import pdf from 'npm:pdf-parse@1.1.1';

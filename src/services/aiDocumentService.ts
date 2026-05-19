@@ -63,12 +63,15 @@ export async function extractFromDocument(
   // Validate file
   validateFile(fileName, fileType, fileSize);
 
-  // Call Supabase Edge Function
-  const { data, error } = await supabase.functions.invoke('process-document', {
+  // Call Supabase Edge Function. Unified extraction lives in
+  // process-document-v2 (Anthropic, tool-use). mode:'scope' pins the
+  // text/rooms-tasks path and keeps it off the receipt vision path.
+  const { data, error } = await supabase.functions.invoke('process-document-v2', {
     body: {
       fileUrl,
       fileType,
       fileName,
+      mode: 'scope',
     },
   });
 
