@@ -47,6 +47,12 @@
   "demoProject": {
     "badge": "Proyecto de ejemplo"
   },
+  "ownerStart": {
+    "greetingMorning": "Buenos días",
+    "greetingAfternoon": "Buenas tardes",
+    "greetingEvening": "Buenas noches",
+    "greetingNight": "Buenas noches"
+  },
   "nav": {
     "home": "Inicio",
     "start": "Comenzar",

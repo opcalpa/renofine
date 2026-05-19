@@ -6202,6 +6202,10 @@
     "paxmlNoData": "No approved hours this month"
   },
   "ownerStart": {
+    "greetingMorning": "Good morning",
+    "greetingAfternoon": "Good afternoon",
+    "greetingEvening": "Good evening",
+    "greetingNight": "Good night",
     "welcome": "Welcome to Renofine",
     "welcomeDescription": "Keep track of your renovation — budget, tasks, and documents in one place.",
     "createProject": "Create your first project",

@@ -6201,6 +6201,10 @@
     "paxmlNoData": "Inga godkända timmar denna månad"
   },
   "ownerStart": {
+    "greetingMorning": "God morgon",
+    "greetingAfternoon": "God eftermiddag",
+    "greetingEvening": "God kväll",
+    "greetingNight": "God natt",
     "welcome": "Välkommen till Renofine",
     "welcomeDescription": "Håll koll på din renovering — budget, arbeten och dokument på ett ställe.",
     "createProject": "Skapa ditt första projekt",

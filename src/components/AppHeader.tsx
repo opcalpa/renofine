@@ -107,7 +107,7 @@ export const AppHeader = ({ userName, userEmail, avatarUrl, onSignOut, children,
     // RLS exposes them to every logged-in user, same as the demo project).
     supabase
       .from("quotes")
-      .select("id, title, project:projects(name)")
+      .select("id, title, project:projects!quotes_project_id_fkey(name)")
       .neq("project_id", PUBLIC_DEMO_PROJECT_ID)
       .order("updated_at", { ascending: false })
       .limit(10)

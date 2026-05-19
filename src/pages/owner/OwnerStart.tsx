@@ -50,12 +50,12 @@ function chipClass(status: string | null): string {
   return "rf-chip chip-primary";
 }
 
-function getGreeting(): string {
+function getGreetingKey(): string {
   const hour = new Date().getHours();
-  if (hour < 5) return "God natt";
-  if (hour < 12) return "God morgon";
-  if (hour < 17) return "God eftermiddag";
-  return "God kväll";
+  if (hour < 5) return "ownerStart.greetingNight";
+  if (hour < 12) return "ownerStart.greetingMorning";
+  if (hour < 17) return "ownerStart.greetingAfternoon";
+  return "ownerStart.greetingEvening";
 }
 
 export default function OwnerStart() {
@@ -308,7 +308,7 @@ export default function OwnerStart() {
                 {t("ownerStart.kicker", "Mina renoveringar")}
               </span>
               <h1 className="font-display text-3xl sm:text-4xl font-normal tracking-tight mt-1">
-                {getGreeting()}, {firstName}.
+                {t(getGreetingKey(), "Good morning")}, {firstName}.
               </h1>
               {totalInvested > 0 && (
                 <p className="text-sm text-muted-foreground mt-2">
