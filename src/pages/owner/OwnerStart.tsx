@@ -24,7 +24,7 @@ import { CreateIntakeDialog } from "@/components/intake/CreateIntakeDialog";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Loader2, Plus, Home, Sparkles, MessageSquare, ArrowRight } from "lucide-react";
 import { PUBLIC_DEMO_PROJECT_TYPE } from "@/constants/publicDemo";
-import { seedDemoProject, isDemoProject } from "@/services/demoProjectService";
+import { seedDemoProject, hasDemoProject, isDemoProject } from "@/services/demoProjectService";
 import { formatCurrency } from "@/lib/currency";
 
 interface OwnerProject {
@@ -85,11 +85,11 @@ export default function OwnerStart() {
 
       const profileId = profileData?.id;
 
-      // Every user gets a personal, owned demo project to explore (own row,
-      // not the shared global public_demo). The RPC is idempotent and
-      // SECURITY DEFINER — it returns the existing demo if one exists, so
-      // this also self-heals users created before seeding was wired.
-      if (profileId) {
+      // Every user gets one personal, owned demo project to explore (own
+      // row, not the shared global public_demo). Only seed when the user
+      // has none yet — skips the heavier seed RPC on every later visit.
+      // Self-heals users created before seeding was wired.
+      if (profileId && !(await hasDemoProject(profileId))) {
         await seedDemoProject(profileId, i18n.language);
       }
 
