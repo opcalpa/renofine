@@ -14,6 +14,7 @@ import { Loader2 } from "lucide-react";
 import { GuestMigrationDialog } from "@/components/guest";
 import { hasGuestProjectsToMigrate } from "@/services/guestMigrationService";
 import { useGuestMode } from "@/hooks/useGuestMode";
+import { analytics, AnalyticsEvents } from "@/lib/analytics";
 
 const Auth = () => {
   const { t } = useTranslation();
@@ -82,6 +83,16 @@ const Auth = () => {
       });
 
       if (error) throw error;
+
+      // Track signup completion deterministically here. The email-confirmation
+      // flow never reaches the SIGNED_IN session event (and OAuth is handled in
+      // useAuthSession), so this is the reliable signal for email signups.
+      if (data.user) {
+        analytics.capture(AnalyticsEvents.SIGNUP_COMPLETED, {
+          method: "email",
+          email_confirmation_required: !data.session,
+        });
+      }
 
       // Email confirmation required — no session returned
       if (data.user && !data.session) {

@@ -39,11 +39,16 @@ export const useAuthSession = (): AuthSession => {
             auth_provider: currentSession.user.app_metadata?.provider,
           });
 
-          // Track new signups (created_at within last 60 seconds = new user)
+          // Track new OAuth signups. Email signups are captured explicitly in
+          // Auth.tsx (their email-confirmation flow never reaches SIGNED_IN),
+          // so we only count non-email providers here to avoid double-counting.
+          // A brand-new account has created_at within the last ~2 minutes;
+          // returning logins have an older created_at and are skipped.
+          const provider = currentSession.user.app_metadata?.provider;
           const createdAt = new Date(currentSession.user.created_at).getTime();
-          if (Date.now() - createdAt < 60_000) {
+          if (provider && provider !== 'email' && Date.now() - createdAt < 120_000) {
             analytics.capture(AnalyticsEvents.SIGNUP_COMPLETED, {
-              auth_provider: currentSession.user.app_metadata?.provider,
+              auth_provider: provider,
             });
           }
         }

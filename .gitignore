@@ -39,3 +39,5 @@ e2e/.auth/
 .env.local
 .env.production
 supabase/.temp/
+.posthog-proxy-secret
+.pq.sh
