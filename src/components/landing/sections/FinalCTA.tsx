@@ -1,6 +1,8 @@
 import { useTranslation } from "react-i18next";
 import { ArrowRight } from "lucide-react";
 
+const BOOK_DEMO_URL = "https://calendar.app.google/cpD1Z1Qb6VQBhSAL9";
+
 interface FinalCTAProps {
   onCta: () => void;
 }
@@ -48,8 +50,11 @@ export function FinalCTA({ onCta }: FinalCTAProps) {
             {t("landingV2.hero.cta", "Kom ig\u00e5ng \u2014 gratis")}
             <ArrowRight size={14} />
           </button>
-          <button
-            className="cursor-pointer"
+          <a
+            href={BOOK_DEMO_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center cursor-pointer"
             style={{
               padding: "14px 22px",
               borderRadius: 6,
@@ -58,10 +63,11 @@ export function FinalCTA({ onCta }: FinalCTAProps) {
               fontSize: 14,
               fontWeight: 500,
               border: "1px solid var(--lp-hairline)",
+              textDecoration: "none",
             }}
           >
             {t("landingV2.finalCta.demo", "Boka 15 min demo")}
-          </button>
+          </a>
         </div>
       </div>
 
@@ -82,22 +88,43 @@ export function FinalCTA({ onCta }: FinalCTAProps) {
         <p style={{ fontSize: 14, color: "var(--lp-fg-muted)", margin: "0 0 22px", lineHeight: 1.55 }}>
           {t("landingV2.finalCta.bodyMobile", "Gratis under hela beta. Inga kontokrav.")}
         </p>
-        <button
-          onClick={onCta}
-          className="inline-flex items-center gap-2 border-none cursor-pointer"
-          style={{
-            padding: "14px 26px",
-            borderRadius: 6,
-            background: "var(--lp-accent-ink)",
-            color: "var(--lp-bg)",
-            fontSize: 14,
-            fontWeight: 500,
-            minHeight: 48,
-          }}
-        >
-          {t("landingV2.finalCta.ctaMobile", "Kom ig\u00e5ng")}
-          <ArrowRight size={14} />
-        </button>
+        <div className="flex flex-col items-center gap-2.5">
+          <button
+            onClick={onCta}
+            className="inline-flex items-center justify-center gap-2 border-none cursor-pointer"
+            style={{
+              padding: "14px 26px",
+              borderRadius: 6,
+              background: "var(--lp-accent-ink)",
+              color: "var(--lp-bg)",
+              fontSize: 14,
+              fontWeight: 500,
+              minHeight: 48,
+            }}
+          >
+            {t("landingV2.finalCta.ctaMobile", "Kom ig\u00e5ng")}
+            <ArrowRight size={14} />
+          </button>
+          <a
+            href={BOOK_DEMO_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center cursor-pointer"
+            style={{
+              padding: "14px 22px",
+              borderRadius: 6,
+              background: "transparent",
+              color: "var(--lp-fg)",
+              fontSize: 14,
+              fontWeight: 500,
+              minHeight: 48,
+              border: "1px solid var(--lp-hairline)",
+              textDecoration: "none",
+            }}
+          >
+            {t("landingV2.finalCta.demo", "Boka 15 min demo")}
+          </a>
+        </div>
       </div>
     </section>
   );
