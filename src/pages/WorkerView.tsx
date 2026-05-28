@@ -107,12 +107,15 @@ export default function WorkerView() {
       setData(viewData);
 
       // Auto-translate non-worker messages + welcome message when the worker's
-      // language differs from sv/en. Translations are kept separate from the
-      // originals so the user can toggle "Show original" later.
+      // language differs from sv/en. Originals stay intact; translations are
+      // stored in a separate field (or state for welcome) so workers can
+      // toggle "Show original" per-message later.
       const lang = effectiveLang;
       if (lang && lang !== "sv" && lang !== "en") {
         const allMessages = viewData.tasks.flatMap((t) =>
-          t.messages.filter((m) => !m.isWorker && m.content)
+          t.messages.filter(
+            (m) => !m.isWorker && m.content && !m.content.startsWith("🎤"),
+          ),
         );
         const items: Array<{ id: string; content: string }> = allMessages.map(
           (m) => ({ id: m.id, content: m.content }),
@@ -143,7 +146,7 @@ export default function WorkerView() {
                     ...task,
                     messages: task.messages.map((msg) => ({
                       ...msg,
-                      content: trMap.get(msg.id) || msg.content,
+                      translatedContent: trMap.get(msg.id) || msg.translatedContent || null,
                     })),
                   })),
                 };

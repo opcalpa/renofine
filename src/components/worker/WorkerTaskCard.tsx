@@ -88,6 +88,8 @@ interface WorkerRoom {
 interface WorkerMessage {
   id: string;
   content: string;
+  /** Auto-translated content when worker_language differs from source. */
+  translatedContent?: string | null;
   createdAt: string;
   authorName: string;
   isWorker: boolean;
@@ -179,6 +181,7 @@ export function WorkerTaskCard({
   const { t } = useTranslation();
   const [uploading, setUploading] = useState(false);
   const [togglingItems, setTogglingItems] = useState<Set<string>>(new Set());
+  const [showOriginalMsg, setShowOriginalMsg] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Flatten for progress count
@@ -558,7 +561,33 @@ export function WorkerTaskCard({
                   {msg.content.startsWith("🎤") ? (
                     <audio controls src={msg.content.replace("🎤 ", "")} className="h-8 max-w-full" />
                   ) : (
-                    <p className="whitespace-pre-wrap">{msg.content}</p>
+                    <>
+                      <p className="whitespace-pre-wrap">
+                        {msg.translatedContent && !showOriginalMsg.has(msg.id)
+                          ? msg.translatedContent
+                          : msg.content}
+                      </p>
+                      {msg.translatedContent && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setShowOriginalMsg((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(msg.id)) next.delete(msg.id);
+                              else next.add(msg.id);
+                              return next;
+                            })
+                          }
+                          className={`mt-1 inline-flex items-center text-[10px] underline-offset-2 hover:underline ${
+                            msg.isWorker ? "text-primary-foreground/70" : "text-muted-foreground"
+                          }`}
+                        >
+                          {showOriginalMsg.has(msg.id)
+                            ? t("worker.showTranslated", "Visa översatt")
+                            : t("worker.showOriginal", "Visa original")}
+                        </button>
+                      )}
+                    </>
                   )}
                   {msg.images.length > 0 && (
                     <div className="flex gap-1 mt-1">
