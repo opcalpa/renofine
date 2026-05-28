@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -39,9 +39,18 @@ export const FeedThread = ({ group, projectId, onNavigate, onCommentPosted }: Fe
   const { t, i18n } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const [replyTarget, setReplyTarget] = useState<FeedComment | null>(null);
-  const { translationsEnabled, translating, toggleTranslations, getTranslatedContent, targetLang } = useCommentTranslation();
+  const { translationsEnabled, translating, toggleTranslations, ensureTranslations, getTranslatedContent, targetLang } = useCommentTranslation();
 
   const { contextType, contextLabel, comments } = group;
+
+  // Auto-load translations so the default "translations on" state lands
+  // with content already cached. Idempotent — only uncached ids hit the API.
+  useEffect(() => {
+    if (translationsEnabled && comments.length > 0) {
+      ensureTranslations(comments.map((c) => ({ id: c.id, content: c.content })));
+    }
+  }, [comments, translationsEnabled, ensureTranslations]);
+
   const isEntityThread = contextType !== "project";
   const latestComment = comments[comments.length - 1];
   const hiddenCount = comments.length - VISIBLE_COUNT;

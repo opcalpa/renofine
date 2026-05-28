@@ -8,30 +8,35 @@ interface CommentInput {
   content: string;
 }
 
+/**
+ * Translates comment content on demand. The cache lives in-memory per
+ * mount; on rerender or remount we re-fetch any missing keys.
+ *
+ * Default is "translations enabled" so workers and project members land
+ * on content in their UI language without an extra click. Consumers
+ * trigger `ensureTranslations(comments)` (typically in an effect) when
+ * the comment list changes to populate the cache; `toggleTranslations`
+ * flips visibility between translated and original.
+ */
 export function useCommentTranslation() {
   const { t, i18n } = useTranslation();
-  const [translationsEnabled, setTranslationsEnabled] = useState(false);
+  const [translationsEnabled, setTranslationsEnabled] = useState(true);
   const [translating, setTranslating] = useState(false);
   const cacheRef = useRef<Map<string, string>>(new Map());
 
   const targetLang = i18n.language;
 
-  const toggleTranslations = useCallback(
+  /**
+   * Idempotent loader. Filters out already-cached entries before calling
+   * the edge function. Safe to call repeatedly with the same input — only
+   * uncached ids hit the API.
+   */
+  const ensureTranslations = useCallback(
     async (comments: CommentInput[]) => {
-      if (translationsEnabled) {
-        setTranslationsEnabled(false);
-        return;
-      }
-
-      // Check which comments need translation
       const uncached = comments.filter(
         (c) => !cacheRef.current.has(`${c.id}:${targetLang}`)
       );
-
-      if (uncached.length === 0) {
-        setTranslationsEnabled(true);
-        return;
-      }
+      if (uncached.length === 0) return;
 
       setTranslating(true);
       try {
@@ -44,25 +49,39 @@ export function useCommentTranslation() {
             },
           }
         );
-
         if (error) throw error;
-
         const translations: { id: string; translatedContent: string }[] =
           data?.translations ?? [];
-
         for (const item of translations) {
           cacheRef.current.set(`${item.id}:${targetLang}`, item.translatedContent);
         }
-
-        setTranslationsEnabled(true);
       } catch (err) {
         console.error("Translation error:", err);
-        toast.error(t("comments.translationError", "Could not translate comments"));
       } finally {
         setTranslating(false);
       }
     },
-    [translationsEnabled, targetLang, t]
+    [targetLang]
+  );
+
+  /**
+   * Flip the visibility toggle. When re-enabling, ensure translations
+   * exist first so the toggle feels instant.
+   */
+  const toggleTranslations = useCallback(
+    async (comments: CommentInput[]) => {
+      if (translationsEnabled) {
+        setTranslationsEnabled(false);
+        return;
+      }
+      try {
+        await ensureTranslations(comments);
+        setTranslationsEnabled(true);
+      } catch {
+        toast.error(t("comments.translationError", "Could not translate comments"));
+      }
+    },
+    [translationsEnabled, ensureTranslations, t]
   );
 
   const getTranslatedContent = useCallback(
@@ -77,6 +96,7 @@ export function useCommentTranslation() {
     translationsEnabled,
     translating,
     toggleTranslations,
+    ensureTranslations,
     getTranslatedContent,
     targetLang,
   };

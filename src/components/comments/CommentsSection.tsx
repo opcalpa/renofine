@@ -82,7 +82,15 @@ export const CommentsSection = ({ taskId, materialId, entityId, entityType, draw
   // viewers (RLS already enforces; this is purely to avoid a confusing UI).
   const [viewerMode, setViewerMode] = useState<ViewerMode | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { translationsEnabled, translating, toggleTranslations, getTranslatedContent, targetLang } = useCommentTranslation();
+  const { translationsEnabled, translating, toggleTranslations, ensureTranslations, getTranslatedContent, targetLang } = useCommentTranslation();
+
+  // Auto-load translations on default-on so the comment list lands in the
+  // viewer's UI language. Idempotent — only uncached ids hit the API.
+  useEffect(() => {
+    if (translationsEnabled && comments.length > 0) {
+      ensureTranslations(comments.map((c) => ({ id: c.id, content: c.content })));
+    }
+  }, [comments, translationsEnabled, ensureTranslations]);
 
   // Group comments into top-level and replies
   const { topLevelComments, repliesByParent } = useMemo(() => {
