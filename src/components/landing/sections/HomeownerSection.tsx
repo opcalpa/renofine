@@ -39,7 +39,7 @@ export function HomeownerSection() {
         style={{ maxWidth: 1280, margin: "0 auto", padding: "80px 40px", gridTemplateColumns: "1fr 1fr", gap: 60, alignItems: "center" }}
       >
         <div>
-          <Pill tone="paper">{t("landingV2.homeowner.pill", "F\u00f6r hem\u00e4garen")}</Pill>
+          <Pill tone="paper">{t("landingV2.homeowner.pill", "Kundvy")}</Pill>
           <h2
             style={{
               fontFamily: '"Fraunces", ui-serif, Georgia, serif',
@@ -108,7 +108,7 @@ export function HomeownerSection() {
 
       {/* Mobile: simplified, no shot */}
       <div className="md:hidden" style={{ padding: "40px 20px" }}>
-        <Pill tone="paper">{t("landingV2.homeowner.pill", "F\u00f6r hem\u00e4garen")}</Pill>
+        <Pill tone="paper">{t("landingV2.homeowner.pill", "Kundvy")}</Pill>
         <h2
           style={{
             fontFamily: '"Fraunces", ui-serif, Georgia, serif',

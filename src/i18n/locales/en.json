@@ -446,7 +446,7 @@
     "nav": {
       "features": "Features",
       "pricing": "Pricing",
-      "homeowner": "For homeowners",
+      "homeowner": "Client view",
       "login": "Log in",
       "cta": "Get started — free"
     },
@@ -495,13 +495,10 @@
       "timelineDesc": "Drag-and-drop Gantt with task dependencies. Move one task and the rest follows automatically.",
       "budgetKicker": "Purchasing & tax deductions",
       "budgetTitle": "One ledger for the build",
-      "budgetDesc": "Log purchases, link them to tasks, let the client approve in the app. Everything in one place instead of email.",
-      "clientKicker": "Client view",
-      "clientTitle": "Invite the client — free of charge",
-      "clientDesc": "Your client gets their own view. Sees progress, approves purchases, sees tax deduction balance. They like you more."
+      "budgetDesc": "Log purchases, link them to tasks, let the client approve in the app. Everything in one place instead of email."
     },
     "homeowner": {
-      "pill": "For the homeowner",
+      "pill": "Client view",
       "h2": "Your client gets their own view. That's where you win the next client.",
       "body": "When you invite your client to Renofine they get something no builder in Sweden has given them before: transparency without disturbing you.",
       "b1Title": "Real-time progress",

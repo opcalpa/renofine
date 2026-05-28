@@ -446,7 +446,7 @@
     "nav": {
       "features": "Funktioner",
       "pricing": "Priser",
-      "homeowner": "För hemägare",
+      "homeowner": "Kundvy",
       "login": "Logga in",
       "cta": "Kom igång — gratis"
     },
@@ -495,13 +495,10 @@
       "timelineDesc": "Drag-and-drop Gantt med beroenden mellan arbeten. Flytta ett arbete så följer resten med automatiskt.",
       "budgetKicker": "Inköp & ROT",
       "budgetTitle": "En kassabok för bygget",
-      "budgetDesc": "Registrera inköp, koppla till arbeten, låt kunden godkänna i appen. Allt på ett ställe istället för i mejlen.",
-      "clientKicker": "Kundvy",
-      "clientTitle": "Bjud in kunden — kostnadsfritt",
-      "clientDesc": "Din kund får en egen, snygg vy. Ser progress, godkänner inköp, ser ROT-saldo. De gillar dig mer."
+      "budgetDesc": "Registrera inköp, koppla till arbeten, låt kunden godkänna i appen. Allt på ett ställe istället för i mejlen."
     },
     "homeowner": {
-      "pill": "För hemägaren",
+      "pill": "Kundvy",
       "h2": "Din kund får en egen vy. Det är där du vinner nästa kund.",
       "body": "När du bjuder in din kund till Renofine får de något ingen byggare i Sverige har gett dem förut: insyn utan att störa dig.",
       "b1Title": "Realtids-progress",

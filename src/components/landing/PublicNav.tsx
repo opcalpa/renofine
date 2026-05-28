@@ -43,7 +43,7 @@ export function PublicNav({ onCta, onLogin, onScrollTo }: PublicNavProps) {
   const links = [
     { label: t("landingV2.nav.features", "Funktioner"), id: "features" },
     { label: t("landingV2.nav.pricing", "Priser"), id: "pricing" },
-    { label: t("landingV2.nav.homeowner", "F\u00f6r hem\u00e4gare"), id: "homeowner" },
+    { label: t("landingV2.nav.homeowner", "Kundvy"), id: "homeowner" },
   ];
 
   const handleLink = (id: string) => {
