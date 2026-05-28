@@ -5948,7 +5948,8 @@
     "sendEmail": "Skicka e-post",
     "emailSent": "E-post skickat",
     "emailSubject": "Dina arbetsinstruktioner",
-    "shareViaWhatsApp": "Dela via WhatsApp"
+    "shareViaWhatsApp": "Dela via WhatsApp",
+    "poweredBy": "Drivs av Renofine"
   },
   "teamWorker": {
     "workers": "Arbetare",

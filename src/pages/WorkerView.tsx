@@ -351,7 +351,7 @@ export default function WorkerView() {
 
       {/* Footer */}
       <footer className="text-center py-6 text-xs text-muted-foreground/50">
-        Powered by Renofine
+        {t("worker.poweredBy", "Powered by Renofine")}
       </footer>
     </div>
   );
