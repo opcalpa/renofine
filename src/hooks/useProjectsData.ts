@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useGuestMode } from "@/hooks/useGuestMode";
 import { getGuestProjects } from "@/services/guestStorageService";
+import { PUBLIC_DEMO_PROJECT_TYPE } from "@/constants/publicDemo";
 
 export interface ProjectItem {
   id: string;
@@ -145,10 +146,15 @@ export function useProjectsData(): ProjectsDataResult {
         .single();
       if (!prof) return;
 
+      // RLS exposes the global public_demo to every logged-in user (so it can
+      // serve as the public marketing demo) — exclude it explicitly so it
+      // doesn't show up under "Mina Projekt". Per-user demo_project rows
+      // still come through normally.
       const { data, error } = await supabase
         .from("projects")
         .select("*")
         .is("deleted_at", null)
+        .neq("project_type", PUBLIC_DEMO_PROJECT_TYPE)
         .order("created_at", { ascending: false });
       if (error) throw error;
 
