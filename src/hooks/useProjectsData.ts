@@ -150,11 +150,15 @@ export function useProjectsData(): ProjectsDataResult {
       // serve as the public marketing demo) — exclude it explicitly so it
       // doesn't show up under "Mina Projekt". Per-user demo_project rows
       // still come through normally.
+      //
+      // The OR-with-IS-NULL pattern is required because SQL `!=` is unsafe
+      // against NULL — `NULL != 'public_demo'` evaluates to NULL, not TRUE,
+      // which silently drops every project_type=NULL row from the result.
       const { data, error } = await supabase
         .from("projects")
         .select("*")
         .is("deleted_at", null)
-        .neq("project_type", PUBLIC_DEMO_PROJECT_TYPE)
+        .or(`project_type.is.null,project_type.neq.${PUBLIC_DEMO_PROJECT_TYPE}`)
         .order("created_at", { ascending: false });
       if (error) throw error;
 

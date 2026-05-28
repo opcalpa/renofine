@@ -105,13 +105,18 @@ export const AppHeader = ({ userName, userEmail, avatarUrl, onSignOut, children,
 
       // Own projects + shared with me. Exclude the global public demo since
       // its RLS exposes it to every logged-in user.
+      //
+      // The OR-with-IS-NULL pattern is required because SQL `!=` is unsafe
+      // against NULL — `NULL != 'public_demo'` evaluates to NULL, not TRUE,
+      // which silently drops every project_type=NULL row from the result.
+      const publicDemoFilter = `project_type.is.null,project_type.neq.${PUBLIC_DEMO_PROJECT_TYPE}`;
       const [ownRes, sharesRes] = await Promise.all([
         supabase
           .from("projects")
           .select("id, name, project_type, created_at")
           .eq("owner_id", profileId)
           .is("deleted_at", null)
-          .neq("project_type", PUBLIC_DEMO_PROJECT_TYPE)
+          .or(publicDemoFilter)
           .order("created_at", { ascending: false }),
         supabase
           .from("project_shares")
@@ -127,7 +132,7 @@ export const AppHeader = ({ userName, userEmail, avatarUrl, onSignOut, children,
           .select("id, name, project_type, created_at")
           .in("id", sharedIds)
           .is("deleted_at", null)
-          .neq("project_type", PUBLIC_DEMO_PROJECT_TYPE);
+          .or(publicDemoFilter);
         sharedRows = (data || []) as SimpleProject[];
       }
 
