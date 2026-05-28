@@ -76,7 +76,7 @@ export function RoomInstructionCard({
     <div className="space-y-4 pb-8">
       {/* Room header */}
       <div className="space-y-2">
-        <h2 className="text-lg font-bold">{room.name}</h2>
+        <h2 className="text-lg font-bold">{room.name || t("rooms.unassignedRoom", "Utan rum")}</h2>
         {room.dimensions && (
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
             <Ruler className="h-3.5 w-3.5" />

@@ -68,14 +68,14 @@ export function SwipeableRoomInstructions({
         </button>
 
         <div className="flex flex-col items-center gap-1">
-          <span className="text-sm font-semibold">{rooms[activeIndex]?.name}</span>
+          <span className="text-sm font-semibold">{rooms[activeIndex]?.name || t("rooms.unassignedRoom", "Utan rum")}</span>
           {/* Dots */}
           <div className="flex items-center gap-1.5">
             {rooms.map((room, i) => (
               <button
                 key={room.id}
                 type="button"
-                aria-label={`${room.name} (${i + 1}/${rooms.length})`}
+                aria-label={`${room.name || t("rooms.unassignedRoom", "Utan rum")} (${i + 1}/${rooms.length})`}
                 className={cn(
                   "h-1.5 rounded-full transition-all",
                   i === activeIndex ? "w-4 bg-primary" : "w-1.5 bg-muted-foreground/30 hover:bg-muted-foreground/50"

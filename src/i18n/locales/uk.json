@@ -252,6 +252,9 @@
   "rooms": {
     "title": "Кімнати",
     "description": "Організуйте роботу з ремонту по кімнатах",
+    "unassignedRoom": "Без кімнати",
+    "progressPhoto": "Фото прогресу",
+    "completedPhoto": "Фото завершення",
     "createdOn": "Створено",
     "addRoom": "Додати кімнату",
     "addRoomTitle": "Додати нову кімнату",

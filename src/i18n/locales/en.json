@@ -1038,6 +1038,7 @@
   },
   "rooms": {
     "title": "Rooms",
+    "unassignedRoom": "Without room",
     "description": "Organize renovation work by room",
     "createdOn": "Created",
     "addRoom": "Add Room",

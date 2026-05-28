@@ -130,7 +130,7 @@ export function useRoomInstructionsData(projectId: string, profileId: string | n
 
         rooms.push({
           id: rid,
-          name: dbRoom?.name || "Utan rum",
+          name: dbRoom?.name || "",
           wallColor: dbRoom?.wall_color || null,
           ceilingColor: dbRoom?.ceiling_color || null,
           trimColor: dbRoom?.trim_color || null,
@@ -231,7 +231,7 @@ export function groupWorkerTasksByRoom(
 
     rooms.push({
       id: key,
-      name: room?.name || "Utan rum",
+      name: room?.name || "",
       wallColor: room?.wallColor || null,
       ceilingColor: room?.ceilingColor || null,
       trimColor: room?.trimColor || null,

@@ -1039,6 +1039,7 @@
   "rooms": {
     "title": "Rum",
     "description": "Organisera renoveringsarbete per rum",
+    "unassignedRoom": "Utan rum",
     "createdOn": "Skapad",
     "addRoom": "Lägg till rum",
     "addRoomTitle": "Lägg till nytt rum",

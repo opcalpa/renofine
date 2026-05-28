@@ -352,7 +352,6 @@ interface WorkerSuccessProps {
 
 function WorkerSuccess({ result, phone, email }: WorkerSuccessProps) {
   const { t } = useTranslation();
-  const { toast } = useToast();
   const [copied, setCopied] = useState(false);
 
   const copy = async () => {
@@ -361,46 +360,21 @@ function WorkerSuccess({ result, phone, email }: WorkerSuccessProps) {
     setTimeout(() => setCopied(false), 1800);
   };
 
-  const sendSms = async () => {
-    try {
-      const { data, error } = await import("@/integrations/supabase/client").then(
-        ({ supabase }) =>
-          supabase.functions.invoke("send-worker-sms", {
-            body: { tokenId: result.tokenId },
-          }),
-      );
-      if (error) throw error;
-      toast({
-        title: t("inviteWizard.success.smsSent", "SMS skickat"),
-        description: (data as { phone?: string })?.phone || phone,
-      });
-    } catch (err) {
-      toast({
-        title: t("common.error", "Något gick fel"),
-        description: err instanceof Error ? err.message : String(err),
-        variant: "destructive",
-      });
-    }
+  // Open the OS default messaging app with the link pre-filled. Works on
+  // iOS/Android — no backend SMS gateway needed. Carl picks the carrier.
+  const openSmsApp = () => {
+    const body = encodeURIComponent(result.workerLink);
+    const target = phone ? `sms:${phone}?body=${body}` : `sms:?body=${body}`;
+    window.location.href = target;
   };
 
-  const sendEmail = async () => {
-    try {
-      const { data, error } = await import("@/integrations/supabase/client").then(
-        ({ supabase }) =>
-          supabase.functions.invoke("send-worker-email", {
-            body: { tokenId: result.tokenId },
-          }),
-      );
-      if (error) throw error;
-      toast({
-        title: t("inviteWizard.success.emailSent", "E-post skickat"),
-        description: (data as { email?: string })?.email || email,
-      });
-    } catch {
-      // Fallback to mailto
-      const body = encodeURIComponent(result.workerLink);
-      window.location.href = `mailto:${email}?body=${body}`;
-    }
+  // Open the OS default mail app. Same idea — no backend, user picks client.
+  const openMailApp = () => {
+    const body = encodeURIComponent(result.workerLink);
+    const target = email
+      ? `mailto:${email}?body=${body}`
+      : `mailto:?body=${body}`;
+    window.location.href = target;
   };
 
   return (
@@ -434,9 +408,9 @@ function WorkerSuccess({ result, phone, email }: WorkerSuccessProps) {
           )}
         </Button>
         {phone && (
-          <Button type="button" variant="outline" size="sm" onClick={sendSms}>
+          <Button type="button" variant="outline" size="sm" onClick={openSmsApp}>
             <MessageCircle className="h-4 w-4 mr-1.5" />
-            {t("inviteWizard.success.sendSms", "Skicka SMS")}
+            {t("inviteWizard.success.openMessages", "Öppna Meddelanden")}
           </Button>
         )}
         {phone && (
@@ -456,9 +430,9 @@ function WorkerSuccess({ result, phone, email }: WorkerSuccessProps) {
           </Button>
         )}
         {email && (
-          <Button type="button" variant="outline" size="sm" onClick={sendEmail}>
+          <Button type="button" variant="outline" size="sm" onClick={openMailApp}>
             <Mail className="h-4 w-4 mr-1.5" />
-            {t("inviteWizard.success.sendEmail", "Skicka e-post")}
+            {t("inviteWizard.success.openMail", "Öppna e-post")}
           </Button>
         )}
       </div>
