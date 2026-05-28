@@ -46,6 +46,7 @@ import { useContextualTips } from "@/hooks/useContextualTips";
 import { TipList } from "@/components/ui/TipCard";
 import type { TipContext } from "@/lib/contextualTips";
 import { InviteCustomerPlanningDialog } from "./overview/InviteCustomerPlanningDialog";
+import { ProjectCustomerCard } from "./ProjectCustomerCard";
 import type { OverviewProject, OverviewNavigation } from "./overview/types";
 import type { FeedComment } from "./feed/types";
 
@@ -474,6 +475,11 @@ const OverviewTab = ({
         currency={project.currency}
         onNavigateToPurchases={onNavigateToPurchases ? (poId) => onNavigateToPurchases(poId) : undefined}
       />
+
+      {/* Projektets kund (CRM-link) — proffs owner only */}
+      {!isHomeowner && isProjectOwner && (
+        <ProjectCustomerCard projectId={project.id} />
+      )}
 
       {/* Quick action buttons — contractor only */}
       {!isHomeowner && economyActionsAllowed && (

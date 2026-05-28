@@ -13,7 +13,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import CustomerViewTab from "./CustomerViewTab";
 import { WorkerInstructionsView } from "./WorkerInstructionsView";
-import { ProjectCustomerCard } from "./ProjectCustomerCard";
+import { KundvyAccessList } from "./sharing/KundvyAccessList";
 
 interface SharingTabProps {
   projectId: string;
@@ -106,8 +106,8 @@ export default function SharingTab({
 
   return (
     <div className="space-y-6">
-      {/* Project customer (CRM link) — owner-only */}
-      <ProjectCustomerCard projectId={projectId} />
+      {/* Who has Kundvy access — owner-only */}
+      <KundvyAccessList projectId={projectId} />
 
       {/* View selector — always visible for owners */}
       <div className="flex items-center gap-3">
