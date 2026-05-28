@@ -2772,6 +2772,8 @@
     "sendSms": "Надіслати SMS",
     "shareViaWhatsApp": "Поділитися через WhatsApp",
     "poweredBy": "На базі Renofine",
+    "showOriginal": "Показати оригінал",
+    "showTranslated": "Показати переклад",
     "tag": "Працівник",
     "fromWorkerTooltip": "Надіслано працівником через посилання",
     "workerSuffix": "(працівник)",

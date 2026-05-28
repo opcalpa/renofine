@@ -5950,7 +5950,9 @@
     "emailSent": "Email sent",
     "emailSubject": "Your work instructions",
     "shareViaWhatsApp": "Share via WhatsApp",
-    "poweredBy": "Powered by Renofine"
+    "poweredBy": "Powered by Renofine",
+    "showOriginal": "Show original",
+    "showTranslated": "Show translation"
   },
   "teamWorker": {
     "workers": "Workers",

@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Loader2, AlertCircle, Wrench, Layers, List } from "lucide-react";
+import { Loader2, AlertCircle, Wrench, Layers, List, Languages } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { WorkerTaskCard, type WorkerTask } from "@/components/worker/WorkerTaskCard";
 import { SwipeableRoomInstructions, groupWorkerTasksByRoom } from "@/components/room-instructions";
@@ -28,6 +28,7 @@ interface WorkerViewData {
   projectName: string;
   workerName: string;
   language: string;
+  welcomeMessage: string | null;
   canUploadPhotos: boolean;
   canToggleChecklist: boolean;
   canCreatePurchases?: boolean;
@@ -50,6 +51,10 @@ export default function WorkerView() {
   const [error, setError] = useState<ErrorState>(null);
   const [data, setData] = useState<WorkerViewData | null>(null);
   const [workerViewMode, setWorkerViewMode] = useState<"rooms" | "list">("rooms");
+  // Translated welcome_message (filled when worker_language ≠ sv/en).
+  // Original always stays on data.welcomeMessage so user can toggle back.
+  const [welcomeTranslated, setWelcomeTranslated] = useState<string | null>(null);
+  const [showOriginalGreeting, setShowOriginalGreeting] = useState(false);
 
   // Group tasks by room for swipe view
   const roomInstructions = useMemo(
@@ -101,39 +106,48 @@ export default function WorkerView() {
       const viewData = result as WorkerViewData;
       setData(viewData);
 
-      // Auto-translate non-worker messages if effective language differs from sv/en
+      // Auto-translate non-worker messages + welcome message when the worker's
+      // language differs from sv/en. Translations are kept separate from the
+      // originals so the user can toggle "Show original" later.
       const lang = effectiveLang;
       if (lang && lang !== "sv" && lang !== "en") {
         const allMessages = viewData.tasks.flatMap((t) =>
           t.messages.filter((m) => !m.isWorker && m.content)
         );
-        if (allMessages.length > 0) {
+        const items: Array<{ id: string; content: string }> = allMessages.map(
+          (m) => ({ id: m.id, content: m.content }),
+        );
+        const WELCOME_ID = "__welcome__";
+        if (viewData.welcomeMessage) {
+          items.push({ id: WELCOME_ID, content: viewData.welcomeMessage });
+        }
+        if (items.length > 0) {
           supabase.functions
             .invoke("translate-comments", {
-              body: {
-                comments: allMessages.map((m) => ({ id: m.id, content: m.content })),
-                targetLanguage: lang,
-              },
+              body: { comments: items, targetLanguage: lang },
             })
             .then(({ data: trData }) => {
-              if (trData?.translations) {
-                const trMap = new Map<string, string>(
-                  trData.translations.map((t: { id: string; translatedContent: string }) => [t.id, t.translatedContent])
-                );
-                setData((prev) => {
-                  if (!prev) return prev;
-                  return {
-                    ...prev,
-                    tasks: prev.tasks.map((task) => ({
-                      ...task,
-                      messages: task.messages.map((msg) => ({
-                        ...msg,
-                        content: trMap.get(msg.id) || msg.content,
-                      })),
+              if (!trData?.translations) return;
+              const trMap = new Map<string, string>(
+                trData.translations.map(
+                  (t: { id: string; translatedContent: string }) => [t.id, t.translatedContent],
+                ),
+              );
+              const welcomeT = trMap.get(WELCOME_ID);
+              if (welcomeT) setWelcomeTranslated(welcomeT);
+              setData((prev) => {
+                if (!prev) return prev;
+                return {
+                  ...prev,
+                  tasks: prev.tasks.map((task) => ({
+                    ...task,
+                    messages: task.messages.map((msg) => ({
+                      ...msg,
+                      content: trMap.get(msg.id) || msg.content,
                     })),
-                  };
-                });
-              }
+                  })),
+                };
+              });
             })
             .catch((err) => console.error("Translation failed:", err));
         }
@@ -301,6 +315,32 @@ export default function WorkerView() {
           </div>
         </div>
       </header>
+
+      {/* Welcome message from the inviter — auto-translated to the worker's
+          language when available, with a toggle to see the original. */}
+      {data.welcomeMessage && (
+        <div className="max-w-lg mx-auto px-4 pt-3">
+          <div className="rounded-md border bg-card p-3 text-sm">
+            <p className="whitespace-pre-wrap leading-relaxed">
+              {welcomeTranslated && !showOriginalGreeting
+                ? welcomeTranslated
+                : data.welcomeMessage}
+            </p>
+            {welcomeTranslated && (
+              <button
+                type="button"
+                onClick={() => setShowOriginalGreeting((v) => !v)}
+                className="mt-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+              >
+                <Languages className="h-3 w-3" />
+                {showOriginalGreeting
+                  ? t("worker.showTranslated", "Visa översatt")
+                  : t("worker.showOriginal", "Visa original")}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Action bar — Be om inköp / Logga inköp */}
       {(data.canCreatePurchases !== false || data.canLogReceipts) && token && (
