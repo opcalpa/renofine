@@ -180,16 +180,16 @@ export function renderCell(col: ColumnDef, row: DisplayRow, ctx: CellContext): R
       }
       if (isMaterialBudgetPost) {
         return (
-          <Badge variant="secondary" className="gap-1 text-blue-700 bg-blue-50 border-blue-200">
-            <ShoppingCart className="h-3 w-3 text-blue-500" />
+          <Badge variant="outline" className="gap-1 text-gray-500">
+            <ShoppingCart className="h-3 w-3 text-gray-400" />
             {t('budget.materialBudget', 'Materialbudget')}
           </Badge>
         );
       }
       if (row.type === "material") {
         return (
-          <Badge variant={row.isChild ? "outline" : "secondary"} className="gap-1">
-            <ShoppingCart className="h-3 w-3 text-blue-500" />
+          <Badge variant="outline" className="gap-1 text-gray-500">
+            <ShoppingCart className="h-3 w-3 text-gray-400" />
             {t('budget.material')}
           </Badge>
         );
@@ -197,8 +197,8 @@ export function renderCell(col: ColumnDef, row: DisplayRow, ctx: CellContext): R
       const isSubcontractor = isBuilder && (row.taskCostType === "subcontractor" || (!row.taskCostType && (row.subcontractorCost ?? 0) > 0));
       const hasOwnLabor = row.taskCostType === "own_labor" || (!row.taskCostType && (row.estimatedHours ?? 0) > 0);
       return (
-        <Badge variant="default" className="gap-1">
-          {isSubcontractor ? <Handshake className="h-3 w-3 text-amber-100" /> : <Hammer className="h-3 w-3" />}
+        <Badge variant="outline" className="gap-1 text-gray-500">
+          {isSubcontractor ? <Handshake className="h-3 w-3 text-gray-400" /> : <Hammer className="h-3 w-3 text-gray-400" />}
           {isSubcontractor && !hasOwnLabor
             ? t('budget.subcontractor', 'UE')
             : t('budget.task')}
