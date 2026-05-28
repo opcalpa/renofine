@@ -46,11 +46,18 @@ interface Checklist {
   items: ChecklistItem[];
 }
 
-interface TaskToTranslate {
+interface TaskRow {
   id: string;
   title: string;
   description: string | null;
   checklists: Checklist[] | null;
+  room_id: string | null;
+}
+
+interface RoomRow {
+  id: string;
+  name: string;
+  description: string | null;
 }
 
 serve(async (req) => {
@@ -68,7 +75,6 @@ serve(async (req) => {
       return jsonResponse({ error: "targetLanguage is required" }, 400, req);
     }
 
-    // Skip translation for English/Swedish source languages
     if (targetLanguage === "en" || targetLanguage === "sv") {
       return jsonResponse({ translated: 0, skipped: "source language" }, 200, req);
     }
@@ -80,43 +86,80 @@ serve(async (req) => {
 
     const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Check which tasks already have translations
-    const { data: existing } = await sb
+    // Identify tasks that still need translation for the target language.
+    const { data: existingTasks } = await sb
       .from("task_translations")
       .select("task_id")
       .in("task_id", taskIds)
       .eq("language", targetLanguage);
 
-    const existingIds = new Set((existing || []).map((e) => e.task_id));
-    const missingIds = taskIds.filter((id: string) => !existingIds.has(id));
+    const cachedTaskIds = new Set((existingTasks || []).map((e) => e.task_id));
+    const missingTaskIds = taskIds.filter((id: string) => !cachedTaskIds.has(id));
 
-    if (missingIds.length === 0) {
-      return jsonResponse({ translated: 0, skipped: "all cached" }, 200, req);
-    }
-
-    // Fetch task data
+    // Always fetch tasks (even cached ones) so we can derive room ids for
+    // the room-translation half. Cached tasks will be filtered out of the
+    // OpenAI payload below.
     const { data: tasks } = await sb
       .from("tasks")
-      .select("id, title, description, checklists")
-      .in("id", missingIds);
+      .select("id, title, description, checklists, room_id")
+      .in("id", taskIds);
 
     if (!tasks || tasks.length === 0) {
       return jsonResponse({ translated: 0, skipped: "no tasks found" }, 200, req);
     }
 
+    const allTasks = tasks as TaskRow[];
+    const tasksToTranslate = allTasks.filter((t) => missingTaskIds.includes(t.id));
+
+    // Derive room ids referenced by the assigned tasks, then check which
+    // already have a translation cached for the target language.
+    const roomIdSet = new Set<string>();
+    for (const t of allTasks) {
+      if (t.room_id) roomIdSet.add(t.room_id);
+    }
+    const roomIds = Array.from(roomIdSet);
+
+    let roomsToTranslate: RoomRow[] = [];
+    if (roomIds.length > 0) {
+      const { data: existingRooms } = await sb
+        .from("room_translations")
+        .select("room_id")
+        .in("room_id", roomIds)
+        .eq("language", targetLanguage);
+      const cachedRoomIds = new Set((existingRooms || []).map((r) => r.room_id));
+      const missingRoomIds = roomIds.filter((id) => !cachedRoomIds.has(id));
+
+      if (missingRoomIds.length > 0) {
+        const { data: rooms } = await sb
+          .from("rooms")
+          .select("id, name, description")
+          .in("id", missingRoomIds);
+        roomsToTranslate = (rooms as RoomRow[]) || [];
+      }
+    }
+
+    if (tasksToTranslate.length === 0 && roomsToTranslate.length === 0) {
+      return jsonResponse({ translated: 0, skipped: "all cached" }, 200, req);
+    }
+
     const targetName = LANGUAGE_NAMES[targetLanguage] || targetLanguage;
 
-    // Build translation prompt
-    const tasksPayload = (tasks as TaskToTranslate[]).map((t) => ({
+    const tasksPayload = tasksToTranslate.map((t) => ({
       id: t.id,
       title: t.title,
       description: t.description || "",
-      checklistItems: (t.checklists as Checklist[] || []).flatMap((cl) =>
+      checklistItems: (t.checklists || []).flatMap((cl) =>
         cl.items.map((item) => ({ checklistId: cl.id, itemId: item.id, title: item.title }))
       ),
     }));
 
-    const prompt = JSON.stringify(tasksPayload, null, 0);
+    const roomsPayload = roomsToTranslate.map((r) => ({
+      id: r.id,
+      name: r.name,
+      description: r.description || "",
+    }));
+
+    const prompt = JSON.stringify({ tasks: tasksPayload, rooms: roomsPayload }, null, 0);
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -130,21 +173,19 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You translate renovation/construction work instructions to ${targetName}.
+            content: `You translate renovation/construction work content to ${targetName}.
 
 Rules:
-- Translate title, description, and checklistItems[].title for each task
-- NEVER translate product names, brand names, color codes (NCS, RAL, Pantone), material codes, or measurements
-- Keep the same JSON structure
-- Return ONLY a JSON array — no markdown, no explanation
+- Translate tasks (title, description, checklistItems[].title) and rooms (name, description).
+- NEVER translate product names, brand names, color codes (NCS, RAL, Pantone), material codes, or measurements.
+- Keep the same JSON structure with two top-level arrays "tasks" and "rooms".
+- Return ONLY a JSON object — no markdown, no explanation.
 
 Input/output format:
-[{
-  "id": "task-uuid",
-  "title": "translated title",
-  "description": "translated description",
-  "checklistItems": [{ "checklistId": "...", "itemId": "...", "title": "translated" }]
-}]`,
+{
+  "tasks": [{ "id": "...", "title": "...", "description": "...", "checklistItems": [{"checklistId":"...","itemId":"...","title":"..."}] }],
+  "rooms": [{ "id": "...", "name": "...", "description": "..." }]
+}`,
           },
           { role: "user", content: prompt },
         ],
@@ -158,41 +199,40 @@ Input/output format:
     }
 
     const data = await response.json();
-    const rawContent = data.choices?.[0]?.message?.content?.trim() || "[]";
-
-    // Strip markdown fences if present
+    const rawContent = data.choices?.[0]?.message?.content?.trim() || "{}";
     const cleaned = rawContent.replace(/^```json?\s*\n?/i, "").replace(/\n?```\s*$/i, "");
 
-    let translated: Array<{
-      id: string;
-      title: string;
-      description: string;
-      checklistItems: Array<{ checklistId: string; itemId: string; title: string }>;
-    }>;
+    let parsed: {
+      tasks?: Array<{
+        id: string;
+        title: string;
+        description: string;
+        checklistItems: Array<{ checklistId: string; itemId: string; title: string }>;
+      }>;
+      rooms?: Array<{ id: string; name: string; description: string }>;
+    };
 
     try {
-      translated = JSON.parse(cleaned);
+      parsed = JSON.parse(cleaned);
     } catch {
       console.error("Failed to parse translation:", cleaned);
       return jsonResponse({ error: "Invalid translation response" }, 502, req);
     }
 
-    // Rebuild checklists with translated item titles
-    const upserts = translated.map((tr) => {
-      const originalTask = (tasks as TaskToTranslate[]).find((t) => t.id === tr.id);
-      const originalChecklists = (originalTask?.checklists as Checklist[]) || [];
+    const now = new Date().toISOString();
 
-      // Map translated items back into checklist structure
+    // Task upserts — rebuild checklists with translated item titles
+    const taskUpserts = (parsed.tasks || []).map((tr) => {
+      const originalTask = tasksToTranslate.find((t) => t.id === tr.id);
+      const originalChecklists = originalTask?.checklists || [];
+
       const translatedChecklists = originalChecklists.map((cl) => ({
         ...cl,
         items: cl.items.map((item) => {
           const translatedItem = tr.checklistItems?.find(
             (ti) => ti.checklistId === cl.id && ti.itemId === item.id
           );
-          return {
-            ...item,
-            title: translatedItem?.title || item.title,
-          };
+          return { ...item, title: translatedItem?.title || item.title };
         }),
       }));
 
@@ -202,23 +242,45 @@ Input/output format:
         title: tr.title,
         description: tr.description || null,
         checklists: translatedChecklists.length > 0 ? translatedChecklists : null,
-        translated_at: new Date().toISOString(),
+        translated_at: now,
       };
     });
 
-    // Upsert translations
-    const { error: upsertError } = await sb
-      .from("task_translations")
-      .upsert(upserts, { onConflict: "task_id,language" });
+    const roomUpserts = (parsed.rooms || []).map((rr) => ({
+      room_id: rr.id,
+      language: targetLanguage,
+      name: rr.name,
+      description: rr.description || null,
+      translated_at: now,
+    }));
 
-    if (upsertError) {
-      console.error("Upsert error:", upsertError);
-      return jsonResponse({ error: "Failed to save translations" }, 500, req);
+    if (taskUpserts.length > 0) {
+      const { error: taskUpsertError } = await sb
+        .from("task_translations")
+        .upsert(taskUpserts, { onConflict: "task_id,language" });
+      if (taskUpsertError) {
+        console.error("Task upsert error:", taskUpsertError);
+        return jsonResponse({ error: "Failed to save task translations" }, 500, req);
+      }
     }
 
-    return jsonResponse({ translated: upserts.length }, 200, req);
+    if (roomUpserts.length > 0) {
+      const { error: roomUpsertError } = await sb
+        .from("room_translations")
+        .upsert(roomUpserts, { onConflict: "room_id,language" });
+      if (roomUpsertError) {
+        console.error("Room upsert error:", roomUpsertError);
+        return jsonResponse({ error: "Failed to save room translations" }, 500, req);
+      }
+    }
+
+    return jsonResponse(
+      { translatedTasks: taskUpserts.length, translatedRooms: roomUpserts.length },
+      200,
+      req,
+    );
   } catch (error) {
     console.error("translate-task-content error:", error);
-    return jsonResponse({ error: error.message }, 500, req);
+    return jsonResponse({ error: (error as Error).message }, 500, req);
   }
 });

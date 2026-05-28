@@ -96,7 +96,7 @@ serve(async (req) => {
     if (roomIds.length > 0) {
       const { data: rooms } = await sb
         .from("rooms")
-        .select("id, name, wall_color, ceiling_color, trim_color, wall_spec, floor_spec, ceiling_spec, joinery_spec, dimensions, ceiling_height_mm")
+        .select("id, name, description, wall_color, ceiling_color, trim_color, wall_spec, floor_spec, ceiling_spec, joinery_spec, dimensions, ceiling_height_mm")
         .in("id", roomIds);
       for (const room of rooms || []) {
         roomsMap[room.id] = room;
@@ -175,6 +175,7 @@ serve(async (req) => {
     // 5e. Fetch translations for worker's language
     const workerLang = tokenRecord.worker_language;
     let translationsMap: Record<string, { title: string; description: string | null; checklists: unknown }> = {};
+    let roomTranslationsMap: Record<string, { name: string; description: string | null }> = {};
     if (workerLang && workerLang !== "en" && workerLang !== "sv") {
       const { data: translations } = await sb
         .from("task_translations")
@@ -183,6 +184,25 @@ serve(async (req) => {
         .eq("language", workerLang);
       for (const tr of translations || []) {
         translationsMap[tr.task_id] = { title: tr.title, description: tr.description, checklists: tr.checklists };
+      }
+
+      if (roomIds.length > 0) {
+        const { data: roomTrs } = await sb
+          .from("room_translations")
+          .select("room_id, name, description")
+          .in("room_id", roomIds)
+          .eq("language", workerLang);
+        for (const rtr of roomTrs || []) {
+          roomTranslationsMap[rtr.room_id] = { name: rtr.name, description: rtr.description };
+        }
+      }
+
+      // Apply room-name translations to floor-plan shapes built earlier so
+      // the minimap labels also render in the worker's language.
+      for (const shape of floorPlanShapes) {
+        if (shape.roomId && roomTranslationsMap[shape.roomId]?.name) {
+          shape.name = roomTranslationsMap[shape.roomId].name;
+        }
       }
     }
 
@@ -365,7 +385,8 @@ serve(async (req) => {
         roomId: task.room_id || null,
         room: room
           ? {
-              name: room.name,
+              name: (task.room_id && roomTranslationsMap[task.room_id]?.name) || room.name,
+              description: (task.room_id && roomTranslationsMap[task.room_id]?.description) || room.description || null,
               wallColor: room.wall_color || null,
               ceilingColor: room.ceiling_color || null,
               trimColor: room.trim_color || null,
