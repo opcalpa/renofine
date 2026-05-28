@@ -90,36 +90,79 @@ export const AppHeader = ({ userName, userEmail, avatarUrl, onSignOut, children,
     // Skip data fetching for guest users
     if (!user || isGuest) return;
 
-    // Fetch projects. RLS exposes the global public demo to every logged-in
-    // user, so it must be excluded here or it shows up under "My Projects"
-    // for everyone (OwnerStart already filters to owned/shared only).
-    supabase
-      .from("projects")
-      .select("id, name, project_type")
-      .is("deleted_at", null)
-      .neq("project_type", PUBLIC_DEMO_PROJECT_TYPE)
-      .order("created_at", { ascending: false })
-      .then(({ data }) => {
-        if (data) setProjects(data);
-      });
+    let cancelled = false;
+    (async () => {
+      // Resolve profile.id so we can scope explicitly. RLS lets system_admins
+      // see every project across the DB, which would turn "Mina Projekt" into
+      // "All projects". Trust the user's scope, not the policy.
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      const profileId = profile?.id;
+      if (!profileId || cancelled) return;
 
-    // Fetch quotes with project names (exclude the public demo's quotes —
-    // RLS exposes them to every logged-in user, same as the demo project).
-    supabase
-      .from("quotes")
-      .select("id, title, project:projects!quotes_project_id_fkey(name)")
-      .neq("project_id", PUBLIC_DEMO_PROJECT_ID)
-      .order("updated_at", { ascending: false })
-      .limit(10)
-      .then(({ data }) => {
-        if (data) {
-          setQuotes(data.map(q => ({
-            id: q.id,
-            title: q.title,
-            project_name: (q.project as { name: string } | null)?.name || null,
-          })));
-        }
-      });
+      // Own projects + shared with me. Exclude the global public demo since
+      // its RLS exposes it to every logged-in user.
+      const [ownRes, sharesRes] = await Promise.all([
+        supabase
+          .from("projects")
+          .select("id, name, project_type, created_at")
+          .eq("owner_id", profileId)
+          .is("deleted_at", null)
+          .neq("project_type", PUBLIC_DEMO_PROJECT_TYPE)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("project_shares")
+          .select("project_id")
+          .eq("shared_with_user_id", profileId),
+      ]);
+
+      let sharedRows: SimpleProject[] = [];
+      const sharedIds = (sharesRes.data || []).map((s) => s.project_id);
+      if (sharedIds.length > 0) {
+        const { data } = await supabase
+          .from("projects")
+          .select("id, name, project_type, created_at")
+          .in("id", sharedIds)
+          .is("deleted_at", null)
+          .neq("project_type", PUBLIC_DEMO_PROJECT_TYPE);
+        sharedRows = (data || []) as SimpleProject[];
+      }
+
+      if (cancelled) return;
+      const merged = [...(ownRes.data || []) as SimpleProject[]];
+      for (const sp of sharedRows) {
+        if (!merged.some((p) => p.id === sp.id)) merged.push(sp);
+      }
+      setProjects(merged);
+
+      // Quotes for the same project scope (own + shared). Limit 10, newest
+      // updated first. Skipping quotes whose project is the public demo too.
+      const projectIds = merged.map((p) => p.id);
+      if (projectIds.length === 0) {
+        setQuotes([]);
+        return;
+      }
+      const { data: quotesData } = await supabase
+        .from("quotes")
+        .select("id, title, project:projects!quotes_project_id_fkey(name)")
+        .in("project_id", projectIds)
+        .neq("project_id", PUBLIC_DEMO_PROJECT_ID)
+        .order("updated_at", { ascending: false })
+        .limit(10);
+      if (cancelled) return;
+      if (quotesData) {
+        setQuotes(quotesData.map((q) => ({
+          id: q.id,
+          title: q.title,
+          project_name: (q.project as { name: string } | null)?.name || null,
+        })));
+      }
+    })();
+
+    return () => { cancelled = true; };
   }, [user, isGuest]);
 
   const handleLanguageChange = async (langCode: string) => {

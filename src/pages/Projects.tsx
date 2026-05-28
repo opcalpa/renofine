@@ -55,7 +55,6 @@ const DashboardRedesign = lazyWithRetry(
 );
 import { CreateProjectDialog } from "@/components/project/CreateProjectDialog";
 import { useProjectsData } from "@/hooks/useProjectsData";
-const OwnerStart = lazyWithRetry(() => import("@/pages/owner/OwnerStart"));
 const ContractorStart = lazyWithRetry(() => import("@/pages/contractor/ContractorStart"));
 import { ResourcePlanningView } from "@/components/project/ResourcePlanningView";
 import { useEnabledModules } from "@/hooks/useEnabledModules";
@@ -360,17 +359,10 @@ const Projects = () => {
     return <PageLoadingSkeleton />;
   }
 
-  // Dispatch: homeowners (non-guest) get their own start page
-  // Admin bypass only applies to route guards, not UI — admins flip role in settings to test
-  if (!isGuest && !isContractor && profile) {
-    return (
-      <Suspense fallback={<PageLoadingSkeleton />}>
-        <OwnerStart />
-      </Suspense>
-    );
-  }
-
-  // Dispatch: contractors with 0 projects get setup start page
+  // Dispatch: contractors with 0 projects get setup start page.
+  // Homeowners share this same body — gated sections (LeadsPipeline,
+  // FinancialAnalysis, ResourcePlanning) already check isContractor/module
+  // visibility, and HomeownerYearlyAnalysis renders for them below.
   if (!isGuest && isContractor && profile && nonDemoProjects.length === 0) {
     return (
       <Suspense fallback={<PageLoadingSkeleton />}>
