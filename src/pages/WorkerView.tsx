@@ -255,14 +255,18 @@ export default function WorkerView() {
       file: File,
     ) => {
       if (!token) return;
-      const isRoomLevel = roomId !== "__none__";
+      // Task-level upload wins over room-level. Task carries side-effects
+      // (status → awaiting_review, auto-comment); room-level is just a
+      // gallery contribution. The __none__ room id never has a real DB row.
+      const useTaskLevel = !!taskId;
+      const useRoomLevel = !useTaskLevel && roomId !== "__none__";
       try {
         const compressed = await compressImage(file);
         await uploadWorkerPhoto({
           token,
           file: compressed,
-          taskId: !isRoomLevel && taskId ? taskId : undefined,
-          roomId: isRoomLevel ? roomId : undefined,
+          taskId: useTaskLevel ? taskId! : undefined,
+          roomId: useRoomLevel ? roomId : undefined,
           category,
         });
         toast.success(t("worker.photoUploaded", "Photo uploaded"));

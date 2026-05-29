@@ -195,6 +195,7 @@ export function groupWorkerTasksByRoom(
       photos?: Array<{ id: string; url: string; caption: string | null; source?: string }>;
       materials?: Array<{ id: string; name: string; quantity: number; unit: string; vendorName: string | null }>;
     } | null;
+    requiresCompletionPhoto?: boolean;
   }>
 ): RoomInstruction[] {
   const map = new Map<string, { room: typeof tasks[0]["room"]; tasks: RoomTask[] }>();
@@ -214,6 +215,7 @@ export function groupWorkerTasksByRoom(
       photos: t.photos,
       instructionImages: t.instructionImages || [],
       messages: (t as unknown as { messages?: RoomTask["messages"] }).messages || [],
+      requiresCompletionPhoto: t.requiresCompletionPhoto,
     });
   }
 

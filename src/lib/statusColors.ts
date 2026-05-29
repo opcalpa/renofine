@@ -11,6 +11,7 @@ const STATUS_COLORS: Record<string, string> = {
   // Task statuses
   to_do:        "bg-amber-100 text-amber-700 border-amber-200",
   in_progress:  "bg-blue-100 text-blue-700 border-blue-200",
+  awaiting_review: "bg-violet-100 text-violet-700 border-violet-200",
   completed:    "bg-emerald-100 text-emerald-700 border-emerald-200",
   done:         "bg-emerald-100 text-emerald-700 border-emerald-200",
   on_hold:      "bg-gray-100 text-gray-500 border-gray-200",
@@ -40,6 +41,7 @@ export function getStatusBadgeColor(status: string): string {
 const STATUS_SOLID: Record<string, string> = {
   to_do:        "bg-amber-500",
   in_progress:  "bg-blue-500",
+  awaiting_review: "bg-violet-500",
   completed:    "bg-emerald-500",
   done:         "bg-emerald-500",
   on_hold:      "bg-gray-400",

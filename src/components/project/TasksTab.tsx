@@ -593,15 +593,16 @@ const TasksTab = ({ projectId, projectName, projectStatus, tasksScope = 'all', t
 
   // Group tasks by status (supporting both old and new status values)
   // Note: 'done' is a legacy status that should be merged into 'completed'
-  const statusOrder = ['planned', 'to_do', 'in_progress', 'waiting', 'completed', 'cancelled'] as const;
+  const statusOrder = ['planned', 'to_do', 'in_progress', 'waiting', 'awaiting_review', 'completed', 'cancelled'] as const;
   const kanbanStatusDotColor = (status: string): string => {
     const map: Record<string, string> = {
-      planned:     "bg-indigo-400",
-      to_do:       "bg-muted-foreground/50",
-      in_progress: "bg-primary",
-      waiting:     "bg-amber-500",
-      completed:   "bg-emerald-500",
-      cancelled:   "bg-red-400",
+      planned:         "bg-indigo-400",
+      to_do:           "bg-muted-foreground/50",
+      in_progress:     "bg-primary",
+      waiting:         "bg-amber-500",
+      awaiting_review: "bg-violet-500",
+      completed:       "bg-emerald-500",
+      cancelled:       "bg-red-400",
     };
     return map[status] || "bg-muted-foreground/30";
   };
@@ -611,6 +612,7 @@ const TasksTab = ({ projectId, projectName, projectStatus, tasksScope = 'all', t
     to_do: t('statuses.toDo'),
     in_progress: t('statuses.inProgress'),
     waiting: t('statuses.waiting', 'Waiting'),
+    awaiting_review: t('statuses.awaitingReview', 'Awaiting review'),
     completed: t('statuses.completed'),
     cancelled: t('statuses.cancelled', 'Cancelled'),
   };

@@ -62,6 +62,7 @@ export interface RoomTask {
   photos: Photo[];
   instructionImages: Array<{ url: string; description: string }>;
   messages: TaskMessage[];
+  requiresCompletionPhoto?: boolean;
 }
 
 export interface RoomMaterial {

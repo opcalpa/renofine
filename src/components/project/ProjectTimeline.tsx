@@ -434,7 +434,7 @@ const ProjectTimeline = ({
     const groupOrder: string[] = [];
 
     // Define group order and colors based on groupBy type
-    const statusOrder = ['in_progress', 'to_do', 'waiting', 'on_hold', 'blocked', 'completed', 'cancelled'];
+    const statusOrder = ['in_progress', 'to_do', 'waiting', 'on_hold', 'blocked', 'awaiting_review', 'completed', 'cancelled'];
     const priorityOrder = ['high', 'medium', 'low'];
 
     visibleTasks.forEach(task => {
@@ -610,6 +610,8 @@ const ProjectTimeline = ({
       case "waiting":
       case "on_hold":
         return "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800";
+      case "awaiting_review":
+        return "bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-900/30 dark:text-violet-400 dark:border-violet-800";
       case "blocked":
         return "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800";
       case "cancelled":

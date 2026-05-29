@@ -37,7 +37,7 @@ export function WizardStep3Worker({
   onRemoveInstructionImage,
 }: Props) {
   const { t } = useTranslation();
-  const { tasks, loading: tasksLoading } = useWorkerTasks(projectId);
+  const { tasks, loading: tasksLoading, setTaskCompletionPhotoRequired } = useWorkerTasks(projectId);
   const selectedCount = workerAccess.taskIds.length;
   const [previewTaskId, setPreviewTaskId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -150,6 +150,24 @@ export function WizardStep3Worker({
                             onClick={(e) => e.stopPropagation()}
                           />
                           <span className="text-sm flex-1">{task.title}</span>
+                          {checked && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setTaskCompletionPhotoRequired(task.id, !task.requiresCompletionPhoto).catch(() => {});
+                              }}
+                              className={cn(
+                                "text-[10px] px-1.5 py-0.5 rounded-md border shrink-0 transition-colors",
+                                task.requiresCompletionPhoto
+                                  ? "bg-violet-100 text-violet-700 border-violet-200 hover:bg-violet-200"
+                                  : "bg-muted text-muted-foreground border-transparent hover:bg-accent",
+                              )}
+                              title={t("inviteWizard.workerStep.requirePhotoTitle", "Require a final photo before this task can be accepted")}
+                            >
+                              📸 {t("inviteWizard.workerStep.requirePhoto", "Require photo")}
+                            </button>
+                          )}
                           {checked && (
                             <CheckSquare className="h-3.5 w-3.5 text-primary shrink-0" />
                           )}

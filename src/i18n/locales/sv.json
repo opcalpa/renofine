@@ -43,7 +43,9 @@
       "canProposeLabel": "Kan föreslå inköp",
       "canProposeDescription": "Skapar förslag som du godkänner innan inköpet görs.",
       "canLogLabel": "Kan logga utförda inköp",
-      "canLogDescription": "Workern registrerar och bifogar kvitto direkt — kringgår godkännande."
+      "canLogDescription": "Workern registrerar och bifogar kvitto direkt — kringgår godkännande.",
+      "requirePhoto": "Kräv foto",
+      "requirePhotoTitle": "Kräv ett slutligt foto innan denna uppgift kan accepteras"
     },
     "memberStep": {
       "title": "Vilken nivå av åtkomst?",
@@ -1709,6 +1711,7 @@
     "waiting": "Väntar",
     "doing": "Utförs",
     "blocked": "Blockerad",
+    "awaitingReview": "Väntar granskning",
     "completed": "Avslutad",
     "done": "Klar",
     "scrapped": "Struken",
@@ -5951,7 +5954,9 @@
     "shareViaWhatsApp": "Dela via WhatsApp",
     "poweredBy": "Drivs av Renofine",
     "showOriginal": "Visa original",
-    "showTranslated": "Visa översatt"
+    "showTranslated": "Visa översatt",
+    "completeTaskWithPhoto": "Markera klart + foto",
+    "photoRequiredHint": "Foto krävs för att markera klart"
   },
   "teamWorker": {
     "workers": "Arbetare",

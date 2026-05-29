@@ -97,6 +97,7 @@ export interface WorkerTask {
   messages: WorkerMessage[];
   roomId: string | null;
   room: WorkerRoom | null;
+  requiresCompletionPhoto?: boolean;
 }
 
 interface FloorPlanShape {
@@ -125,6 +126,7 @@ interface WorkerTaskCardProps {
 const statusKey = (s: string) => {
   const map: Record<string, string> = {
     to_do: "toDo", in_progress: "inProgress", on_hold: "onHold",
+    awaiting_review: "awaitingReview",
   };
   return map[s] || s;
 };

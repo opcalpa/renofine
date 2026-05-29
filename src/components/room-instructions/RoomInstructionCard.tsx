@@ -31,6 +31,7 @@ interface RoomInstructionCardProps {
 const statusKey = (s: string) => {
   const map: Record<string, string> = {
     to_do: "toDo", in_progress: "inProgress", on_hold: "onHold",
+    awaiting_review: "awaitingReview",
   };
   return map[s] || s;
 };
@@ -124,10 +125,13 @@ export function RoomInstructionCard({
           <TaskSection
             key={task.id}
             task={task}
+            roomId={room.id}
             expanded={expandedTasks.has(task.id)}
             onToggle={() => toggleTask(task.id)}
             canToggleChecklist={canToggleChecklist}
+            canUploadPhotos={canUploadPhotos}
             onChecklistToggle={onChecklistToggle}
+            onPhotoUpload={onPhotoUpload}
           />
         ))}
       </div>
@@ -216,20 +220,40 @@ function PhotoStrip({ label, icon, photos }: { label: string; icon: React.ReactN
 
 function TaskSection({
   task,
+  roomId,
   expanded,
   onToggle,
   canToggleChecklist,
+  canUploadPhotos,
   onChecklistToggle,
+  onPhotoUpload,
 }: {
   task: RoomTask;
+  roomId: string;
   expanded: boolean;
   onToggle: () => void;
   canToggleChecklist: boolean;
+  canUploadPhotos: boolean;
   onChecklistToggle?: (taskId: string, checklistId: string, itemId: string, completed: boolean) => void;
+  onPhotoUpload?: (taskId: string | null, roomId: string, category: "progress" | "completed", file: File) => void;
 }) {
   const { t } = useTranslation();
+  const [taskUploading, setTaskUploading] = useState(false);
   const totalItems = task.checklists.reduce((sum, cl) => sum + cl.items.length, 0);
   const completedItems = task.checklists.reduce((sum, cl) => sum + cl.items.filter((i) => i.completed).length, 0);
+  const isAwaitingOrCompleted = task.status === "awaiting_review" || task.status === "completed";
+
+  const handleCompletionUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !onPhotoUpload) return;
+    setTaskUploading(true);
+    try {
+      await onPhotoUpload(task.id, roomId, "completed", file);
+    } finally {
+      setTaskUploading(false);
+      e.target.value = "";
+    }
+  };
 
   return (
     <div className="rounded-lg border overflow-hidden">
@@ -240,6 +264,11 @@ function TaskSection({
       >
         <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform flex-shrink-0", !expanded && "-rotate-90")} />
         <span className="text-sm font-medium flex-1 truncate">{task.title}</span>
+        {task.requiresCompletionPhoto && !isAwaitingOrCompleted && (
+          <span className="text-[10px] text-muted-foreground flex items-center gap-0.5" aria-label={t("worker.photoRequiredHint", "Photo required to finish")}>
+            <Camera className="h-3 w-3" />
+          </span>
+        )}
         <Badge className={cn("text-[10px] px-1.5", getStatusBadgeColor(task.status))}>
           {t(`statuses.${statusKey(task.status)}`, task.status)}
         </Badge>
@@ -311,6 +340,25 @@ function TaskSection({
                 />
               ))}
             </div>
+          )}
+
+          {canUploadPhotos && onPhotoUpload && !isAwaitingOrCompleted && (
+            <label className="flex items-center justify-center gap-2 h-11 rounded-lg border-2 border-dashed border-violet-300 bg-violet-50/40 text-xs font-medium text-violet-700 hover:border-violet-500 hover:bg-violet-50 transition-colors cursor-pointer">
+              {taskUploading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <CheckCircle2 className="h-4 w-4" />
+              )}
+              {t("worker.completeTaskWithPhoto", "Mark complete + photo")}
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={handleCompletionUpload}
+                disabled={taskUploading}
+              />
+            </label>
           )}
         </div>
       )}

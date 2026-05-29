@@ -87,7 +87,7 @@ serve(async (req) => {
 
     const { data: tasks } = await sb
       .from("tasks")
-      .select("id, title, description, status, progress, checklists, room_id")
+      .select("id, title, description, status, progress, checklists, room_id, requires_completion_photo")
       .in("id", taskIds);
 
     // 5. Fetch rooms for those tasks
@@ -383,6 +383,7 @@ serve(async (req) => {
         instructionImages: instructionImagesByTask[task.id] || [],
         messages: messagesByTask[task.id] || [],
         roomId: task.room_id || null,
+        requiresCompletionPhoto: !!task.requires_completion_photo,
         room: room
           ? {
               name: (task.room_id && roomTranslationsMap[task.room_id]?.name) || room.name,

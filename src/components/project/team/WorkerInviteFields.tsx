@@ -56,6 +56,7 @@ export interface TaskOption {
   roomIds: string[];
   roomName: string | null;
   checklists: Checklist[];
+  requiresCompletionPhoto: boolean;
 }
 
 export interface TaskOverride {
@@ -94,7 +95,7 @@ export function useWorkerTasks(projectId: string) {
       try {
         const { data: taskRows } = await supabase
           .from("tasks")
-          .select("id, title, description, room_id, room_ids, checklists")
+          .select("id, title, description, room_id, room_ids, checklists, requires_completion_photo")
           .eq("project_id", projectId)
           .order("created_at", { ascending: true });
 
@@ -121,6 +122,7 @@ export function useWorkerTasks(projectId: string) {
             roomIds: (t.room_ids && (t.room_ids as string[]).length > 0) ? t.room_ids as string[] : t.room_id ? [t.room_id] : [],
             roomName: t.room_id ? roomMap[t.room_id] || null : null,
             checklists: Array.isArray(t.checklists) ? (t.checklists as Checklist[]) : [],
+            requiresCompletionPhoto: !!(t as { requires_completion_photo?: boolean }).requires_completion_photo,
           }))
         );
       } finally {
@@ -132,7 +134,19 @@ export function useWorkerTasks(projectId: string) {
     return () => { cancelled = true; };
   }, [projectId]);
 
-  return { tasks, loading };
+  const setTaskCompletionPhotoRequired = async (taskId: string, required: boolean) => {
+    setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, requiresCompletionPhoto: required } : t)));
+    const { error } = await supabase
+      .from("tasks")
+      .update({ requires_completion_photo: required })
+      .eq("id", taskId);
+    if (error) {
+      setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, requiresCompletionPhoto: !required } : t)));
+      throw error;
+    }
+  };
+
+  return { tasks, loading, setTaskCompletionPhotoRequired };
 }
 
 // ---------------------------------------------------------------------------

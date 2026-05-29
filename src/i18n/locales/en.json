@@ -43,7 +43,9 @@
       "canProposeLabel": "Can propose purchases",
       "canProposeDescription": "Creates proposals that you approve before the purchase is made.",
       "canLogLabel": "Can log completed purchases",
-      "canLogDescription": "Worker records and attaches receipt directly — bypasses approval."
+      "canLogDescription": "Worker records and attaches receipt directly — bypasses approval.",
+      "requirePhoto": "Require photo",
+      "requirePhotoTitle": "Require a final photo before this task can be accepted"
     },
     "memberStep": {
       "title": "Which level of access?",
@@ -2264,6 +2266,7 @@
     "waiting": "Waiting",
     "doing": "Doing",
     "blocked": "Blocked",
+    "awaitingReview": "Awaiting review",
     "completed": "Completed",
     "done": "Done",
     "scrapped": "Scrapped",
@@ -5952,7 +5955,9 @@
     "shareViaWhatsApp": "Share via WhatsApp",
     "poweredBy": "Powered by Renofine",
     "showOriginal": "Show original",
-    "showTranslated": "Show translation"
+    "showTranslated": "Show translation",
+    "completeTaskWithPhoto": "Mark complete + photo",
+    "photoRequiredHint": "Photo required to finish"
   },
   "teamWorker": {
     "workers": "Workers",

@@ -1253,6 +1253,7 @@ export const TaskEditDialog = ({
                             <SelectItem value="to_do">{t("statuses.toDo")}</SelectItem>
                             <SelectItem value="in_progress">{t("statuses.inProgress")}{isBlocked && " ⚠️"}</SelectItem>
                             <SelectItem value="waiting">{t("statuses.waiting")}</SelectItem>
+                            <SelectItem value="awaiting_review">{t("statuses.awaitingReview", "Awaiting review")}</SelectItem>
                             <SelectItem value="completed">{t("statuses.completed")}{isBlocked && " ⚠️"}</SelectItem>
                             <SelectItem value="cancelled">{t("statuses.cancelled")}</SelectItem>
                           </SelectContent>

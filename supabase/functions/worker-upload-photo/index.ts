@@ -28,6 +28,16 @@ function jsonResponse(data: unknown, status: number, req: Request) {
   });
 }
 
+// Statuses that may be transitioned to 'awaiting_review' when the worker
+// submits a completion photo. Leaves 'completed', 'awaiting_review',
+// 'cancelled' alone so we don't undo PM decisions.
+const TRANSITIONABLE_STATUSES = new Set([
+  "planned",
+  "to_do",
+  "waiting",
+  "in_progress",
+]);
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: getCorsHeaders(req) });
@@ -53,7 +63,6 @@ serve(async (req) => {
 
     const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Validate token
     const { data: tokenRecord } = await sb
       .from("worker_access_tokens")
       .select("project_id, assigned_task_ids, can_upload_photos, created_by_user_id, worker_name")
@@ -72,9 +81,6 @@ serve(async (req) => {
 
     const assignedIds: string[] = tokenRecord.assigned_task_ids || [];
 
-    // Authorize: either the task is assigned, or the room hosts at least one
-    // assigned task. This keeps the worker's reach scoped to what they were
-    // explicitly given access to, even when uploading at room level.
     let linkedToType: "task" | "room";
     let linkedToId: string;
 
@@ -98,7 +104,6 @@ serve(async (req) => {
       linkedToId = roomId;
     }
 
-    // Upload to storage
     const ext = file.name?.split(".").pop() || "jpg";
     const uniqueName = `${crypto.randomUUID()}.${ext}`;
     const storagePath = `projects/${tokenRecord.project_id}/attachments/${linkedToType}/${uniqueName}`;
@@ -116,14 +121,10 @@ serve(async (req) => {
       return jsonResponse({ error: "Failed to upload file" }, 500, req);
     }
 
-    // Get public URL
     const { data: urlData } = sb.storage
       .from("project-files")
       .getPublicUrl(storagePath);
 
-    // Map category → source. Existing room-photo categorization reads
-    // `worker_progress` / `worker_completed`; legacy task uploads stay on
-    // `worker` so list-view photo grids keep working unchanged.
     const source = category ? `worker_${category}` : "worker";
 
     const { data: photo, error: insertError } = await sb
@@ -143,6 +144,35 @@ serve(async (req) => {
     if (insertError) {
       console.error("Photo insert error:", insertError);
       return jsonResponse({ error: "Failed to save photo record" }, 500, req);
+    }
+
+    // Side-effect: a task-level "completed" upload is the worker's
+    // hand-off signal. Move the task into awaiting_review (unless the
+    // PM already moved it past it) and post the photo into the task's
+    // comment feed so the PM gets the normal in-app notification.
+    if (linkedToType === "task" && category === "completed") {
+      const { data: taskRow } = await sb
+        .from("tasks")
+        .select("status")
+        .eq("id", taskId)
+        .single();
+
+      if (taskRow && TRANSITIONABLE_STATUSES.has(taskRow.status)) {
+        await sb
+          .from("tasks")
+          .update({ status: "awaiting_review", updated_at: new Date().toISOString() })
+          .eq("id", taskId);
+      }
+
+      const workerLabel = `${tokenRecord.worker_name} (worker)`;
+      await sb.from("comments").insert({
+        entity_type: "task",
+        entity_id: taskId,
+        content: "📸 Worker submitted a completion photo for review.",
+        author_display_name: workerLabel,
+        created_by_user_id: tokenRecord.created_by_user_id,
+        images: [{ id: photo.id, url: photo.url, caption: photo.caption }],
+      });
     }
 
     return jsonResponse({ success: true, photo }, 200, req);

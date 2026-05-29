@@ -34,6 +34,7 @@ const statusKey = (s: string) => {
     to_do: "toDo",
     in_progress: "inProgress",
     on_hold: "onHold",
+    awaiting_review: "awaitingReview",
     new_construction: "newConstruction",
     to_be_renovated: "toBeRenovated",
     not_paid: "notPaid",
