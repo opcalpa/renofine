@@ -36,11 +36,19 @@ serve(async (req) => {
   try {
     const formData = await req.formData();
     const token = formData.get("token") as string;
-    const taskId = formData.get("taskId") as string;
+    const taskId = (formData.get("taskId") as string) || "";
+    const roomId = (formData.get("roomId") as string) || "";
+    const category = (formData.get("category") as string) || "";
     const file = formData.get("file") as File;
 
-    if (!token || !taskId || !file) {
-      return jsonResponse({ error: "token, taskId, and file are required" }, 400, req);
+    if (!token || !file) {
+      return jsonResponse({ error: "token and file are required" }, 400, req);
+    }
+    if (!taskId && !roomId) {
+      return jsonResponse({ error: "taskId or roomId is required" }, 400, req);
+    }
+    if (category && category !== "progress" && category !== "completed") {
+      return jsonResponse({ error: "category must be 'progress' or 'completed'" }, 400, req);
     }
 
     const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -63,14 +71,37 @@ serve(async (req) => {
     }
 
     const assignedIds: string[] = tokenRecord.assigned_task_ids || [];
-    if (!assignedIds.includes(taskId)) {
-      return jsonResponse({ error: "Task not assigned" }, 403, req);
+
+    // Authorize: either the task is assigned, or the room hosts at least one
+    // assigned task. This keeps the worker's reach scoped to what they were
+    // explicitly given access to, even when uploading at room level.
+    let linkedToType: "task" | "room";
+    let linkedToId: string;
+
+    if (taskId) {
+      if (!assignedIds.includes(taskId)) {
+        return jsonResponse({ error: "Task not assigned" }, 403, req);
+      }
+      linkedToType = "task";
+      linkedToId = taskId;
+    } else {
+      const { data: roomTasks } = await sb
+        .from("tasks")
+        .select("id")
+        .eq("project_id", tokenRecord.project_id)
+        .eq("room_id", roomId)
+        .in("id", assignedIds);
+      if (!roomTasks || roomTasks.length === 0) {
+        return jsonResponse({ error: "Room not accessible" }, 403, req);
+      }
+      linkedToType = "room";
+      linkedToId = roomId;
     }
 
     // Upload to storage
     const ext = file.name?.split(".").pop() || "jpg";
     const uniqueName = `${crypto.randomUUID()}.${ext}`;
-    const storagePath = `projects/${tokenRecord.project_id}/attachments/task/${uniqueName}`;
+    const storagePath = `projects/${tokenRecord.project_id}/attachments/${linkedToType}/${uniqueName}`;
 
     const arrayBuffer = await file.arrayBuffer();
     const { error: uploadError } = await sb.storage
@@ -90,16 +121,20 @@ serve(async (req) => {
       .from("project-files")
       .getPublicUrl(storagePath);
 
-    // Insert photo record (photos table has no project_id column)
+    // Map category → source. Existing room-photo categorization reads
+    // `worker_progress` / `worker_completed`; legacy task uploads stay on
+    // `worker` so list-view photo grids keep working unchanged.
+    const source = category ? `worker_${category}` : "worker";
+
     const { data: photo, error: insertError } = await sb
       .from("photos")
       .insert({
         url: urlData.publicUrl,
-        linked_to_type: "task",
-        linked_to_id: taskId,
+        linked_to_type: linkedToType,
+        linked_to_id: linkedToId,
         uploaded_by_user_id: tokenRecord.created_by_user_id,
         caption: `${tokenRecord.worker_name}`,
-        source: "worker",
+        source,
         mime_type: file.type || "image/jpeg",
       })
       .select("id, url, caption")

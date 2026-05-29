@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Loader2, AlertCircle, Wrench, Layers, List, Languages } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { WorkerTaskCard, type WorkerTask } from "@/components/worker/WorkerTaskCard";
 import { SwipeableRoomInstructions, groupWorkerTasksByRoom } from "@/components/room-instructions";
 import { WorkerPurchaseRequestDialog } from "@/components/worker/WorkerPurchaseRequestDialog";
@@ -10,6 +11,11 @@ import {
   WorkerLanguageSelector,
   workerLangOverrideKey,
 } from "@/components/worker/WorkerLanguageSelector";
+import {
+  compressImage,
+  uploadWorkerPhoto,
+  type WorkerPhotoCategory,
+} from "@/components/worker/uploadWorkerPhoto";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -241,6 +247,34 @@ export default function WorkerView() {
     []
   );
 
+  const handleRoomPhotoUpload = useCallback(
+    async (
+      taskId: string | null,
+      roomId: string,
+      category: WorkerPhotoCategory,
+      file: File,
+    ) => {
+      if (!token) return;
+      const isRoomLevel = roomId !== "__none__";
+      try {
+        const compressed = await compressImage(file);
+        await uploadWorkerPhoto({
+          token,
+          file: compressed,
+          taskId: !isRoomLevel && taskId ? taskId : undefined,
+          roomId: isRoomLevel ? roomId : undefined,
+          category,
+        });
+        toast.success(t("worker.photoUploaded", "Photo uploaded"));
+        await loadWorkerData();
+      } catch (err) {
+        console.error("Room photo upload failed:", err);
+        toast.error(t("common.error", "Upload failed"));
+      }
+    },
+    [token, t],
+  );
+
   // -------------------------------------------------------------------------
   // Loading
   // -------------------------------------------------------------------------
@@ -370,6 +404,7 @@ export default function WorkerView() {
             rooms={roomInstructions}
             canToggleChecklist={data.canToggleChecklist}
             canUploadPhotos={data.canUploadPhotos}
+            onPhotoUpload={handleRoomPhotoUpload}
           />
         </main>
       ) : (

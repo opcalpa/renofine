@@ -13,19 +13,7 @@ import { MapPin, Ruler, Camera, Loader2, CheckSquare, ImageIcon, MessageCircle }
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-/** Call edge function with FormData (supabase.functions.invoke doesn't handle FormData) */
-async function invokeWithFormData(fnName: string, formData: FormData) {
-  const res = await fetch(`${SUPABASE_URL}/functions/v1/${fnName}`, {
-    method: "POST",
-    body: formData,
-    headers: { Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
-  });
-  if (!res.ok) throw new Error(`${fnName}: ${res.status}`);
-  return res.json();
-}
+import { compressImage, uploadWorkerPhoto } from "./uploadWorkerPhoto";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -141,30 +129,6 @@ const statusKey = (s: string) => {
   return map[s] || s;
 };
 
-async function compressImage(file: File, maxSize = 1200, quality = 0.8): Promise<Blob> {
-  return new Promise((resolve) => {
-    const objectUrl = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      URL.revokeObjectURL(objectUrl);
-      const canvas = document.createElement("canvas");
-      let { width, height } = img;
-      if (width > maxSize || height > maxSize) {
-        const ratio = Math.min(maxSize / width, maxSize / height);
-        width = Math.round(width * ratio);
-        height = Math.round(height * ratio);
-      }
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext("2d")!;
-      ctx.drawImage(img, 0, 0, width, height);
-      canvas.toBlob((blob) => resolve(blob || file), "image/jpeg", quality);
-    };
-    img.onerror = () => URL.revokeObjectURL(objectUrl);
-    img.src = objectUrl;
-  });
-}
-
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -242,20 +206,17 @@ export function WorkerTaskCard({
     setUploading(true);
     try {
       const compressed = await compressImage(file);
-      const formData = new FormData();
-      formData.append("token", token);
-      formData.append("taskId", task.id);
-      formData.append("file", compressed, `worker-${Date.now()}.jpg`);
-
-      const data = await invokeWithFormData("worker-upload-photo", formData);
+      const data = await uploadWorkerPhoto({
+        token,
+        file: compressed,
+        taskId: task.id,
+      });
 
       if (data?.photo) {
         onTaskUpdate(task.id, {
           photos: [...task.photos, data.photo],
         });
         toast.success(t("worker.photoUploaded", "Photo uploaded"));
-      } else if (data?.error) {
-        toast.error(data.error);
       }
     } catch (err) {
       console.error("Upload failed:", err);
