@@ -830,7 +830,6 @@ export function HomeownerPlanningView({
             </div>
           </div>
         </div>
-        {tasksWithRoomNames.length > 0 && (
             <div className="rounded-lg border bg-card overflow-auto max-h-[calc(100vh-20rem)] mb-3">
               <table className="w-full text-sm">
                 <thead className="sticky top-0 z-20">
@@ -1124,10 +1123,60 @@ export function HomeownerPlanningView({
                       </tr>
                     );
                   })}
+                  {/* Add row — looks like the next empty row in the table */}
+                  <tr className="border-b last:border-b-0 hover:bg-muted/30 transition-colors">
+                    {isAdding ? (
+                      <td
+                        colSpan={1 + (show.description ? 1 : 0) + (show.room ? 1 : 0) + (show.area ? 1 : 0) + (show.quote ? 1 : 0) + (show.budget ? 1 : 0) + (show.materialEstimate ? 1 : 0) + (show.rotAmount ? 1 : 0) + 1}
+                        className="px-3 py-2.5"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Input
+                            autoFocus
+                            placeholder={t("homeownerPlanning.taskPlaceholder", "e.g. Paint living room, new flooring in kitchen...")}
+                            value={newTitle}
+                            onChange={(e) => setNewTitle(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") addTask();
+                              if (e.key === "Escape") { setIsAdding(false); setNewTitle(""); }
+                            }}
+                            className="flex-1 h-7 text-sm"
+                            disabled={addingLoading}
+                          />
+                          <Button size="sm" onClick={addTask} disabled={addingLoading || !newTitle.trim()}>
+                            {t("common.add", "Add")}
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => { setIsAdding(false); setNewTitle(""); }}>
+                            {t("common.cancel", "Cancel")}
+                          </Button>
+                        </div>
+                      </td>
+                    ) : (
+                      <>
+                        <td className="px-3 py-2.5">
+                          <button
+                            type="button"
+                            onClick={() => setIsAdding(true)}
+                            className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground text-sm transition-colors"
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                            {t("homeownerPlanning.addTask", "Add task")}
+                          </button>
+                        </td>
+                        {show.description && <td />}
+                        {show.room && <td />}
+                        {show.area && <td className="hidden sm:table-cell" />}
+                        {show.quote && <td />}
+                        {show.budget && <td />}
+                        {show.materialEstimate && <td />}
+                        {show.rotAmount && <td />}
+                        <td />
+                      </>
+                    )}
+                  </tr>
                 </tbody>
               </table>
             </div>
-          )}
 
           {/* Column context menu */}
           {headerMenu && (
@@ -1158,50 +1207,19 @@ export function HomeownerPlanningView({
             </>
           )}
 
-          {/* Add task */}
-          {isAdding ? (
-            <div className="flex items-center gap-2">
-              <Input
-                autoFocus
-                placeholder={t("homeownerPlanning.taskPlaceholder", "e.g. Paint living room, new flooring in kitchen...")}
-                value={newTitle}
-                onChange={(e) => setNewTitle(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") addTask();
-                  if (e.key === "Escape") { setIsAdding(false); setNewTitle(""); }
-                }}
-                className="flex-1"
-                disabled={addingLoading}
-              />
-              <Button size="sm" onClick={addTask} disabled={addingLoading || !newTitle.trim()}>
-                {t("common.add", "Add")}
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => { setIsAdding(false); setNewTitle(""); }}>
-                {t("common.cancel", "Cancel")}
-              </Button>
-            </div>
-          ) : (
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1.5"
-                onClick={() => setSmartImportOpen(true)}
-              >
-                <Sparkles className="h-3.5 w-3.5" />
-                {t("homeownerPlanning.smartImport", "Smart import")}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1.5"
-                onClick={() => setIsAdding(true)}
-              >
-                <Plus className="h-3.5 w-3.5" />
-                {t("homeownerPlanning.addTask", "Add task")}
-              </Button>
-            </div>
-          )}
+          {/* Smart import — moved out of "Add task" peer group; lives alone now that
+              Add task is an inline row inside the table. */}
+          <div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => setSmartImportOpen(true)}
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              {t("homeownerPlanning.smartImport", "Smart import")}
+            </Button>
+          </div>
 
       {/* Rooms: reuse builder component */}
       <PlanningRoomList
