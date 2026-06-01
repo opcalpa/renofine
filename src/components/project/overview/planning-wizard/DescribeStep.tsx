@@ -1,15 +1,13 @@
 import { useTranslation } from "react-i18next";
-import { Sparkles, Loader2, Mic, MicOff } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Mic, MicOff } from "lucide-react";
 import { useState, useRef, useCallback } from "react";
 import type { PlanningStepProps } from "./types";
 
 interface DescribeStepProps extends PlanningStepProps {
-  onAnalyze: () => void;
   analyzing: boolean;
 }
 
-export function DescribeStep({ formData, updateFormData, onAnalyze, analyzing }: DescribeStepProps) {
+export function DescribeStep({ formData, updateFormData, analyzing }: DescribeStepProps) {
   const { t } = useTranslation();
   const [listening, setListening] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
@@ -85,56 +83,6 @@ export function DescribeStep({ formData, updateFormData, onAnalyze, analyzing }:
         )}
       </div>
 
-      {/* Total area */}
-      <div className="flex items-center gap-3 rounded-lg border bg-muted/30 px-4 py-3">
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium">{t("planningWizard.totalArea", "How big is the property?")}</p>
-          <p className="text-xs text-muted-foreground">{t("planningWizard.totalAreaHint", "Total living area — usually stated in your purchase contract")}</p>
-        </div>
-        <div className="flex items-center gap-1.5 shrink-0">
-          <input
-            type="number"
-            className="w-20 h-8 px-2 text-sm text-right rounded-md border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 tabular-nums"
-            placeholder="—"
-            value={formData.totalAreaSqm ?? ""}
-            onChange={(e) => updateFormData({ totalAreaSqm: e.target.value ? parseFloat(e.target.value) : undefined })}
-            step="1"
-            min="0"
-          />
-          <span className="text-sm text-muted-foreground">m²</span>
-        </div>
-      </div>
-
-      {formData.description.length > 10 && (
-        <Button
-          variant="outline"
-          className="gap-2"
-          onClick={onAnalyze}
-          disabled={analyzing}
-        >
-          {analyzing ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Sparkles className="h-4 w-4" />
-          )}
-          {analyzing
-            ? t("planningWizard.analyzing", "Analyzing...")
-            : t("planningWizard.analyzeButton", "Analyze with AI")}
-        </Button>
-      )}
-
-      {formData.aiParsed && (
-        <div className="rounded-lg border bg-primary/5 p-3 text-sm text-muted-foreground">
-          <p className="font-medium text-foreground mb-1">
-            {t("planningWizard.aiFoundTitle", "AI found:")}
-          </p>
-          <p>
-            {formData.aiParsed.rooms.length} {t("planningWizard.rooms", "rooms")},{" "}
-            {formData.aiParsed.globalWorkTypes.length + formData.aiParsed.rooms.reduce((s, r) => s + r.suggestedWorkTypes.length, 0)}{" "}
-            {t("planningWizard.workTypes", "work types")}
-          </p>
-        </div>
-      )}
     </div>
   );
 }

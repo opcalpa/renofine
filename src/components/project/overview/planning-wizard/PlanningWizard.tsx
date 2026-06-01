@@ -204,7 +204,6 @@ export function PlanningWizard({ projectId, onComplete, onSkip }: PlanningWizard
             <DescribeStep
               formData={formData}
               updateFormData={updateFormData}
-              onAnalyze={handleAnalyze}
               analyzing={analyzing}
             />
           )}
@@ -228,7 +227,39 @@ export function PlanningWizard({ projectId, onComplete, onSkip }: PlanningWizard
             )}
           </div>
           <div>
-            {step < TOTAL_STEPS ? (
+            {step === 1 ? (
+              <Button
+                size="sm"
+                onClick={async () => {
+                  // Drive every step-1 user through AI on first pass.
+                  // Continue to step 2 even if analysis fails — manual fallback.
+                  if (!formData.aiParsed) {
+                    await handleAnalyze();
+                  }
+                  setStep(2);
+                }}
+                disabled={!canProceed() || analyzing}
+                className="gap-1.5"
+              >
+                {analyzing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    {t("planningWizard.analyzing", "Analyzing...")}
+                  </>
+                ) : formData.aiParsed ? (
+                  <>
+                    {t("common.next", "Next")}
+                    <ChevronRight className="h-4 w-4" />
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4" />
+                    {t("planningWizard.analyzeAndContinue", "Analysera & fortsätt")}
+                    <ChevronRight className="h-4 w-4" />
+                  </>
+                )}
+              </Button>
+            ) : step < TOTAL_STEPS ? (
               <Button size="sm" onClick={() => setStep((s) => s + 1)} disabled={!canProceed()} className="gap-1">
                 {t("common.next", "Next")}
                 <ChevronRight className="h-4 w-4" />

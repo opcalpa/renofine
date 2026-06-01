@@ -6121,6 +6121,7 @@
     "step1Desc": "Tell us in your own words what you want to do. Think big picture — details come later.",
     "step1Placeholder": "e.g. We're renovating the bathroom and kitchen. New tiles in the bathroom, new cabinet fronts in the kitchen and repainting the whole apartment...",
     "analyzeButton": "Analyze with AI",
+    "analyzeAndContinue": "Analyze & continue",
     "analyzing": "Analyzing...",
     "analyzeFailed": "Could not analyze. You can continue manually.",
     "rateLimited": "Too many attempts in a short time. Wait a moment or continue manually.",

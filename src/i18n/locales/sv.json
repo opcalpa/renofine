@@ -6120,6 +6120,7 @@
     "step1Desc": "Beskriv med egna ord vad du vill göra. Tänk stora drag — detaljer kommer sen.",
     "step1Placeholder": "t.ex. Vi ska renovera badrum och kök. Nytt kakel i badrummet, nya luckor i köket och måla om i hela lägenheten...",
     "analyzeButton": "Analysera med AI",
+    "analyzeAndContinue": "Analysera & fortsätt",
     "analyzing": "Analyserar...",
     "analyzeFailed": "Kunde inte analysera. Du kan fortsätta manuellt.",
     "rateLimited": "För många försök på kort tid. Vänta en stund eller fyll i manuellt.",
