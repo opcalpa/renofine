@@ -14,20 +14,19 @@ export function RoomsStep({ formData, updateFormData }: PlanningStepProps) {
   const [editingName, setEditingName] = useState("");
   const suggestions = getRoomSuggestions();
 
-  const isSelected = (nameKey: string) => formData.rooms.some((r) => r.nameKey === nameKey);
+  const countByNameKey = (nameKey: string) =>
+    formData.rooms.filter((r) => r.nameKey === nameKey).length;
 
-  const toggleRoom = (nameKey: string) => {
-    if (isSelected(nameKey)) {
-      updateFormData({ rooms: formData.rooms.filter((r) => r.nameKey !== nameKey) });
-    } else {
-      const room: PlanningWizardRoom = {
-        id: crypto.randomUUID(),
-        name: t(`intake.room.${nameKey}`, nameKey),
-        nameKey,
-        aiSuggested: false,
-      };
-      updateFormData({ rooms: [...formData.rooms, room] });
-    }
+  const addRoomOfType = (nameKey: string) => {
+    const baseName = t(`intake.room.${nameKey}`, nameKey);
+    const count = countByNameKey(nameKey);
+    const room: PlanningWizardRoom = {
+      id: crypto.randomUUID(),
+      name: count === 0 ? baseName : `${baseName} #${count + 1}`,
+      nameKey,
+      aiSuggested: false,
+    };
+    updateFormData({ rooms: [...formData.rooms, room] });
   };
 
   const addCustomRoom = () => {
@@ -61,10 +60,11 @@ export function RoomsStep({ formData, updateFormData }: PlanningStepProps) {
         </p>
       </div>
 
-      {/* Room suggestions grid */}
+      {/* Room suggestions grid — click ALWAYS adds; multiples get "Name #N" auto-suffix */}
       <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
         {suggestions.map((s) => {
-          const selected = isSelected(s.nameKey);
+          const count = countByNameKey(s.nameKey);
+          const selected = count > 0;
           const aiSuggested = formData.rooms.find((r) => r.nameKey === s.nameKey)?.aiSuggested;
           return (
             <button
@@ -76,12 +76,17 @@ export function RoomsStep({ formData, updateFormData }: PlanningStepProps) {
                   ? "border-primary bg-primary/5 ring-1 ring-primary/20"
                   : "border-muted hover:bg-muted/50"
               )}
-              onClick={() => toggleRoom(s.nameKey)}
+              onClick={() => addRoomOfType(s.nameKey)}
             >
               <span className="text-xl">{s.icon}</span>
               <span className="text-xs font-medium truncate w-full text-center">
                 {t(`intake.room.${s.nameKey}`, s.nameKey)}
               </span>
+              {count >= 2 && (
+                <span className="absolute top-1 left-1 h-5 min-w-5 px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center tabular-nums">
+                  {count}
+                </span>
+              )}
               {aiSuggested && (
                 <Sparkles className="absolute top-1 right-1 h-3 w-3 text-primary" />
               )}
