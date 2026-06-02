@@ -200,6 +200,15 @@ export function HomeownerPlanningView({
   const [groupByCategory, setGroupByCategory] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
+  // First-visit onboarding tip — dismissible, localStorage-persisted globally
+  const [postWizardTipDismissed, setPostWizardTipDismissed] = useState(() => {
+    try { return localStorage.getItem("planning-postwizard-tip-dismissed") === "1"; } catch { return false; }
+  });
+  const dismissPostWizardTip = useCallback(() => {
+    setPostWizardTipDismissed(true);
+    try { localStorage.setItem("planning-postwizard-tip-dismissed", "1"); } catch { /* ignore */ }
+  }, []);
+
   // Persist column prefs (localStorage + server sync)
   useEffect(() => {
     const key = PREFS_KEY(projectId);
@@ -769,6 +778,32 @@ export function HomeownerPlanningView({
           </div>
         )}
       </div>
+      )}
+
+      {/* First-visit onboarding tip — shown when there are tasks (i.e. came from wizard) */}
+      {!locked && !contributorMode && totalTasks > 0 && !postWizardTipDismissed && (
+        <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 flex items-start gap-3">
+          <Sparkles className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-foreground">
+              {t("homeownerPlanning.postWizardTipTitle", "Din plan är skapad — så här jobbar du vidare")}
+            </p>
+            <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+              {t(
+                "homeownerPlanning.postWizardTipBody",
+                "Klicka på en rad för att lägga till beskrivning, kostnad och rumsdetaljer. Om en arbetstyp ser olika ut i olika rum (t.ex. olika golvtyp), dela på flera rader — varje rad kan ha eget material och egen faktura."
+              )}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={dismissPostWizardTip}
+            className="h-7 w-7 rounded-full hover:bg-muted/80 flex items-center justify-center text-muted-foreground hover:text-foreground shrink-0 transition-colors"
+            aria-label={t("common.dismiss", "Dölj")}
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
       )}
 
       {/* Planning content — disabled overlay when locked */}

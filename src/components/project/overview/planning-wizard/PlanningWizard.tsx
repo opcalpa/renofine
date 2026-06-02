@@ -11,9 +11,8 @@ import {
 } from "@/services/planningWizardService";
 import { useGuestMode } from "@/hooks/useGuestMode";
 import { DescribeStep } from "./DescribeStep";
-import { RoomsStep } from "./RoomsStep";
-import { GlobalWorkTypesStep } from "./GlobalWorkTypesStep";
-import { RoomSpecificStep } from "./RoomSpecificStep";
+import { SummaryStep } from "./SummaryStep";
+import { WorkMatrixStep } from "./WorkMatrixStep";
 import { INITIAL_FORM_DATA, TOTAL_STEPS } from "./types";
 import type { PlanningWizardData, PlanningWizardRoom, AIParsedResult } from "./types";
 
@@ -64,8 +63,7 @@ export function PlanningWizard({ projectId, onComplete, onSkip }: PlanningWizard
     switch (step) {
       case 1: return formData.description.length > 10;
       case 2: return formData.rooms.length > 0;
-      case 3: return true; // global work types are optional
-      case 4: return true; // room-specific work is optional
+      case 3: return true; // matrix is optional — user can submit with no tasks
       default: return false;
     }
   };
@@ -95,7 +93,7 @@ export function PlanningWizard({ projectId, onComplete, onSkip }: PlanningWizard
       if (error) throw error;
 
       const parsed = data as AIParsedResult;
-      // Pre-populate rooms from AI
+      // Pre-populate main rooms (with proposed work) from AI
       const aiRooms: PlanningWizardRoom[] = parsed.rooms.map((r) => ({
         id: crypto.randomUUID(),
         name: r.name,
@@ -103,21 +101,43 @@ export function PlanningWizard({ projectId, onComplete, onSkip }: PlanningWizard
         aiSuggested: true,
       }));
 
-      // Pre-populate room-specific work from AI
+      // Pre-populate discovered-but-no-work rooms separately
+      const aiOtherSpaces: PlanningWizardRoom[] = (parsed.otherSpaces ?? []).map((r) => ({
+        id: crypto.randomUUID(),
+        name: r.name,
+        nameKey: r.nameKey,
+        aiSuggested: true,
+      }));
+
+      // Pre-populate room-specific work from AI.
+      // Note: multiple rooms can share the same nameKey ("Sovrum 1", "Sovrum 2") —
+      // match by index within nameKey-group so each numbered room gets its own AI entry.
       const roomSpecificWork: PlanningWizardData["roomSpecificWork"] = {};
-      for (const aiRoom of parsed.rooms) {
-        const matchingRoom = aiRooms.find((r) => r.nameKey === aiRoom.nameKey);
-        if (matchingRoom && aiRoom.suggestedWorkTypes.length > 0) {
-          roomSpecificWork[matchingRoom.id] = {
-            description: "",
-            workTypes: aiRoom.suggestedWorkTypes,
-          };
-        }
-      }
+      const aiRoomQueueByKey = new Map<string, typeof parsed.rooms>();
+      parsed.rooms.forEach((aiR) => {
+        const arr = aiRoomQueueByKey.get(aiR.nameKey) ?? [];
+        arr.push(aiR);
+        aiRoomQueueByKey.set(aiR.nameKey, arr);
+      });
+      aiRooms.forEach((wizardRoom) => {
+        const queue = aiRoomQueueByKey.get(wizardRoom.nameKey ?? "");
+        const aiR = queue?.shift();
+        if (!aiR || aiR.suggestedWorkTypes.length === 0) return;
+        roomSpecificWork[wizardRoom.id] = {
+          description: "",
+          workTypes: aiR.suggestedWorkTypes,
+          excludedGlobals: [],
+          taskTitles: aiR.taskTitles,
+        };
+      });
 
       updateFormData({
         aiParsed: parsed,
+        propertyType: parsed.propertyType,
+        floors: parsed.floors,
+        totalAreaSqm: parsed.totalAreaSqm ?? undefined,
         rooms: aiRooms,
+        otherSpaces: aiOtherSpaces,
         globalWorkTypes: parsed.globalWorkTypes,
         roomSpecificWork,
       });
@@ -207,9 +227,8 @@ export function PlanningWizard({ projectId, onComplete, onSkip }: PlanningWizard
               analyzing={analyzing}
             />
           )}
-          {step === 2 && <RoomsStep formData={formData} updateFormData={updateFormData} />}
-          {step === 3 && <GlobalWorkTypesStep formData={formData} updateFormData={updateFormData} />}
-          {step === 4 && <RoomSpecificStep formData={formData} updateFormData={updateFormData} />}
+          {step === 2 && <SummaryStep formData={formData} updateFormData={updateFormData} />}
+          {step === 3 && <WorkMatrixStep formData={formData} updateFormData={updateFormData} />}
         </div>
 
         {/* Navigation */}

@@ -3,6 +3,34 @@ import { workTypeToCostCenter, getWorkTypeLabel } from "./workTypeUtils";
 import type { WorkType } from "./workTypeUtils";
 import type { PlanningWizardData } from "@/components/project/overview/planning-wizard/types";
 import { saveGuestRoom, saveGuestTask } from "./guestStorageService";
+
+/**
+ * Build a task title for a per-room task.
+ * - No AI title → "{categoryLabel} - {roomName}"
+ * - AI title used by multiple rooms (e.g. "Riva gamla tapeter" in 3 sovrum) → suffix with " — {roomName}" so list rows are distinguishable
+ * - AI title unique to this room → use as-is
+ */
+function formatRoomTaskTitle(
+  aiTitle: string | undefined,
+  categoryLabel: string,
+  roomName: string,
+  data: PlanningWizardData
+): string {
+  if (!aiTitle || aiTitle.length === 0) {
+    return `${categoryLabel} - ${roomName}`;
+  }
+  // Count occurrences of this exact AI title across all rooms
+  let occurrences = 0;
+  for (const r of data.rooms) {
+    const titles = data.roomSpecificWork[r.id]?.taskTitles;
+    if (!titles) continue;
+    if (Object.values(titles).some((t) => t === aiTitle)) {
+      occurrences += 1;
+      if (occurrences > 1) break;
+    }
+  }
+  return occurrences > 1 ? `${aiTitle} — ${roomName}` : aiTitle;
+}
 import {
   detectRecipeKey,
   suggestMaterialsMultiRoom,
@@ -64,10 +92,13 @@ export async function populateProjectFromPlanningWizard(
       .map((r) => roomNameToId.get(r.id))
       .filter(Boolean) as string[];
 
+    const aiTitle = data.aiParsed?.globalTaskTitles?.[workType];
+    const taskTitle = aiTitle && aiTitle.length > 0 ? aiTitle : wtLabel(workType);
+
     // Create checklist with one item per room
     const checklist = {
       id: crypto.randomUUID(),
-      title: wtLabel(workType),
+      title: taskTitle,
       items: applicableRooms.map((r) => ({
         id: crypto.randomUUID(),
         title: r.name,
@@ -79,7 +110,7 @@ export async function populateProjectFromPlanningWizard(
       project_id: projectId,
       room_id: roomIds[0], // primary room
       room_ids: roomIds,
-      title: wtLabel(workType),
+      title: taskTitle,
       description: applicableRooms.map((r) => r.name).join(", "),
       status: "planned",
       priority: "medium",
@@ -101,10 +132,12 @@ export async function populateProjectFromPlanningWizard(
     // Room-specific work types (excluding globals)
     for (const workType of specific.workTypes) {
       if (data.globalWorkTypes.includes(workType)) continue; // already handled globally
+      const aiTitle = specific.taskTitles?.[workType];
+      const taskTitle = formatRoomTaskTitle(aiTitle, wtLabel(workType), room.name, data);
       const { error } = await supabase.from("tasks").insert({
         project_id: projectId,
         room_id: dbRoomId,
-        title: `${wtLabel(workType)} - ${room.name}`,
+        title: taskTitle,
         status: "planned",
         priority: "medium",
         cost_center: workTypeToCostCenter(workType),
@@ -177,9 +210,11 @@ export function populateGuestProjectFromPlanningWizard(
     if (applicableRooms.length === 0) continue;
 
     const primaryRoomId = roomNameToId.get(applicableRooms[0].id) ?? null;
+    const aiTitle = data.aiParsed?.globalTaskTitles?.[workType];
+    const taskTitle = aiTitle && aiTitle.length > 0 ? aiTitle : wtLabel(workType);
     const saved = saveGuestTask(projectId, {
       room_id: primaryRoomId,
-      title: wtLabel(workType),
+      title: taskTitle,
       description: applicableRooms.map((r) => r.name).join(", "),
       status: "to_do",
       priority: "medium",
@@ -198,9 +233,11 @@ export function populateGuestProjectFromPlanningWizard(
 
     for (const workType of specific.workTypes) {
       if (data.globalWorkTypes.includes(workType)) continue;
+      const aiTitle = specific.taskTitles?.[workType];
+      const taskTitle = formatRoomTaskTitle(aiTitle, wtLabel(workType), room.name, data);
       const saved = saveGuestTask(projectId, {
         room_id: guestRoomId,
-        title: `${wtLabel(workType)} - ${room.name}`,
+        title: taskTitle,
         description: null,
         status: "to_do",
         priority: "medium",
