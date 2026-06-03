@@ -27,6 +27,15 @@ export {
   snapDelta,
 } from './snap';
 
+// Room edge snapping (magnetic alignment to neighbouring rooms)
+export {
+  getEdgeSnapThreshold,
+  collectRoomBBoxes,
+  snapRectEdgesToRooms,
+  edgeSnapNudge,
+} from './roomSnap';
+export type { BBox } from './roomSnap';
+
 // Shape connection helpers (auto-grouping, magnetic snap)
 export {
   findConnectedShapes,

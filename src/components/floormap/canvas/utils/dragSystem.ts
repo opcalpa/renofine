@@ -15,6 +15,7 @@ import { FloorMapShape } from '../../types';
 import { findNearestWall, projectOntoWall, splitWall, isOpeningType, findMergeableWalls, findWallGap } from '../../utils/wallSnap';
 import { snapObjectToWall as snapToWallRelative, syncWallRelativeFromFloorplan } from './viewSync';
 import { findNearestWallForPoint, getWallGeometry } from './wallCoordinates';
+import { getRoomBBox, collectRoomBBoxes, edgeSnapNudge, getEdgeSnapThreshold } from './roomSnap';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
@@ -614,6 +615,24 @@ export function createDragHandlers(shapeId: string) {
         }
       }
 
+      // Room edge snapping: nudge a single dragged room so an edge aligns with a
+      // neighbouring room (→ clean shared wall). Applied on top of the grid snap.
+      if (!isDuplicating && shapesToUpdate.length === 1 && draggedShape?.type === 'room' && snapEnabled) {
+        const box = getRoomBBox(draggedShape);
+        if (box) {
+          const moved = {
+            minX: box.minX + deltaX,
+            minY: box.minY + deltaY,
+            maxX: box.maxX + deltaX,
+            maxY: box.maxY + deltaY,
+          };
+          const neighbors = collectRoomBBoxes(shapes, draggedShape.planId ?? null, [draggedShape.id]);
+          const nudge = edgeSnapNudge(moved, neighbors, getEdgeSnapThreshold(state.viewState.zoom));
+          deltaX += nudge.dx;
+          deltaY += nudge.dy;
+        }
+      }
+
       // Build updates for all affected shapes
       const updates: Array<{ id: string; updates: Partial<FloorMapShape> }> = [];
 
@@ -633,6 +652,10 @@ export function createDragHandlers(shapeId: string) {
       // Apply all updates at once (single undo entry)
       if (updates.length > 0) {
         updateShapes(updates);
+        // Rebuild auto-walls so they follow a moved room (no-op outside simplified mode).
+        if (!isDuplicating && draggedShape?.type === 'room') {
+          state.regenerateAutoWalls();
+        }
       }
 
       // Reset all moved nodes to position 0

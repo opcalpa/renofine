@@ -40,6 +40,10 @@ import {
   getSnapSize,
   snapToGrid,
   snapDelta,
+  getEdgeSnapThreshold,
+  collectRoomBBoxes,
+  snapRectEdgesToRooms,
+  edgeSnapNudge,
   // Shape connection utilities
   findConnectedShapes,
   findNearestWallEndpoint,
@@ -1982,8 +1986,20 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
       const defaultHeight = 4000 * scaleSettings.pixelsPerMm;
 
       // Center the room on the click position
-      const startX = pos.x - defaultWidth / 2;
-      const startY = pos.y - defaultHeight / 2;
+      let startX = pos.x - defaultWidth / 2;
+      let startY = pos.y - defaultHeight / 2;
+
+      // Magnetically nudge the placed room so it abuts neighbouring rooms.
+      if (projectSettings.snapEnabled) {
+        const neighbors = collectRoomBBoxes(currentShapes, currentPlanId);
+        const { dx, dy } = edgeSnapNudge(
+          { minX: startX, minY: startY, maxX: startX + defaultWidth, maxY: startY + defaultHeight },
+          neighbors,
+          getEdgeSnapThreshold(viewState.zoom)
+        );
+        startX += dx;
+        startY += dy;
+      }
 
       const roomPoints = [
         { x: startX, y: startY },
@@ -2451,16 +2467,26 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
       
       // ROOM TOOL - Create rectangular room from drag box
       if (activeTool === 'room' && selectionBox) {
-        const minX = Math.min(selectionBox.start.x, selectionBox.end.x);
-        const maxX = Math.max(selectionBox.start.x, selectionBox.end.x);
-        const minY = Math.min(selectionBox.start.y, selectionBox.end.y);
-        const maxY = Math.max(selectionBox.start.y, selectionBox.end.y);
-        
+        const minSize = 100 * scaleSettings.pixelsPerMm; // 100mm minimum
+
+        // Magnetically snap the drawn rectangle's edges to neighbouring rooms so
+        // adjacent rooms share an exact boundary (→ single shared auto-wall).
+        let rect = {
+          minX: Math.min(selectionBox.start.x, selectionBox.end.x),
+          maxX: Math.max(selectionBox.start.x, selectionBox.end.x),
+          minY: Math.min(selectionBox.start.y, selectionBox.end.y),
+          maxY: Math.max(selectionBox.start.y, selectionBox.end.y),
+        };
+        if (projectSettings.snapEnabled) {
+          const neighbors = collectRoomBBoxes(currentShapes, currentPlanId);
+          rect = snapRectEdgesToRooms(rect, neighbors, getEdgeSnapThreshold(viewState.zoom), minSize);
+        }
+        const { minX, maxX, minY, maxY } = rect;
+
         // Only create room if box is big enough (minimum 100mm x 100mm)
         const width = maxX - minX;
         const height = maxY - minY;
-        const minSize = 100 * scaleSettings.pixelsPerMm; // 100mm minimum
-        
+
         if (width >= minSize && height >= minSize) {
           // Create 4 corner points for rectangular room
           const roomPoints = [
