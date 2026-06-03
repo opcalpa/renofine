@@ -144,7 +144,7 @@ export function RoomDetailDialog({
         <Sheet open={open} onOpenChange={onOpenChange}>
           <SheetPortal>
             <SheetOverlay className="bg-transparent pointer-events-none" />
-            <SheetContent side="right" className="w-[520px] max-w-[90vw] flex flex-col gap-0 p-0">
+            <SheetContent side="right" className="w-[520px] max-w-[90vw] flex flex-col gap-0 p-0 !top-14 !h-[calc(100dvh-3.5rem)]">
               <div className="flex flex-col items-center justify-center flex-1 py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
                 <p className="text-muted-foreground">{t("rooms.loadingRoomData", "Loading room data")}...</p>
@@ -162,7 +162,9 @@ export function RoomDetailDialog({
           <SheetOverlay className="bg-transparent pointer-events-none" />
           <SheetContent
             side="right"
-            className="w-[520px] max-w-[90vw] flex flex-col gap-0 p-0 overflow-hidden"
+            // Sit below the fixed planner top bar (h-14 / z-60) so the room hero header
+            // isn't clipped behind it. Overrides the Sheet's default inset-y-0 / h-full.
+            className="w-[520px] max-w-[90vw] flex flex-col gap-0 p-0 overflow-hidden !top-14 !h-[calc(100dvh-3.5rem)]"
           >
             {/* Title hidden visually for existing rooms — room name inside form is the real heading */}
             <VisuallyHidden>
