@@ -11,6 +11,7 @@ import { useFloorMapStore } from '../store';
 import { RoomShapeProps } from './types';
 import { createUnifiedDragHandlers } from '../canvas/utils';
 import { formatMeasurement } from '../utils/formatting';
+import { WALL_DEFAULTS } from '../canvas/constants';
 import { toast } from 'sonner';
 
 /**
@@ -222,6 +223,7 @@ export const RoomShape = React.memo<RoomShapeProps>(({
   isReadOnly,
   isHighlighted,
   renderHandlesOnly = false,
+  simplified = false,
 }) => {
   const { zoom } = viewState;
   const { pixelsPerMm } = scaleSettings;
@@ -373,7 +375,32 @@ export const RoomShape = React.memo<RoomShapeProps>(({
       {...(!renderHandlesOnly && !isReadOnly && !isDrawingMode ? createUnifiedDragHandlers(shape.id) : {})}
     >
       {/* Room polygon - filled area is clickable (skip in handles-only mode) */}
-      {!renderHandlesOnly && (
+      {!renderHandlesOnly && simplified && (
+        <>
+          {/* Model A: the room's own outline IS the wall. The filled area carries the
+              click target; a thick stroke on the same polygon renders the wall. Adjacent
+              rooms share an edge (after edge-snapping) so their walls coincide into one. */}
+          <Line
+            points={flatPoints}
+            closed
+            fill={isHighlighted ? 'rgba(34, 197, 94, 0.30)' : (shape.color || 'rgba(59, 130, 246, 0.2)')}
+            stroke="transparent"
+            shapeId={shape.id}
+            perfectDrawEnabled={false}
+            listening={true}
+          />
+          <Line
+            points={flatPoints}
+            closed
+            stroke={isSelected ? '#3b82f6' : isHighlighted ? '#16a34a' : '#9ca3af'}
+            strokeWidth={WALL_DEFAULTS.thicknessMM * pixelsPerMm}
+            lineJoin="miter"
+            perfectDrawEnabled={false}
+            listening={false}
+          />
+        </>
+      )}
+      {!renderHandlesOnly && !simplified && (
         <Line
           points={flatPoints}
           closed

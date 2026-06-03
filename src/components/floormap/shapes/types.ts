@@ -77,6 +77,11 @@ export interface RoomShapeProps extends ShapeWithViewProps {
    * Used for rendering handles above walls in a separate layer.
    */
   renderHandlesOnly?: boolean;
+  /**
+   * Simplified (homeowner) mode. When true, the room outline is rendered as a
+   * thick wall (Model A) — there are no separate wall objects.
+   */
+  simplified?: boolean;
 }
 
 /**
