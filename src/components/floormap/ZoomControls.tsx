@@ -29,7 +29,7 @@ export const ZoomControls = () => {
   };
 
   return (
-    <div className="absolute bottom-4 right-4 z-20 flex gap-2 bg-background/95 backdrop-blur-sm rounded-lg p-2 shadow-lg border border-border">
+    <div className="fixed bottom-24 right-4 z-30 flex gap-2 bg-background/95 backdrop-blur-sm rounded-lg p-2 shadow-lg border border-border">
       <Button
         variant="ghost"
         size="icon"

@@ -10,6 +10,7 @@ import { RoomElevationView } from './RoomElevationView';
 import { WallElevationView } from './WallElevationView';
 import { NameRoomDialog } from './NameRoomDialog';
 import { PropertyPanel } from './PropertyPanel';
+import { ZoomControls } from './ZoomControls';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { saveShapesForPlan, loadShapesForPlan } from './utils/plans';
@@ -827,7 +828,8 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
           description: null,
           dimensions: {
             area_sqm: areaSqM,
-            perimeter_mm: perimeter,
+            // perimeter is summed in pixels above — convert to mm (matches roomInsights.ts)
+            perimeter_mm: (perimeter / getPixelsPerMeter(scaleSettings.pixelsPerMm)) * 1000,
           },
           floor_plan_position: {
             points: points,
@@ -3270,6 +3272,9 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
       }}
       onContextMenu={handleContextMenu}
     >
+      {/* Zoom in/out + fit-to-screen controls (bottom-right) */}
+      <ZoomControls />
+
       {/* Hidden file input for image import from context menu */}
       <input
         ref={imageFileInputRef}

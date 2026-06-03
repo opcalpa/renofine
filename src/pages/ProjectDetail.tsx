@@ -678,6 +678,15 @@ const ProjectDetail = () => {
 
       if (error) throw error;
 
+      // Remove the room's canvas shape + rebuild auto-walls so no ghost outline
+      // lingers on the planner. No-op when the canvas isn't loaded (shape absent).
+      const { shapes, deleteShapes, regenerateAutoWalls } = useFloorMapStore.getState();
+      const roomShape = shapes.find((s) => s.roomId === roomId && s.type === "room");
+      if (roomShape) {
+        deleteShapes([roomShape.id]);
+        regenerateAutoWalls();
+      }
+
       toast({
         title: t('projectDetail.roomDeleted'),
         description: t('projectDetail.roomDeletedDescription', { name: room.name }),

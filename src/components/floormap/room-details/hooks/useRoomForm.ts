@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useFloorMapStore } from "../../store";
+import type { FloorMapShape } from "../../types";
 import type { Room, RoomFormData } from "../types";
 import { DEFAULT_FORM_VALUES } from "../constants";
 
@@ -36,6 +37,20 @@ export function useRoomForm({ room, projectId, onRoomUpdated, onClose }: UseRoom
   // Initialize form data from room or defaults for new room
   useEffect(() => {
     if (room) {
+      // Derive width/depth from the actual polygon so the fields always reflect the
+      // real shape (drawn or canvas-resized), not a stale stored value. Falls back to
+      // stored dimensions when there is no polygon yet.
+      const pts = room.floor_plan_position?.points;
+      const ppm = useFloorMapStore.getState().scaleSettings.pixelsPerMm;
+      let derivedWidthMm = room.dimensions?.width_mm;
+      let derivedDepthMm = room.dimensions?.height_mm;
+      if (pts && pts.length >= 3 && ppm) {
+        const xs = pts.map((p) => p.x);
+        const ys = pts.map((p) => p.y);
+        derivedWidthMm = Math.round((Math.max(...xs) - Math.min(...xs)) / ppm);
+        derivedDepthMm = Math.round((Math.max(...ys) - Math.min(...ys)) / ppm);
+      }
+
       setFormData({
         name: room.name || "",
         description: room.description || "",
@@ -46,8 +61,8 @@ export function useRoomForm({ room, projectId, onRoomUpdated, onClose }: UseRoom
         links: room.links || "",
         notes: room.notes || "",
         area_sqm: room.dimensions?.area_sqm,
-        width_mm: room.dimensions?.width_mm,
-        depth_mm: room.dimensions?.height_mm,
+        width_mm: derivedWidthMm,
+        depth_mm: derivedDepthMm,
         non_paintable_area_sqm: room.dimensions?.non_paintable_area_sqm,
         floor_spec: room.floor_spec || {},
         ceiling_spec: room.ceiling_spec || {},
@@ -88,6 +103,47 @@ export function useRoomForm({ room, projectId, onRoomUpdated, onClose }: UseRoom
 
     setSaving(true);
     try {
+      // Approach A: if the user typed an exact Bredd × Djup that differs from the
+      // room's current polygon, reshape the polygon to a rectangle of that size
+      // (anchored at its current top-left). Comparing against the live polygon — not a
+      // stored value — keeps this idempotent and prevents reverting a canvas resize.
+      let reshapedPoints: { x: number; y: number }[] | null = null;
+      let reshapedDims: { area_sqm: number; perimeter_mm: number } | null = null;
+      if (!isNewRoom && formData.width_mm && formData.depth_mm) {
+        const { scaleSettings, shapes } = useFloorMapStore.getState();
+        const ppm = scaleSettings.pixelsPerMm;
+        const roomShape = shapes.find((s) => s.roomId === room!.id && s.type === "room");
+        const existingPoints =
+          (roomShape?.coordinates as { points?: { x: number; y: number }[] } | undefined)?.points ??
+          room?.floor_plan_position?.points;
+        // Only reshape axis-aligned rectangles (4 corners) — never flatten an L-shape.
+        if (existingPoints && existingPoints.length === 4 && ppm) {
+          const xs = existingPoints.map((p) => p.x);
+          const ys = existingPoints.map((p) => p.y);
+          const minX = Math.min(...xs);
+          const minY = Math.min(...ys);
+          const curWidthMm = (Math.max(...xs) - minX) / ppm;
+          const curDepthMm = (Math.max(...ys) - minY) / ppm;
+          const changed =
+            Math.abs(formData.width_mm - curWidthMm) > 1 ||
+            Math.abs(formData.depth_mm - curDepthMm) > 1;
+          if (changed) {
+            const wPx = formData.width_mm * ppm;
+            const hPx = formData.depth_mm * ppm;
+            reshapedPoints = [
+              { x: minX, y: minY },
+              { x: minX + wPx, y: minY },
+              { x: minX + wPx, y: minY + hPx },
+              { x: minX, y: minY + hPx },
+            ];
+            reshapedDims = {
+              area_sqm: (formData.width_mm * formData.depth_mm) / 1_000_000,
+              perimeter_mm: 2 * (formData.width_mm + formData.depth_mm),
+            };
+          }
+        }
+      }
+
       // Build dimensions JSONB by merging with existing
       const existingDims = room?.dimensions ?? {};
       const dimensions = {
@@ -96,6 +152,7 @@ export function useRoomForm({ room, projectId, onRoomUpdated, onClose }: UseRoom
         ...(formData.width_mm !== undefined ? { width_mm: formData.width_mm } : {}),
         ...(formData.depth_mm !== undefined ? { height_mm: formData.depth_mm } : {}),
         ...(formData.non_paintable_area_sqm !== undefined ? { non_paintable_area_sqm: formData.non_paintable_area_sqm } : {}),
+        ...(reshapedDims ?? {}),
       };
 
       if (isNewRoom) {
@@ -150,6 +207,9 @@ export function useRoomForm({ room, projectId, onRoomUpdated, onClose }: UseRoom
             links: formData.links?.trim() || null,
             notes: formData.notes?.trim() || null,
             dimensions,
+            ...(reshapedPoints
+              ? { floor_plan_position: { ...(room?.floor_plan_position ?? {}), points: reshapedPoints } }
+              : {}),
             floor_spec: formData.floor_spec,
             ceiling_spec: formData.ceiling_spec,
             wall_spec: formData.wall_spec,
@@ -179,7 +239,14 @@ export function useRoomForm({ room, projectId, onRoomUpdated, onClose }: UseRoom
             color: formData.color,
             strokeColor: getDarkerColor(formData.color),
             name: formData.name.trim(),
+            ...(reshapedPoints
+              ? { coordinates: { points: reshapedPoints } as FloorMapShape["coordinates"] }
+              : {}),
           });
+          // Rebuild auto-walls so they hug the resized room (no-op in pro mode).
+          if (reshapedPoints) {
+            useFloorMapStore.getState().regenerateAutoWalls();
+          }
         }
 
         toast.success(t('roomForm.roomUpdated', 'Room updated!'));
@@ -211,6 +278,15 @@ export function useRoomForm({ room, projectId, onRoomUpdated, onClose }: UseRoom
       const { error } = await supabase.from("rooms").delete().eq("id", room.id);
 
       if (error) throw error;
+
+      // Remove the room's canvas shape and rebuild auto-walls so no ghost
+      // outline lingers (DB cascade drops the shape row; the live store needs it too).
+      const { shapes, deleteShapes, regenerateAutoWalls } = useFloorMapStore.getState();
+      const roomShape = shapes.find((s) => s.roomId === room.id && s.type === "room");
+      if (roomShape) {
+        deleteShapes([roomShape.id]);
+        regenerateAutoWalls();
+      }
 
       toast.success(t('roomForm.roomDeleted', 'Room deleted!'));
       onRoomUpdated?.();
