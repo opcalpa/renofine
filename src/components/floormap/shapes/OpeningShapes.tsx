@@ -76,7 +76,8 @@ export const WindowLineShape = React.memo<OpeningShapeProps>(({
   const perpX = Math.sin(angle) * offset;
   const perpY = -Math.cos(angle) * offset;
 
-  const strokeColor = isSelected ? '#3b82f6' : (shape.strokeColor || '#3b82f6');
+  // Model A: muted slate to match the room/wall style (selection stays blue).
+  const strokeColor = isSelected ? '#3b82f6' : '#94a3b8';
   const strokeWidth = 2 / zoom;
   const handleRadius = Math.max(6, 8 / zoom);
 
@@ -312,7 +313,8 @@ export const DoorLineShape = React.memo<OpeningShapeProps & { onDoubleClick?: ()
   if (length < 2) return null;
 
   const angleDeg = Math.atan2(dy, dx) * (180 / Math.PI);
-  const strokeColor = isSelected ? '#8b5cf6' : (shape.strokeColor || '#8b5cf6');
+  // Model A: muted slate door (selection stays blue).
+  const strokeColor = isSelected ? '#3b82f6' : '#475569';
   const strokeWidth = 2.5 / zoom;
   const handleRadius = Math.max(6, 8 / zoom);
   const openRight = shape.openingDirection !== 'left';
@@ -561,7 +563,8 @@ export const SlidingDoorLineShape = React.memo<OpeningShapeProps>(({
   const perpX = Math.sin(angle) * trackOffset;
   const perpY = -Math.cos(angle) * trackOffset;
 
-  const strokeColor = isSelected ? '#10b981' : (shape.strokeColor || '#10b981');
+  // Model A: muted slate sliding door (selection stays blue).
+  const strokeColor = isSelected ? '#3b82f6' : '#475569';
   const trackWidth = 1 / zoom;
   const panelWidth = 3 / zoom;
   const handleRadius = Math.max(6, 8 / zoom);
@@ -812,7 +815,8 @@ export const OpeningLineShape = React.memo<OpeningShapeProps>(({
   const perpX = Math.sin(angle) * markLength;
   const perpY = -Math.cos(angle) * markLength;
 
-  const strokeColor = isSelected ? '#f97316' : (shape.strokeColor || '#f97316'); // Orange color
+  // Model A: a plain wall opening is just a faint marker — the gap + length label carry it.
+  const strokeColor = isSelected ? '#3b82f6' : '#cbd5e1';
   const strokeWidth = 2 / zoom;
   const handleRadius = Math.max(6, 8 / zoom);
 

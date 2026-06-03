@@ -2944,7 +2944,7 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
             x2: finalEnd.x,
             y2: finalEnd.y,
           },
-          strokeColor: '#3b82f6', // Blue for windows
+          strokeColor: '#94a3b8', // Muted slate (Model A)
           thicknessMM: 100, // Window frame thickness
         };
         toast.success('Fönster skapat');
@@ -2973,7 +2973,7 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
             x2: finalEnd.x,
             y2: finalEnd.y,
           },
-          strokeColor: '#8b5cf6', // Purple for doors
+          strokeColor: '#475569', // Muted slate (Model A)
           thicknessMM: 50, // Door frame thickness
           openingDirection: 'right', // Default to right opening
         };
@@ -3003,7 +3003,7 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
             x2: finalEnd.x,
             y2: finalEnd.y,
           },
-          strokeColor: '#10b981', // Green for sliding doors
+          strokeColor: '#475569', // Muted slate (Model A)
           thicknessMM: 50, // Frame thickness
         };
         toast.success('Skjutdörr skapad');
@@ -3034,7 +3034,7 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
             x2: finalEnd.x,
             y2: finalEnd.y,
           },
-          strokeColor: '#f97316', // Orange for openings
+          strokeColor: '#cbd5e1', // Faint slate — gap + label carry it (Model A)
           thicknessMM: 50, // Frame thickness
         };
         toast.success('Väggöppning skapad');

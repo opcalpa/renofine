@@ -2374,6 +2374,7 @@
       "doorLine": "Door",
       "windowLine": "Window",
       "slidingDoor": "Sliding Door",
+      "openingLine": "Wall Opening",
       "measure": "Measure",
       "moreTools": "More tools",
       "lessTools": "Fewer tools",

@@ -85,6 +85,7 @@ const DOOR_WINDOW_OPTIONS: { tool: Tool; labelKey: string; fallback: string }[] 
   { tool: "door_line", labelKey: "floormap.tools.doorLine", fallback: "Door" },
   { tool: "window_line", labelKey: "floormap.tools.windowLine", fallback: "Window" },
   { tool: "sliding_door_line", labelKey: "floormap.tools.slidingDoor", fallback: "Sliding Door" },
+  { tool: "opening_line", labelKey: "floormap.tools.openingLine", fallback: "Wall Opening" },
 ];
 
 // Extended tools shown when "More" is expanded
@@ -173,7 +174,7 @@ export const HomeownerToolbar: React.FC<HomeownerToolbarProps> = ({
     [projectId, addShape, currentPlanId, viewState, t]
   );
 
-  const isDoorWindowActive = (["door_line", "window_line", "sliding_door_line"] as Tool[]).includes(activeTool);
+  const isDoorWindowActive = (["door_line", "window_line", "sliding_door_line", "opening_line"] as Tool[]).includes(activeTool);
   const isExtraToolActive = EXTRA_TOOLS.some(t => t.tool === activeTool);
 
   const handleSelectObject = useCallback(

@@ -545,7 +545,7 @@ export const RoomShape = React.memo<RoomShapeProps>(({
               chip(`wlab-${i}`, w, { textFill: '#374151', bg: 'rgba(255,255,255,0.92)' })
             )}
             {wallBreaks.gaps.map((g, i) =>
-              chip(`glab-${i}`, g, { textFill: '#7c3aed', bg: 'rgba(139,92,246,0.12)', stroke: '#8b5cf6', sideOffset: 16 })
+              chip(`glab-${i}`, g, { textFill: '#475569', bg: 'rgba(71,85,105,0.10)', stroke: '#94a3b8', sideOffset: 16 })
             )}
           </>
         );
