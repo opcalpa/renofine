@@ -2383,7 +2383,8 @@
       "text": "Text",
       "eraser": "Eraser",
       "scissors": "Split Line",
-      "glue": "Merge"
+      "glue": "Merge",
+      "importImage": "Import image"
     },
     "hoverInfo": {
       "wall": "Wall",
@@ -2418,6 +2419,12 @@
       "cooktop": "Cooktop",
       "range_hood": "Range Hood",
       "kitchen_sink": "Kitchen Sink"
+    },
+    "image": {
+      "notAnImage": "Please choose an image file",
+      "tooLarge": "Max 10MB",
+      "added": "\"{{name}}\" added",
+      "uploadFailed": "Could not upload"
     }
   },
   "canvas": {

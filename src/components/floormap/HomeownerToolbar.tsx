@@ -1,5 +1,6 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { v4 as uuidv4 } from "uuid";
 import {
   MousePointer2,
   Home,
@@ -7,6 +8,7 @@ import {
   Armchair,
   Ruler,
   StickyNote,
+  ImagePlus,
   ChevronDown,
   ChevronUp,
   Save,
@@ -30,10 +32,11 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useFloorMapStore } from "./store";
 import { ObjectLibraryPanel } from "./objectLibrary/ObjectLibraryPanel";
 import { CanvasSettingsPopover } from "./CanvasSettingsPopover";
+import { supabase } from "@/integrations/supabase/client";
 import type { UnifiedObjectDefinition } from "./objectLibrary/types";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import type { Tool } from "./types";
+import type { Tool, FloorMapShape } from "./types";
 
 interface HomeownerToolbarProps {
   projectId: string;
@@ -100,6 +103,7 @@ const EXTRA_TOOLS: { tool: Tool; icon: React.ElementType; labelKey: string; fall
 ];
 
 export const HomeownerToolbar: React.FC<HomeownerToolbarProps> = ({
+  projectId,
   onSave,
   onDelete,
   onUndo,
@@ -108,11 +112,66 @@ export const HomeownerToolbar: React.FC<HomeownerToolbarProps> = ({
   canRedo,
 }) => {
   const { t } = useTranslation();
-  const { activeTool, setActiveTool, setPendingObjectId } = useFloorMapStore();
+  const { activeTool, setActiveTool, setPendingObjectId, addShape, currentPlanId, viewState } =
+    useFloorMapStore();
 
   const [doorWindowOpen, setDoorWindowOpen] = useState(false);
   const [objectLibraryOpen, setObjectLibraryOpen] = useState(false);
   const [showMore, setShowMore] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+
+  // Import a photo/reference image and drop it on the canvas as a half-opacity
+  // background you can trace or annotate on. Mirrors SimpleToolbar's importer so
+  // homeowners get the same capability as a visible button instead of a hidden
+  // right-click menu item.
+  const handleImageImport = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      if (!file.type.startsWith("image/")) {
+        toast.error(t("floormap.image.notAnImage", "Vänligen välj en bildfil"));
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error(t("floormap.image.tooLarge", "Max 10MB"));
+        return;
+      }
+      setIsUploadingImage(true);
+      try {
+        const filePath = `projects/${projectId}/Uppladdade filer/${Date.now()}-${file.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from("project-files")
+          .upload(filePath, file);
+        if (uploadError) throw uploadError;
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from("project-files").getPublicUrl(filePath);
+        const cx = (window.innerWidth / 2 - viewState.panX) / viewState.zoom;
+        const cy = (window.innerHeight / 2 - viewState.panY) / viewState.zoom;
+        const imageShape: FloorMapShape = {
+          id: uuidv4(),
+          type: "image",
+          planId: currentPlanId || undefined,
+          coordinates: { x: cx, y: cy, width: 0, height: 0 },
+          imageUrl: publicUrl,
+          imageOpacity: 0.5,
+          locked: false,
+          zIndex: -100,
+          name: file.name,
+        };
+        addShape(imageShape);
+        toast.success(t("floormap.image.added", `"${file.name}" tillagd`, { name: file.name }));
+      } catch (error) {
+        console.error("Error uploading image:", error);
+        toast.error(t("floormap.image.uploadFailed", "Kunde inte ladda upp"));
+      } finally {
+        setIsUploadingImage(false);
+        if (imageInputRef.current) imageInputRef.current.value = "";
+      }
+    },
+    [projectId, addShape, currentPlanId, viewState, t]
+  );
 
   const isDoorWindowActive = (["door_line", "window_line", "sliding_door_line"] as Tool[]).includes(activeTool);
   const isExtraToolActive = EXTRA_TOOLS.some(t => t.tool === activeTool);
@@ -194,7 +253,7 @@ export const HomeownerToolbar: React.FC<HomeownerToolbarProps> = ({
           </div>
         </PopoverTrigger>
         <PopoverContent side="right" align="start" className="w-80 p-0">
-          <ObjectLibraryPanel onSelect={handleSelectObject} />
+          <ObjectLibraryPanel onSelectObject={handleSelectObject} />
         </PopoverContent>
       </Popover>
 
@@ -204,6 +263,22 @@ export const HomeownerToolbar: React.FC<HomeownerToolbarProps> = ({
         label={t("floormap.tools.stickyNote", "Post-it lapp")}
         isActive={activeTool === "sticky_note"}
         onClick={() => setActiveTool("sticky_note")}
+      />
+
+      {/* Import image — drop a photo to trace or annotate on */}
+      <input
+        ref={imageInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleImageImport}
+        className="hidden"
+      />
+      <ToolButton
+        icon={ImagePlus}
+        label={t("floormap.tools.importImage", "Importera bild")}
+        isActive={false}
+        onClick={() => imageInputRef.current?.click()}
+        disabled={isUploadingImage}
       />
 
       {/* Measure */}

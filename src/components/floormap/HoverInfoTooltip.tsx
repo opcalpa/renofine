@@ -8,16 +8,19 @@ import React from 'react';
 import { FloorMapShape } from './types';
 import { useTranslation } from 'react-i18next';
 import { formatMeasurement } from './utils/formatting';
+import { getPixelsPerMeter } from './canvas/utils/scale';
 import { useMeasurement } from "@/contexts/MeasurementContext";
 
 interface HoverInfoTooltipProps {
   shape: FloorMapShape | null;
   mousePosition: { x: number; y: number } | null;
   unit: 'mm' | 'cm' | 'm';
+  /** Scale used to convert room polygon points (stored in pixels) to real area. */
+  pixelsPerMm: number;
 }
 
 // Calculate dimensions for different shape types
-function getShapeDimensions(shape: FloorMapShape): {
+function getShapeDimensions(shape: FloorMapShape, pixelsPerMm: number): {
   length?: number;
   width?: number;
   height?: number;
@@ -76,7 +79,10 @@ function getShapeDimensions(shape: FloorMapShape): {
     }
 
     case 'room': {
-      // Calculate room area from polygon points
+      // Calculate room area from polygon points. Points are stored in pixels, so
+      // convert with the active scale (px/m)² — matches the canonical room-area calc
+      // in utils/roomInsights.ts. (Dividing by 1e6 instead treated px as mm and gave
+      // a wildly wrong value, e.g. 0.1 m² for a 12.1 m² room.)
       const points = coords.points as { x: number; y: number }[];
       if (points && points.length >= 3) {
         let area = 0;
@@ -86,8 +92,8 @@ function getShapeDimensions(shape: FloorMapShape): {
           area -= points[j].x * points[i].y;
         }
         area = Math.abs(area) / 2;
-        // Convert from mm² to m²
-        const areaSqM = area / 1000000;
+        const pxPerMeter = getPixelsPerMeter(pixelsPerMm);
+        const areaSqM = pxPerMeter > 0 ? area / (pxPerMeter ** 2) : 0;
         return {
           area: areaSqM,
           type: 'room',
@@ -163,13 +169,13 @@ function getShapeDimensions(shape: FloorMapShape): {
   }
 }
 
-export function HoverInfoTooltip({ shape, mousePosition, unit }: HoverInfoTooltipProps) {
+export function HoverInfoTooltip({ shape, mousePosition, unit, pixelsPerMm }: HoverInfoTooltipProps) {
   const { t } = useTranslation();
   const ms = useMeasurement();
 
   if (!shape || !mousePosition) return null;
 
-  const dims = getShapeDimensions(shape);
+  const dims = getShapeDimensions(shape, pixelsPerMm);
   if (!dims) return null;
 
   // Type labels for i18n

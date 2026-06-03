@@ -1275,10 +1275,17 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
       return;
     }
 
-    // CRITICAL: If clicking on a shape, let the shape handle it - don't interfere
+    // CRITICAL: If clicking on a shape, let the shape handle it - don't interfere.
+    // EXCEPTION: during object/symbol placement mode a click anywhere — including over a
+    // room polygon that fills the canvas — must place the pending object. Without this,
+    // click-to-place silently fails wherever a room covers the click point (i.e. exactly
+    // where you want to drop outlets/symbols), leaving drag as the only working path.
+    const { pendingObjectId: pendingObjForPlacement, pendingLibrarySymbol: pendingSymForPlacement } =
+      useFloorMapStore.getState();
+    const isPlacingObject = Boolean(pendingObjForPlacement || pendingSymForPlacement);
     const target = e.target;
     const isShape = target !== target.getStage() && (target as any).attrs?.shapeId;
-    if (isShape) {
+    if (isShape && !isPlacingObject) {
       // Shape will handle its own events - don't interfere
       return;
     }
@@ -2228,6 +2235,15 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
     currentPlanId,
     currentProjectId,
     pendingLibrarySymbol,
+    // pendingObjectId was missing here, so its closure went stale (null) and
+    // click-to-place for object-library items (outlets, switches, furniture)
+    // silently never fired — only drag worked. ghostPreview/shapes are read during
+    // placement too (rotation + z-index), so keep them fresh as well.
+    pendingObjectId,
+    ghostPreview,
+    shapes,
+    setPendingObjectId,
+    setGhostPreview,
     setViewState,
     setCurrentPlanId,
     addDrawingPoint,
@@ -4247,9 +4263,19 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
 
       {/* Hover info tooltip - shows dimensions on hover (BIM/CAD standard) */}
       <HoverInfoTooltip
-        shape={hoveredShapeId ? currentShapes.find(s => s.id === hoveredShapeId) || null : null}
+        // Suppress the hover tooltip for a shape that's already selected — its
+        // dimensions are shown via the property panel / handles, and because a room
+        // polygon fills the canvas the tooltip otherwise reads as permanently "stuck".
+        shape={
+          hoveredShapeId &&
+          hoveredShapeId !== selectedShapeId &&
+          !selectedShapeIds.includes(hoveredShapeId)
+            ? currentShapes.find(s => s.id === hoveredShapeId) || null
+            : null
+        }
         mousePosition={hoverMousePosition}
         unit={projectSettings.unit}
+        pixelsPerMm={scaleSettings.pixelsPerMm}
       />
 
       {/* Inline Comments Popover */}

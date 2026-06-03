@@ -1828,7 +1828,8 @@
       "text": "Text",
       "eraser": "Sudd",
       "scissors": "Dela linje",
-      "glue": "Klistra ihop"
+      "glue": "Klistra ihop",
+      "importImage": "Importera bild"
     },
     "hoverInfo": {
       "wall": "Vägg",
@@ -1863,6 +1864,12 @@
       "cooktop": "Häll",
       "range_hood": "Köksfläkt",
       "kitchen_sink": "Diskho"
+    },
+    "image": {
+      "notAnImage": "Vänligen välj en bildfil",
+      "tooLarge": "Max 10MB",
+      "added": "\"{{name}}\" tillagd",
+      "uploadFailed": "Kunde inte ladda upp"
     }
   },
   "canvas": {
