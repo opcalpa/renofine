@@ -161,6 +161,10 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
   // Use refs for synchronous access in rapid click sequences
   const lastClickTimeRef = useRef(0);
   const lastClickedShapeIdRef = useRef<string | null>(null);
+  // Set when an object is placed on a mousedown so the trailing click (which fires
+  // RoomShape.onClick) doesn't then select the room under the cursor — we want the
+  // freshly placed object selected instead.
+  const justPlacedObjectRef = useRef(false);
   const [isGroupMode, setIsGroupMode] = useState(true); // Start in group mode
   
   // Wall chaining state (for continuous wall drawing like old canvas)
@@ -912,6 +916,13 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
     const { pendingObjectId, pendingLibrarySymbol } = useFloorMapStore.getState();
     if (pendingObjectId || pendingLibrarySymbol) {
       return; // Skip selection during placement mode
+    }
+
+    // An object was just placed on this gesture's mousedown; the trailing click
+    // must not re-select the room under the cursor — keep the new object selected.
+    if (justPlacedObjectRef.current) {
+      justPlacedObjectRef.current = false;
+      return;
     }
 
     // SCISSORS TOOL - split wall/line at click point
@@ -1714,6 +1725,11 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
         addShape(newShape);
         toast.success(`✨ ${symbolMetadata.name} placed`);
 
+        // Select the newly placed object (not the room under the cursor)
+        justPlacedObjectRef.current = true;
+        setSelectedShapeId(newShape.id);
+        setSelectedShapeIds([newShape.id]);
+
         // Clear the pending symbol and ghost preview
         setPendingLibrarySymbol(null);
         setGhostPreview(null);
@@ -1721,7 +1737,7 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
 
       return;
     }
-    
+
     // ============================================================================
     // OBJECT LIBRARY PLACEMENT - JSON-based Architectural Objects
     // ============================================================================
@@ -1815,6 +1831,11 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
 
         addShape(newShape);
         toast.success(`${unifiedDef.name} placed${newShape.wallRelative ? ' (wall attached)' : ''}`);
+
+        // Select the newly placed object (not the room under the cursor)
+        justPlacedObjectRef.current = true;
+        setSelectedShapeId(newShape.id);
+        setSelectedShapeIds([newShape.id]);
 
         setPendingObjectId(null);
         setGhostPreview(null);
@@ -1931,6 +1952,11 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
 
         addShape(newShape);
         toast.success(`${objectDef.name} placed${newShape.wallRelative ? ' (wall attached)' : ''}`);
+
+        // Select the newly placed object (not the room under the cursor)
+        justPlacedObjectRef.current = true;
+        setSelectedShapeId(newShape.id);
+        setSelectedShapeIds([newShape.id]);
 
         // Clear the pending object and ghost preview
         setPendingObjectId(null);
@@ -2256,6 +2282,7 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
     setSelectionBox,
     setIsExtendingSelection,
     setSelectedShapeIds,
+    setSelectedShapeId,
     addShape,
     setPendingLibrarySymbol,
     projectSettings.snapEnabled,
