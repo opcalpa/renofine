@@ -96,6 +96,7 @@ import type { AnchorSide } from './types';
 import { ToolContextMenu } from './ToolContextMenu';
 import { Tool } from './types';
 import { HoverInfoTooltip } from './HoverInfoTooltip';
+import { formatMeasurement } from './utils/formatting';
 import { CanvasEmptyState } from './CanvasEmptyState';
 import { InlineCommentPopover } from '@/components/comments/InlineCommentPopover';
 import { MessageCircle } from 'lucide-react';
@@ -3574,6 +3575,30 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
             />
           )}
 
+          {/* Live length label for straight line tools (wall/window/door/opening).
+              The created shape spans first→last point, so label that span's midpoint. */}
+          {isDrawing && currentDrawingPoints.length >= 2 &&
+            (activeTool === 'wall' || activeTool === 'window_line' || activeTool === 'door_line' ||
+             activeTool === 'sliding_door_line' || activeTool === 'opening_line') &&
+            (() => {
+              const a = currentDrawingPoints[0];
+              const b = currentDrawingPoints[currentDrawingPoints.length - 1];
+              const lenMm = Math.sqrt((b.x - a.x) ** 2 + (b.y - a.y) ** 2) / scaleSettings.pixelsPerMm;
+              if (lenMm < 1) return null;
+              const fontSize = 12 / viewState.zoom;
+              const pad = 4 / viewState.zoom;
+              const label = formatMeasurement(lenMm, projectSettings.unit);
+              const w = label.length * fontSize * 0.62 + pad * 2;
+              const h = fontSize + pad * 1.5;
+              const offset = 14 / viewState.zoom; // lift the chip off the line
+              return (
+                <Group x={(a.x + b.x) / 2} y={(a.y + b.y) / 2 - offset} listening={false}>
+                  <Rect x={-w / 2} y={-h / 2} width={w} height={h} fill="rgba(255,255,255,0.92)" cornerRadius={3 / viewState.zoom} />
+                  <KonvaText x={-w / 2} y={-h / 2} width={w} height={h} text={label} fontSize={fontSize} fill="#2563eb" align="center" verticalAlign="middle" />
+                </Group>
+              );
+            })()}
+
           {/* Ghost preview for stamp placement mode (library objects/symbols) */}
           <GhostPreviewOverlay
             ghostPreview={ghostPreview}
@@ -3589,6 +3614,8 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
             selectionBox={selectionBox}
             activeTool={activeTool}
             zoom={viewState.zoom}
+            pixelsPerMm={scaleSettings.pixelsPerMm}
+            unit={projectSettings.unit}
           />
 
           {/* Measurement line - for ruler/measure tool */}

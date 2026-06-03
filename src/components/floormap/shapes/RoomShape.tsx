@@ -386,8 +386,10 @@ export const RoomShape = React.memo<RoomShapeProps>(({
         />
       )}
 
-      {/* Edge measurements - show when showDimensions is enabled, skip edges covered by a wall (skip in handles-only mode) */}
-      {!renderHandlesOnly && showDimensions && points.map((point: { x: number; y: number }, index: number) => {
+      {/* Edge measurements - shown when dimensions are toggled on OR while the room
+          is selected (so lengths update live as you drag a corner to resize).
+          Skip edges covered by a wall, and skip in handles-only mode. */}
+      {!renderHandlesOnly && (showDimensions || isSelected) && points.map((point: { x: number; y: number }, index: number) => {
         if (edgesWithWall.has(index)) return null;
 
         const nextIndex = (index + 1) % points.length;
