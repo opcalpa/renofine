@@ -9,7 +9,7 @@ import { Line, Circle, Group, Text as KonvaText, Rect } from 'react-konva';
 import Konva from 'konva';
 import { useFloorMapStore } from '../store';
 import { RoomShapeProps } from './types';
-import { createUnifiedDragHandlers } from '../canvas/utils';
+import { createUnifiedDragHandlers, computeRoomWallBreaks } from '../canvas/utils';
 import { formatMeasurement } from '../utils/formatting';
 import { WALL_DEFAULTS } from '../canvas/constants';
 import { toast } from 'sonner';
@@ -224,6 +224,7 @@ export const RoomShape = React.memo<RoomShapeProps>(({
   isHighlighted,
   renderHandlesOnly = false,
   simplified = false,
+  openings = [],
 }) => {
   const { zoom } = viewState;
   const { pixelsPerMm } = scaleSettings;
@@ -258,6 +259,17 @@ export const RoomShape = React.memo<RoomShapeProps>(({
 
   // Use dragged points if dragging, otherwise use original points
   const points = draggedPoints || originalPoints;
+
+  // Model A wall geometry: thickness (px) and the wall broken into solid sub-segments
+  // around openings (doors/windows/openings). Pure render-time — no wall objects.
+  const wallThicknessPx = WALL_DEFAULTS.thicknessMM * pixelsPerMm;
+  const wallBreaks = useMemo(
+    () =>
+      simplified
+        ? computeRoomWallBreaks(points, openings, pixelsPerMm, Math.max(wallThicknessPx, 8))
+        : { walls: [], gaps: [] },
+    [simplified, points, openings, pixelsPerMm, wallThicknessPx]
+  );
 
   // Flatten points for Konva Line
   const flatPoints = points.flatMap((p: { x: number; y: number }) => [p.x, p.y]);
@@ -375,31 +387,51 @@ export const RoomShape = React.memo<RoomShapeProps>(({
       {...(!renderHandlesOnly && !isReadOnly && !isDrawingMode ? createUnifiedDragHandlers(shape.id) : {})}
     >
       {/* Room polygon - filled area is clickable (skip in handles-only mode) */}
-      {!renderHandlesOnly && simplified && (
-        <>
-          {/* Model A: the room's own outline IS the wall. The filled area carries the
-              click target; a thick stroke on the same polygon renders the wall. Adjacent
-              rooms share an edge (after edge-snapping) so their walls coincide into one. */}
-          <Line
-            points={flatPoints}
-            closed
-            fill={isHighlighted ? 'rgba(34, 197, 94, 0.30)' : (shape.color || 'rgba(59, 130, 246, 0.2)')}
-            stroke="transparent"
-            shapeId={shape.id}
-            perfectDrawEnabled={false}
-            listening={true}
-          />
-          <Line
-            points={flatPoints}
-            closed
-            stroke={isSelected ? '#3b82f6' : isHighlighted ? '#16a34a' : '#9ca3af'}
-            strokeWidth={WALL_DEFAULTS.thicknessMM * pixelsPerMm}
-            lineJoin="miter"
-            perfectDrawEnabled={false}
-            listening={false}
-          />
-        </>
-      )}
+      {!renderHandlesOnly && simplified && (() => {
+        const wallColor = isSelected ? '#3b82f6' : isHighlighted ? '#16a34a' : '#9ca3af';
+        return (
+          <>
+            {/* Model A: the room's outline IS the wall. The filled polygon carries the
+                click target; the wall is drawn as solid sub-segments that BREAK at
+                openings (doors/windows/openings), with small posts to keep corners
+                solid. Adjacent rooms share an edge so their walls coincide into one. */}
+            <Line
+              points={flatPoints}
+              closed
+              fill={isHighlighted ? 'rgba(34, 197, 94, 0.30)' : (shape.color || 'rgba(59, 130, 246, 0.2)')}
+              stroke="transparent"
+              shapeId={shape.id}
+              perfectDrawEnabled={false}
+              listening={true}
+            />
+            {/* Corner posts — keep wall joins solid where segments meet at vertices */}
+            {points.map((p: { x: number; y: number }, idx: number) => (
+              <Rect
+                key={`post-${idx}`}
+                x={p.x - wallThicknessPx / 2}
+                y={p.y - wallThicknessPx / 2}
+                width={wallThicknessPx}
+                height={wallThicknessPx}
+                fill={wallColor}
+                listening={false}
+                perfectDrawEnabled={false}
+              />
+            ))}
+            {/* Solid wall sub-segments (gaps left where openings sit) */}
+            {wallBreaks.walls.map((w, idx: number) => (
+              <Line
+                key={`wallseg-${idx}`}
+                points={[w.x1, w.y1, w.x2, w.y2]}
+                stroke={wallColor}
+                strokeWidth={wallThicknessPx}
+                lineCap="butt"
+                listening={false}
+                perfectDrawEnabled={false}
+              />
+            ))}
+          </>
+        );
+      })()}
       {!renderHandlesOnly && !simplified && (
         <Line
           points={flatPoints}
@@ -415,8 +447,9 @@ export const RoomShape = React.memo<RoomShapeProps>(({
 
       {/* Edge measurements - shown when dimensions are toggled on OR while the room
           is selected (so lengths update live as you drag a corner to resize).
-          Skip edges covered by a wall, and skip in handles-only mode. */}
-      {!renderHandlesOnly && (showDimensions || isSelected) && points.map((point: { x: number; y: number }, index: number) => {
+          Skip edges covered by a wall, and skip in handles-only mode.
+          In simplified mode the per-segment/opening labels below replace these. */}
+      {!renderHandlesOnly && !simplified && (showDimensions || isSelected) && points.map((point: { x: number; y: number }, index: number) => {
         if (edgesWithWall.has(index)) return null;
 
         const nextIndex = (index + 1) % points.length;
@@ -458,6 +491,65 @@ export const RoomShape = React.memo<RoomShapeProps>(({
           </Group>
         );
       })}
+
+      {/* Simplified (Model A) measurements: length of each solid wall sub-segment
+          (white chip) and of each opening gap (purple chip), shown when selected or
+          when dimensions are toggled on. */}
+      {!renderHandlesOnly && simplified && (showDimensions || isSelected) && (() => {
+        const fs = Math.max(9, 10 / zoom);
+        const chip = (
+          key: string,
+          seg: { x1: number; y1: number; x2: number; y2: number; lengthMm: number },
+          opts: { textFill: string; bg: string; stroke?: string; sideOffset?: number }
+        ) => {
+          const midX = (seg.x1 + seg.x2) / 2;
+          const midY = (seg.y1 + seg.y2) / 2;
+          let ang = (Math.atan2(seg.y2 - seg.y1, seg.x2 - seg.x1) * 180) / Math.PI;
+          if (ang > 90 || ang < -90) ang += 180;
+          const label = formatMeasurement(seg.lengthMm, displayUnit);
+          const tw = label.length * fs * 0.62 + 6 / zoom;
+          const th = fs + 4 / zoom;
+          const len = Math.hypot(seg.x2 - seg.x1, seg.y2 - seg.y1) || 1;
+          const off = (opts.sideOffset ?? 0) / zoom;
+          const nx = (-(seg.y2 - seg.y1) / len) * off;
+          const ny = ((seg.x2 - seg.x1) / len) * off;
+          return (
+            <Group key={key} x={midX + nx} y={midY + ny} rotation={ang} listening={false}>
+              <Rect
+                x={-tw / 2}
+                y={-th / 2}
+                width={tw}
+                height={th}
+                fill={opts.bg}
+                stroke={opts.stroke}
+                strokeWidth={opts.stroke ? 1 / zoom : 0}
+                cornerRadius={2 / zoom}
+              />
+              <KonvaText
+                x={-tw / 2}
+                y={-th / 2}
+                width={tw}
+                height={th}
+                text={label}
+                fontSize={fs}
+                fill={opts.textFill}
+                align="center"
+                verticalAlign="middle"
+              />
+            </Group>
+          );
+        };
+        return (
+          <>
+            {wallBreaks.walls.map((w, i) =>
+              chip(`wlab-${i}`, w, { textFill: '#374151', bg: 'rgba(255,255,255,0.92)' })
+            )}
+            {wallBreaks.gaps.map((g, i) =>
+              chip(`glab-${i}`, g, { textFill: '#7c3aed', bg: 'rgba(139,92,246,0.12)', stroke: '#8b5cf6', sideOffset: 16 })
+            )}
+          </>
+        );
+      })()}
 
       {/* Room name - listening=false so Group receives clicks; name is display-only (skip in handles-only mode) */}
       {!renderHandlesOnly && shape.name && (
@@ -616,6 +708,10 @@ export const RoomShape = React.memo<RoomShapeProps>(({
 }, (prevProps, nextProps) => {
   // Custom comparison to prevent unnecessary re-renders
   const coordsEqual = JSON.stringify(prevProps.shape.coordinates) === JSON.stringify(nextProps.shape.coordinates);
+  // Re-render when nearby openings change (Model A breaks the wall at them).
+  const openSig = (arr?: FloorMapShape[]) =>
+    (arr || []).map((o) => `${o.id}:${JSON.stringify(o.coordinates)}`).join('|');
+  const openingsEqual = openSig(prevProps.openings) === openSig(nextProps.openings);
 
   return (
     prevProps.shape.id === nextProps.shape.id &&
@@ -626,7 +722,9 @@ export const RoomShape = React.memo<RoomShapeProps>(({
     prevProps.projectSettings.unit === nextProps.projectSettings.unit &&
     prevProps.snapSize === nextProps.snapSize &&
     prevProps.renderHandlesOnly === nextProps.renderHandlesOnly &&
+    prevProps.simplified === nextProps.simplified &&
     coordsEqual &&
+    openingsEqual &&
     prevProps.shape.color === nextProps.shape.color &&
     prevProps.shape.strokeColor === nextProps.shape.strokeColor &&
     prevProps.shape.name === nextProps.shape.name

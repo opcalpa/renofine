@@ -82,6 +82,11 @@ export interface RoomShapeProps extends ShapeWithViewProps {
    * thick wall (Model A) — there are no separate wall objects.
    */
   simplified?: boolean;
+  /**
+   * Opening shapes (door/window/opening lines) on the same plan. In simplified
+   * mode the room wall is rendered broken at these openings (render-time only).
+   */
+  openings?: FloorMapShape[];
 }
 
 /**

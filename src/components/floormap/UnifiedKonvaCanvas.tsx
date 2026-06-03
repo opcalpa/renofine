@@ -45,6 +45,7 @@ import {
   snapRectEdgesToRooms,
   edgeSnapNudge,
   snapDoorToRoomEdge,
+  isOpeningShape,
   // Shape connection utilities
   findConnectedShapes,
   findNearestWallEndpoint,
@@ -3707,6 +3708,7 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
                   isReadOnly={isReadOnly}
                   isHighlighted={roomIsHighlighted}
                   simplified={simplified}
+                  openings={simplified ? currentShapes.filter(s => isOpeningShape(s) && s.planId === currentPlanId) : undefined}
                 />
               );
             });
