@@ -36,7 +36,7 @@ export {
   snapDoorToRoomEdge,
 } from './roomSnap';
 export type { BBox } from './roomSnap';
-export { computeRoomWallBreaks, isOpeningShape, isPointInGap } from './wallBreaks';
+export { computeRoomWallBreaks, isOpeningShape, isPointInOpeningSpan } from './wallBreaks';
 export type { WallSegment, OpeningGap } from './wallBreaks';
 
 // Shape connection helpers (auto-grouping, magnetic snap)

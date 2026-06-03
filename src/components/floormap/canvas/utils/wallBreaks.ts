@@ -107,26 +107,31 @@ export const computeRoomWallBreaks = (
 };
 
 /**
- * True if a point sits inside one of the opening gaps (so a corner post drawn
- * there would visibly poke through the opening). Uses a perpendicular tolerance
- * to match the post's half-thickness.
+ * True if a point sits inside the span of any opening (so a corner post drawn
+ * there would visibly poke through the opening).
+ *
+ * Checked against each opening's TRUE endpoints — not per-room clamped gaps — so
+ * an interior junction where several stacked rooms meet along one long opening is
+ * recognised as "inside" and its post is suppressed. Posts at the opening's two
+ * real ends (the jambs) are kept via the perpendicular + along-span margins.
  */
-export const isPointInGap = (
+export const isPointInOpeningSpan = (
   p: { x: number; y: number },
-  gaps: OpeningGap[],
+  openings: FloorMapShape[],
   tolerancePx: number
 ): boolean => {
-  for (const g of gaps) {
-    const ex = g.x2 - g.x1;
-    const ey = g.y2 - g.y1;
+  for (const o of openings) {
+    if (!isOpeningShape(o)) continue;
+    const c = o.coordinates as LineCoordinates;
+    if (!c || typeof c.x1 !== 'number') continue;
+    const ex = c.x2 - c.x1;
+    const ey = c.y2 - c.y1;
     const elen = Math.hypot(ex, ey);
     if (elen < 1e-6) continue;
     const ux = ex / elen;
     const uy = ey / elen;
-    const t = (p.x - g.x1) * ux + (p.y - g.y1) * uy;
-    const perp = Math.abs((p.x - g.x1) * uy - (p.y - g.y1) * ux);
-    // Keep posts at the very ends of the gap (the jambs); only suppress ones
-    // sitting inside the span.
+    const t = (p.x - c.x1) * ux + (p.y - c.y1) * uy;
+    const perp = Math.abs((p.x - c.x1) * uy - (p.y - c.y1) * ux);
     if (perp <= tolerancePx && t > tolerancePx && t < elen - tolerancePx) return true;
   }
   return false;
