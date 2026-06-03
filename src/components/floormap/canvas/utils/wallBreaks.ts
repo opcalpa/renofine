@@ -105,3 +105,29 @@ export const computeRoomWallBreaks = (
 
   return { walls, gaps };
 };
+
+/**
+ * True if a point sits inside one of the opening gaps (so a corner post drawn
+ * there would visibly poke through the opening). Uses a perpendicular tolerance
+ * to match the post's half-thickness.
+ */
+export const isPointInGap = (
+  p: { x: number; y: number },
+  gaps: OpeningGap[],
+  tolerancePx: number
+): boolean => {
+  for (const g of gaps) {
+    const ex = g.x2 - g.x1;
+    const ey = g.y2 - g.y1;
+    const elen = Math.hypot(ex, ey);
+    if (elen < 1e-6) continue;
+    const ux = ex / elen;
+    const uy = ey / elen;
+    const t = (p.x - g.x1) * ux + (p.y - g.y1) * uy;
+    const perp = Math.abs((p.x - g.x1) * uy - (p.y - g.y1) * ux);
+    // Keep posts at the very ends of the gap (the jambs); only suppress ones
+    // sitting inside the span.
+    if (perp <= tolerancePx && t > tolerancePx && t < elen - tolerancePx) return true;
+  }
+  return false;
+};

@@ -9,7 +9,7 @@ import { Line, Circle, Group, Text as KonvaText, Rect } from 'react-konva';
 import Konva from 'konva';
 import { useFloorMapStore } from '../store';
 import { RoomShapeProps } from './types';
-import { createUnifiedDragHandlers, computeRoomWallBreaks } from '../canvas/utils';
+import { createUnifiedDragHandlers, computeRoomWallBreaks, isPointInGap } from '../canvas/utils';
 import { formatMeasurement } from '../utils/formatting';
 import { WALL_DEFAULTS } from '../canvas/constants';
 import { toast } from 'sonner';
@@ -404,19 +404,23 @@ export const RoomShape = React.memo<RoomShapeProps>(({
               perfectDrawEnabled={false}
               listening={true}
             />
-            {/* Corner posts — keep wall joins solid where segments meet at vertices */}
-            {points.map((p: { x: number; y: number }, idx: number) => (
-              <Rect
-                key={`post-${idx}`}
-                x={p.x - wallThicknessPx / 2}
-                y={p.y - wallThicknessPx / 2}
-                width={wallThicknessPx}
-                height={wallThicknessPx}
-                fill={wallColor}
-                listening={false}
-                perfectDrawEnabled={false}
-              />
-            ))}
+            {/* Corner posts — keep wall joins solid where segments meet at vertices.
+                Skip any post that lands inside an opening gap (e.g. a T-junction
+                vertex sitting mid-opening) so it doesn't poke through the gap. */}
+            {points.map((p: { x: number; y: number }, idx: number) =>
+              isPointInGap(p, wallBreaks.gaps, wallThicknessPx / 2) ? null : (
+                <Rect
+                  key={`post-${idx}`}
+                  x={p.x - wallThicknessPx / 2}
+                  y={p.y - wallThicknessPx / 2}
+                  width={wallThicknessPx}
+                  height={wallThicknessPx}
+                  fill={wallColor}
+                  listening={false}
+                  perfectDrawEnabled={false}
+                />
+              )
+            )}
             {/* Solid wall sub-segments (gaps left where openings sit) */}
             {wallBreaks.walls.map((w, idx: number) => (
               <Line
