@@ -9,6 +9,7 @@ import { Line, Circle, Group, Text as KonvaText, Rect } from 'react-konva';
 import Konva from 'konva';
 import { useFloorMapStore } from '../store';
 import { RoomShapeProps } from './types';
+import type { FloorMapShape } from '../types';
 import { createUnifiedDragHandlers, computeRoomWallBreaks, isPointInOpeningSpan } from '../canvas/utils';
 import { formatMeasurement } from '../utils/formatting';
 import { WALL_DEFAULTS } from '../canvas/constants';
