@@ -305,6 +305,7 @@ export const FloorMapEditor = ({ projectId, projectName, onBack, backLabel, isRe
               />
               {/* Mobile: compact bottom toolbar */}
               <MobileCanvasToolbar
+                projectId={projectId}
                 onSave={handleManualSave}
                 onDelete={handleDelete}
                 onUndo={handleUndo}
