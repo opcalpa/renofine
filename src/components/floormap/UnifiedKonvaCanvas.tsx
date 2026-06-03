@@ -44,6 +44,7 @@ import {
   collectRoomBBoxes,
   snapRectEdgesToRooms,
   edgeSnapNudge,
+  snapDoorToRoomEdge,
   // Shape connection utilities
   findConnectedShapes,
   findNearestWallEndpoint,
@@ -332,6 +333,7 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
   const setSelectedShapeId = useFloorMapStore((state) => state.setSelectedShapeId);
   const setSelectedShapeIds = useFloorMapStore((state) => state.setSelectedShapeIds);
   const setShapes = useFloorMapStore((state) => state.setShapes);
+  const setSimplified = useFloorMapStore((state) => state.setSimplified);
   const updateShape = useFloorMapStore((state) => state.updateShape);
   const updateShapes = useFloorMapStore((state) => state.updateShapes);
   const addShape = useFloorMapStore((state) => state.addShape);
@@ -783,7 +785,13 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
 
     loadShapes();
   }, [currentPlanId, currentProjectId, setShapes, initializedViewForPlanId, setInitializedViewForPlanId]);
-  
+
+  // Mirror the simplified (homeowner) flag into the store so non-React helpers
+  // (e.g. the drag system) can branch on Model A behaviour.
+  useEffect(() => {
+    setSimplified(!!simplified);
+  }, [simplified, setSimplified]);
+
   // Auto-save shapes to database when they change (skip for read-only and demo)
   useEffect(() => {
     if (!currentPlanId || isReadOnly || isDemo) {
@@ -3036,7 +3044,22 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
 
         // Auto-snap openings (doors, windows, openings) to walls and break the wall
         const openingTypes = ['door_line', 'window_line', 'sliding_door_line', 'opening_line'];
-        if (openingTypes.includes(newShape.type)) {
+        if (openingTypes.includes(newShape.type) && simplified) {
+          // Model A: walls are room outlines, not objects. Snap the opening onto the
+          // nearest room edge and DON'T split any wall (which is what created stray
+          // wall fragments). Keeps the door sitting in the wall between rooms.
+          const oc = newShape.coordinates as { x1: number; y1: number; x2: number; y2: number };
+          // Anchor on the click/start point (which the user puts on the wall), not the
+          // midpoint — a default horizontal door's midpoint sits far from a vertical wall.
+          const anchor = { x: oc.x1, y: oc.y1 };
+          const lengthPx = Math.hypot(oc.x2 - oc.x1, oc.y2 - oc.y1) || 900 * scaleSettings.pixelsPerMm;
+          const rooms = currentShapes.filter(s => s.type === 'room' && s.planId === currentPlanId);
+          const snapped = snapDoorToRoomEdge(anchor, lengthPx, rooms, currentPlanId, 40 / viewState.zoom);
+          if (snapped) {
+            updateShape(newShape.id, { coordinates: snapped });
+            toast.success('Dörr placerad i vägg');
+          }
+        } else if (openingTypes.includes(newShape.type)) {
           const openingCoords = newShape.coordinates as { x1: number; y1: number; x2: number; y2: number };
           const walls = shapes.filter(
             s => s.planId === currentPlanId &&

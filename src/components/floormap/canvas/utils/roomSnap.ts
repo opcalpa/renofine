@@ -131,3 +131,55 @@ export const edgeSnapNudge = (
     dy: bestNudge([rect.minY, rect.maxY], ys),
   };
 };
+
+/** Closest point on segment a→b to point p, plus the segment's unit direction. */
+const projectOnSegment = (
+  p: { x: number; y: number },
+  a: { x: number; y: number },
+  b: { x: number; y: number }
+): { point: { x: number; y: number }; dir: { x: number; y: number }; dist: number } => {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const len2 = dx * dx + dy * dy;
+  const t = len2 === 0 ? 0 : Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / len2));
+  const point = { x: a.x + t * dx, y: a.y + t * dy };
+  const len = Math.sqrt(len2) || 1;
+  return { point, dir: { x: dx / len, y: dy / len }, dist: Math.hypot(p.x - point.x, p.y - point.y) };
+};
+
+/**
+ * Model A door placement: snap a door/opening onto the nearest room edge (the
+ * shared boundary that reads as the wall) within threshold. Returns line coords
+ * of length `lengthPx` centred on the projection and aligned to the edge, or null
+ * when no edge is close enough. No wall objects are touched — so no fragments.
+ */
+export const snapDoorToRoomEdge = (
+  mid: { x: number; y: number },
+  lengthPx: number,
+  rooms: FloorMapShape[],
+  planId: string | null,
+  threshold: number
+): { x1: number; y1: number; x2: number; y2: number } | null => {
+  let best: { point: { x: number; y: number }; dir: { x: number; y: number } } | null = null;
+  let bestDist = threshold;
+  for (const room of rooms) {
+    if (room.type !== 'room' || room.planId !== planId) continue;
+    const pts = (room.coordinates as PolygonCoordinates)?.points;
+    if (!pts || pts.length < 2) continue;
+    for (let i = 0; i < pts.length; i++) {
+      const proj = projectOnSegment(mid, pts[i], pts[(i + 1) % pts.length]);
+      if (proj.dist < bestDist) {
+        bestDist = proj.dist;
+        best = { point: proj.point, dir: proj.dir };
+      }
+    }
+  }
+  if (!best) return null;
+  const half = lengthPx / 2;
+  return {
+    x1: best.point.x - best.dir.x * half,
+    y1: best.point.y - best.dir.y * half,
+    x2: best.point.x + best.dir.x * half,
+    y2: best.point.y + best.dir.y * half,
+  };
+};

@@ -33,6 +33,7 @@ export {
   collectRoomBBoxes,
   snapRectEdgesToRooms,
   edgeSnapNudge,
+  snapDoorToRoomEdge,
 } from './roomSnap';
 export type { BBox } from './roomSnap';
 

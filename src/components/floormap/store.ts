@@ -67,6 +67,9 @@ const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
 interface FloorMapStore {
   // Project context
   currentProjectId: string | null;
+  /** Simplified (homeowner) mode — Model A: room outlines are the walls, openings
+   *  snap to room edges instead of splitting separate wall objects. */
+  simplified: boolean;
 
   // Plans
   plans: FloorMapPlan[];
@@ -114,6 +117,7 @@ interface FloorMapStore {
   
   // Actions - Plans
   setCurrentProjectId: (id: string | null) => void;
+  setSimplified: (v: boolean) => void;
   setPlans: (plans: FloorMapPlan[]) => void;
   addPlan: (plan: FloorMapPlan) => void;
   updatePlan: (id: string, updates: Partial<FloorMapPlan>) => void;
@@ -237,6 +241,7 @@ interface FloorMapStore {
 export const useFloorMapStore = create<FloorMapStore>((set, get) => ({
   // Initial state
   currentProjectId: null,
+  simplified: false,
   plans: [],
   currentPlanId: null,
   shapes: [],
@@ -281,6 +286,7 @@ export const useFloorMapStore = create<FloorMapStore>((set, get) => ({
 
   // Plan Actions
   setCurrentProjectId: (id) => set({ currentProjectId: id }),
+  setSimplified: (v) => set({ simplified: v }),
   
   setPlans: (plans) => set({ plans }),
   

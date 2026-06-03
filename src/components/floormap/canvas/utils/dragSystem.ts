@@ -436,7 +436,8 @@ export function createDragHandlers(shapeId: string) {
         shapesToUpdate.length === 1 &&
         draggedShape &&
         isOpeningType(draggedShape.type) &&
-        !isGroupedShape
+        !isGroupedShape &&
+        !state.simplified // Model A: openings don't split wall objects
       ) {
         const coords = draggedShape.coordinates as { x1: number; y1: number; x2: number; y2: number };
         const newCoords = {
