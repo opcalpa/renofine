@@ -99,6 +99,8 @@ import type { AnchorSide } from './types';
 import { ToolContextMenu } from './ToolContextMenu';
 import { Tool } from './types';
 import { HoverInfoTooltip } from './HoverInfoTooltip';
+import { ObjectInfoTooltip } from './canvas/ObjectInfoTooltip';
+import { useRoomItemsByShape } from './hooks/useRoomItemsByShape';
 import { formatMeasurement } from './utils/formatting';
 import { CanvasEmptyState } from './CanvasEmptyState';
 import { InlineCommentPopover } from '@/components/comments/InlineCommentPopover';
@@ -479,6 +481,9 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
     ),
     [shapes, currentPlanId]
   );
+
+  // E5: room_items linked to placed objects, keyed by shape id, for hover info.
+  const roomItemsByShape = useRoomItemsByShape(currentShapes);
 
   // When the naming dialog opens, load the project's rooms that aren't already drawn
   // on this plan, so we can steer the user toward their existing rooms first.
@@ -2523,8 +2528,15 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
     // Hover detection for info tooltip (only when not actively doing something)
     // Only show tooltip when using select tool and not drawing/panning/box-selecting
     if (activeTool === 'select' && !isPanning && !isDrawing && !isBoxSelecting) {
-      const target = e.target;
-      const shapeId = (target as any).attrs?.shapeId;
+      // Walk up to find the owning shape's id: a unified object's hit target is a
+      // child Path that doesn't carry shapeId itself (it sits on the parent group),
+      // so reading e.target.attrs directly would miss objects entirely.
+      let node: Konva.Node | null = e.target;
+      let shapeId: string | undefined;
+      while (node && !shapeId) {
+        shapeId = (node as any).attrs?.shapeId;
+        node = node.getParent();
+      }
       if (shapeId && shapeId !== hoveredShapeId) {
         setHoveredShapeId(shapeId);
         setHoverMousePosition({ x: e.evt.clientX, y: e.evt.clientY });
@@ -4416,22 +4428,34 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
         />
       )}
 
-      {/* Hover info tooltip - shows dimensions on hover (BIM/CAD standard) */}
-      <HoverInfoTooltip
-        // Suppress the hover tooltip for a shape that's already selected — its
-        // dimensions are shown via the property panel / handles, and because a room
-        // polygon fills the canvas the tooltip otherwise reads as permanently "stuck".
-        shape={
+      {/* Hover info tooltip. For a placed object linked to a room_items entry, show
+          its logged info (E5 — drawing-as-instruction); otherwise the dimension
+          tooltip (BIM/CAD standard). Suppressed for the selected shape so a room
+          polygon filling the canvas doesn't read as a permanently "stuck" tooltip. */}
+      {(() => {
+        const hoverShape =
           hoveredShapeId &&
           hoveredShapeId !== selectedShapeId &&
           !selectedShapeIds.includes(hoveredShapeId)
             ? currentShapes.find(s => s.id === hoveredShapeId) || null
-            : null
+            : null;
+        const linkedItem =
+          hoverShape && hoverShape.metadata?.isUnifiedObject
+            ? roomItemsByShape[hoverShape.id]
+            : null;
+
+        if (hoverShape && linkedItem) {
+          return <ObjectInfoTooltip item={linkedItem} mousePosition={hoverMousePosition} />;
         }
-        mousePosition={hoverMousePosition}
-        unit={projectSettings.unit}
-        pixelsPerMm={scaleSettings.pixelsPerMm}
-      />
+        return (
+          <HoverInfoTooltip
+            shape={hoverShape}
+            mousePosition={hoverMousePosition}
+            unit={projectSettings.unit}
+            pixelsPerMm={scaleSettings.pixelsPerMm}
+          />
+        );
+      })()}
 
       {/* Inline Comments Popover */}
       {activeComment && (
