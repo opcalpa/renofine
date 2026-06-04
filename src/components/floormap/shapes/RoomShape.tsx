@@ -207,6 +207,37 @@ function findVisualCenter(points: { x: number; y: number }[]): { x: number; y: n
 }
 
 /**
+ * Area-weighted centroid of a polygon — the true geometric center.
+ * For rectangular rooms this is the exact center both horizontally and vertically.
+ */
+function polygonCentroid(points: { x: number; y: number }[]): { x: number; y: number } {
+  const n = points.length;
+  if (n < 3) {
+    const xs = points.map(p => p.x);
+    const ys = points.map(p => p.y);
+    return { x: (Math.min(...xs) + Math.max(...xs)) / 2, y: (Math.min(...ys) + Math.max(...ys)) / 2 };
+  }
+  let area = 0;
+  let cx = 0;
+  let cy = 0;
+  for (let i = 0; i < n; i++) {
+    const p0 = points[i];
+    const p1 = points[(i + 1) % n];
+    const cross = p0.x * p1.y - p1.x * p0.y;
+    area += cross;
+    cx += (p0.x + p1.x) * cross;
+    cy += (p0.y + p1.y) * cross;
+  }
+  area *= 0.5;
+  if (Math.abs(area) < 1e-6) {
+    const xs = points.map(p => p.x);
+    const ys = points.map(p => p.y);
+    return { x: (Math.min(...xs) + Math.max(...xs)) / 2, y: (Math.min(...ys) + Math.max(...ys)) / 2 };
+  }
+  return { x: cx / (6 * area), y: cy / (6 * area) };
+}
+
+/**
  * RoomShape - Renders a room polygon with vertex handles and edge measurements
  * PERFORMANCE: Memoized to prevent unnecessary re-renders
  */
@@ -285,11 +316,18 @@ export const RoomShape = React.memo<RoomShapeProps>(({
   const roomWidth = maxX - minX;
   const roomHeight = maxY - minY;
 
-  // Find visual center (a point inside the polygon, good for label placement)
+  // Place the name at the room's true geometric center (both axes). For irregular
+  // rooms whose centroid falls outside the polygon, fall back to the clearance-based
+  // visual center so the label still sits on the room surface.
   const visualCenter = useMemo(() => findVisualCenter(points), [points]);
-  const centerX = visualCenter.x;
-  const centerY = visualCenter.y;
-  const labelRotation = visualCenter.rotation;
+  const centroid = useMemo(() => polygonCentroid(points), [points]);
+  const centroidInside = useMemo(
+    () => isPointInPolygon(centroid.x, centroid.y, points),
+    [centroid, points]
+  );
+  const centerX = centroidInside ? centroid.x : visualCenter.x;
+  const centerY = centroidInside ? centroid.y : visualCenter.y;
+  const labelRotation = centroidInside ? 0 : visualCenter.rotation;
 
   // Fixed screen-size label — same size for all rooms regardless of area.
   // Dividing by zoom makes the font zoom-invariant (always ~14px on screen).
@@ -556,32 +594,32 @@ export const RoomShape = React.memo<RoomShapeProps>(({
         );
       })()}
 
-      {/* Room name - listening=false so Group receives clicks; name is display-only (skip in handles-only mode) */}
-      {!renderHandlesOnly && shape.name && (
-        <Group x={centerX} y={centerY} rotation={labelRotation}>
-          <Rect
-            x={-(shape.name.length * fontSize * 0.3)}
-            y={-fontSize * 0.6}
-            width={shape.name.length * fontSize * 0.6}
-            height={fontSize * 1.2}
-            fill="rgba(255, 255, 255, 0.9)"
-            cornerRadius={2}
-            listening={false}
-          />
-          <KonvaText
-            x={0}
-            y={0}
-            text={shape.name}
-            fontSize={fontSize}
-            fill="#000000"
-            align="center"
-            verticalAlign="middle"
-            offsetX={(shape.name.length * fontSize * 0.6) / 2}
-            offsetY={fontSize * 0.6}
-            listening={false}
-          />
-        </Group>
-      )}
+      {/* Room name - listening=false so Group receives clicks; name is display-only (skip in handles-only mode).
+          The text box is sized generously and the Group is offset by half of it, so the
+          name sits exactly on the room center on both axes. No background — letters draw
+          directly on the room surface. */}
+      {!renderHandlesOnly && shape.name && (() => {
+        const labelW = shape.name.length * fontSize * 0.7 + 20 / zoom;
+        const labelH = fontSize * 1.4;
+        return (
+          <Group x={centerX} y={centerY} rotation={labelRotation}>
+            <KonvaText
+              x={0}
+              y={0}
+              width={labelW}
+              height={labelH}
+              text={shape.name}
+              fontSize={fontSize}
+              fill="#1f2937"
+              align="center"
+              verticalAlign="middle"
+              offsetX={labelW / 2}
+              offsetY={labelH / 2}
+              listening={false}
+            />
+          </Group>
+        );
+      })()}
 
       {/* Edge midpoint handles - for adding new points */}
       {isSelected && originalPoints.map((point: { x: number; y: number }, index: number) => {
