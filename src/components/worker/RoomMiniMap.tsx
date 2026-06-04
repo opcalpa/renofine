@@ -14,8 +14,14 @@
  * one trade at a time — turning the drawing into an instruction.
  */
 import { useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { Check, ExternalLink } from "lucide-react";
+import {
+  CATEGORY_COLORS,
+  CategoryFilterChips,
+  ObjectInfoCard,
+  type FloorPlanObject,
+} from "./roomObjectShared";
+
+export type { FloorPlanObject };
 
 interface FloorPlanShape {
   id: string;
@@ -32,20 +38,6 @@ interface FloorPlanImage {
   y: number;
 }
 
-export interface FloorPlanObject {
-  id: string;
-  roomId: string | null;
-  x: number;
-  y: number;
-  category: string;
-  subtype: string | null;
-  title: string;
-  installStatus: string;
-  productLink: string | null;
-  quantity: number | null;
-  notes: string | null;
-}
-
 interface RoomMiniMapProps {
   shapes: FloorPlanShape[];
   highlightRoomId: string | null;
@@ -55,35 +47,6 @@ interface RoomMiniMapProps {
   objects?: FloorPlanObject[];
   className?: string;
 }
-
-// Category → marker accent colour. Mirrors ROOM_ITEM_CATEGORIES order.
-const CATEGORY_COLORS: Record<string, string> = {
-  electrical: "#f59e0b",
-  plumbing: "#3b82f6",
-  ventilation: "#06b6d4",
-  appliance: "#a855f7",
-};
-
-const CATEGORY_LABEL_KEYS: Record<string, string> = {
-  electrical: "roomItems.catElectrical",
-  plumbing: "roomItems.catPlumbing",
-  ventilation: "roomItems.catVentilation",
-  appliance: "roomItems.catAppliance",
-};
-
-// Electrical subtype → i18n key (mirrors ELECTRICAL_ITEM_SUBTYPE_OPTIONS). Lets
-// the worker see object titles in their own language for free (no AI), since the
-// electrical catalog is fully translated. Other categories use the raw title.
-const ELECTRICAL_SUBTYPE_KEYS: Record<string, string> = {
-  single_outlet: "objects.electrical.singleOutlet",
-  double_outlet: "objects.electrical.doubleOutlet",
-  usb_outlet: "objects.electrical.usbOutlet",
-  data_outlet: "objects.electrical.dataOutlet",
-  tv_outlet: "objects.electrical.tvOutlet",
-  light_switch: "objects.electrical.lightSwitch",
-  dimmer_switch: "objects.electrical.dimmerSwitch",
-  ceiling_lamp: "objects.electrical.ceilingLamp",
-};
 
 function pointsToSvgPath(points: Array<{ x: number; y: number }>): string {
   if (points.length < 2) return "";
@@ -103,8 +66,6 @@ export function RoomMiniMap({
   objects,
   className,
 }: RoomMiniMapProps) {
-  const { t } = useTranslation();
-
   const validShapes = (shapes || []).filter(
     (s) => Array.isArray(s.points) && s.points.length >= 3
   );
@@ -121,7 +82,6 @@ export function RoomMiniMap({
     return seen;
   }, [roomObjects]);
 
-  // Active category filter (all on by default). null entry = uninitialised.
   const [hiddenCategories, setHiddenCategories] = useState<Set<string>>(new Set());
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -140,7 +100,7 @@ export function RoomMiniMap({
     return null;
   }
 
-  // Bounding box of shapes + visible object markers (so markers never clip).
+  // Bounding box of shapes + object markers (so markers never clip).
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
   for (const shape of validShapes) {
     for (const p of shape.points) {
@@ -157,11 +117,10 @@ export function RoomMiniMap({
     if (o.y > maxY) maxY = o.y;
   }
 
-  // If only background image with no room shapes, use image position as bounds
   if (validShapes.length === 0 && roomObjects.length === 0 && backgroundImage) {
     minX = backgroundImage.x;
     minY = backgroundImage.y;
-    maxX = backgroundImage.x + 10000; // Estimate — image will scale to fit
+    maxX = backgroundImage.x + 10000;
     maxY = backgroundImage.y + 7000;
   }
 
@@ -178,49 +137,21 @@ export function RoomMiniMap({
   const strokeScale = Math.max(vbW, vbH);
   const markerR = strokeScale * 0.02;
 
-  const objectTitle = (o: FloorPlanObject): string => {
-    if (o.category === "electrical" && o.subtype && ELECTRICAL_SUBTYPE_KEYS[o.subtype]) {
-      return t(ELECTRICAL_SUBTYPE_KEYS[o.subtype], o.title);
-    }
-    return o.title;
-  };
-
   return (
     <div className="space-y-2">
-      {/* Category filter chips (only when more than one trade is present) */}
       {presentCategories.length > 1 && (
-        <div className="flex flex-wrap gap-1.5">
-          {presentCategories.map((cat) => {
-            const active = !hiddenCategories.has(cat);
-            const color = CATEGORY_COLORS[cat] || "#6b7280";
-            return (
-              <button
-                key={cat}
-                type="button"
-                onClick={() =>
-                  setHiddenCategories((prev) => {
-                    const next = new Set(prev);
-                    if (next.has(cat)) next.delete(cat);
-                    else next.add(cat);
-                    return next;
-                  })
-                }
-                className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition ${
-                  active
-                    ? "border-transparent text-white"
-                    : "border-border bg-background text-muted-foreground"
-                }`}
-                style={active ? { backgroundColor: color } : undefined}
-              >
-                <span
-                  className="inline-block h-2 w-2 rounded-full"
-                  style={{ backgroundColor: active ? "rgba(255,255,255,0.9)" : color }}
-                />
-                {t(CATEGORY_LABEL_KEYS[cat] || "", cat)}
-              </button>
-            );
-          })}
-        </div>
+        <CategoryFilterChips
+          categories={presentCategories}
+          hidden={hiddenCategories}
+          onToggle={(cat) =>
+            setHiddenCategories((prev) => {
+              const next = new Set(prev);
+              if (next.has(cat)) next.delete(cat);
+              else next.add(cat);
+              return next;
+            })
+          }
+        />
       )}
 
       <svg
@@ -229,7 +160,6 @@ export function RoomMiniMap({
         style={{ width: "100%", maxHeight: 220 }}
         preserveAspectRatio="xMidYMid meet"
       >
-        {/* Background image (uploaded floor plan / architect drawing) */}
         {backgroundImage?.url && (
           <image
             href={backgroundImage.url}
@@ -242,7 +172,6 @@ export function RoomMiniMap({
           />
         )}
 
-        {/* Room polygons as overlays */}
         {validShapes.map((shape) => {
           const isHighlighted = shape.roomId === highlightRoomId;
           return (
@@ -279,7 +208,6 @@ export function RoomMiniMap({
           );
         })}
 
-        {/* Object markers */}
         {visibleObjects.map((o) => {
           const color = CATEGORY_COLORS[o.category] || "#6b7280";
           const installed = o.installStatus === "installed";
@@ -290,7 +218,6 @@ export function RoomMiniMap({
               style={{ cursor: "pointer" }}
               onClick={() => setSelectedId(isSelected ? null : o.id)}
             >
-              {/* tap halo */}
               <circle cx={o.x} cy={o.y} r={markerR * 1.9} fill="transparent" />
               <circle
                 cx={o.x}
@@ -317,55 +244,7 @@ export function RoomMiniMap({
         })}
       </svg>
 
-      {/* Tapped-object info card */}
-      {selected && (
-        <div className="rounded-lg border border-border bg-background px-3 py-2 text-sm shadow-sm">
-          <div className="flex items-start justify-between gap-2">
-            <div className="font-medium text-foreground">{objectTitle(selected)}</div>
-            <span
-              className="mt-0.5 inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-medium text-white"
-              style={{ backgroundColor: CATEGORY_COLORS[selected.category] || "#6b7280" }}
-            >
-              {t(CATEGORY_LABEL_KEYS[selected.category] || "", selected.category)}
-            </span>
-          </div>
-          <div className="mt-1.5 space-y-1 text-xs text-muted-foreground">
-            <div className="flex items-center gap-1.5">
-              <span
-                className={`inline-flex h-3.5 w-3.5 items-center justify-center rounded-full ${
-                  selected.installStatus === "installed"
-                    ? "bg-emerald-500 text-white"
-                    : "border border-muted-foreground/40"
-                }`}
-              >
-                {selected.installStatus === "installed" && <Check className="h-2.5 w-2.5" />}
-              </span>
-              <span>
-                {selected.installStatus === "installed"
-                  ? t("roomItems.installed", "Installed")
-                  : t("roomItems.planned", "Planned")}
-              </span>
-            </div>
-            {selected.quantity != null && (
-              <div>
-                {t("roomItems.quantity", "Qty")}: <span className="rf-num">×{selected.quantity}</span>
-              </div>
-            )}
-            {selected.notes && <div className="whitespace-pre-wrap">{selected.notes}</div>}
-            {selected.productLink && (
-              <a
-                href={selected.productLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-primary hover:underline"
-              >
-                <ExternalLink className="h-3 w-3" />
-                {t("roomItems.productLink", "Product link")}
-              </a>
-            )}
-          </div>
-        </div>
-      )}
+      {selected && <ObjectInfoCard object={selected} />}
     </div>
   );
 }

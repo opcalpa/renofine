@@ -5,7 +5,8 @@ import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getStatusBadgeColor } from "@/lib/statusColors";
 import { ColorSwatchRow } from "@/components/worker/ColorSwatchRow";
-import { RoomMiniMap, type FloorPlanObject } from "@/components/worker/RoomMiniMap";
+import { RoomObjectViews } from "@/components/worker/RoomObjectViews";
+import type { FloorPlanObject, WallObject } from "@/components/worker/roomObjectShared";
 import {
   ChevronDown,
   Camera,
@@ -23,6 +24,7 @@ interface RoomInstructionCardProps {
   room: RoomInstruction;
   floorPlanShapes?: FloorPlanShape[];
   floorPlanObjects?: FloorPlanObject[];
+  wallObjects?: WallObject[];
   canToggleChecklist?: boolean;
   canUploadPhotos?: boolean;
   onChecklistToggle?: (taskId: string, checklistId: string, itemId: string, completed: boolean) => void;
@@ -41,6 +43,7 @@ export function RoomInstructionCard({
   room,
   floorPlanShapes,
   floorPlanObjects,
+  wallObjects,
   canToggleChecklist = false,
   canUploadPhotos = false,
   onChecklistToggle,
@@ -96,14 +99,17 @@ export function RoomInstructionCard({
         </div>
       </div>
 
-      {/* Floor plan minimap */}
+      {/* Floor plan + wall instruction views */}
       {room.id !== "__none__" &&
         ((floorPlanShapes && floorPlanShapes.length > 0) ||
-          (floorPlanObjects || []).some((o) => o.roomId === room.id)) && (
-          <RoomMiniMap
+          (floorPlanObjects || []).some((o) => o.roomId === room.id) ||
+          (wallObjects || []).some((o) => o.roomId === room.id)) && (
+          <RoomObjectViews
             shapes={floorPlanShapes || []}
             highlightRoomId={room.id}
-            objects={floorPlanObjects}
+            floorObjects={floorPlanObjects}
+            wallObjects={wallObjects}
+            ceilingHeightMm={room.dimensions?.ceiling_height_mm ?? null}
             className="rounded-lg border"
           />
         )}

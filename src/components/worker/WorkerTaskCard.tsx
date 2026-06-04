@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getStatusBadgeColor } from "@/lib/statusColors";
 import { ColorSwatchRow } from "./ColorSwatchRow";
-import { RoomMiniMap, type FloorPlanObject } from "./RoomMiniMap";
+import { RoomObjectViews } from "./RoomObjectViews";
+import type { FloorPlanObject, WallObject } from "./roomObjectShared";
 import { RoomSpecsSummary } from "./RoomSpecsSummary";
 import { WorkerMessageInput } from "./WorkerMessageInput";
 import { MapPin, Ruler, Camera, Loader2, CheckSquare, ImageIcon, MessageCircle } from "lucide-react";
@@ -117,6 +118,7 @@ interface WorkerTaskCardProps {
   floorPlan: FloorPlanShape[] | null;
   floorPlanImage?: { url: string; x: number; y: number } | null;
   floorPlanObjects?: FloorPlanObject[];
+  wallObjects?: WallObject[];
   onTaskUpdate: (taskId: string, updates: Partial<WorkerTask>) => void;
 }
 
@@ -144,6 +146,7 @@ export function WorkerTaskCard({
   floorPlan,
   floorPlanImage,
   floorPlanObjects,
+  wallObjects,
   onTaskUpdate,
 }: WorkerTaskCardProps) {
   const { t } = useTranslation();
@@ -262,20 +265,24 @@ export function WorkerTaskCard({
         )}
       </div>
 
-      {/* Floor plan mini-map */}
-      {floorPlan && floorPlan.length > 0 && task.room && (
-        <div className="px-4 pb-2">
-          <div className="rounded-lg bg-muted/30 border p-2">
-            <RoomMiniMap
-              shapes={floorPlan}
-              highlightRoomId={task.roomId}
-              backgroundImage={floorPlanImage}
-              objects={floorPlanObjects}
-              className="rounded"
-            />
+      {/* Floor plan + wall instruction views */}
+      {((floorPlan && floorPlan.length > 0) ||
+        (wallObjects || []).some((o) => o.roomId === task.roomId)) &&
+        task.room && (
+          <div className="px-4 pb-2">
+            <div className="rounded-lg bg-muted/30 border p-2">
+              <RoomObjectViews
+                shapes={floorPlan || []}
+                highlightRoomId={task.roomId}
+                backgroundImage={floorPlanImage}
+                floorObjects={floorPlanObjects}
+                wallObjects={wallObjects}
+                ceilingHeightMm={ceilingH}
+                className="rounded"
+              />
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* Room info */}
       {room && (

@@ -6490,6 +6490,9 @@
     "catPlumbing": "VVS",
     "catVentilation": "Ventilation",
     "catAppliance": "Vitvaror",
-    "linkedItem": "Loggad post"
+    "linkedItem": "Loggad post",
+    "wall": "Vägg",
+    "floorView": "Planritning",
+    "wallView": "Väggvy"
   }
 }

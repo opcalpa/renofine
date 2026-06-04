@@ -5,7 +5,7 @@ import { Loader2, AlertCircle, Wrench, Layers, List, Languages } from "lucide-re
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { WorkerTaskCard, type WorkerTask } from "@/components/worker/WorkerTaskCard";
-import type { FloorPlanObject } from "@/components/worker/RoomMiniMap";
+import type { FloorPlanObject, WallObject } from "@/components/worker/roomObjectShared";
 import { SwipeableRoomInstructions, groupWorkerTasksByRoom } from "@/components/room-instructions";
 import { WorkerPurchaseRequestDialog } from "@/components/worker/WorkerPurchaseRequestDialog";
 import {
@@ -44,6 +44,7 @@ interface WorkerViewData {
   floorPlan: FloorPlanShape[] | null;
   floorPlanImage: { url: string; x: number; y: number } | null;
   floorPlanObjects?: FloorPlanObject[];
+  wallObjects?: WallObject[];
 }
 
 type ErrorState = "not_found" | "expired" | "error" | null;
@@ -410,6 +411,7 @@ export default function WorkerView() {
             rooms={roomInstructions}
             floorPlanShapes={data.floorPlan ?? undefined}
             floorPlanObjects={data.floorPlanObjects}
+            wallObjects={data.wallObjects}
             canToggleChecklist={data.canToggleChecklist}
             canUploadPhotos={data.canUploadPhotos}
             onPhotoUpload={handleRoomPhotoUpload}
@@ -430,6 +432,7 @@ export default function WorkerView() {
               floorPlan={data.floorPlan}
               floorPlanImage={data.floorPlanImage}
               floorPlanObjects={data.floorPlanObjects}
+              wallObjects={data.wallObjects}
               onTaskUpdate={handleTaskUpdate}
             />
           ))}

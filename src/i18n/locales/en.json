@@ -6491,6 +6491,9 @@
     "catPlumbing": "Plumbing",
     "catVentilation": "Ventilation",
     "catAppliance": "Appliances",
-    "linkedItem": "Logged item"
+    "linkedItem": "Logged item",
+    "wall": "Wall",
+    "floorView": "Floor plan",
+    "wallView": "Wall view"
   }
 }

@@ -172,11 +172,11 @@ serve(async (req) => {
       }
     }
 
-    // 5f. Fetch placed room-items (objects logged on the floor plan) for the
-    //     assigned rooms. These become tappable markers on the worker mini-map,
-    //     turning the drawing into an instruction (which product, where, status).
-    //     Only floor-plan-placed items have a placementX/Y; elevation-only items
-    //     (wall-relative) are skipped here.
+    // 5f. Fetch placed room-items (objects logged on the drawing) for the assigned
+    //     rooms. These become tappable markers — turning the drawing into an
+    //     instruction (which product, where, status). An item is placed EITHER on
+    //     the floor plan (metadata.placementX/Y) OR on a wall in elevation
+    //     (shape_data.wallRelative). We surface both as separate view layers.
     let floorPlanObjects: Array<{
       id: string;
       roomId: string | null;
@@ -190,6 +190,23 @@ serve(async (req) => {
       quantity: number | null;
       notes: string | null;
     }> = [];
+    // Wall (elevation) objects: positioned along a wall (distance + height in mm).
+    let wallObjects: Array<{
+      id: string;
+      roomId: string | null;
+      wallId: string;
+      category: string;
+      subtype: string | null;
+      title: string;
+      installStatus: string;
+      productLink: string | null;
+      quantity: number | null;
+      notes: string | null;
+      distanceFromWallStart: number;
+      elevationBottom: number;
+      width: number;
+      height: number;
+    }> = [];
     if (roomIds.length > 0) {
       const { data: items } = await sb
         .from("room_items")
@@ -202,28 +219,29 @@ serve(async (req) => {
         ...new Set((items || []).map((i) => i.floor_map_shape_id).filter(Boolean) as string[]),
       ];
       const shapePos: Record<string, { x: number; y: number }> = {};
+      const shapeWall: Record<string, Record<string, unknown>> = {};
       if (objShapeIds.length > 0) {
         const { data: objShapes } = await sb
           .from("floor_map_shapes")
           .select("id, shape_data")
           .in("id", objShapeIds);
         for (const s of objShapes || []) {
-          const md = ((s.shape_data as Record<string, unknown>)?.metadata || {}) as Record<string, unknown>;
+          const sd = (s.shape_data as Record<string, unknown>) || {};
+          const md = (sd.metadata || {}) as Record<string, unknown>;
           const x = typeof md.placementX === "number" ? md.placementX : null;
           const y = typeof md.placementY === "number" ? md.placementY : null;
           if (x !== null && y !== null) shapePos[s.id] = { x, y };
+          const wr = sd.wallRelative as Record<string, unknown> | undefined;
+          if (wr && typeof wr.wallId === "string") shapeWall[s.id] = wr;
         }
       }
 
       for (const it of items || []) {
-        const pos = it.floor_map_shape_id ? shapePos[it.floor_map_shape_id] : null;
-        if (!pos) continue; // no floor-plan position (elevation-only or missing shape)
+        if (!it.floor_map_shape_id) continue;
         const detail = (it.detail || {}) as Record<string, unknown>;
-        floorPlanObjects.push({
+        const base = {
           id: it.id,
           roomId: it.room_id,
-          x: pos.x,
-          y: pos.y,
           category: it.category,
           subtype: it.subtype,
           title: it.title,
@@ -231,7 +249,21 @@ serve(async (req) => {
           productLink: typeof detail.product_link === "string" ? detail.product_link : null,
           quantity: typeof detail.quantity === "number" ? detail.quantity : null,
           notes: typeof detail.notes === "string" ? detail.notes : null,
-        });
+        };
+        const pos = shapePos[it.floor_map_shape_id];
+        const wr = shapeWall[it.floor_map_shape_id];
+        if (pos) {
+          floorPlanObjects.push({ ...base, x: pos.x, y: pos.y });
+        } else if (wr) {
+          wallObjects.push({
+            ...base,
+            wallId: wr.wallId as string,
+            distanceFromWallStart: typeof wr.distanceFromWallStart === "number" ? wr.distanceFromWallStart : 0,
+            elevationBottom: typeof wr.elevationBottom === "number" ? wr.elevationBottom : 0,
+            width: typeof wr.width === "number" ? wr.width : 100,
+            height: typeof wr.height === "number" ? wr.height : 100,
+          });
+        }
       }
     }
 
@@ -269,19 +301,23 @@ serve(async (req) => {
       }
 
       // Apply room-item free-text translations (custom title + notes) to the
-      // mini-map objects built in 5f, so object tooltips read in the worker's
+      // floor + wall objects built in 5f, so object tooltips read in the worker's
       // language. Electrical enum titles still resolve via i18n on the client.
-      if (floorPlanObjects.length > 0) {
+      const allObjIds = [
+        ...floorPlanObjects.map((o) => o.id),
+        ...wallObjects.map((o) => o.id),
+      ];
+      if (allObjIds.length > 0) {
         const { data: itemTrs } = await sb
           .from("room_item_translations")
           .select("room_item_id, title, notes")
-          .in("room_item_id", floorPlanObjects.map((o) => o.id))
+          .in("room_item_id", allObjIds)
           .eq("language", workerLang);
         const itemTrMap: Record<string, { title: string | null; notes: string | null }> = {};
         for (const tr of itemTrs || []) {
           itemTrMap[tr.room_item_id] = { title: tr.title, notes: tr.notes };
         }
-        for (const obj of floorPlanObjects) {
+        for (const obj of [...floorPlanObjects, ...wallObjects]) {
           const tr = itemTrMap[obj.id];
           if (tr?.title) obj.title = tr.title;
           if (tr?.notes) obj.notes = tr.notes;
@@ -500,6 +536,7 @@ serve(async (req) => {
       floorPlan: floorPlanShapes.length > 0 ? floorPlanShapes : null,
       floorPlanImage: backgroundImage,
       floorPlanObjects,
+      wallObjects,
     }, 200, req);
   } catch (error) {
     console.error("get-worker-data error:", error);
