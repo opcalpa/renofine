@@ -172,6 +172,69 @@ serve(async (req) => {
       }
     }
 
+    // 5f. Fetch placed room-items (objects logged on the floor plan) for the
+    //     assigned rooms. These become tappable markers on the worker mini-map,
+    //     turning the drawing into an instruction (which product, where, status).
+    //     Only floor-plan-placed items have a placementX/Y; elevation-only items
+    //     (wall-relative) are skipped here.
+    let floorPlanObjects: Array<{
+      id: string;
+      roomId: string | null;
+      x: number;
+      y: number;
+      category: string;
+      subtype: string | null;
+      title: string;
+      installStatus: string;
+      productLink: string | null;
+      quantity: number | null;
+      notes: string | null;
+    }> = [];
+    if (roomIds.length > 0) {
+      const { data: items } = await sb
+        .from("room_items")
+        .select("id, room_id, category, subtype, title, install_status, detail, floor_map_shape_id")
+        .eq("project_id", tokenRecord.project_id)
+        .in("room_id", roomIds)
+        .not("floor_map_shape_id", "is", null);
+
+      const objShapeIds = [
+        ...new Set((items || []).map((i) => i.floor_map_shape_id).filter(Boolean) as string[]),
+      ];
+      const shapePos: Record<string, { x: number; y: number }> = {};
+      if (objShapeIds.length > 0) {
+        const { data: objShapes } = await sb
+          .from("floor_map_shapes")
+          .select("id, shape_data")
+          .in("id", objShapeIds);
+        for (const s of objShapes || []) {
+          const md = ((s.shape_data as Record<string, unknown>)?.metadata || {}) as Record<string, unknown>;
+          const x = typeof md.placementX === "number" ? md.placementX : null;
+          const y = typeof md.placementY === "number" ? md.placementY : null;
+          if (x !== null && y !== null) shapePos[s.id] = { x, y };
+        }
+      }
+
+      for (const it of items || []) {
+        const pos = it.floor_map_shape_id ? shapePos[it.floor_map_shape_id] : null;
+        if (!pos) continue; // no floor-plan position (elevation-only or missing shape)
+        const detail = (it.detail || {}) as Record<string, unknown>;
+        floorPlanObjects.push({
+          id: it.id,
+          roomId: it.room_id,
+          x: pos.x,
+          y: pos.y,
+          category: it.category,
+          subtype: it.subtype,
+          title: it.title,
+          installStatus: it.install_status,
+          productLink: typeof detail.product_link === "string" ? detail.product_link : null,
+          quantity: typeof detail.quantity === "number" ? detail.quantity : null,
+          notes: typeof detail.notes === "string" ? detail.notes : null,
+        });
+      }
+    }
+
     // 5e. Fetch translations for worker's language
     const workerLang = tokenRecord.worker_language;
     let translationsMap: Record<string, { title: string; description: string | null; checklists: unknown }> = {};
@@ -416,6 +479,7 @@ serve(async (req) => {
       tasks: workerTasks,
       floorPlan: floorPlanShapes.length > 0 ? floorPlanShapes : null,
       floorPlanImage: backgroundImage,
+      floorPlanObjects,
     }, 200, req);
   } catch (error) {
     console.error("get-worker-data error:", error);

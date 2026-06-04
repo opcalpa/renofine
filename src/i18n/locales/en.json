@@ -6467,6 +6467,7 @@
     "quantity": "Qty",
     "productLink": "Product link",
     "installed": "Installed",
+    "planned": "Planned",
     "markInstalled": "Mark as installed",
     "newItem": "New item",
     "editItem": "Edit item",

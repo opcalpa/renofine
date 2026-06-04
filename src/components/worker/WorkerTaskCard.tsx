@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getStatusBadgeColor } from "@/lib/statusColors";
 import { ColorSwatchRow } from "./ColorSwatchRow";
-import { RoomMiniMap } from "./RoomMiniMap";
+import { RoomMiniMap, type FloorPlanObject } from "./RoomMiniMap";
 import { RoomSpecsSummary } from "./RoomSpecsSummary";
 import { WorkerMessageInput } from "./WorkerMessageInput";
 import { MapPin, Ruler, Camera, Loader2, CheckSquare, ImageIcon, MessageCircle } from "lucide-react";
@@ -116,6 +116,7 @@ interface WorkerTaskCardProps {
   canUploadPhotos: boolean;
   floorPlan: FloorPlanShape[] | null;
   floorPlanImage?: { url: string; x: number; y: number } | null;
+  floorPlanObjects?: FloorPlanObject[];
   onTaskUpdate: (taskId: string, updates: Partial<WorkerTask>) => void;
 }
 
@@ -142,6 +143,7 @@ export function WorkerTaskCard({
   canUploadPhotos,
   floorPlan,
   floorPlanImage,
+  floorPlanObjects,
   onTaskUpdate,
 }: WorkerTaskCardProps) {
   const { t } = useTranslation();
@@ -268,6 +270,7 @@ export function WorkerTaskCard({
               shapes={floorPlan}
               highlightRoomId={task.roomId}
               backgroundImage={floorPlanImage}
+              objects={floorPlanObjects}
               className="rounded"
             />
           </div>

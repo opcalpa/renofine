@@ -5,7 +5,7 @@ import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getStatusBadgeColor } from "@/lib/statusColors";
 import { ColorSwatchRow } from "@/components/worker/ColorSwatchRow";
-import { RoomMiniMap } from "@/components/worker/RoomMiniMap";
+import { RoomMiniMap, type FloorPlanObject } from "@/components/worker/RoomMiniMap";
 import {
   ChevronDown,
   Camera,
@@ -22,6 +22,7 @@ import type { RoomInstruction, RoomTask, FloorPlanShape } from "./types";
 interface RoomInstructionCardProps {
   room: RoomInstruction;
   floorPlanShapes?: FloorPlanShape[];
+  floorPlanObjects?: FloorPlanObject[];
   canToggleChecklist?: boolean;
   canUploadPhotos?: boolean;
   onChecklistToggle?: (taskId: string, checklistId: string, itemId: string, completed: boolean) => void;
@@ -39,6 +40,7 @@ const statusKey = (s: string) => {
 export function RoomInstructionCard({
   room,
   floorPlanShapes,
+  floorPlanObjects,
   canToggleChecklist = false,
   canUploadPhotos = false,
   onChecklistToggle,
@@ -95,13 +97,16 @@ export function RoomInstructionCard({
       </div>
 
       {/* Floor plan minimap */}
-      {floorPlanShapes && floorPlanShapes.length > 0 && room.id !== "__none__" && (
-        <RoomMiniMap
-          shapes={floorPlanShapes}
-          highlightRoomId={room.id}
-          className="rounded-lg border"
-        />
-      )}
+      {room.id !== "__none__" &&
+        ((floorPlanShapes && floorPlanShapes.length > 0) ||
+          (floorPlanObjects || []).some((o) => o.roomId === room.id)) && (
+          <RoomMiniMap
+            shapes={floorPlanShapes || []}
+            highlightRoomId={room.id}
+            objects={floorPlanObjects}
+            className="rounded-lg border"
+          />
+        )}
 
       {/* Color specs — reuse existing ColorSwatchRow */}
       <ColorSwatchRow
