@@ -24,6 +24,7 @@ export {
   USB_OUTLET,
   DATA_OUTLET,
   TV_OUTLET,
+  CEILING_LAMP,
 } from './definitions/electrical';
 
 // Definitions - Kitchen

@@ -4434,6 +4434,7 @@
     "noResults": "No objects found",
     "hint": "Click to select, drag to place",
     "objectSelected": "{{name}} selected - click on drawing to place",
+    "objectSelectedWall": "{{name}} selected - click on the wall to place",
     "categories": {
       "electrical": "Electrical",
       "kitchen": "Kitchen",
@@ -4454,7 +4455,8 @@
       "dimmerSwitch": "Dimmer Switch",
       "usbOutlet": "USB Outlet",
       "dataOutlet": "Data Outlet",
-      "tvOutlet": "TV Outlet"
+      "tvOutlet": "TV Outlet",
+      "ceilingLamp": "Ceiling Lamp"
     },
     "kitchen": {
       "baseCabinet": "Base Cabinet",

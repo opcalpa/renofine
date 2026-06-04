@@ -677,6 +677,100 @@ export const TV_OUTLET: UnifiedObjectDefinition = {
 };
 
 /**
+ * Ceiling Lamp (Taklampa)
+ * Ceiling-mounted fixture — sits on the ceiling, not a wall.
+ * Floor plan: circle with a cross (standard ceiling light point symbol).
+ * Elevation: mount plate, rod and shade seen from the front.
+ */
+export const CEILING_LAMP: UnifiedObjectDefinition = {
+  id: 'ceiling_lamp',
+  name: 'Taklampa',
+  nameKey: 'objects.electrical.ceilingLamp',
+  category: 'electrical',
+
+  dimensions: {
+    width: 300,
+    height: 150,
+    depth: 300,
+  },
+
+  // Floor plan view - circle with a cross (ceiling light point)
+  floorPlanSymbol: {
+    viewBox: '0 0 80 80',
+    paths: [
+      // Outer circle
+      {
+        d: 'M14,40 a26,26 0 1,0 52,0 a26,26 0 1,0 -52,0',
+        fill: 'none',
+        stroke: '#374151',
+        strokeWidth: 3,
+      },
+      // Horizontal cross line
+      {
+        d: 'M22,40 H58',
+        fill: 'none',
+        stroke: '#374151',
+        strokeWidth: 3,
+      },
+      // Vertical cross line
+      {
+        d: 'M40,22 V58',
+        fill: 'none',
+        stroke: '#374151',
+        strokeWidth: 3,
+      },
+    ],
+    defaultStroke: '#374151',
+  },
+
+  // Elevation view - ceiling mount, rod and shade
+  elevationSymbol: {
+    viewBox: '0 0 80 80',
+    paths: [
+      // Ceiling mount plate
+      {
+        d: 'M30,8 h20 v6 h-20 z',
+        fill: '#e5e7eb',
+        stroke: '#374151',
+        strokeWidth: 2,
+      },
+      // Drop rod
+      {
+        d: 'M40,14 V26',
+        fill: 'none',
+        stroke: '#374151',
+        strokeWidth: 2,
+      },
+      // Shade (trapezoid, wider at the bottom)
+      {
+        d: 'M32,26 H48 L56,52 H24 Z',
+        fill: '#fef3c7',
+        stroke: '#374151',
+        strokeWidth: 2,
+      },
+      // Bulb glow
+      {
+        d: 'M40,52 a4,4 0 1,0 0.01,0',
+        fill: '#fbbf24',
+        stroke: 'none',
+      },
+    ],
+    defaultStroke: '#374151',
+  },
+
+  wallBehavior: {
+    attachesToWall: false,
+    penetratesWall: false,
+    defaultElevationMM: 2400, // ceiling height
+    side: 'none',
+    canFlip: false,
+    canRotate: true,
+  },
+
+  tags: ['el', 'belysning', 'taklampa', 'lampa', 'ceiling lamp', 'ceiling light', 'lighting', 'armatur'],
+};
+
+/**
  * All electrical objects
  */
 export const ELECTRICAL_OBJECTS: UnifiedObjectDefinition[] = [
@@ -687,6 +781,7 @@ export const ELECTRICAL_OBJECTS: UnifiedObjectDefinition[] = [
   USB_OUTLET,
   DATA_OUTLET,
   TV_OUTLET,
+  CEILING_LAMP,
 ];
 
 export default ELECTRICAL_OBJECTS;

@@ -116,7 +116,7 @@ export const MobileCanvasToolbar: React.FC<MobileCanvasToolbarProps> = ({
       setPendingObjectId(definition.id);
       setObjectsOpen(false);
       toast.success(
-        t('objectLibrary.objectSelected', `${definition.name} vald — tryck på ritningen för att placera`),
+        t('objectLibrary.objectSelected', { name: definition.name, defaultValue: `${definition.name} vald — tryck på ritningen för att placera` }),
       );
     },
     [setPendingObjectId, t],

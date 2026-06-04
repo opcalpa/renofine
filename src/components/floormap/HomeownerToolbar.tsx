@@ -182,7 +182,7 @@ export const HomeownerToolbar: React.FC<HomeownerToolbarProps> = ({
       setPendingObjectId(definition.id);
       setObjectLibraryOpen(false);
       toast.success(
-        t("objectLibrary.objectSelected", `${definition.name} selected — click canvas to place`)
+        t("objectLibrary.objectSelected", { name: definition.name, defaultValue: `${definition.name} selected — click canvas to place` })
       );
     },
     [setPendingObjectId, t]

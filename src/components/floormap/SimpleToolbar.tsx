@@ -457,7 +457,7 @@ export const SimpleToolbar = ({
   const handleSelectObject = useCallback((definition: UnifiedObjectDefinition) => {
     setPendingObjectId(definition.id);
     setObjectLibraryOpen(false);
-    toast.success(t('objectLibrary.objectSelected', `${definition.name} vald - klicka på canvas för att placera`));
+    toast.success(t('objectLibrary.objectSelected', { name: definition.name, defaultValue: `${definition.name} vald - klicka på canvas för att placera` }));
   }, [setPendingObjectId, t]);
 
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);

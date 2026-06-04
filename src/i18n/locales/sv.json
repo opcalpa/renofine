@@ -4433,6 +4433,7 @@
     "noResults": "Inga objekt hittades",
     "hint": "Klicka för att välja, dra för att placera",
     "objectSelected": "{{name}} vald - klicka på canvas för att placera",
+    "objectSelectedWall": "{{name}} vald - klicka på väggen för att placera",
     "categories": {
       "electrical": "El",
       "kitchen": "Kök",
@@ -4453,7 +4454,8 @@
       "dimmerSwitch": "Dimmer",
       "usbOutlet": "USB-uttag",
       "dataOutlet": "Datauttag",
-      "tvOutlet": "TV-uttag"
+      "tvOutlet": "TV-uttag",
+      "ceilingLamp": "Taklampa"
     },
     "kitchen": {
       "baseCabinet": "Underskåp",

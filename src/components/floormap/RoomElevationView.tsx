@@ -1337,7 +1337,7 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
     setSelectedUnifiedObject(definition);
     setSelectedPlacement(null); // Clear legacy placement
     setObjectLibraryOpen(false);
-    toast.success(t('objectLibrary.objectSelected', `${definition.name} vald - klicka på väggen för att placera`));
+    toast.success(t('objectLibrary.objectSelectedWall', { name: definition.name, defaultValue: `${definition.name} vald - klicka på väggen för att placera` }));
   }, [t]);
 
   /**
