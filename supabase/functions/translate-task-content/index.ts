@@ -60,6 +60,12 @@ interface RoomRow {
   description: string | null;
 }
 
+interface RoomItemRow {
+  id: string;
+  title: string;
+  detail: { notes?: string } | null;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: getCorsHeaders(req) });
@@ -138,7 +144,37 @@ serve(async (req) => {
       }
     }
 
-    if (tasksToTranslate.length === 0 && roomsToTranslate.length === 0) {
+    // Placed room-items (objects shown on the worker mini-map) carry free-text
+    // — a custom title and detail.notes — that also needs translating. Mirror the
+    // room half: derive from the same assigned rooms, skip already-cached ones.
+    let roomItemsToTranslate: RoomItemRow[] = [];
+    if (roomIds.length > 0) {
+      const { data: placedItems } = await sb
+        .from("room_items")
+        .select("id, title, detail")
+        .in("room_id", roomIds)
+        .not("floor_map_shape_id", "is", null);
+
+      const candidates = (placedItems as RoomItemRow[] | null || []).filter(
+        (ri) => (ri.title && ri.title.trim()) || (ri.detail?.notes && ri.detail.notes.trim()),
+      );
+
+      if (candidates.length > 0) {
+        const { data: existingItems } = await sb
+          .from("room_item_translations")
+          .select("room_item_id")
+          .in("room_item_id", candidates.map((c) => c.id))
+          .eq("language", targetLanguage);
+        const cachedItemIds = new Set((existingItems || []).map((e) => e.room_item_id));
+        roomItemsToTranslate = candidates.filter((c) => !cachedItemIds.has(c.id));
+      }
+    }
+
+    if (
+      tasksToTranslate.length === 0 &&
+      roomsToTranslate.length === 0 &&
+      roomItemsToTranslate.length === 0
+    ) {
       return jsonResponse({ translated: 0, skipped: "all cached" }, 200, req);
     }
 
@@ -159,7 +195,17 @@ serve(async (req) => {
       description: r.description || "",
     }));
 
-    const prompt = JSON.stringify({ tasks: tasksPayload, rooms: roomsPayload }, null, 0);
+    const roomItemsPayload = roomItemsToTranslate.map((ri) => ({
+      id: ri.id,
+      title: ri.title || "",
+      notes: ri.detail?.notes || "",
+    }));
+
+    const prompt = JSON.stringify(
+      { tasks: tasksPayload, rooms: roomsPayload, roomItems: roomItemsPayload },
+      null,
+      0,
+    );
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -176,15 +222,16 @@ serve(async (req) => {
             content: `You translate renovation/construction work content to ${targetName}.
 
 Rules:
-- Translate tasks (title, description, checklistItems[].title) and rooms (name, description).
+- Translate tasks (title, description, checklistItems[].title), rooms (name, description) and roomItems (title, notes).
 - NEVER translate product names, brand names, color codes (NCS, RAL, Pantone), material codes, or measurements.
-- Keep the same JSON structure with two top-level arrays "tasks" and "rooms".
+- Keep the same JSON structure with three top-level arrays "tasks", "rooms" and "roomItems".
 - Return ONLY a JSON object — no markdown, no explanation.
 
 Input/output format:
 {
   "tasks": [{ "id": "...", "title": "...", "description": "...", "checklistItems": [{"checklistId":"...","itemId":"...","title":"..."}] }],
-  "rooms": [{ "id": "...", "name": "...", "description": "..." }]
+  "rooms": [{ "id": "...", "name": "...", "description": "..." }],
+  "roomItems": [{ "id": "...", "title": "...", "notes": "..." }]
 }`,
           },
           { role: "user", content: prompt },
@@ -210,6 +257,7 @@ Input/output format:
         checklistItems: Array<{ checklistId: string; itemId: string; title: string }>;
       }>;
       rooms?: Array<{ id: string; name: string; description: string }>;
+      roomItems?: Array<{ id: string; title: string; notes: string }>;
     };
 
     try {
@@ -254,6 +302,14 @@ Input/output format:
       translated_at: now,
     }));
 
+    const roomItemUpserts = (parsed.roomItems || []).map((ri) => ({
+      room_item_id: ri.id,
+      language: targetLanguage,
+      title: ri.title || null,
+      notes: ri.notes || null,
+      translated_at: now,
+    }));
+
     if (taskUpserts.length > 0) {
       const { error: taskUpsertError } = await sb
         .from("task_translations")
@@ -274,8 +330,22 @@ Input/output format:
       }
     }
 
+    if (roomItemUpserts.length > 0) {
+      const { error: roomItemUpsertError } = await sb
+        .from("room_item_translations")
+        .upsert(roomItemUpserts, { onConflict: "room_item_id,language" });
+      if (roomItemUpsertError) {
+        console.error("Room item upsert error:", roomItemUpsertError);
+        return jsonResponse({ error: "Failed to save room item translations" }, 500, req);
+      }
+    }
+
     return jsonResponse(
-      { translatedTasks: taskUpserts.length, translatedRooms: roomUpserts.length },
+      {
+        translatedTasks: taskUpserts.length,
+        translatedRooms: roomUpserts.length,
+        translatedRoomItems: roomItemUpserts.length,
+      },
       200,
       req,
     );

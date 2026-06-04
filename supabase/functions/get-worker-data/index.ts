@@ -267,6 +267,26 @@ serve(async (req) => {
           shape.name = roomTranslationsMap[shape.roomId].name;
         }
       }
+
+      // Apply room-item free-text translations (custom title + notes) to the
+      // mini-map objects built in 5f, so object tooltips read in the worker's
+      // language. Electrical enum titles still resolve via i18n on the client.
+      if (floorPlanObjects.length > 0) {
+        const { data: itemTrs } = await sb
+          .from("room_item_translations")
+          .select("room_item_id, title, notes")
+          .in("room_item_id", floorPlanObjects.map((o) => o.id))
+          .eq("language", workerLang);
+        const itemTrMap: Record<string, { title: string | null; notes: string | null }> = {};
+        for (const tr of itemTrs || []) {
+          itemTrMap[tr.room_item_id] = { title: tr.title, notes: tr.notes };
+        }
+        for (const obj of floorPlanObjects) {
+          const tr = itemTrMap[obj.id];
+          if (tr?.title) obj.title = tr.title;
+          if (tr?.notes) obj.notes = tr.notes;
+        }
+      }
     }
 
     // 6. Fetch photos for tasks
