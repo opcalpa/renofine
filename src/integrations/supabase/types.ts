@@ -2891,6 +2891,92 @@ export type Database = {
           },
         ]
       }
+      room_items: {
+        Row: {
+          category: string
+          created_at: string
+          detail: Json
+          floor_map_shape_id: string | null
+          id: string
+          install_status: string
+          project_id: string
+          purchase_order_item_id: string | null
+          representation_kind: string
+          room_id: string | null
+          series: string | null
+          sort_order: number | null
+          subtype: string | null
+          task_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          detail?: Json
+          floor_map_shape_id?: string | null
+          id?: string
+          install_status?: string
+          project_id: string
+          purchase_order_item_id?: string | null
+          representation_kind?: string
+          room_id?: string | null
+          series?: string | null
+          sort_order?: number | null
+          subtype?: string | null
+          task_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          detail?: Json
+          floor_map_shape_id?: string | null
+          id?: string
+          install_status?: string
+          project_id?: string
+          purchase_order_item_id?: string | null
+          representation_kind?: string
+          room_id?: string | null
+          series?: string | null
+          sort_order?: number | null
+          subtype?: string | null
+          task_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_items_floor_map_shape_id_fkey"
+            columns: ["floor_map_shape_id"]
+            isOneToOne: false
+            referencedRelation: "floor_map_shapes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "room_items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "room_items_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "room_items_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       room_translations: {
         Row: {
           description: string | null
