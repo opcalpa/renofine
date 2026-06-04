@@ -179,6 +179,16 @@ export const LIGHTING_TYPE_OPTIONS = [
   { value: "pendel", labelKey: "lighting.pendant" },
 ];
 
+// Room-item categories (E5.2). The generic per-room list groups items by these.
+// Electrical has a canvas object catalog (subtypes + "place on drawing"); the
+// rest are list-only for now ("log the list"). Rendered in this order.
+export const ROOM_ITEM_CATEGORIES = [
+  { value: "electrical", labelKey: "roomItems.catElectrical" },
+  { value: "plumbing", labelKey: "roomItems.catPlumbing" },
+  { value: "ventilation", labelKey: "roomItems.catVentilation" },
+  { value: "appliance", labelKey: "roomItems.catAppliance" },
+];
+
 // Electrical room-item subtypes (E2). Mirrors the unified object library's
 // electrical catalog ids/nameKeys (objectLibrary/definitions/electrical.ts) so a
 // logged list item maps cleanly onto a placed canvas object in E3. Keep in sync.

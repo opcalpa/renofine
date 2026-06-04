@@ -6482,6 +6482,12 @@
     "clickToPlace": "Klicka på ritningen för att placera objektet",
     "linkedToPlan": "Objektet kopplat till ritningen",
     "linkError": "Kunde inte koppla objektet till posten",
-    "addedFromPlan": "Tillagt i rummets el-lista"
+    "addedFromPlan": "Tillagt i rummets el-lista",
+    "sectionTitle": "Rum-objekt",
+    "category": "Kategori",
+    "catElectrical": "El",
+    "catPlumbing": "VVS",
+    "catVentilation": "Ventilation",
+    "catAppliance": "Vitvaror"
   }
 }

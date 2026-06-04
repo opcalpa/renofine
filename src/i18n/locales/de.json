@@ -2188,6 +2188,12 @@
     "clickToPlace": "Auf die Zeichnung klicken, um das Objekt zu platzieren",
     "linkedToPlan": "Objekt mit der Zeichnung verknüpft",
     "linkError": "Objekt konnte nicht mit dem Eintrag verknüpft werden",
-    "addedFromPlan": "Zur Elektroliste des Raums hinzugefügt"
+    "addedFromPlan": "Zur Elektroliste des Raums hinzugefügt",
+    "sectionTitle": "Raumobjekte",
+    "category": "Kategorie",
+    "catElectrical": "Elektro",
+    "catPlumbing": "Sanitär",
+    "catVentilation": "Lüftung",
+    "catAppliance": "Geräte"
   }
 }

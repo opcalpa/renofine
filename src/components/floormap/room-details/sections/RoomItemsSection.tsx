@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { Plus, Pencil, Trash2, Check, ExternalLink, Loader2, MapPin } from "lucide-react";
 import { toast } from "sonner";
-import { ELECTRICAL_ITEM_SUBTYPE_OPTIONS } from "../constants";
+import { ELECTRICAL_ITEM_SUBTYPE_OPTIONS, ROOM_ITEM_CATEGORIES } from "../constants";
 
 interface RoomItemDetail {
   product_link?: string;
@@ -39,33 +39,39 @@ interface RoomItem {
   floor_map_shape_id: string | null;
 }
 
-// Categories rendered top-to-bottom. Electrical first (E2); others follow as
-// the model is generalised. Subtype options per category drive the type select.
-const CATEGORY_ORDER = ["electrical"] as const;
+// Subtype catalogs per category. Only electrical has one today (it maps to the
+// canvas object library); other categories are free-text list entries.
 const SUBTYPE_OPTIONS: Record<string, { value: string; labelKey: string }[]> = {
   electrical: ELECTRICAL_ITEM_SUBTYPE_OPTIONS,
 };
+const subtypesFor = (category: string) => SUBTYPE_OPTIONS[category] ?? [];
 
 interface RoomItemsSectionProps {
   roomId?: string;
   projectId: string;
-  /** Category to manage; defaults to electrical (E2). */
-  category?: string;
   /** E3: hand off to the floor planner to place this item as a canvas object. */
   onPlaceOnPlan?: (args: { itemId: string; roomId: string; subtype: string }) => void;
 }
 
 interface EditorState {
   id: string | null;
+  category: string;
   subtype: string;
   title: string;
   quantity: string;
   productLink: string;
 }
 
-const emptyEditor: EditorState = { id: null, subtype: "", title: "", quantity: "", productLink: "" };
+const emptyEditor: EditorState = {
+  id: null,
+  category: ROOM_ITEM_CATEGORIES[0].value,
+  subtype: "",
+  title: "",
+  quantity: "",
+  productLink: "",
+};
 
-export function RoomItemsSection({ roomId, projectId, category = "electrical", onPlaceOnPlan }: RoomItemsSectionProps) {
+export function RoomItemsSection({ roomId, projectId, onPlaceOnPlan }: RoomItemsSectionProps) {
   const { t } = useTranslation();
   const [items, setItems] = useState<RoomItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,13 +79,13 @@ export function RoomItemsSection({ roomId, projectId, category = "electrical", o
   const [saving, setSaving] = useState(false);
   const [editor, setEditor] = useState<EditorState>(emptyEditor);
 
-  const subtypeOptions = SUBTYPE_OPTIONS[category] ?? [];
+  const editorSubtypes = subtypesFor(editor.category);
   const labelForSubtype = useCallback(
-    (subtype: string | null) => {
-      const opt = subtypeOptions.find((o) => o.value === subtype);
+    (category: string, subtype: string | null) => {
+      const opt = subtypesFor(category).find((o) => o.value === subtype);
       return opt ? t(opt.labelKey) : "";
     },
-    [subtypeOptions, t]
+    [t]
   );
 
   const fetchItems = useCallback(async () => {
@@ -122,6 +128,7 @@ export function RoomItemsSection({ roomId, projectId, category = "electrical", o
   const openEdit = (item: RoomItem) => {
     setEditor({
       id: item.id,
+      category: item.category,
       subtype: item.subtype ?? "",
       title: item.title,
       quantity: item.detail.quantity != null ? String(item.detail.quantity) : "",
@@ -130,20 +137,32 @@ export function RoomItemsSection({ roomId, projectId, category = "electrical", o
     setDialogOpen(true);
   };
 
+  const handleCategoryChange = (value: string) => {
+    // Switching category drops a now-irrelevant subtype; if the title still
+    // mirrors the old subtype label, clear it so it can re-autofill.
+    const oldLabel = labelForSubtype(editor.category, editor.subtype);
+    setEditor((prev) => ({
+      ...prev,
+      category: value,
+      subtype: "",
+      title: prev.title === oldLabel ? "" : prev.title,
+    }));
+  };
+
   const handleSubtypeChange = (value: string) => {
     // Auto-fill the title from the subtype label unless the user has typed a custom one.
-    const currentLabel = labelForSubtype(editor.subtype);
+    const currentLabel = labelForSubtype(editor.category, editor.subtype);
     const shouldAutofill = !editor.title.trim() || editor.title === currentLabel;
     setEditor((prev) => ({
       ...prev,
       subtype: value,
-      title: shouldAutofill ? labelForSubtype(value) : prev.title,
+      title: shouldAutofill ? labelForSubtype(editor.category, value) : prev.title,
     }));
   };
 
   const handleSave = async () => {
     if (!roomId) return;
-    const title = editor.title.trim() || labelForSubtype(editor.subtype);
+    const title = editor.title.trim() || labelForSubtype(editor.category, editor.subtype);
     if (!title) {
       toast.error(t("roomItems.titleRequired", "Välj en typ eller ange en benämning"));
       return;
@@ -159,7 +178,7 @@ export function RoomItemsSection({ roomId, projectId, category = "electrical", o
       if (editor.id) {
         const { error } = await supabase
           .from("room_items")
-          .update({ subtype: editor.subtype || null, title, detail })
+          .update({ category: editor.category, subtype: editor.subtype || null, title, detail })
           .eq("id", editor.id);
         if (error) throw error;
         toast.success(t("roomItems.updated", "Objekt uppdaterat"));
@@ -167,7 +186,7 @@ export function RoomItemsSection({ roomId, projectId, category = "electrical", o
         const { error } = await supabase.from("room_items").insert({
           project_id: projectId,
           room_id: roomId,
-          category,
+          category: editor.category,
           subtype: editor.subtype || null,
           title,
           detail,
@@ -222,11 +241,11 @@ export function RoomItemsSection({ roomId, projectId, category = "electrical", o
     return <p className="py-2 text-sm text-muted-foreground">{t("roomItems.loading", "Laddar objekt…")}</p>;
   }
 
-  // E2 manages a single category; group rendering kept generic for future categories.
-  const grouped = CATEGORY_ORDER.filter((c) => c === category).map((c) => ({
+  // Group by category in the configured order; only show groups that have items.
+  const grouped = ROOM_ITEM_CATEGORIES.map((c) => ({
     category: c,
-    items: items.filter((i) => i.category === c),
-  }));
+    catItems: items.filter((i) => i.category === c.value),
+  })).filter((g) => g.catItems.length > 0);
 
   return (
     <div className="space-y-3">
@@ -237,15 +256,19 @@ export function RoomItemsSection({ roomId, projectId, category = "electrical", o
         </Button>
       </div>
 
-      {grouped.map(({ category: cat, items: catItems }) => (
-        <div key={cat}>
-          {catItems.length === 0 ? (
-            <p className="py-2 text-sm text-muted-foreground">
-              {t("roomItems.empty", "Inga objekt loggade än")}
-            </p>
-          ) : (
-            <ul className="space-y-1.5">
-              {catItems.map((item) => {
+      {items.length === 0 && (
+        <p className="py-2 text-sm text-muted-foreground">
+          {t("roomItems.empty", "Inga objekt loggade än")}
+        </p>
+      )}
+
+      {grouped.map(({ category: cat, catItems }) => (
+        <div key={cat.value}>
+          <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            {t(cat.labelKey)}
+          </p>
+          <ul className="space-y-1.5">
+            {catItems.map((item) => {
                 const installed = item.install_status === "installed";
                 // Gate on the shape FK, not representation_kind: deleting the object
                 // on the canvas nulls this via ON DELETE SET NULL, so the item reverts
@@ -255,7 +278,7 @@ export function RoomItemsSection({ roomId, projectId, category = "electrical", o
                   !!onPlaceOnPlan &&
                   !!roomId &&
                   !isPlaced &&
-                  subtypeOptions.some((o) => o.value === item.subtype);
+                  subtypesFor(item.category).some((o) => o.value === item.subtype);
                 return (
                   <li
                     key={item.id}
@@ -328,8 +351,7 @@ export function RoomItemsSection({ roomId, projectId, category = "electrical", o
                   </li>
                 );
               })}
-            </ul>
-          )}
+          </ul>
         </div>
       ))}
 
@@ -342,20 +364,37 @@ export function RoomItemsSection({ roomId, projectId, category = "electrical", o
           </DialogHeader>
           <div className="space-y-4 py-1">
             <div>
-              <Label>{t("roomItems.type", "Typ")}</Label>
-              <Select value={editor.subtype} onValueChange={handleSubtypeChange}>
+              <Label>{t("roomItems.category", "Kategori")}</Label>
+              <Select value={editor.category} onValueChange={handleCategoryChange}>
                 <SelectTrigger>
-                  <SelectValue placeholder={t("roomItems.selectType", "Välj typ")} />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {subtypeOptions.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {t(opt.labelKey)}
+                  {ROOM_ITEM_CATEGORIES.map((c) => (
+                    <SelectItem key={c.value} value={c.value}>
+                      {t(c.labelKey)}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
+            {editorSubtypes.length > 0 && (
+              <div>
+                <Label>{t("roomItems.type", "Typ")}</Label>
+                <Select value={editor.subtype} onValueChange={handleSubtypeChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t("roomItems.selectType", "Välj typ")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {editorSubtypes.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {t(opt.labelKey)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div>
               <Label htmlFor="room-item-title">{t("roomItems.itemTitle", "Benämning")}</Label>
               <Input

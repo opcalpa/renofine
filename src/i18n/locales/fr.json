@@ -2188,6 +2188,12 @@
     "clickToPlace": "Cliquez sur le plan pour placer l’élément",
     "linkedToPlan": "Élément lié au plan",
     "linkError": "Impossible de lier l’élément à la fiche",
-    "addedFromPlan": "Ajouté à la liste électrique de la pièce"
+    "addedFromPlan": "Ajouté à la liste électrique de la pièce",
+    "sectionTitle": "Objets de la pièce",
+    "category": "Catégorie",
+    "catElectrical": "Électricité",
+    "catPlumbing": "Plomberie",
+    "catVentilation": "Ventilation",
+    "catAppliance": "Électroménager"
   }
 }

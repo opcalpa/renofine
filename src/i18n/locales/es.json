@@ -2188,6 +2188,12 @@
     "clickToPlace": "Haz clic en el plano para colocar el elemento",
     "linkedToPlan": "Elemento vinculado al plano",
     "linkError": "No se pudo vincular el elemento al registro",
-    "addedFromPlan": "Añadido a la lista eléctrica de la sala"
+    "addedFromPlan": "Añadido a la lista eléctrica de la sala",
+    "sectionTitle": "Objetos de la sala",
+    "category": "Categoría",
+    "catElectrical": "Electricidad",
+    "catPlumbing": "Fontanería",
+    "catVentilation": "Ventilación",
+    "catAppliance": "Electrodomésticos"
   }
 }

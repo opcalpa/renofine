@@ -62,13 +62,8 @@ export function MaterialTab({ formData, updateFormData, updateSpec, roomId, proj
       </div>
 
       <div>
-        <span className="rf-section-label mb-2 block">{t("roomItems.electricalItems", "El-objekt")}</span>
-        <RoomItemsSection
-          roomId={roomId}
-          projectId={projectId}
-          category="electrical"
-          onPlaceOnPlan={onPlaceItemOnPlan}
-        />
+        <span className="rf-section-label mb-2 block">{t("roomItems.sectionTitle", "Rum-objekt")}</span>
+        <RoomItemsSection roomId={roomId} projectId={projectId} onPlaceOnPlan={onPlaceItemOnPlan} />
       </div>
     </div>
   );
