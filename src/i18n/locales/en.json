@@ -6453,5 +6453,29 @@
       "usa": "United States",
       "uk": "United Kingdom"
     }
+  },
+  "roomItems": {
+    "electricalItems": "Electrical items",
+    "addItem": "Add",
+    "empty": "No items logged yet",
+    "saveRoomFirst": "Save the room first to log items",
+    "loading": "Loading items…",
+    "type": "Type",
+    "selectType": "Select type",
+    "itemTitle": "Label",
+    "titlePlaceholder": "e.g. Double outlet by counter",
+    "quantity": "Qty",
+    "productLink": "Product link",
+    "installed": "Installed",
+    "markInstalled": "Mark as installed",
+    "newItem": "New item",
+    "editItem": "Edit item",
+    "created": "Item logged",
+    "updated": "Item updated",
+    "deleted": "Item removed",
+    "titleRequired": "Pick a type or enter a label",
+    "loadError": "Could not load items",
+    "saveError": "Could not save the item",
+    "deleteError": "Could not remove the item"
   }
 }

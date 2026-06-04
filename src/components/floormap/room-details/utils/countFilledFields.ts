@@ -62,7 +62,8 @@ export function countFilledFields(formData: RoomFormData) {
   const electricalSpec = formData.electrical_spec as ElectricalSpec | undefined;
   const heatingSpec = formData.heating_spec as HeatingSpec | undefined;
 
-  const electricalFields = countFilled(electricalSpec, ["series", "outlet_types", "lighting_types"]);
+  // outlet_types/lighting_types moved to the room_items list (E2); only series is edited here.
+  const electricalFields = countFilled(electricalSpec, ["series"]);
   const heatingFields = countFilled(heatingSpec, ["type"]);
 
   const electricalHeating = {

@@ -1,12 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { ComboboxSelect } from "../fields/ComboboxSelect";
-import { MultiSelect } from "../fields/MultiSelect";
-import {
-  ELECTRICAL_SERIES_OPTIONS,
-  OUTLET_TYPE_OPTIONS,
-  LIGHTING_TYPE_OPTIONS,
-  HEATING_TYPE_OPTIONS,
-} from "../constants";
+import { ELECTRICAL_SERIES_OPTIONS, HEATING_TYPE_OPTIONS } from "../constants";
 import type { SectionProps, ElectricalSpec, HeatingSpec } from "../types";
 
 function SpecRow({ label, children }: { label: string; children: React.ReactNode }) {
@@ -43,22 +37,6 @@ export function TechnicalSection({ formData, updateSpec }: SectionProps) {
             value={electricalSpec?.series || ""}
             onChange={(value) => updateSpec("electrical_spec", { ...electricalSpec, series: value })}
             placeholder={t("rooms.selectSeries")}
-          />
-        </SpecRow>
-        <SpecRow label={t("rooms.outletsAndSwitches")}>
-          <MultiSelect
-            options={OUTLET_TYPE_OPTIONS}
-            selected={electricalSpec?.outlet_types || []}
-            onChange={(values) => updateSpec("electrical_spec", { ...electricalSpec, outlet_types: values })}
-            placeholder={t("rooms.selectOutletTypes")}
-          />
-        </SpecRow>
-        <SpecRow label={t("rooms.lightingType")}>
-          <MultiSelect
-            options={LIGHTING_TYPE_OPTIONS}
-            selected={electricalSpec?.lighting_types || []}
-            onChange={(values) => updateSpec("electrical_spec", { ...electricalSpec, lighting_types: values })}
-            placeholder={t("rooms.selectLightingTypes")}
           />
         </SpecRow>
       </div>

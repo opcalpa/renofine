@@ -2158,5 +2158,29 @@
     "homeownerDesc": "Estoy renovando mi propia casa",
     "subtitle": "¿Qué te describe mejor?",
     "title": "¡Bienvenido a Renofine!"
+  },
+  "roomItems": {
+    "electricalItems": "Elementos eléctricos",
+    "addItem": "Añadir",
+    "empty": "Aún no hay elementos registrados",
+    "saveRoomFirst": "Guarda la sala primero para registrar elementos",
+    "loading": "Cargando elementos…",
+    "type": "Tipo",
+    "selectType": "Seleccionar tipo",
+    "itemTitle": "Etiqueta",
+    "titlePlaceholder": "p. ej. Enchufe doble junto a la encimera",
+    "quantity": "Cant.",
+    "productLink": "Enlace de producto",
+    "installed": "Instalado",
+    "markInstalled": "Marcar como instalado",
+    "newItem": "Nuevo elemento",
+    "editItem": "Editar elemento",
+    "created": "Elemento registrado",
+    "updated": "Elemento actualizado",
+    "deleted": "Elemento eliminado",
+    "titleRequired": "Elige un tipo o introduce una etiqueta",
+    "loadError": "No se pudieron cargar los elementos",
+    "saveError": "No se pudo guardar el elemento",
+    "deleteError": "No se pudo eliminar el elemento"
   }
 }

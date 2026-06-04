@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { HorizontalSection } from "../../sections/HorizontalSection";
 import { VerticalSection } from "../../sections/VerticalSection";
 import { TechnicalSection } from "../../sections/TechnicalSection";
+import { RoomItemsSection } from "../../sections/RoomItemsSection";
 import { FilledIndicator } from "../../components/FilledIndicator";
 import { countFilledFields } from "../../utils/countFilledFields";
 import type { RoomFormData } from "../../types";
@@ -13,6 +14,8 @@ interface MaterialTabProps {
     specKey: K,
     updates: Partial<RoomFormData[K]>
   ) => void;
+  roomId?: string;
+  projectId: string;
 }
 
 function SectionHeader({ label, filled, total }: { label: string; filled: number; total: number }) {
@@ -24,7 +27,7 @@ function SectionHeader({ label, filled, total }: { label: string; filled: number
   );
 }
 
-export function MaterialTab({ formData, updateFormData, updateSpec }: MaterialTabProps) {
+export function MaterialTab({ formData, updateFormData, updateSpec, roomId, projectId }: MaterialTabProps) {
   const { t } = useTranslation();
   const counts = countFilledFields(formData);
 
@@ -55,6 +58,11 @@ export function MaterialTab({ formData, updateFormData, updateSpec }: MaterialTa
           total={counts.electricalHeating.total}
         />
         <TechnicalSection formData={formData} updateFormData={updateFormData} updateSpec={updateSpec} />
+      </div>
+
+      <div>
+        <span className="rf-section-label mb-2 block">{t("roomItems.electricalItems", "El-objekt")}</span>
+        <RoomItemsSection roomId={roomId} projectId={projectId} category="electrical" />
       </div>
     </div>
   );

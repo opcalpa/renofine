@@ -179,6 +179,20 @@ export const LIGHTING_TYPE_OPTIONS = [
   { value: "pendel", labelKey: "lighting.pendant" },
 ];
 
+// Electrical room-item subtypes (E2). Mirrors the unified object library's
+// electrical catalog ids/nameKeys (objectLibrary/definitions/electrical.ts) so a
+// logged list item maps cleanly onto a placed canvas object in E3. Keep in sync.
+export const ELECTRICAL_ITEM_SUBTYPE_OPTIONS = [
+  { value: "single_outlet", labelKey: "objects.electrical.singleOutlet" },
+  { value: "double_outlet", labelKey: "objects.electrical.doubleOutlet" },
+  { value: "usb_outlet", labelKey: "objects.electrical.usbOutlet" },
+  { value: "data_outlet", labelKey: "objects.electrical.dataOutlet" },
+  { value: "tv_outlet", labelKey: "objects.electrical.tvOutlet" },
+  { value: "light_switch", labelKey: "objects.electrical.lightSwitch" },
+  { value: "dimmer_switch", labelKey: "objects.electrical.dimmerSwitch" },
+  { value: "ceiling_lamp", labelKey: "objects.electrical.ceilingLamp" },
+];
+
 // Heating type options
 export const HEATING_TYPE_OPTIONS = [
   { value: "radiator", labelKey: "heating.radiator" },

@@ -6452,5 +6452,29 @@
       "usa": "USA",
       "uk": "Storbritannien"
     }
+  },
+  "roomItems": {
+    "electricalItems": "El-objekt",
+    "addItem": "Lägg till",
+    "empty": "Inga objekt loggade än",
+    "saveRoomFirst": "Spara rummet först för att logga objekt",
+    "loading": "Laddar objekt…",
+    "type": "Typ",
+    "selectType": "Välj typ",
+    "itemTitle": "Benämning",
+    "titlePlaceholder": "t.ex. Dubbeluttag vid bänk",
+    "quantity": "Antal",
+    "productLink": "Produktlänk",
+    "installed": "Installerad",
+    "markInstalled": "Markera installerad",
+    "newItem": "Nytt objekt",
+    "editItem": "Redigera objekt",
+    "created": "Objekt loggat",
+    "updated": "Objekt uppdaterat",
+    "deleted": "Objekt borttaget",
+    "titleRequired": "Välj en typ eller ange en benämning",
+    "loadError": "Kunde inte ladda objekt",
+    "saveError": "Kunde inte spara objektet",
+    "deleteError": "Kunde inte ta bort objektet"
   }
 }

@@ -185,6 +185,8 @@ export function RoomDetailFormV2({
             formData={formData}
             updateFormData={updateFormData}
             updateSpec={updateSpec}
+            roomId={room?.id}
+            projectId={projectId}
           />
         )}
         {tab === "measurements" && (

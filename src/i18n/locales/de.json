@@ -2158,5 +2158,29 @@
     "homeownerDesc": "Ich renoviere mein eigenes Zuhause",
     "subtitle": "Was beschreibt dich am besten?",
     "title": "Willkommen bei Renofine!"
+  },
+  "roomItems": {
+    "electricalItems": "Elektro-Objekte",
+    "addItem": "Hinzufügen",
+    "empty": "Noch keine Objekte erfasst",
+    "saveRoomFirst": "Raum zuerst speichern, um Objekte zu erfassen",
+    "loading": "Objekte werden geladen…",
+    "type": "Typ",
+    "selectType": "Typ wählen",
+    "itemTitle": "Bezeichnung",
+    "titlePlaceholder": "z. B. Doppelsteckdose an der Arbeitsplatte",
+    "quantity": "Anzahl",
+    "productLink": "Produktlink",
+    "installed": "Installiert",
+    "markInstalled": "Als installiert markieren",
+    "newItem": "Neues Objekt",
+    "editItem": "Objekt bearbeiten",
+    "created": "Objekt erfasst",
+    "updated": "Objekt aktualisiert",
+    "deleted": "Objekt entfernt",
+    "titleRequired": "Typ wählen oder Bezeichnung eingeben",
+    "loadError": "Objekte konnten nicht geladen werden",
+    "saveError": "Objekt konnte nicht gespeichert werden",
+    "deleteError": "Objekt konnte nicht entfernt werden"
   }
 }

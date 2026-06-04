@@ -2158,5 +2158,29 @@
     "homeownerDesc": "Je rénove ma propre maison",
     "subtitle": "Qu'est-ce qui vous décrit le mieux ?",
     "title": "Bienvenue sur Renofine !"
+  },
+  "roomItems": {
+    "electricalItems": "Éléments électriques",
+    "addItem": "Ajouter",
+    "empty": "Aucun élément enregistré",
+    "saveRoomFirst": "Enregistrez la pièce pour ajouter des éléments",
+    "loading": "Chargement des éléments…",
+    "type": "Type",
+    "selectType": "Choisir le type",
+    "itemTitle": "Libellé",
+    "titlePlaceholder": "ex. Prise double près du plan de travail",
+    "quantity": "Qté",
+    "productLink": "Lien produit",
+    "installed": "Installé",
+    "markInstalled": "Marquer comme installé",
+    "newItem": "Nouvel élément",
+    "editItem": "Modifier l’élément",
+    "created": "Élément enregistré",
+    "updated": "Élément mis à jour",
+    "deleted": "Élément supprimé",
+    "titleRequired": "Choisissez un type ou saisissez un libellé",
+    "loadError": "Impossible de charger les éléments",
+    "saveError": "Impossible d’enregistrer l’élément",
+    "deleteError": "Impossible de supprimer l’élément"
   }
 }
