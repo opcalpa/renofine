@@ -11,15 +11,18 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ROOM_PRESETS } from './roomPresets';
+import { ROOM_PRESETS, presetIconForName, type ProjectRoomOption } from './roomPresets';
 import { cn } from '@/lib/utils';
 
 interface NameRoomDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: (roomName: string, color?: string) => void;
+  /** roomId is set when the user picked an existing project room, so the shape links to it. */
+  onConfirm: (roomName: string, color?: string, roomId?: string) => void;
   onCancel: () => void;
   defaultName?: string;
+  /** The project's already-created rooms that aren't placed on the plan yet. */
+  projectRooms?: ProjectRoomOption[];
 }
 
 export const NameRoomDialog: React.FC<NameRoomDialogProps> = ({
@@ -28,29 +31,44 @@ export const NameRoomDialog: React.FC<NameRoomDialogProps> = ({
   onConfirm,
   onCancel,
   defaultName = '',
+  projectRooms = [],
 }) => {
   const { t } = useTranslation();
   const [roomName, setRoomName] = useState(defaultName);
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
+  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
+
+  const reset = () => {
+    setRoomName('');
+    setSelectedPreset(null);
+    setSelectedRoomId(null);
+  };
 
   const handleConfirm = () => {
     if (roomName.trim()) {
-      const preset = ROOM_PRESETS.find(p => p.value === selectedPreset);
-      onConfirm(roomName.trim(), preset?.color);
-      setRoomName('');
-      setSelectedPreset(null);
+      const color = selectedRoomId
+        ? projectRooms.find(r => r.id === selectedRoomId)?.color
+        : ROOM_PRESETS.find(p => p.value === selectedPreset)?.color;
+      onConfirm(roomName.trim(), color, selectedRoomId ?? undefined);
+      reset();
     }
   };
 
   const handleCancel = () => {
     onCancel();
-    setRoomName('');
-    setSelectedPreset(null);
+    reset();
   };
 
   const handlePresetClick = (preset: typeof ROOM_PRESETS[0]) => {
     setSelectedPreset(preset.value);
+    setSelectedRoomId(null);
     setRoomName(t(preset.labelKey, preset.defaultName));
+  };
+
+  const handleProjectRoomClick = (room: ProjectRoomOption) => {
+    setSelectedRoomId(room.id);
+    setSelectedPreset(null);
+    setRoomName(room.name);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -63,6 +81,8 @@ export const NameRoomDialog: React.FC<NameRoomDialogProps> = ({
     }
   };
 
+  const hasProjectRooms = projectRooms.length > 0;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
@@ -73,28 +93,66 @@ export const NameRoomDialog: React.FC<NameRoomDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          {/* Room type presets */}
-          <div className="grid grid-cols-3 gap-2">
-            {ROOM_PRESETS.map((preset) => {
-              const Icon = preset.icon;
-              const isActive = selectedPreset === preset.value;
-              return (
-                <button
-                  key={preset.value}
-                  type="button"
-                  onClick={() => handlePresetClick(preset)}
-                  className={cn(
-                    "flex items-center gap-2 px-3 py-2 rounded-full border text-sm font-medium transition-colors",
-                    isActive
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border hover:bg-accent hover:text-accent-foreground"
-                  )}
-                >
-                  <Icon className="h-4 w-4 shrink-0" />
-                  <span className="truncate">{t(preset.labelKey, preset.defaultName)}</span>
-                </button>
-              );
-            })}
+          {/* Project rooms — steer the user to the rooms they already created. */}
+          {hasProjectRooms && (
+            <div className="grid gap-2">
+              <span className="text-xs font-medium text-muted-foreground">
+                {t('nameRoomDialog.yourRooms', 'Projektets rum')}
+              </span>
+              <div className="grid grid-cols-3 gap-2">
+                {projectRooms.map((room) => {
+                  const Icon = presetIconForName(room.name);
+                  const isActive = selectedRoomId === room.id;
+                  return (
+                    <button
+                      key={room.id}
+                      type="button"
+                      onClick={() => handleProjectRoomClick(room)}
+                      className={cn(
+                        "flex items-center gap-2 px-3 py-2 rounded-full border text-sm font-medium transition-colors",
+                        isActive
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border hover:bg-accent hover:text-accent-foreground"
+                      )}
+                    >
+                      <Icon className="h-4 w-4 shrink-0" />
+                      <span className="truncate">{room.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Default room type presets (fallback / new room types) */}
+          <div className="grid gap-2">
+            {hasProjectRooms && (
+              <span className="text-xs font-medium text-muted-foreground">
+                {t('nameRoomDialog.commonRooms', 'Vanliga rum')}
+              </span>
+            )}
+            <div className="grid grid-cols-3 gap-2">
+              {ROOM_PRESETS.map((preset) => {
+                const Icon = preset.icon;
+                const isActive = selectedPreset === preset.value;
+                return (
+                  <button
+                    key={preset.value}
+                    type="button"
+                    onClick={() => handlePresetClick(preset)}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-2 rounded-full border text-sm font-medium transition-colors",
+                      isActive
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border hover:bg-accent hover:text-accent-foreground"
+                    )}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span className="truncate">{t(preset.labelKey, preset.defaultName)}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Custom name input */}
@@ -108,6 +166,7 @@ export const NameRoomDialog: React.FC<NameRoomDialogProps> = ({
               onChange={(e) => {
                 setRoomName(e.target.value);
                 setSelectedPreset(null);
+                setSelectedRoomId(null);
               }}
               onKeyDown={handleKeyDown}
               placeholder={t('nameRoomDialog.placeholder')}

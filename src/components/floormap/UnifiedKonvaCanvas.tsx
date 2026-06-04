@@ -9,6 +9,7 @@ import { RoomDetailDialog } from './RoomDetailDialog';
 import { RoomElevationView } from './RoomElevationView';
 import { WallElevationView } from './WallElevationView';
 import { NameRoomDialog } from './NameRoomDialog';
+import { presetColorForName, type ProjectRoomOption } from './roomPresets';
 import { PropertyPanel } from './PropertyPanel';
 import { ZoomControls } from './ZoomControls';
 import { supabase } from '@/integrations/supabase/client';
@@ -219,6 +220,8 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
   const [pendingRoom, setPendingRoom] = useState<{ points: { x: number; y: number }[] } | null>(null);
   const [isNameRoomDialogOpen, setIsNameRoomDialogOpen] = useState(false);
   const [selectedShapeForNaming, setSelectedShapeForNaming] = useState<string | null>(null);
+  // Project rooms not yet placed on the plan — offered as primary chips when naming.
+  const [unplacedProjectRooms, setUnplacedProjectRooms] = useState<ProjectRoomOption[]>([]);
   
   // Clipboard for copy/paste
   const [clipboard, setClipboard] = useState<FloorMapShape[]>([]);
@@ -477,6 +480,36 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
     ),
     [shapes, currentPlanId]
   );
+
+  // When the naming dialog opens, load the project's rooms that aren't already drawn
+  // on this plan, so we can steer the user toward their existing rooms first.
+  useEffect(() => {
+    if (!isNameRoomDialogOpen || !currentProjectId) return;
+    let cancelled = false;
+    const fetchProjectRooms = async () => {
+      const { data, error } = await supabase
+        .from('rooms')
+        .select('id, name')
+        .eq('project_id', currentProjectId)
+        .order('created_at', { ascending: true });
+      if (cancelled) return;
+      if (error) {
+        console.error('Failed to load project rooms:', error);
+        setUnplacedProjectRooms([]);
+        return;
+      }
+      // Exclude rooms already linked to a shape on this plan.
+      const placedRoomIds = new Set(
+        currentShapes.filter(s => s.type === 'room' && s.roomId).map(s => s.roomId)
+      );
+      const options: ProjectRoomOption[] = (data || [])
+        .filter(r => r.name && !placedRoomIds.has(r.id))
+        .map(r => ({ id: r.id, name: r.name, color: presetColorForName(r.name) }));
+      setUnplacedProjectRooms(options);
+    };
+    fetchProjectRooms();
+    return () => { cancelled = true; };
+  }, [isNameRoomDialogOpen, currentProjectId, currentShapes]);
 
   // Stable reference to shape IDs for fetching comments
   const shapeIdsKey = useMemo(() => currentShapes.map(s => s.id).join(','), [currentShapes]);
@@ -3375,7 +3408,8 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
       <NameRoomDialog
         open={isNameRoomDialogOpen}
         onOpenChange={setIsNameRoomDialogOpen}
-        onConfirm={async (name, color) => {
+        projectRooms={unplacedProjectRooms}
+        onConfirm={async (name, color, existingRoomId) => {
           if (selectedShapeForNaming) {
             const shape = currentShapes.find(s => s.id === selectedShapeForNaming);
             if (shape && shape.type === 'room') {
@@ -3384,11 +3418,31 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
               if (color) {
                 updates.style = { ...(shape.style || {}), fill: color, fillOpacity: 0.3 };
               }
-              updateShape(selectedShapeForNaming, updates);
-              // Save room to database and get roomId
-              const roomId = await saveRoomToDB({ ...shape, name });
-              if (roomId) {
-                toast.success(`Rum "${name}" sparat!`);
+
+              if (existingRoomId) {
+                // User picked one of the project's existing rooms — link the drawn
+                // shape to it instead of creating a duplicate, and record its position.
+                updates.roomId = existingRoomId;
+                updateShape(selectedShapeForNaming, updates);
+                const points = (shape.coordinates as { points: { x: number; y: number }[] }).points;
+                const { error } = await supabase
+                  .from('rooms')
+                  .update({ floor_plan_position: { points } })
+                  .eq('id', existingRoomId);
+                if (error) {
+                  console.error('Failed to link room position:', error);
+                  toast.error('Kunde inte koppla rummet');
+                } else {
+                  toast.success(`Rum "${name}" placerat på ritningen`);
+                  if (onRoomCreated) onRoomCreated();
+                }
+              } else {
+                updateShape(selectedShapeForNaming, updates);
+                // Save room to database and get roomId
+                const roomId = await saveRoomToDB({ ...shape, name });
+                if (roomId) {
+                  toast.success(`Rum "${name}" sparat!`);
+                }
               }
 
               // Model A (simplified): the room's own outline IS the wall — we no

@@ -2962,7 +2962,9 @@
   "nameRoomDialog": {
     "title": "Namnge Rum",
     "description": "Ge rummet ett namn som visas på planritningen.",
-    "placeholder": "ex. Vardagsrum, Kök..."
+    "placeholder": "ex. Vardagsrum, Kök...",
+    "yourRooms": "Projektets rum",
+    "commonRooms": "Vanliga rum"
   },
   "roomPresets": {
     "kitchen": "Kök",
