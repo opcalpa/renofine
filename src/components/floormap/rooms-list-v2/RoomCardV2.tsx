@@ -3,6 +3,7 @@ import { Check, MapPin, Image as ImageIcon } from "lucide-react";
 import { useMeasurement } from "@/contexts/MeasurementContext";
 import { RoomShapeMini } from "../room-details/v2/RoomShapeMini";
 import { getRoomTypeIcon } from "./roomTypeIcons";
+import { getRoomPlacementPoints, isRoomPlacedOnCanvas } from "../utils/roomPlacement";
 import type { Room } from "../rooms-table/types";
 import type { RoomProgress } from "./useRoomsProgress";
 import type { RoomCoverPhoto } from "./useRoomCoverPhotos";
@@ -52,8 +53,8 @@ function RoomCover({
   color: string;
   coverPhoto?: RoomCoverPhoto;
 }) {
-  const points = room.floor_plan_position?.points;
-  const hasShape = points && points.length > 0;
+  const points = getRoomPlacementPoints(room);
+  const hasShape = !!points && points.length > 0;
 
   if (coverPhoto?.url) {
     return (
@@ -107,8 +108,7 @@ export function RoomCardV2({
   const { t } = useTranslation();
   const ms = useMeasurement();
 
-  const points = room.floor_plan_position?.points;
-  const placed = !!(points && points.length > 0);
+  const placed = isRoomPlacedOnCanvas(room);
   const color = previewColorFromRgba(room.color);
   const status = STATUS_LABEL[room.status || "existing"] ?? STATUS_LABEL.existing;
   const priority = (room.priority || "medium") as "high" | "medium" | "low";

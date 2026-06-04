@@ -18,6 +18,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { MapPin, Trash2 } from "lucide-react";
+import { isRoomPlacedOnCanvas } from "../utils/roomPlacement";
 import { useMeasurement } from "@/contexts/MeasurementContext";
 import {
   ROOM_STATUS_OPTIONS,
@@ -72,12 +73,6 @@ export function RoomsTableView({
     saveEdit,
   } = useRoomInlineEdit(onRoomUpdated, onOptimisticUpdate);
 
-  const isRoomPlacedOnCanvas = (room: Room): boolean => {
-    return !!(
-      room.floor_plan_position?.points &&
-      room.floor_plan_position.points.length > 0
-    );
-  };
 
   const getStatusLabel = useCallback(
     (status: string | null | undefined) => {

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ColumnToggle } from "@/components/shared/ColumnToggle";
 import { Loader2, Home, Plus, Search, Trash2, MapPin, Calendar, X, ArrowUpDown, LayoutGrid, Table as TableIcon, Settings2 } from "lucide-react";
+import { isRoomPlacedOnCanvas } from "./utils/roomPlacement";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -93,9 +94,8 @@ export const RoomsList = ({ projectId, rooms: externalRooms, onRoomClick, onAddR
     });
   }, [i18n.language]);
 
-  const isRoomPlacedOnCanvas = (room: Room): boolean => {
-    return !!(room.floor_plan_position?.points && room.floor_plan_position.points.length > 0);
-  };
+  // isRoomPlacedOnCanvas imported from utils/roomPlacement (handles the
+  // double-nested floor_plan_position.points.points structure).
 
   useEffect(() => {
     if (externalRooms) {

@@ -181,6 +181,36 @@ export function createRoomPoints(placement: RoomPlacement): { x: number; y: numb
 }
 
 /**
+ * Whether a room has been placed on the floor-plan canvas, and its polygon.
+ *
+ * `floor_plan_position` is stored DOUBLE-NESTED — the polygon array lives at
+ * `floor_plan_position.points.points` (placement writes `{ points: shape.coordinates }`
+ * and `coordinates` is itself `{ points: [...] }`). Older/other writes may be flat
+ * (`floor_plan_position.points` is the array). Accept both, otherwise every placed
+ * room reads as un-placed (grey map-pin) instead of green + jump-to-canvas.
+ */
+export function getRoomPlacementPoints(
+  room: { floor_plan_position?: unknown } | null | undefined
+): { x: number; y: number }[] | null {
+  const fpp = room?.floor_plan_position as { points?: unknown } | null | undefined;
+  if (!fpp || typeof fpp !== "object") return null;
+
+  const p = fpp.points as unknown;
+  if (Array.isArray(p)) return p as { x: number; y: number }[];
+  if (p && typeof p === "object" && Array.isArray((p as { points?: unknown }).points)) {
+    return (p as { points: { x: number; y: number }[] }).points;
+  }
+  return null;
+}
+
+export function isRoomPlacedOnCanvas(
+  room: { floor_plan_position?: unknown } | null | undefined
+): boolean {
+  const pts = getRoomPlacementPoints(room);
+  return !!pts && pts.length > 0;
+}
+
+/**
  * Calculate area of room in square meters from polygon points
  */
 export function calculateAreaFromPoints(points: { x: number; y: number }[]): number {
