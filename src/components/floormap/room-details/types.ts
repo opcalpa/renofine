@@ -12,9 +12,6 @@ export interface Room {
   description: string | null;
   color?: string | null;
   material?: string | null;
-  wall_color?: string | null;
-  ceiling_color?: string | null;
-  trim_color?: string | null;
   status?: string | null;
   ceiling_height_mm?: number | null;
   priority?: string | null;
@@ -67,6 +64,7 @@ export interface WallSpec {
 export interface JoinerySpec {
   door_type?: string;
   trim_type?: string;
+  frame_color?: string;
 }
 
 export interface ElectricalSpec {
@@ -104,6 +102,7 @@ export const wallSpecSchema = z.object({
 export const joinerySpecSchema = z.object({
   door_type: z.string().optional(),
   trim_type: z.string().optional(),
+  frame_color: z.string().optional(),
 });
 
 export const electricalSpecSchema = z.object({

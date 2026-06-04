@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import type { Room, EditableFieldKey, EditingCell } from "./types";
-import type { CeilingSpec, WallSpec, FloorSpec } from "../room-details/types";
+import type { CeilingSpec, WallSpec, FloorSpec, JoinerySpec } from "../room-details/types";
 
 export function useRoomInlineEdit(
   onRoomUpdated?: () => void,
@@ -42,7 +42,10 @@ export function useRoomInlineEdit(
           break;
 
         case "trimColor":
-          updates.trim_color = value || null;
+          updates.joinery_spec = {
+            ...(room.joinery_spec as JoinerySpec),
+            frame_color: value || undefined,
+          };
           break;
 
         case "wallColor":
@@ -60,7 +63,6 @@ export function useRoomInlineEdit(
           break;
 
         case "ceilingColor":
-          updates.ceiling_color = value || null;
           updates.ceiling_spec = {
             ...(room.ceiling_spec as CeilingSpec),
             color: value || undefined,

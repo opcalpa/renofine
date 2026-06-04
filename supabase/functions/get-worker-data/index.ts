@@ -96,7 +96,7 @@ serve(async (req) => {
     if (roomIds.length > 0) {
       const { data: rooms } = await sb
         .from("rooms")
-        .select("id, name, description, wall_color, ceiling_color, trim_color, wall_spec, floor_spec, ceiling_spec, joinery_spec, dimensions, ceiling_height_mm")
+        .select("id, name, description, wall_spec, floor_spec, ceiling_spec, joinery_spec, dimensions, ceiling_height_mm")
         .in("id", roomIds);
       for (const room of rooms || []) {
         roomsMap[room.id] = room;
@@ -388,9 +388,9 @@ serve(async (req) => {
           ? {
               name: (task.room_id && roomTranslationsMap[task.room_id]?.name) || room.name,
               description: (task.room_id && roomTranslationsMap[task.room_id]?.description) || room.description || null,
-              wallColor: room.wall_color || null,
-              ceilingColor: room.ceiling_color || null,
-              trimColor: room.trim_color || null,
+              wallColor: (room.wall_spec as { main_color?: string } | null)?.main_color || null,
+              ceilingColor: (room.ceiling_spec as { color?: string } | null)?.color || null,
+              trimColor: (room.joinery_spec as { frame_color?: string } | null)?.frame_color || null,
               wallSpec: room.wall_spec || null,
               floorSpec: room.floor_spec || null,
               ceilingSpec: room.ceiling_spec || null,

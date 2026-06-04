@@ -33,7 +33,7 @@ export function useRoomInstructionsData(projectId: string, profileId: string | n
       // Parallel fetches
       const [roomsRes, photosRes, materialsRes, taskPhotosRes, floorPlanRes] = await Promise.all([
         roomIds.length > 0
-          ? supabase.from("rooms").select("id, name, wall_color, ceiling_color, trim_color, wall_spec, floor_spec, ceiling_spec, joinery_spec, dimensions, ceiling_height_mm").in("id", roomIds)
+          ? supabase.from("rooms").select("id, name, wall_spec, floor_spec, ceiling_spec, joinery_spec, dimensions, ceiling_height_mm").in("id", roomIds)
           : { data: [] },
         roomIds.length > 0
           ? supabase.from("photos").select("id, url, caption, source, linked_to_id").eq("linked_to_type", "room").in("linked_to_id", roomIds)
@@ -131,9 +131,9 @@ export function useRoomInstructionsData(projectId: string, profileId: string | n
         rooms.push({
           id: rid,
           name: dbRoom?.name || "",
-          wallColor: dbRoom?.wall_color || null,
-          ceilingColor: dbRoom?.ceiling_color || null,
-          trimColor: dbRoom?.trim_color || null,
+          wallColor: (dbRoom?.wall_spec as { main_color?: string } | null)?.main_color || null,
+          ceilingColor: (dbRoom?.ceiling_spec as { color?: string } | null)?.color || null,
+          trimColor: (dbRoom?.joinery_spec as { frame_color?: string } | null)?.frame_color || null,
           wallSpec: dbRoom?.wall_spec as RoomInstruction["wallSpec"],
           floorSpec: dbRoom?.floor_spec as RoomInstruction["floorSpec"],
           ceilingSpec: dbRoom?.ceiling_spec as RoomInstruction["ceilingSpec"],

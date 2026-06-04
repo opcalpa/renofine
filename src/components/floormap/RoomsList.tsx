@@ -312,15 +312,17 @@ export const RoomsList = ({ projectId, rooms: externalRooms, onRoomClick, onAddR
             <span className="font-medium line-clamp-1">{room.notes}</span>
           </span>
         ) : null;
-      case 'trimColor':
-        return room.trim_color ? (
+      case 'trimColor': {
+        const trim = (room.joinery_spec as { frame_color?: string } | null)?.frame_color;
+        return trim ? (
           <span className="text-sm">
             <span className="text-muted-foreground">{t('rooms.trimColor')}:</span>{' '}
-            <span className="font-medium">{room.trim_color}</span>
+            <span className="font-medium">{trim}</span>
           </span>
         ) : null;
+      }
       case 'ceilingColor': {
-        const color = room.ceiling_color || (room.ceiling_spec as { color?: string } | null)?.color;
+        const color = (room.ceiling_spec as { color?: string } | null)?.color;
         return color ? (
           <span className="text-sm">
             <span className="text-muted-foreground">{t('rooms.ceilingColor')}:</span>{' '}

@@ -24,7 +24,7 @@ import {
   PRIORITY_OPTIONS,
   FLOOR_MATERIAL_OPTIONS,
 } from "../room-details/constants";
-import type { CeilingSpec } from "../room-details/types";
+import type { CeilingSpec, JoinerySpec } from "../room-details/types";
 import { computeWallArea, computePaintEstimate } from "./computations";
 import { useRoomInlineEdit } from "./useRoomInlineEdit";
 import type { Room, FieldKey, EditableFieldKey, FieldDefinition } from "./types";
@@ -145,10 +145,12 @@ export function RoomsTableView({
           return room.notes || "\u2014";
         case "ceilingColor": {
           const cs = room.ceiling_spec as CeilingSpec | null | undefined;
-          return room.ceiling_color || cs?.color || "\u2014";
+          return cs?.color || "\u2014";
         }
-        case "trimColor":
-          return room.trim_color || "\u2014";
+        case "trimColor": {
+          const js = room.joinery_spec as JoinerySpec | null | undefined;
+          return js?.frame_color || "\u2014";
+        }
         case "wallArea": {
           const wa = computeWallArea(room);
           return wa !== null ? `${wa.toFixed(1)} ${ms.areaLabel}` : "\u2014";
@@ -185,10 +187,12 @@ export function RoomsTableView({
           return room.notes || "";
         case "ceilingColor": {
           const cs = room.ceiling_spec as CeilingSpec | null | undefined;
-          return room.ceiling_color || cs?.color || "";
+          return cs?.color || "";
         }
-        case "trimColor":
-          return room.trim_color || "";
+        case "trimColor": {
+          const js = room.joinery_spec as JoinerySpec | null | undefined;
+          return js?.frame_color || "";
+        }
         case "wallColor":
           return room.wall_spec?.main_color || "";
         case "floorMaterial":
