@@ -2187,6 +2187,7 @@
     "onPlan": "Auf Zeichnung",
     "clickToPlace": "Auf die Zeichnung klicken, um das Objekt zu platzieren",
     "linkedToPlan": "Objekt mit der Zeichnung verknüpft",
-    "linkError": "Objekt konnte nicht mit dem Eintrag verknüpft werden"
+    "linkError": "Objekt konnte nicht mit dem Eintrag verknüpft werden",
+    "addedFromPlan": "Zur Elektroliste des Raums hinzugefügt"
   }
 }

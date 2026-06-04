@@ -14,7 +14,7 @@ import { ZoomControls } from './ZoomControls';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { saveShapesForPlan, loadShapesForPlan } from './utils/plans';
-import { linkPlacedItemToShape } from './utils/roomItemLink';
+import { linkPlacedItemToShape, createRoomItemForPlacedShape, pointInPolygon } from './utils/roomItemLink';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -1884,11 +1884,27 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
           }
         }
 
-        // E3: if this placement came from a room_items "Placera på ritning",
-        // stamp the object with the room so it reads back as that room's item.
+        // E3: resolve the room_items linkage for this placement.
+        //  - forward (E3.1): placement came from a list item → link that item.
+        //  - reverse (E3.2): an electrical object dropped inside a room polygon
+        //    becomes that room's list entry. Stamp roomId so it reads back right.
         const itemLink = useFloorMapStore.getState().pendingItemLink;
+        let reverseRoomId: string | null = null;
         if (itemLink) {
           newShape.roomId = itemLink.roomId;
+        } else if (unifiedDef.category === 'electrical') {
+          const containingRoom = shapes.find(
+            (s) =>
+              s.type === 'room' &&
+              s.planId === currentPlanId &&
+              !!s.roomId &&
+              Array.isArray((s.coordinates as { points?: { x: number; y: number }[] })?.points) &&
+              pointInPolygon(pos, (s.coordinates as { points: { x: number; y: number }[] }).points)
+          );
+          if (containingRoom?.roomId) {
+            reverseRoomId = containingRoom.roomId;
+            newShape.roomId = containingRoom.roomId;
+          }
         }
 
         addShape(newShape);
@@ -1899,7 +1915,7 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
         setSelectedShapeId(newShape.id);
         setSelectedShapeIds([newShape.id]);
 
-        // E3: persist the shape and link it to its room_items row (one record,
+        // E3: persist the shape and reconcile it with room_items (one record,
         // two views). Done after addShape so getState().shapes includes it.
         if (itemLink) {
           const planForLink = useFloorMapStore.getState().currentPlanId;
@@ -1913,6 +1929,15 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
               });
           }
           useFloorMapStore.getState().setPendingItemPlacement(null);
+        } else if (reverseRoomId) {
+          const planForLink = useFloorMapStore.getState().currentPlanId;
+          const shapesForLink = useFloorMapStore.getState().shapes;
+          const projectForLink = useFloorMapStore.getState().currentProjectId;
+          if (planForLink && projectForLink) {
+            createRoomItemForPlacedShape(planForLink, shapesForLink, projectForLink, reverseRoomId, newShape)
+              .then(() => toast.success(t('roomItems.addedFromPlan', 'Tillagt i rummets el-lista')))
+              .catch((err) => console.error('Failed to create room item from placed shape:', err));
+          }
         }
 
         setPendingObjectId(null);

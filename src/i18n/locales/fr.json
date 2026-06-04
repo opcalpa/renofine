@@ -2187,6 +2187,7 @@
     "onPlan": "Sur le plan",
     "clickToPlace": "Cliquez sur le plan pour placer l’élément",
     "linkedToPlan": "Élément lié au plan",
-    "linkError": "Impossible de lier l’élément à la fiche"
+    "linkError": "Impossible de lier l’élément à la fiche",
+    "addedFromPlan": "Ajouté à la liste électrique de la pièce"
   }
 }

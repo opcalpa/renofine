@@ -26,3 +26,50 @@ export async function linkPlacedItemToShape(
 
   if (error) throw error;
 }
+
+/** Ray-casting point-in-polygon. Point and polygon share the canvas world space. */
+export function pointInPolygon(
+  pt: { x: number; y: number },
+  points: { x: number; y: number }[]
+): boolean {
+  let inside = false;
+  for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+    const xi = points[i].x, yi = points[i].y;
+    const xj = points[j].x, yj = points[j].y;
+    const intersect =
+      yi > pt.y !== yj > pt.y && pt.x < ((xj - xi) * (pt.y - yi)) / (yj - yi) + xi;
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
+/**
+ * E3.2 reverse — an electrical object drawn directly on the canvas inside a room
+ * becomes a room_items entry for that room (canvas → list). Shape is persisted
+ * first so the FK target exists (same ordering as linkPlacedItemToShape).
+ */
+export async function createRoomItemForPlacedShape(
+  planId: string,
+  shapes: FloorMapShape[],
+  projectId: string,
+  roomId: string,
+  shape: { id: string; name?: string; metadata?: { unifiedObjectId?: unknown } }
+): Promise<void> {
+  await saveShapesForPlan(planId, shapes);
+
+  const subtype = typeof shape.metadata?.unifiedObjectId === 'string'
+    ? shape.metadata.unifiedObjectId
+    : null;
+
+  const { error } = await supabase.from('room_items').insert({
+    project_id: projectId,
+    room_id: roomId,
+    category: 'electrical',
+    subtype,
+    title: shape.name || subtype || 'El-objekt',
+    representation_kind: 'point',
+    floor_map_shape_id: shape.id,
+  });
+
+  if (error) throw error;
+}

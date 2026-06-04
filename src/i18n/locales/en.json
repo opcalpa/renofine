@@ -6482,6 +6482,7 @@
     "onPlan": "On drawing",
     "clickToPlace": "Click the drawing to place the object",
     "linkedToPlan": "Object linked to the drawing",
-    "linkError": "Could not link the object to the item"
+    "linkError": "Could not link the object to the item",
+    "addedFromPlan": "Added to the room’s electrical list"
   }
 }

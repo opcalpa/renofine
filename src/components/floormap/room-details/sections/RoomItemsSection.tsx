@@ -36,6 +36,7 @@ interface RoomItem {
   detail: RoomItemDetail;
   install_status: string;
   representation_kind: string;
+  floor_map_shape_id: string | null;
 }
 
 // Categories rendered top-to-bottom. Electrical first (E2); others follow as
@@ -90,7 +91,7 @@ export function RoomItemsSection({ roomId, projectId, category = "electrical", o
     setLoading(true);
     const { data, error } = await supabase
       .from("room_items")
-      .select("id, category, subtype, title, detail, install_status, representation_kind")
+      .select("id, category, subtype, title, detail, install_status, representation_kind, floor_map_shape_id")
       .eq("room_id", roomId)
       .order("sort_order", { ascending: true, nullsFirst: false })
       .order("created_at", { ascending: true });
@@ -246,7 +247,10 @@ export function RoomItemsSection({ roomId, projectId, category = "electrical", o
             <ul className="space-y-1.5">
               {catItems.map((item) => {
                 const installed = item.install_status === "installed";
-                const isPlaced = item.representation_kind !== "none";
+                // Gate on the shape FK, not representation_kind: deleting the object
+                // on the canvas nulls this via ON DELETE SET NULL, so the item reverts
+                // to placeable automatically (E3.2 deletion sync — no extra code).
+                const isPlaced = !!item.floor_map_shape_id;
                 const canPlace =
                   !!onPlaceOnPlan &&
                   !!roomId &&
