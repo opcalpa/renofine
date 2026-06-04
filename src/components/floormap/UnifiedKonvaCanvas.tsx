@@ -1217,6 +1217,13 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
         setSelectedRoomForDetail(shape.roomId);
         setIsRoomDetailOpen(true);
         toast.success(t('floormap.openingRoomDetails', 'Opening room details'));
+      } else if (shapeType === 'room') {
+        // Unnamed room (no roomId yet) — reopen the name/pick-room dialog instead of
+        // the generic property panel, so it can be named or linked to a project room.
+        setShowPropertyPanel(false);
+        setPropertyPanelShape(null);
+        setSelectedShapeForNaming(shape.id);
+        setIsNameRoomDialogOpen(true);
       } else if (shapeType === 'sticky_note' || shapeType === 'text') {
         // Skip property panel — onDblClick handler opens inline editor instead
       } else {
@@ -3737,7 +3744,12 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
                   setIsRoomDetailOpen(true);
                   toast.success(t('floormap.openingRoomDetails', 'Opening room details'));
                 } else {
-                  toast.info(t('floormap.roomMustBeSavedFirst', 'Room must be named and saved first.'));
+                  // Unnamed room (drawn but never named — e.g. user hit Cancel). Reopen the
+                  // same name/pick-room dialog so it can be named instead of being a dead shape.
+                  setShowPropertyPanel(false);
+                  setPropertyPanelShape(null);
+                  setSelectedShapeForNaming(shape.id);
+                  setIsNameRoomDialogOpen(true);
                 }
               };
               const handleSelect = isReadOnly
