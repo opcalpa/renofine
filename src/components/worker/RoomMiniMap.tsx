@@ -20,6 +20,7 @@ import {
   ObjectInfoCard,
   type FloorPlanObject,
 } from "./roomObjectShared";
+import { ZoomPanSvg } from "./ZoomPanSvg";
 
 export type { FloorPlanObject };
 
@@ -154,12 +155,7 @@ export function RoomMiniMap({
         />
       )}
 
-      <svg
-        viewBox={`${vbX} ${vbY} ${vbW} ${vbH}`}
-        className={className}
-        style={{ width: "100%", maxHeight: 220 }}
-        preserveAspectRatio="xMidYMid meet"
-      >
+      <ZoomPanSvg viewBox={`${vbX} ${vbY} ${vbW} ${vbH}`} className={className} maxHeight={220}>
         {backgroundImage?.url && (
           <image
             href={backgroundImage.url}
@@ -242,7 +238,7 @@ export function RoomMiniMap({
             </g>
           );
         })}
-      </svg>
+      </ZoomPanSvg>
 
       {selected && <ObjectInfoCard object={selected} />}
     </div>

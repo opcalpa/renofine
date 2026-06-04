@@ -17,6 +17,7 @@ import {
   ObjectInfoCard,
   type WallObject,
 } from "./roomObjectShared";
+import { ZoomPanSvg } from "./ZoomPanSvg";
 
 interface WallElevationMiniViewProps {
   objects: WallObject[];
@@ -108,11 +109,10 @@ export function WallElevationMiniView({
               {t("roomItems.wall", "Wall")} {i + 1}
             </div>
           )}
-          <svg
+          <ZoomPanSvg
             viewBox={`${-wall.lengthMM * 0.04} ${-wallHeightMM * 0.06} ${wall.lengthMM * 1.08} ${wallHeightMM * 1.18}`}
             className={className}
-            style={{ width: "100%", maxHeight: 200 }}
-            preserveAspectRatio="xMidYMid meet"
+            maxHeight={200}
           >
             {/* Wall face */}
             <rect
@@ -173,7 +173,7 @@ export function WallElevationMiniView({
                 </g>
               );
             })}
-          </svg>
+          </ZoomPanSvg>
         </div>
       ))}
 

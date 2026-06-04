@@ -6494,6 +6494,9 @@
     "linkedItem": "Logged item",
     "wall": "Wall",
     "floorView": "Floor plan",
-    "wallView": "Wall view"
+    "wallView": "Wall view",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "resetZoom": "Reset view"
   }
 }

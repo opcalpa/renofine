@@ -6493,6 +6493,9 @@
     "linkedItem": "Loggad post",
     "wall": "Vägg",
     "floorView": "Planritning",
-    "wallView": "Väggvy"
+    "wallView": "Väggvy",
+    "zoomIn": "Zooma in",
+    "zoomOut": "Zooma ut",
+    "resetZoom": "Återställ vy"
   }
 }
