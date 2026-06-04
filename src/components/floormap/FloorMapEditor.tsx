@@ -3,7 +3,6 @@ import { SimpleToolbar } from "./SimpleToolbar";
 import { HomeownerToolbar } from "./HomeownerToolbar";
 import { MobileCanvasToolbar } from "./MobileCanvasToolbar";
 import { UnifiedKonvaCanvas } from "./UnifiedKonvaCanvas";
-import { ElevationCanvas } from "./ElevationCanvas";
 import { RoomElevationView } from "./RoomElevationView";
 import { RoomDetailDialog } from "./RoomDetailDialog";
 import { RoomPickerDialog } from "./RoomPickerDialog";
@@ -361,21 +360,14 @@ export const FloorMapEditor = ({ projectId, projectName, onBack, backLabel, isRe
 
         {viewMode === 'elevation' && (
           <main className="flex-1 overflow-hidden relative">
-            {/* Use RoomElevationView when a room is selected (proper room-centric view) */}
-            {/* Otherwise fall back to ElevationCanvas (wall-based view) */}
-            {elevationRoom ? (
+            {/* Single room-centric elevation view. When no room is chosen yet the
+                RoomPickerDialog overlays this area; cancelling it returns to floor. */}
+            {elevationRoom && (
               <RoomElevationView
                 room={elevationRoom}
                 projectId={projectId}
                 onClose={() => {
                   setElevationRoom(null);
-                  useFloorMapStore.getState().setViewMode('floor');
-                }}
-              />
-            ) : (
-              <ElevationCanvas
-                projectId={projectId}
-                onClose={() => {
                   useFloorMapStore.getState().setViewMode('floor');
                 }}
               />

@@ -225,7 +225,7 @@ export interface FloorMapShape {
     radiusMM?: number;
     perimeterMM?: number;
     // Elevation symbol metadata
-    symbolType?: string; // Type from ElevationSymbolLibrary
+    symbolType?: string; // Legacy elevation symbol type identifier
     category?: string; // Symbol category
     typicalHeightFromFloor?: number; // Typical installation height in mm
     materialNotes?: string; // Material/finish notes

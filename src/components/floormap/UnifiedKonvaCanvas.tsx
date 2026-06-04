@@ -7,7 +7,6 @@ import { FloorMapShape, ScalePreset, GridPreset, LineCoordinates } from './types
 import { v4 as uuidv4 } from 'uuid';
 import { RoomDetailDialog } from './RoomDetailDialog';
 import { RoomElevationView } from './RoomElevationView';
-import { WallElevationView } from './WallElevationView';
 import { NameRoomDialog } from './NameRoomDialog';
 import { presetColorForName, type ProjectRoomOption } from './roomPresets';
 import { PropertyPanel } from './PropertyPanel';
@@ -210,7 +209,6 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
   const connectorStartRef = useRef<{ shapeId: string; anchor: AnchorSide } | null>(null);
 
   // Wall elevation view state (shows combined collinear walls)
-  const [wallElevationId, setWallElevationId] = useState<string | null>(null);
 
   // Property panel state (for all object types)
   const [showPropertyPanel, setShowPropertyPanel] = useState(false);
@@ -3510,15 +3508,6 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
         />
       )}
 
-      {/* Wall Elevation View - shows combined collinear walls */}
-      {wallElevationId && currentProjectId && (
-        <WallElevationView
-          wallId={wallElevationId}
-          projectId={currentProjectId}
-          onClose={() => setWallElevationId(null)}
-        />
-      )}
-
       {/* Property Panel */}
       {/* PropertyPanel - for all shapes EXCEPT rooms (rooms use RoomDetailDialog) */}
       {showPropertyPanel && propertyPanelShape && currentProjectId && propertyPanelShape.type !== 'room' && (
@@ -3558,54 +3547,6 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
           );
         })()
       )}
-
-      {/* Floating Wall Elevation Button - Shows when a wall is selected */}
-      {(() => {
-        // Check if a wall is selected (single selection)
-        const selectedWall = selectedShapeIds.length === 1
-          ? currentShapes.find(s => s.id === selectedShapeIds[0] && (s.type === 'wall' || s.type === 'line'))
-          : null;
-
-        if (!selectedWall) return null;
-
-        // Calculate button position near the wall's midpoint
-        const wallCoords = selectedWall.coordinates as { x1: number; y1: number; x2: number; y2: number };
-        if (!wallCoords.x1) return null;
-
-        const wallMidX = (wallCoords.x1 + wallCoords.x2) / 2;
-        const wallMidY = (wallCoords.y1 + wallCoords.y2) / 2;
-
-        // Convert to screen coordinates
-        const screenX = wallMidX * scaleSettings.pixelsPerMm * viewState.zoom + viewState.panX;
-        const screenY = wallMidY * scaleSettings.pixelsPerMm * viewState.zoom + viewState.panY;
-
-        // Only show if on screen
-        if (screenX < 0 || screenX > window.innerWidth || screenY < 0 || screenY > window.innerHeight) {
-          return null;
-        }
-
-        return (
-          <button
-            onClick={() => {
-              // Open combined wall elevation view for this wall
-              // This shows all collinear (same-line) wall segments plus openings
-              setWallElevationId(selectedWall.id);
-            }}
-            className="fixed z-50 flex items-center gap-2 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg transition-all hover:scale-105"
-            style={{
-              left: `${Math.min(Math.max(screenX - 60, 60), window.innerWidth - 180)}px`,
-              top: `${Math.min(Math.max(screenY - 50, 60), window.innerHeight - 60)}px`,
-            }}
-            title="Visa väggvy (Elevation)"
-          >
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-            </svg>
-            <span className="text-sm font-medium">Väggvy</span>
-          </button>
-        );
-      })()}
 
       {/* Konva Stage */}
       <Stage
@@ -4394,22 +4335,17 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
             }
           }}
           onViewElevation={() => {
-            // Find selected room or wall
+            // Elevation is room-centric: open the room's wall view. Wall selection
+            // is navigation inside RoomElevationView, not a separate view.
             if (selectedShapeIds.length > 0) {
               const firstSelected = currentShapes.find(s => s.id === selectedShapeIds[0]);
               if (!firstSelected) return;
 
-              // If a room is selected, show room-centric elevation view
               if (firstSelected.type === 'room') {
-                setElevationInitialWallId(undefined); // No specific wall
+                setElevationInitialWallId(undefined); // start at wall #1
                 setRoomElevationShape(firstSelected);
-                return;
-              }
-
-              // If a wall is selected, show wall-centric elevation view
-              // This shows the entire "logical wall" - all collinear segments plus openings
-              if (firstSelected.type === 'wall' || firstSelected.type === 'line') {
-                setWallElevationId(firstSelected.id);
+              } else {
+                toast.info('Välj ett rum för att öppna väggvyn');
               }
             }
           }}

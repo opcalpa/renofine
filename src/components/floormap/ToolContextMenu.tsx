@@ -388,7 +388,7 @@ export const ToolContextMenu = memo(({
             )}
 
             {/* Elevation view */}
-            {onViewElevation && (selectionType === 'room' || hasRoomInSelection || selectionType === 'wall' || hasWallInSelection) && (
+            {onViewElevation && (selectionType === 'room' || hasRoomInSelection) && (
               <button
                 className="w-full px-3 py-1.5 flex items-center gap-2.5 hover:bg-purple-50 transition-colors text-left"
                 onClick={() => { onViewElevation(); onClose(); }}

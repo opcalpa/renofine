@@ -72,8 +72,11 @@ export const RoomPickerDialog: React.FC<RoomPickerDialogProps> = ({
                   variant={isSuggested ? 'default' : 'outline'}
                   className="w-full justify-start gap-3 h-auto py-3"
                   onClick={() => {
+                    // onSelectRoom is the single "picked" signal; the parent closes
+                    // the dialog. Calling onOpenChange(false) here too would fire the
+                    // parent's cancel path with a stale elevationRoom and bounce back
+                    // to the floor view.
                     onSelectRoom(room);
-                    onOpenChange(false);
                   }}
                 >
                   <span
