@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.1"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       access_log: {
@@ -916,6 +941,7 @@ export type Database = {
           shape_data: Json
           shape_type: string
           stroke_color: string | null
+          task_id: string | null
           updated_at: string
           view_mode: string | null
         }
@@ -930,6 +956,7 @@ export type Database = {
           shape_data: Json
           shape_type: string
           stroke_color?: string | null
+          task_id?: string | null
           updated_at?: string
           view_mode?: string | null
         }
@@ -944,6 +971,7 @@ export type Database = {
           shape_data?: Json
           shape_type?: string
           stroke_color?: string | null
+          task_id?: string | null
           updated_at?: string
           view_mode?: string | null
         }
@@ -967,6 +995,13 @@ export type Database = {
             columns: ["room_id"]
             isOneToOne: false
             referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "floor_map_shapes_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
             referencedColumns: ["id"]
           },
         ]
@@ -2856,9 +2891,40 @@ export type Database = {
           },
         ]
       }
+      room_translations: {
+        Row: {
+          description: string | null
+          language: string
+          name: string | null
+          room_id: string
+          translated_at: string
+        }
+        Insert: {
+          description?: string | null
+          language: string
+          name?: string | null
+          room_id: string
+          translated_at?: string
+        }
+        Update: {
+          description?: string | null
+          language?: string
+          name?: string | null
+          room_id?: string
+          translated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_translations_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rooms: {
         Row: {
-          ceiling_color: string | null
           ceiling_height_mm: number | null
           ceiling_spec: Json | null
           checklists: Json | null
@@ -2880,13 +2946,10 @@ export type Database = {
           priority: string | null
           project_id: string
           status: string | null
-          trim_color: string | null
           updated_at: string
-          wall_color: string | null
           wall_spec: Json | null
         }
         Insert: {
-          ceiling_color?: string | null
           ceiling_height_mm?: number | null
           ceiling_spec?: Json | null
           checklists?: Json | null
@@ -2908,13 +2971,10 @@ export type Database = {
           priority?: string | null
           project_id: string
           status?: string | null
-          trim_color?: string | null
           updated_at?: string
-          wall_color?: string | null
           wall_spec?: Json | null
         }
         Update: {
-          ceiling_color?: string | null
           ceiling_height_mm?: number | null
           ceiling_spec?: Json | null
           checklists?: Json | null
@@ -2936,9 +2996,7 @@ export type Database = {
           priority?: string | null
           project_id?: string
           status?: string | null
-          trim_color?: string | null
           updated_at?: string
-          wall_color?: string | null
           wall_spec?: Json | null
         }
         Relationships: [
@@ -3299,6 +3357,7 @@ export type Database = {
           priority: string | null
           progress: number | null
           project_id: string
+          requires_completion_photo: boolean
           room_id: string | null
           room_ids: string[] | null
           rot_amount: number | null
@@ -3349,6 +3408,7 @@ export type Database = {
           priority?: string | null
           progress?: number | null
           project_id: string
+          requires_completion_photo?: boolean
           room_id?: string | null
           room_ids?: string[] | null
           rot_amount?: number | null
@@ -3399,6 +3459,7 @@ export type Database = {
           priority?: string | null
           progress?: number | null
           project_id?: string
+          requires_completion_photo?: boolean
           room_id?: string | null
           room_ids?: string[] | null
           rot_amount?: number | null
@@ -3924,9 +3985,10 @@ export type Database = {
         Args: { p_linked_to_id: string; p_linked_to_type: string }
         Returns: string
       }
-      seed_demo_project_for_user:
-        | { Args: { p_owner_id: string }; Returns: string }
-        | { Args: { p_language?: string; p_owner_id: string }; Returns: string }
+      seed_demo_project_for_user: {
+        Args: { p_language?: string; p_owner_id: string }
+        Returns: string
+      }
       user_can_invite_to_project: {
         Args: { project_uuid: string }
         Returns: boolean
@@ -4144,6 +4206,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       contractor_role: [
