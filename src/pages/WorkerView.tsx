@@ -256,6 +256,7 @@ export default function WorkerView() {
       roomId: string,
       category: WorkerPhotoCategory,
       file: File,
+      progress?: number,
     ) => {
       if (!token) return;
       // Task-level upload wins over room-level. Task carries side-effects
@@ -271,6 +272,7 @@ export default function WorkerView() {
           taskId: useTaskLevel ? taskId! : undefined,
           roomId: useRoomLevel ? roomId : undefined,
           category,
+          progress,
         });
         toast.success(t("worker.photoUploaded", "Photo uploaded"));
         await loadWorkerData();

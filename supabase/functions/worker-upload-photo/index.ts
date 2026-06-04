@@ -50,6 +50,15 @@ serve(async (req) => {
     const roomId = (formData.get("roomId") as string) || "";
     const category = (formData.get("category") as string) || "";
     const file = formData.get("file") as File;
+    // Optional worker-reported progress (0-100). Travels with the photo so a
+    // photo and a progress update always stay in sync. Only sent by the client
+    // for checklist-less work (where there is no derived progress).
+    const progressRaw = formData.get("progress");
+    let progress: number | null = null;
+    if (progressRaw != null && progressRaw !== "") {
+      const n = Math.round(Number(progressRaw));
+      if (!Number.isNaN(n)) progress = Math.min(100, Math.max(0, n));
+    }
 
     if (!token || !file) {
       return jsonResponse({ error: "token and file are required" }, 400, req);
@@ -83,6 +92,8 @@ serve(async (req) => {
 
     let linkedToType: "task" | "room";
     let linkedToId: string;
+    // Tasks whose progress the worker's % update applies to.
+    let progressTaskIds: string[] = [];
 
     if (taskId) {
       if (!assignedIds.includes(taskId)) {
@@ -90,6 +101,7 @@ serve(async (req) => {
       }
       linkedToType = "task";
       linkedToId = taskId;
+      progressTaskIds = [taskId];
     } else {
       const { data: roomTasks } = await sb
         .from("tasks")
@@ -102,6 +114,7 @@ serve(async (req) => {
       }
       linkedToType = "room";
       linkedToId = roomId;
+      progressTaskIds = roomTasks.map((t) => t.id);
     }
 
     const ext = file.name?.split(".").pop() || "jpg";
@@ -144,6 +157,36 @@ serve(async (req) => {
     if (insertError) {
       console.error("Photo insert error:", insertError);
       return jsonResponse({ error: "Failed to save photo record" }, 500, req);
+    }
+
+    // Apply the worker-reported progress to the relevant task(s). 100% also
+    // hands the work off for review (same signal as a completion photo).
+    if (progress != null && progressTaskIds.length > 0) {
+      const update: Record<string, unknown> = {
+        progress,
+        updated_at: new Date().toISOString(),
+      };
+      if (progress >= 100) {
+        const { data: rows } = await sb
+          .from("tasks")
+          .select("id, status")
+          .in("id", progressTaskIds);
+        const toReview = (rows || [])
+          .filter((r) => TRANSITIONABLE_STATUSES.has(r.status))
+          .map((r) => r.id);
+        if (toReview.length > 0) {
+          await sb
+            .from("tasks")
+            .update({ ...update, status: "awaiting_review" })
+            .in("id", toReview);
+        }
+        const rest = progressTaskIds.filter((id) => !toReview.includes(id));
+        if (rest.length > 0) {
+          await sb.from("tasks").update(update).in("id", rest);
+        }
+      } else {
+        await sb.from("tasks").update(update).in("id", progressTaskIds);
+      }
     }
 
     // Side-effect: a task-level "completed" upload is the worker's

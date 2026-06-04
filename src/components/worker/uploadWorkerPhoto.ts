@@ -9,6 +9,8 @@ export interface UploadWorkerPhotoArgs {
   taskId?: string;
   roomId?: string;
   category?: WorkerPhotoCategory;
+  /** Optional worker-reported progress 0-100; applied to the task(s) server-side. */
+  progress?: number;
 }
 
 export interface UploadWorkerPhotoResult {
@@ -21,12 +23,14 @@ export async function uploadWorkerPhoto({
   taskId,
   roomId,
   category,
+  progress,
 }: UploadWorkerPhotoArgs): Promise<UploadWorkerPhotoResult> {
   const formData = new FormData();
   formData.append("token", token);
   if (taskId) formData.append("taskId", taskId);
   if (roomId) formData.append("roomId", roomId);
   if (category) formData.append("category", category);
+  if (progress != null) formData.append("progress", String(progress));
   const filename =
     "name" in file && typeof (file as File).name === "string"
       ? (file as File).name

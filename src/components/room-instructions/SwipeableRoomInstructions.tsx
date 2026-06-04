@@ -14,7 +14,7 @@ interface SwipeableRoomInstructionsProps {
   canToggleChecklist?: boolean;
   canUploadPhotos?: boolean;
   onChecklistToggle?: (taskId: string, checklistId: string, itemId: string, completed: boolean) => void;
-  onPhotoUpload?: (taskId: string | null, roomId: string, category: "progress" | "completed", file: File) => void;
+  onPhotoUpload?: (taskId: string | null, roomId: string, category: "progress" | "completed", file: File, progress?: number) => void;
 }
 
 export function SwipeableRoomInstructions({

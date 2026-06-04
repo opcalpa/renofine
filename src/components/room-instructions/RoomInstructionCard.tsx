@@ -3,6 +3,15 @@ import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { getStatusBadgeColor } from "@/lib/statusColors";
 import { ColorSwatchRow } from "@/components/worker/ColorSwatchRow";
 import { RoomObjectViews } from "@/components/worker/RoomObjectViews";
@@ -28,7 +37,7 @@ interface RoomInstructionCardProps {
   canToggleChecklist?: boolean;
   canUploadPhotos?: boolean;
   onChecklistToggle?: (taskId: string, checklistId: string, itemId: string, completed: boolean) => void;
-  onPhotoUpload?: (taskId: string | null, roomId: string, category: "progress" | "completed", file: File) => void;
+  onPhotoUpload?: (taskId: string | null, roomId: string, category: "progress" | "completed", file: File, progress?: number) => void;
 }
 
 const statusKey = (s: string) => {
@@ -75,6 +84,42 @@ export function RoomInstructionCard({
     } finally {
       setUploading(false);
       e.target.value = "";
+    }
+  };
+
+  // "Dela foto" — one button replaces the old progress/completed pair. After the
+  // photo is picked, the worker confirms status (and, when there is no checklist
+  // to derive progress from, a %). Photo + progress travel together.
+  const hasChecklist = room.tasks.some((tk) =>
+    (tk.checklists || []).some((cl) => (cl.items?.length ?? 0) > 0)
+  );
+  const [shareFile, setShareFile] = useState<File | null>(null);
+  const [shareCategory, setShareCategory] = useState<"progress" | "completed">("progress");
+  const [sharePct, setSharePct] = useState(0);
+
+  const pickShareFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setShareFile(file);
+    setShareCategory("progress");
+    setSharePct(progressPct);
+    e.target.value = "";
+  };
+
+  const confirmShare = async () => {
+    if (!shareFile || !onPhotoUpload) return;
+    setUploading(true);
+    try {
+      await onPhotoUpload(
+        null,
+        room.id,
+        shareCategory,
+        shareFile,
+        hasChecklist ? undefined : sharePct,
+      );
+      setShareFile(null);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -186,21 +231,88 @@ export function RoomInstructionCard({
         />
       )}
 
-      {/* Photo upload buttons */}
+      {/* Share photo — one button; status (+ optional %) confirmed in the dialog */}
       {canUploadPhotos && (
-        <div className="grid grid-cols-2 gap-2">
-          <UploadButton
-            label={t("rooms.progressPhoto", "Progressfoto")}
-            uploading={uploading}
-            onChange={(e) => handleFileUpload(null, "progress", e)}
-          />
-          <UploadButton
-            label={t("rooms.completedPhoto", "Slutfört-foto")}
-            uploading={uploading}
-            onChange={(e) => handleFileUpload(null, "completed", e)}
-          />
-        </div>
+        <UploadButton
+          label={t("rooms.sharePhoto", "Dela foto")}
+          uploading={uploading}
+          onChange={pickShareFile}
+        />
       )}
+
+      <Dialog open={!!shareFile} onOpenChange={(o) => !o && setShareFile(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{t("rooms.sharePhoto", "Dela foto")}</DialogTitle>
+          </DialogHeader>
+
+          {shareFile && (
+            <div className="space-y-4">
+              <img
+                src={URL.createObjectURL(shareFile)}
+                alt=""
+                className="max-h-48 w-full rounded-lg object-cover"
+              />
+
+              <div>
+                <p className="mb-1.5 text-sm font-medium">
+                  {t("rooms.shareStatusQ", "Hur går arbetet?")}
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {(["progress", "completed"] as const).map((cat) => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => {
+                        setShareCategory(cat);
+                        if (!hasChecklist) setSharePct(cat === "completed" ? 100 : sharePct);
+                      }}
+                      className={cn(
+                        "rounded-lg border px-3 py-2 text-sm transition",
+                        shareCategory === cat
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border bg-background text-muted-foreground",
+                      )}
+                    >
+                      {cat === "progress"
+                        ? t("rooms.shareInProgress", "Pågående")
+                        : t("rooms.shareDone", "Klart")}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {!hasChecklist && (
+                <div>
+                  <div className="mb-1.5 flex justify-between text-sm">
+                    <span className="font-medium">{t("rooms.shareProgressQ", "Hur långt är arbetet?")}</span>
+                    <span className="tabular-nums text-muted-foreground">{sharePct}%</span>
+                  </div>
+                  <Slider
+                    value={[sharePct]}
+                    min={0}
+                    max={100}
+                    step={5}
+                    onValueChange={([v]) => {
+                      setSharePct(v);
+                      setShareCategory(v >= 100 ? "completed" : "progress");
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="ghost" onClick={() => setShareFile(null)} disabled={uploading}>
+              {t("common.cancel", "Avbryt")}
+            </Button>
+            <Button onClick={confirmShare} disabled={uploading}>
+              {uploading ? t("common.saving", "Sparar…") : t("rooms.sharePhoto", "Dela foto")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -246,7 +358,7 @@ function TaskSection({
   canToggleChecklist: boolean;
   canUploadPhotos: boolean;
   onChecklistToggle?: (taskId: string, checklistId: string, itemId: string, completed: boolean) => void;
-  onPhotoUpload?: (taskId: string | null, roomId: string, category: "progress" | "completed", file: File) => void;
+  onPhotoUpload?: (taskId: string | null, roomId: string, category: "progress" | "completed", file: File, progress?: number) => void;
 }) {
   const { t } = useTranslation();
   const [taskUploading, setTaskUploading] = useState(false);
