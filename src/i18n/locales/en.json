@@ -6489,6 +6489,7 @@
     "catElectrical": "Electrical",
     "catPlumbing": "Plumbing",
     "catVentilation": "Ventilation",
-    "catAppliance": "Appliances"
+    "catAppliance": "Appliances",
+    "linkedItem": "Logged item"
   }
 }

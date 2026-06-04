@@ -6488,6 +6488,7 @@
     "catElectrical": "El",
     "catPlumbing": "VVS",
     "catVentilation": "Ventilation",
-    "catAppliance": "Vitvaror"
+    "catAppliance": "Vitvaror",
+    "linkedItem": "Loggad post"
   }
 }

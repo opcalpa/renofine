@@ -14,6 +14,7 @@ import { useFloorMapStore } from './store';
 import { toast } from 'sonner';
 import { WallSmartDataSection } from './WallSmartDataSection';
 import { ShapePhotoSection } from './ShapePhotoSection';
+import { ObjectRoomItemSection } from './ObjectRoomItemSection';
 
 interface PropertyPanelProps {
   shape: FloorMapShape;
@@ -902,6 +903,9 @@ export const PropertyPanel: React.FC<PropertyPanelProps> = ({
             </div>
           )}
         </div>
+
+        {/* Linked room_items entry (E5.3) — for placed unified objects */}
+        {shape.metadata?.isUnifiedObject && <ObjectRoomItemSection shapeId={shape.id} />}
 
         {/* Template Group Section */}
         {isTemplateGroup && (

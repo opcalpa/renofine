@@ -2194,6 +2194,7 @@
     "catElectrical": "Électricité",
     "catPlumbing": "Plomberie",
     "catVentilation": "Ventilation",
-    "catAppliance": "Électroménager"
+    "catAppliance": "Électroménager",
+    "linkedItem": "Élément enregistré"
   }
 }

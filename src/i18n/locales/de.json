@@ -2194,6 +2194,7 @@
     "catElectrical": "Elektro",
     "catPlumbing": "Sanitär",
     "catVentilation": "Lüftung",
-    "catAppliance": "Geräte"
+    "catAppliance": "Geräte",
+    "linkedItem": "Erfasster Eintrag"
   }
 }
