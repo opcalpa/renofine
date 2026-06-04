@@ -68,3 +68,17 @@ export function getUnifiedObjectById(id: string): UnifiedObjectDefinition | unde
 export function getObjectsByCategory(category: string): UnifiedObjectDefinition[] {
   return ALL_OBJECTS.filter(obj => obj.category === category);
 }
+
+/**
+ * Whether a placed shape is an electrical object (outlet, switch, lamp, ...).
+ * Used by the El-filter to show/hide electrical fixtures.
+ */
+export function isElectricalShape(shape: {
+  objectCategory?: unknown;
+  metadata?: { unifiedObjectId?: unknown } | null;
+}): boolean {
+  const cat = typeof shape.objectCategory === 'string' ? shape.objectCategory : '';
+  if (cat === 'electrical' || cat.startsWith('electrical')) return true;
+  const defId = shape.metadata?.unifiedObjectId;
+  return typeof defId === 'string' && getUnifiedObjectById(defId)?.category === 'electrical';
+}

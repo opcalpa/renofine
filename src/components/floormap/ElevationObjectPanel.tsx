@@ -7,7 +7,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, MessageCircle, Trash2, Move, Ruler, ChevronRight, Save } from 'lucide-react';
+import { X, MessageCircle, Trash2, Move, Ruler, ChevronRight, Save, CheckCircle2, Circle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { FloorMapShape, WallObjectCategory } from './types';
 import { useFloorMapStore } from './store';
+import { isElectricalShape } from './objectLibrary';
 import { cn } from '@/lib/utils';
 
 interface ElevationObjectPanelProps {
@@ -59,8 +60,20 @@ export const ElevationObjectPanel: React.FC<ElevationObjectPanelProps> = ({
   isCommentResolved = false,
 }) => {
   const { t, i18n } = useTranslation();
-  const { updateShapeWallRelative, deleteShape } = useFloorMapStore();
+  const { updateShapeWallRelative, deleteShape, updateShape } = useFloorMapStore();
   const lang = i18n.language.startsWith('sv') ? 'sv' : 'en';
+
+  // Install status (control checklist) — only meaningful for electrical fixtures.
+  const isElectrical = isElectricalShape(object);
+  const isInstalled = object.metadata?.installStatus === 'installed';
+  const toggleInstalled = useCallback(() => {
+    updateShape(object.id, {
+      metadata: {
+        ...object.metadata,
+        installStatus: isInstalled ? 'planned' : 'installed',
+      },
+    });
+  }, [object.id, object.metadata, isInstalled, updateShape]);
 
   // Local state for form fields
   const [width, setWidth] = useState<number>(object.wallRelative?.width || 0);
@@ -140,6 +153,24 @@ export const ElevationObjectPanel: React.FC<ElevationObjectPanelProps> = ({
           <X className="h-4 w-4" />
         </Button>
       </div>
+
+      {/* Install status (control checklist) — electrical fixtures only */}
+      {isElectrical && (
+        <button
+          onClick={toggleInstalled}
+          className={cn(
+            "flex items-center gap-2 px-4 py-2.5 border-b text-sm font-medium transition-colors text-left",
+            isInstalled
+              ? "bg-green-50 text-green-700 hover:bg-green-100"
+              : "bg-white text-gray-600 hover:bg-gray-50"
+          )}
+        >
+          {isInstalled ? <CheckCircle2 className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
+          {isInstalled
+            ? t('elevation.installed', 'Installerad')
+            : t('elevation.markInstalled', 'Markera som installerad')}
+        </button>
+      )}
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">

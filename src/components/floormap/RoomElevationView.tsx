@@ -49,7 +49,7 @@ import { wallRelativeToElevation, elevationToWallRelative } from './canvas/utils
 import { ElevationObjectPanel } from './ElevationObjectPanel';
 import { saveShapesForPlan } from './utils/plans';
 import { HoverInfoTooltip } from './HoverInfoTooltip';
-import { ObjectLibraryPanel, getUnifiedObjectById, ELECTRICAL_OBJECTS, UnifiedObjectDefinition } from './objectLibrary';
+import { ObjectLibraryPanel, getUnifiedObjectById, ELECTRICAL_OBJECTS, UnifiedObjectDefinition, isElectricalShape } from './objectLibrary';
 
 interface RoomElevationViewProps {
   room: FloorMapShape;
@@ -2389,6 +2389,14 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
                             fontStyle="bold"
                             fill="white"
                           />
+                        </Group>
+                      )}
+
+                      {/* Install indicator - green check when an electrical fixture is marked installed */}
+                      {isElectricalShape(obj) && obj.metadata?.installStatus === 'installed' && !isDragging && (
+                        <Group x={-8} y={-8} listening={false}>
+                          <Rect x={0} y={0} width={16} height={16} fill="#22c55e" cornerRadius={8} shadowColor="#000" shadowBlur={3} shadowOpacity={0.2} />
+                          <KonvaText x={3} y={2} text="✓" fontSize={11} fontStyle="bold" fill="white" />
                         </Group>
                       )}
                     </Group>

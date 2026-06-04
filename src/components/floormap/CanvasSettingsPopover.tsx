@@ -45,6 +45,7 @@ export const CanvasSettingsPopover = () => {
     toggleSnap,
     toggleDimensions,
     toggleAreaLabels,
+    toggleElectrical,
     setCanvasSize,
   } = useFloorMapStore();
 
@@ -406,6 +407,18 @@ export const CanvasSettingsPopover = () => {
                 id="show-area"
                 checked={projectSettings.showAreaLabels}
                 onCheckedChange={toggleAreaLabels}
+              />
+            </div>
+
+            {/* El-filter: show/hide placed electrical objects */}
+            <div className="flex items-center justify-between">
+              <Label htmlFor="show-electrical" className="text-sm font-normal">
+                {t('canvas.showElectrical', 'Visa el-objekt')}
+              </Label>
+              <Switch
+                id="show-electrical"
+                checked={projectSettings.showElectrical}
+                onCheckedChange={toggleElectrical}
               />
             </div>
           </div>

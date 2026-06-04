@@ -43,7 +43,8 @@ export interface ProjectSettings {
   // Additional workspace preferences
   showDimensions: boolean; // Auto-show dimension labels
   showAreaLabels: boolean; // Auto-show area labels for rooms
-  
+  showElectrical: boolean; // Show placed electrical objects (El-filter)
+
   // Canvas dimensions (in meters) - NEW
   canvasWidthMeters: number; // Working area width
   canvasHeightMeters: number; // Working area height
@@ -59,6 +60,7 @@ const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
   snapEnabled: true,
   showDimensions: false, // Off by default - hover tooltip shows dimensions instead
   showAreaLabels: true,
+  showElectrical: true, // Electrical objects visible by default
   canvasWidthMeters: 50, // 50m × 50m working area
   canvasHeightMeters: 50,
   canvasMarginMeters: 0, // No margin - grid covers entire canvas
@@ -177,6 +179,7 @@ interface FloorMapStore {
   toggleSnap: () => void;
   toggleDimensions: () => void;
   toggleAreaLabels: () => void;
+  toggleElectrical: () => void;
   setCanvasSize: (widthMeters: number, heightMeters: number) => void;
   setCanvasMargin: (marginMeters: number) => void;
 
@@ -1055,7 +1058,14 @@ export const useFloorMapStore = create<FloorMapStore>((set, get) => ({
       showAreaLabels: !state.projectSettings.showAreaLabels,
     },
   })),
-  
+
+  toggleElectrical: () => set((state) => ({
+    projectSettings: {
+      ...state.projectSettings,
+      showElectrical: !state.projectSettings.showElectrical,
+    },
+  })),
+
   setCanvasSize: (widthMeters, heightMeters) => set((state) => ({
     projectSettings: {
       ...state.projectSettings,
