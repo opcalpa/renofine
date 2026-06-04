@@ -14,6 +14,7 @@ import { ZoomControls } from './ZoomControls';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { saveShapesForPlan, loadShapesForPlan } from './utils/plans';
+import { linkPlacedItemToShape } from './utils/roomItemLink';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -1883,6 +1884,13 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
           }
         }
 
+        // E3: if this placement came from a room_items "Placera på ritning",
+        // stamp the object with the room so it reads back as that room's item.
+        const itemLink = useFloorMapStore.getState().pendingItemLink;
+        if (itemLink) {
+          newShape.roomId = itemLink.roomId;
+        }
+
         addShape(newShape);
         toast.success(`${unifiedDef.name} placed${newShape.wallRelative ? ' (wall attached)' : ''}`);
 
@@ -1890,6 +1898,22 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
         justPlacedObjectRef.current = true;
         setSelectedShapeId(newShape.id);
         setSelectedShapeIds([newShape.id]);
+
+        // E3: persist the shape and link it to its room_items row (one record,
+        // two views). Done after addShape so getState().shapes includes it.
+        if (itemLink) {
+          const planForLink = useFloorMapStore.getState().currentPlanId;
+          const shapesForLink = useFloorMapStore.getState().shapes;
+          if (planForLink) {
+            linkPlacedItemToShape(planForLink, shapesForLink, itemLink.itemId, newShape.id)
+              .then(() => toast.success(t('roomItems.linkedToPlan', 'Objektet kopplat till ritningen')))
+              .catch((err) => {
+                console.error('Failed to link room item to shape:', err);
+                toast.error(t('roomItems.linkError', 'Kunde inte koppla objektet till posten'));
+              });
+          }
+          useFloorMapStore.getState().setPendingItemPlacement(null);
+        }
 
         setPendingObjectId(null);
         setGhostPreview(null);

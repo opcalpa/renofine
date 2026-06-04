@@ -2181,6 +2181,12 @@
     "titleRequired": "Choisissez un type ou saisissez un libellé",
     "loadError": "Impossible de charger les éléments",
     "saveError": "Impossible d’enregistrer l’élément",
-    "deleteError": "Impossible de supprimer l’élément"
+    "deleteError": "Impossible de supprimer l’élément",
+    "placeOnPlan": "Placer sur le plan",
+    "placedOnPlan": "Placé sur le plan",
+    "onPlan": "Sur le plan",
+    "clickToPlace": "Cliquez sur le plan pour placer l’élément",
+    "linkedToPlan": "Élément lié au plan",
+    "linkError": "Impossible de lier l’élément à la fiche"
   }
 }

@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Pencil, Trash2, Check, ExternalLink, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Check, ExternalLink, Loader2, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { ELECTRICAL_ITEM_SUBTYPE_OPTIONS } from "../constants";
 
@@ -50,6 +50,8 @@ interface RoomItemsSectionProps {
   projectId: string;
   /** Category to manage; defaults to electrical (E2). */
   category?: string;
+  /** E3: hand off to the floor planner to place this item as a canvas object. */
+  onPlaceOnPlan?: (args: { itemId: string; roomId: string; subtype: string }) => void;
 }
 
 interface EditorState {
@@ -62,7 +64,7 @@ interface EditorState {
 
 const emptyEditor: EditorState = { id: null, subtype: "", title: "", quantity: "", productLink: "" };
 
-export function RoomItemsSection({ roomId, projectId, category = "electrical" }: RoomItemsSectionProps) {
+export function RoomItemsSection({ roomId, projectId, category = "electrical", onPlaceOnPlan }: RoomItemsSectionProps) {
   const { t } = useTranslation();
   const [items, setItems] = useState<RoomItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -244,6 +246,12 @@ export function RoomItemsSection({ roomId, projectId, category = "electrical" }:
             <ul className="space-y-1.5">
               {catItems.map((item) => {
                 const installed = item.install_status === "installed";
+                const isPlaced = item.representation_kind !== "none";
+                const canPlace =
+                  !!onPlaceOnPlan &&
+                  !!roomId &&
+                  !isPlaced &&
+                  subtypeOptions.some((o) => o.value === item.subtype);
                 return (
                   <li
                     key={item.id}
@@ -278,7 +286,29 @@ export function RoomItemsSection({ roomId, projectId, category = "electrical" }:
                         <ExternalLink className="h-3.5 w-3.5" />
                       </a>
                     )}
+                    {isPlaced && (
+                      <span
+                        className="inline-flex shrink-0 items-center gap-1 rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"
+                        title={t("roomItems.placedOnPlan", "Placerad på ritning")}
+                      >
+                        <MapPin className="h-3 w-3" />
+                        {t("roomItems.onPlan", "På ritning")}
+                      </span>
+                    )}
                     <div className="ml-auto flex shrink-0 items-center gap-0.5">
+                      {canPlace && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          title={t("roomItems.placeOnPlan", "Placera på ritning")}
+                          onClick={() =>
+                            onPlaceOnPlan!({ itemId: item.id, roomId: roomId!, subtype: item.subtype! })
+                          }
+                        >
+                          <MapPin className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(item)}>
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>

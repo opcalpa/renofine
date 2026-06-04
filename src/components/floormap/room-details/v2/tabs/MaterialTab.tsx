@@ -16,6 +16,7 @@ interface MaterialTabProps {
   ) => void;
   roomId?: string;
   projectId: string;
+  onPlaceItemOnPlan?: (args: { itemId: string; roomId: string; subtype: string }) => void;
 }
 
 function SectionHeader({ label, filled, total }: { label: string; filled: number; total: number }) {
@@ -27,7 +28,7 @@ function SectionHeader({ label, filled, total }: { label: string; filled: number
   );
 }
 
-export function MaterialTab({ formData, updateFormData, updateSpec, roomId, projectId }: MaterialTabProps) {
+export function MaterialTab({ formData, updateFormData, updateSpec, roomId, projectId, onPlaceItemOnPlan }: MaterialTabProps) {
   const { t } = useTranslation();
   const counts = countFilledFields(formData);
 
@@ -62,7 +63,12 @@ export function MaterialTab({ formData, updateFormData, updateSpec, roomId, proj
 
       <div>
         <span className="rf-section-label mb-2 block">{t("roomItems.electricalItems", "El-objekt")}</span>
-        <RoomItemsSection roomId={roomId} projectId={projectId} category="electrical" />
+        <RoomItemsSection
+          roomId={roomId}
+          projectId={projectId}
+          category="electrical"
+          onPlaceOnPlan={onPlaceItemOnPlan}
+        />
       </div>
     </div>
   );

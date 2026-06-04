@@ -6475,6 +6475,12 @@
     "titleRequired": "Välj en typ eller ange en benämning",
     "loadError": "Kunde inte ladda objekt",
     "saveError": "Kunde inte spara objektet",
-    "deleteError": "Kunde inte ta bort objektet"
+    "deleteError": "Kunde inte ta bort objektet",
+    "placeOnPlan": "Placera på ritning",
+    "placedOnPlan": "Placerad på ritning",
+    "onPlan": "På ritning",
+    "clickToPlace": "Klicka på ritningen för att placera objektet",
+    "linkedToPlan": "Objektet kopplat till ritningen",
+    "linkError": "Kunde inte koppla objektet till posten"
   }
 }

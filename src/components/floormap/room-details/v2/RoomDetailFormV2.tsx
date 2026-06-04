@@ -22,6 +22,7 @@ interface RoomDetailFormV2Props {
     updates: Partial<RoomFormData[K]>
   ) => void;
   showPinterest?: boolean;
+  onPlaceItemOnPlan?: (args: { itemId: string; roomId: string; subtype: string }) => void;
 }
 
 type TabKey = "overview" | "material" | "measurements" | "photos" | "checklists" | "comments" | "related";
@@ -42,6 +43,7 @@ export function RoomDetailFormV2({
   updateFormData,
   updateSpec,
   showPinterest,
+  onPlaceItemOnPlan,
 }: RoomDetailFormV2Props) {
   const { t } = useTranslation();
   const isNewRoom = !room;
@@ -187,6 +189,7 @@ export function RoomDetailFormV2({
             updateSpec={updateSpec}
             roomId={room?.id}
             projectId={projectId}
+            onPlaceItemOnPlan={onPlaceItemOnPlan}
           />
         )}
         {tab === "measurements" && (

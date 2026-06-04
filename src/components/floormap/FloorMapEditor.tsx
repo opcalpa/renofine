@@ -399,6 +399,7 @@ export const FloorMapEditor = ({ projectId, projectName, onBack, backLabel, isRe
         open={roomDialogOpen}
         onOpenChange={setRoomDialogOpen}
         onRoomUpdated={handleRoomUpdated}
+        onPlaceItemOnPlan={(args) => useFloorMapStore.getState().setPendingItemPlacement(args)}
       />
 
       {/* Room Picker Dialog for elevation view */}

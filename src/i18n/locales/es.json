@@ -2181,6 +2181,12 @@
     "titleRequired": "Elige un tipo o introduce una etiqueta",
     "loadError": "No se pudieron cargar los elementos",
     "saveError": "No se pudo guardar el elemento",
-    "deleteError": "No se pudo eliminar el elemento"
+    "deleteError": "No se pudo eliminar el elemento",
+    "placeOnPlan": "Colocar en el plano",
+    "placedOnPlan": "Colocado en el plano",
+    "onPlan": "En el plano",
+    "clickToPlace": "Haz clic en el plano para colocar el elemento",
+    "linkedToPlan": "Elemento vinculado al plano",
+    "linkError": "No se pudo vincular el elemento al registro"
   }
 }

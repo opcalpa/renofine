@@ -893,6 +893,22 @@ const ProjectDetail = () => {
     });
   };
 
+  // E3: place a room_items entry onto the floor plan. Arms object placement +
+  // remembers which item to link once the object lands on the canvas.
+  const handlePlaceRoomItem = (args: { itemId: string; roomId: string; subtype: string }) => {
+    const { setPendingItemPlacement } = useFloorMapStore.getState();
+    setPendingItemPlacement(args);
+
+    setPreviousTab({ tab: activeTab, subTab: activeSubTab, label: getTabLabelKey(activeTab) });
+    setActiveTab('spaceplanner');
+    setActiveSubTab('floorplan');
+
+    toast({
+      title: t('roomItems.placeOnPlan', 'Placera på ritning'),
+      description: t('roomItems.clickToPlace', 'Klicka på ritningen för att placera objektet'),
+    });
+  };
+
   // Show loading while auth or data is loading
   if (authLoading || loading || permissions.loading) {
     return <ProjectDetailSkeleton />;
@@ -1558,6 +1574,7 @@ const ProjectDetail = () => {
         onOpenChange={setShowRoomDialog}
         onRoomUpdated={handleRoomUpdated}
         showPinterest={effectiveUserType === "homeowner"}
+        onPlaceItemOnPlan={handlePlaceRoomItem}
       />
 
       {/* Create Room Dialog */}

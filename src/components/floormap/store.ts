@@ -88,6 +88,7 @@ interface FloorMapStore {
   pendingObjectId: string | null; // ObjectDefinition ID from ObjectLibrary
   pendingTemplateId: string | null; // Template ID from Template Gallery
   pendingRoomPlacement: { roomId: string; roomName: string; color?: string } | null; // Room from list to place on canvas
+  pendingItemLink: { itemId: string; roomId: string } | null; // room_items row to link to the next placed object (E3)
 
   // History for Undo/Redo
   history: FloorMapShape[][];
@@ -144,6 +145,7 @@ interface FloorMapStore {
   setPendingObjectId: (objectId: string | null) => void;
   setPendingTemplateId: (templateId: string | null) => void;
   setPendingRoomPlacement: (room: { roomId: string; roomName: string; color?: string } | null) => void;
+  setPendingItemPlacement: (link: { itemId: string; roomId: string; subtype: string } | null) => void;
   centerOnRoom: (roomId: string) => void;
   
   // Actions - Drawing state
@@ -255,6 +257,7 @@ export const useFloorMapStore = create<FloorMapStore>((set, get) => ({
   pendingObjectId: null, // NEW: For object library placement
   pendingTemplateId: null, // NEW: For template gallery placement
   pendingRoomPlacement: null, // NEW: For placing existing room from list onto canvas
+  pendingItemLink: null, // E3: room_items row to link to the next placed object
   history: [[]],
   historyIndex: 0,
   isDrawing: false,
@@ -442,25 +445,28 @@ export const useFloorMapStore = create<FloorMapStore>((set, get) => ({
   setPendingSymbolType: (type) => set({ pendingSymbolType: type }),
   
   // Library symbol actions (NEW)
-  setPendingLibrarySymbol: (symbolType) => set({ 
+  setPendingLibrarySymbol: (symbolType) => set({
     pendingLibrarySymbol: symbolType,
     pendingObjectId: null, // Clear object ID when setting symbol
+    pendingItemLink: null,
     activeTool: symbolType ? 'symbol' : 'select' // Auto-switch to symbol placement mode
   }),
-  
+
   // Object library actions (NEW)
-  setPendingObjectId: (objectId) => set({ 
+  setPendingObjectId: (objectId) => set({
     pendingObjectId: objectId,
     pendingLibrarySymbol: null, // Clear symbol when setting object
     pendingTemplateId: null, // Clear template when setting object
+    pendingItemLink: null, // Clear any room_item link (plain library placement is unlinked)
     activeTool: objectId ? 'object' : 'select' // Auto-switch to object placement mode
   }),
-  
+
   // Template gallery actions (NEW)
   setPendingTemplateId: (templateId) => set({
     pendingTemplateId: templateId,
     pendingLibrarySymbol: null, // Clear symbol when setting template
     pendingObjectId: null, // Clear object when setting template
+    pendingItemLink: null,
     activeTool: templateId ? 'select' : 'select' // Keep select tool for template placement
   }),
 
@@ -470,7 +476,19 @@ export const useFloorMapStore = create<FloorMapStore>((set, get) => ({
     pendingLibrarySymbol: null,
     pendingObjectId: null,
     pendingTemplateId: null,
+    pendingItemLink: null,
     activeTool: room ? 'room' : 'select'
+  }),
+
+  // Room-item placement from the room-details list (E3): arm object placement
+  // AND remember which room_items row to link once the object lands on the canvas.
+  setPendingItemPlacement: (link) => set({
+    pendingItemLink: link ? { itemId: link.itemId, roomId: link.roomId } : null,
+    pendingObjectId: link ? link.subtype : null,
+    pendingLibrarySymbol: null,
+    pendingTemplateId: null,
+    pendingRoomPlacement: null,
+    activeTool: link ? 'object' : 'select',
   }),
 
   // Center view on a specific room by roomId

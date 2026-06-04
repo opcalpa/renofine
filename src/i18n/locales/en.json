@@ -6476,6 +6476,12 @@
     "titleRequired": "Pick a type or enter a label",
     "loadError": "Could not load items",
     "saveError": "Could not save the item",
-    "deleteError": "Could not remove the item"
+    "deleteError": "Could not remove the item",
+    "placeOnPlan": "Place on drawing",
+    "placedOnPlan": "Placed on drawing",
+    "onPlan": "On drawing",
+    "clickToPlace": "Click the drawing to place the object",
+    "linkedToPlan": "Object linked to the drawing",
+    "linkError": "Could not link the object to the item"
   }
 }

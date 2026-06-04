@@ -152,6 +152,8 @@ export interface RoomDetailDialogProps {
   onViewElevation?: () => void;
   /** Show Pinterest features (only for homeowners) */
   showPinterest?: boolean;
+  /** E3: hand off a room_items row to the floor planner for placement. Closes the dialog. */
+  onPlaceItemOnPlan?: (args: { itemId: string; roomId: string; subtype: string }) => void;
 }
 
 // Props for section components

@@ -2181,6 +2181,12 @@
     "titleRequired": "Typ wählen oder Bezeichnung eingeben",
     "loadError": "Objekte konnten nicht geladen werden",
     "saveError": "Objekt konnte nicht gespeichert werden",
-    "deleteError": "Objekt konnte nicht entfernt werden"
+    "deleteError": "Objekt konnte nicht entfernt werden",
+    "placeOnPlan": "Auf Zeichnung platzieren",
+    "placedOnPlan": "Auf Zeichnung platziert",
+    "onPlan": "Auf Zeichnung",
+    "clickToPlace": "Auf die Zeichnung klicken, um das Objekt zu platzieren",
+    "linkedToPlan": "Objekt mit der Zeichnung verknüpft",
+    "linkError": "Objekt konnte nicht mit dem Eintrag verknüpft werden"
   }
 }

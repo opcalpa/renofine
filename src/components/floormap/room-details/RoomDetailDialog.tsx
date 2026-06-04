@@ -59,7 +59,15 @@ export function RoomDetailDialog({
   isCreateMode = false,
   onViewElevation,
   showPinterest,
+  onPlaceItemOnPlan,
 }: RoomDetailDialogProps) {
+  // E3: wrap so placing an item also dismisses this dialog before the view switches.
+  const handlePlaceItemOnPlan = onPlaceItemOnPlan
+    ? (args: { itemId: string; roomId: string; subtype: string }) => {
+        onOpenChange(false);
+        onPlaceItemOnPlan(args);
+      }
+    : undefined;
   const { t } = useTranslation();
   const isDesktop = useIsDesktop();
   const {
@@ -193,6 +201,7 @@ export function RoomDetailDialog({
                   updateFormData={updateFormData}
                   updateSpec={updateSpec}
                   showPinterest={showPinterest}
+                  onPlaceItemOnPlan={handlePlaceItemOnPlan}
                 />
               </div>
             ) : (
@@ -268,6 +277,7 @@ export function RoomDetailDialog({
                 updateFormData={updateFormData}
                 updateSpec={updateSpec}
                 showPinterest={showPinterest}
+                onPlaceItemOnPlan={handlePlaceItemOnPlan}
               />
             </div>
 
