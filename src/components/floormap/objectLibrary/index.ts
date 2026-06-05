@@ -69,16 +69,42 @@ export function getObjectsByCategory(category: string): UnifiedObjectDefinition[
   return ALL_OBJECTS.filter(obj => obj.category === category);
 }
 
-/**
- * Whether a placed shape is an electrical object (outlet, switch, lamp, ...).
- * Used by the El-filter to show/hide electrical fixtures.
- */
-export function isElectricalShape(shape: {
+type ObjectCategoryShape = {
   objectCategory?: unknown;
   metadata?: { unifiedObjectId?: unknown } | null;
-}): boolean {
-  const cat = typeof shape.objectCategory === 'string' ? shape.objectCategory : '';
-  if (cat === 'electrical' || cat.startsWith('electrical')) return true;
+};
+
+/**
+ * The object-library category of a placed shape ('electrical', 'kitchen', ...),
+ * or null if the shape is not a library object (rooms, walls, freehand, ...).
+ * Resolved from the unified object definition, falling back to objectCategory.
+ * This is the canvas object taxonomy — distinct from the room_items category.
+ */
+export function getShapeObjectCategory(shape: ObjectCategoryShape): string | null {
   const defId = shape.metadata?.unifiedObjectId;
-  return typeof defId === 'string' && getUnifiedObjectById(defId)?.category === 'electrical';
+  if (typeof defId === 'string') {
+    const def = getUnifiedObjectById(defId);
+    if (def) return def.category;
+  }
+  const cat = typeof shape.objectCategory === 'string' ? shape.objectCategory : '';
+  if (!cat) return null;
+  return cat.startsWith('electrical') ? 'electrical' : cat;
+}
+
+/**
+ * Whether a placed shape should be hidden given the set of hidden categories.
+ * Used by the per-category canvas filter (generalizes the old El-filter).
+ */
+export function isObjectCategoryHidden(shape: ObjectCategoryShape, hidden: string[]): boolean {
+  if (!hidden || hidden.length === 0) return false;
+  const cat = getShapeObjectCategory(shape);
+  return cat != null && hidden.includes(cat);
+}
+
+/**
+ * Whether a placed shape is an electrical object (outlet, switch, lamp, ...).
+ * Used by the elevation install-status badge.
+ */
+export function isElectricalShape(shape: ObjectCategoryShape): boolean {
+  return getShapeObjectCategory(shape) === 'electrical';
 }

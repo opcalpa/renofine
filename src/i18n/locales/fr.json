@@ -322,6 +322,8 @@
     "settings": "Paramètres du dessin",
     "settingsDescription": "Configurez l'environnement de l'espace de travail sans affecter les mesures réelles",
     "showAreaLabels": "Afficher les surfaces des pièces",
+    "objectVisibility": "Afficher les objets",
+    "objectCatKitchen": "Objets de cuisine",
     "showDimensions": "Afficher les dimensions des murs",
     "showGrid": "Afficher la grille",
     "snap": "Aimanter",

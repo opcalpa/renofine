@@ -1915,6 +1915,8 @@
     "dimensionsDesc": "Längdmått visas i vald måttenhet",
     "showAreaLabels": "Visa rumsareor",
     "showElectrical": "Visa el-objekt",
+    "objectVisibility": "Visa objekt",
+    "objectCatKitchen": "Köksobjekt",
     "activeConfig": "Aktiv Konfiguration:",
     "on": "PÅ",
     "off": "AV",

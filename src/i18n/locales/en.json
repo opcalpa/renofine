@@ -2479,6 +2479,8 @@
     "dimensionsDesc": "Lengths displayed in selected unit",
     "showAreaLabels": "Show room areas",
     "showElectrical": "Show electrical objects",
+    "objectVisibility": "Show objects",
+    "objectCatKitchen": "Kitchen objects",
     "activeConfig": "Active Configuration:",
     "on": "ON",
     "off": "OFF",

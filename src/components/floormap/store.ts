@@ -43,7 +43,7 @@ export interface ProjectSettings {
   // Additional workspace preferences
   showDimensions: boolean; // Auto-show dimension labels
   showAreaLabels: boolean; // Auto-show area labels for rooms
-  showElectrical: boolean; // Show placed electrical objects (El-filter)
+  hiddenObjectCategories: string[]; // Object-library categories hidden on the canvas (per-category filter; generalizes the old El-filter)
 
   // Canvas dimensions (in meters) - NEW
   canvasWidthMeters: number; // Working area width
@@ -60,7 +60,7 @@ const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
   snapEnabled: true,
   showDimensions: false, // Off by default - hover tooltip shows dimensions instead
   showAreaLabels: true,
-  showElectrical: true, // Electrical objects visible by default
+  hiddenObjectCategories: [], // All object categories visible by default
   canvasWidthMeters: 50, // 50m × 50m working area
   canvasHeightMeters: 50,
   canvasMarginMeters: 0, // No margin - grid covers entire canvas
@@ -181,7 +181,7 @@ interface FloorMapStore {
   toggleSnap: () => void;
   toggleDimensions: () => void;
   toggleAreaLabels: () => void;
-  toggleElectrical: () => void;
+  toggleObjectCategory: (category: string) => void;
   setCanvasSize: (widthMeters: number, heightMeters: number) => void;
   setCanvasMargin: (marginMeters: number) => void;
 
@@ -1077,12 +1077,15 @@ export const useFloorMapStore = create<FloorMapStore>((set, get) => ({
     },
   })),
 
-  toggleElectrical: () => set((state) => ({
-    projectSettings: {
-      ...state.projectSettings,
-      showElectrical: !state.projectSettings.showElectrical,
-    },
-  })),
+  toggleObjectCategory: (category) => set((state) => {
+    const hidden = state.projectSettings.hiddenObjectCategories;
+    const next = hidden.includes(category)
+      ? hidden.filter((c) => c !== category)
+      : [...hidden, category];
+    return {
+      projectSettings: { ...state.projectSettings, hiddenObjectCategories: next },
+    };
+  }),
 
   setCanvasSize: (widthMeters, heightMeters) => set((state) => ({
     projectSettings: {

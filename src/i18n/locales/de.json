@@ -322,6 +322,8 @@
     "settings": "Zeichenflächeneinstellungen",
     "settingsDescription": "Arbeitsumgebung konfigurieren, ohne die tatsächlichen Maße zu beeinflussen",
     "showAreaLabels": "Raumflächen anzeigen",
+    "objectVisibility": "Objekte anzeigen",
+    "objectCatKitchen": "Küchenobjekte",
     "showDimensions": "Wandabmessungen anzeigen",
     "showGrid": "Raster anzeigen",
     "snap": "Einrasten",

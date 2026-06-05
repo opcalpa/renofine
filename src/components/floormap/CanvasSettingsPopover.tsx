@@ -4,7 +4,7 @@
  * Separated from drawing tools to reduce cognitive load
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useMeasurement } from "@/contexts/MeasurementContext";
 import { Settings, Grid3x3, Ruler, Magnet, Maximize2, Layers } from "lucide-react";
@@ -25,6 +25,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { useFloorMapStore } from "./store";
+import { getShapeObjectCategory } from "./objectLibrary";
 import { Scale, Unit } from "./utils/formatting";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -32,6 +33,15 @@ import { toast } from "sonner";
 // localStorage keys for persistent settings
 const WALL_THICKNESS_KEY = "admin_wallThickness";
 const WALL_HEIGHT_KEY = "admin_wallHeight";
+
+// Object-library category → [i18n key, fallback]. Drives the canvas category filter labels.
+const OBJECT_CATEGORY_LABELS: Record<string, [string, string]> = {
+  electrical: ["roomItems.catElectrical", "El-objekt"],
+  kitchen: ["canvas.objectCatKitchen", "Köksobjekt"],
+  plumbing: ["roomItems.catPlumbing", "VVS"],
+  ventilation: ["roomItems.catVentilation", "Ventilation"],
+  appliance: ["roomItems.catAppliance", "Vitvaror"],
+};
 
 export const CanvasSettingsPopover = () => {
   const { t } = useTranslation();
@@ -45,9 +55,20 @@ export const CanvasSettingsPopover = () => {
     toggleSnap,
     toggleDimensions,
     toggleAreaLabels,
-    toggleElectrical,
+    toggleObjectCategory,
     setCanvasSize,
+    shapes,
   } = useFloorMapStore();
+
+  // Object categories actually present on the canvas — each gets a filter toggle.
+  const presentObjectCategories = useMemo(() => {
+    const set = new Set<string>();
+    for (const s of shapes) {
+      const cat = getShapeObjectCategory(s);
+      if (cat) set.add(cat);
+    }
+    return [...set].sort();
+  }, [shapes]);
 
   // Wall defaults (persisted in localStorage)
   const [wallThickness, setWallThickness] = useState<string>("150");
@@ -410,17 +431,31 @@ export const CanvasSettingsPopover = () => {
               />
             </div>
 
-            {/* El-filter: show/hide placed electrical objects */}
-            <div className="flex items-center justify-between">
-              <Label htmlFor="show-electrical" className="text-sm font-normal">
-                {t('canvas.showElectrical', 'Visa el-objekt')}
-              </Label>
-              <Switch
-                id="show-electrical"
-                checked={projectSettings.showElectrical}
-                onCheckedChange={toggleElectrical}
-              />
-            </div>
+            {/* Category filter: show/hide placed objects per category. Only the
+                categories actually present on the canvas get a toggle. */}
+            {presentObjectCategories.length > 0 && (
+              <>
+                <Separator className="my-1" />
+                <Label className="text-xs font-medium text-muted-foreground">
+                  {t('canvas.objectVisibility', 'Visa objekt')}
+                </Label>
+                {presentObjectCategories.map((cat) => {
+                  const [labelKey, fallback] = OBJECT_CATEGORY_LABELS[cat] ?? [`roomItems.cat${cat}`, cat];
+                  return (
+                    <div key={cat} className="flex items-center justify-between">
+                      <Label htmlFor={`show-cat-${cat}`} className="text-sm font-normal">
+                        {t(labelKey, fallback)}
+                      </Label>
+                      <Switch
+                        id={`show-cat-${cat}`}
+                        checked={!projectSettings.hiddenObjectCategories.includes(cat)}
+                        onCheckedChange={() => toggleObjectCategory(cat)}
+                      />
+                    </div>
+                  );
+                })}
+              </>
+            )}
           </div>
 
           {/* Current Settings Summary */}

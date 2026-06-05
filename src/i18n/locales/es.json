@@ -322,6 +322,8 @@
     "settings": "Ajustes del dibujo",
     "settingsDescription": "Configure el entorno del espacio de trabajo sin afectar a las medidas reales",
     "showAreaLabels": "Mostrar áreas de las habitaciones",
+    "objectVisibility": "Mostrar objetos",
+    "objectCatKitchen": "Objetos de cocina",
     "showDimensions": "Mostrar dimensiones de las paredes",
     "showGrid": "Mostrar cuadrícula",
     "snap": "Ajustar",
