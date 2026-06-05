@@ -176,11 +176,23 @@ const TasksTab = ({ projectId, projectName, projectStatus, tasksScope = 'all', t
   type ScheduleView = 'timeline' | 'calendar';
   const [scheduleView, setScheduleView] = usePersistedPreference<string>(`tasks-schedule-view-${projectId}`, 'timeline');
   const safeScheduleView = (scheduleView === 'calendar' ? 'calendar' : 'timeline') as ScheduleView;
-  const [scheduleOpen, setScheduleOpen] = useState(() => localStorage.getItem(`tasks-schedule-open-${projectId}`) !== 'false');
+  const [scheduleOpen, setScheduleOpen] = useState(() => {
+    const stored = localStorage.getItem(`tasks-schedule-open-${projectId}`);
+    if (stored !== null) return stored !== 'false';
+    // The gantt timeline is a desktop visualisation — on a phone the bars/labels
+    // are unreadable. Start it collapsed on mobile so the readable task
+    // list/board is the first thing a (cold) visitor sees; desktop keeps it open.
+    return typeof window !== 'undefined' ? window.innerWidth >= 768 : true;
+  });
 
   // Detail view (bottom section): table or kanban
   type DetailView = 'table' | 'kanban';
-  const [detailView, setDetailView] = usePersistedPreference<string>(`tasks-detail-view-${projectId}`, 'kanban');
+  // Kanban columns sit side-by-side — cramped on a phone. Default to the table
+  // (vertical list) on mobile; desktop keeps kanban. Stored preference wins.
+  const [detailView, setDetailView] = usePersistedPreference<string>(
+    `tasks-detail-view-${projectId}`,
+    typeof window !== 'undefined' && window.innerWidth < 768 ? 'table' : 'kanban'
+  );
   const safeDetailView = (detailView === 'table' ? 'table' : 'kanban') as DetailView;
 
   // Legacy compat — viewMode used by some conditional toolbar items
