@@ -145,6 +145,7 @@
         "surface": "Full app · admin"
       },
       "worker": {
+    "taskEyebrow": "UPPGIFT",
     "roomEyebrow": "RUM",
         "title": "Hantverkare med jobb",
         "description": "Får ett dagsjobb via SMS-länk. Behöver inget konto.",

@@ -240,9 +240,12 @@ export function WorkerTaskCard({
   return (
     <div className="bg-card rounded-xl border shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="px-4 pt-4 pb-3 space-y-2">
+      <div className="px-4 pt-4 pb-3 space-y-2.5">
         <div className="flex items-start justify-between gap-3">
-          <h3 className="text-base font-semibold leading-snug">{task.title}</h3>
+          <div className="min-w-0">
+            <div className="rf-eyebrow">{t("worker.taskEyebrow", "UPPGIFT")}</div>
+            <h3 className="rf-display text-xl leading-tight text-[var(--rf-ink)] mt-1">{task.title}</h3>
+          </div>
           <Badge className={`shrink-0 text-xs ${getStatusBadgeColor(task.status)}`}>
             {t(`statuses.${statusKey(task.status)}`, task.status)}
           </Badge>
@@ -251,15 +254,15 @@ export function WorkerTaskCard({
         {/* Progress */}
         {(task.progress > 0 || completedCount > 0) && (
           <div className="space-y-1">
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>{t("worker.progress", "Progress")}</span>
-              <span className="tabular-nums">
+            <div className="flex justify-between text-xs text-[var(--rf-fg-muted)]">
+              <span>{t("worker.progress", "Framsteg")}</span>
+              <span className="rf-num">
                 {allItems.length > 0 ? `${completedCount}/${allItems.length}` : `${task.progress}%`}
               </span>
             </div>
             <Progress
               value={allItems.length > 0 ? (completedCount / allItems.length) * 100 : task.progress}
-              className="h-2"
+              className="h-1.5"
             />
           </div>
         )}
@@ -401,9 +404,9 @@ export function WorkerTaskCard({
       {allItems.length > 0 && (
         <div className="px-4 pb-3 space-y-2">
           <div className="flex items-center gap-2">
-            <CheckSquare className="h-4 w-4 text-muted-foreground" />
-            <span className="text-xs font-medium text-muted-foreground">
-              {t("worker.checklist", "Checklist")}
+            <CheckSquare className="h-3.5 w-3.5 text-[var(--rf-fg-subtle)]" />
+            <span className="rf-section-label">
+              {t("worker.checklist", "Checklista")}
             </span>
           </div>
           {task.checklists.map((cl) => (
@@ -442,9 +445,9 @@ export function WorkerTaskCard({
       {(task.photos.length > 0 || canUploadPhotos) && (
         <div className="px-4 pb-4 space-y-2">
           <div className="flex items-center gap-2">
-            <ImageIcon className="h-4 w-4 text-muted-foreground" />
-            <span className="text-xs font-medium text-muted-foreground">
-              {t("worker.photos", "Photos")}
+            <ImageIcon className="h-3.5 w-3.5 text-[var(--rf-fg-subtle)]" />
+            <span className="rf-section-label">
+              {t("worker.photos", "Foton")}
             </span>
           </div>
 
@@ -505,9 +508,9 @@ export function WorkerTaskCard({
       {/* Messages */}
       <div className="px-4 pb-4 space-y-2">
         <div className="flex items-center gap-2">
-          <MessageCircle className="h-4 w-4 text-muted-foreground" />
-          <span className="text-xs font-medium text-muted-foreground">
-            {t("worker.messages", "Messages")}
+          <MessageCircle className="h-3.5 w-3.5 text-[var(--rf-fg-subtle)]" />
+          <span className="rf-section-label">
+            {t("worker.messages", "Meddelanden")}
             {task.messages.length > 0 && ` (${task.messages.length})`}
           </span>
         </div>
