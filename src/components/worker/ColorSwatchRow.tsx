@@ -59,25 +59,35 @@ export function ColorSwatchRow({ wallSpec, ceilingSpec, floorSpec }: ColorSwatch
   if (swatches.length === 0) return null;
 
   return (
-    <div className="flex flex-wrap gap-3">
-      {swatches.map((s, i) => (
-        <div key={i} className="flex items-center gap-2 bg-muted/50 rounded-lg px-3 py-2">
-          {isCssColor(s.color) ? (
-            <div
-              className="h-7 w-7 rounded-md border border-border shadow-sm shrink-0"
-              style={{ backgroundColor: s.color }}
-            />
-          ) : (
-            <div className="h-7 w-7 rounded-md border-2 border-dashed border-primary/40 shrink-0 flex items-center justify-center">
-              <span className="text-[9px] font-bold text-primary/60">🎨</span>
+    <div className="flex flex-wrap gap-2">
+      {swatches.map((s, i) => {
+        const hex = isCssColor(s.color);
+        return (
+          <div
+            key={i}
+            className="flex items-center gap-2 rounded-lg border border-[var(--rf-hairline)] bg-[var(--rf-surface)] px-2.5 py-1.5"
+          >
+            {hex ? (
+              <div
+                className="h-6 w-6 rounded-md border border-[var(--rf-hairline)] shadow-sm shrink-0"
+                style={{ backgroundColor: s.color }}
+              />
+            ) : (
+              <div className="h-6 w-6 rounded-md bg-[var(--rf-sand)] shrink-0 flex items-center justify-center text-[10px]">
+                🎨
+              </div>
+            )}
+            <div className="min-w-0">
+              <p className="rf-section-label leading-none">{s.label}</p>
+              {/* Only surface a human-readable value (material/named colour);
+                  a raw hex is noise for the worker — the swatch already shows it. */}
+              {!hex && (
+                <p className="text-xs font-medium text-[var(--rf-ink)] truncate max-w-[140px]">{s.color}</p>
+              )}
             </div>
-          )}
-          <div className="min-w-0">
-            <p className="text-[10px] text-muted-foreground leading-none">{s.label}</p>
-            <p className="text-xs font-semibold truncate max-w-[140px]">{s.color}</p>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

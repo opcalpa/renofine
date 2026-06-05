@@ -328,17 +328,17 @@ export default function WorkerView() {
   // Main view
   // -------------------------------------------------------------------------
   return (
-    <div className="min-h-screen bg-muted/30">
+    <div className="rf-paper min-h-screen bg-[var(--rf-paper)]">
       {/* Sticky header */}
-      <header className="sticky top-0 z-50 bg-background border-b px-4 py-3 safe-area-top">
+      <header className="sticky top-0 z-50 bg-[var(--rf-surface)] border-b border-[var(--rf-hairline)] px-4 py-3 safe-area-top">
         <div className="max-w-lg mx-auto flex items-center gap-3">
-          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-            <Wrench className="h-4 w-4 text-primary" />
+          <div className="h-9 w-9 rounded-full bg-[var(--rf-green-soft)] flex items-center justify-center shrink-0">
+            <Wrench className="h-4 w-4 text-[var(--rf-green)]" />
           </div>
           <div className="min-w-0 flex-1">
-            <h1 className="text-sm font-semibold truncate">{data.projectName}</h1>
-            <p className="text-xs text-muted-foreground truncate">
-              {t("worker.hello", "Hello")}, {data.workerName}
+            <h1 className="rf-display text-[17px] leading-tight truncate text-[var(--rf-ink)]">{data.projectName}</h1>
+            <p className="text-xs text-[var(--rf-fg-muted)] truncate">
+              {t("worker.hello", "Hej")}, {data.workerName}
             </p>
           </div>
           {token && <WorkerLanguageSelector token={token} />}

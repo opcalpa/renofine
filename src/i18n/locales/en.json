@@ -145,6 +145,7 @@
         "surface": "Full app · admin"
       },
       "worker": {
+    "roomEyebrow": "ROOM",
         "title": "Tradesperson with a job",
         "description": "Gets a day job via SMS link. No account needed.",
         "surface": "Worker view"

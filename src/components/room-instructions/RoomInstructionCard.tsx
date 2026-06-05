@@ -129,21 +129,24 @@ export function RoomInstructionCard({
   return (
     <div className="space-y-4 pb-8">
       {/* Room header */}
-      <div className="space-y-2">
-        <h2 className="text-lg font-bold">{room.name || t("rooms.unassignedRoom", "Utan rum")}</h2>
+      <div className="space-y-2.5">
+        <div className="rf-eyebrow">{t("worker.roomEyebrow", "RUM")}</div>
+        <h2 className="rf-display text-3xl leading-none text-[var(--rf-ink)]">
+          {room.name || t("rooms.unassignedRoom", "Utan rum")}
+        </h2>
         {room.dimensions && (
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          <div className="flex items-center gap-3 text-xs text-[var(--rf-fg-muted)]">
             <Ruler className="h-3.5 w-3.5" />
-            {room.dimensions.area_sqm && <span>{room.dimensions.area_sqm} m²</span>}
+            {room.dimensions.area_sqm && <span className="rf-num">{room.dimensions.area_sqm} m²</span>}
             {room.dimensions.ceiling_height_mm && (
-              <span>{t("rooms.ceilingHeight", "Takhöjd")}: {(room.dimensions.ceiling_height_mm / 1000).toFixed(1)}m</span>
+              <span>{t("rooms.ceilingHeight", "Takhöjd")}: <span className="rf-num">{(room.dimensions.ceiling_height_mm / 1000).toFixed(1)}m</span></span>
             )}
           </div>
         )}
         {/* Progress bar */}
-        <div className="flex items-center gap-2">
-          <Progress value={progressPct} className="flex-1 h-2" />
-          <span className="text-xs font-medium tabular-nums">{progressPct}%</span>
+        <div className="flex items-center gap-2.5 pt-1">
+          <Progress value={progressPct} className="flex-1 h-1.5" />
+          <span className="rf-num text-xs text-[var(--rf-fg-muted)]">{progressPct}%</span>
         </div>
       </div>
 
@@ -470,13 +473,13 @@ function TaskSection({
           )}
 
           {canUploadPhotos && onPhotoUpload && !isAwaitingOrCompleted && (
-            <label className="flex items-center justify-center gap-2 h-11 rounded-lg border-2 border-dashed border-violet-300 bg-violet-50/40 text-xs font-medium text-violet-700 hover:border-violet-500 hover:bg-violet-50 transition-colors cursor-pointer">
+            <label className="flex items-center justify-center gap-2 h-11 rounded-md bg-[var(--rf-green)] text-white text-[13px] font-medium hover:opacity-90 transition-opacity cursor-pointer">
               {taskUploading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <CheckCircle2 className="h-4 w-4" />
               )}
-              {t("worker.completeTaskWithPhoto", "Mark complete + photo")}
+              {t("worker.completeTaskWithPhoto", "Markera klart + foto")}
               <input
                 type="file"
                 accept="image/*"
@@ -503,7 +506,7 @@ function UploadButton({
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }) {
   return (
-    <label className="flex items-center justify-center gap-2 h-12 rounded-lg border-2 border-dashed text-xs text-muted-foreground hover:border-primary hover:text-primary transition-colors cursor-pointer">
+    <label className="flex items-center justify-center gap-2 h-11 rounded-md border border-[var(--rf-hairline)] bg-[var(--rf-surface)] text-[13px] font-medium text-[var(--rf-fg-muted)] hover:bg-[var(--rf-bg-sunken)] hover:text-[var(--rf-ink)] transition-colors cursor-pointer">
       {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
       {label}
       <input

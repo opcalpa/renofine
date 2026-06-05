@@ -139,7 +139,7 @@ export function RoomMiniMap({
   const vbH = height + padding * 2;
 
   const strokeScale = Math.max(vbW, vbH);
-  const markerR = strokeScale * 0.02;
+  const markerR = strokeScale * 0.035;
 
   return (
     <div className="space-y-2">
@@ -158,7 +158,7 @@ export function RoomMiniMap({
         />
       )}
 
-      <ZoomPanSvg viewBox={`${vbX} ${vbY} ${vbW} ${vbH}`} className={className} maxHeight={220}>
+      <ZoomPanSvg viewBox={`${vbX} ${vbY} ${vbW} ${vbH}`} className={className} maxHeight={168}>
         {backgroundImage?.url && (
           <image
             href={backgroundImage.url}

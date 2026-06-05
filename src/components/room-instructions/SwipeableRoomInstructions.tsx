@@ -75,9 +75,9 @@ export function SwipeableRoomInstructions({
           <ChevronLeft className="h-5 w-5" />
         </button>
 
-        <div className="flex flex-col items-center gap-1">
-          <span className="text-sm font-semibold">{rooms[activeIndex]?.name || t("rooms.unassignedRoom", "Utan rum")}</span>
-          {/* Dots */}
+        <div className="flex flex-col items-center gap-1.5">
+          {/* Room name lives in the card heading below; the nav just carries
+              position so it doesn't duplicate the Fraunces title. */}
           <div className="flex items-center gap-1.5">
             {rooms.map((room, i) => (
               <button
