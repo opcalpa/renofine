@@ -46,6 +46,8 @@ interface RoomMiniMapProps {
   backgroundImage?: FloorPlanImage | null;
   /** Placed room-items (objects) across assigned rooms; filtered to the highlighted room. */
   objects?: FloorPlanObject[];
+  /** Worker token — when set, the info card lets the worker ask a question (W3). */
+  token?: string;
   className?: string;
 }
 
@@ -65,6 +67,7 @@ export function RoomMiniMap({
   highlightRoomId,
   backgroundImage,
   objects,
+  token,
   className,
 }: RoomMiniMapProps) {
   const validShapes = (shapes || []).filter(
@@ -240,7 +243,7 @@ export function RoomMiniMap({
         })}
       </ZoomPanSvg>
 
-      {selected && <ObjectInfoCard object={selected} />}
+      {selected && <ObjectInfoCard object={selected} token={token} />}
     </div>
   );
 }

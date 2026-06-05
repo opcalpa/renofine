@@ -24,6 +24,8 @@ interface WallElevationMiniViewProps {
   /** Render walls for this room only (the card's room). */
   roomId: string | null;
   ceilingHeightMm?: number | null;
+  /** Worker token — when set, the info card lets the worker ask a question (W3). */
+  token?: string;
   className?: string;
 }
 
@@ -35,6 +37,7 @@ export function WallElevationMiniView({
   objects,
   roomId,
   ceilingHeightMm,
+  token,
   className,
 }: WallElevationMiniViewProps) {
   const { t } = useTranslation();
@@ -177,7 +180,7 @@ export function WallElevationMiniView({
         </div>
       ))}
 
-      {selected && <ObjectInfoCard object={selected} />}
+      {selected && <ObjectInfoCard object={selected} token={token} />}
     </div>
   );
 }

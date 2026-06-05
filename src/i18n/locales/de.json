@@ -2195,6 +2195,10 @@
     "catPlumbing": "Sanitär",
     "catVentilation": "Lüftung",
     "catAppliance": "Geräte",
-    "linkedItem": "Erfasster Eintrag"
+    "linkedItem": "Erfasster Eintrag",
+    "askQuestion": "Frage stellen",
+    "askPlaceholder": "Was möchtest du dazu fragen?",
+    "questionSent": "Frage gesendet!",
+    "questionFailed": "Frage konnte nicht gesendet werden"
   }
 }

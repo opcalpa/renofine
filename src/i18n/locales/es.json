@@ -2195,6 +2195,10 @@
     "catPlumbing": "Fontanería",
     "catVentilation": "Ventilación",
     "catAppliance": "Electrodomésticos",
-    "linkedItem": "Elemento registrado"
+    "linkedItem": "Elemento registrado",
+    "askQuestion": "Hacer una pregunta",
+    "askPlaceholder": "¿Qué quieres preguntar sobre esto?",
+    "questionSent": "¡Pregunta enviada!",
+    "questionFailed": "No se pudo enviar la pregunta"
   }
 }

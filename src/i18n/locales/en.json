@@ -6502,6 +6502,10 @@
     "wallView": "Wall view",
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out",
-    "resetZoom": "Reset view"
+    "resetZoom": "Reset view",
+    "askQuestion": "Ask a question",
+    "askPlaceholder": "What do you want to ask about this?",
+    "questionSent": "Question sent!",
+    "questionFailed": "Could not send question"
   }
 }

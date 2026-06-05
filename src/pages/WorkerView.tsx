@@ -414,6 +414,7 @@ export default function WorkerView() {
             floorPlanShapes={data.floorPlan ?? undefined}
             floorPlanObjects={data.floorPlanObjects}
             wallObjects={data.wallObjects}
+            token={token!}
             canToggleChecklist={data.canToggleChecklist}
             canUploadPhotos={data.canUploadPhotos}
             onPhotoUpload={handleRoomPhotoUpload}

@@ -278,6 +278,7 @@ export function WorkerTaskCard({
                 floorObjects={floorPlanObjects}
                 wallObjects={wallObjects}
                 ceilingHeightMm={ceilingH}
+                token={token}
                 className="rounded"
               />
             </div>

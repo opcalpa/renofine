@@ -179,6 +179,7 @@ serve(async (req) => {
     //     (shape_data.wallRelative). We surface both as separate view layers.
     let floorPlanObjects: Array<{
       id: string;
+      drawingObjectId: string;
       roomId: string | null;
       x: number;
       y: number;
@@ -193,6 +194,7 @@ serve(async (req) => {
     // Wall (elevation) objects: positioned along a wall (distance + height in mm).
     let wallObjects: Array<{
       id: string;
+      drawingObjectId: string;
       roomId: string | null;
       wallId: string;
       category: string;
@@ -241,6 +243,7 @@ serve(async (req) => {
         const detail = (it.detail || {}) as Record<string, unknown>;
         const base = {
           id: it.id,
+          drawingObjectId: it.floor_map_shape_id as string,
           roomId: it.room_id,
           category: it.category,
           subtype: it.subtype,

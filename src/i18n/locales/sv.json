@@ -6501,6 +6501,10 @@
     "wallView": "Väggvy",
     "zoomIn": "Zooma in",
     "zoomOut": "Zooma ut",
-    "resetZoom": "Återställ vy"
+    "resetZoom": "Återställ vy",
+    "askQuestion": "Ställ en fråga",
+    "askPlaceholder": "Vad vill du fråga om det här?",
+    "questionSent": "Frågan skickad!",
+    "questionFailed": "Kunde inte skicka frågan"
   }
 }

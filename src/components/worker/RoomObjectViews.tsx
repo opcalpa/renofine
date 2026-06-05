@@ -26,6 +26,8 @@ interface RoomObjectViewsProps {
   floorObjects?: FloorPlanObject[];
   wallObjects?: WallObject[];
   ceilingHeightMm?: number | null;
+  /** Worker token — enables "ask a question" on tapped objects (W3). */
+  token?: string;
   className?: string;
 }
 
@@ -36,6 +38,7 @@ export function RoomObjectViews({
   floorObjects,
   wallObjects,
   ceilingHeightMm,
+  token,
   className,
 }: RoomObjectViewsProps) {
   const { t } = useTranslation();
@@ -82,6 +85,7 @@ export function RoomObjectViews({
           highlightRoomId={highlightRoomId}
           backgroundImage={backgroundImage}
           objects={floorObjects}
+          token={token}
           className={className}
         />
       ) : (
@@ -89,6 +93,7 @@ export function RoomObjectViews({
           objects={wallObjects || []}
           roomId={highlightRoomId}
           ceilingHeightMm={ceilingHeightMm}
+          token={token}
           className={className}
         />
       )}

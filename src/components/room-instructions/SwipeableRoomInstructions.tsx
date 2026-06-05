@@ -11,6 +11,8 @@ interface SwipeableRoomInstructionsProps {
   floorPlanShapes?: FloorPlanShape[];
   floorPlanObjects?: FloorPlanObject[];
   wallObjects?: WallObject[];
+  /** Worker token — enables "ask a question" on tapped objects (W3). */
+  token?: string;
   canToggleChecklist?: boolean;
   canUploadPhotos?: boolean;
   onChecklistToggle?: (taskId: string, checklistId: string, itemId: string, completed: boolean) => void;
@@ -22,6 +24,7 @@ export function SwipeableRoomInstructions({
   floorPlanShapes,
   floorPlanObjects,
   wallObjects,
+  token,
   canToggleChecklist,
   canUploadPhotos,
   onChecklistToggle,
@@ -125,6 +128,7 @@ export function SwipeableRoomInstructions({
               floorPlanShapes={floorPlanShapes}
               floorPlanObjects={floorPlanObjects}
               wallObjects={wallObjects}
+              token={token}
               canToggleChecklist={canToggleChecklist}
               canUploadPhotos={canUploadPhotos}
               onChecklistToggle={onChecklistToggle}

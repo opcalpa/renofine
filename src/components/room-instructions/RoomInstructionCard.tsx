@@ -34,6 +34,8 @@ interface RoomInstructionCardProps {
   floorPlanShapes?: FloorPlanShape[];
   floorPlanObjects?: FloorPlanObject[];
   wallObjects?: WallObject[];
+  /** Worker token — enables "ask a question" on tapped objects (W3). */
+  token?: string;
   canToggleChecklist?: boolean;
   canUploadPhotos?: boolean;
   onChecklistToggle?: (taskId: string, checklistId: string, itemId: string, completed: boolean) => void;
@@ -53,6 +55,7 @@ export function RoomInstructionCard({
   floorPlanShapes,
   floorPlanObjects,
   wallObjects,
+  token,
   canToggleChecklist = false,
   canUploadPhotos = false,
   onChecklistToggle,
@@ -155,6 +158,7 @@ export function RoomInstructionCard({
             floorObjects={floorPlanObjects}
             wallObjects={wallObjects}
             ceilingHeightMm={room.dimensions?.ceiling_height_mm ?? null}
+            token={token}
             className="rounded-lg border"
           />
         )}
