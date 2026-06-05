@@ -323,6 +323,7 @@
     "settingsDescription": "Configurez l'environnement de l'espace de travail sans affecter les mesures réelles",
     "showAreaLabels": "Afficher les surfaces des pièces",
     "objectVisibility": "Afficher les objets",
+    "surfaceVisibility": "Surfaces et couleur",
     "objectCatKitchen": "Objets de cuisine",
     "showDimensions": "Afficher les dimensions des murs",
     "showGrid": "Afficher la grille",

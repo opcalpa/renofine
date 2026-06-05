@@ -2480,6 +2480,7 @@
     "showAreaLabels": "Show room areas",
     "showElectrical": "Show electrical objects",
     "objectVisibility": "Show objects",
+    "surfaceVisibility": "Surfaces & color",
     "objectCatKitchen": "Kitchen objects",
     "activeConfig": "Active Configuration:",
     "on": "ON",

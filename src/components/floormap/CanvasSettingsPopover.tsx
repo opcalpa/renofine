@@ -70,6 +70,12 @@ export const CanvasSettingsPopover = () => {
     return [...set].sort();
   }, [shapes]);
 
+  // Whether any room carries a surface finish (E4) — enables the surface toggle.
+  const hasSurfaces = useMemo(
+    () => shapes.some((s) => s.surfaceTint || s.wallSurfaceColor),
+    [shapes]
+  );
+
   // Wall defaults (persisted in localStorage)
   const [wallThickness, setWallThickness] = useState<string>("150");
   const [wallHeight, setWallHeight] = useState<string>("2400");
@@ -431,14 +437,26 @@ export const CanvasSettingsPopover = () => {
               />
             </div>
 
-            {/* Category filter: show/hide placed objects per category. Only the
-                categories actually present on the canvas get a toggle. */}
-            {presentObjectCategories.length > 0 && (
+            {/* Category filter: show/hide placed objects per category + room
+                surfaces. Only what's actually present on the canvas gets a toggle. */}
+            {(presentObjectCategories.length > 0 || hasSurfaces) && (
               <>
                 <Separator className="my-1" />
                 <Label className="text-xs font-medium text-muted-foreground">
                   {t('canvas.objectVisibility', 'Visa objekt')}
                 </Label>
+                {hasSurfaces && (
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="show-surfaces" className="text-sm font-normal">
+                      {t('canvas.surfaceVisibility', 'Ytor & färg')}
+                    </Label>
+                    <Switch
+                      id="show-surfaces"
+                      checked={!projectSettings.hiddenObjectCategories.includes('surface')}
+                      onCheckedChange={() => toggleObjectCategory('surface')}
+                    />
+                  </div>
+                )}
                 {presentObjectCategories.map((cat) => {
                   const [labelKey, fallback] = OBJECT_CATEGORY_LABELS[cat] ?? [`roomItems.cat${cat}`, cat];
                   return (

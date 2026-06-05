@@ -1857,18 +1857,23 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
                   fill="#6b7280"
                 />
 
-                {/* Wall rectangle - solid if wall exists, dashed if no wall */}
-                {/* Uses room's color as subtle background tint for context */}
+                {/* Wall rectangle - solid if wall exists, dashed if no wall.
+                    E4: tint the wall face with the room's actual wall paint
+                    (wall_spec.main_color) when set, so the elevation reads as a
+                    paint instruction; otherwise fall back to the subtle room tint. */}
                 <Rect
                   x={visualization.wallX}
                   y={visualization.wallY}
                   width={visualization.wallWidth}
                   height={visualization.wallHeight}
                   fill={visualization.hasWall
-                    ? (room?.color
-                      ? room.color.replace(/[\d.]+\)$/, '0.15)') // Make room color very subtle
-                      : '#e5e7eb')
+                    ? (room?.wallSurfaceColor
+                      ? room.wallSurfaceColor
+                      : (room?.color
+                        ? room.color.replace(/[\d.]+\)$/, '0.15)') // Make room color very subtle
+                        : '#e5e7eb'))
                     : '#fafafa'}
+                  opacity={visualization.hasWall && room?.wallSurfaceColor ? 0.55 : 1}
                   stroke={directionColors[currentSegment.direction]}
                   strokeWidth={visualization.hasWall ? 3 : 2}
                   dash={visualization.hasWall ? undefined : [10, 5]}

@@ -323,6 +323,7 @@
     "settingsDescription": "Arbeitsumgebung konfigurieren, ohne die tatsächlichen Maße zu beeinflussen",
     "showAreaLabels": "Raumflächen anzeigen",
     "objectVisibility": "Objekte anzeigen",
+    "surfaceVisibility": "Flächen & Farbe",
     "objectCatKitchen": "Küchenobjekte",
     "showDimensions": "Wandabmessungen anzeigen",
     "showGrid": "Raster anzeigen",

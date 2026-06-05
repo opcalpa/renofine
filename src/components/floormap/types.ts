@@ -205,6 +205,12 @@ export interface FloorMapShape {
   name?: string; // Room name displayed on canvas
   area?: number; // Area in square meters (for rooms)
 
+  // Surface finishes merged from the rooms table specs (E4 — surface/paint filter).
+  // Used to tint the room on the canvas as a finish instruction.
+  surfaceTint?: string | null; // Floor-finish tint for the room area (floor plan)
+  surfaceLabel?: string | null; // Floor finish text (e.g. "Ek", "Klinker")
+  wallSurfaceColor?: string | null; // wall_spec.main_color — tints the wall face in elevation
+
   // Image-specific properties (for background images)
   imageUrl?: string; // Public URL from Supabase storage
   imageOpacity?: number; // 0-1, default 0.5

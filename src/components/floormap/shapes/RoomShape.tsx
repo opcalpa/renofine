@@ -257,6 +257,7 @@ export const RoomShape = React.memo<RoomShapeProps>(({
   renderHandlesOnly = false,
   simplified = false,
   openings = [],
+  showSurfaces = false,
 }) => {
   const { zoom } = viewState;
   const { pixelsPerMm } = scaleSettings;
@@ -487,6 +488,19 @@ export const RoomShape = React.memo<RoomShapeProps>(({
           listening={true}
         />
       )}
+      {/* E4 surface/paint filter: tint the room area with its floor finish. Drawn
+          over the room fill, below labels; skipped while highlighted so the
+          highlight stays clear. Decorative — never intercepts clicks. */}
+      {!renderHandlesOnly && showSurfaces && !isHighlighted && shape.surfaceTint && (
+        <Line
+          points={flatPoints}
+          closed
+          fill={shape.surfaceTint}
+          opacity={0.5}
+          listening={false}
+          perfectDrawEnabled={false}
+        />
+      )}
 
       {/* Edge measurements - shown when dimensions are toggled on OR while the room
           is selected (so lengths update live as you drag a corner to resize).
@@ -611,6 +625,32 @@ export const RoomShape = React.memo<RoomShapeProps>(({
               text={shape.name}
               fontSize={fontSize}
               fill="#1f2937"
+              align="center"
+              verticalAlign="middle"
+              offsetX={labelW / 2}
+              offsetY={labelH / 2}
+              listening={false}
+            />
+          </Group>
+        );
+      })()}
+
+      {/* E4 surface label — the floor finish, shown under the room name when the
+          surface filter is on. Display-only. */}
+      {!renderHandlesOnly && showSurfaces && shape.surfaceLabel && (() => {
+        const fLabel = shape.surfaceLabel as string;
+        const labelW = fLabel.length * (fontSize * 0.62) + 20 / zoom;
+        const labelH = fontSize * 1.1;
+        return (
+          <Group x={centerX} y={centerY + fontSize * 1.1} rotation={labelRotation}>
+            <KonvaText
+              x={0}
+              y={0}
+              width={labelW}
+              height={labelH}
+              text={fLabel}
+              fontSize={fontSize * 0.78}
+              fill="#6b7280"
               align="center"
               verticalAlign="middle"
               offsetX={labelW / 2}
@@ -770,6 +810,9 @@ export const RoomShape = React.memo<RoomShapeProps>(({
     openingsEqual &&
     prevProps.shape.color === nextProps.shape.color &&
     prevProps.shape.strokeColor === nextProps.shape.strokeColor &&
-    prevProps.shape.name === nextProps.shape.name
+    prevProps.shape.name === nextProps.shape.name &&
+    prevProps.showSurfaces === nextProps.showSurfaces &&
+    prevProps.shape.surfaceTint === nextProps.shape.surfaceTint &&
+    prevProps.shape.surfaceLabel === nextProps.shape.surfaceLabel
   );
 });

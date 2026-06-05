@@ -24,6 +24,7 @@ import { ObjectShape, ObjectDefinition } from './objectLibraryDefinitions';
 import { getTemplateById, placeTemplateShapes, calculateBounds, DEFAULT_TEMPLATES } from './templateDefinitions';
 import { getTemplatePlanId } from './utils/objectTemplates';
 import { getUnifiedObjectById, UnifiedObjectDefinition, isObjectCategoryHidden } from './objectLibrary';
+import { resolveFloorTint } from './canvas/utils/floorMaterialColor';
 import { useTranslation } from 'react-i18next';
 
 // Canvas module imports
@@ -734,7 +735,7 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
           const roomIds = roomShapes.map(s => s.roomId).filter(Boolean);
           const { data: rooms, error } = await supabase
             .from('rooms')
-            .select('id, name, color')
+            .select('id, name, color, wall_spec, floor_spec')
             .in('id', roomIds);
 
           if (!error && rooms) {
@@ -755,11 +756,19 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
                     return rgbaColor || 'rgba(41, 91, 172, 0.8)';
                   };
 
+                  // Surface finishes (E4): floor tint + label for the floor plan,
+                  // wall colour for the elevation. Merged onto the shape so both
+                  // views read them without a second fetch.
+                  const floorSpec = (room.floor_spec || {}) as { material?: string; skirting_color?: string };
+                  const wallSpec = (room.wall_spec || {}) as { main_color?: string };
                   return {
                     ...shape,
                     name: room.name,
                     color: room.color || shape.color || 'rgba(59, 130, 246, 0.2)',
-                    strokeColor: getDarkerColor(room.color || shape.color || 'rgba(59, 130, 246, 0.2)')
+                    strokeColor: getDarkerColor(room.color || shape.color || 'rgba(59, 130, 246, 0.2)'),
+                    surfaceTint: resolveFloorTint(floorSpec.material, floorSpec.skirting_color),
+                    surfaceLabel: floorSpec.material || null,
+                    wallSurfaceColor: wallSpec.main_color || null,
                   };
                 }
               }
@@ -3776,6 +3785,7 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
                   isReadOnly={isReadOnly}
                   isHighlighted={roomIsHighlighted}
                   simplified={simplified}
+                  showSurfaces={!projectSettings.hiddenObjectCategories.includes('surface')}
                   openings={simplified ? currentShapes.filter(s => isOpeningShape(s) && s.planId === currentPlanId) : undefined}
                 />
               );

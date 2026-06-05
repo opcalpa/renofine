@@ -87,6 +87,11 @@ export interface RoomShapeProps extends ShapeWithViewProps {
    * mode the room wall is rendered broken at these openings (render-time only).
    */
   openings?: FloorMapShape[];
+  /**
+   * E4 surface/paint filter. When true and the room carries a surface finish
+   * (shape.surfaceTint / surfaceLabel), tint the room area and show the finish.
+   */
+  showSurfaces?: boolean;
 }
 
 /**
