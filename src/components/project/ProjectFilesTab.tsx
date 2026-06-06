@@ -1144,7 +1144,7 @@ const ProjectFilesTab = ({ projectId, projectName, filesAccess = "view", onNavig
                     <Table className={compactRows ? 'text-xs' : ''}>
                       <TableHeader>
                         <TableRow className={compactRows ? '[&>th]:py-1.5' : ''}>
-                          <TableHead className="w-12 sticky left-0 bg-background z-20">
+                          <TableHead className="w-12 md:sticky md:left-0 bg-background z-20">
                             <Checkbox
                               checked={allProjectFiles.length > 0 && selectedFiles.size === allProjectFiles.length}
                               onCheckedChange={() => {
@@ -1161,7 +1161,7 @@ const ProjectFilesTab = ({ projectId, projectName, filesAccess = "view", onNavig
                               {fileColLabels[col]}
                             </TableHead>
                           ))}
-                          <TableHead className="w-8 text-right sticky right-0 bg-white dark:bg-card z-10">
+                          <TableHead className="w-8 text-right md:sticky md:right-0 bg-white dark:bg-card z-10">
                             <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => changeViewMode('folder')}>
                               <X className="h-3 w-3" />
                             </Button>
@@ -1178,7 +1178,7 @@ const ProjectFilesTab = ({ projectId, projectName, filesAccess = "view", onNavig
                             onDragStart={(e) => handleInternalDragStart(e, file.path, file.name, false)}
                             onDragEnd={handleInternalDragEnd}
                           >
-                            <TableCell className="w-12 sticky left-0 bg-background z-10">
+                            <TableCell className="w-12 md:sticky md:left-0 bg-background z-10">
                               <span className="inline-flex items-center gap-1.5">
                                 <Checkbox
                                   checked={selectedFiles.has(file.path)}
@@ -1222,7 +1222,7 @@ const ProjectFilesTab = ({ projectId, projectName, filesAccess = "view", onNavig
                                 formatDate={formatDate}
                               />
                             ))}
-                            <TableCell className="text-right sticky right-0 bg-white dark:bg-card z-10">
+                            <TableCell className="text-right md:sticky md:right-0 bg-white dark:bg-card z-10">
                               <FileActionMenu file={file} onPreview={handlePreview} onDownload={handleDownload} onSmartTolk={runSmartTolk} />
                             </TableCell>
                           </TableRow>
@@ -1265,7 +1265,7 @@ const ProjectFilesTab = ({ projectId, projectName, filesAccess = "view", onNavig
               <Table className={compactRows ? 'text-xs' : ''}>
                 <TableHeader>
                   <TableRow className={compactRows ? '[&>th]:py-1.5' : ''}>
-                    <TableHead className="w-12 sticky left-0 bg-background z-20">
+                    <TableHead className="w-12 md:sticky md:left-0 bg-background z-20">
                       <Checkbox
                         checked={filteredFiles.length > 0 && selectedFiles.size === filteredFiles.length}
                         onCheckedChange={toggleSelectAll}
@@ -1308,7 +1308,7 @@ const ProjectFilesTab = ({ projectId, projectName, filesAccess = "view", onNavig
                         </div>
                       </TableHead>
                     ))}
-                    <TableHead className="w-8 text-right sticky right-0 bg-white dark:bg-card z-10">
+                    <TableHead className="w-8 text-right md:sticky md:right-0 bg-white dark:bg-card z-10">
                       <ColumnToggle
                         columns={ALL_FILE_COLS}
                         labels={fileColLabels}
@@ -1341,7 +1341,7 @@ const ProjectFilesTab = ({ projectId, projectName, filesAccess = "view", onNavig
                           onDrop={(e) => handleFolderDrop(e, folder.path)}
                         >
                           <TableCell
-                            className="w-12 sticky left-0 z-10 bg-white dark:bg-card"
+                            className="w-12 md:sticky md:left-0 z-10 bg-white dark:bg-card"
                             onClick={(e) => { e.stopPropagation(); toggleFolder(folder.path); }}
                           >
                             <span className="inline-flex items-center gap-1">
@@ -1365,7 +1365,7 @@ const ProjectFilesTab = ({ projectId, projectName, filesAccess = "view", onNavig
                               {col === 'category' ? <Badge variant="secondary">{t('files.folder')}</Badge> : '–'}
                             </TableCell>
                           ))}
-                          <TableCell className="sticky right-0 bg-white dark:bg-card z-10"></TableCell>
+                          <TableCell className="md:sticky md:right-0 bg-white dark:bg-card z-10"></TableCell>
                         </TableRow>
                         {/* Expanded sub-files — draggable to move between folders */}
                         {isExpanded && subFiles.map((sf) => {
@@ -1378,7 +1378,7 @@ const ProjectFilesTab = ({ projectId, projectName, filesAccess = "view", onNavig
                             onDragStart={(e) => handleInternalDragStart(e, sf.path, sf.name, false)}
                             onDragEnd={handleInternalDragEnd}
                           >
-                            <TableCell className={`w-12 sticky left-0 z-10 ${sfBg}`}>
+                            <TableCell className={`w-12 md:sticky md:left-0 z-10 ${sfBg}`}>
                               <span className="inline-flex items-center gap-1.5 pl-4">
                                 <Checkbox
                                   checked={selectedFiles.has(sf.path)}
@@ -1419,7 +1419,7 @@ const ProjectFilesTab = ({ projectId, projectName, filesAccess = "view", onNavig
                                 formatDate={formatDate}
                               />
                             ))}
-                            <TableCell className="text-right sticky right-0 bg-white dark:bg-card z-10">
+                            <TableCell className="text-right md:sticky md:right-0 bg-white dark:bg-card z-10">
                               <FileActionMenu
                                 file={sf}
                                 canEdit={canManage}
@@ -1448,7 +1448,7 @@ const ProjectFilesTab = ({ projectId, projectName, filesAccess = "view", onNavig
                       onDragStart={(e) => handleInternalDragStart(e, file.path, file.name, false)}
                       onDragEnd={handleInternalDragEnd}
                     >
-                      <TableCell className="w-12 sticky left-0 z-10 bg-white dark:bg-card">
+                      <TableCell className="w-12 md:sticky md:left-0 z-10 bg-white dark:bg-card">
                         <span className="inline-flex items-center gap-1.5">
                           <Checkbox
                             checked={selectedFiles.has(file.path)}
@@ -1489,7 +1489,7 @@ const ProjectFilesTab = ({ projectId, projectName, filesAccess = "view", onNavig
                           formatDate={formatDate}
                         />
                       ))}
-                      <TableCell className="text-right sticky right-0 bg-white dark:bg-card z-10">
+                      <TableCell className="text-right md:sticky md:right-0 bg-white dark:bg-card z-10">
                         <FileActionMenu
                           file={file}
                           canEdit={canManage}
