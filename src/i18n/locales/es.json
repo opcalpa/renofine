@@ -2154,6 +2154,7 @@
   },
   "welcome": {
     "chooseLanguage": "Elige tu idioma",
+    "chooseLanguageDesc": "Puedes cambiar esto más tarde en los ajustes",
     "continue": "Continuar",
     "contractor": "Contratista",
     "contractorDesc": "Dirijo una empresa de construcción",

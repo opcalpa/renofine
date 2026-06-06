@@ -4244,6 +4244,7 @@
   },
   "welcome": {
     "chooseLanguage": "Välj ditt språk",
+    "chooseLanguageDesc": "Du kan ändra detta senare i inställningarna",
     "moreLanguages": "+6 fler språk",
     "title": "Välkommen till Renofine!",
     "subtitle": "Vad beskriver dig bäst?",

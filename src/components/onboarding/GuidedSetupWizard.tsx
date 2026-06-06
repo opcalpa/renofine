@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight, Loader2, CheckCircle, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { createProjectFromGuidedSetup, workTypeToCostCenter } from "@/services/intakeService";
+import { createGuestProjectFromGuidedSetup } from "@/services/guestStorageService";
 import {
   TOTAL_STEPS,
   INITIAL_FORM_DATA,
@@ -21,7 +22,10 @@ interface GuidedSetupWizardProps {
   onComplete: (projectId: string) => void;
   onCancel: () => void;
   userType: "homeowner" | "contractor";
-  profileId: string;
+  /** Required for authenticated users; omitted for guests (local-only project). */
+  profileId?: string;
+  /** When true, the project is created in guest localStorage instead of Supabase. */
+  isGuest?: boolean;
 }
 
 const STEP_KEYS = [
@@ -65,6 +69,7 @@ export function GuidedSetupWizard({
   onComplete,
   onCancel,
   profileId,
+  isGuest = false,
 }: GuidedSetupWizardProps) {
   const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(1);
@@ -123,17 +128,23 @@ export function GuidedSetupWizard({
         ceiling_height_mm: r.ceiling_height_mm,
       }));
 
-      const result = await createProjectFromGuidedSetup(
-        {
-          projectName: formData.projectName.trim(),
-          address: formData.address.trim() || undefined,
-          postalCode: formData.postalCode.trim() || undefined,
-          city: formData.city.trim() || undefined,
-          rooms,
-          tasks,
-        },
-        profileId
-      );
+      const input = {
+        projectName: formData.projectName.trim(),
+        address: formData.address.trim() || undefined,
+        postalCode: formData.postalCode.trim() || undefined,
+        city: formData.city.trim() || undefined,
+        rooms,
+        tasks,
+      };
+
+      const result = isGuest
+        ? createGuestProjectFromGuidedSetup(input)
+        : await createProjectFromGuidedSetup(input, profileId!);
+
+      if (!result) {
+        toast.error(t("guest.projectLimit", "Guest mode is limited to 3 projects."));
+        return;
+      }
 
       setSubmitted(true);
       toast.success(t("guidedSetup.projectCreated"));

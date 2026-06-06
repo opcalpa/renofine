@@ -351,5 +351,80 @@ export function getAllGuestData() {
   };
 }
 
+// ============ Guided Setup (guest-local) ============
+
+export interface GuidedSetupGuestInput {
+  projectName: string;
+  address?: string;
+  postalCode?: string;
+  city?: string;
+  rooms: Array<{
+    name: string;
+    area_sqm?: number;
+    width_mm?: number;
+    height_mm?: number;
+    ceiling_height_mm?: number;
+  }>;
+  tasks: Array<{
+    workTypeLabel: string;
+    roomName: string | null;
+  }>;
+}
+
+/**
+ * Guest-local equivalent of createProjectFromGuidedSetup — builds a project,
+ * its rooms and tasks in localStorage so guests get the full guided wizard
+ * before signing up. The existing guest→account migration handles the rest.
+ * Returns null when the guest project limit is reached.
+ */
+export function createGuestProjectFromGuidedSetup(
+  input: GuidedSetupGuestInput
+): { projectId: string } | null {
+  const project = saveGuestProject({
+    name: input.projectName || 'My renovation',
+    description: null,
+    status: 'planning',
+    address: input.address || null,
+    postal_code: input.postalCode || null,
+    city: input.city || null,
+    project_type: null,
+    start_date: null,
+    finish_goal_date: null,
+    total_budget: null,
+  });
+
+  if (!project) return null;
+
+  const roomNameToId: Record<string, string> = {};
+  for (const room of input.rooms) {
+    const savedRoom = saveGuestRoom(project.id, {
+      name: room.name,
+      room_type: null,
+      status: 'existing',
+      area_sqm: room.area_sqm ?? null,
+      floor_number: null,
+      notes: null,
+      width_mm: room.width_mm ?? null,
+      height_mm: room.height_mm ?? null,
+      ceiling_height_mm: room.ceiling_height_mm ?? null,
+    });
+    if (savedRoom) roomNameToId[room.name.toLowerCase()] = savedRoom.id;
+  }
+
+  for (const task of input.tasks) {
+    const roomId = task.roomName ? roomNameToId[task.roomName.toLowerCase()] || null : null;
+    saveGuestTask(project.id, {
+      room_id: roomId,
+      title: task.workTypeLabel,
+      description: null,
+      status: 'to_do',
+      priority: null,
+      due_date: null,
+    });
+  }
+
+  return { projectId: project.id };
+}
+
 // Storage keys export for migration service
 export const GUEST_STORAGE_KEYS = KEYS;

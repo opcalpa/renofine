@@ -922,12 +922,14 @@ const Projects = () => {
               {t("guidedSetup.titleDesc")}
             </DialogDescription>
           </DialogHeader>
-          {profile?.id && (
+          {(profile?.id || isGuest) && (
             <GuidedSetupWizard
-              userType={(profile?.onboarding_user_type as "homeowner" | "contractor") || "homeowner"}
-              profileId={profile.id as string}
+              userType={((isGuest ? guestRole : profile?.onboarding_user_type) as "homeowner" | "contractor") || "homeowner"}
+              profileId={profile?.id as string | undefined}
+              isGuest={isGuest}
               onComplete={(projectId) => {
                 setShowGuidedSetup(false);
+                refreshStorageUsage?.();
                 navigate(`/projects/${projectId}`);
               }}
               onCancel={() => setShowGuidedSetup(false)}
