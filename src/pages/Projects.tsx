@@ -392,7 +392,7 @@ const Projects = () => {
           <DashboardRedesign
             userId={user.id}
             userName={profile?.name as string | undefined}
-            onNewProject={() => setDialogOpen(true)}
+            onNewProject={() => setShowGuidedSetup(true)}
             onToggleBack={() => {
               setEditorialDashboard(false);
               localStorage.setItem("rf_dashboard_v2", "false");
@@ -578,7 +578,7 @@ const Projects = () => {
                   }
                 />
               )}
-              <Button onClick={() => setDialogOpen(true)}>
+              <Button onClick={() => setShowGuidedSetup(true)}>
                 <Plus className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">
                   {t('projects.newProject')}
@@ -605,7 +605,7 @@ const Projects = () => {
             <div className="space-y-3">
               <Button
                 className="w-full h-14 text-left justify-start px-6"
-                onClick={() => setDialogOpen(true)}
+                onClick={() => setShowGuidedSetup(true)}
               >
                 <Plus className="h-5 w-5 mr-3 flex-shrink-0" />
                 <div>
