@@ -85,7 +85,7 @@ export function MobileBottomNav({ activeTab, onTabChange, isTabBlocked, userRole
 
   return (
     <>
-      <div aria-hidden="true" className="fixed inset-x-0 bottom-0 bg-card md:hidden z-[49] h-24 pointer-events-none" />
+      <div aria-hidden="true" className="fixed inset-x-0 bottom-0 bg-card md:hidden z-[49] h-[calc(4rem+env(safe-area-inset-bottom))] pointer-events-none" />
       <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-card md:hidden pb-[env(safe-area-inset-bottom)]">
         <div className="relative">
           {/* Fade indicators */}
