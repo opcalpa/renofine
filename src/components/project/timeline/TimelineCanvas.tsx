@@ -104,29 +104,15 @@ const TimelineCanvasComponent: React.FC<TimelineCanvasProps> = ({
     width: number;
   } | null>(null);
 
-  // Dynamic height: count rows whose tasks are visible in the current viewport
+  // Height must fit every row. Rows are placed at their absolute rowIndex and
+  // only the time (x) axis scrolls, so the canvas always spans all rows.
+  // (The old "count horizontally-visible rows" height clipped bottom rows whose
+  // bars happened to sit outside the current time window — the cut-off-on-mobile bug.)
   const MIN_VISIBLE_ROWS = 4;
-  const stageHeight = useMemo(() => {
-    const visibleStart = xToDate(0, originDate, pixelsPerDay, panX);
-    const visibleEnd = xToDate(stageWidth, originDate, pixelsPerDay, panX);
-    const visibleGroupIds = new Set<string>();
-    let visibleTaskRows = 0;
-    for (const row of rows) {
-      if (row.type === "task" && row.task?.start_date && row.task?.finish_date) {
-        const start = parseISO(row.task.start_date);
-        const end = parseISO(row.task.finish_date);
-        if (start <= visibleEnd && end >= visibleStart) {
-          visibleTaskRows++;
-          if (row.groupId) visibleGroupIds.add(row.groupId);
-        }
-      }
-    }
-    const visibleGroupHeaders = rows.filter(
-      (r) => r.type === "group-header" && visibleGroupIds.has(r.groupId ?? "")
-    ).length;
-    const visibleRows = visibleTaskRows + visibleGroupHeaders;
-    return Math.max(visibleRows * ROW_HEIGHT + 20, MIN_VISIBLE_ROWS * ROW_HEIGHT + 20);
-  }, [rows, originDate, pixelsPerDay, panX, stageWidth]);
+  const stageHeight = useMemo(
+    () => Math.max(totalRows * ROW_HEIGHT + 20, MIN_VISIBLE_ROWS * ROW_HEIGHT + 20),
+    [totalRows],
+  );
 
   useEffect(() => {
     const el = containerRef.current;
