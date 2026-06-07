@@ -258,6 +258,7 @@ export function PlanningRoomList({ projectId, locked = false, onRoomChange }: Pl
       if (visibleExtras.has(key)) count++;
     }
     if (!locked) count++;
+    count++; // flexible spacer column (absorbs slack so data columns stay grouped)
     return count;
   }, [visibleExtras, locked]);
 
@@ -555,13 +556,13 @@ export function PlanningRoomList({ projectId, locked = false, onRoomChange }: Pl
               <thead>
                 <tr className="bg-muted border-b">
                   <th className="px-3 py-2.5 text-left kicker w-[140px] sticky left-0 z-20 bg-muted">{t("planningRooms.roomName", "Room")}</th>
-                  {show.width && <th className="px-3 py-2.5 text-right kicker w-[80px]">{t("rooms.width")}</th>}
-                  {show.depth && <th className="px-3 py-2.5 text-right kicker w-[80px]">{t("rooms.depth")}</th>}
-                  {show.ceilingHeight && <th className="px-3 py-2.5 text-right kicker w-[80px] hidden sm:table-cell">{t("rooms.ceilingHeight")}</th>}
-                  <th className="px-3 py-2.5 text-right kicker w-[80px]">{t("rooms.area")}</th>
-                  {show.wallArea && <th className="px-3 py-2.5 text-right kicker w-[80px] hidden sm:table-cell">{t("rooms.wallArea")}</th>}
+                  {show.width && <th className="px-3 py-2.5 text-right kicker whitespace-nowrap">{t("rooms.width")}</th>}
+                  {show.depth && <th className="px-3 py-2.5 text-right kicker whitespace-nowrap">{t("rooms.depth")}</th>}
+                  {show.ceilingHeight && <th className="px-3 py-2.5 text-right kicker whitespace-nowrap hidden sm:table-cell">{t("rooms.ceilingHeight")}</th>}
+                  <th className="px-3 py-2.5 text-right kicker whitespace-nowrap">{t("rooms.area")}</th>
+                  {show.wallArea && <th className="px-3 py-2.5 text-right kicker whitespace-nowrap hidden sm:table-cell">{t("rooms.wallArea")}</th>}
                   {show.paintEstimate && (
-                    <th className="px-3 py-2.5 text-right kicker w-[100px]">
+                    <th className="px-3 py-2.5 text-right kicker whitespace-nowrap w-[100px]">
                       <div className="flex items-center justify-end gap-1">
                         {t("rooms.paintEstimate")}
                         <TooltipProvider>
@@ -586,6 +587,8 @@ export function PlanningRoomList({ projectId, locked = false, onRoomChange }: Pl
                   )}
                   {show.status && <th className="px-3 py-2.5 text-left kicker w-[100px]">{t("common.status")}</th>}
                   {show.attachments && <th className="px-3 py-2.5 text-left kicker w-[60px]">{t("tasksTable.attachment", "Bilagor")}</th>}
+                  {/* Flexible spacer: soaks up slack so the data columns stay grouped and don't drift with window width */}
+                  <th className="w-full p-0" aria-hidden="true" />
                   {!locked && <th className="w-[40px] px-2 py-2.5" />}
                 </tr>
               </thead>
@@ -666,6 +669,7 @@ export function PlanningRoomList({ projectId, locked = false, onRoomChange }: Pl
                           )}
                         </td>
                       )}
+                      <td className="w-full p-0" aria-hidden="true" />
                       {!locked && (
                         <td className="px-2 py-2.5 w-[40px]">
                           <Button
