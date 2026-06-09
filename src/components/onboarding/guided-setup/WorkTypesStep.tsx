@@ -91,7 +91,7 @@ export function WorkTypesStep({ formData, updateFormData }: StepProps) {
       {/* Predefined work types */}
       <div className="space-y-3">
         <Label>{t("guidedSetup.predefinedTypes")}</Label>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
           {predefinedTypes.map((wt) => {
             const isSelected = selectedIds.has(wt.value);
             return (
@@ -100,14 +100,16 @@ export function WorkTypesStep({ formData, updateFormData }: StepProps) {
                 type="button"
                 onClick={() => handleTogglePredefined(wt)}
                 className={cn(
-                  "px-3 py-1.5 rounded-full text-sm border transition-all inline-flex items-center gap-1.5",
-                  isSelected
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-background border-input hover:bg-accent"
+                  "flex flex-col items-center justify-center gap-1 p-2 sm:p-3 rounded-lg border-2 transition-all",
+                  "hover:border-primary/50 hover:bg-accent/50",
+                  isSelected ? "border-primary bg-primary/5" : "border-muted"
                 )}
               >
-                {t(`intake.workType.${wt.value}`)}
-                {isSelected && <Check className="h-3 w-3" />}
+                <span className="text-xl sm:text-2xl">{wt.icon}</span>
+                <span className="text-xs font-medium text-center leading-tight">
+                  {t(`intake.workType.${wt.value}`)}
+                </span>
+                {isSelected && <Check className="h-3 w-3 text-primary" />}
               </button>
             );
           })}

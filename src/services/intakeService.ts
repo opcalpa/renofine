@@ -2,7 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { autoGenerateMaterials } from "./planningWizardService";
 // Re-export shared types/utils from workTypeUtils for backward compatibility
 export type { WorkType, RoomPriority, PropertyType } from "./workTypeUtils";
-export { workTypeToCostCenter, getWorkTypeLabel, getWorkTypes, getRoomSuggestions } from "./workTypeUtils";
+export { workTypeToCostCenter, getWorkTypeLabel, getWorkTypeIcon, getWorkTypes, getRoomSuggestions } from "./workTypeUtils";
 
 // =============================================================================
 // TYPES

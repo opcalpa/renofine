@@ -72,9 +72,37 @@ export function getWorkTypeLabel(workType: WorkType): string {
 }
 
 /**
- * Get all available work types with labels
+ * Emoji for each work type — mirrors the room icons so the guided wizard
+ * feels consistent across steps. `annat` falls back to a generic hammer.
  */
-export function getWorkTypes(): Array<{ value: WorkType; label: string }> {
+const WORK_TYPE_ICONS: Record<WorkType, string> = {
+  rivning: "🧨",
+  el: "⚡",
+  vvs: "🚰",
+  kakel: "🧱",
+  snickeri: "🪚",
+  malning: "🎨",
+  golv: "🪵",
+  kok: "🍳",
+  badrum: "🛁",
+  fonster_dorrar: "🪟",
+  fasad: "🏠",
+  tak: "🪜",
+  tradgard: "🌳",
+  annat: "🔨",
+};
+
+/**
+ * Get emoji for a work type. Falls back to a generic hammer.
+ */
+export function getWorkTypeIcon(workType: WorkType): string {
+  return WORK_TYPE_ICONS[workType] || "🔨";
+}
+
+/**
+ * Get all available work types with labels and icons
+ */
+export function getWorkTypes(): Array<{ value: WorkType; label: string; icon: string }> {
   const types: WorkType[] = [
     "rivning",
     "el",
@@ -91,7 +119,7 @@ export function getWorkTypes(): Array<{ value: WorkType; label: string }> {
     "tradgard",
     "annat",
   ];
-  return types.map((t) => ({ value: t, label: getWorkTypeLabel(t) }));
+  return types.map((t) => ({ value: t, label: getWorkTypeLabel(t), icon: getWorkTypeIcon(t) }));
 }
 
 /**
