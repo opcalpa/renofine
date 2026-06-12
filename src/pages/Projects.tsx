@@ -39,7 +39,8 @@ import { AIProjectImportModal } from "@/components/project/AIProjectImportModal"
 import { HomeownerYearlyAnalysis } from "@/components/project/HomeownerYearlyAnalysis";
 import { DashboardStrip } from "@/components/project/DashboardStrip";
 import { ProjectGridCard } from "@/components/project/ProjectGridCard";
-import { GuestBanner } from "@/components/guest";
+import { GuestBanner, GuestMigrationDialog } from "@/components/guest";
+import { hasGuestProjectsToMigrate } from "@/services/guestMigrationService";
 import { CreateIntakeDialog } from "@/components/intake/CreateIntakeDialog";
 import {
   getGuestProjects,
@@ -102,6 +103,16 @@ const Projects = () => {
   useEffect(() => {
     if (needsWelcomeModal) setShowWelcomeModal(true);
   }, [needsWelcomeModal]);
+
+  // Safety net: a signed-in user with guest projects left in localStorage
+  // (e.g. signed up via email link or OAuth, where the Auth-page migration
+  // never ran) gets offered migration here instead of losing their work.
+  const [showGuestMigration, setShowGuestMigration] = useState(false);
+  useEffect(() => {
+    if (!authLoading && !isGuest && profile?.id && !showWelcomeModal && hasGuestProjectsToMigrate()) {
+      setShowGuestMigration(true);
+    }
+  }, [authLoading, isGuest, profile?.id, showWelcomeModal]);
   const [showGuidedSetup, setShowGuidedSetup] = useState(false);
   const [showAIImport, setShowAIImport] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
@@ -909,6 +920,19 @@ const Projects = () => {
         profileId={profile?.id as string | undefined}
         onComplete={handleWelcomeComplete}
       />
+
+      {/* Safety net: offer migration of leftover guest projects */}
+      {profile?.id && (
+        <GuestMigrationDialog
+          open={showGuestMigration}
+          onOpenChange={setShowGuestMigration}
+          profileId={profile.id as string}
+          onComplete={() => {
+            setShowGuestMigration(false);
+            refetch();
+          }}
+        />
+      )}
 
       {/* Create Intake Dialog (send customer form) */}
       <CreateIntakeDialog open={createIntakeOpen} onOpenChange={setCreateIntakeOpen} onCreated={() => { /* intake created from dialog */ }} />

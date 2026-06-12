@@ -12,7 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Loader2 } from "lucide-react";
 import { GuestMigrationDialog } from "@/components/guest";
-import { hasGuestProjectsToMigrate } from "@/services/guestMigrationService";
+import { hasGuestProjectsToMigrate, migrateGuestProjects } from "@/services/guestMigrationService";
 import { useGuestMode } from "@/hooks/useGuestMode";
 import { analytics, AnalyticsEvents } from "@/lib/analytics";
 
@@ -106,23 +106,46 @@ const Auth = () => {
 
       toast({
         title: t('auth.accountCreated', 'Account created!'),
-        description: t('auth.accountCreatedDescription', 'You can now sign in with your credentials.'),
+        description: t('auth.welcomeAboard', 'Welcome to Renofine!'),
       });
 
-      // Auto sign in after signup - check for migration
+      // Brand-new account: silently carry over any guest projects — the user
+      // just built them and signed up to keep them, so don't ask.
       if (data.user) {
         if (hasGuestProjectsToMigrate()) {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("id")
-            .eq("user_id", data.user.id)
-            .single();
-
-          if (profile) {
-            setProfileIdForMigration(profile.id);
-            setShowMigrationDialog(true);
-            return;
+          // The profile row is created by a DB trigger; retry briefly in case
+          // it isn't visible yet right after signUp returns.
+          let profileId: string | null = null;
+          for (let attempt = 0; attempt < 5 && !profileId; attempt++) {
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("id")
+              .eq("user_id", data.user.id)
+              .maybeSingle();
+            if (profile) profileId = profile.id;
+            else await new Promise((r) => setTimeout(r, 600));
           }
+
+          if (profileId) {
+            const result = await migrateGuestProjects(profileId);
+            if (result.migratedProjects > 0) {
+              toast({
+                title: t('guest.autoMigrated', 'Your project came along!'),
+                description: t('guest.autoMigratedDescription', 'Everything you created as a guest is now saved to your account.'),
+              });
+              exitGuestMode();
+              navigate(
+                result.newProjectIds.length === 1
+                  ? `/projects/${result.newProjectIds[0]}`
+                  : "/start"
+              );
+              return;
+            }
+          }
+          // Migration didn't run — keep guest data; the /start safety net
+          // will offer migration there instead.
+          navigate(redirect || "/start");
+          return;
         }
         exitGuestMode();
         navigate(redirect || "/start");
@@ -262,26 +285,26 @@ const Auth = () => {
 
         {redirect && (
           <div className="mb-4 bg-primary/10 text-primary border border-primary/20 rounded-lg p-3 text-sm text-center">
-            Sign in or create an account to accept your invitation.
+            {t('auth.invitationPrompt', 'Sign in or create an account to accept your invitation.')}
           </div>
         )}
 
         <Card className="border-border">
           <CardHeader>
-            <CardTitle>Welcome</CardTitle>
-            <CardDescription>Sign in or create an account to get started</CardDescription>
+            <CardTitle>{t('auth.welcome', 'Welcome')}</CardTitle>
+            <CardDescription>{t('auth.welcomeDescription', 'Sign in or create an account to get started')}</CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="signin" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="signin">Sign In</TabsTrigger>
-                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+                <TabsTrigger value="signin">{t('auth.signIn', 'Sign In')}</TabsTrigger>
+                <TabsTrigger value="signup">{t('auth.signUp', 'Sign Up')}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="signin">
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signin-email">Email</Label>
+                    <Label htmlFor="signin-email">{t('auth.email', 'Email')}</Label>
                     <Input
                       id="signin-email"
                       type="email"
@@ -292,7 +315,7 @@ const Auth = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signin-password">Password</Label>
+                    <Label htmlFor="signin-password">{t('auth.password', 'Password')}</Label>
                     <Input
                       id="signin-password"
                       type="password"
@@ -309,7 +332,7 @@ const Auth = () => {
                         onCheckedChange={(checked) => setRememberMe(checked as boolean)}
                       />
                       <Label htmlFor="remember-me" className="text-sm font-normal cursor-pointer">
-                        Remember me for 30 days
+                        {t('auth.rememberMe', 'Remember me for 30 days')}
                       </Label>
                     </div>
                     <button
@@ -317,13 +340,13 @@ const Auth = () => {
                       className="text-sm text-primary hover:underline"
                       onClick={() => setShowResetForm(true)}
                     >
-                      Forgot password?
+                      {t('auth.forgotPassword', 'Forgot password?')}
                     </button>
                   </div>
                   {showResetForm && (
                     <div className="bg-muted/50 p-4 rounded-lg space-y-3">
                       <p className="text-sm text-muted-foreground">
-                        Enter your email above and click below to receive a reset link.
+                        {t('auth.resetInstructions', 'Enter your email above and click below to receive a reset link.')}
                       </p>
                       <Button
                         type="button"
@@ -335,16 +358,16 @@ const Auth = () => {
                         {resetLoading ? (
                           <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Sending...
+                            {t('auth.sending', 'Sending...')}
                           </>
                         ) : (
-                          "Send Reset Link"
+                          t('auth.sendResetLink', 'Send Reset Link')
                         )}
                       </Button>
                     </div>
                   )}
                   <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Signing in..." : "Sign In"}
+                    {loading ? t('auth.signingIn', 'Signing in...') : t('auth.signIn', 'Sign In')}
                   </Button>
 
                   <div className="relative">
@@ -352,7 +375,7 @@ const Auth = () => {
                       <Separator />
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
+                      <span className="bg-card px-2 text-muted-foreground">{t('auth.orContinueWith', 'Or continue with')}</span>
                     </div>
                   </div>
 
@@ -366,7 +389,7 @@ const Auth = () => {
                     {googleLoading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Connecting...
+                        {t('auth.connecting', 'Connecting...')}
                       </>
                     ) : (
                       <>
@@ -388,7 +411,7 @@ const Auth = () => {
                             d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                           />
                         </svg>
-                        Sign in with Google
+                        {t('auth.signInWithGoogle', 'Sign in with Google')}
                       </>
                     )}
                   </Button>
@@ -398,18 +421,18 @@ const Auth = () => {
               <TabsContent value="signup">
                 <form onSubmit={handleSignUp} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signup-name">Name</Label>
+                    <Label htmlFor="signup-name">{t('auth.name', 'Name')}</Label>
                     <Input
                       id="signup-name"
                       type="text"
-                      placeholder="Your name"
+                      placeholder={t('auth.namePlaceholder', 'Your name')}
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       required
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
+                    <Label htmlFor="signup-email">{t('auth.email', 'Email')}</Label>
                     <Input
                       id="signup-email"
                       type="email"
@@ -442,7 +465,7 @@ const Auth = () => {
                     />
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Creating account..." : "Create Account"}
+                    {loading ? t('auth.creatingAccount', 'Creating account...') : t('auth.createAccount', 'Create Account')}
                   </Button>
 
                   <div className="relative">
@@ -450,7 +473,7 @@ const Auth = () => {
                       <Separator />
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
+                      <span className="bg-card px-2 text-muted-foreground">{t('auth.orContinueWith', 'Or continue with')}</span>
                     </div>
                   </div>
 
@@ -464,7 +487,7 @@ const Auth = () => {
                     {googleLoading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Connecting...
+                        {t('auth.connecting', 'Connecting...')}
                       </>
                     ) : (
                       <>
@@ -486,7 +509,7 @@ const Auth = () => {
                             d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                           />
                         </svg>
-                        Sign up with Google
+                        {t('auth.signUpWithGoogle', 'Sign up with Google')}
                       </>
                     )}
                   </Button>

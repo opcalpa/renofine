@@ -145,8 +145,8 @@
         "surface": "Full app · admin"
       },
       "worker": {
-    "taskEyebrow": "UPPGIFT",
-    "roomEyebrow": "RUM",
+        "taskEyebrow": "UPPGIFT",
+        "roomEyebrow": "RUM",
         "title": "Hantverkare med jobb",
         "description": "Får ett dagsjobb via SMS-länk. Behöver inget konto.",
         "surface": "Arbetarvy"
@@ -301,7 +301,11 @@
     "loginToSaveDesc": "Skapa ett gratis konto för att spara ditt projekt och komma åt det från vilken enhet som helst.",
     "createAccount": "Skapa gratis konto",
     "signIn": "Jag har redan ett konto",
-    "dataKept": "Din planeringsdata sparas till ditt konto."
+    "dataKept": "Din planeringsdata sparas till ditt konto.",
+    "autoMigrated": "Ditt projekt följde med!",
+    "autoMigratedDescription": "Allt du skapade som gäst är nu sparat på ditt konto.",
+    "signUpNudge": "Skapa ett gratis konto för att spara ditt projekt, få uppskattningar och bjuda in medarbetare.",
+    "signUpLink": "Skapa konto"
   },
   "guestEstimate": {
     "detectedType": "Identifierad arbetstyp",
@@ -595,7 +599,7 @@
     "signUpDescription": "Börja hantera ditt renoveringsprojekt",
     "emailPlaceholder": "din.epost@exempel.se",
     "passwordPlaceholder": "Ange ditt lösenord",
-    "namePlaceholder": "Ditt fullständiga namn",
+    "namePlaceholder": "Ditt namn",
     "signInButton": "Logga in",
     "signUpButton": "Registrera dig",
     "signingIn": "Loggar in...",
@@ -609,7 +613,26 @@
     "confirmPassword": "Bekräfta lösenord",
     "passwordMismatch": "Lösenorden matchar inte",
     "checkEmail": "Kolla din e-post",
-    "confirmEmailDescription": "Vi har skickat en bekräftelselänk till {{email}}. Klicka på den för att aktivera ditt konto."
+    "confirmEmailDescription": "Vi har skickat en bekräftelselänk till {{email}}. Klicka på den för att aktivera ditt konto.",
+    "welcomeAboard": "Välkommen till Renofine!",
+    "invitationPrompt": "Logga in eller skapa ett konto för att acceptera din inbjudan.",
+    "welcome": "Välkommen",
+    "welcomeDescription": "Logga in eller skapa ett konto för att komma igång",
+    "signIn": "Logga in",
+    "signUp": "Skapa konto",
+    "email": "E-post",
+    "rememberMe": "Kom ihåg mig i 30 dagar",
+    "forgotPassword": "Glömt lösenord?",
+    "resetInstructions": "Ange din e-post ovan och klicka nedan för att få en återställningslänk.",
+    "sending": "Skickar...",
+    "sendResetLink": "Skicka återställningslänk",
+    "orContinueWith": "Eller fortsätt med",
+    "connecting": "Ansluter...",
+    "signInWithGoogle": "Logga in med Google",
+    "signUpWithGoogle": "Skapa konto med Google",
+    "name": "Namn",
+    "creatingAccount": "Skapar konto...",
+    "createAccount": "Skapa konto"
   },
   "projects": {
     "title": "Mina projekt",

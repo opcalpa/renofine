@@ -23,8 +23,13 @@ export async function migrateGuestOnboardingToProfile(profileId: string): Promis
   const guestLanguage = localStorage.getItem("i18nextLng");
 
   const updates: Record<string, unknown> = {};
-  if (guestUserType) updates.onboarding_user_type = guestUserType;
-  if (guestLanguage) updates.preferred_language = guestLanguage;
+  if (guestUserType) {
+    updates.onboarding_user_type = guestUserType;
+    // The guest already picked role + language in the guest welcome flow —
+    // don't make them redo it in the post-signup welcome modal.
+    updates.onboarding_welcome_completed = true;
+  }
+  if (guestLanguage) updates.language_preference = guestLanguage;
 
   if (Object.keys(updates).length === 0) return;
 
@@ -47,6 +52,7 @@ export async function migrateGuestProjects(
     migratedProjects: 0,
     migratedRooms: 0,
     migratedTasks: 0,
+    newProjectIds: [],
     errors: [],
   };
 
@@ -101,6 +107,7 @@ export async function migrateGuestProjects(
         }
 
         projectIdMap.set(guestProject.id, newProject.id);
+        result.newProjectIds.push(newProject.id);
         result.migratedProjects++;
 
         // Migrate rooms for this project

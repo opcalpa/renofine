@@ -324,11 +324,9 @@ export function clearAllGuestData(): void {
 // ============ Migration Helpers ============
 
 export function hasGuestProjectsToMigrate(): boolean {
-  const state = getGuestModeState();
-  if (!state.isGuest && !state.guestId) return false;
-
-  const projects = getGuestProjects();
-  return projects.length > 0;
+  // Intentionally ignores the guest-mode flag: exitGuestMode() clears the flag
+  // but leaves project data, and those projects must still be migratable.
+  return getGuestProjects().length > 0;
 }
 
 export function getAllGuestData() {

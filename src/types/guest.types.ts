@@ -70,6 +70,7 @@ export interface MigrationResult {
   migratedProjects: number;
   migratedRooms: number;
   migratedTasks: number;
+  newProjectIds: string[];
   errors: string[];
 }
 

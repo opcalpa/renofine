@@ -159,7 +159,7 @@
   },
   "auth": {
     "emailPlaceholder": "tu.correo@ejemplo.com",
-    "namePlaceholder": "Tu nombre completo",
+    "namePlaceholder": "Tu nombre",
     "passwordPlaceholder": "Ingresa tu contraseña",
     "signInButton": "Iniciar sesión",
     "signInDescription": "Inicia sesión en tu cuenta de Renofine",
@@ -170,7 +170,26 @@
     "signUpSuccess": "¡Cuenta creada exitosamente!",
     "signUpTitle": "Crear cuenta",
     "signingIn": "Iniciando sesión...",
-    "signingUp": "Registrando..."
+    "signingUp": "Registrando...",
+    "welcomeAboard": "¡Bienvenido a Renofine!",
+    "invitationPrompt": "Inicia sesión o crea una cuenta para aceptar tu invitación.",
+    "welcome": "Bienvenido",
+    "welcomeDescription": "Inicia sesión o crea una cuenta para empezar",
+    "signIn": "Iniciar sesión",
+    "signUp": "Crear cuenta",
+    "email": "Correo electrónico",
+    "rememberMe": "Recuérdame durante 30 días",
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "resetInstructions": "Escribe tu correo arriba y haz clic abajo para recibir un enlace de restablecimiento.",
+    "sending": "Enviando...",
+    "sendResetLink": "Enviar enlace",
+    "orContinueWith": "O continuar con",
+    "connecting": "Conectando...",
+    "signInWithGoogle": "Iniciar sesión con Google",
+    "signUpWithGoogle": "Registrarse con Google",
+    "name": "Nombre",
+    "creatingAccount": "Creando cuenta...",
+    "createAccount": "Crear cuenta"
   },
   "budget": {
     "advancedFilter": "Filtro+",
@@ -2204,5 +2223,11 @@
     "askPlaceholder": "¿Qué quieres preguntar sobre esto?",
     "questionSent": "¡Pregunta enviada!",
     "questionFailed": "No se pudo enviar la pregunta"
+  },
+  "guest": {
+    "autoMigrated": "¡Tu proyecto te acompañó!",
+    "autoMigratedDescription": "Todo lo que creaste como invitado ahora está guardado en tu cuenta.",
+    "signUpNudge": "Crea una cuenta gratuita para guardar tu proyecto, obtener estimaciones e invitar a colaboradores.",
+    "signUpLink": "Crear cuenta"
   }
 }

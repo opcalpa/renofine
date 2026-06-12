@@ -159,7 +159,7 @@
   },
   "auth": {
     "emailPlaceholder": "ihre.email@beispiel.de",
-    "namePlaceholder": "Ihr vollständiger Name",
+    "namePlaceholder": "Dein Name",
     "passwordPlaceholder": "Geben Sie Ihr Passwort ein",
     "signInButton": "Anmelden",
     "signInDescription": "Melden Sie sich bei Ihrem Renofine-Konto an",
@@ -169,8 +169,27 @@
     "signUpDescription": "Beginnen Sie mit der Verwaltung Ihres Renovierungsprojekts",
     "signUpSuccess": "Konto erfolgreich erstellt!",
     "signUpTitle": "Konto erstellen",
-    "signingIn": "Anmelden...",
-    "signingUp": "Registrieren..."
+    "signingIn": "Anmeldung läuft...",
+    "signingUp": "Registrieren...",
+    "welcomeAboard": "Willkommen bei Renofine!",
+    "invitationPrompt": "Melde dich an oder erstelle ein Konto, um deine Einladung anzunehmen.",
+    "welcome": "Willkommen",
+    "welcomeDescription": "Melde dich an oder erstelle ein Konto, um loszulegen",
+    "signIn": "Anmelden",
+    "signUp": "Konto erstellen",
+    "email": "E-Mail",
+    "rememberMe": "30 Tage angemeldet bleiben",
+    "forgotPassword": "Passwort vergessen?",
+    "resetInstructions": "Gib oben deine E-Mail ein und klicke unten, um einen Link zum Zurücksetzen zu erhalten.",
+    "sending": "Wird gesendet...",
+    "sendResetLink": "Link senden",
+    "orContinueWith": "Oder weiter mit",
+    "connecting": "Verbinden...",
+    "signInWithGoogle": "Mit Google anmelden",
+    "signUpWithGoogle": "Mit Google registrieren",
+    "name": "Name",
+    "creatingAccount": "Konto wird erstellt...",
+    "createAccount": "Konto erstellen"
   },
   "budget": {
     "advancedFilter": "Filter+",
@@ -2204,5 +2223,11 @@
     "askPlaceholder": "Was möchtest du dazu fragen?",
     "questionSent": "Frage gesendet!",
     "questionFailed": "Frage konnte nicht gesendet werden"
+  },
+  "guest": {
+    "autoMigrated": "Dein Projekt ist mitgekommen!",
+    "autoMigratedDescription": "Alles, was du als Gast erstellt hast, ist jetzt in deinem Konto gespeichert.",
+    "signUpNudge": "Erstelle ein kostenloses Konto, um dein Projekt zu speichern, Schätzungen zu erhalten und Mitwirkende einzuladen.",
+    "signUpLink": "Konto erstellen"
   }
 }

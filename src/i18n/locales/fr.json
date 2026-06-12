@@ -159,7 +159,7 @@
   },
   "auth": {
     "emailPlaceholder": "votre.email@exemple.fr",
-    "namePlaceholder": "Votre nom complet",
+    "namePlaceholder": "Votre nom",
     "passwordPlaceholder": "Entrez votre mot de passe",
     "signInButton": "Se connecter",
     "signInDescription": "Connectez-vous à votre compte Renofine",
@@ -170,7 +170,26 @@
     "signUpSuccess": "Compte créé avec succès !",
     "signUpTitle": "Créer un compte",
     "signingIn": "Connexion...",
-    "signingUp": "Inscription..."
+    "signingUp": "Inscription...",
+    "welcomeAboard": "Bienvenue sur Renofine !",
+    "invitationPrompt": "Connectez-vous ou créez un compte pour accepter votre invitation.",
+    "welcome": "Bienvenue",
+    "welcomeDescription": "Connectez-vous ou créez un compte pour commencer",
+    "signIn": "Se connecter",
+    "signUp": "Créer un compte",
+    "email": "E-mail",
+    "rememberMe": "Se souvenir de moi pendant 30 jours",
+    "forgotPassword": "Mot de passe oublié ?",
+    "resetInstructions": "Saisissez votre e-mail ci-dessus et cliquez ci-dessous pour recevoir un lien de réinitialisation.",
+    "sending": "Envoi...",
+    "sendResetLink": "Envoyer le lien",
+    "orContinueWith": "Ou continuer avec",
+    "connecting": "Connexion...",
+    "signInWithGoogle": "Se connecter avec Google",
+    "signUpWithGoogle": "S'inscrire avec Google",
+    "name": "Nom",
+    "creatingAccount": "Création du compte...",
+    "createAccount": "Créer un compte"
   },
   "budget": {
     "advancedFilter": "Filtre+",
@@ -2204,5 +2223,11 @@
     "askPlaceholder": "Que voulez-vous demander à ce sujet ?",
     "questionSent": "Question envoyée !",
     "questionFailed": "Impossible d'envoyer la question"
+  },
+  "guest": {
+    "autoMigrated": "Votre projet vous a suivi !",
+    "autoMigratedDescription": "Tout ce que vous avez créé en tant qu’invité est maintenant enregistré sur votre compte.",
+    "signUpNudge": "Créez un compte gratuit pour enregistrer votre projet, obtenir des estimations et inviter des collaborateurs.",
+    "signUpLink": "Créer un compte"
   }
 }

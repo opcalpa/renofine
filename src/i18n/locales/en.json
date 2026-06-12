@@ -145,8 +145,8 @@
         "surface": "Full app · admin"
       },
       "worker": {
-    "taskEyebrow": "TASK",
-    "roomEyebrow": "ROOM",
+        "taskEyebrow": "TASK",
+        "roomEyebrow": "ROOM",
         "title": "Tradesperson with a job",
         "description": "Gets a day job via SMS link. No account needed.",
         "surface": "Worker view"
@@ -301,7 +301,11 @@
     "loginToSaveDesc": "Create a free account to save your project and access it from any device.",
     "createAccount": "Create free account",
     "signIn": "I already have an account",
-    "dataKept": "Your planning data will be saved to your account."
+    "dataKept": "Your planning data will be saved to your account.",
+    "autoMigrated": "Your project came along!",
+    "autoMigratedDescription": "Everything you created as a guest is now saved to your account.",
+    "signUpNudge": "Create a free account to save your project, get estimates, and invite collaborators.",
+    "signUpLink": "Sign up"
   },
   "guestEstimate": {
     "detectedType": "Detected work type",
@@ -595,7 +599,7 @@
     "signUpDescription": "Start managing your renovation project",
     "emailPlaceholder": "your.email@example.com",
     "passwordPlaceholder": "Enter your password",
-    "namePlaceholder": "Your full name",
+    "namePlaceholder": "Your name",
     "signInButton": "Sign In",
     "signUpButton": "Sign Up",
     "signingIn": "Signing in...",
@@ -609,7 +613,26 @@
     "confirmPassword": "Confirm password",
     "passwordMismatch": "Passwords do not match",
     "checkEmail": "Check your email",
-    "confirmEmailDescription": "We sent a confirmation link to {{email}}. Click it to activate your account."
+    "confirmEmailDescription": "We sent a confirmation link to {{email}}. Click it to activate your account.",
+    "welcomeAboard": "Welcome to Renofine!",
+    "invitationPrompt": "Sign in or create an account to accept your invitation.",
+    "welcome": "Welcome",
+    "welcomeDescription": "Sign in or create an account to get started",
+    "signIn": "Sign In",
+    "signUp": "Sign Up",
+    "email": "Email",
+    "rememberMe": "Remember me for 30 days",
+    "forgotPassword": "Forgot password?",
+    "resetInstructions": "Enter your email above and click below to receive a reset link.",
+    "sending": "Sending...",
+    "sendResetLink": "Send Reset Link",
+    "orContinueWith": "Or continue with",
+    "connecting": "Connecting...",
+    "signInWithGoogle": "Sign in with Google",
+    "signUpWithGoogle": "Sign up with Google",
+    "name": "Name",
+    "creatingAccount": "Creating account...",
+    "createAccount": "Create Account"
   },
   "projects": {
     "title": "My Projects",
