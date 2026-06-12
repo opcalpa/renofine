@@ -10,6 +10,7 @@ import mammoth from 'npm:mammoth@1.6.0';
 
 const ALLOWED_ORIGINS = [
   'http://localhost:5173',
+  'http://localhost:5002',
   'http://localhost:3000',
   'https://app.renofine.com',
   'https://renofine.com',

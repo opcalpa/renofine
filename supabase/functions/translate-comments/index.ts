@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const ALLOWED_ORIGINS = [
   'http://localhost:5173',
+  'http://localhost:5002',
   'http://localhost:3000',
   'https://app.renofine.com',
   'https://renofine.com',

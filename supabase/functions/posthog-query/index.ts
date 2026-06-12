@@ -13,6 +13,7 @@ const POSTHOG_PROJECT_ID = Deno.env.get("POSTHOG_PROJECT_ID") ?? "140317";
 
 const ALLOWED_ORIGINS = [
   "http://localhost:5173",
+  "http://localhost:5002",
   "http://localhost:3000",
   "https://app.renofine.com",
   "https://renofine.com",
