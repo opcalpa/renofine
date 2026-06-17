@@ -50,6 +50,16 @@ tags: [growth]
 Draft finns i PA: `projects/renomate/vc-pitch.md`. Uppföljning på inkommande VC-intresse.
 
 ---
+id: joel-jansson-betatestare
+status: todo
+priority: P3
+tags: [growth]
+---
+## Joel Jansson — betatestare (uppföljning)
+Beta-testare, byggstart april, projektleder mellan arkitekt/byggare. Svarat på LinkedIn,
+invänta att han testar appen. Passiv uppföljning — ping om tyst.
+
+---
 id: proffs-bygglet-gap
 status: todo
 priority: P2
