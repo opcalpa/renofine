@@ -52,6 +52,7 @@ const AttendanceCheckIn = lazy(() => import("./pages/AttendanceCheckIn"));
 const DocPlayground = lazy(() => import("./pages/_DocPlayground"));
 import { HelpBot } from "./components/HelpBot";
 import { BetaBanner } from "./components/BetaBanner";
+import { Canonical } from "./components/seo/Canonical";
 
 /** Only show HelpBot on authenticated/app pages, not public landing pages */
 function AuthenticatedHelpBot() {
@@ -91,6 +92,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+            <Canonical />
             <BetaBanner />
             <Routes>
               {/* ── Public routes ── */}
