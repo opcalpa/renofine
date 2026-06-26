@@ -128,17 +128,27 @@ invänta att han testar appen. Passiv uppföljning — ping om tyst.
 
 ---
 id: taulant-bara-lead
-status: todo
+status: doing
 priority: P2
 tags: [growth, lead]
 created: 2026-06-24
+updated: 2026-06-26
 ---
-## Taulant Bara — lead från FB-kampanjen (uppföljning)
-Första riktiga leaden från FB-rundan 2026-06-23. Registrerade sig, testade appen,
-"positivt överraskad". Jobbar med **IT + fastigheter**, renoverar lägenheter regelbundet
-— stark ICP-match. Vill prata vision + **framtiden för bolaget** (kan luta investerar-/
-partnerhåll — lyssna innan pitch). Mejl: taulant.bara@icloud.com. Svar skickat med
-bokningslänk → invänta att han bokar/svarar, ping om tyst om ~1 vecka.
+## Taulant Bara — lead från FB-kampanjen (aktiv dialog)
+Första riktiga leaden från FB-rundan 2026-06-23. Mejl: taulant.bara@icloud.com,
+tel 070 573 44 88.
+**Profil:** IT-administratör, Malmö stads grundskoleförvaltning. Vid sidan av jobbet
+**köper/renoverar/säljer lägenheter** (fix-and-flip, flera projekt) — stark ICP +
+affärsmässigt skarp. Intresserad av AI.
+**Validerade moaten oombedd:** fastnade mest för **rum↔arbetsmoment-strukturen**
+("logiskt, enkelt att följa") — exakt det domän-system research+evals pekade ut som
+vallgraven, ej översättningen.
+**Dialog (mejl):** ställer investerar-/strategifrågor (abonnemang vs plattform,
+framtiden för bolaget). Carl svarat ärligt: abonnemang proffs-först → plattform på sikt
+(affiliate/finansiering), traction före monetisering. Ställt intent-fråga tillbaka
+("nyfikenhet eller vill du vara med och påverka") — **ej besvarad än**.
+**Nästa:** bollen hos Taulant. Om tyst ~1 vecka, föreslå konkret samtalstid (mejl-
+pingpong fortsätter annars). Bevaka om han lutar mot advisor-/partnerroll.
 
 ---
 id: agent-mode-additive-flag
