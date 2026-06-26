@@ -199,22 +199,38 @@ Förutsättning för agent-/MCP-exponering.
 
 ---
 id: generate-checklist-evals
-status: doing
+status: done
 priority: P1
 tags: [ai, evals, agent-ui]
 created: 2026-06-26
 updated: 2026-06-26
 ---
-## Drag 1: Evals för generate-work-checklist (stäng luckan före exponering)
-**Suite byggd & smoke-testad (offline, inga credits).** Speglar produktions-prompten
-+ temp 0.3. Nya filer: `evals/dataset/generate-work-checklist.json` (8 bygg-fällor:
-tätskikt-före-kakel, takfärg-ej-väggfärg, golv-acklimatisering, spackel-före-färg,
-riv-stäng-av-vatten, inga-inköpssteg, minimal input, el-behörighet), `evals/run-checklist.mjs`,
-+ nya exports i `lib/prompt.mjs` & `lib/scorers.mjs` (rör ej translate). Scorers:
-struct, count 4–10, verbatim (NCS/RAL/mått/varumärke), LLM-judge (säker ordning,
-rätt material vs spec, inga inköp). **Kvar:** kör första baseline mot modell (kostar
-lite credits) för att registrera siffror: `node evals/run-checklist.mjs --langs sv --no-judge`
-(gratis) eller full `node evals/run-checklist.mjs`. Då → done.
+## Drag 1: Evals för generate-work-checklist (byggd + baseline körd)
+Suite byggd: `evals/dataset/generate-work-checklist.json` (8 bygg-fällor),
+`evals/run-checklist.mjs`, scorers (struct, count 4–10, verbatim, LLM-judge för säker
+ordning/material/inga-inköp). **Baseline körd 2026-06-26** (gpt-4o-mini, sv) — avslöjade
+att motorn är SVAG (se `checklist-engine-quality`). Eval-bygget klart; kvalitetsarbetet
+är eget item.
+
+---
+id: checklist-engine-quality
+status: todo
+priority: P1
+tags: [ai, agent-ui, moat, bugfix]
+created: 2026-06-26
+---
+## Härda checklistemotorn — moaten är svag (eval-fynd 2026-06-26)
+Baseline (`run-checklist.mjs`, sv): **judge 2.75/5, 18 kritiska, verbatim 67%, count 88%**
+— vs 5.00/5 för översättning/extraktion. Detta är funktionen vi pekat ut som vallgraven,
+och den är motorns svagaste del. Allvarliga fel: tätskikt EJ före kakel (våtrum 1/5),
+golv utan acklimatisering/underlag + tappade brand/mått, väggmålning utan spackel/grundning
++ inköpssteg smiter in, rivning utan vattenavstängning/dammskydd, spotlights utan "behörig
+elektriker", count >10. **Fix-plan (eval-driven):** (a) skärp prompten i
+`generate-work-checklist/index.ts` — domän-specifik säkerhetsordning (tätskikt→kakel,
+avstängning→rivning, maskering→färg), prep-steg (grundning/acklimatisering/spackel),
+hårdare no-purchasing + verbatim-koder, ev. few-shot; (b) om prompt ej räcker, låt evalen
+avgöra modelluppgradering (gpt-4o/claude) bara för denna motor; (c) count-cap. Verifiera
+med `node evals/run-checklist.mjs`. KRÄVER DEPLOY efter fix.
 
 ---
 id: translate-domain-vs-commodity-eval
