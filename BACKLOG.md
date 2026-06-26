@@ -20,11 +20,78 @@ tags: [growth, launch]
 created: 2026-06-12
 ---
 ## Facebook-grupper: posta + värva betatestare
-Posta i bygg- och hemägargrupper under 1–2 veckor för att få 20–30 betatestare.
-Spelbok + grupplista i `.claude/briefs/fb-launch-kit.md`, 10 unika postvarianter i
-`.claude/briefs/fb-post-varianter.md`. Regler: max 2–3 grupper/dag, läs gruppregler
-(admin-DM vid reklamförbud), alltid bild, svara inom en timme, titta på PostHog-recordings
-samma kväll. Kvällscoach-rutin aktiv (Google Calendar 19:30). Logga utfall i kit-tabellen.
+**Mål:** 20–30 nya betatestare på 1–2 veckor via FB-grupper. **Strategi:** "mobilen
+övertygar" — alla läser posten på mobilen, demon måste sitta där.
+Källfiler: `.claude/briefs/fb-launch-kit.md` + `.claude/briefs/fb-post-varianter.md`.
+
+### 0. Innan första posten (15 min, en gång)
+- [ ] **Ta 2 skärmdumpar på iPhone:** (1) Översikt-vyn i demoprojektet (rumsfoto + kort — snyggaste mobilvyn), (2) planritningen eller budgetvyn på desktop. Poster med bild får mångdubbelt fler svar.
+- [ ] **Testa demon kallt:** öppna renofine.com i privat flik på mobilen → "Se demoprojekt" → bekräfta att det imponerar utan inloggning.
+- [ ] **Öppna PostHog** (session recordings) i en flik — titta samma kväll som du postar.
+- [ ] Ha `Interviews/`-mappen eller ett kalkylark redo för loggen (se §6).
+
+### 1. Postningsregler (ordning spelar roll)
+1. **Gå med i grupperna NU** — många har 1–3 dagars godkännandetid. Svara ärligt på medlemsfrågorna ("bygger en renoveringsapp, söker feedback").
+2. **Läs gruppens regler före varje post.** Står det "ingen reklam" → skicka meddelande C till en admin först. Vissa grupper har "reklamfredag/söndag" — använd den.
+3. **Max 2–3 grupper per dag.** Sprid över 1–2 veckor — du hinner svara på kommentarer, och FB flaggar identiska massposter som spam.
+4. **Variera texten per grupp** (en unik variant per grupp, se §3) — FB:s spamfilter + det ser ärligare ut.
+5. **Bästa tider:** tis–tors 19–21, söndag 10–12. Undvik fredag kväll/lördag.
+6. **Bild på varje post:** mobil-skärmdumpen av Översikt-vyn först, desktop-bilden som tvåa. Aldrig bara länk.
+7. **Posta D (egen profil) först av allt** — varma kontakter ger snällaste första testarna, du övar på frågorna.
+
+### 2. Grupplista — bocka av när postat (sök upp, verifiera storlek/aktivitet själv)
+Manus per grupp finns i fliken **`fb-post-varianter.md`** — hoppa dit, kopiera, kom tillbaka och bocka av här. Lägg till `· postat ÅÅÅÅ-MM-DD` efter raden om du vill datum-logga.
+
+**Postat 2026-06-23 (generisk text, ej variant-anpassad):**
+- [x] **Inredning, inspiration & renovering** (Hemägare) · postat 2026-06-23
+- [x] **Inredning, inspiration & renovering (utan regler)** (Hemägare) · postat 2026-06-23
+- [x] **Bygg och Renovering i Stockholm** (Hemägare/blandat) · postat 2026-06-23 + foto
+- [x] **Hitta Snickare, Målare i Stockholm** (Hitta-hantverkare) · postat 2026-06-23
+- [x] **Jag vill hitta en plattsättare, målare, snickare, vvs** (Hitta-hantverkare) · postat 2026-06-23
+- [x] **Jag vill hitta målare, snickare och elektriker** (Hitta-hantverkare) · postat 2026-06-23
+- [x] **Claude Code Sverige** (AI/dev) · postat 2026-06-23 (två-appar-text: Renofine + GetProdulog)
+- [x] **Vibe Coding - Sverige** (AI/dev) · postat 2026-06-23 (två-appar-text)
+- [x] **AI Sverige** (AI/dev) · postat 2026-06-23 (två-appar-text)
+
+> ⚠️ Lärdom: 9 grupper på ~11 min med nästan identisk text → FB:s spamfilter triggas lätt, och varje grupp förtjänar en egen vinkel. Nästa runda: max 2–3/dag, en unik variant per grupp (P1–P3 till proffs, V-serien till hemägare), alltid bild. "Hitta-hantverkare"-grupper är hemägare som SÖKER proffs — där passar hemägar-vinkeln (V2/V4), inte proffs-texten.
+
+**Kvar att posta (en unik variant var):**
+- [ ] **Egen profil + ev. story** (Privat) → variant **D** — borde postats FÖRST
+- [ ] **Din lokala stadsgrupp** (Lokal) → variant **V1**
+- [ ] **"Vi som renoverar"** (Hemägare) → variant **V2**
+- [ ] **"Hus, hem & renovering"** (Hemägare) → variant **V3**
+- [ ] **"Vi som bor i hus"** (Hemägare) → variant **V6**
+- [ ] **"DIY – gör det själv"** (Hemägare) → variant **V5**
+- [ ] **"Bygga & renovera hus"** (Hemägare/nybygge) → variant **V7**
+- [ ] **"Hantverkare i Sverige"** (Proffs) → variant **P1**
+- [ ] **"Snickare"** (Proffs) → variant **P2**
+- [ ] **"Småföretagare inom bygg"** (Proffs) → variant **P3**
+- [ ] **byggahus.se-forumet** (Forum, ej FB) → V2 omskriven, läs deras regler
+- [ ] Grupper med reklamförbud: skicka variant **C** (admin-DM) innan du postar
+
+### 3. Manustexterna bor i egen flik
+Alla texter ligger i fliken **`fb-post-varianter.md`** — copy-paste därifrån, bocka av i §2 här. Hemägare: V1–V7. Proffs: P1–P3. AI/dev-grupper: **P4** (byggprocess-vinkeln, ej säljpitch). Admin-DM: C, egen profil: D. Full spelbok med svarsmallar m.m. i fliken **`fb-launch-kit.md`**.
+
+### 4. Svarsplaybook (första timmen avgör)
+- **Svara på ALLT inom en timme** första kvällen. En post med 10 kommentarer bubblar upp i flödet; en med 0 dör.
+- "Kostar det?" → *"Gratis hela betan, inget kort. Early adopters får förmånligt pris när betalplaner kommer."*
+- "Finns det app?" → *"Funkar direkt i mobilens webbläsare, ingen installation."*
+- "Hur skiljer det sig från X?" → ärligt + en konkret styrka (ROT-beräkning i offerten / dela med hantverkaren / planritning). Skäll aldrig på konkurrenten.
+- Skeptiker/gnäll → tacka för synpunkten, bjud in: *"Exakt sånt här behöver jag höra — testa 5 min och säg var det brister?"*
+- Intresserade hantverkare → flytta till DM, boka 15 min (manus i `outreach-kit.md` §5–6).
+- **Aldrig försvara, alltid fråga.** Du lär dig, du säljer inte.
+
+### 5. Samma kväll + dag 2
+- **Titta på PostHog-inspelningarna** av kvällens besökare — var fastnar de? Det är din buggrapport ingen skriver. (Kvällscoach-rutin aktiv, Google Calendar 19:30.)
+- Dag 2: svara på nattens kommentarer, lägg en uppföljningskommentar på egna posten om något hänt ("Wow, 15 testare första dygnet — tack!").
+- Buggar som rapporteras: svara *"Fixat — ladda om!"* så fort det är ute. Snabb loop = lojala testare.
+
+### 6. Logg (en rad per post/kontakt)
+| Datum | Grupp | Variant | Reaktioner | Kommentarer | DM:s | Signups (PostHog) | Bästa citat |
+|------|------|------|------|------|------|------|------|
+| | | | | | | | |
+
+PostHog-mått per vecka: besökare → demo-öppningar → signups → dag-2-retur.
 
 ---
 id: demo-videos
@@ -60,6 +127,165 @@ Beta-testare, byggstart april, projektleder mellan arkitekt/byggare. Svarat på 
 invänta att han testar appen. Passiv uppföljning — ping om tyst.
 
 ---
+id: taulant-bara-lead
+status: todo
+priority: P2
+tags: [growth, lead]
+created: 2026-06-24
+---
+## Taulant Bara — lead från FB-kampanjen (uppföljning)
+Första riktiga leaden från FB-rundan 2026-06-23. Registrerade sig, testade appen,
+"positivt överraskad". Jobbar med **IT + fastigheter**, renoverar lägenheter regelbundet
+— stark ICP-match. Vill prata vision + **framtiden för bolaget** (kan luta investerar-/
+partnerhåll — lyssna innan pitch). Mejl: taulant.bara@icloud.com. Svar skickat med
+bokningslänk → invänta att han bokar/svarar, ping om tyst om ~1 vecka.
+
+---
+id: agent-mode-additive-flag
+status: todo
+priority: P1
+tags: [architecture, agent-ui, safety]
+created: 2026-06-26
+---
+## Agentiskt läge = opt-in ovanpå manuellt (aldrig ersättning)
+Strategisk omställning 2026-06-26 (agent-UI-linsen). Designregel som gäller alla
+thesis-* poster: alla dagens manuella flöden bevaras som förstklassig väg
+("2021-appen" — smart manuell app). Agenten ligger bakom feature-flag, auto-körs
+aldrig på befintliga projekt, och kan stängas av med en kill-switch. Drag 1
+(motor-exponering) är additivt/refaktor-bakom-stabilt-gränssnitt och rör inte
+befintligt beteende.
+
+---
+id: agent-cost-guardrails
+status: todo
+priority: P1
+tags: [cost, ai, safety, agent-ui]
+created: 2026-06-26
+---
+## Kostnadsgrindar för agentflödet
+Bunden deterministisk pipeline (fasta, räknebara steg — ej autonom loop). Behåll
+gpt-4o-mini + befintlig översättnings-cache (task_translations). Human-approve före
+varje betalt steg = kostnadsgrind. Usage-logg + per-användare/per-projekt-kvot +
+hård OpenAI billing-cap (sätt idag). Beta: server-side API-nyckel, testare matar EJ
+in egna nycklar. Modellval: stanna billigt, låt evals avgöra ev. uppgradering per motor.
+
+---
+id: engine-pure-translate-contract
+status: todo
+priority: P2
+tags: [api, ai, agent-ui]
+created: 2026-06-26
+updated: 2026-06-26
+---
+## Drag 1: Frikoppla translate-task-content från DB (ren content-in/ut-kärna)
+**GRINDAD (nedprio P1→P2 2026-06-26 per research):** påbörjas FÖRST när
+`translate-domain-vs-commodity-eval` bevisat precisions-gapet vs DeepL. Bygg inte
+API-paketeringen innan moaten är verifierad.
+Idag tar fn {taskIds[], targetLanguage} och läser/skriver tasks + task_translations.
+Extrahera en ren kärna {items:[{id,title,description,checklists}], targetLanguage} →
+översatt innehåll, noll DB. UI-vägen blir tunn wrapper ovanpå (befintligt beteende
+oförändrat). Kärnan finns redan i evals/run.mjs (prompt-nivå) — lyft därifrån.
+Förutsättning för agent-/MCP-exponering.
+
+---
+id: generate-checklist-evals
+status: doing
+priority: P1
+tags: [ai, evals, agent-ui]
+created: 2026-06-26
+updated: 2026-06-26
+---
+## Drag 1: Evals för generate-work-checklist (stäng luckan före exponering)
+**Suite byggd & smoke-testad (offline, inga credits).** Speglar produktions-prompten
++ temp 0.3. Nya filer: `evals/dataset/generate-work-checklist.json` (8 bygg-fällor:
+tätskikt-före-kakel, takfärg-ej-väggfärg, golv-acklimatisering, spackel-före-färg,
+riv-stäng-av-vatten, inga-inköpssteg, minimal input, el-behörighet), `evals/run-checklist.mjs`,
++ nya exports i `lib/prompt.mjs` & `lib/scorers.mjs` (rör ej translate). Scorers:
+struct, count 4–10, verbatim (NCS/RAL/mått/varumärke), LLM-judge (säker ordning,
+rätt material vs spec, inga inköp). **Kvar:** kör första baseline mot modell (kostar
+lite credits) för att registrera siffror: `node evals/run-checklist.mjs --langs sv --no-judge`
+(gratis) eller full `node evals/run-checklist.mjs`. Då → done.
+
+---
+id: translate-domain-vs-commodity-eval
+status: done
+priority: P1
+tags: [ai, evals, agent-ui, moat]
+created: 2026-06-26
+updated: 2026-06-26
+---
+## Drag 1: Multi-engine eval-experiment (avslutat — lärdom, ej strategisk pelare)
+**OBS framing korrigerad 2026-06-26:** DeepL är INTE en Renofine-konkurrent — ingen
+renoverar med DeepL. Head-to-head:en var fel artefakt som "konkurrensbevis". Behåll
+den inte som säljpelare.
+**Vad som faktiskt gjordes:** byggde multi-engine-stöd i eval-harnessen
+(`run-baseline.mjs` + `lib/translate-fields.mjs` + `callDeepL`,
+`buildGenericTranslateSystem` — rör ej `run.mjs`) och körde renofine vs generic-llm
+vs deepl (gpt-4o-mini, PL+DE).
+**Resultat:** renofine 5.00/5 0 kritiska · generic-llm (naiv LLM) 5.00/5 0 kritiska ·
+deepl 4.38/5 4 kritiska (t.ex. "takfärg"→yttertaksfärg). Resultat:
+evals/results/baseline-*.json.
+**Vad det är värt (ärligt):** (1) Eval-muskeln tränad + harnessen kan nu jämföra
+modeller/motorer — återanvändbart. (2) En *värde-berättelse* för marknadsföring:
+"arbetaren slipper klistra in svensk instruktion i Google Translate som gör takfärg
+till yttertaksfärg — den är redan korrekt." EJ ett benchmark.
+**Vad det INTE bevisar:** översättning är ingen teknisk moat (naiv LLM matchade oss).
+→ Moaten = bygg-domän-SYSTEMET (checklistor, spec-medvetenhet, arbetsflöde, godkänn-
+grind). Nästa eval som faktiskt rör användare: **AI-extraktion** (quote/kvitto→rum/
+arbeten/budget — idag omätt, fel där korrumperar projekt tyst).
+
+---
+id: engine-agent-api-surface
+status: todo
+priority: P2
+tags: [api, mcp, auth, agent-ui]
+created: 2026-06-26
+---
+## Drag 1: Agent-anropbar yta — API-nycklar + MCP-server för de två motorerna
+Ny endpoint/server BREDVID de befintliga (ersätter inget). API-key-utgivning + rate
+limit + usage-logg (frikopplad från Supabase user-JWT). Versionerat JSON-kontrakt.
+Tunn MCP-server som exponerar generate_work_checklist + translate_work_content som
+tools. Beror på engine-pure-translate-contract + agent-cost-guardrails.
+
+---
+id: thesis-agent-orchestrator-spec
+status: todo
+priority: P1
+tags: [ai, agent-ui, architecture]
+created: 2026-06-26
+---
+## Drag 2: Orkestrator-spec — beskrivning → checklista → översätt → fördela (+ approve)
+Kedja ihop parse-renovation-description → generate-work-checklist →
+translate-task-content → worker-flödet under en agent, med explicit human-APPROVE
+mellan förslag och utskick. Motorerna finns — detta är orkestrering + state + var
+godkännandet sitter. Bunden pipeline (se agent-cost-guardrails). Spec först, ej kod.
+
+---
+id: approve-not-operate-ux
+status: todo
+priority: P1
+tags: [ux, agent-ui]
+created: 2026-06-26
+---
+## Drag 2: "Godkänn, inte operera"-UX för entreprenörsflödet
+Bygg om hantverkar-/hemägar-ytan så agenten föreslår checklistor/tilldelning och
+människan godkänner/justerar — aldrig handmatar. Kilen mot "ännu en projektapp".
+Opt-in ovanpå manuellt flöde (se agent-mode-additive-flag). Beror på
+thesis-agent-orchestrator-spec.
+
+---
+id: multilang-crew-assignment
+status: todo
+priority: P2
+tags: [feature, agent-ui, i18n]
+created: 2026-06-26
+---
+## Drag 2: Flerspråkig lagtilldelning (payoffen)
+Uppgifter ut till icke-svensktalande montörer med språk per person, byggt på
+worker-* + översättningsmotorn. "Agenten som får ditt flerspråkiga bygglag att
+förstå jobbet rätt" — SE/DE med utländsk arbetskraft. Beror på approve-not-operate-ux.
+
+---
 id: proffs-bygglet-gap
 status: todo
 priority: P2
@@ -91,6 +317,24 @@ tags: [feature, ai]
 ## AI-onboarding — edge cases
 Quote-upload MVP klar. Robustera: inga rum/tasks extraheras → vad händer? Felmeddelanden?
 Edit-preview innan create? Detaljer: `.claude/memory/project_ai_onboarding_flow.md`
+
+---
+id: parse-overeager-global-worktypes
+status: done
+priority: P2
+tags: [bugfix, ai, evals]
+created: 2026-06-26
+updated: 2026-06-26
+---
+## parse-renovation-description: överivrig globalWorkTypes (eval-fynd → fixat)
+**Hittat & fixat 2026-06-26 via eval-driven-fix.** Buggen: trade-lista i totalentreprenad
+("kan hålla i allt: snickeri, el") hamnade i `globalWorkTypes` → fantom-uppgifter i alla rum.
+**Fix (alt b):** deterministisk guard i `parse-renovation-description/index.ts` — behåller
+globals bara om beskrivningen har spatial trigger ("i hela", "överallt", "alla/varje/samtliga
+rum"). Speglad i `evals/lib/extraction-scorers.mjs` (`applyGlobalGuard`) så evalen mäter
+produktionsbeteende. **Verifierat:** full svit 0 kritiska, globAcc 100%; trap-fallet droppar
+globals, `true-global-flooring` ("i hela lägenheten") behåller dem. **⚠ DEPLOY KRÄVS:**
+`supabase functions deploy parse-renovation-description`.
 
 ---
 id: role-separation-arkitektur
