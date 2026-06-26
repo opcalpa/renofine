@@ -1,0 +1,151 @@
+{
+  "feature": "generate-work-checklist",
+  "source": "supabase/functions/generate-work-checklist/index.ts",
+  "description": "Golden set for the on-site work-checklist generator. Each case loads a real construction trap: dangerous step ordering (waterproofing before tiling), wrong material vs spec (wall paint on a ceiling), preserved color codes/measurements/brands, the 'no purchasing steps' rule, and scope safety (electrical). input is the production function payload; the runner injects `language` per --langs.",
+  "cases": [
+    {
+      "id": "bathroom-waterproof-before-tile",
+      "note": "The killer ordering trap: tätskikt (waterproofing membrane) MUST be applied before tiling. Tile first = water damage and a torn-out wall.",
+      "input": {
+        "taskTitle": "Kakla våtrumsväggarna i badrummet",
+        "taskDescription": "Sätt kakel på väggarna i duschzonen. Väggarna ska göras vattentäta.",
+        "roomName": "Badrum",
+        "wallSpec": { "treatments": ["tätskikt", "kakel"], "main_color": "vit" },
+        "dimensions": { "area_sqm": 6 }
+      },
+      "preserveVerbatim": [],
+      "criticalRequirements": [
+        "the waterproofing membrane (tätskikt) is applied BEFORE any tiling",
+        "the wall is primed/prepped before the waterproofing",
+        "masking/protection at the start and cleanup at the end",
+        "no purchasing or ordering steps — on-site work only"
+      ]
+    },
+    {
+      "id": "ceiling-paint-not-wall",
+      "note": "Ceiling task must use ceiling paint (takfärg), not wall paint. NCS code must survive verbatim; walls/floor masked first.",
+      "input": {
+        "taskTitle": "Måla taket i vardagsrummet",
+        "taskDescription": "Måla om taket med takfärg.",
+        "roomName": "Vardagsrum",
+        "ceilingSpec": { "material": "gipsskiva", "color": "NCS S 0500-N" },
+        "dimensions": { "area_sqm": 22 }
+      },
+      "preserveVerbatim": ["NCS S 0500-N"],
+      "criticalRequirements": [
+        "the ceiling is painted with CEILING paint (takfärg), not wall paint",
+        "walls and floor are masked/protected before painting",
+        "the color code NCS S 0500-N is used unchanged",
+        "no purchasing or ordering steps"
+      ]
+    },
+    {
+      "id": "click-floor-acclimatize",
+      "note": "Click flooring needs acclimatization + underlay + expansion gap; skirting goes on last. Brand and thickness must survive.",
+      "input": {
+        "taskTitle": "Lägg klickgolv i sovrummet",
+        "roomName": "Sovrum",
+        "floorSpec": {
+          "material": "Kährs Ek Nouveau Snow",
+          "specification": "klickparkett 14 mm",
+          "skirting_type": "fotlist",
+          "skirting_color": "vit"
+        },
+        "dimensions": { "area_sqm": 14 }
+      },
+      "preserveVerbatim": ["Kährs Ek Nouveau Snow", "14 mm"],
+      "criticalRequirements": [
+        "the floorboards are acclimatized in the room before laying",
+        "an underlay/foam is installed before the boards",
+        "an expansion gap is left at the walls",
+        "skirting (fotlist) is installed AFTER the floor, not before",
+        "no purchasing or ordering steps"
+      ]
+    },
+    {
+      "id": "wall-prep-accent",
+      "note": "Fill + sand + prime before topcoat; accent wall uses its own color. Two NCS codes must survive and be assigned correctly.",
+      "input": {
+        "taskTitle": "Måla om väggarna i sovrummet",
+        "roomName": "Sovrum",
+        "wallSpec": {
+          "treatments": ["spackling", "målning"],
+          "main_color": "NCS S 0502-Y",
+          "has_accent_wall": true,
+          "accent_wall_color": "NCS S 4030-R90B"
+        },
+        "dimensions": { "area_sqm": 16 }
+      },
+      "preserveVerbatim": ["NCS S 0502-Y", "NCS S 4030-R90B"],
+      "criticalRequirements": [
+        "surfaces are filled (spackel) and sanded before painting",
+        "primer/grundning before the topcoat",
+        "the accent wall uses NCS S 4030-R90B and the other walls use NCS S 0502-Y",
+        "masking at the start, cleanup at the end",
+        "no purchasing or ordering steps"
+      ]
+    },
+    {
+      "id": "demolition-shutoff-first",
+      "note": "Rip-out of bathroom tile: shut off water (and any wet-zone electricity) and seal off dust BEFORE demolition; debris handled.",
+      "input": {
+        "taskTitle": "Riv ut kakel och klinker i badrummet",
+        "taskDescription": "Bila bort befintligt kakel på väggar och klinker på golv inför renovering.",
+        "roomName": "Badrum",
+        "dimensions": { "area_sqm": 5 }
+      },
+      "preserveVerbatim": [],
+      "criticalRequirements": [
+        "water (and any electricity in the wet zone) is shut off before demolition begins",
+        "the room is sealed off / dust protection is set up before bilning",
+        "debris is collected and removed",
+        "no purchasing or ordering steps"
+      ]
+    },
+    {
+      "id": "no-purchasing-kitchen-doors",
+      "note": "Tempting to add 'buy paint/brushes'. Must be on-site work only — the production rule forbids purchasing steps.",
+      "input": {
+        "taskTitle": "Måla köksluckorna",
+        "taskDescription": "Måla om köksluckorna i en ny kulör.",
+        "roomName": "Kök"
+      },
+      "preserveVerbatim": [],
+      "criticalRequirements": [
+        "there are NO purchasing or ordering steps (no 'köp', 'beställ', 'inhandla', 'buy', 'order')",
+        "doors are removed and labeled, cleaned/degreased, sanded, primed and painted, then refitted",
+        "drying time between coats is mentioned"
+      ]
+    },
+    {
+      "id": "minimal-input-spackla",
+      "note": "Only a title, no specs. Must still produce a sane, well-ordered 4–10 step on-site checklist.",
+      "input": {
+        "taskTitle": "Spackla och slipa väggar"
+      },
+      "preserveVerbatim": [],
+      "criticalRequirements": [
+        "logical order: protection → fill (spackel) → sand → remove dust → cleanup",
+        "between 4 and 10 steps",
+        "no purchasing or ordering steps"
+      ]
+    },
+    {
+      "id": "spotlights-electrical-scope",
+      "note": "Installing ceiling spotlights — the final 230V connection is for a certified electrician. Checklist must not instruct unsafe DIY mains wiring.",
+      "input": {
+        "taskTitle": "Montera spotlights i innertaket",
+        "taskDescription": "Sätt upp infällda spotlights i köksdelens innertak.",
+        "roomName": "Kök",
+        "ceilingSpec": { "material": "gips undertak" }
+      },
+      "preserveVerbatim": [],
+      "criticalRequirements": [
+        "the power is turned off at the fuse/breaker before any wiring work",
+        "the final 230V connection is done by a certified electrician (behörig elektriker), not framed as casual DIY",
+        "hole positions are measured and marked before cutting the ceiling",
+        "no purchasing or ordering steps"
+      ]
+    }
+  ]
+}

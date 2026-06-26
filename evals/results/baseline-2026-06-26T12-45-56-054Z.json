@@ -1,0 +1,358 @@
+{
+  "args": {
+    "engines": [
+      "renofine",
+      "generic-llm"
+    ],
+    "model": "gpt-4o-mini",
+    "langs": [
+      "pl",
+      "de"
+    ],
+    "judge": "gpt-4o-mini",
+    "cases": null,
+    "judgeOn": true
+  },
+  "summary": [
+    {
+      "engine": "renofine",
+      "n": 16,
+      "structPass": 0,
+      "vbRatio": 1,
+      "judgeAvg": null,
+      "critical": 0,
+      "errors": 16
+    },
+    {
+      "engine": "generic-llm",
+      "n": 16,
+      "structPass": 0,
+      "vbRatio": 1,
+      "judgeAvg": null,
+      "critical": 0,
+      "errors": 16
+    }
+  ],
+  "rows": [
+    {
+      "engine": "renofine",
+      "caseId": "ceiling-vs-wall-paint",
+      "lang": "pl",
+      "structureOk": false,
+      "verbatim": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)",
+      "skipped": false
+    },
+    {
+      "engine": "renofine",
+      "caseId": "ceiling-vs-wall-paint",
+      "lang": "de",
+      "structureOk": false,
+      "verbatim": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)",
+      "skipped": false
+    },
+    {
+      "engine": "renofine",
+      "caseId": "color-codes",
+      "lang": "pl",
+      "structureOk": false,
+      "verbatim": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)",
+      "skipped": false
+    },
+    {
+      "engine": "renofine",
+      "caseId": "color-codes",
+      "lang": "de",
+      "structureOk": false,
+      "verbatim": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)",
+      "skipped": false
+    },
+    {
+      "engine": "renofine",
+      "caseId": "brand-and-safety",
+      "lang": "pl",
+      "structureOk": false,
+      "verbatim": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)",
+      "skipped": false
+    },
+    {
+      "engine": "renofine",
+      "caseId": "brand-and-safety",
+      "lang": "de",
+      "structureOk": false,
+      "verbatim": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)",
+      "skipped": false
+    },
+    {
+      "engine": "renofine",
+      "caseId": "measurements-tile",
+      "lang": "pl",
+      "structureOk": false,
+      "verbatim": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)",
+      "skipped": false
+    },
+    {
+      "engine": "renofine",
+      "caseId": "measurements-tile",
+      "lang": "de",
+      "structureOk": false,
+      "verbatim": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)",
+      "skipped": false
+    },
+    {
+      "engine": "renofine",
+      "caseId": "plumbing-safety",
+      "lang": "pl",
+      "structureOk": false,
+      "verbatim": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)",
+      "skipped": false
+    },
+    {
+      "engine": "renofine",
+      "caseId": "plumbing-safety",
+      "lang": "de",
+      "structureOk": false,
+      "verbatim": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)",
+      "skipped": false
+    },
+    {
+      "engine": "renofine",
+      "caseId": "electrical-safety",
+      "lang": "pl",
+      "structureOk": false,
+      "verbatim": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)",
+      "skipped": false
+    },
+    {
+      "engine": "renofine",
+      "caseId": "electrical-safety",
+      "lang": "de",
+      "structureOk": false,
+      "verbatim": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)",
+      "skipped": false
+    },
+    {
+      "engine": "renofine",
+      "caseId": "rooms-and-roomitems",
+      "lang": "pl",
+      "structureOk": false,
+      "verbatim": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)",
+      "skipped": false
+    },
+    {
+      "engine": "renofine",
+      "caseId": "rooms-and-roomitems",
+      "lang": "de",
+      "structureOk": false,
+      "verbatim": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)",
+      "skipped": false
+    },
+    {
+      "engine": "renofine",
+      "caseId": "do-not-translate-plus-timing",
+      "lang": "pl",
+      "structureOk": false,
+      "verbatim": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)",
+      "skipped": false
+    },
+    {
+      "engine": "renofine",
+      "caseId": "do-not-translate-plus-timing",
+      "lang": "de",
+      "structureOk": false,
+      "verbatim": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)",
+      "skipped": false
+    },
+    {
+      "engine": "generic-llm",
+      "caseId": "ceiling-vs-wall-paint",
+      "lang": "pl",
+      "structureOk": false,
+      "verbatim": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)",
+      "skipped": false
+    },
+    {
+      "engine": "generic-llm",
+      "caseId": "ceiling-vs-wall-paint",
+      "lang": "de",
+      "structureOk": false,
+      "verbatim": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)",
+      "skipped": false
+    },
+    {
+      "engine": "generic-llm",
+      "caseId": "color-codes",
+      "lang": "pl",
+      "structureOk": false,
+      "verbatim": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)",
+      "skipped": false
+    },
+    {
+      "engine": "generic-llm",
+      "caseId": "color-codes",
+      "lang": "de",
+      "structureOk": false,
+      "verbatim": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)",
+      "skipped": false
+    },
+    {
+      "engine": "generic-llm",
+      "caseId": "brand-and-safety",
+      "lang": "pl",
+      "structureOk": false,
+      "verbatim": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)",
+      "skipped": false
+    },
+    {
+      "engine": "generic-llm",
+      "caseId": "brand-and-safety",
+      "lang": "de",
+      "structureOk": false,
+      "verbatim": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)",
+      "skipped": false
+    },
+    {
+      "engine": "generic-llm",
+      "caseId": "measurements-tile",
+      "lang": "pl",
+      "structureOk": false,
+      "verbatim": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)",
+      "skipped": false
+    },
+    {
+      "engine": "generic-llm",
+      "caseId": "measurements-tile",
+      "lang": "de",
+      "structureOk": false,
+      "verbatim": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)",
+      "skipped": false
+    },
+    {
+      "engine": "generic-llm",
+      "caseId": "plumbing-safety",
+      "lang": "pl",
+      "structureOk": false,
+      "verbatim": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)",
+      "skipped": false
+    },
+    {
+      "engine": "generic-llm",
+      "caseId": "plumbing-safety",
+      "lang": "de",
+      "structureOk": false,
+      "verbatim": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)",
+      "skipped": false
+    },
+    {
+      "engine": "generic-llm",
+      "caseId": "electrical-safety",
+      "lang": "pl",
+      "structureOk": false,
+      "verbatim": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)",
+      "skipped": false
+    },
+    {
+      "engine": "generic-llm",
+      "caseId": "electrical-safety",
+      "lang": "de",
+      "structureOk": false,
+      "verbatim": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)",
+      "skipped": false
+    },
+    {
+      "engine": "generic-llm",
+      "caseId": "rooms-and-roomitems",
+      "lang": "pl",
+      "structureOk": false,
+      "verbatim": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)",
+      "skipped": false
+    },
+    {
+      "engine": "generic-llm",
+      "caseId": "rooms-and-roomitems",
+      "lang": "de",
+      "structureOk": false,
+      "verbatim": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)",
+      "skipped": false
+    },
+    {
+      "engine": "generic-llm",
+      "caseId": "do-not-translate-plus-timing",
+      "lang": "pl",
+      "structureOk": false,
+      "verbatim": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)",
+      "skipped": false
+    },
+    {
+      "engine": "generic-llm",
+      "caseId": "do-not-translate-plus-timing",
+      "lang": "de",
+      "structureOk": false,
+      "verbatim": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)",
+      "skipped": false
+    }
+  ]
+}

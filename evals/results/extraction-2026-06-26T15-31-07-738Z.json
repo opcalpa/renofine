@@ -1,0 +1,103 @@
+{
+  "args": {
+    "models": [
+      "gpt-4o-mini"
+    ],
+    "judge": "gpt-4o",
+    "cases": [
+      "global-vs-perroom-trap",
+      "true-global-flooring"
+    ],
+    "judgeOn": false
+  },
+  "summary": [
+    {
+      "model": "gpt-4o-mini",
+      "n": 2,
+      "structPass": 2,
+      "roomRecall": 1,
+      "wtRecall": 1,
+      "objAcc": 1,
+      "globAcc": 1,
+      "judgeAvg": null,
+      "critical": 0,
+      "errors": 0
+    }
+  ],
+  "rows": [
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "global-vs-perroom-trap",
+      "structureOk": true,
+      "rooms": {
+        "roomRecall": {
+          "found": 2,
+          "expected": 2,
+          "ratio": 1
+        },
+        "missedRooms": 0,
+        "hallucinated": [],
+        "workTypeRecall": {
+          "found": 2,
+          "required": 2,
+          "ratio": 1
+        },
+        "forbidViolations": [],
+        "forbidRoomViolations": []
+      },
+      "objects": {
+        "checked": 0,
+        "correct": 0,
+        "mismatches": []
+      },
+      "globals": {
+        "checked": true,
+        "ok": true,
+        "expected": [],
+        "got": []
+      },
+      "judge": null,
+      "error": null,
+      "critical": 0
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "true-global-flooring",
+      "structureOk": true,
+      "rooms": {
+        "roomRecall": {
+          "found": 1,
+          "expected": 1,
+          "ratio": 1
+        },
+        "missedRooms": 0,
+        "hallucinated": [],
+        "workTypeRecall": {
+          "found": 1,
+          "required": 1,
+          "ratio": 1
+        },
+        "forbidViolations": [],
+        "forbidRoomViolations": []
+      },
+      "objects": {
+        "checked": 1,
+        "correct": 1,
+        "mismatches": []
+      },
+      "globals": {
+        "checked": true,
+        "ok": true,
+        "expected": [
+          "golv"
+        ],
+        "got": [
+          "golv"
+        ]
+      },
+      "judge": null,
+      "error": null,
+      "critical": 0
+    }
+  ]
+}

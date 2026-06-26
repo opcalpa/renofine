@@ -1,0 +1,161 @@
+{
+  "feature": "translate-task-content",
+  "source": "sv",
+  "description": "Golden set for evaluating renovation/construction translation. Each case carries traps: terms that MUST stay verbatim (color codes, measurements, brands) and instruction meaning that MUST be preserved (the founding bug: takfärg vs väggfärg, inverted safety steps).",
+  "cases": [
+    {
+      "id": "ceiling-vs-wall-paint",
+      "note": "The founding bug. Ceiling paint must not become wall paint and vice versa.",
+      "input": {
+        "tasks": [
+          {
+            "id": "t1",
+            "title": "Måla taket i sovrummet",
+            "description": "Använd takfärg på taket. Använd INTE väggfärg på taket. Måla väggarna separat med väggfärg.",
+            "checklistItems": [
+              { "checklistId": "c1", "itemId": "i1", "title": "Grunda taket först" },
+              { "checklistId": "c1", "itemId": "i2", "title": "Stryk takfärg två gånger" }
+            ]
+          }
+        ],
+        "rooms": [],
+        "roomItems": []
+      },
+      "preserveVerbatim": [],
+      "criticalMeaning": [
+        "the ceiling is painted with CEILING paint (takfärg), not wall paint",
+        "the walls are painted with WALL paint (väggfärg)",
+        "ceiling gets two coats of ceiling paint"
+      ]
+    },
+    {
+      "id": "color-codes",
+      "note": "Color codes must never be translated or altered.",
+      "input": {
+        "tasks": [
+          {
+            "id": "t1",
+            "title": "Måla väggar i vardagsrum",
+            "description": "Måla väggarna i NCS S 0502-Y, två strykningar. Måla lister i RAL 9010.",
+            "checklistItems": []
+          }
+        ],
+        "rooms": [],
+        "roomItems": []
+      },
+      "preserveVerbatim": ["NCS S 0502-Y", "RAL 9010"],
+      "criticalMeaning": ["walls get two coats", "trims/mouldings painted in RAL 9010"]
+    },
+    {
+      "id": "brand-and-safety",
+      "note": "Brand/product name verbatim + safety instruction preserved.",
+      "input": {
+        "tasks": [
+          {
+            "id": "t1",
+            "title": "Spackla väggar",
+            "description": "Spackla med Gyproc ProMix Lite. Slipa mellan lagren med korn 120.",
+            "checklistItems": [
+              { "checklistId": "c1", "itemId": "i1", "title": "Bär andningsskydd vid slipning" }
+            ]
+          }
+        ],
+        "rooms": [],
+        "roomItems": []
+      },
+      "preserveVerbatim": ["Gyproc ProMix Lite", "120"],
+      "criticalMeaning": ["wear breathing protection / respirator when sanding", "sand between coats with grit 120"]
+    },
+    {
+      "id": "measurements-tile",
+      "note": "Measurements and ratios must stay verbatim.",
+      "input": {
+        "tasks": [
+          {
+            "id": "t1",
+            "title": "Lägg klinker i badrum",
+            "description": "Lägg klinker 60x60 cm med 3 mm fog. Fall mot golvbrunn minst 1:100.",
+            "checklistItems": []
+          }
+        ],
+        "rooms": [],
+        "roomItems": []
+      },
+      "preserveVerbatim": ["60x60 cm", "3 mm", "1:100"],
+      "criticalMeaning": ["slope toward the floor drain at least 1:100", "3 mm grout joint"]
+    },
+    {
+      "id": "plumbing-safety",
+      "note": "Order of a safety step must not be inverted.",
+      "input": {
+        "tasks": [
+          {
+            "id": "t1",
+            "title": "Byt blandare i kök",
+            "description": "Stäng av vattnet vid huvudkranen innan du demonterar den gamla blandaren.",
+            "checklistItems": [
+              { "checklistId": "c1", "itemId": "i1", "title": "Kontrollera att vattnet är avstängt" }
+            ]
+          }
+        ],
+        "rooms": [],
+        "roomItems": []
+      },
+      "preserveVerbatim": [],
+      "criticalMeaning": ["shut off the water at the main valve BEFORE removing the old mixer tap", "verify the water is shut off"]
+    },
+    {
+      "id": "electrical-safety",
+      "note": "Authorization requirement + power-off step.",
+      "input": {
+        "tasks": [
+          {
+            "id": "t1",
+            "title": "Montera vägguttag",
+            "description": "Bryt strömmen i elcentralen innan arbete. Endast behörig elektriker får utföra arbetet.",
+            "checklistItems": []
+          }
+        ],
+        "rooms": [],
+        "roomItems": []
+      },
+      "preserveVerbatim": [],
+      "criticalMeaning": ["cut the power at the electrical panel before work", "only an authorized/licensed electrician may do the work"]
+    },
+    {
+      "id": "rooms-and-roomitems",
+      "note": "Exercises rooms + roomItems arrays, with a measurement to preserve.",
+      "input": {
+        "tasks": [],
+        "rooms": [
+          { "id": "r1", "name": "Tvättstuga", "description": "Vattentätt golv krävs. Golvbrunn finns i hörnet." }
+        ],
+        "roomItems": [
+          { "id": "ri1", "title": "Kommod", "notes": "Montera 85 cm över färdigt golv." }
+        ]
+      },
+      "preserveVerbatim": ["85 cm"],
+      "criticalMeaning": ["waterproof floor is required", "mount the vanity 85 cm above the finished floor"]
+    },
+    {
+      "id": "do-not-translate-plus-timing",
+      "note": "Brand + measurement verbatim, plus a timing instruction that matters.",
+      "input": {
+        "tasks": [
+          {
+            "id": "t1",
+            "title": "Behandla trädäck",
+            "description": "Olja trädäcket med Osmo 420. Applicera tunt och torka av överflöd inom 20 minuter, annars blir ytan klibbig.",
+            "checklistItems": [
+              { "checklistId": "c1", "itemId": "i1", "title": "Rengör däcket och låt torka helt först" }
+            ]
+          }
+        ],
+        "rooms": [],
+        "roomItems": []
+      },
+      "preserveVerbatim": ["Osmo 420", "20"],
+      "criticalMeaning": ["apply thin and wipe off excess within 20 minutes or the surface gets sticky", "clean the deck and let it dry fully first"]
+    }
+  ]
+}

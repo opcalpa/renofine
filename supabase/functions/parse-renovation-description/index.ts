@@ -296,7 +296,22 @@ Return valid JSON only, no markdown.`;
       VALID_WORK_TYPES.includes(wt)
     );
 
-    const validatedGlobalTaskTitles = sanitizeTaskTitles(parsed.globalTaskTitles, validatedGlobals);
+    // Guard against over-eager globals (eval case: global-vs-perroom-trap). The
+    // model sometimes promotes per-room trades to globalWorkTypes when the user
+    // merely lists which trades a contractor handles ("totalentreprenad som kan
+    // hålla i allt: snickeri, el") — which would create phantom tasks in EVERY
+    // room. Only keep globals when the description has a spatial "every room"
+    // trigger; this is the prompt's own rule, enforced deterministically.
+    // Mirror in evals/lib/extraction-scorers.mjs (applyGlobalGuard) if changed.
+    const GLOBAL_TRIGGERS = [
+      "i hela", "hela lägenhet", "hela villan", "hela huset", "hela bostaden",
+      "överallt", "alla rum", "alla rummen", "varje rum", "samtliga rum", "i samtliga",
+    ];
+    const descLowerForGlobals = description.toLowerCase();
+    const hasGlobalTrigger = GLOBAL_TRIGGERS.some((t) => descLowerForGlobals.includes(t));
+    const guardedGlobals = hasGlobalTrigger ? validatedGlobals : [];
+
+    const validatedGlobalTaskTitles = sanitizeTaskTitles(parsed.globalTaskTitles, guardedGlobals);
 
     const VALID_PROPERTY_TYPES = ["apartment", "villa", "townhouse", "summerhouse", "other"];
     const propertyType =
@@ -321,7 +336,7 @@ Return valid JSON only, no markdown.`;
         totalAreaSqm,
         rooms: validatedRooms,
         otherSpaces: validatedOtherSpaces,
-        globalWorkTypes: validatedGlobals,
+        globalWorkTypes: guardedGlobals,
         globalTaskTitles: validatedGlobalTaskTitles,
         summary: parsed.summary || "",
       },

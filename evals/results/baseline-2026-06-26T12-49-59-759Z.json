@@ -1,0 +1,648 @@
+{
+  "args": {
+    "engines": [
+      "renofine",
+      "generic-llm"
+    ],
+    "model": "gpt-4o-mini",
+    "langs": [
+      "pl",
+      "de"
+    ],
+    "judge": "gpt-4o-mini",
+    "cases": null,
+    "judgeOn": true
+  },
+  "summary": [
+    {
+      "engine": "renofine",
+      "n": 16,
+      "structPass": 16,
+      "vbRatio": 1,
+      "judgeAvg": 5,
+      "critical": 0,
+      "errors": 0
+    },
+    {
+      "engine": "generic-llm",
+      "n": 16,
+      "structPass": 16,
+      "vbRatio": 1,
+      "judgeAvg": 4.75,
+      "critical": 1,
+      "errors": 0
+    }
+  ],
+  "rows": [
+    {
+      "engine": "renofine",
+      "caseId": "ceiling-vs-wall-paint",
+      "lang": "pl",
+      "structureOk": true,
+      "verbatim": {
+        "total": 0,
+        "pass": 0,
+        "missing": [],
+        "ratio": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "Meaning fully preserved."
+      },
+      "error": null,
+      "skipped": false
+    },
+    {
+      "engine": "renofine",
+      "caseId": "ceiling-vs-wall-paint",
+      "lang": "de",
+      "structureOk": true,
+      "verbatim": {
+        "total": 0,
+        "pass": 0,
+        "missing": [],
+        "ratio": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "Meaning fully preserved."
+      },
+      "error": null,
+      "skipped": false
+    },
+    {
+      "engine": "renofine",
+      "caseId": "color-codes",
+      "lang": "pl",
+      "structureOk": true,
+      "verbatim": {
+        "total": 2,
+        "pass": 2,
+        "missing": [],
+        "ratio": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "Meaning fully preserved."
+      },
+      "error": null,
+      "skipped": false
+    },
+    {
+      "engine": "renofine",
+      "caseId": "color-codes",
+      "lang": "de",
+      "structureOk": true,
+      "verbatim": {
+        "total": 2,
+        "pass": 2,
+        "missing": [],
+        "ratio": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "The translation fully preserves the meaning of the original content, including the instruction for two coats and the specific color for the trims."
+      },
+      "error": null,
+      "skipped": false
+    },
+    {
+      "engine": "renofine",
+      "caseId": "brand-and-safety",
+      "lang": "pl",
+      "structureOk": true,
+      "verbatim": {
+        "total": 2,
+        "pass": 2,
+        "missing": [],
+        "ratio": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "Meaning fully preserved."
+      },
+      "error": null,
+      "skipped": false
+    },
+    {
+      "engine": "renofine",
+      "caseId": "brand-and-safety",
+      "lang": "de",
+      "structureOk": true,
+      "verbatim": {
+        "total": 2,
+        "pass": 2,
+        "missing": [],
+        "ratio": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "Meaning fully preserved."
+      },
+      "error": null,
+      "skipped": false
+    },
+    {
+      "engine": "renofine",
+      "caseId": "measurements-tile",
+      "lang": "pl",
+      "structureOk": true,
+      "verbatim": {
+        "total": 3,
+        "pass": 3,
+        "missing": [],
+        "ratio": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "The translation fully preserves the meaning of the original content, including the slope requirement and grout joint specification."
+      },
+      "error": null,
+      "skipped": false
+    },
+    {
+      "engine": "renofine",
+      "caseId": "measurements-tile",
+      "lang": "de",
+      "structureOk": true,
+      "verbatim": {
+        "total": 3,
+        "pass": 3,
+        "missing": [],
+        "ratio": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "Meaning fully preserved."
+      },
+      "error": null,
+      "skipped": false
+    },
+    {
+      "engine": "renofine",
+      "caseId": "plumbing-safety",
+      "lang": "pl",
+      "structureOk": true,
+      "verbatim": {
+        "total": 0,
+        "pass": 0,
+        "missing": [],
+        "ratio": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "Meaning fully preserved."
+      },
+      "error": null,
+      "skipped": false
+    },
+    {
+      "engine": "renofine",
+      "caseId": "plumbing-safety",
+      "lang": "de",
+      "structureOk": true,
+      "verbatim": {
+        "total": 0,
+        "pass": 0,
+        "missing": [],
+        "ratio": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "The translation fully preserves the meaning of the original instructions regarding shutting off the water and verifying it is off."
+      },
+      "error": null,
+      "skipped": false
+    },
+    {
+      "engine": "renofine",
+      "caseId": "electrical-safety",
+      "lang": "pl",
+      "structureOk": true,
+      "verbatim": {
+        "total": 0,
+        "pass": 0,
+        "missing": [],
+        "ratio": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "Meaning fully preserved."
+      },
+      "error": null,
+      "skipped": false
+    },
+    {
+      "engine": "renofine",
+      "caseId": "electrical-safety",
+      "lang": "de",
+      "structureOk": true,
+      "verbatim": {
+        "total": 0,
+        "pass": 0,
+        "missing": [],
+        "ratio": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "Meaning fully preserved."
+      },
+      "error": null,
+      "skipped": false
+    },
+    {
+      "engine": "renofine",
+      "caseId": "rooms-and-roomitems",
+      "lang": "pl",
+      "structureOk": true,
+      "verbatim": {
+        "total": 1,
+        "pass": 1,
+        "missing": [],
+        "ratio": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "Meaning fully preserved."
+      },
+      "error": null,
+      "skipped": false
+    },
+    {
+      "engine": "renofine",
+      "caseId": "rooms-and-roomitems",
+      "lang": "de",
+      "structureOk": true,
+      "verbatim": {
+        "total": 1,
+        "pass": 1,
+        "missing": [],
+        "ratio": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "Meaning fully preserved."
+      },
+      "error": null,
+      "skipped": false
+    },
+    {
+      "engine": "renofine",
+      "caseId": "do-not-translate-plus-timing",
+      "lang": "pl",
+      "structureOk": true,
+      "verbatim": {
+        "total": 2,
+        "pass": 2,
+        "missing": [],
+        "ratio": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "Meaning fully preserved."
+      },
+      "error": null,
+      "skipped": false
+    },
+    {
+      "engine": "renofine",
+      "caseId": "do-not-translate-plus-timing",
+      "lang": "de",
+      "structureOk": true,
+      "verbatim": {
+        "total": 2,
+        "pass": 2,
+        "missing": [],
+        "ratio": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "Meaning fully preserved."
+      },
+      "error": null,
+      "skipped": false
+    },
+    {
+      "engine": "generic-llm",
+      "caseId": "ceiling-vs-wall-paint",
+      "lang": "pl",
+      "structureOk": true,
+      "verbatim": {
+        "total": 0,
+        "pass": 0,
+        "missing": [],
+        "ratio": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "Meaning fully preserved."
+      },
+      "error": null,
+      "skipped": false
+    },
+    {
+      "engine": "generic-llm",
+      "caseId": "ceiling-vs-wall-paint",
+      "lang": "de",
+      "structureOk": true,
+      "verbatim": {
+        "total": 0,
+        "pass": 0,
+        "missing": [],
+        "ratio": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "Meaning fully preserved."
+      },
+      "error": null,
+      "skipped": false
+    },
+    {
+      "engine": "generic-llm",
+      "caseId": "color-codes",
+      "lang": "pl",
+      "structureOk": true,
+      "verbatim": {
+        "total": 2,
+        "pass": 2,
+        "missing": [],
+        "ratio": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "Meaning fully preserved."
+      },
+      "error": null,
+      "skipped": false
+    },
+    {
+      "engine": "generic-llm",
+      "caseId": "color-codes",
+      "lang": "de",
+      "structureOk": true,
+      "verbatim": {
+        "total": 2,
+        "pass": 2,
+        "missing": [],
+        "ratio": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "Meaning fully preserved."
+      },
+      "error": null,
+      "skipped": false
+    },
+    {
+      "engine": "generic-llm",
+      "caseId": "brand-and-safety",
+      "lang": "pl",
+      "structureOk": true,
+      "verbatim": {
+        "total": 2,
+        "pass": 2,
+        "missing": [],
+        "ratio": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "Meaning fully preserved."
+      },
+      "error": null,
+      "skipped": false
+    },
+    {
+      "engine": "generic-llm",
+      "caseId": "brand-and-safety",
+      "lang": "de",
+      "structureOk": true,
+      "verbatim": {
+        "total": 2,
+        "pass": 2,
+        "missing": [],
+        "ratio": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "Meaning fully preserved."
+      },
+      "error": null,
+      "skipped": false
+    },
+    {
+      "engine": "generic-llm",
+      "caseId": "measurements-tile",
+      "lang": "pl",
+      "structureOk": true,
+      "verbatim": {
+        "total": 3,
+        "pass": 3,
+        "missing": [],
+        "ratio": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "Meaning fully preserved."
+      },
+      "error": null,
+      "skipped": false
+    },
+    {
+      "engine": "generic-llm",
+      "caseId": "measurements-tile",
+      "lang": "de",
+      "structureOk": true,
+      "verbatim": {
+        "total": 3,
+        "pass": 3,
+        "missing": [],
+        "ratio": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "Meaning fully preserved."
+      },
+      "error": null,
+      "skipped": false
+    },
+    {
+      "engine": "generic-llm",
+      "caseId": "plumbing-safety",
+      "lang": "pl",
+      "structureOk": true,
+      "verbatim": {
+        "total": 0,
+        "pass": 0,
+        "missing": [],
+        "ratio": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "The translation fully preserves the meaning of the source content, including the instruction to shut off the water before removing the old mixer tap and the verification step."
+      },
+      "error": null,
+      "skipped": false
+    },
+    {
+      "engine": "generic-llm",
+      "caseId": "plumbing-safety",
+      "lang": "de",
+      "structureOk": true,
+      "verbatim": {
+        "total": 0,
+        "pass": 0,
+        "missing": [],
+        "ratio": 1
+      },
+      "judge": {
+        "score": 3,
+        "criticalIssues": [],
+        "notes": "The translation uses 'Mische den Wasserhahn' instead of 'Byt blandare', which means 'Mix the faucet' instead of 'Change the mixer tap'. This is a minor meaning drift but does not affect the safety instructions."
+      },
+      "error": null,
+      "skipped": false
+    },
+    {
+      "engine": "generic-llm",
+      "caseId": "electrical-safety",
+      "lang": "pl",
+      "structureOk": true,
+      "verbatim": {
+        "total": 0,
+        "pass": 0,
+        "missing": [],
+        "ratio": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "Meaning fully preserved."
+      },
+      "error": null,
+      "skipped": false
+    },
+    {
+      "engine": "generic-llm",
+      "caseId": "electrical-safety",
+      "lang": "de",
+      "structureOk": true,
+      "verbatim": {
+        "total": 0,
+        "pass": 0,
+        "missing": [],
+        "ratio": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "Meaning fully preserved."
+      },
+      "error": null,
+      "skipped": false
+    },
+    {
+      "engine": "generic-llm",
+      "caseId": "rooms-and-roomitems",
+      "lang": "pl",
+      "structureOk": true,
+      "verbatim": {
+        "total": 1,
+        "pass": 1,
+        "missing": [],
+        "ratio": 1
+      },
+      "judge": {
+        "score": 3,
+        "criticalIssues": [
+          "'Kommod' translated as 'Konsola' which may not accurately reflect the intended item (vanity) in a bathroom context."
+        ],
+        "notes": "The translation preserves the meaning of the waterproof floor requirement and the mounting height, but the term for 'vanity' is not accurately translated, which could lead to confusion."
+      },
+      "error": null,
+      "skipped": false
+    },
+    {
+      "engine": "generic-llm",
+      "caseId": "rooms-and-roomitems",
+      "lang": "de",
+      "structureOk": true,
+      "verbatim": {
+        "total": 1,
+        "pass": 1,
+        "missing": [],
+        "ratio": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "Meaning fully preserved."
+      },
+      "error": null,
+      "skipped": false
+    },
+    {
+      "engine": "generic-llm",
+      "caseId": "do-not-translate-plus-timing",
+      "lang": "pl",
+      "structureOk": true,
+      "verbatim": {
+        "total": 2,
+        "pass": 2,
+        "missing": [],
+        "ratio": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "Meaning fully preserved."
+      },
+      "error": null,
+      "skipped": false
+    },
+    {
+      "engine": "generic-llm",
+      "caseId": "do-not-translate-plus-timing",
+      "lang": "de",
+      "structureOk": true,
+      "verbatim": {
+        "total": 2,
+        "pass": 2,
+        "missing": [],
+        "ratio": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "Meaning fully preserved."
+      },
+      "error": null,
+      "skipped": false
+    }
+  ]
+}

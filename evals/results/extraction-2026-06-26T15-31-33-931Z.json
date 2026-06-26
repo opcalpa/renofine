@@ -1,0 +1,310 @@
+{
+  "args": {
+    "models": [
+      "gpt-4o-mini"
+    ],
+    "judge": "gpt-4o",
+    "cases": null,
+    "judgeOn": false
+  },
+  "summary": [
+    {
+      "model": "gpt-4o-mini",
+      "n": 8,
+      "structPass": 8,
+      "roomRecall": 1,
+      "wtRecall": 1,
+      "objAcc": 1,
+      "globAcc": 1,
+      "judgeAvg": null,
+      "critical": 0,
+      "errors": 0
+    }
+  ],
+  "rows": [
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "kitchen-granularity",
+      "structureOk": true,
+      "rooms": {
+        "roomRecall": {
+          "found": 1,
+          "expected": 1,
+          "ratio": 1
+        },
+        "missedRooms": 0,
+        "hallucinated": [],
+        "workTypeRecall": {
+          "found": 3,
+          "required": 3,
+          "ratio": 1
+        },
+        "forbidViolations": [],
+        "forbidRoomViolations": []
+      },
+      "objects": {
+        "checked": 0,
+        "correct": 0,
+        "mismatches": []
+      },
+      "globals": {
+        "checked": false,
+        "ok": true,
+        "expected": null,
+        "got": null
+      },
+      "judge": null,
+      "error": null,
+      "critical": 0
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "enumerated-bedrooms",
+      "structureOk": true,
+      "rooms": {
+        "roomRecall": {
+          "found": 2,
+          "expected": 2,
+          "ratio": 1
+        },
+        "missedRooms": 0,
+        "hallucinated": [],
+        "workTypeRecall": {
+          "found": 2,
+          "required": 2,
+          "ratio": 1
+        },
+        "forbidViolations": [],
+        "forbidRoomViolations": []
+      },
+      "objects": {
+        "checked": 0,
+        "correct": 0,
+        "mismatches": []
+      },
+      "globals": {
+        "checked": false,
+        "ok": true,
+        "expected": null,
+        "got": null
+      },
+      "judge": null,
+      "error": null,
+      "critical": 0
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "global-vs-perroom-trap",
+      "structureOk": true,
+      "rooms": {
+        "roomRecall": {
+          "found": 2,
+          "expected": 2,
+          "ratio": 1
+        },
+        "missedRooms": 0,
+        "hallucinated": [],
+        "workTypeRecall": {
+          "found": 2,
+          "required": 2,
+          "ratio": 1
+        },
+        "forbidViolations": [],
+        "forbidRoomViolations": []
+      },
+      "objects": {
+        "checked": 0,
+        "correct": 0,
+        "mismatches": []
+      },
+      "globals": {
+        "checked": true,
+        "ok": true,
+        "expected": [],
+        "got": []
+      },
+      "judge": null,
+      "error": null,
+      "critical": 0
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "true-global-flooring",
+      "structureOk": true,
+      "rooms": {
+        "roomRecall": {
+          "found": 1,
+          "expected": 1,
+          "ratio": 1
+        },
+        "missedRooms": 0,
+        "hallucinated": [],
+        "workTypeRecall": {
+          "found": 1,
+          "required": 1,
+          "ratio": 1
+        },
+        "forbidViolations": [],
+        "forbidRoomViolations": []
+      },
+      "objects": {
+        "checked": 1,
+        "correct": 1,
+        "mismatches": []
+      },
+      "globals": {
+        "checked": true,
+        "ok": true,
+        "expected": [
+          "golv"
+        ],
+        "got": [
+          "golv"
+        ]
+      },
+      "judge": null,
+      "error": null,
+      "critical": 0
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "object-fields-villa",
+      "structureOk": true,
+      "rooms": {
+        "roomRecall": {
+          "found": 1,
+          "expected": 1,
+          "ratio": 1
+        },
+        "missedRooms": 0,
+        "hallucinated": [],
+        "workTypeRecall": {
+          "found": 3,
+          "required": 3,
+          "ratio": 1
+        },
+        "forbidViolations": [],
+        "forbidRoomViolations": []
+      },
+      "objects": {
+        "checked": 3,
+        "correct": 3,
+        "mismatches": []
+      },
+      "globals": {
+        "checked": false,
+        "ok": true,
+        "expected": null,
+        "got": null
+      },
+      "judge": null,
+      "error": null,
+      "critical": 0
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "otherspaces-no-work",
+      "structureOk": true,
+      "rooms": {
+        "roomRecall": {
+          "found": 1,
+          "expected": 1,
+          "ratio": 1
+        },
+        "missedRooms": 0,
+        "hallucinated": [],
+        "workTypeRecall": {
+          "found": 1,
+          "required": 1,
+          "ratio": 1
+        },
+        "forbidViolations": [],
+        "forbidRoomViolations": []
+      },
+      "objects": {
+        "checked": 2,
+        "correct": 2,
+        "mismatches": []
+      },
+      "globals": {
+        "checked": false,
+        "ok": true,
+        "expected": null,
+        "got": null
+      },
+      "judge": null,
+      "error": null,
+      "critical": 0
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "worktype-triggers-tiling-vs-floor",
+      "structureOk": true,
+      "rooms": {
+        "roomRecall": {
+          "found": 2,
+          "expected": 2,
+          "ratio": 1
+        },
+        "missedRooms": 0,
+        "hallucinated": [],
+        "workTypeRecall": {
+          "found": 2,
+          "required": 2,
+          "ratio": 1
+        },
+        "forbidViolations": [],
+        "forbidRoomViolations": []
+      },
+      "objects": {
+        "checked": 0,
+        "correct": 0,
+        "mismatches": []
+      },
+      "globals": {
+        "checked": false,
+        "ok": true,
+        "expected": null,
+        "got": null
+      },
+      "judge": null,
+      "error": null,
+      "critical": 0
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "hallucination-guard-minimal",
+      "structureOk": true,
+      "rooms": {
+        "roomRecall": {
+          "found": 1,
+          "expected": 1,
+          "ratio": 1
+        },
+        "missedRooms": 0,
+        "hallucinated": [],
+        "workTypeRecall": {
+          "found": 1,
+          "required": 1,
+          "ratio": 1
+        },
+        "forbidViolations": [],
+        "forbidRoomViolations": []
+      },
+      "objects": {
+        "checked": 0,
+        "correct": 0,
+        "mismatches": []
+      },
+      "globals": {
+        "checked": true,
+        "ok": true,
+        "expected": [],
+        "got": []
+      },
+      "judge": null,
+      "error": null,
+      "critical": 0
+    }
+  ]
+}

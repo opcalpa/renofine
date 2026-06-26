@@ -1,0 +1,65 @@
+{
+  "args": {
+    "models": [
+      "gpt-4o-mini"
+    ],
+    "langs": [
+      "en"
+    ],
+    "judge": "gpt-4o-mini",
+    "cases": [
+      "ceiling-vs-wall-paint",
+      "plumbing-safety"
+    ],
+    "judgeOn": true
+  },
+  "summary": [
+    {
+      "model": "gpt-4o-mini",
+      "n": 2,
+      "structPass": 2,
+      "vbRatio": 1,
+      "judgeAvg": 5,
+      "critical": 0,
+      "errors": 0
+    }
+  ],
+  "rows": [
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "ceiling-vs-wall-paint",
+      "lang": "en",
+      "structureOk": true,
+      "verbatim": {
+        "total": 0,
+        "pass": 0,
+        "missing": [],
+        "ratio": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "Meaning fully preserved."
+      },
+      "error": null
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "plumbing-safety",
+      "lang": "en",
+      "structureOk": true,
+      "verbatim": {
+        "total": 0,
+        "pass": 0,
+        "missing": [],
+        "ratio": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "The translation fully preserves the meaning of the original instructions regarding safety and the sequence of actions."
+      },
+      "error": null
+    }
+  ]
+}

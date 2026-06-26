@@ -1,0 +1,47 @@
+{
+  "args": {
+    "models": [
+      "gpt-4o-mini"
+    ],
+    "langs": [
+      "en"
+    ],
+    "judge": "gpt-4o-mini",
+    "cases": [
+      "ceiling-vs-wall-paint",
+      "plumbing-safety"
+    ],
+    "judgeOn": true
+  },
+  "summary": [
+    {
+      "model": "gpt-4o-mini",
+      "n": 2,
+      "structPass": 0,
+      "vbRatio": 1,
+      "judgeAvg": null,
+      "critical": 0,
+      "errors": 2
+    }
+  ],
+  "rows": [
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "ceiling-vs-wall-paint",
+      "lang": "en",
+      "structureOk": false,
+      "verbatim": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "plumbing-safety",
+      "lang": "en",
+      "structureOk": false,
+      "verbatim": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    }
+  ]
+}

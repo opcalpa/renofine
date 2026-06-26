@@ -1,0 +1,126 @@
+{
+  "feature": "parse-renovation-description",
+  "source": "supabase/functions/parse-renovation-description/index.ts",
+  "description": "Golden set for free-text → structured renovation plan. Each case targets a documented failure mode that silently corrupts a user's project: flattening granular trades into rollups, missing/inventing rooms, marking per-room work as global, and missing object fields. `expect` only checks keys it defines (propertyType/floors/totalAreaSqm and globalWorkTypes are skipped unless present). Work types: rivning=demolition, el, vvs, kakel=wall tiling, snickeri=carpentry, malning=painting, golv=flooring, kok/badrum=rollups (avoid when granular fits).",
+  "cases": [
+    {
+      "id": "kitchen-granularity",
+      "note": "GRANULARITY rule: 'nytt kök från IKEA' must yield granular trades (rivning/snickeri/el), NOT the 'kok' rollup.",
+      "input": {
+        "description": "Vi vill renovera köket helt. Riva ut det gamla köket och montera ett nytt kök från IKEA, samt flytta ett eluttag och koppla in nya vitvaror.",
+        "language": "sv"
+      },
+      "expect": {
+        "rooms": [
+          { "nameKey": "kitchen", "count": 1, "requireWorkTypes": ["rivning", "snickeri", "el"], "forbidWorkTypes": ["kok"] }
+        ],
+        "forbidRooms": ["bathroom", "livingRoom"]
+      }
+    },
+    {
+      "id": "enumerated-bedrooms",
+      "note": "CONSISTENCY rule: '2 sovrum' with shared work → two separate bedroom entries, both with the same work types.",
+      "input": {
+        "description": "I våra två sovrum ska vi riva tapeter, måla om väggarna och lägga nytt parkettgolv i båda.",
+        "language": "sv"
+      },
+      "expect": {
+        "rooms": [
+          { "nameKey": "bedroom", "count": 2, "requireWorkTypes": ["malning", "golv"] }
+        ]
+      }
+    },
+    {
+      "id": "global-vs-perroom-trap",
+      "note": "The conservative-global trap: a totalentreprenad listing TRADES is not 'work in every room'. globalWorkTypes must be empty.",
+      "input": {
+        "description": "Vi söker en totalentreprenad som kan hålla i allt: snickeri, måleri och el. Just nu gäller det att måla om vardagsrummet och byta diskbänk i köket.",
+        "language": "sv"
+      },
+      "expect": {
+        "rooms": [
+          { "nameKey": "livingRoom", "count": 1, "requireWorkTypes": ["malning"] },
+          { "nameKey": "kitchen", "count": 1, "requireWorkTypes": ["vvs"] }
+        ],
+        "globalWorkTypes": []
+      }
+    },
+    {
+      "id": "true-global-flooring",
+      "note": "Genuine global: 'i hela lägenheten' → golv in globalWorkTypes, and it is an apartment.",
+      "input": {
+        "description": "Vi ska lägga nytt parkettgolv i hela lägenheten. Dessutom vill vi måla om vardagsrummet.",
+        "language": "sv"
+      },
+      "expect": {
+        "propertyType": "apartment",
+        "rooms": [
+          { "nameKey": "livingRoom", "count": 1, "requireWorkTypes": ["malning"] }
+        ],
+        "globalWorkTypes": ["golv"]
+      }
+    },
+    {
+      "id": "object-fields-villa",
+      "note": "Object-level extraction: villa, 2 floors, 140 m² from natural phrasing.",
+      "input": {
+        "description": "Vi har en villa på två plan, ca 140 kvm. Vi vill renovera badrummet på övervåningen: riva, kakla väggarna och dra ny vvs.",
+        "language": "sv"
+      },
+      "expect": {
+        "propertyType": "villa",
+        "floors": 2,
+        "totalAreaSqm": 140,
+        "rooms": [
+          { "nameKey": "bathroom", "count": 1, "requireWorkTypes": ["rivning", "kakel", "vvs"] }
+        ]
+      }
+    },
+    {
+      "id": "otherspaces-no-work",
+      "note": "Rooms mentioned without proposed work → otherSpaces, not rooms. No invented work for the hall/laundry.",
+      "input": {
+        "description": "Trea på 78 kvm. Vi ska bara måla om köket. Lägenheten har också en hall och en tvättstuga men där ska inget göras.",
+        "language": "sv"
+      },
+      "expect": {
+        "propertyType": "apartment",
+        "totalAreaSqm": 78,
+        "rooms": [
+          { "nameKey": "kitchen", "count": 1, "requireWorkTypes": ["malning"] }
+        ],
+        "otherSpaces": ["hallway", "laundry"],
+        "forbidRooms": ["bathroom", "bedroom"]
+      }
+    },
+    {
+      "id": "worktype-triggers-tiling-vs-floor",
+      "note": "Trigger discrimination: 'klinker på golvet' → golv (NOT kakel); 'kakel på väggen' → kakel. Don't confuse them.",
+      "input": {
+        "description": "I hallen ska vi lägga klinker på golvet. I badrummet ska vi sätta kakel på väggarna.",
+        "language": "sv"
+      },
+      "expect": {
+        "rooms": [
+          { "nameKey": "hallway", "count": 1, "requireWorkTypes": ["golv"], "forbidWorkTypes": ["kakel"] },
+          { "nameKey": "bathroom", "count": 1, "requireWorkTypes": ["kakel"] }
+        ]
+      }
+    },
+    {
+      "id": "hallucination-guard-minimal",
+      "note": "Minimal, single-room scope. Must NOT invent rooms or work the user never mentioned.",
+      "input": {
+        "description": "Vi vill bara byta fönster i vardagsrummet.",
+        "language": "sv"
+      },
+      "expect": {
+        "rooms": [
+          { "nameKey": "livingRoom", "count": 1, "requireWorkTypes": ["fonster_dorrar"] }
+        ],
+        "globalWorkTypes": [],
+        "forbidRooms": ["kitchen", "bathroom", "bedroom", "hallway"]
+      }
+    }
+  ]
+}
