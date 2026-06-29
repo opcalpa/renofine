@@ -15,13 +15,32 @@ export function safeParseJson(text) {
   }
 }
 
+// --- aidev-admin: tunn push-adapter (observability) ---
+// Pushar en trace per LLM-anrop till aidev-admin (/api/ingest), taggad med project.
+// Fire-and-forget och fail-silent: observability far ALDRIG krascha en eval-korning.
+// Konfig via env (evals/.env): AIDEV_INGEST_KEY kravs, AIDEV_ENDPOINT/AIDEV_PROJECT valfria.
+const AIDEV_ENDPOINT = process.env.AIDEV_ENDPOINT || "http://localhost:5007";
+const AIDEV_PROJECT = process.env.AIDEV_PROJECT || "renofine";
+function traceLLM(record) {
+  const key = process.env.AIDEV_INGEST_KEY;
+  if (!key) return; // ingen nyckel -> ingen instrumentering (no-op)
+  try {
+    fetch(`${AIDEV_ENDPOINT}/api/ingest`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-ingest-key": key },
+      body: JSON.stringify({ project: AIDEV_PROJECT, ...record }),
+    }).catch(() => {});
+  } catch { /* fail-silent */ }
+}
+
 // Returns the raw assistant text. temperature defaults to 0.1 (matches prod).
 // jsonObject:true sends OpenAI's response_format json_object (mirrors functions
 // that use it, e.g. parse-renovation-description). Ignored for Claude.
-export async function callModel(model, system, user, { temperature = 0.1, maxTokens = 2000, jsonObject = false } = {}) {
+export async function callModel(model, system, user, { temperature = 0.1, maxTokens = 2000, jsonObject = false, label } = {}) {
   if (model.startsWith("claude")) {
     const key = process.env.ANTHROPIC_API_KEY;
     if (!key) throw new Error("ANTHROPIC_API_KEY not set (needed for " + model + ")");
+    const t0 = Date.now();
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -39,6 +58,7 @@ export async function callModel(model, system, user, { temperature = 0.1, maxTok
     });
     if (!res.ok) throw new Error(`Anthropic ${res.status}: ${await res.text()}`);
     const data = await res.json();
+    traceLLM({ model, tokens: { in: data.usage?.input_tokens || 0, out: data.usage?.output_tokens || 0 }, latencyMs: Date.now() - t0, label });
     return (data.content || []).map((b) => b.text || "").join("");
   }
 
@@ -54,6 +74,7 @@ export async function callModel(model, system, user, { temperature = 0.1, maxTok
     ],
   };
   if (jsonObject) body.response_format = { type: "json_object" };
+  const t0 = Date.now();
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
@@ -61,6 +82,7 @@ export async function callModel(model, system, user, { temperature = 0.1, maxTok
   });
   if (!res.ok) throw new Error(`OpenAI ${res.status}: ${await res.text()}`);
   const data = await res.json();
+  traceLLM({ model, tokens: { in: data.usage?.prompt_tokens || 0, out: data.usage?.completion_tokens || 0 }, latencyMs: Date.now() - t0, label });
   return data.choices?.[0]?.message?.content || "";
 }
 
