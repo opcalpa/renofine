@@ -30,11 +30,13 @@ function getCorsHeaders(req: Request) {
   };
 }
 
-function supabaseRestHeaders() {
-  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+// Context is fetched AS THE CALLER (their JWT) so Postgres RLS scopes it to
+// projects they can actually access — never service-role. This prevents a
+// caller from enumerating another project's rooms/tasks by passing its id.
+function supabaseRestHeaders(authHeader: string) {
   return {
-    apikey: serviceRoleKey,
-    Authorization: `Bearer ${serviceRoleKey}`,
+    apikey: Deno.env.get("SUPABASE_ANON_KEY")!,
+    Authorization: authHeader,
     "Content-Type": "application/json",
   };
 }
@@ -51,15 +53,16 @@ const LANGUAGE_NAMES: Record<string, string> = {
 interface RoomCtx { id: string; name: string }
 interface TaskCtx { id: string; title: string; status: string | null }
 
-async function fetchContext(projectId: string): Promise<{ rooms: RoomCtx[]; tasks: TaskCtx[] }> {
+async function fetchContext(projectId: string, authHeader: string): Promise<{ rooms: RoomCtx[]; tasks: TaskCtx[] }> {
+  const headers = supabaseRestHeaders(authHeader);
   const [roomsRes, tasksRes] = await Promise.all([
     fetch(
       `${supabaseRestUrl("rooms")}?project_id=eq.${projectId}&select=id,name&order=name.asc`,
-      { headers: supabaseRestHeaders() },
+      { headers },
     ),
     fetch(
       `${supabaseRestUrl("tasks")}?project_id=eq.${projectId}&select=id,title,status&order=created_at.desc&limit=200`,
-      { headers: supabaseRestHeaders() },
+      { headers },
     ),
   ]);
   const rooms = roomsRes.ok ? await roomsRes.json() : [];
@@ -225,7 +228,7 @@ serve(async (req) => {
       });
     }
 
-    const { rooms, tasks } = await fetchContext(projectId);
+    const { rooms, tasks } = await fetchContext(projectId, authHeader);
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
