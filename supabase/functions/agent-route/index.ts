@@ -114,10 +114,13 @@ Allowed action objects:
 Rules:
 - "Köket är färdigmålat" → if a painting task exists for the kitchen → set_progress 100. Otherwise update_task or unknown.
 - "behöver beställa tio kvm klinker" → create_purchase { item, quantity: 10, unit: "kvm" }, roomId if a room is named.
+- NEW work the user describes in an EXISTING room that has no matching task → create_task (set roomId). A new material/product to buy → create_purchase. Do NOT mark clearly-actionable new work as "unknown".
+- Reserve "unknown" for input you genuinely cannot map: a place or thing that does not exist in the project, or truly ambiguous intent.
+- If the note contains NO actionable instruction (pure chit-chat, mood, weather), return an EMPTY proposals array — invent nothing.
 - A single note may yield MULTIPLE proposals (e.g. a progress update AND a purchase).
 - Summaries MUST be written in ${langName}.
 - confidence reflects how sure you are about the mapping (id match, intent). Below 0.5 the user will have to opt in manually.
-- Prefer "unknown" over a wrong guess.`;
+- Prefer "unknown" over a WRONG guess — but an honest create_task/create_purchase for clear new work is NOT a guess.`;
 }
 
 interface RawProposal {

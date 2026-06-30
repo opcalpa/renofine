@@ -44,6 +44,11 @@ node evals/run-extraction.mjs                                      # gpt-4o-mini
 node evals/run-extraction.mjs --no-judge                           # deterministic only (cheap)
 node evals/run-extraction.mjs --cases global-vs-perroom-trap
 
+# agent-route router: messy field note → structured proposals (the voice/agentic layer)
+node evals/run-router.mjs                                          # gpt-4o-mini, judge gpt-4o
+node evals/run-router.mjs --no-judge                              # deterministic only (cheap)
+node evals/run-router.mjs --cases seal-done,unknown-garage
+
 # head-to-head: our domain engine vs commodity translation (the moat-proof)
 export DEEPL_API_KEY=...:fx                                        # optional; deepl engine skipped if unset
 node evals/run-baseline.mjs                                        # renofine vs generic-llm vs deepl, langs pl,de

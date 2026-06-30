@@ -1,0 +1,90 @@
+{
+  "description": "Router golden set — messy Swedish field notes → structured proposals against a FIXED mini-project context. Scores id-integrity (never invent an id), recall of expected actions, and 'unknown over wrong guess'. Keep context ids stable; cases reference them.",
+  "context": {
+    "language": "sv",
+    "rooms": [
+      { "id": "r-kitchen", "name": "Kök" },
+      { "id": "r-bath", "name": "Badrum" },
+      { "id": "r-bed", "name": "Sovrum" },
+      { "id": "r-living", "name": "Vardagsrum" }
+    ],
+    "tasks": [
+      { "id": "t-paint", "title": "Målning väggar & tak", "status": "in_progress" },
+      { "id": "t-seal", "title": "Tätskikt badrum", "status": "to_do" },
+      { "id": "t-tile", "title": "Kakelsättning badrum", "status": "to_do" },
+      { "id": "t-floor", "title": "Slipning och lackning av golv", "status": "to_do" },
+      { "id": "t-trim", "title": "Montering av lister", "status": "to_do" },
+      { "id": "t-elec", "title": "Eluttag och belysning", "status": "to_do" }
+    ]
+  },
+  "cases": [
+    {
+      "id": "seal-done",
+      "input": "Tätskiktet i badrummet är klart nu.",
+      "expect": [
+        { "type": "set_progress", "taskId": "t-seal", "progressMin": 100 }
+      ]
+    },
+    {
+      "id": "buy-tiles",
+      "input": "Jag behöver beställa tio kvadratmeter klinker till badrummet.",
+      "expect": [
+        { "type": "create_purchase", "roomId": "r-bath", "itemIncludes": "klinker", "quantity": 10 }
+      ]
+    },
+    {
+      "id": "combo-progress-and-purchase",
+      "input": "Tätskiktet i badrummet är klart, och beställ tio kvadratmeter klinker dit också.",
+      "expect": [
+        { "type": "set_progress", "taskId": "t-seal", "progressMin": 100 },
+        { "type": "create_purchase", "roomId": "r-bath", "itemIncludes": "klinker", "quantity": 10 }
+      ]
+    },
+    {
+      "id": "unknown-garage",
+      "input": "Jag fixade taket på garaget och dubbelgaraget idag, blev jättefint.",
+      "expectUnknown": true
+    },
+    {
+      "id": "add-task-room",
+      "input": "Vi behöver också byta dörrhandtagen i sovrummet.",
+      "expect": [
+        { "type": "create_task", "roomId": "r-bed", "titleIncludes": "handtag" }
+      ]
+    },
+    {
+      "id": "buy-no-room",
+      "input": "Behöver beställa en ny köksblandare.",
+      "expect": [
+        { "type": "create_purchase", "itemIncludes": "blandare" }
+      ]
+    },
+    {
+      "id": "chitchat",
+      "input": "Det var en riktigt bra dag på bygget idag, sol och fin stämning.",
+      "expectEmpty": true
+    },
+    {
+      "id": "progress-partial",
+      "input": "Målningen är ungefär halvklar nu.",
+      "expect": [
+        { "type": "set_progress", "taskId": "t-paint", "progressMin": 30, "progressMax": 70 }
+      ]
+    },
+    {
+      "id": "wrong-room-trap",
+      "input": "Kakelsättningen i badrummet är påbörjad.",
+      "expect": [
+        { "type": "update_task", "taskId": "t-tile" }
+      ],
+      "forbidTaskIds": ["t-seal", "t-paint"]
+    },
+    {
+      "id": "lister-done-no-invent",
+      "input": "Listerna är monterade i vardagsrummet.",
+      "expect": [
+        { "type": "set_progress", "taskId": "t-trim", "progressMin": 100 }
+      ]
+    }
+  ]
+}
