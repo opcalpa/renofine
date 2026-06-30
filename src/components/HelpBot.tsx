@@ -1,15 +1,21 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, X, Lightbulb, BookOpen, Wrench, FileText, Bug, MessageSquarePlus, ArrowLeft } from "lucide-react";
+import { Send, X, Lightbulb, BookOpen, Wrench, FileText, Bug, MessageSquarePlus, ArrowLeft, Mic } from "lucide-react";
 import { useJuniorStore } from "@/stores/juniorStore";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
+import { ConfirmDiff } from "@/components/agent/ConfirmDiff";
+import { routeAgentInput } from "@/services/agent/routeClient";
+import { applyProposals } from "@/services/agent/applyProposals";
+import type { AgentProposal } from "@/services/agent/types";
 
 interface Message {
   role: "user" | "assistant";
   content: string;
   /** Optional inline quick-action buttons rendered below this message */
   actions?: InlineAction[];
+  /** When present, the message renders an agentic ConfirmDiff instead of a text bubble */
+  proposals?: AgentProposal[];
 }
 
 interface InlineAction {
@@ -106,9 +112,13 @@ export function HelpBot() {
   const [userName, setUserName] = useState<string | null>(null);
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
   const [feedbackMode, setFeedbackMode] = useState<FeedbackMode>(null);
+  const [capturing, setCapturing] = useState(false);
+  const [listening, setListening] = useState(false);
+  const [applying, setApplying] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   // Fetch user type and name from profile
   useEffect(() => {
@@ -338,6 +348,96 @@ export function HelpBot() {
   const handleSend = useCallback(() => {
     sendMessage(input);
   }, [input, sendMessage]);
+
+  // --- Agentic capture: route a quick update → proposals → ConfirmDiff ---
+  const captureUpdate = useCallback(async (text: string, kind: "text" | "voice_transcript") => {
+    if (!text.trim() || capturing || loading) return;
+
+    setMessages((prev) => [...prev, { role: "user", content: text.trim() }]);
+    setInput("");
+
+    const projectId = useJuniorStore.getState().projectId;
+    if (!projectId) {
+      setMessages((prev) => [...prev, { role: "assistant", content: t("helpBot.agent.noProject") }]);
+      return;
+    }
+
+    setCapturing(true);
+    try {
+      const res = await routeAgentInput({ kind, content: text.trim() }, projectId, i18n.language);
+      if (!res.proposals.length) {
+        setMessages((prev) => [...prev, { role: "assistant", content: t("helpBot.agent.noProposals") }]);
+      } else {
+        setMessages((prev) => [...prev, { role: "assistant", content: "", proposals: res.proposals }]);
+      }
+    } catch {
+      setMessages((prev) => [...prev, { role: "assistant", content: t("helpBot.agent.routeError") }]);
+    } finally {
+      setCapturing(false);
+    }
+  }, [capturing, loading, t, i18n.language]);
+
+  const startVoiceCapture = useCallback(() => {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+      inputRef.current?.focus();
+      return;
+    }
+    if (listening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+    const langMap: Record<string, string> = { sv: "sv-SE", en: "en-US", de: "de-DE", fr: "fr-FR", es: "es-ES" };
+    const rec = new SR();
+    rec.lang = langMap[i18n.language] || i18n.language;
+    rec.interimResults = false;
+    rec.maxAlternatives = 1;
+    rec.onresult = (e: SpeechRecognitionEvent) => {
+      const transcript = e.results[0]?.[0]?.transcript ?? "";
+      setListening(false);
+      if (transcript.trim()) captureUpdate(transcript, "voice_transcript");
+    };
+    rec.onerror = () => setListening(false);
+    rec.onend = () => setListening(false);
+    recognitionRef.current = rec;
+    setListening(true);
+    rec.start();
+  }, [listening, i18n.language, captureUpdate]);
+
+  // Mic button: typed text → route as action; empty → start voice capture
+  const handleCaptureClick = useCallback(() => {
+    if (input.trim()) captureUpdate(input, "text");
+    else startVoiceCapture();
+  }, [input, captureUpdate, startVoiceCapture]);
+
+  const handleApplyProposals = useCallback(async (msgIndex: number, accepted: AgentProposal[]) => {
+    const projectId = useJuniorStore.getState().projectId;
+    if (!projectId) return;
+
+    setApplying(true);
+    const result = await applyProposals(accepted, projectId);
+    setApplying(false);
+
+    const content = result.failed.length === 0
+      ? t("helpBot.agent.applied", { count: result.applied.length })
+      : result.applied.length === 0
+        ? t("helpBot.agent.allFailed")
+        : t("helpBot.agent.partialFailed", { applied: result.applied.length, failed: result.failed.length });
+
+    setMessages((prev) =>
+      prev
+        .map((m, i) => (i === msgIndex ? { ...m, proposals: undefined } : m))
+        .concat({ role: "assistant", content }),
+    );
+  }, [t]);
+
+  const handleDismissProposals = useCallback((msgIndex: number) => {
+    setMessages((prev) =>
+      prev.map((m, i) =>
+        i === msgIndex ? { ...m, proposals: undefined, content: t("helpBot.agent.dismissed") } : m,
+      ),
+    );
+  }, [t]);
 
   const startFeedbackMode = useCallback((type: FeedbackMode) => {
     if (!type) return;
@@ -588,6 +688,19 @@ export function HelpBot() {
           <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
             {messages.map((msg, i) => (
               <div key={i}>
+                {msg.proposals && msg.proposals.length > 0 ? (
+                  <div className="flex items-start gap-2 justify-start">
+                    <img src="/chatbot-avatar.jpg" alt="Junior" className="h-6 w-6 rounded-full object-cover shrink-0 mt-1" />
+                    <div className="max-w-[85%] flex-1">
+                      <ConfirmDiff
+                        proposals={msg.proposals}
+                        applying={applying}
+                        onConfirm={(accepted) => handleApplyProposals(i, accepted)}
+                        onDismiss={() => handleDismissProposals(i)}
+                      />
+                    </div>
+                  </div>
+                ) : (
                 <div className={`flex items-end gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                   {msg.role === "assistant" && (
                     <img src="/chatbot-avatar.jpg" alt="Junior" className="h-6 w-6 rounded-full object-cover shrink-0 mb-0.5" />
@@ -609,6 +722,7 @@ export function HelpBot() {
                         </div>
                   )}
                 </div>
+                )}
                 {/* Inline action buttons below a message */}
                 {msg.actions && msg.actions.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mt-2 ml-1">
@@ -654,7 +768,7 @@ export function HelpBot() {
               </div>
             )}
 
-            {loading && (
+            {(loading || capturing) && (
               <div className="flex justify-start">
                 <div className="bg-muted rounded-lg px-3 py-2 text-sm text-muted-foreground animate-pulse">
                   ...
@@ -677,15 +791,26 @@ export function HelpBot() {
                   handleSend();
                 }
               }}
-              placeholder={placeholderText}
+              placeholder={listening ? t("helpBot.agent.listening") : placeholderText}
               className="flex-1 rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring"
-              disabled={loading}
+              disabled={loading || capturing}
             />
+            <Button
+              size="icon"
+              variant={listening ? "default" : "outline"}
+              className={`h-9 w-9 shrink-0 ${listening ? "animate-pulse" : ""}`}
+              onClick={handleCaptureClick}
+              disabled={loading || capturing}
+              title={t("helpBot.agent.captureButton")}
+              aria-label={t("helpBot.agent.captureButton")}
+            >
+              <Mic className="h-4 w-4" />
+            </Button>
             <Button
               size="icon"
               className="h-9 w-9 shrink-0"
               onClick={handleSend}
-              disabled={loading || !input.trim()}
+              disabled={loading || capturing || !input.trim()}
             >
               <Send className="h-4 w-4" />
             </Button>

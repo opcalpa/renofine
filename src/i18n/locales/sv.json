@@ -3778,6 +3778,23 @@
       "budgetTips": "Hur spårar jag renoveringskostnader och hanterar min budget i appen?",
       "planningHelp": "Hur planerar jag min renovering och skickar offertförfrågningar till byggare?",
       "quotesTips": "Hur skapar jag offerter, hanterar ROT-avdrag och fakturerar kunder?"
+    },
+    "agent": {
+      "captureButton": "Snabb uppdatering",
+      "capturePlaceholder": "Säg eller skriv en snabb uppdatering…",
+      "listening": "Lyssnar…",
+      "reviewTitle": "Så här förstod jag det — bekräfta vad som ska göras:",
+      "needsClarification": "Det här var jag osäker på:",
+      "confirm": "Genomför",
+      "dismiss": "Avfärda",
+      "applying": "Genomför…",
+      "applied": "Klart — genomförde {{count}} ändring(ar).",
+      "partialFailed": "Genomförde {{applied}}, {{failed}} misslyckades.",
+      "allFailed": "Hmm, det gick inte igenom. Försök igen?",
+      "routeError": "Jag kunde inte tolka det. Försök igen?",
+      "noProposals": "Jag hittade inget att ändra i den noteringen.",
+      "noProject": "Öppna ett projekt först så vet jag var det hör hemma.",
+      "dismissed": "Okej, jag lät allt vara."
     }
   },
   "feedback": {

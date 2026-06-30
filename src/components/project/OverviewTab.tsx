@@ -298,9 +298,9 @@ const OverviewTab = ({
 
   // Sync reminders to Junior store
   useEffect(() => {
-    useJuniorStore.getState().setReminders(reminders, project.name, project.country);
+    useJuniorStore.getState().setReminders(reminders, project.id, project.name, project.country);
     return () => useJuniorStore.getState().clear();
-  }, [reminders, project.name, project.country]);
+  }, [reminders, project.id, project.name, project.country]);
 
   const handleTipAction = useCallback((target: string) => {
     switch (target) {

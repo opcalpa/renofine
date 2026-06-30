@@ -3779,6 +3779,23 @@
       "budgetTips": "How do I track renovation costs and manage my budget in the app?",
       "planningHelp": "How do I plan my renovation and send quote requests to builders?",
       "quotesTips": "How do I create quotes, handle ROT deductions, and invoice clients?"
+    },
+    "agent": {
+      "captureButton": "Quick update",
+      "capturePlaceholder": "Speak or type a quick update…",
+      "listening": "Listening…",
+      "reviewTitle": "Here's what I understood — confirm what to apply:",
+      "needsClarification": "I wasn't sure about this:",
+      "confirm": "Apply",
+      "dismiss": "Dismiss",
+      "applying": "Applying…",
+      "applied": "Done — applied {{count}} change(s).",
+      "partialFailed": "Applied {{applied}}, {{failed}} failed.",
+      "allFailed": "Hmm, that didn't go through. Try again?",
+      "routeError": "I couldn't process that. Try again?",
+      "noProposals": "I didn't find anything to change in that note.",
+      "noProject": "Open a project first so I know where to put this.",
+      "dismissed": "Okay, I left everything as is."
     }
   },
   "feedback": {
