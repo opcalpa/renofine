@@ -35,7 +35,9 @@ Output STRICT JSON of this exact shape (no prose, no markdown):
     {
       "summary": "<one short human line in ${langName}>",
       "confidence": <number 0..1>,
-      "action": <one of the action objects below>
+      "action": <one of the action objects below>,
+      "matchConfidence": <0..1 — ONLY for update_task/set_progress: how sure you are that taskId is the RIGHT task>,
+      "candidateTaskIds": [<up to 3 existing task ids that could plausibly be meant — for update_task/set_progress>]
     }
   ]
 }
@@ -53,6 +55,8 @@ Rules:
 - "behöver beställa tio kvm klinker" → create_purchase { item, quantity: 10, unit: "kvm" }, roomId if a room is named.
 - NEW work the user describes in an EXISTING room that has no matching task → create_task (set roomId). A new material/product to buy → create_purchase. Do NOT mark clearly-actionable new work as "unknown".
 - Reserve "unknown" for input you genuinely cannot map: a place or thing that does not exist in the project, or truly ambiguous intent.
+- CRITICAL for update_task/set_progress: you MUST set matchConfidence. Match on the WORK ITSELF (the trade/activity), NOT on the room. Being in the same room is NOT a match. If NO existing task is the SAME work as described, DO NOT pick a loosely-related task — emit "unknown", or "create_task" if it is clearly new work. Set matchConfidence below 0.6 whenever unsure, and list the closest existing tasks in candidateTaskIds so the user can pick.
+  WRONG-match example to AVOID: note = "the underfloor heating in the bathroom is done", but the only bathroom tasks are "Waterproofing" and "Tiling". Underfloor heating is neither → emit "unknown" (or create_task), matchConfidence low. Do NOT set_progress on Waterproofing or Tiling just because they are also in the bathroom.
 - If the note contains NO actionable instruction (pure chit-chat, mood, weather), return an EMPTY proposals array — invent nothing.
 - A single note may yield MULTIPLE proposals (e.g. a progress update AND a purchase).
 - Summaries MUST be written in ${langName}.

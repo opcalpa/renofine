@@ -66,6 +66,17 @@ export function scoreRouterCase(c, context, proposals) {
   let recall = { found: 0, expected: 0 };
   let falsePositives = 0;
 
+  // Borra-class trap: work with NO matching task must not produce a CONFIDENT task
+  // mutation (it should be unknown/create_task, or a low-confidence pick the UI won't auto-apply).
+  if (c.expectNoConfidentTaskMutation) {
+    const bad = list.filter((p) =>
+      p.action && (p.action.type === "set_progress" || p.action.type === "update_task") &&
+      (typeof p.matchConfidence !== "number" || p.matchConfidence >= 0.7));
+    for (const b of bad) critical.push(`confident mutation on unmatched work (${b.action.type}, mc=${b.matchConfidence ?? "none"})`);
+    const ok = bad.length === 0 && inventedIds.length === 0;
+    return { id: c.id, kind: "no-confident-mutation", ok, recall, falsePositives: 0, inventedIds, critical };
+  }
+
   if (c.expectUnknown) {
     // Must not produce an actionable proposal on un-routable input
     if (actionable.length > 0) critical.push(`hallucinated ${actionable.length} action(s) on unknown input`);

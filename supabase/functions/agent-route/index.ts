@@ -98,7 +98,9 @@ Output STRICT JSON of this exact shape (no prose, no markdown):
     {
       "summary": "<one short human line in ${langName}>",
       "confidence": <number 0..1>,
-      "action": <one of the action objects below>
+      "action": <one of the action objects below>,
+      "matchConfidence": <0..1 — ONLY for update_task/set_progress: how sure you are that taskId is the RIGHT task>,
+      "candidateTaskIds": [<up to 3 existing task ids that could plausibly be meant — for update_task/set_progress>]
     }
   ]
 }
@@ -116,6 +118,8 @@ Rules:
 - "behöver beställa tio kvm klinker" → create_purchase { item, quantity: 10, unit: "kvm" }, roomId if a room is named.
 - NEW work the user describes in an EXISTING room that has no matching task → create_task (set roomId). A new material/product to buy → create_purchase. Do NOT mark clearly-actionable new work as "unknown".
 - Reserve "unknown" for input you genuinely cannot map: a place or thing that does not exist in the project, or truly ambiguous intent.
+- CRITICAL for update_task/set_progress: you MUST set matchConfidence. Match on the WORK ITSELF (the trade/activity), NOT on the room. Being in the same room is NOT a match. If NO existing task is the SAME work as described, DO NOT pick a loosely-related task — emit "unknown", or "create_task" if it is clearly new work. Set matchConfidence below 0.6 whenever unsure, and list the closest existing tasks in candidateTaskIds so the user can pick.
+  WRONG-match example to AVOID: note = "the underfloor heating in the bathroom is done", but the only bathroom tasks are "Waterproofing" and "Tiling". Underfloor heating is neither → emit "unknown" (or create_task), matchConfidence low. Do NOT set_progress on Waterproofing or Tiling just because they are also in the bathroom.
 - If the note contains NO actionable instruction (pure chit-chat, mood, weather), return an EMPTY proposals array — invent nothing.
 - A single note may yield MULTIPLE proposals (e.g. a progress update AND a purchase).
 - Summaries MUST be written in ${langName}.
@@ -127,6 +131,17 @@ interface RawProposal {
   summary?: unknown;
   confidence?: unknown;
   action?: { type?: string; [k: string]: unknown };
+  matchConfidence?: unknown;
+  candidateTaskIds?: unknown;
+}
+
+interface NormalizedProposal {
+  id: string;
+  summary: string;
+  confidence: number;
+  action: Record<string, unknown>;
+  matchConfidence?: number;
+  candidates?: { id: string; title: string }[];
 }
 
 /** Validate + normalize model output against the real context. Drops/repairs unsafe proposals. */
@@ -134,10 +149,11 @@ function normalizeProposals(
   raw: RawProposal[],
   rooms: RoomCtx[],
   tasks: TaskCtx[],
-): { id: string; summary: string; confidence: number; action: Record<string, unknown> }[] {
+): NormalizedProposal[] {
   const roomIds = new Set(rooms.map((r) => r.id));
   const taskIds = new Set(tasks.map((t) => t.id));
-  const out: { id: string; summary: string; confidence: number; action: Record<string, unknown> }[] = [];
+  const taskTitle = new Map(tasks.map((t) => [t.id, t.title]));
+  const out: NormalizedProposal[] = [];
 
   for (const p of raw) {
     const action = p.action;
@@ -157,7 +173,18 @@ function normalizeProposals(
           toUnknown("Hittade ingen matchande uppgift");
           break;
         }
-        out.push({ id, summary, confidence, action: { ...action } });
+        const matchConfidence = typeof p.matchConfidence === "number"
+          ? Math.max(0, Math.min(1, p.matchConfidence))
+          : confidence;
+        // Resolve candidate ids (+ the chosen task) → {id,title} for manual re-pick.
+        const candIds = Array.isArray(p.candidateTaskIds)
+          ? (p.candidateTaskIds as unknown[]).filter((c): c is string => typeof c === "string")
+          : [];
+        const candidates = [action.taskId as string, ...candIds]
+          .filter((tid, i, arr) => taskIds.has(tid) && arr.indexOf(tid) === i)
+          .slice(0, 4)
+          .map((tid) => ({ id: tid, title: taskTitle.get(tid) ?? "" }));
+        out.push({ id, summary, confidence, action: { ...action }, matchConfidence, candidates });
         break;
       }
       case "create_task": {

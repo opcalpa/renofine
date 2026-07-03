@@ -85,6 +85,11 @@
       "expect": [
         { "type": "set_progress", "taskId": "t-trim", "progressMin": 100 }
       ]
+    },
+    {
+      "id": "no-matching-task-borra-trap",
+      "input": "Golvvärmen i badrummet är inkopplad och klar.",
+      "expectNoConfidentTaskMutation": true
     }
   ]
 }

@@ -26,6 +26,12 @@ export type ProposalAction =
 
 export type ProposalType = ProposalAction["type"];
 
+/** A task the user could re-target a proposal onto (for manual pick in ConfirmDiff). */
+export interface TaskCandidate {
+  id: string;
+  title: string;
+}
+
 export interface AgentProposal {
   /** Client-stable id for diff tracking / selection in ConfirmDiff. */
   id: string;
@@ -34,7 +40,25 @@ export interface AgentProposal {
   /** 0..1 — drives default selection in ConfirmDiff (>= 0.5 pre-checked). */
   confidence: number;
   action: ProposalAction;
+  /**
+   * For task-targeting actions (update_task / set_progress): how sure the router
+   * is that it picked the RIGHT task. Below TASK_MATCH_MIN_CONFIDENCE the proposal
+   * is shown unchecked so the user must confirm or re-pick — never silently applied.
+   */
+  matchConfidence?: number;
+  /** Alternative tasks for manual re-pick when the match is uncertain. */
+  candidates?: TaskCandidate[];
 }
+
+/** A reversible record of one applied action, used for one-tap undo. */
+export type UndoOp =
+  | { kind: "task_fields"; taskId: string; before: { status?: string | null; progress?: number | null; title?: string | null; description?: string | null } }
+  | { kind: "delete_task"; taskId: string }
+  | { kind: "delete_purchase"; purchaseOrderId: string; materialId: string }
+  | { kind: "delete_comment"; commentId: string };
+
+/** Below this task-match confidence, a task proposal is shown unchecked (needs confirm/re-pick). */
+export const TASK_MATCH_MIN_CONFIDENCE = 0.7;
 
 export interface AgentRouteInput {
   kind: "text" | "voice_transcript" | "document";
