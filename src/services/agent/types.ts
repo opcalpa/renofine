@@ -20,6 +20,8 @@ export type ProposalAction =
   | { type: "set_progress"; taskId: string; progress: number; status?: string }
   | { type: "create_task"; roomId?: string; title: string; description?: string }
   | { type: "create_purchase"; roomId?: string; item: string; quantity?: number; unit?: string }
+  | { type: "log_time"; taskId?: string; hours: number; date?: string; description?: string }
+  | { type: "toggle_checklist"; taskId: string; itemText: string; completed?: boolean }
   | { type: "add_note"; target: "task" | "room" | "project"; targetId: string; text: string }
   /** Router could not confidently route the input — surface as a question, never apply. */
   | { type: "unknown"; rawText: string; reason: string };
@@ -55,7 +57,9 @@ export type UndoOp =
   | { kind: "task_fields"; taskId: string; before: { status?: string | null; progress?: number | null; title?: string | null; description?: string | null } }
   | { kind: "delete_task"; taskId: string }
   | { kind: "delete_purchase"; purchaseOrderId: string; materialId: string }
-  | { kind: "delete_comment"; commentId: string };
+  | { kind: "delete_comment"; commentId: string }
+  | { kind: "delete_time"; timeEntryId: string }
+  | { kind: "checklist_restore"; taskId: string; before: { checklists: unknown; progress: number | null } };
 
 /** Below this task-match confidence, a task proposal is shown unchecked (needs confirm/re-pick). */
 export const TASK_MATCH_MIN_CONFIDENCE = 0.7;

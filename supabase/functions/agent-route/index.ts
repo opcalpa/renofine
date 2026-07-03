@@ -51,7 +51,15 @@ const LANGUAGE_NAMES: Record<string, string> = {
 };
 
 interface RoomCtx { id: string; name: string }
-interface TaskCtx { id: string; title: string; status: string | null }
+interface TaskCtx { id: string; title: string; status: string | null; checklistItems?: string[] }
+
+// deno-lint-ignore no-explicit-any
+function extractChecklistItems(checklists: any): string[] {
+  if (!Array.isArray(checklists)) return [];
+  return checklists.flatMap((cl) =>
+    Array.isArray(cl?.items) ? cl.items.map((i: { title?: string }) => i?.title).filter((t: unknown): t is string => typeof t === "string" && t.length > 0) : [],
+  );
+}
 
 async function fetchContext(projectId: string, authHeader: string): Promise<{ rooms: RoomCtx[]; tasks: TaskCtx[] }> {
   const headers = supabaseRestHeaders(authHeader);
@@ -61,12 +69,15 @@ async function fetchContext(projectId: string, authHeader: string): Promise<{ ro
       { headers },
     ),
     fetch(
-      `${supabaseRestUrl("tasks")}?project_id=eq.${projectId}&select=id,title,status&order=created_at.desc&limit=200`,
+      `${supabaseRestUrl("tasks")}?project_id=eq.${projectId}&select=id,title,status,checklists&order=created_at.desc&limit=200`,
       { headers },
     ),
   ]);
   const rooms = roomsRes.ok ? await roomsRes.json() : [];
-  const tasks = tasksRes.ok ? await tasksRes.json() : [];
+  const tasksRaw = tasksRes.ok ? await tasksRes.json() : [];
+  const tasks: TaskCtx[] = tasksRaw.map((t: { id: string; title: string; status: string | null; checklists?: unknown }) => ({
+    id: t.id, title: t.title, status: t.status, checklistItems: extractChecklistItems(t.checklists),
+  }));
   return { rooms, tasks };
 }
 
@@ -76,7 +87,12 @@ function buildSystemPrompt(language: string, rooms: RoomCtx[], tasks: TaskCtx[])
     ? rooms.map((r) => `  - id="${r.id}" name="${r.name}"`).join("\n")
     : "  (no rooms yet)";
   const taskList = tasks.length
-    ? tasks.map((t) => `  - id="${t.id}" title="${t.title}" status="${t.status ?? ""}"`).join("\n")
+    ? tasks.map((t) => {
+        const cl = t.checklistItems && t.checklistItems.length
+          ? ` checklist=[${t.checklistItems.map((x) => `"${x}"`).join(", ")}]`
+          : "";
+        return `  - id="${t.id}" title="${t.title}" status="${t.status ?? ""}"${cl}`;
+      }).join("\n")
     : "  (no tasks yet)";
 
   return `You are the routing brain of a renovation app. You convert a user's quick, possibly
@@ -99,8 +115,8 @@ Output STRICT JSON of this exact shape (no prose, no markdown):
       "summary": "<one short human line in ${langName}>",
       "confidence": <number 0..1>,
       "action": <one of the action objects below>,
-      "matchConfidence": <0..1 — ONLY for update_task/set_progress: how sure you are that taskId is the RIGHT task>,
-      "candidateTaskIds": [<up to 3 existing task ids that could plausibly be meant — for update_task/set_progress>]
+      "matchConfidence": <0..1 — for task-targeting actions (update_task/set_progress/log_time/toggle_checklist): how sure you are that taskId is the RIGHT task>,
+      "candidateTaskIds": [<up to 3 existing task ids that could plausibly be meant — for task-targeting actions>]
     }
   ]
 }
@@ -110,6 +126,8 @@ Allowed action objects:
 - { "type": "set_progress", "taskId": "<existing task id>", "progress": <0..100>, "status"?: string }
 - { "type": "create_task", "roomId"?: "<existing room id>", "title": string, "description"?: string }
 - { "type": "create_purchase", "roomId"?: "<existing room id>", "item": string, "quantity"?: number, "unit"?: string }
+- { "type": "log_time", "taskId"?: "<existing task id>", "hours": <number>, "date"?: "YYYY-MM-DD", "description"?: string }
+- { "type": "toggle_checklist", "taskId": "<existing task id>", "itemText": "<the checklist item text, taken from that task's checklist=[...]>", "completed"?: <boolean, default true> }
 - { "type": "add_note", "target": "task"|"room"|"project", "targetId": "<existing id>", "text": string }
 - { "type": "unknown", "rawText": "<the part you couldn't route>", "reason": "<short why, in ${langName}>" }
 
@@ -117,6 +135,8 @@ Rules:
 - "Köket är färdigmålat" → if a painting task exists for the kitchen → set_progress 100. Otherwise update_task or unknown.
 - "behöver beställa tio kvm klinker" → create_purchase { item, quantity: 10, unit: "kvm" }, roomId if a room is named.
 - NEW work the user describes in an EXISTING room that has no matching task → create_task (set roomId). A new material/product to buy → create_purchase. Do NOT mark clearly-actionable new work as "unknown".
+- "jobbade tre timmar i köket igår" → log_time { taskId (the matching kitchen task, set matchConfidence), hours: 3, date if stated }. If no clear task matches, log_time WITHOUT taskId (project-level time).
+- "listerna är klara/monterade" → if a task has a checklist item matching that text (see checklist=[...]) → toggle_checklist { taskId, itemText: "<the matching item verbatim>", completed: true }. If it names whole-task work instead, use set_progress.
 - Reserve "unknown" for input you genuinely cannot map: a place or thing that does not exist in the project, or truly ambiguous intent.
 - CRITICAL for update_task/set_progress: you MUST set matchConfidence. Match on the WORK ITSELF (the trade/activity), NOT on the room. Being in the same room is NOT a match. If NO existing task is the SAME work as described, DO NOT pick a loosely-related task — emit "unknown", or "create_task" if it is clearly new work. Set matchConfidence below 0.6 whenever unsure, and list the closest existing tasks in candidateTaskIds so the user can pick.
   WRONG-match example to AVOID: note = "the underfloor heating in the bathroom is done", but the only bathroom tasks are "Waterproofing" and "Tiling". Underfloor heating is neither → emit "unknown" (or create_task), matchConfidence low. Do NOT set_progress on Waterproofing or Tiling just because they are also in the bathroom.
@@ -196,6 +216,34 @@ function normalizeProposals(
       case "create_purchase": {
         if (typeof action.item !== "string" || !action.item.trim()) break;
         if (action.roomId && !roomIds.has(action.roomId as string)) delete action.roomId;
+        out.push({ id, summary, confidence, action: { ...action } });
+        break;
+      }
+      case "log_time": {
+        if (typeof action.hours !== "number" || !(action.hours > 0)) break;
+        let matchConfidence: number | undefined;
+        let candidates: { id: string; title: string }[] | undefined;
+        if (typeof action.taskId === "string") {
+          if (!taskIds.has(action.taskId)) {
+            delete action.taskId; // no real task match → log at project level
+          } else {
+            matchConfidence = typeof p.matchConfidence === "number" ? Math.max(0, Math.min(1, p.matchConfidence)) : confidence;
+            const candIds = Array.isArray(p.candidateTaskIds)
+              ? (p.candidateTaskIds as unknown[]).filter((c): c is string => typeof c === "string") : [];
+            candidates = [action.taskId as string, ...candIds]
+              .filter((tid, i, arr) => taskIds.has(tid) && arr.indexOf(tid) === i)
+              .slice(0, 4).map((tid) => ({ id: tid, title: taskTitle.get(tid) ?? "" }));
+          }
+        }
+        out.push({ id, summary, confidence, action: { ...action }, matchConfidence, candidates });
+        break;
+      }
+      case "toggle_checklist": {
+        if (typeof action.taskId !== "string" || !taskIds.has(action.taskId) ||
+            typeof action.itemText !== "string" || !action.itemText.trim()) {
+          toUnknown("Hittade ingen matchande checklistpunkt");
+          break;
+        }
         out.push({ id, summary, confidence, action: { ...action } });
         break;
       }

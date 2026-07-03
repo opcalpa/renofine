@@ -13,7 +13,7 @@
       { "id": "t-seal", "title": "Tätskikt badrum", "status": "to_do" },
       { "id": "t-tile", "title": "Kakelsättning badrum", "status": "to_do" },
       { "id": "t-floor", "title": "Slipning och lackning av golv", "status": "to_do" },
-      { "id": "t-trim", "title": "Montering av lister", "status": "to_do" },
+      { "id": "t-trim", "title": "Montering av lister", "status": "to_do", "checklistItems": ["Kapa lister", "Montera lister", "Måla lister"] },
       { "id": "t-elec", "title": "Eluttag och belysning", "status": "to_do" }
     ]
   },
@@ -80,16 +80,30 @@
       "forbidTaskIds": ["t-seal", "t-paint"]
     },
     {
-      "id": "lister-done-no-invent",
+      "id": "lister-checklist-not-room",
       "input": "Listerna är monterade i vardagsrummet.",
       "expect": [
-        { "type": "set_progress", "taskId": "t-trim", "progressMin": 100 }
+        { "type": "toggle_checklist", "taskId": "t-trim", "itemIncludes": "montera" }
       ]
     },
     {
       "id": "no-matching-task-borra-trap",
       "input": "Golvvärmen i badrummet är inkopplad och klar.",
       "expectNoConfidentTaskMutation": true
+    },
+    {
+      "id": "log-time-on-task",
+      "input": "Jag jobbade tre timmar på målningen igår.",
+      "expect": [
+        { "type": "log_time", "hours": 3 }
+      ]
+    },
+    {
+      "id": "toggle-checklist-item",
+      "input": "Listerna är monterade nu.",
+      "expect": [
+        { "type": "toggle_checklist", "taskId": "t-trim", "itemIncludes": "montera" }
+      ]
     }
   ]
 }

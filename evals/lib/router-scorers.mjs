@@ -29,9 +29,10 @@ function matches(expected, action) {
 
   if (expected.taskId && action.taskId !== expected.taskId) return false;
   if (expected.roomId && action.roomId !== expected.roomId) return false;
-  if (expected.itemIncludes && !(action.item || "").toLowerCase().includes(expected.itemIncludes.toLowerCase())) return false;
+  if (expected.itemIncludes && !((action.item || action.itemText || "").toLowerCase().includes(expected.itemIncludes.toLowerCase()))) return false;
   if (expected.titleIncludes && !(action.title || "").toLowerCase().includes(expected.titleIncludes.toLowerCase())) return false;
   if (expected.quantity != null && Number(action.quantity) !== Number(expected.quantity)) return false;
+  if (expected.hours != null && Number(action.hours) !== Number(expected.hours)) return false;
   if (expected.progressMin != null && !(Number(action.progress) >= expected.progressMin)) return false;
   if (expected.progressMax != null && !(Number(action.progress) <= expected.progressMax)) return false;
   return true;

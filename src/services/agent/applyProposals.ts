@@ -20,7 +20,11 @@ export interface ApplyResult {
   undo: UndoOp[];
 }
 
-const ACTOR = "renaida";
+interface ChecklistGroup {
+  id?: string;
+  title?: string;
+  items?: { id?: string; title?: string; completed?: boolean }[];
+}
 
 async function getProfileId(): Promise<string> {
   const { data: { user }, error: authErr } = await supabase.auth.getUser();
@@ -114,6 +118,52 @@ async function applyOne(
       return { kind: "delete_purchase", purchaseOrderId, materialId };
     }
 
+    case "log_time": {
+      const date = action.date ?? new Date().toISOString().slice(0, 10);
+      const { data, error } = await supabase.from("time_entries").insert({
+        project_id: projectId,
+        task_id: action.taskId ?? null,
+        user_id: profileId,
+        date,
+        hours: action.hours,
+        description: action.description ?? null,
+      }).select("id").single();
+      if (error || !data) throw new Error(error?.message ?? "Kunde inte logga tid");
+
+      logActivity(projectId, profileId, "renaida_log_time", "time_entry", data.id, `${action.hours}h`, { hours: action.hours, taskId: action.taskId, date });
+      return { kind: "delete_time", timeEntryId: data.id };
+    }
+
+    case "toggle_checklist": {
+      const { data: task } = await supabase
+        .from("tasks").select("checklists,progress,title").eq("id", action.taskId).single();
+      const before = { checklists: task?.checklists ?? null, progress: task?.progress ?? null };
+      const checklists = (task?.checklists as ChecklistGroup[] | null) ?? [];
+      const want = action.completed ?? true;
+      const needle = action.itemText.toLowerCase();
+      let found = false;
+      for (const cl of checklists) {
+        for (const item of cl.items ?? []) {
+          if (!found && (item.title ?? "").toLowerCase().includes(needle)) {
+            item.completed = want;
+            found = true;
+          }
+        }
+      }
+      if (!found) throw new Error("Hittade ingen checklistpunkt som matchar");
+
+      // Recompute task progress from checklist completion (mirrors worker-toggle-checklist).
+      let total = 0, done = 0;
+      for (const cl of checklists) for (const item of cl.items ?? []) { total++; if (item.completed) done++; }
+      const progress = total > 0 ? Math.round((done / total) * 100) : (task?.progress ?? 0);
+
+      const { error } = await supabase.from("tasks").update({ checklists, progress }).eq("id", action.taskId);
+      if (error) throw new Error(error.message);
+
+      logActivity(projectId, profileId, "renaida_checklist", "task", action.taskId, task?.title ?? "", { itemText: action.itemText, completed: want });
+      return { kind: "checklist_restore", taskId: action.taskId, before };
+    }
+
     case "add_note": {
       const { data, error } = await supabase.from("comments").insert({
         content: action.text,
@@ -179,6 +229,15 @@ export async function undoProposals(undo: UndoOp[]): Promise<void> {
           break;
         case "delete_comment":
           await supabase.from("comments").delete().eq("id", op.commentId);
+          break;
+        case "delete_time":
+          await supabase.from("time_entries").delete().eq("id", op.timeEntryId);
+          break;
+        case "checklist_restore":
+          await supabase.from("tasks").update({
+            checklists: op.before.checklists as never,
+            progress: op.before.progress,
+          }).eq("id", op.taskId);
           break;
       }
     } catch {

@@ -30,7 +30,8 @@ interface ConfirmDiffProps {
   onDismiss: () => void;
 }
 
-const isTaskAction = (a: ProposalAction) => a.type === "update_task" || a.type === "set_progress";
+const isTaskAction = (a: ProposalAction) =>
+  a.type === "update_task" || a.type === "set_progress" || a.type === "log_time";
 
 function unknownTitle(p: AgentProposal): string {
   if (p.action.type === "unknown" && p.action.rawText && !p.action.rawText.trim().startsWith("{")) {
