@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { ConfirmDiff } from "@/components/agent/ConfirmDiff";
+import { RenaidaAvatar, type RenaidaState } from "@/components/renaida/RenaidaAvatar";
 import { routeAgentInput } from "@/services/agent/routeClient";
 import { applyProposals, undoProposals } from "@/services/agent/applyProposals";
 import type { AgentProposal, UndoOp } from "@/services/agent/types";
@@ -117,10 +118,50 @@ export function HelpBot() {
   const [capturing, setCapturing] = useState(false);
   const [listening, setListening] = useState(false);
   const [applying, setApplying] = useState(false);
+  const [renaidaFlash, setRenaidaFlash] = useState<RenaidaState | null>(null);
+  const [renaidaAsleep, setRenaidaAsleep] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const flashTimerRef = useRef<number | undefined>(undefined);
+  const sleepTimerRef = useRef<number | undefined>(undefined);
+
+  // --- Renaida mood machine: idle → hello/think/talk/happy, sleep when idle ---
+  const wakeRenaida = useCallback(() => {
+    setRenaidaAsleep(false);
+    if (sleepTimerRef.current) window.clearTimeout(sleepTimerRef.current);
+    sleepTimerRef.current = window.setTimeout(() => setRenaidaAsleep(true), 45000);
+  }, []);
+
+  const flashRenaida = useCallback((mood: RenaidaState, ms = 1800) => {
+    wakeRenaida();
+    setRenaidaFlash(mood);
+    if (flashTimerRef.current) window.clearTimeout(flashTimerRef.current);
+    flashTimerRef.current = window.setTimeout(() => setRenaidaFlash(null), ms);
+  }, [wakeRenaida]);
+
+  const renaidaBusy = loading || capturing || applying;
+  const renaidaState: RenaidaState = renaidaFlash
+    ? renaidaFlash
+    : renaidaBusy
+      ? "think"
+      : (renaidaAsleep && !open) ? "sleep" : "idle";
+
+  // Start the inactivity clock on mount; clean timers on unmount.
+  useEffect(() => {
+    wakeRenaida();
+    return () => {
+      if (flashTimerRef.current) window.clearTimeout(flashTimerRef.current);
+      if (sleepTimerRef.current) window.clearTimeout(sleepTimerRef.current);
+    };
+  }, [wakeRenaida]);
+
+  // Wave hello when opened; reset inactivity clock when closed.
+  useEffect(() => {
+    if (open) flashRenaida("hello", 2200);
+    else wakeRenaida();
+  }, [open, flashRenaida, wakeRenaida]);
 
   // Fetch user type and name from profile
   useEffect(() => {
@@ -331,6 +372,7 @@ export function HelpBot() {
           ],
         },
       ]);
+      flashRenaida("talk", 1600);
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -345,7 +387,7 @@ export function HelpBot() {
     } finally {
       setLoading(false);
     }
-  }, [loading, messages, t, i18n.language, userType, feedbackMode, submitFeedback]);
+  }, [loading, messages, t, i18n.language, userType, feedbackMode, submitFeedback, flashRenaida]);
 
   const handleSend = useCallback(() => {
     sendMessage(input);
@@ -365,6 +407,7 @@ export function HelpBot() {
     }
 
     setCapturing(true);
+    wakeRenaida();
     try {
       const res = await routeAgentInput({ kind, content: text.trim() }, projectId, i18n.language);
       if (!res.proposals.length) {
@@ -372,12 +415,13 @@ export function HelpBot() {
       } else {
         setMessages((prev) => [...prev, { role: "assistant", content: "", proposals: res.proposals }]);
       }
+      flashRenaida("talk", 1400);
     } catch {
       setMessages((prev) => [...prev, { role: "assistant", content: t("helpBot.agent.routeError") }]);
     } finally {
       setCapturing(false);
     }
-  }, [capturing, loading, t, i18n.language]);
+  }, [capturing, loading, t, i18n.language, flashRenaida, wakeRenaida]);
 
   const startVoiceCapture = useCallback(() => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -431,7 +475,8 @@ export function HelpBot() {
         .map((m, i) => (i === msgIndex ? { ...m, proposals: undefined } : m))
         .concat({ role: "assistant", content, undo: result.undo.length ? result.undo : undefined }),
     );
-  }, [t]);
+    if (result.applied.length > 0) flashRenaida("happy", 2000);
+  }, [t, flashRenaida]);
 
   const handleUndo = useCallback(async (msgIndex: number, ops: UndoOp[]) => {
     setMessages((prev) => prev.map((m, i) => (i === msgIndex ? { ...m, undo: undefined } : m)));
@@ -624,7 +669,7 @@ export function HelpBot() {
           className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-50 h-14 w-14 rounded-full shadow-lg bg-white border-2 border-primary/20 hover:border-primary/40 transition-colors flex items-center justify-center"
           aria-label={t("helpBot.title", "Renaida")}
         >
-          <img src="/chatbot-avatar.jpg" alt="Renaida" className="h-10 w-10 rounded-full object-cover" />
+          <RenaidaAvatar state={renaidaState} size={44} />
           {reminderCount > 0 && (
             <span className="absolute -top-1 -right-1 h-5 min-w-5 px-1 rounded-full bg-orange-500 text-white text-[11px] font-bold flex items-center justify-center shadow-sm">
               {reminderCount}
@@ -641,7 +686,7 @@ export function HelpBot() {
           {/* Header */}
           <div className="flex items-center justify-between border-b px-4 py-3">
             <div className="flex items-center gap-2">
-              <img src="/chatbot-avatar.jpg" alt="Renaida" className="h-7 w-7 rounded-full object-cover" />
+              <RenaidaAvatar state={renaidaState} size={28} />
               <h3 className="font-semibold text-sm">
                 {t("helpBot.title", "Renaida")}
               </h3>
@@ -698,7 +743,7 @@ export function HelpBot() {
               <div key={i}>
                 {msg.proposals && msg.proposals.length > 0 ? (
                   <div className="flex items-start gap-2 justify-start">
-                    <img src="/chatbot-avatar.jpg" alt="Renaida" className="h-6 w-6 rounded-full object-cover shrink-0 mt-1" />
+                    <RenaidaAvatar state="idle" size={24} className="shrink-0 mt-1" />
                     <div className="max-w-[85%] flex-1">
                       <ConfirmDiff
                         proposals={msg.proposals}
@@ -711,7 +756,7 @@ export function HelpBot() {
                 ) : (
                 <div className={`flex items-end gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                   {msg.role === "assistant" && (
-                    <img src="/chatbot-avatar.jpg" alt="Renaida" className="h-6 w-6 rounded-full object-cover shrink-0 mb-0.5" />
+                    <RenaidaAvatar state="idle" size={24} className="shrink-0 mb-0.5" />
                   )}
                   <div
                     className={`max-w-[80%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap ${

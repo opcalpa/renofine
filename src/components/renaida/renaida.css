@@ -1,0 +1,135 @@
+/* Renaida avatar — motion. Ported 1:1 from the design handoff showcase.
+   All looping animations are behind prefers-reduced-motion so reduced-motion /
+   print show a stable resting frame. Decor layers are hidden until a state
+   turns them on. */
+
+/* decor layers off by default */
+.rn-dots,
+.rn-sound,
+.rn-spark,
+.rn-zzz {
+  opacity: 0;
+}
+.rn--think .rn-dots {
+  opacity: 1;
+}
+.rn--talk .rn-sound {
+  opacity: 1;
+}
+.rn--hello .rn-spark,
+.rn--happy .rn-spark {
+  opacity: 1;
+}
+.rn--sleep .rn-zzz {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .rn {
+    animation: rn-float 3.6s ease-in-out infinite;
+  }
+  .rn-eye {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: rn-blink 4.8s ease-in-out infinite;
+  }
+  .rn--sleep {
+    animation: rn-float 6s ease-in-out infinite;
+  }
+  .rn--talk .rn-head {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: rn-nod 0.9s ease-in-out infinite;
+  }
+  .rn--hello .rn-head {
+    transform-box: fill-box;
+    transform-origin: 50% 82%;
+    animation: rn-wave 0.8s ease-in-out infinite;
+  }
+  .rn--happy .rn-head {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: rn-hop 0.72s ease-in-out infinite;
+  }
+  .rn--think .rn-dots circle {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: rn-dot 1.4s ease-in-out infinite;
+  }
+  .rn--think .rn-dots circle:nth-child(2) {
+    animation-delay: 0.18s;
+  }
+  .rn--think .rn-dots circle:nth-child(3) {
+    animation-delay: 0.36s;
+  }
+  .rn--talk .rn-sound path {
+    animation: rn-snd 0.9s ease-in-out infinite;
+  }
+  .rn--talk .rn-sound path:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+  .rn-spark-a,
+  .rn-spark-b {
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+  .rn--hello .rn-spark-a,
+  .rn--happy .rn-spark-a {
+    animation: rn-tw 1.3s ease-in-out infinite;
+  }
+  .rn--hello .rn-spark-b,
+  .rn--happy .rn-spark-b {
+    animation: rn-tw 1.3s ease-in-out 0.45s infinite;
+  }
+  .rn--sleep .rn-z1 {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: rn-z 2.4s ease-in-out infinite;
+  }
+  .rn--sleep .rn-z2 {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: rn-z 2.4s ease-in-out 0.5s infinite;
+  }
+}
+
+@keyframes rn-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+@keyframes rn-blink {
+  0%, 90%, 100% { transform: scaleY(1); }
+  94% { transform: scaleY(0.1); }
+  97% { transform: scaleY(1); }
+}
+@keyframes rn-nod {
+  0%, 100% { transform: rotate(0); }
+  25% { transform: rotate(-4deg); }
+  75% { transform: rotate(4deg); }
+}
+@keyframes rn-wave {
+  0%, 100% { transform: rotate(-7deg); }
+  50% { transform: rotate(8deg); }
+}
+@keyframes rn-hop {
+  0%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-5px); }
+  60% { transform: translateY(-2px); }
+}
+@keyframes rn-dot {
+  0%, 100% { opacity: 0.25; transform: translateY(2px); }
+  50% { opacity: 1; transform: translateY(-1px); }
+}
+@keyframes rn-snd {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 0.9; }
+}
+@keyframes rn-tw {
+  0%, 100% { opacity: 0.15; transform: scale(0.55); }
+  50% { opacity: 1; transform: scale(1); }
+}
+@keyframes rn-z {
+  0% { opacity: 0; transform: translateY(5px); }
+  30% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-7px); }
+}
