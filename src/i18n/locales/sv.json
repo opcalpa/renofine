@@ -3794,7 +3794,12 @@
       "routeError": "Jag kunde inte tolka det. Försök igen?",
       "noProposals": "Jag hittade inget att ändra i den noteringen.",
       "noProject": "Öppna ett projekt först så vet jag var det hör hemma.",
-      "dismissed": "Okej, jag lät allt vara."
+      "dismissed": "Okej, jag lät allt vara.",
+      "uncertainMatch": "· osäker matchning, kolla gärna",
+      "createTask": "Skapa uppgift",
+      "willCreateTask": "Skapar en uppgift",
+      "undo": "Ångra",
+      "undone": "Ångrat — återställde ändringarna."
     }
   },
   "feedback": {

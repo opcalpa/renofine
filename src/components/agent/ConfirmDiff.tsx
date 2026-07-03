@@ -1,23 +1,26 @@
 /**
  * ConfirmDiff — the agentic keystone.
  *
- * Renders a list of AgentProposals as a reviewable, selectable diff. The user
- * confirms which to apply; nothing mutates until confirm. `unknown` proposals
- * are shown as clarification questions and are never selectable.
+ * Renders AgentProposals as a reviewable, selectable diff. The user confirms
+ * which to apply; nothing mutates until confirm. Task-targeting proposals show
+ * WHICH task they hit; when the match is uncertain (matchConfidence below
+ * threshold) the row is unchecked and offers a manual re-pick among candidates.
+ * `unknown` proposals are shown as questions and offer "create a task instead".
  *
- * Generalized from the upload→review→apply pattern in AIProjectImportModal.
- * See .claude/briefs/agentic-mvp.md.
+ * See .claude/briefs/voice-capture-plan.md.
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Check, HelpCircle } from "lucide-react";
+import { Check, HelpCircle, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import {
   type AgentProposal,
+  type ProposalAction,
   isActionable,
   PROPOSAL_AUTOSELECT_CONFIDENCE,
+  TASK_MATCH_MIN_CONFIDENCE,
 } from "@/services/agent/types";
 
 interface ConfirmDiffProps {
@@ -27,17 +30,34 @@ interface ConfirmDiffProps {
   onDismiss: () => void;
 }
 
+const isTaskAction = (a: ProposalAction) => a.type === "update_task" || a.type === "set_progress";
+
+function unknownTitle(p: AgentProposal): string {
+  if (p.action.type === "unknown" && p.action.rawText && !p.action.rawText.trim().startsWith("{")) {
+    return p.action.rawText;
+  }
+  return p.summary;
+}
+
 export function ConfirmDiff({ proposals, applying = false, onConfirm, onDismiss }: ConfirmDiffProps) {
   const { t } = useTranslation();
+
+  const lowMatch = (p: AgentProposal) =>
+    isActionable(p) && isTaskAction(p.action) &&
+    typeof p.matchConfidence === "number" && p.matchConfidence < TASK_MATCH_MIN_CONFIDENCE;
 
   const [selected, setSelected] = useState<Set<string>>(
     () =>
       new Set(
         proposals
-          .filter((p) => isActionable(p) && p.confidence >= PROPOSAL_AUTOSELECT_CONFIDENCE)
+          .filter((p) => isActionable(p) && !lowMatch(p) && p.confidence >= PROPOSAL_AUTOSELECT_CONFIDENCE)
           .map((p) => p.id),
       ),
   );
+  // Per-proposal re-picked task id (manual override of the router's choice)
+  const [taskOverride, setTaskOverride] = useState<Record<string, string>>({});
+  // Unknown proposals the user chose to turn into a new task
+  const [asNewTask, setAsNewTask] = useState<Set<string>>(new Set());
 
   const actionable = proposals.filter(isActionable);
   const unknowns = proposals.filter((p) => !isActionable(p));
@@ -49,30 +69,83 @@ export function ConfirmDiff({ proposals, applying = false, onConfirm, onDismiss 
       return next;
     });
 
-  const selectedCount = selected.size;
+  const pickTask = (id: string, taskId: string) => {
+    setTaskOverride((prev) => ({ ...prev, [id]: taskId }));
+    setSelected((prev) => new Set(prev).add(id)); // re-picking implies intent to apply
+  };
+
+  const convertToTask = (id: string) => {
+    setAsNewTask((prev) => new Set(prev).add(id));
+    setSelected((prev) => new Set(prev).add(id));
+  };
+
+  const buildAccepted = (): AgentProposal[] => {
+    const out: AgentProposal[] = [];
+    for (const p of proposals) {
+      if (!selected.has(p.id)) continue;
+      if (asNewTask.has(p.id)) {
+        out.push({ ...p, action: { type: "create_task", title: unknownTitle(p) } });
+        continue;
+      }
+      let action = p.action;
+      const override = taskOverride[p.id];
+      if (override && isTaskAction(action)) {
+        action = { ...action, taskId: override } as ProposalAction;
+      }
+      out.push({ ...p, action });
+    }
+    return out;
+  };
+
+  const currentTaskId = (p: AgentProposal): string | undefined => {
+    if (taskOverride[p.id]) return taskOverride[p.id];
+    if (isTaskAction(p.action) && "taskId" in p.action) return p.action.taskId;
+    return undefined;
+  };
+
+  const selectedCount = selected.size + [...asNewTask].filter((id) => selected.has(id)).length * 0;
 
   return (
     <div className="rounded-lg border border-border bg-card p-3 text-sm">
       <p className="mb-2 font-medium">{t("helpBot.agent.reviewTitle")}</p>
 
-      <ul className="space-y-1.5">
-        {actionable.map((p) => (
-          <li key={p.id} className="flex items-start gap-2">
-            <Checkbox
-              id={`prop-${p.id}`}
-              checked={selected.has(p.id)}
-              onCheckedChange={() => toggle(p.id)}
-              disabled={applying}
-              className="mt-0.5"
-            />
-            <label htmlFor={`prop-${p.id}`} className="flex-1 cursor-pointer leading-snug">
-              <span>{p.summary}</span>
-              <Badge variant="secondary" className="ml-2 align-middle text-[10px]">
-                {p.action.type}
-              </Badge>
-            </label>
-          </li>
-        ))}
+      <ul className="space-y-2">
+        {actionable.map((p) => {
+          const taskAction = isTaskAction(p.action);
+          const showPicker = taskAction && (p.candidates?.length ?? 0) > 0 && (lowMatch(p) || (p.candidates?.length ?? 0) > 1);
+          return (
+            <li key={p.id} className="flex items-start gap-2">
+              <Checkbox
+                id={`prop-${p.id}`}
+                checked={selected.has(p.id)}
+                onCheckedChange={() => toggle(p.id)}
+                disabled={applying}
+                className="mt-0.5"
+              />
+              <div className="flex-1">
+                <label htmlFor={`prop-${p.id}`} className="cursor-pointer leading-snug">
+                  <span>{p.summary}</span>
+                  <Badge variant="secondary" className="ml-2 align-middle text-[10px]">{p.action.type}</Badge>
+                  {lowMatch(p) && (
+                    <span className="ml-1 text-[10px] text-amber-600">{t("helpBot.agent.uncertainMatch")}</span>
+                  )}
+                </label>
+                {showPicker && (
+                  <select
+                    value={currentTaskId(p) ?? ""}
+                    onChange={(e) => pickTask(p.id, e.target.value)}
+                    disabled={applying}
+                    className="mt-1 block w-full rounded border border-border bg-background px-2 py-1 text-xs"
+                  >
+                    {p.candidates!.map((c) => (
+                      <option key={c.id} value={c.id}>{c.title}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            </li>
+          );
+        })}
       </ul>
 
       {unknowns.length > 0 && (
@@ -81,10 +154,21 @@ export function ConfirmDiff({ proposals, applying = false, onConfirm, onDismiss 
             <HelpCircle className="h-3.5 w-3.5" />
             {t("helpBot.agent.needsClarification")}
           </p>
-          <ul className="space-y-1">
+          <ul className="space-y-1.5">
             {unknowns.map((p) => (
-              <li key={p.id} className="text-xs text-muted-foreground">
-                {p.summary}
+              <li key={p.id} className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                <span>{p.summary}</span>
+                {!asNewTask.has(p.id) ? (
+                  <button
+                    onClick={() => convertToTask(p.id)}
+                    disabled={applying}
+                    className="inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium hover:bg-accent"
+                  >
+                    <Plus className="h-3 w-3" />{t("helpBot.agent.createTask")}
+                  </button>
+                ) : (
+                  <span className="shrink-0 text-[11px] text-primary">{t("helpBot.agent.willCreateTask")}</span>
+                )}
               </li>
             ))}
           </ul>
@@ -97,7 +181,7 @@ export function ConfirmDiff({ proposals, applying = false, onConfirm, onDismiss 
         </Button>
         <Button
           size="sm"
-          onClick={() => onConfirm(actionable.filter((p) => selected.has(p.id)))}
+          onClick={() => onConfirm(buildAccepted())}
           disabled={applying || selectedCount === 0}
         >
           <Check className="mr-1 h-3.5 w-3.5" />

@@ -6,8 +6,8 @@ import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { ConfirmDiff } from "@/components/agent/ConfirmDiff";
 import { routeAgentInput } from "@/services/agent/routeClient";
-import { applyProposals } from "@/services/agent/applyProposals";
-import type { AgentProposal } from "@/services/agent/types";
+import { applyProposals, undoProposals } from "@/services/agent/applyProposals";
+import type { AgentProposal, UndoOp } from "@/services/agent/types";
 
 interface Message {
   role: "user" | "assistant";
@@ -16,6 +16,8 @@ interface Message {
   actions?: InlineAction[];
   /** When present, the message renders an agentic ConfirmDiff instead of a text bubble */
   proposals?: AgentProposal[];
+  /** When present, the message shows an "Undo" button that reverses these ops */
+  undo?: UndoOp[];
 }
 
 interface InlineAction {
@@ -427,8 +429,14 @@ export function HelpBot() {
     setMessages((prev) =>
       prev
         .map((m, i) => (i === msgIndex ? { ...m, proposals: undefined } : m))
-        .concat({ role: "assistant", content }),
+        .concat({ role: "assistant", content, undo: result.undo.length ? result.undo : undefined }),
     );
+  }, [t]);
+
+  const handleUndo = useCallback(async (msgIndex: number, ops: UndoOp[]) => {
+    setMessages((prev) => prev.map((m, i) => (i === msgIndex ? { ...m, undo: undefined } : m)));
+    await undoProposals(ops);
+    setMessages((prev) => [...prev, { role: "assistant", content: t("helpBot.agent.undone") }]);
   }, [t]);
 
   const handleDismissProposals = useCallback((msgIndex: number) => {
@@ -736,6 +744,18 @@ export function HelpBot() {
                         {t(action.labelKey, action.fallback)}
                       </button>
                     ))}
+                  </div>
+                )}
+                {/* Undo button for an applied agentic action */}
+                {msg.undo && msg.undo.length > 0 && (
+                  <div className="mt-2 ml-1">
+                    <button
+                      onClick={() => handleUndo(i, msg.undo!)}
+                      className="inline-flex items-center gap-1 rounded-full border bg-background px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                    >
+                      <ArrowLeft className="h-3 w-3" />
+                      {t("helpBot.agent.undo")}
+                    </button>
                   </div>
                 )}
               </div>

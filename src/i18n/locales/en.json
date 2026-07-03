@@ -3795,7 +3795,12 @@
       "routeError": "I couldn't process that. Try again?",
       "noProposals": "I didn't find anything to change in that note.",
       "noProject": "Open a project first so I know where to put this.",
-      "dismissed": "Okay, I left everything as is."
+      "dismissed": "Okay, I left everything as is.",
+      "uncertainMatch": "· uncertain match, please check",
+      "createTask": "Create task",
+      "willCreateTask": "Will create a task",
+      "undo": "Undo",
+      "undone": "Undone — reverted the changes."
     }
   },
   "feedback": {
