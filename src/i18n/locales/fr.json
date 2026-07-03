@@ -906,10 +906,10 @@
   "helpBot": {
     "disclaimer": "REMARQUE : pour la réglementation de la construction, je fournis des indications générales — contactez toujours le comité de construction de votre commune pour les décisions finales.",
     "errorMessage": "Une erreur s'est produite. Veuillez réessayer.",
-    "greeting": "Bonjour ! Je suis Renofine Junior — votre expert en rénovation et guide de la plateforme. Posez-moi des questions sur la réglementation de la construction, des conseils de rénovation ou comment tirer le meilleur parti de l'application !\n\nREMARQUE : pour la réglementation de la construction, je fournis des indications générales — contactez toujours le comité de construction de votre commune pour les décisions finales.",
+    "greeting": "Bonjour ! Je suis Renaida — votre expert en rénovation et guide de la plateforme. Posez-moi des questions sur la réglementation de la construction, des conseils de rénovation ou comment tirer le meilleur parti de l'application !\n\nREMARQUE : pour la réglementation de la construction, je fournis des indications générales — contactez toujours le comité de construction de votre commune pour les décisions finales.",
     "placeholder": "Posez une question sur les rénovations ou l'utilisation de l'application...",
     "send": "Envoyer",
-    "title": "Renofine Junior"
+    "title": "Renaida"
   },
   "hotspots": {
     "canvas": "Dessinez vos pièces ici en 30 secondes",

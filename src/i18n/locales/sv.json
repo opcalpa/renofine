@@ -3717,10 +3717,10 @@
     "couldNotDelete": "Kunde inte ta bort rum"
   },
   "helpBot": {
-    "title": "Renofine Junior",
+    "title": "Renaida",
     "placeholder": "Fråga om renovering eller hur appen fungerar...",
     "disclaimer": "OBS: För byggregler ger jag allmän vägledning — kontakta alltid din kommuns byggnadsnämnd för slutgiltigt besked.",
-    "greeting": "Hej! Jag är Renofine Junior — din renoveringsexpert och plattformsguide. Fråga mig om byggregler, renoveringstips eller hur du får ut mest av appen!\n\nOBS: För byggregler ger jag allmän vägledning — kontakta alltid din kommuns byggnadsnämnd för slutgiltigt besked.",
+    "greeting": "Hej! Jag är Renaida — din renoveringsexpert och plattformsguide. Fråga mig om byggregler, renoveringstips eller hur du får ut mest av appen!\n\nOBS: För byggregler ger jag allmän vägledning — kontakta alltid din kommuns byggnadsnämnd för slutgiltigt besked.",
     "timeGreeting": {
       "morning": "God morgon",
       "afternoon": "Hej",

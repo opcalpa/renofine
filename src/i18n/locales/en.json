@@ -3718,10 +3718,10 @@
     "couldNotDelete": "Could not delete room"
   },
   "helpBot": {
-    "title": "Renofine Junior",
+    "title": "Renaida",
     "placeholder": "Ask about renovations or how to use the app...",
     "disclaimer": "NOTE: For building regulations I provide general guidance — always contact your municipality's building committee for final decisions.",
-    "greeting": "Hi! I'm Renofine Junior — your renovation expert and platform guide. Ask me about building regulations, renovation tips, or how to get the most out of the app!\n\nNOTE: For building regulations I provide general guidance — always contact your municipality's building committee for final decisions.",
+    "greeting": "Hi! I'm Renaida — your renovation expert and platform guide. Ask me about building regulations, renovation tips, or how to get the most out of the app!\n\nNOTE: For building regulations I provide general guidance — always contact your municipality's building committee for final decisions.",
     "timeGreeting": {
       "morning": "Good morning",
       "afternoon": "Hey",

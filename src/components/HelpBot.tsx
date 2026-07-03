@@ -614,9 +614,9 @@ export function HelpBot() {
         <button
           onClick={() => setOpen(true)}
           className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-50 h-14 w-14 rounded-full shadow-lg bg-white border-2 border-primary/20 hover:border-primary/40 transition-colors flex items-center justify-center"
-          aria-label={t("helpBot.title", "Renofine Junior")}
+          aria-label={t("helpBot.title", "Renaida")}
         >
-          <img src="/chatbot-avatar.jpg" alt="Renofine Junior" className="h-10 w-10 rounded-full object-cover" />
+          <img src="/chatbot-avatar.jpg" alt="Renaida" className="h-10 w-10 rounded-full object-cover" />
           {reminderCount > 0 && (
             <span className="absolute -top-1 -right-1 h-5 min-w-5 px-1 rounded-full bg-orange-500 text-white text-[11px] font-bold flex items-center justify-center shadow-sm">
               {reminderCount}
@@ -633,9 +633,9 @@ export function HelpBot() {
           {/* Header */}
           <div className="flex items-center justify-between border-b px-4 py-3">
             <div className="flex items-center gap-2">
-              <img src="/chatbot-avatar.jpg" alt="Renofine Junior" className="h-7 w-7 rounded-full object-cover" />
+              <img src="/chatbot-avatar.jpg" alt="Renaida" className="h-7 w-7 rounded-full object-cover" />
               <h3 className="font-semibold text-sm">
-                {t("helpBot.title", "Renofine Junior")}
+                {t("helpBot.title", "Renaida")}
               </h3>
             </div>
             <div className="flex items-center gap-1">
@@ -690,7 +690,7 @@ export function HelpBot() {
               <div key={i}>
                 {msg.proposals && msg.proposals.length > 0 ? (
                   <div className="flex items-start gap-2 justify-start">
-                    <img src="/chatbot-avatar.jpg" alt="Junior" className="h-6 w-6 rounded-full object-cover shrink-0 mt-1" />
+                    <img src="/chatbot-avatar.jpg" alt="Renaida" className="h-6 w-6 rounded-full object-cover shrink-0 mt-1" />
                     <div className="max-w-[85%] flex-1">
                       <ConfirmDiff
                         proposals={msg.proposals}
@@ -703,7 +703,7 @@ export function HelpBot() {
                 ) : (
                 <div className={`flex items-end gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                   {msg.role === "assistant" && (
-                    <img src="/chatbot-avatar.jpg" alt="Junior" className="h-6 w-6 rounded-full object-cover shrink-0 mb-0.5" />
+                    <img src="/chatbot-avatar.jpg" alt="Renaida" className="h-6 w-6 rounded-full object-cover shrink-0 mb-0.5" />
                   )}
                   <div
                     className={`max-w-[80%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap ${

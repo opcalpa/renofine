@@ -2,7 +2,7 @@
  * useProjectReminders — Computes "grundfunktions" reminders for a project.
  *
  * These are core app actions most users should complete to get full value.
- * Used by both the Overview reminder section and Renofine Junior's greeting.
+ * Used by both the Overview reminder section and Renaida's greeting.
  */
 
 import { useMemo, useState, useEffect } from "react";
