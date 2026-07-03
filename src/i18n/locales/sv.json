@@ -3718,6 +3718,9 @@
   },
   "helpBot": {
     "title": "Renaida",
+    "intro": "Jag är Renaida, din personliga renoveringskompis.",
+    "giveFeedback": "Ge feedback",
+    "tipsFound": "Jag såg {{count}} saker att förbättra",
     "placeholder": "Fråga om renovering eller hur appen fungerar...",
     "disclaimer": "OBS: För byggregler ger jag allmän vägledning — kontakta alltid din kommuns byggnadsnämnd för slutgiltigt besked.",
     "greeting": "Hej! Jag är Renaida — din renoveringsexpert och plattformsguide. Fråga mig om byggregler, renoveringstips eller hur du får ut mest av appen!\n\nOBS: För byggregler ger jag allmän vägledning — kontakta alltid din kommuns byggnadsnämnd för slutgiltigt besked.",
@@ -3780,6 +3783,8 @@
       "quotesTips": "Hur skapar jag offerter, hanterar ROT-avdrag och fakturerar kunder?"
     },
     "agent": {
+      "voiceHero": "Berätta vad som hänt",
+      "voiceHeroHint": "Säg eller skriv — jag fixar det i projektet",
       "captureButton": "Snabb uppdatering",
       "capturePlaceholder": "Säg eller skriv en snabb uppdatering…",
       "listening": "Lyssnar…",

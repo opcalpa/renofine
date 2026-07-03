@@ -3719,6 +3719,9 @@
   },
   "helpBot": {
     "title": "Renaida",
+    "intro": "I'm Renaida, your personal renovation buddy.",
+    "giveFeedback": "Give feedback",
+    "tipsFound": "I spotted {{count}} things to improve",
     "placeholder": "Ask about renovations or how to use the app...",
     "disclaimer": "NOTE: For building regulations I provide general guidance — always contact your municipality's building committee for final decisions.",
     "greeting": "Hi! I'm Renaida — your renovation expert and platform guide. Ask me about building regulations, renovation tips, or how to get the most out of the app!\n\nNOTE: For building regulations I provide general guidance — always contact your municipality's building committee for final decisions.",
@@ -3781,6 +3784,8 @@
       "quotesTips": "How do I create quotes, handle ROT deductions, and invoice clients?"
     },
     "agent": {
+      "voiceHero": "Tell me what happened",
+      "voiceHeroHint": "Speak or type — I'll sort it into your project",
       "captureButton": "Quick update",
       "capturePlaceholder": "Speak or type a quick update…",
       "listening": "Listening…",

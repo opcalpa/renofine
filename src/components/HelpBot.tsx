@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, X, Lightbulb, BookOpen, Wrench, FileText, Bug, MessageSquarePlus, ArrowLeft, Mic } from "lucide-react";
+import { Send, X, Lightbulb, BookOpen, Wrench, FileText, ArrowLeft, Mic, Sparkles, ChevronDown, MessageCircle } from "lucide-react";
 import { useJuniorStore } from "@/stores/juniorStore";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
@@ -102,6 +102,12 @@ function getPageContext(): "projects" | "project" | "auth" | "other" {
   return "other";
 }
 
+// Value ranking for reminders: core project-completeness first, niche ROT config last.
+const REMINDER_PRIORITY: Record<string, number> = {
+  no_tasks: 1, no_rooms: 2, unlinked_tasks: 3, no_budget: 4, budget_over: 4,
+  no_deadline: 5, no_start_date: 7, rot_property: 8, rot_personnummer: 9,
+};
+
 export function HelpBot() {
   const { t, i18n } = useTranslation();
   const reminderCount = useJuniorStore((s) => s.reminderCount);
@@ -120,6 +126,7 @@ export function HelpBot() {
   const [applying, setApplying] = useState(false);
   const [renaidaFlash, setRenaidaFlash] = useState<RenaidaState | null>(null);
   const [renaidaAsleep, setRenaidaAsleep] = useState(false);
+  const [remindersExpanded, setRemindersExpanded] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -188,50 +195,15 @@ export function HelpBot() {
 
   const buildGreeting = useCallback(() => {
     const timeKey = getTimeOfDayKey();
-    const page = getPageContext();
     const nameGreeting = userName ? `, ${userName}` : "";
-
-    // Time-based hello
     const hello = t(`helpBot.timeGreeting.${timeKey}`, {
       defaultValue: timeKey === "morning" ? "God morgon" : timeKey === "afternoon" ? "Hej" : "God kväll",
     });
-
-    // Role-specific flavor
-    const roleIntro = userType === "homeowner"
-      ? t("helpBot.roleIntro.homeowner", "I'm your personal renovation sidekick — here to help with everything from planning to punch list.")
-      : userType === "contractor"
-        ? t("helpBot.roleIntro.contractor", "I'm your project assistant — ready to help with quotes, scheduling, and keeping things on track.")
-        : t("helpBot.roleIntro.default", "I'm your renovation expert and platform guide.");
-
-    // Project reminders — shown as clickable links with dismiss buttons
-    let reminderText = "";
-    if (page === "project" && juniorReminders.length > 0) {
-      const items = juniorReminders.slice(0, 4).map(r => {
-        const dismiss = `[](dismiss:${r.id})`;
-        if (r.actionTarget) {
-          return `• [${t(r.titleKey)}](navigate:${r.actionTarget}) ${dismiss}`;
-        }
-        return `• ${t(r.titleKey)} ${dismiss}`;
-      }).join("\n");
-      reminderText = `\n\n${t("helpBot.reminderIntro", "I noticed a few things in your project:")}\n${items}`;
-    }
-
-    // Page-specific nudge (only if no reminders)
-    let nudge = "";
-    if (!reminderText) {
-      if (page === "projects") {
-        nudge = t("helpBot.nudge.projects", "Pick a project to dive into, or ask me anything about renovations!");
-      } else if (page === "project") {
-        nudge = t("helpBot.nudge.project", "I can see you're working on a project — ask me about next steps, building regulations, or how to use any feature.");
-      }
-    }
-
-    const disclaimer = t("helpBot.disclaimerShort", "PS: For building regs I give general guidance — always double-check with your municipality.");
-
+    // One warm line, name included. Reminders + actions live below as chips (progressive disclosure).
     return {
-      content: `${hello}${nameGreeting}! 👋\n\n${roleIntro}${reminderText}\n\n${nudge ? nudge + "\n\n" : ""}${disclaimer}`,
+      content: `${hello}${nameGreeting}! 👋 ${t("helpBot.intro", "Jag är Renaida, din personliga renoveringskompis.")}`,
     };
-  }, [t, userType, userName, juniorReminders]);
+  }, [t, userName]);
 
   // Reset conversation when language changes
   const currentLang = i18n.language;
@@ -616,12 +588,6 @@ export function HelpBot() {
       message: t("helpBot.quickMessage.getStarted"),
     },
     {
-      icon: <FileText className="h-3.5 w-3.5 shrink-0" />,
-      labelKey: "helpBot.quick.permits",
-      fallback: "Building permits & regulations",
-      message: t("helpBot.quickMessage.permits"),
-    },
-    {
       icon: <Wrench className="h-3.5 w-3.5 shrink-0" />,
       labelKey: "helpBot.quick.planningHelp",
       fallback: "Planning & quotes",
@@ -633,25 +599,19 @@ export function HelpBot() {
       fallback: "Budget & cost tracking",
       message: t("helpBot.quickMessage.budgetTips"),
     },
-  ];
-
-  // Feedback entry point
-  const feedbackPrompts: QuickPrompt[] = [
     {
-      icon: <Bug className="h-3.5 w-3.5 shrink-0" />,
-      labelKey: "helpBot.quick.reportBug",
-      fallback: "Report a bug",
-      action: "bug",
-    },
-    {
-      icon: <MessageSquarePlus className="h-3.5 w-3.5 shrink-0" />,
-      labelKey: "helpBot.quick.suggestion",
-      fallback: "Suggestion",
-      action: "suggestion",
+      icon: <FileText className="h-3.5 w-3.5 shrink-0" />,
+      labelKey: "helpBot.quick.permits",
+      fallback: "Building permits & regulations",
+      message: t("helpBot.quickMessage.permits"),
     },
   ];
 
-  const showQuickPrompts = messages.length <= 1 && !loading && !feedbackMode;
+  const showQuickPrompts = messages.length <= 1 && !loading && !feedbackMode && !capturing;
+  const onProjectPage = getPageContext() === "project";
+  const rankedReminders = [...juniorReminders].sort(
+    (a, b) => (REMINDER_PRIORITY[a.id] ?? 6) - (REMINDER_PRIORITY[b.id] ?? 6),
+  );
 
   const placeholderText = feedbackMode === "bug"
     ? t("helpBot.bugPlaceholder")
@@ -806,30 +766,84 @@ export function HelpBot() {
               </div>
             ))}
 
-            {/* Quick prompt buttons */}
+            {/* Entry: voice hero + grouped chips + value-ranked reminders */}
             {showQuickPrompts && (
-              <div className="flex flex-wrap gap-2 pt-1">
-                {quickPrompts.map((prompt, i) => (
+              <div className="space-y-2.5 pt-1">
+                {/* Voice hero — the primary way to drive Renaida */}
+                <button
+                  onClick={startVoiceCapture}
+                  className="w-full flex items-center gap-3 rounded-xl bg-primary px-4 py-3 text-left text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                >
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-foreground/15">
+                    <Mic className="h-4 w-4" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-medium">{t("helpBot.agent.voiceHero", "Berätta vad som hänt")}</span>
+                    <span className="block text-xs text-primary-foreground/70">{t("helpBot.agent.voiceHeroHint", "Säg eller skriv — jag fixar det i projektet")}</span>
+                  </span>
+                </button>
+
+                {/* Help topics + a single feedback entry */}
+                <div className="flex flex-wrap gap-2">
+                  {quickPrompts.slice(0, 3).map((prompt, i) => (
+                    <button
+                      key={i}
+                      onClick={() => handleQuickPrompt(prompt)}
+                      className="inline-flex items-center gap-1.5 rounded-full border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                    >
+                      {prompt.icon}
+                      {t(prompt.labelKey, prompt.fallback)}
+                    </button>
+                  ))}
                   <button
-                    key={i}
-                    onClick={() => handleQuickPrompt(prompt)}
-                    className="inline-flex items-center gap-1.5 rounded-full border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                    onClick={() => handleInlineAction("start_feedback")}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-dashed bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
                   >
-                    {prompt.icon}
-                    {t(prompt.labelKey, prompt.fallback)}
+                    <MessageCircle className="h-3.5 w-3.5 shrink-0" />
+                    {t("helpBot.giveFeedback", "Ge feedback")}
                   </button>
-                ))}
-                <div className="w-full" />
-                {feedbackPrompts.map((prompt, i) => (
-                  <button
-                    key={`fb-${i}`}
-                    onClick={() => handleQuickPrompt(prompt)}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-dashed bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-                  >
-                    {prompt.icon}
-                    {t(prompt.labelKey, prompt.fallback)}
-                  </button>
-                ))}
+                </div>
+
+                {/* Reminders — value-ranked, collapsed by default */}
+                {onProjectPage && rankedReminders.length > 0 && (
+                  <div className="rounded-lg border bg-background/60">
+                    <button
+                      onClick={() => setRemindersExpanded((v) => !v)}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                      <Sparkles className="h-3.5 w-3.5 text-primary shrink-0" />
+                      <span className="flex-1 text-left">
+                        {t("helpBot.tipsFound", { count: rankedReminders.length, defaultValue: "Jag såg {{count}} saker att förbättra" })}
+                      </span>
+                      <ChevronDown className={`h-4 w-4 transition-transform ${remindersExpanded ? "rotate-180" : ""}`} />
+                    </button>
+                    {remindersExpanded && (
+                      <ul className="space-y-1.5 px-3 pb-2.5">
+                        {rankedReminders.map((r) => (
+                          <li key={r.id} className="flex items-center gap-2 text-xs">
+                            {r.actionTarget ? (
+                              <button
+                                onClick={() => handleInlineAction(`navigate:${r.actionTarget}`)}
+                                className="flex-1 text-left text-primary hover:underline"
+                              >
+                                {t(r.titleKey)}
+                              </button>
+                            ) : (
+                              <span className="flex-1 text-muted-foreground">{t(r.titleKey)}</span>
+                            )}
+                            <button
+                              onClick={() => handleDismissReminder(r.id)}
+                              className="shrink-0 text-muted-foreground/50 transition-colors hover:text-muted-foreground"
+                              aria-label={t("helpBot.agent.dismiss", "Dismiss")}
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
