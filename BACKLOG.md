@@ -132,7 +132,7 @@ status: doing
 priority: P2
 tags: [growth, lead]
 created: 2026-06-24
-updated: 2026-06-26
+updated: 2026-07-03
 ---
 ## Taulant Bara — lead från FB-kampanjen (aktiv dialog)
 Första riktiga leaden från FB-rundan 2026-06-23. Mejl: taulant.bara@icloud.com,
@@ -147,8 +147,15 @@ vallgraven, ej översättningen.
 framtiden för bolaget). Carl svarat ärligt: abonnemang proffs-först → plattform på sikt
 (affiliate/finansiering), traction före monetisering. Ställt intent-fråga tillbaka
 ("nyfikenhet eller vill du vara med och påverka") — **ej besvarad än**.
-**Nästa:** bollen hos Taulant. Om tyst ~1 vecka, föreslå konkret samtalstid (mejl-
-pingpong fortsätter annars). Bevaka om han lutar mot advisor-/partnerroll.
+**2026-07-03 — Taulant svarade (varmt, starkt):** bekräftade affärsmodell-tänket,
+självidentifierade som ICP (renoverar ~2 lgh/år, gör mycket själv, lever i struktur/admin),
+**betalningsvillig om det sparar tid**, vill aktivt betatesta + ge ärlig feedback, öppen för
+samtal "längre fram". **Föreslog oombedd RÖSTINMATNING** (mic → AI tolkar → placerar i projektet)
+— exakt det agentiska spår vi just byggt (se [[project_agentic_strategy]]). Carl **skickade svar**
+(tackade, bekräftade röst-idén, erbjöd beta-tillgång + guidning, ankrade samtal mjukt mot hans
+nästa renovering). Utkast: scratchpad `taulant-svar.txt`.
+**Nästa:** bollen hos Taulant igen. När han nappar på beta → sätt upp tillgång + riktigt projekt;
+han är IDEAL första användare av röst-capturen (validerade den oombedd). Bevaka advisor-/partnerlutning.
 
 ---
 id: agent-mode-additive-flag
