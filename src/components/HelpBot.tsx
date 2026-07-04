@@ -9,6 +9,7 @@ import { RenaidaAvatar, type RenaidaState } from "@/components/renaida/RenaidaAv
 import { routeAgentInput } from "@/services/agent/routeClient";
 import { applyProposals, undoProposals } from "@/services/agent/applyProposals";
 import { type AgentProposal, type UndoOp, TASK_MATCH_MIN_CONFIDENCE } from "@/services/agent/types";
+import { recordCorrection } from "@/services/agent/renaidaMemory";
 import { analytics, AnalyticsEvents } from "@/lib/analytics";
 
 /** Action-type histogram + task-target ids, for the Renaida learning-loop sensor events. */
@@ -444,12 +445,13 @@ export function HelpBot() {
     else startVoiceCapture();
   }, [input, captureUpdate, startVoiceCapture]);
 
-  const handleApplyProposals = useCallback(async (msgIndex: number, accepted: AgentProposal[], original: AgentProposal[]) => {
+  const handleApplyProposals = useCallback(async (msgIndex: number, accepted: AgentProposal[], original: AgentProposal[], phrase: string) => {
     const projectId = useJuniorStore.getState().projectId;
     if (!projectId) return;
 
     // Correction signal: a task-targeting proposal whose accepted taskId differs
-    // from what the router originally proposed = the user re-picked. Prime training data.
+    // from what the router originally proposed = the user re-picked. Prime training
+    // data — emit telemetry AND teach Renaida (phrase → intended work) for next time.
     const originalById = new Map(original.map((p) => [p.id, p]));
     const corrections = accepted.filter((a) => {
       const orig = originalById.get(a.id);
@@ -462,6 +464,13 @@ export function HelpBot() {
         count: corrections.length,
         actionTypes: corrections.map((c) => c.action.type),
       });
+      for (const c of corrections) {
+        const chosenId = "taskId" in c.action ? c.action.taskId : undefined;
+        const chosenWork = c.candidates?.find((cand) => cand.id === chosenId)?.title;
+        if (phrase && chosenWork) {
+          void recordCorrection({ projectId, phrase, chosenWork });
+        }
+      }
     }
 
     setApplying(true);
@@ -754,7 +763,7 @@ export function HelpBot() {
                       <ConfirmDiff
                         proposals={msg.proposals}
                         applying={applying}
-                        onConfirm={(accepted) => handleApplyProposals(i, accepted, msg.proposals ?? [])}
+                        onConfirm={(accepted) => handleApplyProposals(i, accepted, msg.proposals ?? [], messages[i - 1]?.content ?? "")}
                         onDismiss={() => handleDismissProposals(i)}
                       />
                     </div>

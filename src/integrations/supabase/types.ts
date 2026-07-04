@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.1"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       access_log: {
@@ -2891,6 +2866,96 @@ export type Database = {
           },
         ]
       }
+      renaida_user_memory: {
+        Row: {
+          created_at: string
+          evidence_count: number
+          id: string
+          key: string
+          kind: string
+          profile_id: string
+          project_id: string | null
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          created_at?: string
+          evidence_count?: number
+          id?: string
+          key: string
+          kind: string
+          profile_id: string
+          project_id?: string | null
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          created_at?: string
+          evidence_count?: number
+          id?: string
+          key?: string
+          kind?: string
+          profile_id?: string
+          project_id?: string | null
+          updated_at?: string
+          value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "renaida_user_memory_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "professional_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "renaida_user_memory_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "renaida_user_memory_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      room_item_translations: {
+        Row: {
+          language: string
+          notes: string | null
+          room_item_id: string
+          title: string | null
+          translated_at: string
+        }
+        Insert: {
+          language: string
+          notes?: string | null
+          room_item_id: string
+          title?: string | null
+          translated_at?: string
+        }
+        Update: {
+          language?: string
+          notes?: string | null
+          room_item_id?: string
+          title?: string | null
+          translated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_item_translations_room_item_id_fkey"
+            columns: ["room_item_id"]
+            isOneToOne: false
+            referencedRelation: "room_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       room_items: {
         Row: {
           category: string
@@ -4071,6 +4136,10 @@ export type Database = {
         Args: { p_linked_to_id: string; p_linked_to_type: string }
         Returns: string
       }
+      seed_demo_content: {
+        Args: { p_language?: string; p_owner_id: string; p_project_id: string }
+        Returns: undefined
+      }
       seed_demo_project_for_user: {
         Args: { p_language?: string; p_owner_id: string }
         Returns: string
@@ -4292,9 +4361,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       contractor_role: [

@@ -52,6 +52,7 @@ const LANGUAGE_NAMES: Record<string, string> = {
 
 interface RoomCtx { id: string; name: string }
 interface TaskCtx { id: string; title: string; status: string | null; checklistItems?: string[] }
+interface MemoryCtx { kind: string; key: string; value: string }
 
 // deno-lint-ignore no-explicit-any
 function extractChecklistItems(checklists: any): string[] {
@@ -61,9 +62,9 @@ function extractChecklistItems(checklists: any): string[] {
   );
 }
 
-async function fetchContext(projectId: string, authHeader: string): Promise<{ rooms: RoomCtx[]; tasks: TaskCtx[] }> {
+async function fetchContext(projectId: string, authHeader: string): Promise<{ rooms: RoomCtx[]; tasks: TaskCtx[]; memories: MemoryCtx[] }> {
   const headers = supabaseRestHeaders(authHeader);
-  const [roomsRes, tasksRes] = await Promise.all([
+  const [roomsRes, tasksRes, memRes] = await Promise.all([
     fetch(
       `${supabaseRestUrl("rooms")}?project_id=eq.${projectId}&select=id,name&order=name.asc`,
       { headers },
@@ -72,16 +73,42 @@ async function fetchContext(projectId: string, authHeader: string): Promise<{ ro
       `${supabaseRestUrl("tasks")}?project_id=eq.${projectId}&select=id,title,status,checklists&order=created_at.desc&limit=200`,
       { headers },
     ),
+    // Renaida's learned facts about this user (project-specific + global).
+    // RLS scopes these to the caller's own profile automatically.
+    fetch(
+      `${supabaseRestUrl("renaida_user_memory")}?or=(project_id.eq.${projectId},project_id.is.null)&select=kind,key,value,evidence_count&order=evidence_count.desc&limit=40`,
+      { headers },
+    ),
   ]);
   const rooms = roomsRes.ok ? await roomsRes.json() : [];
   const tasksRaw = tasksRes.ok ? await tasksRes.json() : [];
+  const memories: MemoryCtx[] = memRes.ok ? await memRes.json() : [];
   const tasks: TaskCtx[] = tasksRaw.map((t: { id: string; title: string; status: string | null; checklists?: unknown }) => ({
     id: t.id, title: t.title, status: t.status, checklistItems: extractChecklistItems(t.checklists),
   }));
-  return { rooms, tasks };
+  return { rooms, tasks, memories };
 }
 
-function buildSystemPrompt(language: string, rooms: RoomCtx[], tasks: TaskCtx[]): string {
+/** Render Renaida's learned facts as prompt hints. Corrections carry the most
+ *  weight: they are prior mistakes the user fixed, so we phrase them as rules. */
+function buildMemorySection(memories: MemoryCtx[]): string {
+  if (!memories.length) return "";
+  const corrections = memories.filter((m) => m.kind === "correction");
+  const others = memories.filter((m) => m.kind !== "correction");
+  const lines: string[] = [];
+  for (const c of corrections) {
+    lines.push(`  - When the user says something like "${c.key}", they have previously meant the work: "${c.value}". Prefer matching a task of that work.`);
+  }
+  for (const o of others) {
+    lines.push(`  - ${o.kind}: "${o.key}" → "${o.value}"`);
+  }
+  return `
+WHAT YOU'VE LEARNED ABOUT THIS USER (apply these preferences; they override generic guessing):
+${lines.join("\n")}
+`;
+}
+
+function buildSystemPrompt(language: string, rooms: RoomCtx[], tasks: TaskCtx[], memories: MemoryCtx[]): string {
   const langName = LANGUAGE_NAMES[language] || "English";
   const roomList = rooms.length
     ? rooms.map((r) => `  - id="${r.id}" name="${r.name}"`).join("\n")
@@ -107,6 +134,7 @@ ${roomList}
 
 TASKS:
 ${taskList}
+${buildMemorySection(memories)}
 
 Output STRICT JSON of this exact shape (no prose, no markdown):
 {
@@ -306,7 +334,7 @@ serve(async (req) => {
       });
     }
 
-    const { rooms, tasks } = await fetchContext(projectId, authHeader);
+    const { rooms, tasks, memories } = await fetchContext(projectId, authHeader);
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -317,7 +345,7 @@ serve(async (req) => {
         max_tokens: 1200,
         response_format: { type: "json_object" },
         messages: [
-          { role: "system", content: buildSystemPrompt(language, rooms, tasks) },
+          { role: "system", content: buildSystemPrompt(language, rooms, tasks, memories) },
           { role: "user", content: input.content },
         ],
       }),
