@@ -40,6 +40,20 @@ function qualifiesForAutoApply(p: AgentProposal): boolean {
   return true;
 }
 
+// Proactive Renaida (Fas 3): first-run autonomy intro + a one-time nudge to try
+// autopilot once she's proven herself. Small device-local flags/counters.
+const AUTONOMY_INTRODUCED_KEY = "renaida-autonomy-introduced";
+const AUTOPILOT_NUDGED_KEY = "renaida-autopilot-nudged";
+const CONFIRM_COUNT_KEY = "renaida-confirm-count";
+const NUDGE_AFTER_CONFIRMS = 3;
+
+function lsGet(key: string): string | null {
+  try { return localStorage.getItem(key); } catch { return null; }
+}
+function lsSet(key: string, val: string): void {
+  try { localStorage.setItem(key, val); } catch { /* ignore */ }
+}
+
 interface Message {
   role: "user" | "assistant";
   content: string;
@@ -263,18 +277,26 @@ export function Renaida() {
   useEffect(() => {
     if (open && messages.length === 0) {
       const greeting = buildGreeting();
-      setMessages([
-        {
+      const initial: Message[] = [
+        { role: "assistant", content: greeting.content, actions: greeting.actions },
+      ];
+      // First-run: proactively introduce the two autonomy modes (project pages only).
+      if (getPageContext() === "project" && !lsGet(AUTONOMY_INTRODUCED_KEY)) {
+        initial.push({
           role: "assistant",
-          content: greeting.content,
-          actions: greeting.actions,
-        },
-      ]);
+          content: t("helpBot.autonomy.intro", "Vill du att jag frågar först innan jag ändrar något, eller fixar säkra saker direkt? Du kan byta när som helst."),
+          actions: [
+            { labelKey: "helpBot.autonomy.suggest", fallback: "Föreslå först", action: "set_autonomy_suggest", icon: <MessageCircle className="h-3 w-3" /> },
+            { labelKey: "helpBot.autonomy.chooseAutopilot", fallback: "Slå på Autopilot", action: "set_autonomy_autopilot", icon: <Sparkles className="h-3 w-3" /> },
+          ],
+        });
+      }
+      setMessages(initial);
     }
     if (open) {
       inputRef.current?.focus();
     }
-  }, [open, messages.length, buildGreeting]);
+  }, [open, messages.length, buildGreeting, t]);
 
   // Update greeting when reminders change (if user hasn't sent any messages yet)
   useEffect(() => {
@@ -442,6 +464,24 @@ export function Renaida() {
       // Overview cards (useOverviewData) are not React Query — nudge them to refetch.
       window.dispatchEvent(new CustomEvent("renaida-data-changed", { detail: { projectId } }));
       flashRenaida("happy", 2000);
+
+      // Progressive-trust nudge: after she's landed a few manual confirms cleanly,
+      // proactively offer autopilot — once. Only in suggest mode, only if not auto.
+      if (!opts.auto && !opts.corrected && useRenaidaStore.getState().autonomy === "suggest" && !lsGet(AUTOPILOT_NUDGED_KEY)) {
+        const count = (parseInt(lsGet(CONFIRM_COUNT_KEY) ?? "0", 10) || 0) + 1;
+        lsSet(CONFIRM_COUNT_KEY, String(count));
+        if (count >= NUDGE_AFTER_CONFIRMS) {
+          lsSet(AUTOPILOT_NUDGED_KEY, "1");
+          setMessages((prev) => [...prev, {
+            role: "assistant",
+            content: t("helpBot.autonomy.nudge", "Jag har landat några uppdateringar rätt nu. Vill du att jag fixar säkra saker direkt istället för att fråga varje gång? (Autopilot — alltid med Ångra.)"),
+            actions: [
+              { labelKey: "helpBot.autonomy.chooseAutopilot", fallback: "Slå på Autopilot", action: "nudge_enable_autopilot", icon: <Sparkles className="h-3 w-3" /> },
+              { labelKey: "helpBot.autonomy.notNow", fallback: "Inte nu", action: "dismiss_nudge" },
+            ],
+          }]);
+        }
+      }
     }
     return result;
   }, [t, flashRenaida]);
@@ -598,8 +638,31 @@ export function Renaida() {
     inputRef.current?.focus();
   }, [t]);
 
+  const setAutonomyChoice = useCallback((mode: RenaidaAutonomy, source: string) => {
+    useRenaidaStore.getState().setAutonomy(mode);
+    void setAutonomyMode(mode);
+    lsSet(AUTONOMY_INTRODUCED_KEY, "1");
+    if (mode === "autopilot") lsSet(AUTOPILOT_NUDGED_KEY, "1"); // already on → no future nudge
+    analytics.capture(AnalyticsEvents.RENAIDA_AUTONOMY_CHANGED, { mode, source });
+    flashRenaida(mode === "autopilot" ? "happy" : "idle", 1500);
+    setMessages((prev) => [...prev, {
+      role: "assistant",
+      content: t(mode === "autopilot" ? "helpBot.autonomy.enabledAutopilot" : "helpBot.autonomy.enabledSuggest",
+        mode === "autopilot" ? "Autopilot på — jag fixar säkra saker direkt, alltid med Ångra." : "Okej, jag frågar först innan jag ändrar något."),
+    }]);
+  }, [t, flashRenaida]);
+
   const handleInlineAction = useCallback((action: string) => {
-    if (action === "bug") {
+    if (action === "set_autonomy_suggest") {
+      setAutonomyChoice("suggest", "intro");
+    } else if (action === "set_autonomy_autopilot") {
+      setAutonomyChoice("autopilot", "intro");
+    } else if (action === "nudge_enable_autopilot") {
+      setAutonomyChoice("autopilot", "nudge");
+    } else if (action === "dismiss_nudge") {
+      lsSet(AUTOPILOT_NUDGED_KEY, "1");
+      setMessages((prev) => [...prev, { role: "assistant", content: t("helpBot.autonomy.nudgeDismissed", "Inga problem — jag frågar först som vanligt.") }]);
+    } else if (action === "bug") {
       startFeedbackMode("bug");
     } else if (action === "suggestion") {
       startFeedbackMode("suggestion");
@@ -650,7 +713,7 @@ export function Renaida() {
       window.dispatchEvent(new CustomEvent("renaida-navigate", { detail: target }));
       setOpen(false);
     }
-  }, [startFeedbackMode, t, buildGreeting]);
+  }, [startFeedbackMode, t, buildGreeting, setAutonomyChoice]);
 
   const handleDismissReminder = useCallback((reminderId: string) => {
     // Dispatch event to OverviewTab to dismiss the reminder

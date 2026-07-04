@@ -3806,8 +3806,15 @@
       "autonomy": {
         "suggest": "Föreslå först",
         "autopilot": "Autopilot",
+        "chooseAutopilot": "Slå på Autopilot",
+        "notNow": "Inte nu",
         "suggestHint": "Renaida frågar innan hon gör något. Tryck för autopilot.",
-        "autopilotHint": "Renaida fixar det hon är säker på direkt (med Ångra). Tryck för att fråga först."
+        "autopilotHint": "Renaida fixar det hon är säker på direkt (med Ångra). Tryck för att fråga först.",
+        "intro": "Vill du att jag frågar först innan jag ändrar något, eller fixar säkra saker direkt? Du kan byta när som helst.",
+        "enabledSuggest": "Okej, jag frågar först innan jag ändrar något.",
+        "enabledAutopilot": "Autopilot på — jag fixar säkra saker direkt, alltid med Ångra.",
+        "nudge": "Jag har landat några uppdateringar rätt nu. Vill du att jag fixar säkra saker direkt istället för att fråga varje gång? (Autopilot — alltid med Ångra.)",
+        "nudgeDismissed": "Inga problem — jag frågar först som vanligt."
       },
       "partialFailed": "Genomförde {{applied}}, {{failed}} misslyckades.",
       "allFailed": "Hmm, det gick inte igenom. Försök igen?",
