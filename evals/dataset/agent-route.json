@@ -3,18 +3,69 @@
   "context": {
     "language": "sv",
     "rooms": [
-      { "id": "r-kitchen", "name": "Kök" },
-      { "id": "r-bath", "name": "Badrum" },
-      { "id": "r-bed", "name": "Sovrum" },
-      { "id": "r-living", "name": "Vardagsrum" }
+      {
+        "id": "r-kitchen",
+        "name": "Kök"
+      },
+      {
+        "id": "r-bath",
+        "name": "Badrum"
+      },
+      {
+        "id": "r-bed",
+        "name": "Sovrum"
+      },
+      {
+        "id": "r-living",
+        "name": "Vardagsrum"
+      }
     ],
     "tasks": [
-      { "id": "t-paint", "title": "Målning väggar & tak", "status": "in_progress" },
-      { "id": "t-seal", "title": "Tätskikt badrum", "status": "to_do" },
-      { "id": "t-tile", "title": "Kakelsättning badrum", "status": "to_do" },
-      { "id": "t-floor", "title": "Slipning och lackning av golv", "status": "to_do" },
-      { "id": "t-trim", "title": "Montering av lister", "status": "to_do", "checklistItems": ["Kapa lister", "Montera lister", "Måla lister"] },
-      { "id": "t-elec", "title": "Eluttag och belysning", "status": "to_do" }
+      {
+        "id": "t-paint",
+        "title": "Målning väggar & tak",
+        "status": "in_progress"
+      },
+      {
+        "id": "t-seal",
+        "title": "Tätskikt badrum",
+        "status": "to_do"
+      },
+      {
+        "id": "t-tile",
+        "title": "Kakelsättning badrum",
+        "status": "to_do"
+      },
+      {
+        "id": "t-floor",
+        "title": "Slipning och lackning av golv",
+        "status": "to_do"
+      },
+      {
+        "id": "t-trim",
+        "title": "Montering av lister",
+        "status": "to_do",
+        "checklistItems": [
+          "Kapa lister",
+          "Montera lister",
+          "Måla lister"
+        ]
+      },
+      {
+        "id": "t-elec",
+        "title": "Eluttag och belysning",
+        "status": "to_do"
+      },
+      {
+        "id": "t-spackle-bed",
+        "title": "Spackling sovrum",
+        "status": "to_do"
+      },
+      {
+        "id": "t-spackle-living",
+        "title": "Spackling vardagsrum",
+        "status": "to_do"
+      }
     ]
   },
   "cases": [
@@ -22,22 +73,40 @@
       "id": "seal-done",
       "input": "Tätskiktet i badrummet är klart nu.",
       "expect": [
-        { "type": "set_progress", "taskId": "t-seal", "progressMin": 100 }
+        {
+          "type": "set_progress",
+          "taskId": "t-seal",
+          "progressMin": 100
+        }
       ]
     },
     {
       "id": "buy-tiles",
       "input": "Jag behöver beställa tio kvadratmeter klinker till badrummet.",
       "expect": [
-        { "type": "create_purchase", "roomId": "r-bath", "itemIncludes": "klinker", "quantity": 10 }
+        {
+          "type": "create_purchase",
+          "roomId": "r-bath",
+          "itemIncludes": "klinker",
+          "quantity": 10
+        }
       ]
     },
     {
       "id": "combo-progress-and-purchase",
       "input": "Tätskiktet i badrummet är klart, och beställ tio kvadratmeter klinker dit också.",
       "expect": [
-        { "type": "set_progress", "taskId": "t-seal", "progressMin": 100 },
-        { "type": "create_purchase", "roomId": "r-bath", "itemIncludes": "klinker", "quantity": 10 }
+        {
+          "type": "set_progress",
+          "taskId": "t-seal",
+          "progressMin": 100
+        },
+        {
+          "type": "create_purchase",
+          "roomId": "r-bath",
+          "itemIncludes": "klinker",
+          "quantity": 10
+        }
       ]
     },
     {
@@ -49,14 +118,21 @@
       "id": "add-task-room",
       "input": "Vi behöver också byta dörrhandtagen i sovrummet.",
       "expect": [
-        { "type": "create_task", "roomId": "r-bed", "titleIncludes": "handtag" }
+        {
+          "type": "create_task",
+          "roomId": "r-bed",
+          "titleIncludes": "handtag"
+        }
       ]
     },
     {
       "id": "buy-no-room",
       "input": "Behöver beställa en ny köksblandare.",
       "expect": [
-        { "type": "create_purchase", "itemIncludes": "blandare" }
+        {
+          "type": "create_purchase",
+          "itemIncludes": "blandare"
+        }
       ]
     },
     {
@@ -68,22 +144,37 @@
       "id": "progress-partial",
       "input": "Målningen är ungefär halvklar nu.",
       "expect": [
-        { "type": "set_progress", "taskId": "t-paint", "progressMin": 30, "progressMax": 70 }
+        {
+          "type": "set_progress",
+          "taskId": "t-paint",
+          "progressMin": 30,
+          "progressMax": 70
+        }
       ]
     },
     {
       "id": "wrong-room-trap",
       "input": "Kakelsättningen i badrummet är påbörjad.",
       "expect": [
-        { "type": "update_task", "taskId": "t-tile" }
+        {
+          "type": "update_task",
+          "taskId": "t-tile"
+        }
       ],
-      "forbidTaskIds": ["t-seal", "t-paint"]
+      "forbidTaskIds": [
+        "t-seal",
+        "t-paint"
+      ]
     },
     {
       "id": "lister-checklist-not-room",
       "input": "Listerna är monterade i vardagsrummet.",
       "expect": [
-        { "type": "toggle_checklist", "taskId": "t-trim", "itemIncludes": "montera" }
+        {
+          "type": "toggle_checklist",
+          "taskId": "t-trim",
+          "itemIncludes": "montera"
+        }
       ]
     },
     {
@@ -95,15 +186,27 @@
       "id": "log-time-on-task",
       "input": "Jag jobbade tre timmar på målningen igår.",
       "expect": [
-        { "type": "log_time", "hours": 3 }
+        {
+          "type": "log_time",
+          "hours": 3
+        }
       ]
     },
     {
       "id": "toggle-checklist-item",
       "input": "Listerna är monterade nu.",
       "expect": [
-        { "type": "toggle_checklist", "taskId": "t-trim", "itemIncludes": "montera" }
+        {
+          "type": "toggle_checklist",
+          "taskId": "t-trim",
+          "itemIncludes": "montera"
+        }
       ]
+    },
+    {
+      "id": "ambiguous-same-trade",
+      "input": "Jag blev klar med spacklingen i ett av rummen.",
+      "expectNoConfidentTaskMutation": true
     }
   ]
 }
