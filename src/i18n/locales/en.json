@@ -989,7 +989,15 @@
     "rotResetSuggested": "Reset to suggested amount",
     "linkToBudgetPost": "Link to budget post",
     "standaloneTask": "Standalone task (no link)",
-    "ataWarning": "Budget on a standalone task increases total cost beyond the original quote"
+    "ataWarning": "Budget on a standalone task increases total cost beyond the original quote",
+    "addNewTask": "Add new task",
+    "addNewTaskDescription": "Create a task and add it to your project.",
+    "descriptionOptional": "Description (optional)",
+    "descriptionPlaceholder": "Add details, materials, or instructions…",
+    "startDateOptional": "Start date (optional)",
+    "finishDateOptional": "Finish date (optional)",
+    "roomOptional": "Room (optional)",
+    "selectRoom": "Select room"
   },
   "tasksTable": {
     "columns": "Columns",

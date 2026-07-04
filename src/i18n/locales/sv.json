@@ -989,7 +989,15 @@
     "rotResetSuggested": "Återställ till föreslaget belopp",
     "linkToBudgetPost": "Koppla till budgetpost",
     "standaloneTask": "Fristående arbete (ingen koppling)",
-    "ataWarning": "Budget på fristående arbete ökar totalkostnaden utöver offerten"
+    "ataWarning": "Budget på fristående arbete ökar totalkostnaden utöver offerten",
+    "addNewTask": "Lägg till nytt arbete",
+    "addNewTaskDescription": "Skapa ett arbete och koppla det till projektet.",
+    "descriptionOptional": "Beskrivning (valfritt)",
+    "descriptionPlaceholder": "Lägg till detaljer, material eller instruktioner…",
+    "startDateOptional": "Startdatum (valfritt)",
+    "finishDateOptional": "Slutdatum (valfritt)",
+    "roomOptional": "Rum (valfritt)",
+    "selectRoom": "Välj rum"
   },
   "tasksTable": {
     "columns": "Kolumner",
