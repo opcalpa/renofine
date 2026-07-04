@@ -320,13 +320,19 @@ const OverviewTab = ({
     const dismissHandler = (e: Event) => {
       dismissReminder((e as CustomEvent).detail);
     };
+    // Renaida applied/undid changes → refetch overview cards (they aren't React Query).
+    const dataChangedHandler = () => {
+      refetch();
+    };
     window.addEventListener("junior-navigate", navHandler);
     window.addEventListener("junior-dismiss-reminder", dismissHandler);
+    window.addEventListener("junior-data-changed", dataChangedHandler);
     return () => {
       window.removeEventListener("junior-navigate", navHandler);
       window.removeEventListener("junior-dismiss-reminder", dismissHandler);
+      window.removeEventListener("junior-data-changed", dataChangedHandler);
     };
-  }, [handleTipAction, dismissReminder]);
+  }, [handleTipAction, dismissReminder, refetch]);
 
   const isRfqProject = !!project.source_rfq_project_id;
 

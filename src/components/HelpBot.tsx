@@ -447,12 +447,18 @@ export function HelpBot() {
         .map((m, i) => (i === msgIndex ? { ...m, proposals: undefined } : m))
         .concat({ role: "assistant", content, undo: result.undo.length ? result.undo : undefined }),
     );
-    if (result.applied.length > 0) flashRenaida("happy", 2000);
+    if (result.applied.length > 0) {
+      // Overview cards (useOverviewData) are not React Query — nudge them to refetch.
+      window.dispatchEvent(new CustomEvent("junior-data-changed", { detail: { projectId } }));
+      flashRenaida("happy", 2000);
+    }
   }, [t, flashRenaida]);
 
   const handleUndo = useCallback(async (msgIndex: number, ops: UndoOp[]) => {
     setMessages((prev) => prev.map((m, i) => (i === msgIndex ? { ...m, undo: undefined } : m)));
     await undoProposals(ops);
+    const projectId = useJuniorStore.getState().projectId;
+    window.dispatchEvent(new CustomEvent("junior-data-changed", { detail: { projectId } }));
     setMessages((prev) => [...prev, { role: "assistant", content: t("helpBot.agent.undone") }]);
   }, [t]);
 
