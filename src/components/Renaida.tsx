@@ -10,6 +10,7 @@ import { routeAgentInput } from "@/services/agent/routeClient";
 import { applyProposals, undoProposals } from "@/services/agent/applyProposals";
 import { type AgentProposal, type UndoOp, TASK_MATCH_MIN_CONFIDENCE, isActionable } from "@/services/agent/types";
 import { recordCorrection, getAutonomyMode, setAutonomyMode } from "@/services/agent/renaidaMemory";
+import { fetchProactiveSuggestions, type RenaidaSuggestion } from "@/services/agent/renaidaSuggestions";
 import { analytics, AnalyticsEvents } from "@/lib/analytics";
 
 /** Action-type histogram + task-target ids, for the Renaida learning-loop sensor events. */
@@ -63,6 +64,21 @@ interface Message {
   proposals?: AgentProposal[];
   /** When present, the message shows an "Undo" button that reverses these ops */
   undo?: UndoOp[];
+  /** Marks a proactively-surfaced suggestion message (Fas 3b) — shown once per open. */
+  suggestion?: boolean;
+}
+
+/** Build ConfirmDiff proposals from proactive suggestions, with localized summaries. */
+function buildSuggestionProposals(
+  suggestions: RenaidaSuggestion[],
+  t: (key: string, opts?: Record<string, unknown>) => string,
+): AgentProposal[] {
+  return suggestions.map((s) => ({
+    id: crypto.randomUUID(),
+    summary: t("helpBot.suggest.checklistDone", { title: s.title, defaultValue: `Alla punkter klara i "${s.title}" — markera som klar?` }),
+    confidence: 0.9,
+    action: { type: "set_progress", taskId: s.taskId, progress: 100 },
+  }));
 }
 
 interface InlineAction {
@@ -223,6 +239,34 @@ export function Renaida() {
     });
     return () => { alive = false; };
   }, []);
+
+  // Proactive suggestions (Fas 3b): once per open, after the user's been introduced,
+  // read project state and surface concrete loose ends as a ConfirmDiff to opt into.
+  const proactiveShownRef = useRef(false);
+  useEffect(() => {
+    if (!open) { proactiveShownRef.current = false; return; }
+    if (proactiveShownRef.current) return;
+    if (getPageContext() !== "project" || !lsGet(AUTONOMY_INTRODUCED_KEY)) return;
+    const projectId = useRenaidaStore.getState().projectId;
+    if (!projectId) return;
+    proactiveShownRef.current = true;
+    let alive = true;
+    fetchProactiveSuggestions(projectId).then((suggestions) => {
+      if (!alive || suggestions.length === 0) return;
+      const proposals = buildSuggestionProposals(suggestions, t);
+      analytics.capture(AnalyticsEvents.RENAIDA_SUGGESTED, { count: proposals.length, kinds: suggestions.map((s) => s.kind) });
+      setMessages((prev) => {
+        if (prev.some((m) => m.suggestion) || prev.some((m) => m.role === "user")) return prev;
+        return [...prev, {
+          role: "assistant",
+          content: t("helpBot.suggest.lead", "Jag la märke till några saker vi kan slutföra:"),
+          suggestion: true,
+          proposals,
+        }];
+      });
+    });
+    return () => { alive = false; };
+  }, [open, t]);
 
   const handleToggleAutonomy = useCallback(() => {
     const next: RenaidaAutonomy = useRenaidaStore.getState().autonomy === "autopilot" ? "suggest" : "autopilot";

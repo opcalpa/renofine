@@ -3804,19 +3804,6 @@
       "applying": "Applying…",
       "applied": "Done — applied {{count}} change(s).",
       "autoApplied": "Done automatically — {{summary}}",
-      "autonomy": {
-        "suggest": "Suggest first",
-        "autopilot": "Autopilot",
-        "chooseAutopilot": "Turn on Autopilot",
-        "notNow": "Not now",
-        "suggestHint": "Renaida asks before doing anything. Tap for autopilot.",
-        "autopilotHint": "Renaida handles what she's sure about right away (with Undo). Tap to ask first.",
-        "intro": "Want me to ask first before I change anything, or just handle the sure things right away? You can switch anytime.",
-        "enabledSuggest": "Okay, I'll ask first before changing anything.",
-        "enabledAutopilot": "Autopilot on — I'll handle the sure things right away, always with Undo.",
-        "nudge": "I've landed a few updates correctly now. Want me to just handle the sure things instead of asking every time? (Autopilot — always with Undo.)",
-        "nudgeDismissed": "No problem — I'll keep asking first."
-      },
       "partialFailed": "Applied {{applied}}, {{failed}} failed.",
       "allFailed": "Hmm, that didn't go through. Try again?",
       "routeError": "I couldn't process that. Try again?",
@@ -3828,6 +3815,23 @@
       "willCreateTask": "Will create a task",
       "undo": "Undo",
       "undone": "Undone — reverted the changes."
+    },
+    "autonomy": {
+      "suggest": "Suggest first",
+      "autopilot": "Autopilot",
+      "chooseAutopilot": "Turn on Autopilot",
+      "notNow": "Not now",
+      "suggestHint": "Renaida asks before doing anything. Tap for autopilot.",
+      "autopilotHint": "Renaida handles what she's sure about right away (with Undo). Tap to ask first.",
+      "intro": "Want me to ask first before I change anything, or just handle the sure things right away? You can switch anytime.",
+      "enabledSuggest": "Okay, I'll ask first before changing anything.",
+      "enabledAutopilot": "Autopilot on — I'll handle the sure things right away, always with Undo.",
+      "nudge": "I've landed a few updates correctly now. Want me to just handle the sure things instead of asking every time? (Autopilot — always with Undo.)",
+      "nudgeDismissed": "No problem — I'll keep asking first."
+    },
+    "suggest": {
+      "lead": "I noticed a few things we could wrap up:",
+      "checklistDone": "All items done in \"{{title}}\" — mark it complete?"
     }
   },
   "feedback": {
