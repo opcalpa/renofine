@@ -8,7 +8,7 @@ import { ConfirmDiff } from "@/components/agent/ConfirmDiff";
 import { RenaidaAvatar, type RenaidaState } from "@/components/renaida/RenaidaAvatar";
 import { routeAgentInput } from "@/services/agent/routeClient";
 import { applyProposals, undoProposals } from "@/services/agent/applyProposals";
-import { type AgentProposal, type UndoOp, TASK_MATCH_MIN_CONFIDENCE } from "@/services/agent/types";
+import { type AgentProposal, type UndoOp, TASK_MATCH_MIN_CONFIDENCE, isActionable } from "@/services/agent/types";
 import { recordCorrection } from "@/services/agent/renaidaMemory";
 import { analytics, AnalyticsEvents } from "@/lib/analytics";
 
@@ -22,6 +22,22 @@ function summarizeProposals(proposals: AgentProposal[]) {
     (p) => typeof p.matchConfidence === "number" && p.matchConfidence < TASK_MATCH_MIN_CONFIDENCE,
   );
   return { count: proposals.length, actionTypes, taskTargets, hasLowConfidence };
+}
+
+// Progressive trust (Fas 2): when Renaida is very sure about a SINGLE action, apply
+// it straight away with a prominent Undo instead of taxing the user with a confirm
+// click. Bars are well above the re-pick threshold — anything uncertain, or any
+// multi-action note, still goes through ConfirmDiff. Everything is reversible.
+const AUTO_APPLY_MIN_CONFIDENCE = 0.9;
+const AUTO_APPLY_MIN_MATCH = 0.85;
+
+function qualifiesForAutoApply(p: AgentProposal): boolean {
+  if (!isActionable(p)) return false;
+  if ((p.confidence ?? 0) < AUTO_APPLY_MIN_CONFIDENCE) return false;
+  // Task-targeting actions must ALSO clear a high match bar (right task, not just right intent).
+  const taskId = "taskId" in p.action ? p.action.taskId : undefined;
+  if (taskId && (p.matchConfidence ?? 0) < AUTO_APPLY_MIN_MATCH) return false;
+  return true;
 }
 
 interface Message {
@@ -379,7 +395,40 @@ export function Renaida() {
     sendMessage(input);
   }, [input, sendMessage]);
 
-  // --- Agentic capture: route a quick update → proposals → ConfirmDiff ---
+  // Apply accepted proposals, emit telemetry, append a result bubble (with Undo),
+  // and refresh dependent views. Shared by manual confirm and auto-apply (Fas 2).
+  const applyAndReport = useCallback(async (
+    accepted: AgentProposal[],
+    projectId: string,
+    opts: { auto: boolean; corrected?: number; content?: string },
+  ) => {
+    setApplying(true);
+    const result = await applyProposals(accepted, projectId);
+    setApplying(false);
+
+    analytics.capture(AnalyticsEvents.RENAIDA_APPLIED, {
+      ...summarizeProposals(result.applied),
+      failed: result.failed.length,
+      corrected: opts.corrected ?? 0,
+      auto: opts.auto,
+    });
+
+    const content = result.failed.length === 0
+      ? (opts.content ?? t("helpBot.agent.applied", { count: result.applied.length }))
+      : result.applied.length === 0
+        ? t("helpBot.agent.allFailed")
+        : t("helpBot.agent.partialFailed", { applied: result.applied.length, failed: result.failed.length });
+
+    setMessages((prev) => [...prev, { role: "assistant", content, undo: result.undo.length ? result.undo : undefined }]);
+    if (result.applied.length > 0) {
+      // Overview cards (useOverviewData) are not React Query — nudge them to refetch.
+      window.dispatchEvent(new CustomEvent("renaida-data-changed", { detail: { projectId } }));
+      flashRenaida("happy", 2000);
+    }
+    return result;
+  }, [t, flashRenaida]);
+
+  // --- Agentic capture: route a quick update → proposals → ConfirmDiff (or auto-apply) ---
   const captureUpdate = useCallback(async (text: string, kind: "text" | "voice_transcript") => {
     if (!text.trim() || capturing || loading) return;
 
@@ -401,6 +450,17 @@ export function Renaida() {
         setMessages((prev) => [...prev, { role: "assistant", content: t("helpBot.agent.noProposals") }]);
       } else {
         const s = summarizeProposals(res.proposals);
+        const single = res.proposals.length === 1 ? res.proposals[0] : null;
+        if (single && qualifiesForAutoApply(single)) {
+          // Progressive trust: very sure + single action → do it now, offer Undo.
+          analytics.capture(AnalyticsEvents.RENAIDA_PROPOSED, { kind, resolved: true, auto: true, ...s });
+          flashRenaida("talk", 1400);
+          await applyAndReport([single], projectId, {
+            auto: true,
+            content: t("helpBot.agent.autoApplied", { summary: single.summary }),
+          });
+          return;
+        }
         analytics.capture(AnalyticsEvents.RENAIDA_PROPOSED, { kind, resolved: true, ...s });
         setMessages((prev) => [...prev, { role: "assistant", content: "", proposals: res.proposals }]);
       }
@@ -410,7 +470,7 @@ export function Renaida() {
     } finally {
       setCapturing(false);
     }
-  }, [capturing, loading, t, i18n.language, flashRenaida, wakeRenaida]);
+  }, [capturing, loading, t, i18n.language, flashRenaida, wakeRenaida, applyAndReport]);
 
   const startVoiceCapture = useCallback(() => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -473,33 +533,10 @@ export function Renaida() {
       }
     }
 
-    setApplying(true);
-    const result = await applyProposals(accepted, projectId);
-    setApplying(false);
-
-    analytics.capture(AnalyticsEvents.RENAIDA_APPLIED, {
-      ...summarizeProposals(result.applied),
-      failed: result.failed.length,
-      corrected: corrections.length,
-    });
-
-    const content = result.failed.length === 0
-      ? t("helpBot.agent.applied", { count: result.applied.length })
-      : result.applied.length === 0
-        ? t("helpBot.agent.allFailed")
-        : t("helpBot.agent.partialFailed", { applied: result.applied.length, failed: result.failed.length });
-
-    setMessages((prev) =>
-      prev
-        .map((m, i) => (i === msgIndex ? { ...m, proposals: undefined } : m))
-        .concat({ role: "assistant", content, undo: result.undo.length ? result.undo : undefined }),
-    );
-    if (result.applied.length > 0) {
-      // Overview cards (useOverviewData) are not React Query — nudge them to refetch.
-      window.dispatchEvent(new CustomEvent("renaida-data-changed", { detail: { projectId } }));
-      flashRenaida("happy", 2000);
-    }
-  }, [t, flashRenaida]);
+    // Clear the source proposals bubble, then apply + append the result.
+    setMessages((prev) => prev.map((m, i) => (i === msgIndex ? { ...m, proposals: undefined } : m)));
+    await applyAndReport(accepted, projectId, { auto: false, corrected: corrections.length });
+  }, [applyAndReport]);
 
   const handleUndo = useCallback(async (msgIndex: number, ops: UndoOp[]) => {
     setMessages((prev) => prev.map((m, i) => (i === msgIndex ? { ...m, undo: undefined } : m)));

@@ -3795,6 +3795,7 @@
       "dismiss": "Dismiss",
       "applying": "Applying…",
       "applied": "Done — applied {{count}} change(s).",
+      "autoApplied": "Done automatically — {{summary}}",
       "partialFailed": "Applied {{applied}}, {{failed}} failed.",
       "allFailed": "Hmm, that didn't go through. Try again?",
       "routeError": "I couldn't process that. Try again?",

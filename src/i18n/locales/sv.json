@@ -3794,6 +3794,7 @@
       "dismiss": "Avfärda",
       "applying": "Genomför…",
       "applied": "Klart — genomförde {{count}} ändring(ar).",
+      "autoApplied": "Klart automatiskt — {{summary}}",
       "partialFailed": "Genomförde {{applied}}, {{failed}} misslyckades.",
       "allFailed": "Hmm, det gick inte igenom. Försök igen?",
       "routeError": "Jag kunde inte tolka det. Försök igen?",
