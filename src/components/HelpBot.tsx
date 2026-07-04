@@ -8,7 +8,20 @@ import { ConfirmDiff } from "@/components/agent/ConfirmDiff";
 import { RenaidaAvatar, type RenaidaState } from "@/components/renaida/RenaidaAvatar";
 import { routeAgentInput } from "@/services/agent/routeClient";
 import { applyProposals, undoProposals } from "@/services/agent/applyProposals";
-import type { AgentProposal, UndoOp } from "@/services/agent/types";
+import { type AgentProposal, type UndoOp, TASK_MATCH_MIN_CONFIDENCE } from "@/services/agent/types";
+import { analytics, AnalyticsEvents } from "@/lib/analytics";
+
+/** Action-type histogram + task-target ids, for the Renaida learning-loop sensor events. */
+function summarizeProposals(proposals: AgentProposal[]) {
+  const actionTypes = proposals.map((p) => p.action.type);
+  const taskTargets = proposals
+    .map((p) => ("taskId" in p.action ? p.action.taskId : undefined))
+    .filter(Boolean) as string[];
+  const hasLowConfidence = proposals.some(
+    (p) => typeof p.matchConfidence === "number" && p.matchConfidence < TASK_MATCH_MIN_CONFIDENCE,
+  );
+  return { count: proposals.length, actionTypes, taskTargets, hasLowConfidence };
+}
 
 interface Message {
   role: "user" | "assistant";
@@ -383,8 +396,11 @@ export function HelpBot() {
     try {
       const res = await routeAgentInput({ kind, content: text.trim() }, projectId, i18n.language);
       if (!res.proposals.length) {
+        analytics.capture(AnalyticsEvents.RENAIDA_PROPOSED, { kind, count: 0, resolved: false });
         setMessages((prev) => [...prev, { role: "assistant", content: t("helpBot.agent.noProposals") }]);
       } else {
+        const s = summarizeProposals(res.proposals);
+        analytics.capture(AnalyticsEvents.RENAIDA_PROPOSED, { kind, resolved: true, ...s });
         setMessages((prev) => [...prev, { role: "assistant", content: "", proposals: res.proposals }]);
       }
       flashRenaida("talk", 1400);
@@ -428,13 +444,35 @@ export function HelpBot() {
     else startVoiceCapture();
   }, [input, captureUpdate, startVoiceCapture]);
 
-  const handleApplyProposals = useCallback(async (msgIndex: number, accepted: AgentProposal[]) => {
+  const handleApplyProposals = useCallback(async (msgIndex: number, accepted: AgentProposal[], original: AgentProposal[]) => {
     const projectId = useJuniorStore.getState().projectId;
     if (!projectId) return;
+
+    // Correction signal: a task-targeting proposal whose accepted taskId differs
+    // from what the router originally proposed = the user re-picked. Prime training data.
+    const originalById = new Map(original.map((p) => [p.id, p]));
+    const corrections = accepted.filter((a) => {
+      const orig = originalById.get(a.id);
+      const aTask = "taskId" in a.action ? a.action.taskId : undefined;
+      const oTask = orig && "taskId" in orig.action ? orig.action.taskId : undefined;
+      return aTask && oTask && aTask !== oTask;
+    });
+    if (corrections.length > 0) {
+      analytics.capture(AnalyticsEvents.RENAIDA_CORRECTED, {
+        count: corrections.length,
+        actionTypes: corrections.map((c) => c.action.type),
+      });
+    }
 
     setApplying(true);
     const result = await applyProposals(accepted, projectId);
     setApplying(false);
+
+    analytics.capture(AnalyticsEvents.RENAIDA_APPLIED, {
+      ...summarizeProposals(result.applied),
+      failed: result.failed.length,
+      corrected: corrections.length,
+    });
 
     const content = result.failed.length === 0
       ? t("helpBot.agent.applied", { count: result.applied.length })
@@ -457,12 +495,14 @@ export function HelpBot() {
   const handleUndo = useCallback(async (msgIndex: number, ops: UndoOp[]) => {
     setMessages((prev) => prev.map((m, i) => (i === msgIndex ? { ...m, undo: undefined } : m)));
     await undoProposals(ops);
+    analytics.capture(AnalyticsEvents.RENAIDA_UNDONE, { count: ops.length });
     const projectId = useJuniorStore.getState().projectId;
     window.dispatchEvent(new CustomEvent("junior-data-changed", { detail: { projectId } }));
     setMessages((prev) => [...prev, { role: "assistant", content: t("helpBot.agent.undone") }]);
   }, [t]);
 
   const handleDismissProposals = useCallback((msgIndex: number) => {
+    analytics.capture(AnalyticsEvents.RENAIDA_DISMISSED, {});
     setMessages((prev) =>
       prev.map((m, i) =>
         i === msgIndex ? { ...m, proposals: undefined, content: t("helpBot.agent.dismissed") } : m,
@@ -714,7 +754,7 @@ export function HelpBot() {
                       <ConfirmDiff
                         proposals={msg.proposals}
                         applying={applying}
-                        onConfirm={(accepted) => handleApplyProposals(i, accepted)}
+                        onConfirm={(accepted) => handleApplyProposals(i, accepted, msg.proposals ?? [])}
                         onDismiss={() => handleDismissProposals(i)}
                       />
                     </div>

@@ -68,6 +68,13 @@ export const AnalyticsEvents = {
   HELP_BOT_OPENED: "help_bot_opened",
   FEEDBACK_SUBMITTED: "feedback_submitted",
 
+  // Renaida agent (capture → propose → confirm). Sensor layer for the learning loop.
+  RENAIDA_PROPOSED: "renaida_proposed",
+  RENAIDA_APPLIED: "renaida_applied",
+  RENAIDA_CORRECTED: "renaida_corrected",
+  RENAIDA_UNDONE: "renaida_undone",
+  RENAIDA_DISMISSED: "renaida_dismissed",
+
   // Quotes
   QUOTE_CREATED: "quote_created",
   QUOTE_SENT: "quote_sent",
