@@ -1,11 +1,11 @@
 /**
- * Lightweight store for Renofine Junior chatbot state.
- * Used to pass project reminder data from OverviewTab to the global HelpBot component.
+ * Lightweight store for Renaida assistant state.
+ * Used to pass project reminder data from OverviewTab to the global Renaida component.
  */
 import { create } from "zustand";
 import type { ProjectReminder } from "@/hooks/useProjectReminders";
 
-interface JuniorState {
+interface RenaidaStoreState {
   reminderCount: number;
   reminders: ProjectReminder[];
   projectId: string | null;
@@ -15,7 +15,7 @@ interface JuniorState {
   clear: () => void;
 }
 
-export const useJuniorStore = create<JuniorState>((set) => ({
+export const useRenaidaStore = create<RenaidaStoreState>((set) => ({
   reminderCount: 0,
   reminders: [],
   projectId: null,

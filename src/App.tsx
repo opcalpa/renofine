@@ -50,18 +50,18 @@ const WorkerView = lazy(() => import("./pages/WorkerView"));
 const AtaApproval = lazy(() => import("./pages/AtaApproval"));
 const AttendanceCheckIn = lazy(() => import("./pages/AttendanceCheckIn"));
 const DocPlayground = lazy(() => import("./pages/_DocPlayground"));
-import { HelpBot } from "./components/HelpBot";
+import { Renaida } from "./components/Renaida";
 import { BetaBanner } from "./components/BetaBanner";
 import { Canonical } from "./components/seo/Canonical";
 
-/** Only show HelpBot on authenticated/app pages, not public landing pages */
-function AuthenticatedHelpBot() {
+/** Only show Renaida on authenticated/app pages, not public landing pages */
+function AuthenticatedRenaida() {
   const path = typeof window !== "undefined" ? window.location.pathname : "";
   const publicPaths = ["/", "/auth", "/landing-test", "/about", "/contact", "/terms", "/privacy", "/tips"];
   if (publicPaths.includes(path) || path.startsWith("/w/") || path.startsWith("/intake/") || path.startsWith("/quotes/") || path.startsWith("/invoices/")) {
     return null;
   }
-  return <HelpBot />;
+  return <Renaida />;
 }
 
 const queryClient = new QueryClient();
@@ -132,7 +132,7 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
-          <AuthenticatedHelpBot />
+          <AuthenticatedRenaida />
         </TooltipProvider>
         </MeasurementProvider>
       </GuestProvider>

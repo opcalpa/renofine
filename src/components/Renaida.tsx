@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Send, X, Lightbulb, BookOpen, Wrench, FileText, ArrowLeft, Mic, Sparkles, ChevronDown, MessageCircle } from "lucide-react";
-import { useJuniorStore } from "@/stores/juniorStore";
+import { useRenaidaStore } from "@/stores/renaidaStore";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
@@ -122,11 +122,11 @@ const REMINDER_PRIORITY: Record<string, number> = {
   no_deadline: 5, no_start_date: 7, rot_property: 8, rot_personnummer: 9,
 };
 
-export function HelpBot() {
+export function Renaida() {
   const { t, i18n } = useTranslation();
-  const reminderCount = useJuniorStore((s) => s.reminderCount);
-  const juniorReminders = useJuniorStore((s) => s.reminders);
-  const juniorProjectName = useJuniorStore((s) => s.projectName);
+  const reminderCount = useRenaidaStore((s) => s.reminderCount);
+  const renaidaReminders = useRenaidaStore((s) => s.reminders);
+  const renaidaProjectName = useRenaidaStore((s) => s.projectName);
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -250,7 +250,7 @@ export function HelpBot() {
         setMessages([{ role: "assistant", content: greeting.content, actions: greeting.actions }]);
       }
     }
-  }, [juniorReminders.length]);
+  }, [renaidaReminders.length]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -341,7 +341,7 @@ export function HelpBot() {
 
       const conversationMessages = allConversation.slice(-8);
 
-      const projectCountry = useJuniorStore.getState().projectCountry;
+      const projectCountry = useRenaidaStore.getState().projectCountry;
       const { data, error } = await supabase.functions.invoke("help-bot", {
         body: { messages: conversationMessages, language: i18n.language, userType, projectCountry },
       });
@@ -386,7 +386,7 @@ export function HelpBot() {
     setMessages((prev) => [...prev, { role: "user", content: text.trim() }]);
     setInput("");
 
-    const projectId = useJuniorStore.getState().projectId;
+    const projectId = useRenaidaStore.getState().projectId;
     if (!projectId) {
       setMessages((prev) => [...prev, { role: "assistant", content: t("helpBot.agent.noProject") }]);
       return;
@@ -446,7 +446,7 @@ export function HelpBot() {
   }, [input, captureUpdate, startVoiceCapture]);
 
   const handleApplyProposals = useCallback(async (msgIndex: number, accepted: AgentProposal[], original: AgentProposal[], phrase: string) => {
-    const projectId = useJuniorStore.getState().projectId;
+    const projectId = useRenaidaStore.getState().projectId;
     if (!projectId) return;
 
     // Correction signal: a task-targeting proposal whose accepted taskId differs
@@ -496,7 +496,7 @@ export function HelpBot() {
     );
     if (result.applied.length > 0) {
       // Overview cards (useOverviewData) are not React Query — nudge them to refetch.
-      window.dispatchEvent(new CustomEvent("junior-data-changed", { detail: { projectId } }));
+      window.dispatchEvent(new CustomEvent("renaida-data-changed", { detail: { projectId } }));
       flashRenaida("happy", 2000);
     }
   }, [t, flashRenaida]);
@@ -505,8 +505,8 @@ export function HelpBot() {
     setMessages((prev) => prev.map((m, i) => (i === msgIndex ? { ...m, undo: undefined } : m)));
     await undoProposals(ops);
     analytics.capture(AnalyticsEvents.RENAIDA_UNDONE, { count: ops.length });
-    const projectId = useJuniorStore.getState().projectId;
-    window.dispatchEvent(new CustomEvent("junior-data-changed", { detail: { projectId } }));
+    const projectId = useRenaidaStore.getState().projectId;
+    window.dispatchEvent(new CustomEvent("renaida-data-changed", { detail: { projectId } }));
     setMessages((prev) => [...prev, { role: "assistant", content: t("helpBot.agent.undone") }]);
   }, [t]);
 
@@ -591,14 +591,14 @@ export function HelpBot() {
     } else if (action.startsWith("navigate:")) {
       const target = action.replace("navigate:", "");
       // Dispatch a custom event that OverviewTab listens to for navigation
-      window.dispatchEvent(new CustomEvent("junior-navigate", { detail: target }));
+      window.dispatchEvent(new CustomEvent("renaida-navigate", { detail: target }));
       setOpen(false);
     }
   }, [startFeedbackMode, t, buildGreeting]);
 
   const handleDismissReminder = useCallback((reminderId: string) => {
     // Dispatch event to OverviewTab to dismiss the reminder
-    window.dispatchEvent(new CustomEvent("junior-dismiss-reminder", { detail: reminderId }));
+    window.dispatchEvent(new CustomEvent("renaida-dismiss-reminder", { detail: reminderId }));
   }, []);
 
   const handleQuickPrompt = useCallback((prompt: QuickPrompt) => {
@@ -664,7 +664,7 @@ export function HelpBot() {
 
   const showQuickPrompts = messages.length <= 1 && !loading && !feedbackMode && !capturing;
   const onProjectPage = getPageContext() === "project";
-  const rankedReminders = [...juniorReminders].sort(
+  const rankedReminders = [...renaidaReminders].sort(
     (a, b) => (REMINDER_PRIORITY[a.id] ?? 6) - (REMINDER_PRIORITY[b.id] ?? 6),
   );
 

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useProjectReminders } from "@/hooks/useProjectReminders";
-import { useJuniorStore } from "@/stores/juniorStore";
+import { useRenaidaStore } from "@/stores/renaidaStore";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -296,10 +296,10 @@ const OverviewTab = ({
 
   const { reminders, dismissReminder, dismissAll: dismissAllReminders } = useProjectReminders(reminderCtx);
 
-  // Sync reminders to Junior store
+  // Sync reminders to Renaida store
   useEffect(() => {
-    useJuniorStore.getState().setReminders(reminders, project.id, project.name, project.country);
-    return () => useJuniorStore.getState().clear();
+    useRenaidaStore.getState().setReminders(reminders, project.id, project.name, project.country);
+    return () => useRenaidaStore.getState().clear();
   }, [reminders, project.id, project.name, project.country]);
 
   const handleTipAction = useCallback((target: string) => {
@@ -312,7 +312,7 @@ const OverviewTab = ({
     }
   }, [onNavigateToTasks, onNavigateToBudget, onNavigateToFeed, onNavigateToRoom]);
 
-  // Listen for Junior navigation and dismiss events
+  // Listen for Renaida navigation and dismiss events
   useEffect(() => {
     const navHandler = (e: Event) => {
       handleTipAction((e as CustomEvent).detail);
@@ -324,13 +324,13 @@ const OverviewTab = ({
     const dataChangedHandler = () => {
       refetch();
     };
-    window.addEventListener("junior-navigate", navHandler);
-    window.addEventListener("junior-dismiss-reminder", dismissHandler);
-    window.addEventListener("junior-data-changed", dataChangedHandler);
+    window.addEventListener("renaida-navigate", navHandler);
+    window.addEventListener("renaida-dismiss-reminder", dismissHandler);
+    window.addEventListener("renaida-data-changed", dataChangedHandler);
     return () => {
-      window.removeEventListener("junior-navigate", navHandler);
-      window.removeEventListener("junior-dismiss-reminder", dismissHandler);
-      window.removeEventListener("junior-data-changed", dataChangedHandler);
+      window.removeEventListener("renaida-navigate", navHandler);
+      window.removeEventListener("renaida-dismiss-reminder", dismissHandler);
+      window.removeEventListener("renaida-data-changed", dataChangedHandler);
     };
   }, [handleTipAction, dismissReminder, refetch]);
 
