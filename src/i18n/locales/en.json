@@ -3509,6 +3509,16 @@
       "material": "material",
       "floorPlan": "floor plan",
       "teamMember": "team member"
+    },
+    "renaida": {
+      "taskUpdate": "updated \"{{name}}\"",
+      "taskCreate": "created the task \"{{name}}\"",
+      "purchaseRequest": "created a purchase request for {{name}}",
+      "logTime": "logged {{name}} of work",
+      "checklist": "ticked off a checklist item in \"{{name}}\"",
+      "comment": "added a note: {{name}}",
+      "generic": "made a change to \"{{name}}\"",
+      "forUser": "for {{name}}"
     }
   },
   "notifications": {

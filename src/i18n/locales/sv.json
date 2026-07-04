@@ -3508,6 +3508,16 @@
       "material": "material",
       "floorPlan": "planlösning",
       "teamMember": "teammedlem"
+    },
+    "renaida": {
+      "taskUpdate": "uppdaterade \"{{name}}\"",
+      "taskCreate": "skapade arbetet \"{{name}}\"",
+      "purchaseRequest": "skapade en inköpsförfrågan för {{name}}",
+      "logTime": "loggade {{name}} arbetstid",
+      "checklist": "bockade av en checklistpunkt i \"{{name}}\"",
+      "comment": "la till en anteckning: {{name}}",
+      "generic": "gjorde en ändring i \"{{name}}\"",
+      "forUser": "åt {{name}}"
     }
   },
   "notifications": {
