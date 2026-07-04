@@ -9,6 +9,16 @@ import { SupplierAutocomplete } from "@/components/shared/SupplierAutocomplete";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -673,6 +683,8 @@ export const TaskEditDialog = ({
   const [task, setTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [editingBudgetField, setEditingBudgetField] = useState<"labor" | "material" | null>(null);
   const [rooms, setRooms] = useState<{ id: string; name: string; dimensions?: RecipeRoom["dimensions"]; ceiling_height_mm?: number | null }[]>([]);
   const [teamMembers, setTeamMembers] = useState<{ id: string; name: string; role?: string }[]>([]);
@@ -1089,6 +1101,25 @@ export const TaskEditDialog = ({
       toast({ title: t("common.error"), description: msg, variant: "destructive" });
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Delete this task (confirm-gated). Mirrors useBulkTaskActions.bulkDelete —
+  // DB FK cascades handle dependents, same as bulk delete and Budget-row delete.
+  const handleDelete = async () => {
+    if (!task) return;
+    setDeleting(true);
+    try {
+      const { error } = await supabase.from("tasks").delete().eq("id", task.id);
+      if (error) throw error;
+      toast({ description: t("tasks.taskDeleted", "Arbetet togs bort") });
+      onOpenChange(false);
+      onSaved?.();
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : "Failed to delete";
+      toast({ title: t("common.error"), description: msg, variant: "destructive" });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -2247,8 +2278,19 @@ export const TaskEditDialog = ({
 
             </div>
             {/* Sticky save footer */}
-            <div className="flex-shrink-0 border-t bg-background px-6 py-4 shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
-              <Button type="submit" className="w-full h-11 text-base font-medium shadow-sm" disabled={saving}>
+            <div className="flex-shrink-0 border-t bg-background px-6 py-4 shadow-[0_-4px_12px_rgba(0,0,0,0.06)] flex items-center gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-11 w-11 flex-shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={() => setShowDeleteConfirm(true)}
+                disabled={saving || deleting}
+                title={t("tasks.deleteTask", "Ta bort arbete")}
+              >
+                {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+              </Button>
+              <Button type="submit" className="flex-1 h-11 text-base font-medium shadow-sm" disabled={saving || deleting}>
                 {saving ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -2263,6 +2305,32 @@ export const TaskEditDialog = ({
         ) : (
           <p className="text-muted-foreground py-8 text-center">{t("budget.noData")}</p>
         )}
+
+        {/* Confirm delete (mirrors the bulk-delete confirm) */}
+        <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                {t("tasks.deleteConfirmTitle", { title: task?.title ?? "", defaultValue: "Ta bort \"{{title}}\"?" })}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {t("tasks.deleteConfirmDesc", "Arbetet tas bort permanent, inklusive dess checklista och kopplingar. Detta går inte att ångra.")}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  void handleDelete();
+                }}
+              >
+                {t("tasks.deleteTask", "Ta bort arbete")}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
     </TaskEditWrapper>
   );
 };

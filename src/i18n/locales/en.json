@@ -997,7 +997,11 @@
     "startDateOptional": "Start date (optional)",
     "finishDateOptional": "Finish date (optional)",
     "roomOptional": "Room (optional)",
-    "selectRoom": "Select room"
+    "selectRoom": "Select room",
+    "deleteTask": "Delete task",
+    "taskDeleted": "Task deleted",
+    "deleteConfirmTitle": "Delete \"{{title}}\"?",
+    "deleteConfirmDesc": "The task is permanently deleted, including its checklist and links. This cannot be undone."
   },
   "tasksTable": {
     "columns": "Columns",
