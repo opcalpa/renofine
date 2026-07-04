@@ -74,6 +74,7 @@ export const AnalyticsEvents = {
   RENAIDA_CORRECTED: "renaida_corrected",
   RENAIDA_UNDONE: "renaida_undone",
   RENAIDA_DISMISSED: "renaida_dismissed",
+  RENAIDA_AUTONOMY_CHANGED: "renaida_autonomy_changed",
 
   // Quotes
   QUOTE_CREATED: "quote_created",

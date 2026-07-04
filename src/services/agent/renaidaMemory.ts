@@ -87,3 +87,29 @@ export async function recordCorrection(params: {
     value: params.chosenWork.trim().slice(0, 160),
   });
 }
+
+const AUTONOMY_KEY = "autonomy";
+
+/** Read the user's Renaida autonomy preference (global). Defaults to "suggest". */
+export async function getAutonomyMode(): Promise<"suggest" | "autopilot"> {
+  try {
+    const profileId = await getProfileId();
+    if (!profileId) return "suggest";
+    const { data } = await supabase
+      .from("renaida_user_memory")
+      .select("value")
+      .eq("profile_id", profileId)
+      .eq("kind", "preference")
+      .eq("key", AUTONOMY_KEY)
+      .is("project_id", null)
+      .limit(1);
+    return data?.[0]?.value === "autopilot" ? "autopilot" : "suggest";
+  } catch {
+    return "suggest";
+  }
+}
+
+/** Persist the user's Renaida autonomy preference (global). */
+export async function setAutonomyMode(mode: "suggest" | "autopilot"): Promise<void> {
+  await rememberFact({ projectId: null, kind: "preference", key: AUTONOMY_KEY, value: mode });
+}

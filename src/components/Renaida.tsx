@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Send, X, Lightbulb, BookOpen, Wrench, FileText, ArrowLeft, Mic, Sparkles, ChevronDown, MessageCircle } from "lucide-react";
-import { useRenaidaStore } from "@/stores/renaidaStore";
+import { useRenaidaStore, type RenaidaAutonomy } from "@/stores/renaidaStore";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,7 +9,7 @@ import { RenaidaAvatar, type RenaidaState } from "@/components/renaida/RenaidaAv
 import { routeAgentInput } from "@/services/agent/routeClient";
 import { applyProposals, undoProposals } from "@/services/agent/applyProposals";
 import { type AgentProposal, type UndoOp, TASK_MATCH_MIN_CONFIDENCE, isActionable } from "@/services/agent/types";
-import { recordCorrection } from "@/services/agent/renaidaMemory";
+import { recordCorrection, getAutonomyMode, setAutonomyMode } from "@/services/agent/renaidaMemory";
 import { analytics, AnalyticsEvents } from "@/lib/analytics";
 
 /** Action-type histogram + task-target ids, for the Renaida learning-loop sensor events. */
@@ -143,6 +143,7 @@ export function Renaida() {
   const reminderCount = useRenaidaStore((s) => s.reminderCount);
   const renaidaReminders = useRenaidaStore((s) => s.reminders);
   const renaidaProjectName = useRenaidaStore((s) => s.projectName);
+  const autonomy = useRenaidaStore((s) => s.autonomy);
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -199,6 +200,23 @@ export function Renaida() {
     if (open) flashRenaida("hello", 2200);
     else wakeRenaida();
   }, [open, flashRenaida, wakeRenaida]);
+
+  // Load the synced autonomy preference on mount (localStorage cache paints first).
+  useEffect(() => {
+    let alive = true;
+    getAutonomyMode().then((mode) => {
+      if (alive) useRenaidaStore.getState().setAutonomy(mode);
+    });
+    return () => { alive = false; };
+  }, []);
+
+  const handleToggleAutonomy = useCallback(() => {
+    const next: RenaidaAutonomy = useRenaidaStore.getState().autonomy === "autopilot" ? "suggest" : "autopilot";
+    useRenaidaStore.getState().setAutonomy(next);
+    void setAutonomyMode(next);
+    analytics.capture(AnalyticsEvents.RENAIDA_AUTONOMY_CHANGED, { mode: next });
+    flashRenaida(next === "autopilot" ? "happy" : "idle", 1500);
+  }, [flashRenaida]);
 
   // Fetch user type and name from profile
   useEffect(() => {
@@ -451,7 +469,8 @@ export function Renaida() {
       } else {
         const s = summarizeProposals(res.proposals);
         const single = res.proposals.length === 1 ? res.proposals[0] : null;
-        if (single && qualifiesForAutoApply(single)) {
+        const autopilot = useRenaidaStore.getState().autonomy === "autopilot";
+        if (autopilot && single && qualifiesForAutoApply(single)) {
           // Progressive trust: very sure + single action → do it now, offer Undo.
           analytics.capture(AnalyticsEvents.RENAIDA_PROPOSED, { kind, resolved: true, auto: true, ...s });
           flashRenaida("talk", 1400);
@@ -744,6 +763,22 @@ export function Renaida() {
               </h3>
             </div>
             <div className="flex items-center gap-1">
+              {!feedbackMode && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 gap-1 px-2 text-xs text-muted-foreground"
+                  onClick={handleToggleAutonomy}
+                  title={t(autonomy === "autopilot" ? "helpBot.autonomy.autopilotHint" : "helpBot.autonomy.suggestHint")}
+                >
+                  {autonomy === "autopilot"
+                    ? <Sparkles className="h-3.5 w-3.5 text-primary" />
+                    : <MessageCircle className="h-3.5 w-3.5" />}
+                  <span className="hidden sm:inline">
+                    {t(autonomy === "autopilot" ? "helpBot.autonomy.autopilot" : "helpBot.autonomy.suggest")}
+                  </span>
+                </Button>
+              )}
               {feedbackMode && (
                 <Button
                   variant="ghost"
