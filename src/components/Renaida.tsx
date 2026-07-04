@@ -77,7 +77,10 @@ function buildSuggestionProposals(
     id: crypto.randomUUID(),
     summary: t("helpBot.suggest.checklistDone", { title: s.title, defaultValue: `Alla punkter klara i "${s.title}" — markera som klar?` }),
     confidence: 0.9,
-    action: { type: "set_progress", taskId: s.taskId, progress: 100 },
+    // status explicit: the OWNER confirms this, so complete outright — the
+    // awaiting_review default on progress=100 is the worker-flow gate, and it
+    // makes the overview "Avslutad" count (which counts completed) sit still.
+    action: { type: "set_progress", taskId: s.taskId, progress: 100, status: "completed" },
   }));
 }
 
@@ -272,9 +275,16 @@ export function Renaida() {
     const next: RenaidaAutonomy = useRenaidaStore.getState().autonomy === "autopilot" ? "suggest" : "autopilot";
     useRenaidaStore.getState().setAutonomy(next);
     void setAutonomyMode(next);
-    analytics.capture(AnalyticsEvents.RENAIDA_AUTONOMY_CHANGED, { mode: next });
+    lsSet(AUTONOMY_INTRODUCED_KEY, "1"); // header toggle counts as having met the choice
+    analytics.capture(AnalyticsEvents.RENAIDA_AUTONOMY_CHANGED, { mode: next, source: "header" });
     flashRenaida(next === "autopilot" ? "happy" : "idle", 1500);
-  }, [flashRenaida]);
+    // Confirm the switch in the thread (Cowork: the label alone was too subtle).
+    setMessages((prev) => [...prev, {
+      role: "assistant",
+      content: t(next === "autopilot" ? "helpBot.autonomy.enabledAutopilot" : "helpBot.autonomy.enabledSuggest",
+        next === "autopilot" ? "Autopilot på — jag fixar säkra saker direkt, alltid med Ångra." : "Okej, jag frågar först innan jag ändrar något."),
+    }]);
+  }, [flashRenaida, t]);
 
   // Fetch user type and name from profile
   useEffect(() => {

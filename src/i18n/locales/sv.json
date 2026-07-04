@@ -1001,7 +1001,8 @@
     "deleteTask": "Ta bort arbete",
     "taskDeleted": "Arbetet togs bort",
     "deleteConfirmTitle": "Ta bort \"{{title}}\"?",
-    "deleteConfirmDesc": "Arbetet tas bort permanent, inklusive dess checklista och kopplingar. Detta går inte att ångra."
+    "deleteConfirmDesc": "Arbetet tas bort permanent, inklusive dess checklista och kopplingar. Detta går inte att ångra.",
+    "budgetOptional": "Budget (valfritt)"
   },
   "tasksTable": {
     "columns": "Kolumner",

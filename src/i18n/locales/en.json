@@ -1001,7 +1001,8 @@
     "deleteTask": "Delete task",
     "taskDeleted": "Task deleted",
     "deleteConfirmTitle": "Delete \"{{title}}\"?",
-    "deleteConfirmDesc": "The task is permanently deleted, including its checklist and links. This cannot be undone."
+    "deleteConfirmDesc": "The task is permanently deleted, including its checklist and links. This cannot be undone.",
+    "budgetOptional": "Budget (optional)"
   },
   "tasksTable": {
     "columns": "Columns",

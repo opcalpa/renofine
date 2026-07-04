@@ -206,7 +206,9 @@
     {
       "id": "ambiguous-same-trade",
       "input": "Jag blev klar med spacklingen i ett av rummen.",
-      "expectNoConfidentTaskMutation": true
+      "expectAmbiguousPick": {
+        "candidatesMin": 2
+      }
     }
   ]
 }
