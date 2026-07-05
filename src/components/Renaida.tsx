@@ -454,9 +454,9 @@ export function Renaida() {
 
       const conversationMessages = allConversation.slice(-8);
 
-      const projectCountry = useRenaidaStore.getState().projectCountry;
+      const { projectCountry, projectId } = useRenaidaStore.getState();
       const { data, error } = await supabase.functions.invoke("help-bot", {
-        body: { messages: conversationMessages, language: i18n.language, userType, projectCountry, userName },
+        body: { messages: conversationMessages, language: i18n.language, userType, projectCountry, userName, projectId },
       });
 
       if (error) throw error;

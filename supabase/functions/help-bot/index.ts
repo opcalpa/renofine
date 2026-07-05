@@ -35,6 +35,62 @@ function supabaseRestUrl(table: string): string {
   return `${Deno.env.get("SUPABASE_URL")!}/rest/v1/${table}`;
 }
 
+// RLS-scoped fetch AS THE CALLER (their JWT) — mirrors agent-route. Used for
+// project-context injection so the bot can only see projects the user can.
+function callerRestHeaders(authHeader: string) {
+  return {
+    apikey: Deno.env.get("SUPABASE_ANON_KEY")!,
+    Authorization: authHeader,
+    "Content-Type": "application/json",
+  };
+}
+
+interface ProjectCtx {
+  name: string;
+  rooms: string[];
+  tasks: { title: string; status: string | null; progress: number | null; budget: number | null }[];
+}
+
+/** Fetch a compact project snapshot (RLS-scoped). Best-effort: null on any failure. */
+async function fetchProjectContext(projectId: string, authHeader: string): Promise<ProjectCtx | null> {
+  try {
+    const headers = callerRestHeaders(authHeader);
+    const [projRes, roomsRes, tasksRes] = await Promise.all([
+      fetch(`${supabaseRestUrl("projects")}?id=eq.${projectId}&select=name&limit=1`, { headers }),
+      fetch(`${supabaseRestUrl("rooms")}?project_id=eq.${projectId}&select=name&order=name.asc&limit=50`, { headers }),
+      fetch(`${supabaseRestUrl("tasks")}?project_id=eq.${projectId}&select=title,status,progress,budget&order=created_at.desc&limit=100`, { headers }),
+    ]);
+    const proj = projRes.ok ? await projRes.json() : [];
+    if (!proj.length) return null;
+    const rooms = roomsRes.ok ? await roomsRes.json() : [];
+    const tasks = tasksRes.ok ? await tasksRes.json() : [];
+    return {
+      name: proj[0].name,
+      rooms: rooms.map((r: { name: string }) => r.name),
+      tasks,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** Render the project snapshot as a prompt section — this is what makes answers
+ *  feel like a consultant who knows THEIR project, not a generic FAQ bot. */
+function buildProjectSection(ctx: ProjectCtx): string {
+  const taskLines = ctx.tasks.slice(0, 60).map((t) => {
+    const parts = [`"${t.title}"`, t.status ?? "", typeof t.progress === "number" ? `${t.progress}%` : ""];
+    return `  - ${parts.filter(Boolean).join(" · ")}`;
+  }).join("\n");
+  const budgetTotal = ctx.tasks.reduce((sum, t) => sum + (typeof t.budget === "number" ? t.budget : 0), 0);
+  return `
+THE USER'S CURRENT PROJECT — "${ctx.name}" (use this to give SPECIFIC, situational advice; reference their actual rooms/tasks by name; sequence advice around what is already done vs not):
+Rooms: ${ctx.rooms.length ? ctx.rooms.join(", ") : "(none yet)"}
+Tasks (${ctx.tasks.length}):
+${taskLines || "  (none yet)"}
+${budgetTotal > 0 ? `Task budgets sum to ~${Math.round(budgetTotal)} (project currency).` : ""}
+`;
+}
+
 const LANGUAGE_NAMES: Record<string, string> = {
   en: "English",
   sv: "Swedish",
@@ -48,7 +104,7 @@ const LANGUAGE_NAMES: Record<string, string> = {
   et: "Estonian",
 };
 
-function buildSystemPrompt(language: string, userType?: string, projectCountry?: string, userName?: string): string {
+function buildSystemPrompt(language: string, userType?: string, projectCountry?: string, userName?: string, projectSection?: string): string {
   const langName = LANGUAGE_NAMES[language] || "English";
   const isContractor = userType === "contractor";
   const isSwedish = !projectCountry || projectCountry === "SE";
@@ -96,10 +152,14 @@ Rules:
 - When questions concern legal requirements, mention relevant regulations${isSwedish ? " (BBR, PBL, Boverket for Sweden)" : " for the user's country"}
 - End answers about laws/regulations with a short disclaimer about checking with local authorities${!isSwedish && projectCountry ? `\n- The user's project is located in country code "${projectCountry}" — adapt regulatory advice accordingly. Do NOT mention Swedish-specific programs like ROT/RUT unless the user explicitly asks.` : ""}
 
+${projectSection ?? ""}
 You can help with TWO areas:
 
-1) RENOVATION & BUILDING EXPERTISE:
-   Building techniques, building permits,${isSwedish ? " tax deductions (ROT)," : ""} material choices, project planning, regulations, insurance.
+1) RENOVATION & BUILDING EXPERTISE (your primary craft — answer like an experienced site manager, not a brochure):
+   - SEQUENCING is your signature skill. Standard renovation order and WHY: rivning/demontering → stom-/konstruktionsändringar → el & VVS-dragning i vägg (rough-in) → ${isSwedish ? "tätskikt i våtrum (KRAV före ytskikt)" : "waterproofing in wet rooms (REQUIRED before surfaces)"} → golvvärme/avjämning → ytskikt (kakel/klinker, spackling, målning: tak → väggar → snickerier) → montering (kök/vitvaror/sanitet) → el-slutmontering (uttag, armaturer) → lister & finish → slutstädning/besiktning. When asked "what order", apply this to THEIR actual tasks if project context is present — point out anything in their plan that seems out of order.
+   - ${isSwedish ? "SWEDISH WET-ROOM & TRADE RULES: tätskikt ska utföras enligt branschregler (BBV/GVK för våtrum, Säker Vatten för VVS) — rekommendera behörig våtrumsfirma för tätskikt och auktoriserad elinstallatör (Elsäkerhetsverket) för fasta el-arbeten; felaktigt utförande kan påverka försäkring och framtida försäljning. ROT-avdrag: 50% av arbetskostnaden 2025/2026 (takbelopp per person/år), endast arbete — inte material — och kräver att utföraren har F-skatt." : "Recommend certified/licensed trades for waterproofing, plumbing and fixed electrical work — regulations vary by country; incorrect work can void insurance."}
+   - COST REALISM: give honest ballpark ranges when asked, always flagging that quotes vary — and that labor${isSwedish ? " (where ROT applies)" : ""} vs material split matters. Never invent exact prices as facts.
+   - Building permits (${isSwedish ? "bygglov/anmälan — bärande väggar, våtrum ändrad planlösning, fasadändring" : "permits for structural changes"}), material choices, moisture/ventilation basics, insurance considerations.
 
 2) PLATFORM GUIDE — how to use the Renofine app effectively:
 
@@ -174,7 +234,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, language = "en", userType, projectCountry, userName } = await req.json();
+    const { messages, language = "en", userType, projectCountry, userName, projectId } = await req.json();
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(
@@ -191,8 +251,19 @@ serve(async (req) => {
       );
     }
 
-    // Check cache for single-message requests (quick prompts)
-    const isSingleMessage = messages.length === 1;
+    // Expert mode (Taulant P3): when a project is open, inject its snapshot and
+    // use the premium model — this is where the "tailored construction expert"
+    // feel lives. Project-context answers are user-specific → NEVER cached.
+    let projectSection: string | undefined;
+    if (typeof projectId === "string" && projectId) {
+      const ctx = await fetchProjectContext(projectId, authHeader);
+      if (ctx) projectSection = buildProjectSection(ctx);
+    }
+    const model = projectSection ? "gpt-4o" : "gpt-4o-mini";
+
+    // Check cache for single-message requests (quick prompts) — generic only;
+    // project-context replies bypass the cache entirely.
+    const isSingleMessage = messages.length === 1 && !projectSection;
     if (isSingleMessage) {
       // v2: cache-key bumped 2026-07-05 — earlier rows were cached from prompts
       // without the no-name-placeholder rule (a "[Ditt namn]" reply got cached).
@@ -236,10 +307,10 @@ serve(async (req) => {
       );
     }
 
-    // Multi-message conversation — trim to last N messages and call OpenAI.
-    // Not cached → safe to personalize with the user's name.
+    // Conversation (or project-context) path — not cached → safe to personalize
+    // with the user's name and their project snapshot.
     const trimmedMessages = messages.slice(-MAX_HISTORY_MESSAGES);
-    const reply = await callOpenAI(openaiApiKey, trimmedMessages, language, userType, projectCountry, typeof userName === "string" ? userName : undefined);
+    const reply = await callOpenAI(openaiApiKey, trimmedMessages, language, userType, projectCountry, typeof userName === "string" ? userName : undefined, projectSection, model);
 
     return new Response(
       JSON.stringify({ reply }),
@@ -261,6 +332,8 @@ async function callOpenAI(
   userType?: string,
   projectCountry?: string,
   userName?: string,
+  projectSection?: string,
+  model = "gpt-4o-mini",
 ): Promise<string> {
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -269,11 +342,11 @@ async function callOpenAI(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "gpt-4o-mini",
+      model,
       temperature: 0.7,
       max_tokens: 1024,
       messages: [
-        { role: "system", content: buildSystemPrompt(language, userType, projectCountry, userName) },
+        { role: "system", content: buildSystemPrompt(language, userType, projectCountry, userName, projectSection) },
         ...messages.map((m) => ({
           role: m.role,
           content: m.content,
