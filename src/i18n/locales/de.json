@@ -1163,7 +1163,15 @@
     "greetingAfternoon": "Guten Tag",
     "greetingEvening": "Guten Abend",
     "greetingMorning": "Guten Morgen",
-    "greetingNight": "Gute Nacht"
+    "greetingNight": "Gute Nacht",
+    "exploreDemo": "Oder erkunde zuerst das Demoprojekt",
+    "path1Kicker": "01 · Sprache oder Text",
+    "path1Title": "Beschreibe deine Renovierung",
+    "path1Description": "Erzähle es in eigenen Worten — die KI schlägt Räume und Arbeiten vor, du bestätigst.",
+    "path2Kicker": "02 · Hast du ein Angebot?",
+    "path2Title": "Angebot importieren",
+    "path2Description": "Lade das Angebot oder Dokument hoch — wir bauen das Projekt daraus.",
+    "path3Kicker": "03 · Zusammenarbeiten"
   },
   "paymentStatuses": {
     "notPaid": "Nicht bezahlt",
@@ -2229,5 +2237,12 @@
     "autoMigratedDescription": "Alles, was du als Gast erstellt hast, ist jetzt in deinem Konto gespeichert.",
     "signUpNudge": "Erstelle ein kostenloses Konto, um dein Projekt zu speichern, Schätzungen zu erhalten und Mitwirkende einzuladen.",
     "signUpLink": "Konto erstellen"
+  },
+  "guidedSetup": {
+    "describeStep": "Beschreiben",
+    "fillManually": "Selbst ausfüllen",
+    "startBlank": "Stattdessen mit leerem Projekt starten",
+    "startBlankHint": "Planung vorerst überspringen — du kannst die Renovierung im Projekt per Sprache beschreiben und Renaida richtet sie ein.",
+    "createBlankProject": "Leeres Projekt erstellen"
   }
 }

@@ -4414,7 +4414,12 @@
     "noMatrixSelections": "Inga val ännu — bocka i minst en ruta",
     "taskList": "Arbeten som skapas",
     "totalTasks": "Totalt antal arbeten",
-    "totalRooms": "Totalt antal rum"
+    "totalRooms": "Totalt antal rum",
+    "describeStep": "Beskriv",
+    "fillManually": "Fyll i själv",
+    "startBlank": "Starta tomt projekt istället",
+    "startBlankHint": "Hoppa över planeringen — du kan beskriva renoveringen med rösten inne i projektet så bygger Renaida upp den.",
+    "createBlankProject": "Skapa tomt projekt"
   },
   "demoProject": {
     "badge": "Exempelprojekt",
@@ -6383,13 +6388,13 @@
     "heroTitleEmphasis": "din historia",
     "heroTitleEnd": "vi håller koll på tider, pengar och ROT.",
     "heroDescription": "Lägg till din första adress eller starta direkt med projektet du vill göra. När entreprenören är ansluten flyter alla beslut, foton och fakturor in på ett ställe.",
-    "path1Kicker": "01 · Steg-för-steg",
-    "path1Title": "Lägg till en adress",
-    "path1Description": "Börja med var du bor. Bra om du planerar flera projekt över tid.",
-    "path2Kicker": "02 · Snabbast",
-    "path2Title": "Beskriv din renovering",
-    "path2Description": "Skriv ett par meningar — vi förbereder beslutspunkter, ROT-kalkyl och offertmall.",
-    "path3Kicker": "03 · Har du en offert?",
+    "path1Kicker": "01 · Röst eller text",
+    "path1Title": "Beskriv din renovering",
+    "path1Description": "Berätta med egna ord — AI:n föreslår rum och arbeten, du godkänner.",
+    "path2Kicker": "02 · Har du en offert?",
+    "path2Title": "Importera en offert",
+    "path2Description": "Ladda upp offerten eller dokumentet — vi bygger projektet ur det.",
+    "path3Kicker": "03 · Samarbeta",
     "path3Title": "Bjud in din entreprenör",
     "path3Description": "Skicka en länk så de fyller i projektet åt dig.",
     "previewKicker": "När du är igång ser du",
@@ -6405,7 +6410,8 @@
     "previewBudgetBody": "Betalt, fakturerat, kvar till mål. Inga överraskningar.",
     "previewRot": "ROT",
     "previewRotTitle": "Avdraget räknas live",
-    "previewRotBody": "Vi separerar arbete från material så Skatteverket-grejen bara funkar."
+    "previewRotBody": "Vi separerar arbete från material så Skatteverket-grejen bara funkar.",
+    "exploreDemo": "Eller utforska demoprojektet först"
   },
   "cashForecast": {
     "kicker": "Nästa 30 dagar",

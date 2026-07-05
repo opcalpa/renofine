@@ -3,9 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 const DEMO_PROJECT_MARKER = "demo_project";
 
 /**
- * Check if a user already has a demo project
+ * Get the user's demo project id, or null if none exists
  */
-export async function hasDemoProject(ownerId: string): Promise<boolean> {
+export async function getDemoProjectId(ownerId: string): Promise<string | null> {
   const { data, error } = await supabase
     .from("projects")
     .select("id")
@@ -15,10 +15,17 @@ export async function hasDemoProject(ownerId: string): Promise<boolean> {
 
   if (error) {
     console.error("Error checking for demo project:", error);
-    return false;
+    return null;
   }
 
-  return (data?.length ?? 0) > 0;
+  return data?.[0]?.id ?? null;
+}
+
+/**
+ * Check if a user already has a demo project
+ */
+export async function hasDemoProject(ownerId: string): Promise<boolean> {
+  return (await getDemoProjectId(ownerId)) !== null;
 }
 
 /**

@@ -4414,7 +4414,12 @@
     "noMatrixSelections": "No selections yet — check at least one cell",
     "taskList": "Tasks to create",
     "totalTasks": "Total tasks",
-    "totalRooms": "Total rooms"
+    "totalRooms": "Total rooms",
+    "describeStep": "Describe",
+    "fillManually": "Fill in myself",
+    "startBlank": "Start with an empty project instead",
+    "startBlankHint": "Skip planning for now — you can describe the renovation by voice inside the project and Renaida sets it up.",
+    "createBlankProject": "Create empty project"
   },
   "demoProject": {
     "badge": "Example Project",
@@ -6383,13 +6388,13 @@
     "heroTitleEmphasis": "your story",
     "heroTitleEnd": "we keep track of timelines, money and tax deductions.",
     "heroDescription": "Add your first address or jump straight into the project you want to do. When your contractor is connected, all decisions, photos and invoices flow into one place.",
-    "path1Kicker": "01 · Step-by-step",
-    "path1Title": "Add an address",
-    "path1Description": "Start with where you live. Great if you plan multiple projects over time.",
-    "path2Kicker": "02 · Fastest",
-    "path2Title": "Describe your renovation",
-    "path2Description": "Write a couple of sentences — we prepare decision points, tax deduction calculations and a quote template.",
-    "path3Kicker": "03 · Have a quote?",
+    "path1Kicker": "01 · Voice or text",
+    "path1Title": "Describe your renovation",
+    "path1Description": "Tell us in your own words — AI suggests rooms and work, you approve.",
+    "path2Kicker": "02 · Have a quote?",
+    "path2Title": "Import a quote",
+    "path2Description": "Upload the quote or document — we build the project from it.",
+    "path3Kicker": "03 · Collaborate",
     "path3Title": "Invite your contractor",
     "path3Description": "Send a link so they fill in the project for you.",
     "previewKicker": "When you get started you'll see",
@@ -6405,7 +6410,8 @@
     "previewBudgetBody": "Paid, invoiced, remaining. No surprises.",
     "previewRot": "Tax deduction",
     "previewRotTitle": "Deduction calculated live",
-    "previewRotBody": "We separate labor from materials so the tax deduction just works."
+    "previewRotBody": "We separate labor from materials so the tax deduction just works.",
+    "exploreDemo": "Or explore the demo project first"
   },
   "cashForecast": {
     "kicker": "Next 30 days",

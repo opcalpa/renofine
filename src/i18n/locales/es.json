@@ -1163,7 +1163,15 @@
     "greetingAfternoon": "Buenas tardes",
     "greetingEvening": "Buenas noches",
     "greetingMorning": "Buenos días",
-    "greetingNight": "Buenas noches"
+    "greetingNight": "Buenas noches",
+    "exploreDemo": "O explora primero el proyecto de demostración",
+    "path1Kicker": "01 · Voz o texto",
+    "path1Title": "Describe tu reforma",
+    "path1Description": "Cuéntalo con tus palabras — la IA sugiere habitaciones y trabajos, tú apruebas.",
+    "path2Kicker": "02 · ¿Tienes un presupuesto?",
+    "path2Title": "Importar un presupuesto",
+    "path2Description": "Sube el presupuesto o documento — creamos el proyecto a partir de él.",
+    "path3Kicker": "03 · Colaborar"
   },
   "paymentStatuses": {
     "notPaid": "No pagado",
@@ -2229,5 +2237,12 @@
     "autoMigratedDescription": "Todo lo que creaste como invitado ahora está guardado en tu cuenta.",
     "signUpNudge": "Crea una cuenta gratuita para guardar tu proyecto, obtener estimaciones e invitar a colaboradores.",
     "signUpLink": "Crear cuenta"
+  },
+  "guidedSetup": {
+    "describeStep": "Describir",
+    "fillManually": "Rellenar yo mismo",
+    "startBlank": "Empezar con un proyecto vacío",
+    "startBlankHint": "Omite la planificación por ahora — puedes describir la reforma por voz dentro del proyecto y Renaida la configurará.",
+    "createBlankProject": "Crear proyecto vacío"
   }
 }

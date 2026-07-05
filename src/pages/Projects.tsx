@@ -57,6 +57,7 @@ const DashboardRedesign = lazyWithRetry(
 import { CreateProjectDialog } from "@/components/project/CreateProjectDialog";
 import { useProjectsData } from "@/hooks/useProjectsData";
 const ContractorStart = lazyWithRetry(() => import("@/pages/contractor/ContractorStart"));
+const OwnerStart = lazyWithRetry(() => import("@/pages/owner/OwnerStart"));
 import { ResourcePlanningView } from "@/components/project/ResourcePlanningView";
 import { useEnabledModules } from "@/hooks/useEnabledModules";
 import { useTaxDeductionVisible } from "@/hooks/useTaxDeduction";
@@ -387,6 +388,22 @@ const Projects = () => {
     return (
       <Suspense fallback={<PageLoadingSkeleton />}>
         <ContractorStart />
+      </Suspense>
+    );
+  }
+
+  // Homeowners with no real projects get their start page (mirrors ContractorStart).
+  // Suppressed while any onboarding dialog is open — the welcome modal's quick-start
+  // choices (wizard/blank/import) render inside this page's dialogs.
+  const isHomeowner = (profile?.onboarding_user_type as string) === "homeowner";
+  if (
+    !isGuest && isHomeowner && profile && nonDemoProjects.length === 0 &&
+    !showWelcomeModal && !showGuidedSetup && !dialogOpen && !showAIImport &&
+    !createIntakeOpen && !showGuestMigration
+  ) {
+    return (
+      <Suspense fallback={<PageLoadingSkeleton />}>
+        <OwnerStart />
       </Suspense>
     );
   }

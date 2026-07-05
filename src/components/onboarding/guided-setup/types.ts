@@ -34,8 +34,6 @@ export interface StepProps {
   updateFormData: (updates: Partial<GuidedFormData>) => void;
 }
 
-export const TOTAL_STEPS = 5;
-
 export const INITIAL_FORM_DATA: GuidedFormData = {
   projectName: "",
   address: "",

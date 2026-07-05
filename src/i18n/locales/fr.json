@@ -1163,7 +1163,15 @@
     "greetingAfternoon": "Bon après-midi",
     "greetingEvening": "Bonsoir",
     "greetingMorning": "Bonjour",
-    "greetingNight": "Bonne nuit"
+    "greetingNight": "Bonne nuit",
+    "exploreDemo": "Ou explorez d'abord le projet de démonstration",
+    "path1Kicker": "01 · Voix ou texte",
+    "path1Title": "Décrivez votre rénovation",
+    "path1Description": "Racontez avec vos mots — l'IA propose pièces et travaux, vous validez.",
+    "path2Kicker": "02 · Vous avez un devis ?",
+    "path2Title": "Importer un devis",
+    "path2Description": "Téléversez le devis ou document — nous créons le projet à partir de lui.",
+    "path3Kicker": "03 · Collaborer"
   },
   "paymentStatuses": {
     "notPaid": "Non payé",
@@ -2229,5 +2237,12 @@
     "autoMigratedDescription": "Tout ce que vous avez créé en tant qu’invité est maintenant enregistré sur votre compte.",
     "signUpNudge": "Créez un compte gratuit pour enregistrer votre projet, obtenir des estimations et inviter des collaborateurs.",
     "signUpLink": "Créer un compte"
+  },
+  "guidedSetup": {
+    "describeStep": "Décrire",
+    "fillManually": "Remplir moi-même",
+    "startBlank": "Commencer avec un projet vide",
+    "startBlankHint": "Passez la planification pour l'instant — décrivez la rénovation à la voix dans le projet et Renaida la mettra en place.",
+    "createBlankProject": "Créer un projet vide"
   }
 }
