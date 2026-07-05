@@ -19,7 +19,8 @@
     "statusChange": "de {{old}} à {{new}}",
     "statusChanged": "a changé le statut de",
     "renaida": {
-      "undo": "a annulé ses dernières modifications"
+      "undo": "a annulé ses dernières modifications",
+      "checklistCreate": "a créé une check-list dans « {{name}} »"
     }
   },
   "admin": {

@@ -19,7 +19,8 @@
     "statusChange": "de {{old}} a {{new}}",
     "statusChanged": "cambió el estado de",
     "renaida": {
-      "undo": "deshizo sus últimos cambios"
+      "undo": "deshizo sus últimos cambios",
+      "checklistCreate": "creó una lista de verificación en \"{{name}}\""
     }
   },
   "admin": {

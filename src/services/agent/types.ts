@@ -29,6 +29,8 @@ export type ProposalAction =
   | { type: "create_purchase"; roomId?: string; item: string; quantity?: number; unit?: string }
   | { type: "log_time"; taskId?: string; hours: number; date?: string; description?: string }
   | { type: "toggle_checklist"; taskId: string; itemText: string; completed?: boolean }
+  /** Author a NEW checklist (work-instruction moments) on a task. */
+  | { type: "create_checklist"; taskId: string; title?: string; items: string[] }
   | { type: "add_note"; target: "task" | "room" | "project"; targetId: string; text: string }
   /** Router could not confidently route the input — surface as a question, never apply. */
   | { type: "unknown"; rawText: string; reason: string };

@@ -184,6 +184,25 @@ async function applyOne(
       return { kind: "checklist_restore", taskId: action.taskId, before };
     }
 
+    case "create_checklist": {
+      const { data: task } = await supabase
+        .from("tasks").select("checklists,progress,title").eq("id", action.taskId).single();
+      const before = { checklists: task?.checklists ?? null, progress: task?.progress ?? null };
+      const checklists = (((task?.checklists as ChecklistGroup[] | null) ?? [])).slice();
+      checklists.push({
+        id: crypto.randomUUID(),
+        title: action.title?.trim() || "Checklista",
+        items: action.items.map((title) => ({ id: crypto.randomUUID(), title, completed: false })),
+      });
+      // Progress is intentionally untouched — adding instructions shouldn't move
+      // the task backwards; the checklist-driven recompute kicks in on first toggle.
+      const { error } = await supabase.from("tasks").update({ checklists }).eq("id", action.taskId);
+      if (error) throw new Error(error.message);
+
+      logActivity(projectId, profileId, "renaida_checklist_create", "task", action.taskId, task?.title ?? "", { items: action.items.length });
+      return { kind: "checklist_restore", taskId: action.taskId, before };
+    }
+
     case "add_note": {
       const { data, error } = await supabase.from("comments").insert({
         content: action.text,

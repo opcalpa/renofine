@@ -222,6 +222,50 @@
           "type": "create_task"
         }
       ]
+    },
+    {
+      "id": "checklist-authoring",
+      "input": "Skapa en checklista på kakelsättningen: primer, tätskikt vägg, tätskikt golv, sätta kakel, foga.",
+      "expect": [
+        {
+          "type": "create_checklist",
+          "taskId": "t-tile",
+          "itemsMin": 4
+        }
+      ]
+    },
+    {
+      "id": "instruction-say-to-trade",
+      "input": "Säg åt målaren att taket ska ha två strykningar.",
+      "expect": [
+        {
+          "type": "add_note",
+          "target": "task",
+          "targetId": "t-paint"
+        }
+      ]
+    },
+    {
+      "id": "instruction-remind",
+      "input": "Påminn snickaren att listerna monteras allra sist.",
+      "expect": [
+        {
+          "type": "add_note",
+          "target": "task",
+          "targetId": "t-trim"
+        }
+      ]
+    },
+    {
+      "id": "instruction-room-scope",
+      "input": "Lägg till i instruktionerna för badrummet: inga arbeten där före den 15:e.",
+      "expect": [
+        {
+          "type": "add_note",
+          "target": "room",
+          "targetId": "r-bath"
+        }
+      ]
     }
   ]
 }

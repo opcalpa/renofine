@@ -19,7 +19,8 @@
     "statusChange": "von {{old}} zu {{new}}",
     "statusChanged": "Status geändert von",
     "renaida": {
-      "undo": "hat ihre letzten Änderungen rückgängig gemacht"
+      "undo": "hat ihre letzten Änderungen rückgängig gemacht",
+      "checklistCreate": "hat eine Checkliste in \"{{name}}\" erstellt"
     }
   },
   "admin": {

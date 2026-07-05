@@ -3544,7 +3544,8 @@
       "generic": "gjorde en ändring i \"{{name}}\"",
       "forUser": "åt {{name}}",
       "roomCreate": "skapade rummet \"{{name}}\"",
-      "undo": "ångrade sina senaste ändringar"
+      "undo": "ångrade sina senaste ändringar",
+      "checklistCreate": "skapade en checklista i \"{{name}}\""
     }
   },
   "notifications": {
