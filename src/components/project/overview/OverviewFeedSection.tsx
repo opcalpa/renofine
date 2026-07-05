@@ -229,8 +229,9 @@ export function OverviewFeedSection({
   const visibleComments = isClient
     ? comments.filter((c) => !!c.project_id && !c.task_id && !c.material_id && !c.drawing_object_id)
     : comments;
+  // Renaida receipt rows (renaida_*) are the user's own assistant actions — always client-safe
   const visibleActivities = isClient
-    ? activities.filter((a) => CLIENT_SAFE_ACTIONS.has(a.action) && CLIENT_SAFE_ENTITY_TYPES.has(a.entity_type))
+    ? activities.filter((a) => a.action.startsWith("renaida_") || (CLIENT_SAFE_ACTIONS.has(a.action) && CLIENT_SAFE_ENTITY_TYPES.has(a.entity_type)))
     : activities;
 
   // Merge comments + activities into unified feed
