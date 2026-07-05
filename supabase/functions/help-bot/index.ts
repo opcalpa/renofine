@@ -48,7 +48,7 @@ const LANGUAGE_NAMES: Record<string, string> = {
   et: "Estonian",
 };
 
-function buildSystemPrompt(language: string, userType?: string, projectCountry?: string): string {
+function buildSystemPrompt(language: string, userType?: string, projectCountry?: string, userName?: string): string {
   const langName = LANGUAGE_NAMES[language] || "English";
   const isContractor = userType === "contractor";
   const isSwedish = !projectCountry || projectCountry === "SE";
@@ -86,7 +86,7 @@ Personality:
 - Friendly and approachable, like a knowledgeable colleague
 - Concise but warm — not robotic, not overly casual
 - Occasionally use a light touch of humor when appropriate
-- Use the user's first name if available in the conversation
+${userName ? `- The user's first name is "${userName.split(" ")[0]}" — address them by it naturally now and then` : "- You do NOT know the user's name. NEVER write a name placeholder like [Ditt namn], [Name] or similar — simply omit the name"}
 
 Rules:
 - ALWAYS respond in ${langName} (language code: ${language}), regardless of what language the user writes in
@@ -174,7 +174,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, language = "en", userType, projectCountry } = await req.json();
+    const { messages, language = "en", userType, projectCountry, userName } = await req.json();
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(
@@ -194,7 +194,9 @@ serve(async (req) => {
     // Check cache for single-message requests (quick prompts)
     const isSingleMessage = messages.length === 1;
     if (isSingleMessage) {
-      const cacheKey = `${language}:${userType || "default"}:${projectCountry || "none"}:${messages[0].content}`;
+      // v2: cache-key bumped 2026-07-05 — earlier rows were cached from prompts
+      // without the no-name-placeholder rule (a "[Ditt namn]" reply got cached).
+      const cacheKey = `v2:${language}:${userType || "default"}:${projectCountry || "none"}:${messages[0].content}`;
 
       // Look up cache via REST API
       const cacheRes = await fetch(
@@ -211,7 +213,9 @@ serve(async (req) => {
         }
       }
 
-      // Cache miss — call OpenAI and store result
+      // Cache miss — call OpenAI and store result. Deliberately NO userName here:
+      // cached replies are shared across users, so they must stay name-neutral
+      // (the prompt's no-placeholder rule handles addressing gracefully).
       const reply = await callOpenAI(openaiApiKey, messages, language, userType, projectCountry);
 
       // Store in cache (fire-and-forget, don't block response)
@@ -232,9 +236,10 @@ serve(async (req) => {
       );
     }
 
-    // Multi-message conversation — trim to last N messages and call OpenAI
+    // Multi-message conversation — trim to last N messages and call OpenAI.
+    // Not cached → safe to personalize with the user's name.
     const trimmedMessages = messages.slice(-MAX_HISTORY_MESSAGES);
-    const reply = await callOpenAI(openaiApiKey, trimmedMessages, language, userType, projectCountry);
+    const reply = await callOpenAI(openaiApiKey, trimmedMessages, language, userType, projectCountry, typeof userName === "string" ? userName : undefined);
 
     return new Response(
       JSON.stringify({ reply }),
@@ -255,6 +260,7 @@ async function callOpenAI(
   language: string,
   userType?: string,
   projectCountry?: string,
+  userName?: string,
 ): Promise<string> {
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -267,7 +273,7 @@ async function callOpenAI(
       temperature: 0.7,
       max_tokens: 1024,
       messages: [
-        { role: "system", content: buildSystemPrompt(language, userType, projectCountry) },
+        { role: "system", content: buildSystemPrompt(language, userType, projectCountry, userName) },
         ...messages.map((m) => ({
           role: m.role,
           content: m.content,

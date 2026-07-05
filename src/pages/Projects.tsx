@@ -30,7 +30,7 @@ import { WelcomeModal, QuickStartChoice } from "@/components/onboarding/WelcomeM
 import { ColumnToggle } from "@/components/shared/ColumnToggle";
 import { GuidedSetupWizard } from "@/components/onboarding/GuidedSetupWizard";
 import { PageLoadingSkeleton } from "@/components/ui/skeleton-screens";
-import { isDemoProject } from "@/services/demoProjectService";
+import { isDemoProject, seedDemoProject, hasDemoProject as userHasDemoProject } from "@/services/demoProjectService";
 import { normalizeStatus, STATUS_META } from "@/lib/projectStatus";
 import { formatCurrency } from "@/lib/currency";
 import { LeadsPipelineSection } from "@/components/pipeline";
@@ -264,7 +264,6 @@ const Projects = () => {
       // Guest mode: refresh guest projects
       refetch();
     } else {
-      // Refresh projects - refetch() already handles demo seeding
       await refetch();
     }
 
@@ -278,12 +277,22 @@ const Projects = () => {
     } else if (quickStart === "import") {
       // Open AI project import modal directly
       setShowAIImport(true);
-    } else {
-      // "explore" - just show toast about demo project
-      toast({
-        title: t("demoProject.badge"),
-        description: t("demoProject.description"),
-      });
+    } else if (quickStart === "explore" && !isGuest && profileId) {
+      // Actually seed the per-user demo (was dead code: the only seeding call
+      // site lived in the unrouted OwnerStart, so this choice used to show a
+      // toast about a demo that never existed) — then take the user into it.
+      const demoId = (await userHasDemoProject(profileId))
+        ? null
+        : await seedDemoProject(profileId, i18n.language);
+      await refetch();
+      if (demoId) {
+        navigate(`/projects/${demoId}`);
+      } else {
+        toast({
+          title: t("demoProject.badge"),
+          description: t("demoProject.description"),
+        });
+      }
     }
   };
 
@@ -427,12 +436,10 @@ const Projects = () => {
                 return t(`dashboard.greeting.${key}`);
               })()}, {(profile.name as string).split(" ")[0]}.
             </h1>
+            {/* Task count was a hardcoded literal 0 — dropped rather than fake it. */}
             <p className="text-[15px] text-muted-foreground leading-relaxed">
               {t("dashboard.summaryPrefix", "You have")}{" "}
-              <strong className="text-foreground">{nonDemoProjects.length} {t("dashboard.summaryProjects", "active projects")}</strong>
-              {" "}{t("dashboard.summaryAnd", "and")}{" "}
-              <strong className="text-foreground">0 {t("dashboard.summaryTasks", "tasks")}</strong>
-              {" "}{t("dashboard.summarySuffix", "this week")}.
+              <strong className="text-foreground">{nonDemoProjects.length} {t("dashboard.summaryProjects", "active projects")}</strong>.
             </p>
           </section>
         )}
@@ -624,17 +631,8 @@ const Projects = () => {
                   <div className="text-xs text-primary-foreground/70">{t('onboarding.createProjectDesc')}</div>
                 </div>
               </Button>
-              <Button
-                variant="outline"
-                className="w-full h-14 text-left justify-start px-6"
-                disabled
-              >
-                <Users className="h-5 w-5 mr-3 flex-shrink-0" />
-                <div>
-                  <div className="font-medium">{t('onboarding.hasInvitation')}</div>
-                  <div className="text-xs text-muted-foreground">{t('onboarding.hasInvitationDesc')}</div>
-                </div>
-              </Button>
+              {/* "I have an invitation" button removed — it was permanently disabled
+                  (looked broken). Invitations arrive via email links, not from here. */}
             </div>
           </div>
         ) : effectiveViewMode === "timeline" ? (

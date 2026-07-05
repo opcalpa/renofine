@@ -296,11 +296,12 @@ const OverviewTab = ({
 
   const { reminders, dismissReminder, dismissAll: dismissAllReminders } = useProjectReminders(reminderCtx);
 
-  // Sync reminders to Renaida store
+  // Sync reminders to Renaida store. Project identity is owned by ProjectDetail
+  // (survives tab switches — Radix unmounts this tab's content); we only own reminders.
   useEffect(() => {
-    useRenaidaStore.getState().setReminders(reminders, project.id, project.name, project.country);
-    return () => useRenaidaStore.getState().clear();
-  }, [reminders, project.id, project.name, project.country]);
+    useRenaidaStore.getState().setReminders(reminders);
+    return () => useRenaidaStore.getState().setReminders([]);
+  }, [reminders]);
 
   const handleTipAction = useCallback((target: string) => {
     switch (target) {

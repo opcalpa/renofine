@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthSession } from "@/hooks/useAuthSession";
+import { useRenaidaStore } from "@/stores/renaidaStore";
 import { useGuestMode } from "@/hooks/useGuestMode";
 import { useProfileLanguage } from "@/hooks/useProfileLanguage";
 import { PUBLIC_DEMO_PROJECT_ID, PUBLIC_DEMO_PROJECT_TYPE } from "@/constants/publicDemo";
@@ -248,6 +249,15 @@ const ProjectDetail = () => {
     return tabParam && validTabs.includes(tabParam) ? tabParam : "overview";
   });
   const [openEntityId, setOpenEntityId] = useState<string | null>(() => searchParams.get("entityId"));
+
+  // Renaida: publish project identity for the WHOLE visit (survives tab switches —
+  // OverviewTab unmounts on other tabs, so it must not own this). Voice capture,
+  // apply/undo and proactive suggestions all key off projectId.
+  useEffect(() => {
+    if (!project?.id) return;
+    useRenaidaStore.getState().setProject(project.id, project.name, project.country);
+    return () => useRenaidaStore.getState().clearProject();
+  }, [project?.id, project?.name, project?.country]);
 
   // Pending scroll anchor (e.g. "chat" → scroll to #project-chat after tab renders)
   const [pendingSection, setPendingSection] = useState<string | null>(null);

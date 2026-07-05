@@ -426,12 +426,15 @@ export function Renaida() {
     }
   }, [t]);
 
-  const sendMessage = useCallback(async (text: string) => {
+  const sendMessage = useCallback(async (text: string, opts?: { skipUserMessage?: boolean }) => {
     if (!text.trim() || loading) return;
 
     const userMsg: Message = { role: "user", content: text.trim() };
-    setMessages((prev) => [...prev, userMsg]);
-    setInput("");
+    // When falling back from the capture path, the user bubble is already shown.
+    if (!opts?.skipUserMessage) {
+      setMessages((prev) => [...prev, userMsg]);
+      setInput("");
+    }
 
     // If in feedback mode, submit as feedback
     if (feedbackMode) {
@@ -453,7 +456,7 @@ export function Renaida() {
 
       const projectCountry = useRenaidaStore.getState().projectCountry;
       const { data, error } = await supabase.functions.invoke("help-bot", {
-        body: { messages: conversationMessages, language: i18n.language, userType, projectCountry },
+        body: { messages: conversationMessages, language: i18n.language, userType, projectCountry, userName },
       });
 
       if (error) throw error;
@@ -483,11 +486,7 @@ export function Renaida() {
     } finally {
       setLoading(false);
     }
-  }, [loading, messages, t, i18n.language, userType, feedbackMode, submitFeedback, flashRenaida]);
-
-  const handleSend = useCallback(() => {
-    sendMessage(input);
-  }, [input, sendMessage]);
+  }, [loading, messages, t, i18n.language, userType, userName, feedbackMode, submitFeedback, flashRenaida]);
 
   // Apply accepted proposals, emit telemetry, append a result bubble (with Undo),
   // and refresh dependent views. Shared by manual confirm and auto-apply (Fas 2).
@@ -541,7 +540,10 @@ export function Renaida() {
   }, [t, flashRenaida]);
 
   // --- Agentic capture: route a quick update → proposals → ConfirmDiff (or auto-apply) ---
-  const captureUpdate = useCallback(async (text: string, kind: "text" | "voice_transcript") => {
+  // With fallbackToChat (the unified entry): when the router finds no actionable
+  // instruction, the SAME text flows into the regular chat instead of dead-ending
+  // in "hittade inget" — one box, one behaviour, no channel to pick wrong.
+  const captureUpdate = useCallback(async (text: string, kind: "text" | "voice_transcript", opts?: { fallbackToChat?: boolean }) => {
     if (!text.trim() || capturing || loading) return;
 
     setMessages((prev) => [...prev, { role: "user", content: text.trim() }]);
@@ -549,6 +551,10 @@ export function Renaida() {
 
     const projectId = useRenaidaStore.getState().projectId;
     if (!projectId) {
+      if (opts?.fallbackToChat) {
+        void sendMessage(text, { skipUserMessage: true });
+        return;
+      }
       setMessages((prev) => [...prev, { role: "assistant", content: t("helpBot.agent.noProject") }]);
       return;
     }
@@ -558,7 +564,12 @@ export function Renaida() {
     try {
       const res = await routeAgentInput({ kind, content: text.trim() }, projectId, i18n.language);
       if (!res.proposals.length) {
-        analytics.capture(AnalyticsEvents.RENAIDA_PROPOSED, { kind, count: 0, resolved: false });
+        analytics.capture(AnalyticsEvents.RENAIDA_PROPOSED, { kind, count: 0, resolved: false, fellBackToChat: !!opts?.fallbackToChat });
+        if (opts?.fallbackToChat) {
+          setCapturing(false);
+          void sendMessage(text, { skipUserMessage: true });
+          return;
+        }
         setMessages((prev) => [...prev, { role: "assistant", content: t("helpBot.agent.noProposals") }]);
       } else {
         const s = summarizeProposals(res.proposals);
@@ -579,11 +590,23 @@ export function Renaida() {
       }
       flashRenaida("talk", 1400);
     } catch {
+      if (opts?.fallbackToChat) {
+        setCapturing(false);
+        void sendMessage(text, { skipUserMessage: true });
+        return;
+      }
       setMessages((prev) => [...prev, { role: "assistant", content: t("helpBot.agent.routeError") }]);
     } finally {
       setCapturing(false);
     }
-  }, [capturing, loading, t, i18n.language, flashRenaida, wakeRenaida, applyAndReport]);
+  }, [capturing, loading, t, i18n.language, flashRenaida, wakeRenaida, applyAndReport, sendMessage]);
+
+  // Unified send (Enter / arrow button): capture-first with chat fallback.
+  // In feedback mode the text is feedback, never an action.
+  const handleSend = useCallback(() => {
+    if (feedbackMode) sendMessage(input);
+    else captureUpdate(input, "text", { fallbackToChat: true });
+  }, [input, feedbackMode, sendMessage, captureUpdate]);
 
   const startVoiceCapture = useCallback(() => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -603,7 +626,7 @@ export function Renaida() {
     rec.onresult = (e: SpeechRecognitionEvent) => {
       const transcript = e.results[0]?.[0]?.transcript ?? "";
       setListening(false);
-      if (transcript.trim()) captureUpdate(transcript, "voice_transcript");
+      if (transcript.trim()) captureUpdate(transcript, "voice_transcript", { fallbackToChat: true });
     };
     rec.onerror = () => setListening(false);
     rec.onend = () => setListening(false);
@@ -614,7 +637,7 @@ export function Renaida() {
 
   // Mic button: typed text → route as action; empty → start voice capture
   const handleCaptureClick = useCallback(() => {
-    if (input.trim()) captureUpdate(input, "text");
+    if (input.trim()) captureUpdate(input, "text", { fallbackToChat: true });
     else startVoiceCapture();
   }, [input, captureUpdate, startVoiceCapture]);
 

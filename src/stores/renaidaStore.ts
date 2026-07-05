@@ -27,9 +27,13 @@ interface RenaidaStoreState {
   projectName: string | null;
   projectCountry: string | null;
   autonomy: RenaidaAutonomy;
-  setReminders: (reminders: ProjectReminder[], projectId?: string, projectName?: string, projectCountry?: string) => void;
+  /** Project identity — owned by ProjectDetail (lives for the whole project visit,
+   *  across tab switches). Voice capture/apply/proactive all key off projectId. */
+  setProject: (projectId: string, projectName?: string | null, projectCountry?: string | null) => void;
+  clearProject: () => void;
+  /** Reminders — owned by OverviewTab (only mounted on the overview tab). */
+  setReminders: (reminders: ProjectReminder[]) => void;
   setAutonomy: (mode: RenaidaAutonomy) => void;
-  clear: () => void;
 }
 
 export const useRenaidaStore = create<RenaidaStoreState>((set) => ({
@@ -39,18 +43,14 @@ export const useRenaidaStore = create<RenaidaStoreState>((set) => ({
   projectName: null,
   projectCountry: null,
   autonomy: cachedAutonomy(),
-  setReminders: (reminders, projectId, projectName, projectCountry) =>
-    set({
-      reminders,
-      reminderCount: reminders.length,
-      projectId: projectId ?? null,
-      projectName: projectName ?? null,
-      projectCountry: projectCountry ?? null,
-    }),
+  setProject: (projectId, projectName, projectCountry) =>
+    set({ projectId, projectName: projectName ?? null, projectCountry: projectCountry ?? null }),
+  clearProject: () =>
+    set({ projectId: null, projectName: null, projectCountry: null, reminders: [], reminderCount: 0 }),
+  setReminders: (reminders) =>
+    set({ reminders, reminderCount: reminders.length }),
   setAutonomy: (mode) => {
     if (typeof localStorage !== "undefined") localStorage.setItem(AUTONOMY_CACHE_KEY, mode);
     set({ autonomy: mode });
   },
-  // clear() runs on project unmount — keep autonomy (it's a user-level preference).
-  clear: () => set({ reminders: [], reminderCount: 0, projectId: null, projectName: null, projectCountry: null }),
 }));
