@@ -288,7 +288,20 @@ export async function undoProposals(undo: UndoOp[], projectId?: string): Promise
     const { data: profile } = await supabase
       .from("profiles").select("id").eq("user_id", user.id).single();
     if (profile) {
-      logActivity(projectId, profile.id, "renaida_undo", "project", projectId, "", { ops: undo.length });
+      // entityIds lets the feed suppress the DB-trigger "deleted" rows for the
+      // entities this undo removed — one clean "Renaida ångrade" row instead of
+      // a noisy "Carl tog bort …" + undo-row pair.
+      const entityIds = undo.flatMap((op) => {
+        switch (op.kind) {
+          case "delete_task": return [op.taskId];
+          case "delete_room": return [op.roomId];
+          case "delete_purchase": return [op.purchaseOrderId, op.materialId];
+          case "delete_comment": return [op.commentId];
+          case "delete_time": return [op.timeEntryId];
+          default: return [];
+        }
+      });
+      logActivity(projectId, profile.id, "renaida_undo", "project", projectId, "", { ops: undo.length, entityIds });
     }
   }
 }

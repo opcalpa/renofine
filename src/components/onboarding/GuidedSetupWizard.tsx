@@ -272,11 +272,12 @@ export function GuidedSetupWizard({
       {/* Progress header */}
       <div className="space-y-2">
         <div className="flex items-center justify-between text-sm text-muted-foreground">
+          {/* The blank branch shares steps with the full flow — a "Steg 2 av 2"
+              counter right after "Steg 1 av 6" reads as broken, so hide it there. */}
           <span>
-            {t("guidedSetup.stepOf", {
-              current: stepIndex + 1,
-              total: steps.length,
-            })}
+            {blankMode
+              ? t("guidedSetup.startBlankLabel", "Tomt projekt")
+              : t("guidedSetup.stepOf", { current: stepIndex + 1, total: steps.length })}
           </span>
           <span>{t(`guidedSetup.${STEP_LABEL_KEYS[currentKey]}`)}</span>
         </div>

@@ -4440,7 +4440,8 @@
     "fillManually": "Fyll i själv",
     "startBlank": "Starta tomt projekt istället",
     "startBlankHint": "Hoppa över planeringen — du kan beskriva renoveringen med rösten inne i projektet så bygger Renaida upp den.",
-    "createBlankProject": "Skapa tomt projekt"
+    "createBlankProject": "Skapa tomt projekt",
+    "startBlankLabel": "Tomt projekt"
   },
   "demoProject": {
     "badge": "Exempelprojekt",

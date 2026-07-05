@@ -218,9 +218,18 @@ export async function fetchProjectActivities(projectId: string): Promise<Activit
       .filter((r) => r.action === "renaida_task_create" || r.action === "renaida_room_create")
       .map((r) => `${r.entity_type}:${r.entity_id}`)
   );
-  return rows.filter(
-    (r) => !(r.action === "created" && createdByRenaida.has(`${r.entity_type}:${r.entity_id}`))
+  // Same for undo: the "Renaida ångrade" receipt lists the entity ids it removed —
+  // suppress the DB-trigger "deleted" rows for those so one action reads as one row.
+  const undoneByRenaida = new Set(
+    rows
+      .filter((r) => r.action === "renaida_undo")
+      .flatMap((r) => (Array.isArray(r.changes?.entityIds) ? (r.changes.entityIds as string[]) : []))
   );
+  return rows.filter((r) => {
+    if (r.action === "created" && createdByRenaida.has(`${r.entity_type}:${r.entity_id}`)) return false;
+    if (r.action === "deleted" && undoneByRenaida.has(r.entity_id)) return false;
+    return true;
+  });
 }
 
 export function mergeIntoUnifiedFeed(

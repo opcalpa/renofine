@@ -2277,6 +2277,7 @@
     "fillManually": "Selbst ausfüllen",
     "startBlank": "Stattdessen mit leerem Projekt starten",
     "startBlankHint": "Planung vorerst überspringen — du kannst die Renovierung im Projekt per Sprache beschreiben und Renaida richtet sie ein.",
-    "createBlankProject": "Leeres Projekt erstellen"
+    "createBlankProject": "Leeres Projekt erstellen",
+    "startBlankLabel": "Leeres Projekt"
   }
 }

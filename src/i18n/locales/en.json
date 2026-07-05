@@ -4440,7 +4440,8 @@
     "fillManually": "Fill in myself",
     "startBlank": "Start with an empty project instead",
     "startBlankHint": "Skip planning for now — you can describe the renovation by voice inside the project and Renaida sets it up.",
-    "createBlankProject": "Create empty project"
+    "createBlankProject": "Create empty project",
+    "startBlankLabel": "Empty project"
   },
   "demoProject": {
     "badge": "Example Project",

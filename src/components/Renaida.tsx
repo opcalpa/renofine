@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, type ReactNode } from "react";
 import { Send, X, Lightbulb, BookOpen, Wrench, FileText, ArrowLeft, Mic, Sparkles, ChevronDown, MessageCircle } from "lucide-react";
 import { useRenaidaStore, type RenaidaAutonomy } from "@/stores/renaidaStore";
 import { Button } from "@/components/ui/button";
@@ -102,9 +102,24 @@ interface QuickPrompt {
 type FeedbackMode = null | "bug" | "suggestion" | "other";
 
 /**
+ * Inline light-markdown: renders **bold** segments as <strong> (the model
+ * writes markdown; raw asterisks in the bubbles read as a bug). Lists and
+ * line breaks already render fine via whitespace-pre-wrap.
+ */
+function renderBold(text: string, keyPrefix: string): ReactNode[] {
+  return text.split(/(\*\*[^*]+\*\*)/g).map((seg, i) => {
+    const bold = seg.match(/^\*\*([^*]+)\*\*$/);
+    return bold
+      ? <strong key={`${keyPrefix}-${i}`}>{bold[1]}</strong>
+      : <span key={`${keyPrefix}-${i}`}>{seg}</span>;
+  });
+}
+
+/**
  * MessageContent — Renders message text with:
  * - Clickable [text](navigate:target) links
  * - Dismiss buttons [x](dismiss:reminderId)
+ * - **bold** inline formatting
  */
 function MessageContent({ content, onNavigate, onDismiss }: {
   content: string;
@@ -144,7 +159,7 @@ function MessageContent({ content, onNavigate, onDismiss }: {
             </button>
           );
         }
-        return <span key={i}>{part}</span>;
+        return <span key={i}>{renderBold(part, String(i))}</span>;
       })}
     </>
   );

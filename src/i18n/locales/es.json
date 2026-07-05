@@ -2277,6 +2277,7 @@
     "fillManually": "Rellenar yo mismo",
     "startBlank": "Empezar con un proyecto vacío",
     "startBlankHint": "Omite la planificación por ahora — puedes describir la reforma por voz dentro del proyecto y Renaida la configurará.",
-    "createBlankProject": "Crear proyecto vacío"
+    "createBlankProject": "Crear proyecto vacío",
+    "startBlankLabel": "Proyecto vacío"
   }
 }

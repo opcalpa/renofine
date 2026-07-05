@@ -2277,6 +2277,7 @@
     "fillManually": "Remplir moi-même",
     "startBlank": "Commencer avec un projet vide",
     "startBlankHint": "Passez la planification pour l'instant — décrivez la rénovation à la voix dans le projet et Renaida la mettra en place.",
-    "createBlankProject": "Créer un projet vide"
+    "createBlankProject": "Créer un projet vide",
+    "startBlankLabel": "Projet vide"
   }
 }
