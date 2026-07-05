@@ -11,6 +11,7 @@ import type { ActivityLogItem } from "./types";
 const renaidaActionKeys: Record<string, string> = {
   renaida_task_update: "activity.renaida.taskUpdate",
   renaida_task_create: "activity.renaida.taskCreate",
+  renaida_room_create: "activity.renaida.roomCreate",
   renaida_purchase_request: "activity.renaida.purchaseRequest",
   renaida_log_time: "activity.renaida.logTime",
   renaida_checklist: "activity.renaida.checklist",

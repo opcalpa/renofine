@@ -18,7 +18,14 @@ export interface TaskWritableFields {
 export type ProposalAction =
   | { type: "update_task"; taskId: string; changes: Partial<TaskWritableFields> }
   | { type: "set_progress"; taskId: string; progress: number; status?: string }
-  | { type: "create_task"; roomId?: string; title: string; description?: string }
+  /** Scaffold a room the user named but that doesn't exist yet (empty-project flow). */
+  | { type: "create_room"; name: string }
+  /**
+   * roomName: the room the task belongs to when it does NOT exist yet — resolved
+   * at apply time against rooms created earlier in the same batch (create_room
+   * proposals are applied first). roomId wins when both are set.
+   */
+  | { type: "create_task"; roomId?: string; roomName?: string; title: string; description?: string }
   | { type: "create_purchase"; roomId?: string; item: string; quantity?: number; unit?: string }
   | { type: "log_time"; taskId?: string; hours: number; date?: string; description?: string }
   | { type: "toggle_checklist"; taskId: string; itemText: string; completed?: boolean }
@@ -56,6 +63,7 @@ export interface AgentProposal {
 export type UndoOp =
   | { kind: "task_fields"; taskId: string; before: { status?: string | null; progress?: number | null; title?: string | null; description?: string | null } }
   | { kind: "delete_task"; taskId: string }
+  | { kind: "delete_room"; roomId: string }
   | { kind: "delete_purchase"; purchaseOrderId: string; materialId: string }
   | { kind: "delete_comment"; commentId: string }
   | { kind: "delete_time"; timeEntryId: string }

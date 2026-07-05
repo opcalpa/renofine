@@ -60,10 +60,23 @@ async function applyOne(
   proposal: ActionableProposal,
   projectId: string,
   profileId: string,
+  createdRoomsByName: Map<string, string>,
 ): Promise<UndoOp> {
   const { action } = proposal;
 
   switch (action.type) {
+    case "create_room": {
+      const { data, error } = await supabase.from("rooms").insert({
+        project_id: projectId,
+        name: action.name,
+      }).select("id").single();
+      if (error || !data) throw new Error(error?.message ?? "Kunde inte skapa rum");
+
+      createdRoomsByName.set(action.name.trim().toLowerCase(), data.id);
+      logActivity(projectId, profileId, "renaida_room_create", "room", data.id, action.name, { name: action.name });
+      return { kind: "delete_room", roomId: data.id };
+    }
+
     case "update_task":
     case "set_progress": {
       const taskId = action.taskId;
@@ -82,9 +95,13 @@ async function applyOne(
     }
 
     case "create_task": {
+      // roomName: room named by the router that didn't exist at routing time —
+      // resolve against rooms created earlier in this same batch.
+      const resolvedRoomId = action.roomId
+        ?? (action.roomName ? createdRoomsByName.get(action.roomName.trim().toLowerCase()) : undefined);
       const { data, error } = await supabase.from("tasks").insert({
         project_id: projectId,
-        room_id: action.roomId ?? null,
+        room_id: resolvedRoomId ?? null,
         title: action.title,
         description: action.description ?? null,
         status: "to_do",
@@ -197,9 +214,16 @@ export async function applyProposals(
     return { applied: [], failed: accepted.map((proposal) => ({ proposal, error })), undo: [] };
   }
 
-  for (const proposal of actionable) {
+  // Rooms first so create_task roomName references resolve within the batch.
+  const ordered = [
+    ...actionable.filter((p) => p.action.type === "create_room"),
+    ...actionable.filter((p) => p.action.type !== "create_room"),
+  ];
+  const createdRoomsByName = new Map<string, string>();
+
+  for (const proposal of ordered) {
     try {
-      const undo = await applyOne(proposal, projectId, profileId);
+      const undo = await applyOne(proposal, projectId, profileId, createdRoomsByName);
       result.applied.push(proposal);
       result.undo.unshift(undo); // reverse order for undo
     } catch (e) {
@@ -222,6 +246,11 @@ export async function undoProposals(undo: UndoOp[]): Promise<void> {
           break;
         case "delete_task":
           await supabase.from("tasks").delete().eq("id", op.taskId);
+          break;
+        case "delete_room":
+          // Undo runs in reverse order, so tasks created into this room in the
+          // same batch are deleted before the room itself.
+          await supabase.from("rooms").delete().eq("id", op.roomId);
           break;
         case "delete_purchase":
           await supabase.from("materials").delete().eq("id", op.materialId);

@@ -209,6 +209,19 @@
       "expectAmbiguousPick": {
         "candidatesMin": 2
       }
+    },
+    {
+      "id": "scaffold-new-room",
+      "input": "vi ska renovera tvättstugan också, sätta nytt kakel där",
+      "expect": [
+        {
+          "type": "create_room",
+          "nameIncludes": "tvättstug"
+        },
+        {
+          "type": "create_task"
+        }
+      ]
     }
   ]
 }

@@ -31,6 +31,7 @@ function matches(expected, action) {
   if (expected.roomId && action.roomId !== expected.roomId) return false;
   if (expected.itemIncludes && !((action.item || action.itemText || "").toLowerCase().includes(expected.itemIncludes.toLowerCase()))) return false;
   if (expected.titleIncludes && !(action.title || "").toLowerCase().includes(expected.titleIncludes.toLowerCase())) return false;
+  if (expected.nameIncludes && !(action.name || "").toLowerCase().includes(expected.nameIncludes.toLowerCase())) return false;
   if (expected.quantity != null && Number(action.quantity) !== Number(expected.quantity)) return false;
   if (expected.hours != null && Number(action.hours) !== Number(expected.hours)) return false;
   if (expected.progressMin != null && !(Number(action.progress) >= expected.progressMin)) return false;

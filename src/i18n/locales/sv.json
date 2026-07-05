@@ -3522,7 +3522,8 @@
       "checklist": "bockade av en checklistpunkt i \"{{name}}\"",
       "comment": "la till en anteckning: {{name}}",
       "generic": "gjorde en ändring i \"{{name}}\"",
-      "forUser": "åt {{name}}"
+      "forUser": "åt {{name}}",
+      "roomCreate": "skapade rummet \"{{name}}\""
     }
   },
   "notifications": {

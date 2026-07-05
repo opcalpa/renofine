@@ -71,7 +71,8 @@ Output STRICT JSON of this exact shape (no prose, no markdown):
 Allowed action objects:
 - { "type": "update_task", "taskId": "<existing task id>", "changes": { "status"?: string, "title"?: string, "description"?: string, "progress"?: number } }
 - { "type": "set_progress", "taskId": "<existing task id>", "progress": <0..100>, "status"?: string }
-- { "type": "create_task", "roomId"?: "<existing room id>", "title": string, "description"?: string }
+- { "type": "create_room", "name": "<room name the user said, e.g. Badrum>" }
+- { "type": "create_task", "roomId"?: "<existing room id>", "roomName"?: "<room name when the room does NOT exist yet — pair with a create_room proposal>", "title": string, "description"?: string }
 - { "type": "create_purchase", "roomId"?: "<existing room id>", "item": string, "quantity"?: number, "unit"?: string }
 - { "type": "log_time", "taskId"?: "<existing task id>", "hours": <number>, "date"?: "YYYY-MM-DD", "description"?: string }
 - { "type": "toggle_checklist", "taskId": "<existing task id>", "itemText": "<the checklist item text, taken from that task's checklist=[...]>", "completed"?: <boolean, default true> }
@@ -82,6 +83,7 @@ Rules:
 - "Köket är färdigmålat" → if a painting task exists for the kitchen → set_progress 100. Otherwise update_task or unknown.
 - "behöver beställa tio kvm klinker" → create_purchase { item, quantity: 10, unit: "kvm" }, roomId if a room is named.
 - NEW work the user describes in an EXISTING room that has no matching task → create_task (set roomId). A new material/product to buy → create_purchase. Do NOT mark clearly-actionable new work as "unknown".
+- SCAFFOLDING (empty or sparse project): when the user names rooms that do NOT exist in ROOMS ("vi ska renovera badrummet och köket") → emit ONE create_room per named room, AND a create_task for each described work with roomName set to the new room's name (NOT roomId — it doesn't exist yet). Renovation intent for a room with no specified work → create_room + one create_task "Renovering <room>" with that roomName. This is how a brand-new project gets its structure — never answer "nothing to do" to clear renovation intent just because the project is empty.
 - "jobbade tre timmar i köket igår" → log_time { taskId (the matching kitchen task, set matchConfidence), hours: 3, date if stated }. If no clear task matches, log_time WITHOUT taskId (project-level time).
 - "listerna är klara/monterade" → if a task has a checklist item matching that text (see checklist=[...]) → toggle_checklist { taskId, itemText: "<the matching item verbatim>", completed: true }. If it names whole-task work instead, use set_progress.
 - Reserve "unknown" for input you genuinely cannot map: a place or thing that does not exist in the project, or truly unclear intent. NOT for choosing between existing tasks — that is the AMBIGUOUS case above (low-confidence proposal + candidateTaskIds).
