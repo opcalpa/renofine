@@ -17,7 +17,10 @@
     "memberAdded": "hinzugefügt",
     "memberRemoved": "entfernt",
     "statusChange": "von {{old}} zu {{new}}",
-    "statusChanged": "Status geändert von"
+    "statusChanged": "Status geändert von",
+    "renaida": {
+      "undo": "hat ihre letzten Änderungen rückgängig gemacht"
+    }
   },
   "admin": {
     "backToProjects": "Zurück zu Projekte",

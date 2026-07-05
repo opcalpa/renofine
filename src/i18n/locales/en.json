@@ -3544,7 +3544,8 @@
       "comment": "added a note: {{name}}",
       "generic": "made a change to \"{{name}}\"",
       "forUser": "for {{name}}",
-      "roomCreate": "created the room \"{{name}}\""
+      "roomCreate": "created the room \"{{name}}\"",
+      "undo": "reverted her latest changes"
     }
   },
   "notifications": {

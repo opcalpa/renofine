@@ -676,9 +676,9 @@ export function Renaida() {
 
   const handleUndo = useCallback(async (msgIndex: number, ops: UndoOp[]) => {
     setMessages((prev) => prev.map((m, i) => (i === msgIndex ? { ...m, undo: undefined } : m)));
-    await undoProposals(ops);
-    analytics.capture(AnalyticsEvents.RENAIDA_UNDONE, { count: ops.length });
     const projectId = useRenaidaStore.getState().projectId;
+    await undoProposals(ops, projectId ?? undefined);
+    analytics.capture(AnalyticsEvents.RENAIDA_UNDONE, { count: ops.length });
     window.dispatchEvent(new CustomEvent("renaida-data-changed", { detail: { projectId } }));
     setMessages((prev) => [...prev, { role: "assistant", content: t("helpBot.agent.undone") }]);
   }, [t]);

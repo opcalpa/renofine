@@ -236,8 +236,13 @@ export async function applyProposals(
   return result;
 }
 
-/** Reverse applied changes (one-tap undo). Best-effort per op. */
-export async function undoProposals(undo: UndoOp[]): Promise<void> {
+/**
+ * Reverse applied changes (one-tap undo). Best-effort per op.
+ * When projectId is given, an honest "Renaida reverted her changes" receipt
+ * row is logged — the original receipt rows stay (audit history), this row
+ * marks them as undone instead of leaving them misleading.
+ */
+export async function undoProposals(undo: UndoOp[], projectId?: string): Promise<void> {
   for (const op of undo) {
     try {
       switch (op.kind) {
@@ -274,6 +279,16 @@ export async function undoProposals(undo: UndoOp[]): Promise<void> {
       }
     } catch {
       // best-effort
+    }
+  }
+
+  if (projectId && undo.length > 0) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data: profile } = await supabase
+      .from("profiles").select("id").eq("user_id", user.id).single();
+    if (profile) {
+      logActivity(projectId, profile.id, "renaida_undo", "project", projectId, "", { ops: undo.length });
     }
   }
 }

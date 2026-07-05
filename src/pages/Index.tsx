@@ -42,7 +42,9 @@ const Index = () => {
 
   const handleDemo = useCallback(() => {
     localStorage.setItem("demo_view_role", "contractor");
-    navigate(`/projects/${PUBLIC_DEMO_PROJECT_ID}?tab=tasks`);
+    // Land on Översikt — cover photo, room photos and budget cards make a
+    // warmer first impression than the raw task table.
+    navigate(`/projects/${PUBLIC_DEMO_PROJECT_ID}`);
   }, [navigate]);
 
   const handleDemoTab = useCallback(

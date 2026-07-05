@@ -16,6 +16,7 @@ const renaidaActionKeys: Record<string, string> = {
   renaida_log_time: "activity.renaida.logTime",
   renaida_checklist: "activity.renaida.checklist",
   renaida_comment: "activity.renaida.comment",
+  renaida_undo: "activity.renaida.undo",
 };
 
 const entityIcons: Record<string, React.ReactNode> = {
@@ -67,7 +68,7 @@ export const ActivityCard = ({ activity, onAvatarClick }: ActivityCardProps) => 
           <p className="text-sm">
             <span className="font-medium">Renaida</span>{" "}
             {t(phraseKey, { name: entityName })}
-            <span className="text-muted-foreground"> · {t("activity.renaida.forUser", { name: actorName })}</span>
+            <span className="text-muted-foreground"> · {t("activity.renaida.forUser", { name: actorName.split(" ")[0] })}</span>
           </p>
           <div className="flex items-center gap-1.5 mt-1 md:hidden">
             <Sparkles className="h-3.5 w-3.5 text-primary" />
