@@ -132,7 +132,7 @@ status: doing
 priority: P2
 tags: [growth, lead]
 created: 2026-06-24
-updated: 2026-07-03
+updated: 2026-07-05
 ---
 ## Taulant Bara — lead från FB-kampanjen (aktiv dialog)
 Första riktiga leaden från FB-rundan 2026-06-23. Mejl: taulant.bara@icloud.com,
@@ -154,8 +154,18 @@ samtal "längre fram". **Föreslog oombedd RÖSTINMATNING** (mic → AI tolkar �
 — exakt det agentiska spår vi just byggt (se [[project_agentic_strategy]]). Carl **skickade svar**
 (tackade, bekräftade röst-idén, erbjöd beta-tillgång + guidning, ankrade samtal mjukt mot hans
 nästa renovering). Utkast: scratchpad `taulant-svar.txt`.
-**Nästa:** bollen hos Taulant igen. När han nappar på beta → sätt upp tillgång + riktigt projekt;
-han är IDEAL första användare av röst-capturen (validerade den oombedd). Bevaka advisor-/partnerlutning.
+**2026-07-05 — Taulant-paketet klart (allt tekniskt grönt):** P1–P4 levererade (röst på alla
+flikar, skaffoldning, expert-hjärnan, describe-först-onboarding). Välkomstmejl-utkast med
+15-min-testväg skrivet (scratchpad `taulant-valkomstmejl.txt`, på urklipp). OBS: pusha main
+(P4 + kvitto-fix) FÖRE utskick — testvägen förutsätter describe-steget på prod.
+**Testväg i mejlet:** skapa konto (Hemägare) → beskriv projekt med rösten i steg 1 → Renaida-capture
+inne i projektet (uttag/klart/timmar) → expertfråga ("vilken ordning i badrummet?") → Ge feedback.
+**PostHog-uppföljningsritual (samma kväll som han testar):** (1) filtrera person på
+taulant.bara@icloud.com, (2) titta hans session recordings i sin helhet, (3) följ eventen
+renaida_proposed/applied/corrected/dismissed + signup→projekt-tratten, (4) notera var han
+fastnar/avbryter → nästa fix. Kärnfrågan i mejlet = hans norrstjärna: sparar det TID?
+**Nästa:** Carl skickar mejlet (efter push). När Taulant testat → PostHog-ritualen + ev. samtal.
+Bevaka advisor-/partnerlutning.
 
 ---
 id: agent-mode-additive-flag
