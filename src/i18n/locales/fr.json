@@ -913,7 +913,17 @@
     "greeting": "Bonjour ! Je suis Renaida — votre expert en rénovation et guide de la plateforme. Posez-moi des questions sur la réglementation de la construction, des conseils de rénovation ou comment tirer le meilleur parti de l'application !\n\nREMARQUE : pour la réglementation de la construction, je fournis des indications générales — contactez toujours le comité de construction de votre commune pour les décisions finales.",
     "placeholder": "Posez une question sur les rénovations ou l'utilisation de l'application...",
     "send": "Envoyer",
-    "title": "Renaida"
+    "title": "Renaida",
+    "agent": {
+      "detailDeadline": "Échéance",
+      "detailStart": "Début",
+      "detailBudget": "Budget",
+      "detailPriority": "Priorité",
+      "detailProgress": "Avancement",
+      "detailStatus": "Statut",
+      "micDenied": "Je n'ai pas accès au micro — vérifiez l'autorisation du navigateur, ou écrivez votre mise à jour ici.",
+      "micFailed": "Le micro n'a pas coopéré — réessayez, ou écrivez votre mise à jour ici."
+    }
   },
   "hotspots": {
     "canvas": "Dessinez vos pièces ici en 30 secondes",

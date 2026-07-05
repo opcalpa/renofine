@@ -3852,7 +3852,15 @@
       "createTask": "Create task",
       "willCreateTask": "Will create a task",
       "undo": "Undo",
-      "undone": "Undone — reverted the changes."
+      "undone": "Undone — reverted the changes.",
+      "detailDeadline": "Deadline",
+      "detailStart": "Start",
+      "detailBudget": "Budget",
+      "detailPriority": "Priority",
+      "detailProgress": "Progress",
+      "detailStatus": "Status",
+      "micDenied": "I'm not allowed to use the microphone — check the browser's mic permission, or type your update here instead.",
+      "micFailed": "The microphone didn't quite cooperate — try again, or type your update here instead."
     },
     "autonomy": {
       "suggest": "Suggest first",

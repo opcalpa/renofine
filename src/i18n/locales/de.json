@@ -913,7 +913,17 @@
     "greeting": "Hallo! Ich bin Renofine — Ihr Renovierungsexperte und Plattform-Guide. Fragen Sie mich zu Bauvorschriften, Renovierungstipps oder wie Sie die App optimal nutzen!",
     "placeholder": "Fragen zu Renovierungen oder zur App-Nutzung stellen...",
     "send": "Senden",
-    "title": "Renofine"
+    "title": "Renofine",
+    "agent": {
+      "detailDeadline": "Frist",
+      "detailStart": "Start",
+      "detailBudget": "Budget",
+      "detailPriority": "Priorität",
+      "detailProgress": "Fortschritt",
+      "detailStatus": "Status",
+      "micDenied": "Ich darf das Mikrofon nicht verwenden — prüfe die Mikrofonberechtigung des Browsers oder schreibe dein Update hier.",
+      "micFailed": "Das Mikrofon wollte nicht so recht — versuch es nochmal oder schreibe dein Update hier."
+    }
   },
   "hotspots": {
     "canvas": "Zeichnen Sie Ihre Räume hier in 30 Sekunden",

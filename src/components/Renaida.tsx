@@ -643,12 +643,23 @@ export function Renaida() {
       setListening(false);
       if (transcript.trim()) captureUpdate(transcript, "voice_transcript", { fallbackToChat: true });
     };
-    rec.onerror = () => setListening(false);
+    rec.onerror = (e: Event & { error?: string }) => {
+      setListening(false);
+      // A silently dying mic reads as a dead button — tell the user what happened.
+      if (e.error !== "aborted") {
+        setMessages((prev) => [...prev, {
+          role: "assistant",
+          content: e.error === "not-allowed"
+            ? t("helpBot.agent.micDenied", "Jag får inte använda mikrofonen — kolla webbläsarens mikrofonbehörighet, eller skriv din uppdatering här istället.")
+            : t("helpBot.agent.micFailed", "Mikrofonen ville inte riktigt — prova igen, eller skriv din uppdatering här istället."),
+        }]);
+      }
+    };
     rec.onend = () => setListening(false);
     recognitionRef.current = rec;
     setListening(true);
     rec.start();
-  }, [listening, i18n.language, captureUpdate]);
+  }, [listening, i18n.language, captureUpdate, t]);
 
   // Mic button: typed text → route as action; empty → start voice capture
   const handleCaptureClick = useCallback(() => {

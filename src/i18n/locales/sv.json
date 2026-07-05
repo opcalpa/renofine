@@ -3851,7 +3851,15 @@
       "createTask": "Skapa uppgift",
       "willCreateTask": "Skapar en uppgift",
       "undo": "Ångra",
-      "undone": "Ångrat — återställde ändringarna."
+      "undone": "Ångrat — återställde ändringarna.",
+      "detailDeadline": "Deadline",
+      "detailStart": "Start",
+      "detailBudget": "Budget",
+      "detailPriority": "Prioritet",
+      "detailProgress": "Framsteg",
+      "detailStatus": "Status",
+      "micDenied": "Jag får inte använda mikrofonen — kolla webbläsarens mikrofonbehörighet, eller skriv din uppdatering här istället.",
+      "micFailed": "Mikrofonen ville inte riktigt — prova igen, eller skriv din uppdatering här istället."
     },
     "autonomy": {
       "suggest": "Föreslå först",

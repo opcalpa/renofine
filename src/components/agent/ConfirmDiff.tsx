@@ -40,8 +40,54 @@ function unknownTitle(p: AgentProposal): string {
   return p.summary;
 }
 
+/**
+ * Concrete values a proposal will write — shown under the summary so the user
+ * confirms actual dates/amounts/items, not just a sentence about them.
+ */
+function actionDetails(
+  action: ProposalAction,
+  t: (key: string, fallback?: string, opts?: Record<string, unknown>) => string,
+  locale: string,
+): string[] {
+  const fmtDate = (d: string) =>
+    new Date(`${d}T12:00:00`).toLocaleDateString(locale, { day: "numeric", month: "short" });
+  const details: string[] = [];
+
+  switch (action.type) {
+    case "update_task": {
+      const c = action.changes;
+      if (c.due_date) details.push(`${t("helpBot.agent.detailDeadline", "Deadline")}: ${fmtDate(c.due_date)}`);
+      if (c.start_date) details.push(`${t("helpBot.agent.detailStart", "Start")}: ${fmtDate(c.start_date)}`);
+      if (typeof c.budget === "number") details.push(`${t("helpBot.agent.detailBudget", "Budget")}: ${c.budget.toLocaleString(locale)} kr`);
+      if (c.priority) details.push(`${t("helpBot.agent.detailPriority", "Prioritet")}: ${t(`tasks.priority${c.priority.charAt(0).toUpperCase()}${c.priority.slice(1)}`, c.priority)}`);
+      if (typeof c.progress === "number") details.push(`${t("helpBot.agent.detailProgress", "Framsteg")}: ${c.progress}%`);
+      if (c.status) details.push(`${t("helpBot.agent.detailStatus", "Status")}: ${c.status}`);
+      break;
+    }
+    case "set_progress":
+      details.push(`${t("helpBot.agent.detailProgress", "Framsteg")}: ${action.progress}%`);
+      break;
+    case "create_checklist":
+      details.push(action.items.join(" · "));
+      break;
+    case "remove_checklist_item":
+      details.push(`− ${action.itemText}`);
+      break;
+    case "log_time":
+      details.push(`${action.hours} h${action.date ? ` · ${fmtDate(action.date)}` : ""}`);
+      break;
+    case "create_purchase":
+      if (action.quantity) details.push(`${action.quantity}${action.unit ? ` ${action.unit}` : " st"}`);
+      break;
+    case "add_note":
+      details.push(`”${action.text.length > 90 ? action.text.slice(0, 90) + "…" : action.text}”`);
+      break;
+  }
+  return details;
+}
+
 export function ConfirmDiff({ proposals, applying = false, onConfirm, onDismiss }: ConfirmDiffProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const lowMatch = (p: AgentProposal) =>
     isActionable(p) && isTaskAction(p.action) &&
@@ -131,6 +177,12 @@ export function ConfirmDiff({ proposals, applying = false, onConfirm, onDismiss 
                     <span className="ml-1 text-[10px] text-amber-600">{t("helpBot.agent.uncertainMatch")}</span>
                   )}
                 </label>
+                {(() => {
+                  const details = actionDetails(p.action, t, i18n.language);
+                  return details.length > 0 ? (
+                    <p className="mt-0.5 text-xs text-muted-foreground">{details.join("  ·  ")}</p>
+                  ) : null;
+                })()}
                 {showPicker && (
                   <select
                     value={currentTaskId(p) ?? ""}
