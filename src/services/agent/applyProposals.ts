@@ -102,6 +102,9 @@ async function applyOne(
       const { data, error } = await supabase.from("tasks").insert({
         project_id: projectId,
         room_id: resolvedRoomId ?? null,
+        // The app writes BOTH fields (TaskEditDialog reads room_ids[] first) —
+        // loop round 7: panel showed "Inget rum" when only room_id was set.
+        room_ids: resolvedRoomId ? [resolvedRoomId] : [],
         title: action.title,
         description: action.description ?? null,
         status: "to_do",
