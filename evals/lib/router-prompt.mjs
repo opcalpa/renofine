@@ -7,7 +7,28 @@ const LANGUAGE_NAMES = {
   pl: "Polish", uk: "Ukrainian", ro: "Romanian", lt: "Lithuanian", et: "Estonian",
 };
 
-export function buildRouterSystem(language, rooms, tasks) {
+// Mirrors prod buildMemorySection. Prod only injects routing-relevant kinds
+// (correction/phrase_map/vendor) — kind=preference is filtered at the query and
+// must NEVER appear here (a preference row flipped the router to "unknown",
+// verified 2026-07-05 via evals/repro-ambiguous-demo.mjs).
+function buildMemorySection(memories) {
+  if (!memories || !memories.length) return "";
+  const corrections = memories.filter((m) => m.kind === "correction");
+  const others = memories.filter((m) => m.kind !== "correction");
+  const lines = [];
+  for (const c of corrections) {
+    lines.push(`  - When the user says something like "${c.key}", they have previously meant the work: "${c.value}". Prefer matching a task of that work.`);
+  }
+  for (const o of others) {
+    lines.push(`  - ${o.kind}: "${o.key}" → "${o.value}"`);
+  }
+  return `
+WHAT YOU'VE LEARNED ABOUT THIS USER (apply these preferences; they override generic guessing):
+${lines.join("\n")}
+`;
+}
+
+export function buildRouterSystem(language, rooms, tasks, memories = []) {
   const langName = LANGUAGE_NAMES[language] || "English";
   const roomList = rooms.length
     ? rooms.map((r) => `  - id="${r.id}" name="${r.name}"`).join("\n")
@@ -33,7 +54,7 @@ ${roomList}
 
 TASKS:
 ${taskList}
-
+${buildMemorySection(memories)}
 Output STRICT JSON of this exact shape (no prose, no markdown):
 {
   "proposals": [

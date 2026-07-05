@@ -74,9 +74,13 @@ async function fetchContext(projectId: string, authHeader: string): Promise<{ ro
       { headers },
     ),
     // Renaida's learned facts about this user (project-specific + global).
+    // ONLY routing-relevant kinds: correction/phrase_map/vendor. App-layer rows
+    // (kind=preference, e.g. the autonomy setting) MUST NOT reach the prompt —
+    // verified 2026-07-05: an injected `preference: "autonomy" → "suggest"` row
+    // flipped the model to "unknown" on ambiguous input 5/5 (killed the picker).
     // RLS scopes these to the caller's own profile automatically.
     fetch(
-      `${supabaseRestUrl("renaida_user_memory")}?or=(project_id.eq.${projectId},project_id.is.null)&select=kind,key,value,evidence_count&order=evidence_count.desc&limit=40`,
+      `${supabaseRestUrl("renaida_user_memory")}?or=(project_id.eq.${projectId},project_id.is.null)&kind=in.(correction,phrase_map,vendor)&select=kind,key,value,evidence_count&order=evidence_count.desc&limit=40`,
       { headers },
     ),
   ]);
