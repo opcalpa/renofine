@@ -209,7 +209,18 @@ export async function fetchProjectActivities(projectId: string): Promise<Activit
     return [];
   }
 
-  return (data ?? []) as unknown as ActivityLogItem[];
+  const rows = (data ?? []) as unknown as ActivityLogItem[];
+
+  // Entities Renaida created get two rows: the generic DB-trigger "created" row
+  // and Renaida's explicit receipt. Keep the receipt, drop the duplicate.
+  const createdByRenaida = new Set(
+    rows
+      .filter((r) => r.action === "renaida_task_create" || r.action === "renaida_room_create")
+      .map((r) => `${r.entity_type}:${r.entity_id}`)
+  );
+  return rows.filter(
+    (r) => !(r.action === "created" && createdByRenaida.has(`${r.entity_type}:${r.entity_id}`))
+  );
 }
 
 export function mergeIntoUnifiedFeed(
