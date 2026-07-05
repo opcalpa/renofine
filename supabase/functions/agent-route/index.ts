@@ -179,13 +179,14 @@ Rules:
 - SCAFFOLDING (empty or sparse project): when the user names rooms that do NOT exist in ROOMS ("vi ska renovera badrummet och köket") → emit ONE create_room per named room, AND a create_task for each described work with roomName set to the new room's name (NOT roomId — it doesn't exist yet). Renovation intent for a room with no specified work → create_room + one create_task "Renovering <room>" with that roomName. This is how a brand-new project gets its structure — never answer "nothing to do" to clear renovation intent just because the project is empty.
 - "jobbade tre timmar i köket igår" → log_time { taskId (the matching kitchen task, set matchConfidence), hours: 3, date if stated }. If no clear task matches, log_time WITHOUT taskId (project-level time).
 - "listerna är klara/monterade" → if a task has a checklist item matching that text (see checklist=[...]) → toggle_checklist { taskId, itemText: "<the matching item verbatim>", completed: true }. If it names whole-task work instead, use set_progress.
-- CHECKLIST AUTHORING: "skapa en checklista på kakelsättningen: primer, tätskikt, kakel, foga" → ONE create_checklist { taskId, items: ["Primer", "Tätskikt", "Kakel", "Foga"] }. Adding single items ("lägg till en punkt…") is ALSO create_checklist (the app appends). Any request to break a task into steps/moments → create_checklist (NEVER toggle_checklist — toggling only ticks items that already exist in checklist=[...]).
+- CHECKLIST AUTHORING: "skapa en checklista på kakelsättningen: primer, tätskikt, kakel, foga" → ONE create_checklist { taskId, items: ["Primer", "Tätskikt", "Kakel", "Foga"] }. Adding single items ("lägg till en punkt…") is ALSO create_checklist (the app appends) — but when the task ALREADY has checklist items (see checklist=[...]), phrase the summary as adding a point ("Lägger till punkten X i …"), NOT as creating a list. Any request to break a task into steps/moments → create_checklist (NEVER toggle_checklist — toggling only ticks items that already exist in checklist=[...]).
 - REMOVING a checklist item ("ta bort punkten primer") → remove_checklist_item { taskId, itemText } — NOT toggle_checklist (unticking is not removing). Unticking ("bocka ur", "var inte klar ändå") → toggle_checklist { completed: false }.
 - PLANNING FIELDS on an existing task → update_task with the matching change (resolve relative dates using TODAY below):
     "sätt deadline på fredag för kakelsättningen" → { "changes": { "due_date": "<next Friday as YYYY-MM-DD>" } }
     "målningen ska börja på måndag" → { "changes": { "start_date": "<next Monday>" } }
     "höj budgeten för golvslipningen till 15000" → { "changes": { "budget": 15000 } }
     "sätt hög prioritet på kakelsättningen" → { "changes": { "priority": "high" } }
+    "ta bort deadlinen på kakelsättningen" → { "changes": { "due_date": null } } — null CLEARS a field (works for due_date/start_date/budget). Clearing is a normal update_task, never "unknown".
   Assignment to a PERSON ("tilldela målningen till Johan") → add_note on that task (the app has no assignee resolution yet — save the instruction).
 - WORK INSTRUCTIONS: phrasings like "säg åt/till <yrkesperson> att …", "påminn <någon> att …", "viktigt: …", "<yrkesperson> behöver veta att …", "notera att …" are instructions to be SAVED → add_note. Target the task whose work matches the trade/activity mentioned (målaren → painting task); if the instruction names a ROOM as its subject ("instruktionerna för badrummet") → target that room; if neither is clear → target "project" with the project id. NEVER return an empty proposals array for a clear instruction — a saved note is always better than losing it.
 - Reserve "unknown" for input you genuinely cannot map: a place or thing that does not exist in the project, or truly unclear intent. NOT for choosing between existing tasks — that is the AMBIGUOUS case above (low-confidence proposal + candidateTaskIds).
@@ -315,9 +316,9 @@ function normalizeProposals(
           if (typeof raw.description === "string") clean.description = raw.description;
           if (typeof raw.status === "string" && raw.status.trim()) clean.status = raw.status.trim();
           if (typeof raw.progress === "number") clean.progress = Math.max(0, Math.min(100, raw.progress));
-          if (typeof raw.due_date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(raw.due_date)) clean.due_date = raw.due_date;
-          if (typeof raw.start_date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(raw.start_date)) clean.start_date = raw.start_date;
-          if (typeof raw.budget === "number" && raw.budget >= 0) clean.budget = raw.budget;
+          if (raw.due_date === null || (typeof raw.due_date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(raw.due_date))) clean.due_date = raw.due_date;
+          if (raw.start_date === null || (typeof raw.start_date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(raw.start_date))) clean.start_date = raw.start_date;
+          if (raw.budget === null || (typeof raw.budget === "number" && raw.budget >= 0)) clean.budget = raw.budget;
           if (raw.priority === "low" || raw.priority === "medium" || raw.priority === "high") clean.priority = raw.priority;
           if (Object.keys(clean).length === 0) {
             toUnknown("Ingen giltig ändring att göra");

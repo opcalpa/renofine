@@ -323,6 +323,17 @@
           "itemIncludes": "montera"
         }
       ]
+    },
+    {
+      "id": "plan-clear-deadline",
+      "input": "Ta bort deadlinen på kakelsättningen.",
+      "expect": [
+        {
+          "type": "update_task",
+          "taskId": "t-tile",
+          "changesNull": "due_date"
+        }
+      ]
     }
   ]
 }

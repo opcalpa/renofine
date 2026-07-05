@@ -922,7 +922,8 @@
       "detailProgress": "Progreso",
       "detailStatus": "Estado",
       "micDenied": "No puedo usar el micrófono — revisa el permiso del navegador, o escribe tu actualización aquí.",
-      "micFailed": "El micrófono no cooperó — inténtalo de nuevo, o escribe tu actualización aquí."
+      "micFailed": "El micrófono no cooperó — inténtalo de nuevo, o escribe tu actualización aquí.",
+      "detailCleared": "se elimina"
     }
   },
   "hotspots": {

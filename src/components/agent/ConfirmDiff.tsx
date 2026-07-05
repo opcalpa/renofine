@@ -56,9 +56,13 @@ function actionDetails(
   switch (action.type) {
     case "update_task": {
       const c = action.changes;
+      const cleared = t("helpBot.agent.detailCleared", "tas bort");
       if (c.due_date) details.push(`${t("helpBot.agent.detailDeadline", "Deadline")}: ${fmtDate(c.due_date)}`);
+      else if (c.due_date === null) details.push(`${t("helpBot.agent.detailDeadline", "Deadline")}: ${cleared}`);
       if (c.start_date) details.push(`${t("helpBot.agent.detailStart", "Start")}: ${fmtDate(c.start_date)}`);
+      else if (c.start_date === null) details.push(`${t("helpBot.agent.detailStart", "Start")}: ${cleared}`);
       if (typeof c.budget === "number") details.push(`${t("helpBot.agent.detailBudget", "Budget")}: ${c.budget.toLocaleString(locale)} kr`);
+      else if (c.budget === null) details.push(`${t("helpBot.agent.detailBudget", "Budget")}: ${cleared}`);
       if (c.priority) details.push(`${t("helpBot.agent.detailPriority", "Prioritet")}: ${t(`tasks.priority${c.priority.charAt(0).toUpperCase()}${c.priority.slice(1)}`, c.priority)}`);
       if (typeof c.progress === "number") details.push(`${t("helpBot.agent.detailProgress", "Framsteg")}: ${c.progress}%`);
       if (c.status) details.push(`${t("helpBot.agent.detailStatus", "Status")}: ${c.status}`);

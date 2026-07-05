@@ -3859,7 +3859,8 @@
       "detailProgress": "Framsteg",
       "detailStatus": "Status",
       "micDenied": "Jag får inte använda mikrofonen — kolla webbläsarens mikrofonbehörighet, eller skriv din uppdatering här istället.",
-      "micFailed": "Mikrofonen ville inte riktigt — prova igen, eller skriv din uppdatering här istället."
+      "micFailed": "Mikrofonen ville inte riktigt — prova igen, eller skriv din uppdatering här istället.",
+      "detailCleared": "tas bort"
     },
     "autonomy": {
       "suggest": "Föreslå först",

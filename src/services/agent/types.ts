@@ -13,10 +13,10 @@ export interface TaskWritableFields {
   description: string;
   status: string;
   progress: number;
-  /** YYYY-MM-DD — the router resolves relative dates ("på fredag") server-side. */
-  due_date: string;
-  start_date: string;
-  budget: number;
+  /** YYYY-MM-DD — the router resolves relative dates ("på fredag") server-side. null clears. */
+  due_date: string | null;
+  start_date: string | null;
+  budget: number | null;
   priority: string;
 }
 
@@ -69,7 +69,7 @@ export interface AgentProposal {
 
 /** A reversible record of one applied action, used for one-tap undo. */
 export type UndoOp =
-  | { kind: "task_fields"; taskId: string; before: { status?: string | null; progress?: number | null; title?: string | null; description?: string | null; due_date?: string | null; start_date?: string | null; budget?: number | null; priority?: string | null } }
+  | { kind: "task_fields"; taskId: string; before: { status?: string | null; progress?: number | null; title?: string | null; description?: string | null; due_date?: string | null; start_date?: string | null; finish_date?: string | null; budget?: number | null; priority?: string | null } }
   | { kind: "delete_task"; taskId: string }
   | { kind: "delete_room"; roomId: string }
   | { kind: "delete_purchase"; purchaseOrderId: string; materialId: string }

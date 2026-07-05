@@ -922,7 +922,8 @@
       "detailProgress": "Avancement",
       "detailStatus": "Statut",
       "micDenied": "Je n'ai pas accès au micro — vérifiez l'autorisation du navigateur, ou écrivez votre mise à jour ici.",
-      "micFailed": "Le micro n'a pas coopéré — réessayez, ou écrivez votre mise à jour ici."
+      "micFailed": "Le micro n'a pas coopéré — réessayez, ou écrivez votre mise à jour ici.",
+      "detailCleared": "supprimé"
     }
   },
   "hotspots": {

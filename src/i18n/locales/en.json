@@ -3860,7 +3860,8 @@
       "detailProgress": "Progress",
       "detailStatus": "Status",
       "micDenied": "I'm not allowed to use the microphone — check the browser's mic permission, or type your update here instead.",
-      "micFailed": "The microphone didn't quite cooperate — try again, or type your update here instead."
+      "micFailed": "The microphone didn't quite cooperate — try again, or type your update here instead.",
+      "detailCleared": "cleared"
     },
     "autonomy": {
       "suggest": "Suggest first",

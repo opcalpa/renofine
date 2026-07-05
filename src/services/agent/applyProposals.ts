@@ -81,11 +81,24 @@ async function applyOne(
     case "set_progress": {
       const taskId = action.taskId;
       const { data: prev } = await supabase
-        .from("tasks").select("status,progress,title,description,due_date,start_date,budget,priority").eq("id", taskId).single();
+        .from("tasks").select("status,progress,title,description,due_date,start_date,finish_date,budget,priority").eq("id", taskId).single();
 
       const changes = action.type === "set_progress"
         ? { progress: action.progress, ...((action.status ?? (action.progress >= 100 ? "awaiting_review" : undefined)) ? { status: action.status ?? "awaiting_review" } : {}) }
-        : action.changes;
+        // The task modal shows finish_date as "Slutdatum" while reminders read
+        // due_date — a deadline the user can't SEE isn't a deadline, so write both.
+        : ("due_date" in action.changes
+            ? (() => {
+                const due = action.changes.due_date;
+                const extra: Record<string, unknown> = { finish_date: due };
+                // tasks_dates_check requires finish >= start: a deadline before the
+                // planned start pulls the start with it (you can't start after it).
+                if (due && !("start_date" in action.changes) && prev?.start_date && prev.start_date > due) {
+                  extra.start_date = due;
+                }
+                return { ...action.changes, ...extra };
+              })()
+            : action.changes);
 
       const { error } = await supabase.from("tasks").update(changes).eq("id", taskId);
       if (error) throw new Error(error.message);
@@ -309,6 +322,7 @@ export async function undoProposals(undo: UndoOp[], projectId?: string): Promise
             description: op.before.description ?? null,
             due_date: op.before.due_date ?? null,
             start_date: op.before.start_date ?? null,
+            finish_date: op.before.finish_date ?? null,
             budget: op.before.budget ?? null,
             priority: op.before.priority ?? null,
           }).eq("id", op.taskId);

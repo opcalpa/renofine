@@ -50,6 +50,7 @@ function matches(expected, action) {
   }
   if (expected.changesBudget != null && Number(action.changes?.budget) !== Number(expected.changesBudget)) return false;
   if (expected.changesPriority && action.changes?.priority !== expected.changesPriority) return false;
+  if (expected.changesNull && action.changes?.[expected.changesNull] !== null) return false;
   return true;
 }
 
