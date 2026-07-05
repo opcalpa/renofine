@@ -81,7 +81,7 @@ async function applyOne(
     case "set_progress": {
       const taskId = action.taskId;
       const { data: prev } = await supabase
-        .from("tasks").select("status,progress,title,description").eq("id", taskId).single();
+        .from("tasks").select("status,progress,title,description,due_date,start_date,budget,priority").eq("id", taskId).single();
 
       const changes = action.type === "set_progress"
         ? { progress: action.progress, ...((action.status ?? (action.progress >= 100 ? "awaiting_review" : undefined)) ? { status: action.status ?? "awaiting_review" } : {}) }
@@ -189,17 +189,53 @@ async function applyOne(
         .from("tasks").select("checklists,progress,title").eq("id", action.taskId).single();
       const before = { checklists: task?.checklists ?? null, progress: task?.progress ?? null };
       const checklists = (((task?.checklists as ChecklistGroup[] | null) ?? [])).slice();
-      checklists.push({
-        id: crypto.randomUUID(),
-        title: action.title?.trim() || "Checklista",
-        items: action.items.map((title) => ({ id: crypto.randomUUID(), title, completed: false })),
-      });
+      const newItems = action.items.map((title) => ({ id: crypto.randomUUID(), title, completed: false }));
+      // "Lägg till en punkt…" on a task with exactly one list means that list —
+      // append instead of stacking a second group. Explicit title → new group.
+      if (checklists.length === 1 && !action.title?.trim()) {
+        checklists[0] = { ...checklists[0], items: [...(checklists[0].items ?? []), ...newItems] };
+      } else {
+        checklists.push({
+          id: crypto.randomUUID(),
+          title: action.title?.trim() || "Checklista",
+          items: newItems,
+        });
+      }
       // Progress is intentionally untouched — adding instructions shouldn't move
       // the task backwards; the checklist-driven recompute kicks in on first toggle.
       const { error } = await supabase.from("tasks").update({ checklists }).eq("id", action.taskId);
       if (error) throw new Error(error.message);
 
       logActivity(projectId, profileId, "renaida_checklist_create", "task", action.taskId, task?.title ?? "", { items: action.items.length });
+      return { kind: "checklist_restore", taskId: action.taskId, before };
+    }
+
+    case "remove_checklist_item": {
+      const { data: task } = await supabase
+        .from("tasks").select("checklists,progress,title").eq("id", action.taskId).single();
+      const before = { checklists: task?.checklists ?? null, progress: task?.progress ?? null };
+      const checklists = (((task?.checklists as ChecklistGroup[] | null) ?? [])).slice();
+      const needle = action.itemText.toLowerCase();
+      let removed = false;
+      for (const cl of checklists) {
+        const idx = (cl.items ?? []).findIndex((it) => (it.title ?? "").toLowerCase().includes(needle));
+        if (idx >= 0) {
+          cl.items = [...(cl.items ?? [])];
+          cl.items.splice(idx, 1);
+          removed = true;
+          break;
+        }
+      }
+      if (!removed) throw new Error("Hittade ingen checklistpunkt som matchar");
+
+      let total = 0, done = 0;
+      for (const cl of checklists) for (const item of cl.items ?? []) { total++; if (item.completed) done++; }
+      const progress = total > 0 ? Math.round((done / total) * 100) : (task?.progress ?? 0);
+
+      const { error } = await supabase.from("tasks").update({ checklists, progress }).eq("id", action.taskId);
+      if (error) throw new Error(error.message);
+
+      logActivity(projectId, profileId, "renaida_checklist", "task", action.taskId, task?.title ?? "", { itemText: action.itemText, removed: true });
       return { kind: "checklist_restore", taskId: action.taskId, before };
     }
 
@@ -269,6 +305,12 @@ export async function undoProposals(undo: UndoOp[], projectId?: string): Promise
           await supabase.from("tasks").update({
             status: op.before.status ?? null,
             progress: op.before.progress ?? null,
+            title: op.before.title ?? undefined,
+            description: op.before.description ?? null,
+            due_date: op.before.due_date ?? null,
+            start_date: op.before.start_date ?? null,
+            budget: op.before.budget ?? null,
+            priority: op.before.priority ?? null,
           }).eq("id", op.taskId);
           break;
         case "delete_task":

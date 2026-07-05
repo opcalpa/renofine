@@ -39,6 +39,17 @@ function matches(expected, action) {
   if (expected.target && action.target !== expected.target) return false;
   if (expected.targetId && action.targetId !== expected.targetId) return false;
   if (expected.itemsMin != null && !(Array.isArray(action.items) && action.items.length >= expected.itemsMin)) return false;
+  if (expected.changesHasDate && !/^\d{4}-\d{2}-\d{2}$/.test(action.changes?.[expected.changesHasDate] ?? "")) return false;
+  if (expected.changesDateWeekday != null) {
+    const field = expected.changesHasDate || "due_date";
+    const v = action.changes?.[field];
+    if (!v) return false;
+    const d = new Date(v + "T12:00:00Z");
+    // must be the expected weekday AND in the future (relative-date resolution)
+    if (d.getUTCDay() !== expected.changesDateWeekday || d.getTime() < Date.now()) return false;
+  }
+  if (expected.changesBudget != null && Number(action.changes?.budget) !== Number(expected.changesBudget)) return false;
+  if (expected.changesPriority && action.changes?.priority !== expected.changesPriority) return false;
   return true;
 }
 

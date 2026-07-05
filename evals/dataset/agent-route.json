@@ -266,6 +266,63 @@
           "targetId": "r-bath"
         }
       ]
+    },
+    {
+      "id": "plan-deadline",
+      "input": "Sätt deadline på fredag för kakelsättningen.",
+      "expect": [
+        {
+          "type": "update_task",
+          "taskId": "t-tile",
+          "changesHasDate": "due_date",
+          "changesDateWeekday": 5
+        }
+      ]
+    },
+    {
+      "id": "plan-start-date",
+      "input": "Målningen av väggar och tak ska börja på måndag.",
+      "expect": [
+        {
+          "type": "update_task",
+          "taskId": "t-paint",
+          "changesHasDate": "start_date",
+          "changesDateWeekday": 1
+        }
+      ]
+    },
+    {
+      "id": "plan-budget",
+      "input": "Höj budgeten för golvslipningen till 15000 kronor.",
+      "expect": [
+        {
+          "type": "update_task",
+          "taskId": "t-floor",
+          "changesBudget": 15000
+        }
+      ]
+    },
+    {
+      "id": "plan-priority",
+      "input": "Kakelsättningen är viktigast just nu, sätt hög prioritet på den.",
+      "expect": [
+        {
+          "type": "update_task",
+          "taskId": "t-tile",
+          "changesPriority": "high"
+        }
+      ]
+    },
+    {
+      "id": "checklist-remove-item",
+      "input": "Ta bort punkten om montering från listernas checklista.",
+      "expect": [
+        {
+          "type": "remove_checklist_item",
+          "taskId": "t-trim",
+          "itemIncludes": "montera"
+        }
+      ]
     }
   ]
 }

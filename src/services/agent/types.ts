@@ -13,6 +13,11 @@ export interface TaskWritableFields {
   description: string;
   status: string;
   progress: number;
+  /** YYYY-MM-DD — the router resolves relative dates ("på fredag") server-side. */
+  due_date: string;
+  start_date: string;
+  budget: number;
+  priority: string;
 }
 
 export type ProposalAction =
@@ -29,8 +34,9 @@ export type ProposalAction =
   | { type: "create_purchase"; roomId?: string; item: string; quantity?: number; unit?: string }
   | { type: "log_time"; taskId?: string; hours: number; date?: string; description?: string }
   | { type: "toggle_checklist"; taskId: string; itemText: string; completed?: boolean }
-  /** Author a NEW checklist (work-instruction moments) on a task. */
+  /** Author checklist moments on a task (appends to a single existing list, else creates one). */
   | { type: "create_checklist"; taskId: string; title?: string; items: string[] }
+  | { type: "remove_checklist_item"; taskId: string; itemText: string }
   | { type: "add_note"; target: "task" | "room" | "project"; targetId: string; text: string }
   /** Router could not confidently route the input — surface as a question, never apply. */
   | { type: "unknown"; rawText: string; reason: string };
@@ -63,7 +69,7 @@ export interface AgentProposal {
 
 /** A reversible record of one applied action, used for one-tap undo. */
 export type UndoOp =
-  | { kind: "task_fields"; taskId: string; before: { status?: string | null; progress?: number | null; title?: string | null; description?: string | null } }
+  | { kind: "task_fields"; taskId: string; before: { status?: string | null; progress?: number | null; title?: string | null; description?: string | null; due_date?: string | null; start_date?: string | null; budget?: number | null; priority?: string | null } }
   | { kind: "delete_task"; taskId: string }
   | { kind: "delete_room"; roomId: string }
   | { kind: "delete_purchase"; purchaseOrderId: string; materialId: string }

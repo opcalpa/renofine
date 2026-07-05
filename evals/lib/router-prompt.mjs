@@ -49,6 +49,12 @@ You are given the project's REAL rooms and tasks. You may ONLY reference ids tha
 NEVER invent an id. If the note refers to something you cannot confidently map to an existing
 id, emit an "unknown" proposal asking for clarification instead of guessing.
 
+TODAY is ${new Date().toISOString().slice(0, 10)} (${["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][new Date().getUTCDay()]}). When resolving relative dates ("på fredag", "imorgon", "nästa vecka"), LOOK THEM UP in this table — do not compute them yourself:
+${Array.from({ length: 14 }, (_, i) => {
+  const d = new Date(Date.now() + (i + 1) * 86400000);
+  return `  ${["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][d.getUTCDay()]} = ${d.toISOString().slice(0, 10)}`;
+}).join("\n")}
+
 ROOMS:
 ${roomList}
 
@@ -69,7 +75,7 @@ Output STRICT JSON of this exact shape (no prose, no markdown):
 }
 
 Allowed action objects:
-- { "type": "update_task", "taskId": "<existing task id>", "changes": { "status"?: string, "title"?: string, "description"?: string, "progress"?: number } }
+- { "type": "update_task", "taskId": "<existing task id>", "changes": { "status"?: string, "title"?: string, "description"?: string, "progress"?: number, "due_date"?: "YYYY-MM-DD", "start_date"?: "YYYY-MM-DD", "budget"?: <number>, "priority"?: "low"|"medium"|"high" } }
 - { "type": "set_progress", "taskId": "<existing task id>", "progress": <0..100>, "status"?: string }
 - { "type": "create_room", "name": "<room name the user said, e.g. Badrum>" }
 - { "type": "create_task", "roomId"?: "<existing room id>", "roomName"?: "<room name when the room does NOT exist yet — pair with a create_room proposal>", "title": string, "description"?: string }
@@ -77,6 +83,7 @@ Allowed action objects:
 - { "type": "log_time", "taskId"?: "<existing task id>", "hours": <number>, "date"?: "YYYY-MM-DD", "description"?: string }
 - { "type": "toggle_checklist", "taskId": "<existing task id>", "itemText": "<the checklist item text, taken from that task's checklist=[...]>", "completed"?: <boolean, default true> }
 - { "type": "create_checklist", "taskId": "<existing task id>", "title"?: string, "items": ["<moment 1>", "<moment 2>", ...] }
+- { "type": "remove_checklist_item", "taskId": "<existing task id>", "itemText": "<the checklist item to REMOVE, taken from that task's checklist=[...]>" }
 - { "type": "add_note", "target": "task"|"room"|"project", "targetId": "<existing id>", "text": string }
 - { "type": "unknown", "rawText": "<the part you couldn't route>", "reason": "<short why, in ${langName}>" }
 
@@ -87,7 +94,14 @@ Rules:
 - SCAFFOLDING (empty or sparse project): when the user names rooms that do NOT exist in ROOMS ("vi ska renovera badrummet och köket") → emit ONE create_room per named room, AND a create_task for each described work with roomName set to the new room's name (NOT roomId — it doesn't exist yet). Renovation intent for a room with no specified work → create_room + one create_task "Renovering <room>" with that roomName. This is how a brand-new project gets its structure — never answer "nothing to do" to clear renovation intent just because the project is empty.
 - "jobbade tre timmar i köket igår" → log_time { taskId (the matching kitchen task, set matchConfidence), hours: 3, date if stated }. If no clear task matches, log_time WITHOUT taskId (project-level time).
 - "listerna är klara/monterade" → if a task has a checklist item matching that text (see checklist=[...]) → toggle_checklist { taskId, itemText: "<the matching item verbatim>", completed: true }. If it names whole-task work instead, use set_progress.
-- CHECKLIST AUTHORING: "skapa en checklista på kakelsättningen: primer, tätskikt, kakel, foga" → ONE create_checklist { taskId, items: ["Primer", "Tätskikt", "Kakel", "Foga"] }. Any request to break a task into steps/moments → create_checklist (NEVER toggle_checklist — toggling only ticks items that already exist in checklist=[...]).
+- CHECKLIST AUTHORING: "skapa en checklista på kakelsättningen: primer, tätskikt, kakel, foga" → ONE create_checklist { taskId, items: ["Primer", "Tätskikt", "Kakel", "Foga"] }. Adding single items ("lägg till en punkt…") is ALSO create_checklist (the app appends). Any request to break a task into steps/moments → create_checklist (NEVER toggle_checklist — toggling only ticks items that already exist in checklist=[...]).
+- REMOVING a checklist item ("ta bort punkten primer") → remove_checklist_item { taskId, itemText } — NOT toggle_checklist (unticking is not removing). Unticking ("bocka ur", "var inte klar ändå") → toggle_checklist { completed: false }.
+- PLANNING FIELDS on an existing task → update_task with the matching change (resolve relative dates using TODAY below):
+    "sätt deadline på fredag för kakelsättningen" → { "changes": { "due_date": "<next Friday as YYYY-MM-DD>" } }
+    "målningen ska börja på måndag" → { "changes": { "start_date": "<next Monday>" } }
+    "höj budgeten för golvslipningen till 15000" → { "changes": { "budget": 15000 } }
+    "sätt hög prioritet på kakelsättningen" → { "changes": { "priority": "high" } }
+  Assignment to a PERSON ("tilldela målningen till Johan") → add_note on that task (the app has no assignee resolution yet — save the instruction).
 - WORK INSTRUCTIONS: phrasings like "säg åt/till <yrkesperson> att …", "påminn <någon> att …", "viktigt: …", "<yrkesperson> behöver veta att …", "notera att …" are instructions to be SAVED → add_note. Target the task whose work matches the trade/activity mentioned (målaren → painting task); if the instruction names a ROOM as its subject ("instruktionerna för badrummet") → target that room; if neither is clear → target "project" with the project id. NEVER return an empty proposals array for a clear instruction — a saved note is always better than losing it.
 - Reserve "unknown" for input you genuinely cannot map: a place or thing that does not exist in the project, or truly unclear intent. NOT for choosing between existing tasks — that is the AMBIGUOUS case above (low-confidence proposal + candidateTaskIds).
 - CRITICAL for update_task/set_progress/log_time: you MUST set matchConfidence, and BEFORE picking a task you MUST COUNT how many existing tasks match the described WORK ITSELF (the trade/activity — NOT the room; being in the same room is NOT a match):
