@@ -200,11 +200,55 @@ interface NormalizedProposal {
   candidates?: { id: string; title: string }[];
 }
 
+/**
+ * Deterministic same-trade ambiguity guard (defense in depth, 2026-07-05).
+ * The model sometimes confidently picks ONE of several same-trade tasks
+ * ("Måla kök" vs "Måla hall") on input that names no distinguishing word —
+ * prompt rules alone are not reliably followed. So we enforce the picker
+ * server-side: if the chosen task shares its leading work-word with other
+ * OPEN tasks, and the user's text doesn't mention anything that singles the
+ * chosen one out, cap matchConfidence below the confident threshold and make
+ * sure the siblings are offered as candidates.
+ */
+function sameTradeGuard(
+  chosenId: string,
+  matchConfidence: number,
+  candidates: { id: string; title: string }[],
+  tasks: TaskCtx[],
+  inputText: string,
+): { matchConfidence: number; candidates: { id: string; title: string }[] } {
+  const chosen = tasks.find((t) => t.id === chosenId);
+  if (!chosen) return { matchConfidence, candidates };
+  const firstWord = chosen.title.trim().toLowerCase().split(/\s+/)[0] ?? "";
+  if (firstWord.length < 4) return { matchConfidence, candidates };
+
+  const siblings = tasks.filter((t) =>
+    t.id !== chosenId &&
+    t.status !== "completed" &&
+    (t.title.trim().toLowerCase().split(/\s+/)[0] ?? "") === firstWord
+  );
+  if (siblings.length === 0) return { matchConfidence, candidates };
+
+  // Does the input single the chosen task out? (its distinguishing title words,
+  // e.g. "kök" in "Måla kök" — substring match covers Swedish definite forms
+  // like "köket"/"hallen")
+  const input = inputText.toLowerCase();
+  const distinguishing = chosen.title.trim().toLowerCase().split(/\s+/).slice(1).filter((w) => w.length >= 3);
+  if (distinguishing.some((w) => input.includes(w))) return { matchConfidence, candidates };
+
+  const merged = [...candidates];
+  for (const s of siblings) {
+    if (!merged.some((c) => c.id === s.id)) merged.push({ id: s.id, title: s.title });
+  }
+  return { matchConfidence: Math.min(matchConfidence, 0.6), candidates: merged.slice(0, 4) };
+}
+
 /** Validate + normalize model output against the real context. Drops/repairs unsafe proposals. */
 function normalizeProposals(
   raw: RawProposal[],
   rooms: RoomCtx[],
   tasks: TaskCtx[],
+  inputText: string,
 ): NormalizedProposal[] {
   const roomIds = new Set(rooms.map((r) => r.id));
   const taskIds = new Set(tasks.map((t) => t.id));
@@ -229,17 +273,20 @@ function normalizeProposals(
           toUnknown("Hittade ingen matchande uppgift");
           break;
         }
-        const matchConfidence = typeof p.matchConfidence === "number"
+        const rawMatchConfidence = typeof p.matchConfidence === "number"
           ? Math.max(0, Math.min(1, p.matchConfidence))
           : confidence;
         // Resolve candidate ids (+ the chosen task) → {id,title} for manual re-pick.
         const candIds = Array.isArray(p.candidateTaskIds)
           ? (p.candidateTaskIds as unknown[]).filter((c): c is string => typeof c === "string")
           : [];
-        const candidates = [action.taskId as string, ...candIds]
+        const rawCandidates = [action.taskId as string, ...candIds]
           .filter((tid, i, arr) => taskIds.has(tid) && arr.indexOf(tid) === i)
           .slice(0, 4)
           .map((tid) => ({ id: tid, title: taskTitle.get(tid) ?? "" }));
+        const { matchConfidence, candidates } = sameTradeGuard(
+          action.taskId as string, rawMatchConfidence, rawCandidates, tasks, inputText,
+        );
         out.push({ id, summary, confidence, action: { ...action }, matchConfidence, candidates });
         break;
       }
@@ -381,6 +428,7 @@ serve(async (req) => {
       Array.isArray(parsed.proposals) ? parsed.proposals : [],
       rooms,
       tasks,
+      input.content,
     );
 
     return new Response(

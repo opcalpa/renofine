@@ -21,6 +21,9 @@ const rooms = [
   { id: "r-bath", name: "Badrum" },
 ];
 const tasks = [
+  // created_at DESC: tasks created today come FIRST (matches Cowork's live run)
+  { id: "t-paint-hall", title: "Måla hall", status: "to_do" },
+  { id: "t-paint-kitchen", title: "Måla kök", status: "to_do" },
   { id: "t-prep", title: "Förberedelse och skydd", status: "completed" },
   { id: "t-demo", title: "Rivning och demontering", status: "completed" },
   { id: "t-spackle", title: "Spackling av väggar", status: "completed" },
@@ -33,8 +36,6 @@ const tasks = [
   { id: "t-elec", title: "Eluttag och belysning", status: "to_do" },
   { id: "t-trim", title: "Montering av lister", status: "to_do" },
   { id: "t-clean", title: "Slutstädning", status: "to_do" },
-  { id: "t-paint-kitchen", title: "Måla kök", status: "to_do" },
-  { id: "t-paint-hall", title: "Måla hall", status: "to_do" },
 ];
 
 const inputs = inputArg
