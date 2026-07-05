@@ -395,7 +395,10 @@ serve(async (req) => {
   }
 
   try {
-    const { input, projectId, language = "en" } = await req.json();
+    const { input, projectId, language: rawLanguage = "en" } = await req.json();
+    // Browser-detected codes arrive as region variants ("sv-SE") — normalize so
+    // the LANGUAGE_NAMES lookup doesn't silently fall back to English.
+    const language = String(rawLanguage).slice(0, 2);
 
     if (!input || typeof input.content !== "string" || !input.content.trim()) {
       return new Response(JSON.stringify({ error: "input.content is required" }), {

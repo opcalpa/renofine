@@ -942,7 +942,8 @@ const ProjectDetail = () => {
       <BookOpen className="h-4 w-4" />
       <span className="font-medium">Demo</span>
       <span className="text-primary-foreground/80">– {t("demoProject.description")}</span>
-      {!permissions.isSystemAdmin && (
+      {/* Owners have full edit on their personal demo — only badge actual view-only access */}
+      {permissions.tasks === "view" && (
         <span className="ml-2 px-2 py-0.5 bg-primary-foreground/20 rounded text-xs font-medium">
           {t("common.viewOnly", "Endast visning")}
         </span>

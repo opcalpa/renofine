@@ -456,7 +456,7 @@ export function Renaida() {
 
       const { projectCountry, projectId } = useRenaidaStore.getState();
       const { data, error } = await supabase.functions.invoke("help-bot", {
-        body: { messages: conversationMessages, language: i18n.language, userType, projectCountry, userName, projectId },
+        body: { messages: conversationMessages, language: i18n.language?.slice(0, 2) || "sv", userType, projectCountry, userName, projectId },
       });
 
       if (error) throw error;
@@ -562,7 +562,7 @@ export function Renaida() {
     setCapturing(true);
     wakeRenaida();
     try {
-      const res = await routeAgentInput({ kind, content: text.trim() }, projectId, i18n.language);
+      const res = await routeAgentInput({ kind, content: text.trim() }, projectId, i18n.language?.slice(0, 2) || "sv");
       if (!res.proposals.length) {
         analytics.capture(AnalyticsEvents.RENAIDA_PROPOSED, { kind, count: 0, resolved: false, fellBackToChat: !!opts?.fallbackToChat });
         if (opts?.fallbackToChat) {

@@ -234,7 +234,10 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, language = "en", userType, projectCountry, userName, projectId } = await req.json();
+    const { messages, language: rawLanguage = "en", userType, projectCountry, userName, projectId } = await req.json();
+    // Browser-detected codes arrive as region variants ("sv-SE") — normalize so
+    // the LANGUAGE_NAMES lookup doesn't silently fall back to English.
+    const language = String(rawLanguage).slice(0, 2);
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(
