@@ -1020,6 +1020,7 @@
     "selectRoom": "Välj rum",
     "deleteTask": "Ta bort arbete",
     "taskDeleted": "Arbetet togs bort",
+    "checklistDeleted": "Checklistan togs bort",
     "deleteConfirmTitle": "Ta bort \"{{title}}\"?",
     "deleteConfirmDesc": "Arbetet tas bort permanent, inklusive dess checklista och kopplingar. Detta går inte att ångra.",
     "budgetOptional": "Budget (valfritt)"

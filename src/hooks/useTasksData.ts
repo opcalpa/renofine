@@ -271,6 +271,14 @@ export function useTasksData(
     }
   }, [currentProfileId, tasksScope]);
 
+  // Renaida applied/undid changes out-of-band → the table snapshot goes stale
+  // vs the modal (which re-fetches by id on open). Mirror OverviewTab's listener.
+  useEffect(() => {
+    const handler = () => fetchTasks();
+    window.addEventListener("renaida-data-changed", handler);
+    return () => window.removeEventListener("renaida-data-changed", handler);
+  }, [projectId]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Fetch dependencies after tasks load
   useEffect(() => {
     if (tasks.length > 0) fetchTaskDependencies();

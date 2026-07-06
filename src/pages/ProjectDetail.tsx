@@ -279,13 +279,23 @@ const ProjectDetail = () => {
         }
         setOpenEntityId(entityParam);
         if (sectionParam) setPendingSection(sectionParam);
-        setSearchParams({}, { replace: true });
+        // Strip the transient deep-link params but KEEP ?tab= — clearing it
+        // meant a reload always landed on Översikt (round-10 flag).
+        setSearchParams({ tab: tabParam }, { replace: true });
       }
     } else if (entityParam) {
       setOpenEntityId(entityParam);
-      setSearchParams({}, { replace: true });
+      setSearchParams(activeTab !== "overview" ? { tab: activeTab } : {}, { replace: true });
     }
   }, [searchParams, activeTab, setSearchParams]);
+
+  // Mirror the active tab into the URL so a reload restores where you were.
+  // replace (not push) — tab switches shouldn't pollute back-button history.
+  useEffect(() => {
+    const current = searchParams.get("tab");
+    if ((current ?? "overview") === activeTab) return;
+    setSearchParams(activeTab === "overview" ? {} : { tab: activeTab }, { replace: true });
+  }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Client in quote phase → redirect to quote (they can only see the quote until accepted)
   const isQuotePhase = ["planning", "quote_created", "quote_sent"].includes(project?.status ?? "");

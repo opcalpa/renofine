@@ -1130,10 +1130,24 @@ export const TaskEditDialog = ({
     setTask({ ...task, checklists: updated });
   };
 
-  const deleteChecklist = (clIdx: number) => {
+  // Trash icon = destructive intent → persist IMMEDIATELY. Before, this only
+  // touched local state, so closing without Save silently resurrected the
+  // checklist (round-10 flag b). Local state updates only after the write lands.
+  const deleteChecklist = async (clIdx: number) => {
     if (!task) return;
     const updated = (task.checklists || []).filter((_, i) => i !== clIdx);
+    const payload: Record<string, unknown> = { checklists: updated };
+    const { error } = await supabase
+      .from("tasks")
+      .update(payload)
+      .eq("id", task.id);
+    if (error) {
+      toast({ title: t("common.error"), description: error.message, variant: "destructive" });
+      return;
+    }
     setTask({ ...task, checklists: updated });
+    toast({ description: t("tasks.checklistDeleted", "Checklistan togs bort") });
+    onSaved?.();
   };
 
   const handleGenerateChecklist = async () => {

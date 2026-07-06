@@ -1020,6 +1020,7 @@
     "selectRoom": "Select room",
     "deleteTask": "Delete task",
     "taskDeleted": "Task deleted",
+    "checklistDeleted": "Checklist deleted",
     "deleteConfirmTitle": "Delete \"{{title}}\"?",
     "deleteConfirmDesc": "The task is permanently deleted, including its checklist and links. This cannot be undone.",
     "budgetOptional": "Budget (optional)"
