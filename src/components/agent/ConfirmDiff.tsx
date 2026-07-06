@@ -171,7 +171,7 @@ export function ConfirmDiff({ proposals, applying = false, onConfirm, onDismiss 
                 checked={selected.has(p.id)}
                 onCheckedChange={() => toggle(p.id)}
                 disabled={applying}
-                className="mt-0.5"
+                className="mt-0.5 h-5 w-5 md:h-4 md:w-4"
               />
               <div className="flex-1">
                 <label htmlFor={`prop-${p.id}`} className="cursor-pointer leading-snug">
@@ -192,7 +192,7 @@ export function ConfirmDiff({ proposals, applying = false, onConfirm, onDismiss 
                     value={currentTaskId(p) ?? ""}
                     onChange={(e) => pickTask(p.id, e.target.value)}
                     disabled={applying}
-                    className="mt-1 block w-full rounded border border-border bg-background px-2 py-1 text-xs"
+                    className="mt-1 block w-full rounded border border-border bg-background px-2 py-2 text-sm md:py-1 md:text-xs"
                   >
                     {p.candidates!.map((c) => (
                       <option key={c.id} value={c.id}>{c.title}</option>
@@ -233,11 +233,12 @@ export function ConfirmDiff({ proposals, applying = false, onConfirm, onDismiss 
       )}
 
       <div className="mt-3 flex justify-end gap-2">
-        <Button variant="ghost" size="sm" onClick={onDismiss} disabled={applying}>
+        <Button variant="ghost" size="sm" className="h-11 px-4 md:h-9 md:px-3" onClick={onDismiss} disabled={applying}>
           {t("helpBot.agent.dismiss")}
         </Button>
         <Button
           size="sm"
+          className="h-11 px-4 md:h-9 md:px-3"
           onClick={() => onConfirm(buildAccepted())}
           disabled={applying || selectedCount === 0}
         >

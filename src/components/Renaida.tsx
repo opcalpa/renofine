@@ -1,5 +1,8 @@
 import { useState, useRef, useEffect, useCallback, type ReactNode } from "react";
-import { Send, X, Lightbulb, BookOpen, Wrench, FileText, ArrowLeft, Mic, Sparkles, ChevronDown, MessageCircle } from "lucide-react";
+import { Send, X, Lightbulb, BookOpen, Wrench, FileText, ArrowLeft, Mic, Sparkles, ChevronDown, MessageCircle, Square, Loader2 } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useVoiceRecorder, isRecorderSupported } from "@/hooks/useVoiceRecorder";
+import { useVisualViewportHeight } from "@/hooks/useVisualViewportHeight";
 import { useRenaidaStore, type RenaidaAutonomy } from "@/stores/renaidaStore";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
@@ -89,6 +92,16 @@ interface InlineAction {
   fallback: string;
   action: string;
   icon?: React.ReactNode;
+}
+
+/** Remove the first-run autonomy chips once a mode has been picked — stale
+ * "choose a mode" buttons after the choice read as a bug. */
+function stripAutonomyIntro(messages: Message[]): Message[] {
+  return messages.map((m) =>
+    m.actions?.some((a) => a.action.startsWith("set_autonomy"))
+      ? { ...m, actions: undefined }
+      : m,
+  );
 }
 
 interface QuickPrompt {
@@ -206,6 +219,9 @@ export function Renaida() {
   const [renaidaFlash, setRenaidaFlash] = useState<RenaidaState | null>(null);
   const [renaidaAsleep, setRenaidaAsleep] = useState(false);
   const [remindersExpanded, setRemindersExpanded] = useState(false);
+  const isMobile = useIsMobile();
+  // Keyboard-aware panel height (iOS overlays fixed elements without resizing).
+  const vvBox = useVisualViewportHeight(open && isMobile);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -293,8 +309,9 @@ export function Renaida() {
     lsSet(AUTONOMY_INTRODUCED_KEY, "1"); // header toggle counts as having met the choice
     analytics.capture(AnalyticsEvents.RENAIDA_AUTONOMY_CHANGED, { mode: next, source: "header" });
     flashRenaida(next === "autopilot" ? "happy" : "idle", 1500);
-    // Confirm the switch in the thread (Cowork: the label alone was too subtle).
-    setMessages((prev) => [...prev, {
+    // Confirm the switch in the thread (Cowork: the label alone was too subtle),
+    // and retire any first-run intro chips — the choice is made.
+    setMessages((prev) => [...stripAutonomyIntro(prev), {
       role: "assistant",
       content: t(next === "autopilot" ? "helpBot.autonomy.enabledAutopilot" : "helpBot.autonomy.enabledSuggest",
         next === "autopilot" ? "Autopilot på — jag fixar säkra saker direkt, alltid med Ångra." : "Okej, jag frågar först innan jag ändrar något."),
@@ -362,10 +379,12 @@ export function Renaida() {
       }
       setMessages(initial);
     }
-    if (open) {
+    // Desktop: focus for immediate typing. Mobile: DON'T — autofocus pops the
+    // keyboard over the voice-first entry the moment the panel opens.
+    if (open && !isMobile) {
       inputRef.current?.focus();
     }
-  }, [open, messages.length, buildGreeting, t]);
+  }, [open, messages.length, buildGreeting, t, isMobile]);
 
   // Update greeting when reminders change (if user hasn't sent any messages yet)
   useEffect(() => {
@@ -623,7 +642,18 @@ export function Renaida() {
     else captureUpdate(input, "text", { fallbackToChat: true });
   }, [input, feedbackMode, sendMessage, captureUpdate]);
 
-  const startVoiceCapture = useCallback(() => {
+  // Voice error → a spoken-to message in the thread, never a silently dead mic.
+  const appendMicError = useCallback((kind: "denied" | "failed") => {
+    setMessages((prev) => [...prev, {
+      role: "assistant",
+      content: kind === "denied"
+        ? t("helpBot.agent.micDenied", "Jag får inte använda mikrofonen — kolla webbläsarens mikrofonbehörighet, eller skriv din uppdatering här istället.")
+        : t("helpBot.agent.micFailed", "Mikrofonen ville inte riktigt — prova igen, eller skriv din uppdatering här istället."),
+    }]);
+  }, [t]);
+
+  // Legacy Web Speech path — fallback only, for browsers without MediaRecorder.
+  const startWebSpeechCapture = useCallback(() => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) {
       inputRef.current?.focus();
@@ -647,19 +677,34 @@ export function Renaida() {
       setListening(false);
       // A silently dying mic reads as a dead button — tell the user what happened.
       if (e.error !== "aborted") {
-        setMessages((prev) => [...prev, {
-          role: "assistant",
-          content: e.error === "not-allowed"
-            ? t("helpBot.agent.micDenied", "Jag får inte använda mikrofonen — kolla webbläsarens mikrofonbehörighet, eller skriv din uppdatering här istället.")
-            : t("helpBot.agent.micFailed", "Mikrofonen ville inte riktigt — prova igen, eller skriv din uppdatering här istället."),
-        }]);
+        appendMicError(e.error === "not-allowed" ? "denied" : "failed");
       }
     };
     rec.onend = () => setListening(false);
     recognitionRef.current = rec;
     setListening(true);
     rec.start();
-  }, [listening, i18n.language, captureUpdate, t]);
+  }, [listening, i18n.language, captureUpdate, appendMicError]);
+
+  // Primary voice path: MediaRecorder → transcribe-audio edge fn (Whisper).
+  // Works on iOS Safari (no Web Speech there) and hears Swedish building
+  // terminology far better than the browser recognizer on Android/desktop.
+  const recorder = useVoiceRecorder({
+    language: i18n.language || "sv",
+    onTranscript: (text) => captureUpdate(text, "voice_transcript", { fallbackToChat: true }),
+    onError: (kind) => {
+      if (kind === "not-allowed") appendMicError("denied");
+      else if (kind === "transcribe-failed") appendMicError("failed");
+      else startWebSpeechCapture();
+    },
+  });
+
+  const startVoiceCapture = useCallback(() => {
+    if (recorder.state === "recording") { recorder.stop(); return; }
+    if (recorder.state === "transcribing") return;
+    if (isRecorderSupported()) { void recorder.start(); return; }
+    startWebSpeechCapture();
+  }, [recorder, startWebSpeechCapture]);
 
   // Mic button: typed text → route as action; empty → start voice capture
   const handleCaptureClick = useCallback(() => {
@@ -748,7 +793,7 @@ export function Renaida() {
     if (mode === "autopilot") lsSet(AUTOPILOT_NUDGED_KEY, "1"); // already on → no future nudge
     analytics.capture(AnalyticsEvents.RENAIDA_AUTONOMY_CHANGED, { mode, source });
     flashRenaida(mode === "autopilot" ? "happy" : "idle", 1500);
-    setMessages((prev) => [...prev, {
+    setMessages((prev) => [...stripAutonomyIntro(prev), {
       role: "assistant",
       content: t(mode === "autopilot" ? "helpBot.autonomy.enabledAutopilot" : "helpBot.autonomy.enabledSuggest",
         mode === "autopilot" ? "Autopilot på — jag fixar säkra saker direkt, alltid med Ångra." : "Okej, jag frågar först innan jag ändrar något."),
@@ -884,7 +929,14 @@ export function Renaida() {
     },
   ];
 
-  const showQuickPrompts = messages.length <= 1 && !loading && !feedbackMode && !capturing;
+  // Entry chips + voice hero: show until the user has actually said something.
+  // <= 2 keeps the hero visible alongside the first-run autonomy intro (before,
+  // the intro pushed length past 1 and hid the primary voice entry on first run).
+  const showQuickPrompts =
+    messages.length <= 2 &&
+    !messages.some((m) => m.role === "user" || m.proposals) &&
+    !loading && !feedbackMode && !capturing;
+  const voiceBusy = recorder.state !== "idle";
   const onProjectPage = getPageContext() === "project";
   const rankedReminders = [...renaidaReminders].sort(
     (a, b) => (REMINDER_PRIORITY[a.id] ?? 6) - (REMINDER_PRIORITY[b.id] ?? 6),
@@ -903,7 +955,7 @@ export function Renaida() {
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-50 h-14 w-14 rounded-full shadow-lg bg-white border-2 border-primary/20 hover:border-primary/40 transition-colors flex items-center justify-center"
+          className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-4 md:bottom-6 md:right-6 z-50 h-14 w-14 rounded-full shadow-lg bg-white border-2 border-primary/20 hover:border-primary/40 transition-colors flex items-center justify-center"
           aria-label={t("helpBot.title", "Renaida")}
         >
           <RenaidaAvatar state={renaidaState} size={50} />
@@ -918,7 +970,10 @@ export function Renaida() {
       {open && (
         <div
           ref={panelRef}
-          className="fixed inset-0 z-50 flex flex-col bg-background md:inset-auto md:bottom-6 md:right-6 md:h-[500px] md:w-[400px] md:max-w-[calc(100%-2rem)] md:rounded-xl md:border md:shadow-2xl"
+          className="fixed inset-0 z-50 flex flex-col bg-background h-[100dvh] md:inset-auto md:bottom-6 md:right-6 md:h-[500px] md:w-[400px] md:max-w-[calc(100%-2rem)] md:rounded-xl md:border md:shadow-2xl"
+          // iOS keyboard overlays fixed elements — size the panel to the visual
+          // viewport while the keyboard is up so the input row stays reachable.
+          style={vvBox ? { height: vvBox.height, top: vvBox.offsetTop } : undefined}
         >
           {/* Header */}
           <div className="flex items-center justify-between border-b px-4 py-3">
@@ -933,14 +988,16 @@ export function Renaida() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-7 gap-1 px-2 text-xs text-muted-foreground"
+                  className="h-9 gap-1.5 px-2.5 text-xs text-muted-foreground md:h-7 md:gap-1 md:px-2"
                   onClick={handleToggleAutonomy}
                   title={t(autonomy === "autopilot" ? "helpBot.autonomy.autopilotHint" : "helpBot.autonomy.suggestHint")}
                 >
                   {autonomy === "autopilot"
                     ? <Sparkles className="h-3.5 w-3.5 text-primary" />
                     : <MessageCircle className="h-3.5 w-3.5" />}
-                  <span className="hidden sm:inline">
+                  {/* Always labeled: an unlabeled icon that silently flips write
+                      autonomy is a mis-tap hazard, especially on mobile. */}
+                  <span>
                     {t(autonomy === "autopilot" ? "helpBot.autonomy.autopilot" : "helpBot.autonomy.suggest")}
                   </span>
                 </Button>
@@ -964,7 +1021,7 @@ export function Renaida() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7"
+                className="h-9 w-9 md:h-7 md:w-7"
                 onClick={() => setOpen(false)}
               >
                 <X className="h-4 w-4" />
@@ -1036,7 +1093,7 @@ export function Renaida() {
                       <button
                         key={j}
                         onClick={() => handleInlineAction(action.action)}
-                        className="inline-flex items-center gap-1 rounded-full border bg-background px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                        className="inline-flex items-center gap-1.5 rounded-full border bg-background px-3.5 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors md:gap-1 md:px-2.5 md:py-1 md:text-xs"
                       >
                         {action.icon}
                         {t(action.labelKey, action.fallback)}
@@ -1049,9 +1106,9 @@ export function Renaida() {
                   <div className="mt-2 ml-1">
                     <button
                       onClick={() => handleUndo(i, msg.undo!)}
-                      className="inline-flex items-center gap-1 rounded-full border bg-background px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                      className="inline-flex items-center gap-1.5 rounded-full border bg-background px-3.5 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors md:gap-1 md:px-2.5 md:py-1 md:text-xs"
                     >
-                      <ArrowLeft className="h-3 w-3" />
+                      <ArrowLeft className="h-3.5 w-3.5 md:h-3 md:w-3" />
                       {t("helpBot.agent.undo")}
                     </button>
                   </div>
@@ -1065,13 +1122,26 @@ export function Renaida() {
                 {/* Voice hero — the primary way to drive Renaida */}
                 <button
                   onClick={startVoiceCapture}
-                  className="w-full flex items-center gap-3 rounded-xl bg-primary px-4 py-3 text-left text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  disabled={recorder.state === "transcribing"}
+                  className={`w-full flex items-center gap-3 rounded-xl px-4 py-4 md:py-3 text-left text-primary-foreground shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40 ${
+                    recorder.state === "recording" ? "bg-red-600 hover:bg-red-600/90" : "bg-primary hover:bg-primary/90"
+                  }`}
                 >
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-foreground/15">
-                    <Mic className="h-4 w-4" />
+                  <span className={`flex h-10 w-10 md:h-8 md:w-8 shrink-0 items-center justify-center rounded-full bg-primary-foreground/15 ${recorder.state === "recording" ? "animate-pulse" : ""}`}>
+                    {recorder.state === "recording"
+                      ? <Square className="h-4 w-4 fill-current" />
+                      : recorder.state === "transcribing"
+                        ? <Loader2 className="h-4 w-4 animate-spin" />
+                        : <Mic className="h-5 w-5 md:h-4 md:w-4" />}
                   </span>
                   <span className="min-w-0">
-                    <span className="block text-sm font-medium">{t("helpBot.agent.voiceHero", "Berätta vad som hänt")}</span>
+                    <span className="block text-sm font-medium">
+                      {recorder.state === "recording"
+                        ? `${t("helpBot.agent.recording", "Spelar in — tryck för att stoppa")} · ${Math.floor(recorder.elapsedSec / 60)}:${String(recorder.elapsedSec % 60).padStart(2, "0")}`
+                        : recorder.state === "transcribing"
+                          ? t("helpBot.agent.transcribing", "Tolkar rösten…")
+                          : t("helpBot.agent.voiceHero", "Berätta vad som hänt")}
+                    </span>
                     <span className="block text-xs text-primary-foreground/70">{t("helpBot.agent.voiceHeroHint", "Säg eller skriv — jag fixar det i projektet")}</span>
                   </span>
                 </button>
@@ -1150,42 +1220,68 @@ export function Renaida() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input */}
-          <div className="border-t px-3 py-3 flex gap-2">
-            <input
-              ref={inputRef}
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend();
-                }
-              }}
-              placeholder={listening ? t("helpBot.agent.listening") : placeholderText}
-              className="flex-1 rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring"
-              disabled={loading || capturing}
-            />
-            <Button
-              size="icon"
-              variant={listening ? "default" : "outline"}
-              className={`h-9 w-9 shrink-0 ${listening ? "animate-pulse" : ""}`}
-              onClick={handleCaptureClick}
-              disabled={loading || capturing}
-              title={t("helpBot.agent.captureButton")}
-              aria-label={t("helpBot.agent.captureButton")}
-            >
-              <Mic className="h-4 w-4" />
-            </Button>
-            <Button
-              size="icon"
-              className="h-9 w-9 shrink-0"
-              onClick={handleSend}
-              disabled={loading || capturing || !input.trim()}
-            >
-              <Send className="h-4 w-4" />
-            </Button>
+          {/* Input — swaps to a full-width recording bar while the mic is live,
+              so the recording state is unmissable on a phone in a work glove. */}
+          <div className="border-t px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:pb-3 flex gap-2">
+            {voiceBusy ? (
+              <button
+                onClick={() => recorder.state === "recording" ? recorder.stop() : undefined}
+                disabled={recorder.state === "transcribing"}
+                className={`flex h-12 md:h-10 flex-1 items-center justify-center gap-2.5 rounded-lg text-sm font-medium text-white transition-colors ${
+                  recorder.state === "recording" ? "bg-red-600 hover:bg-red-600/90" : "bg-muted-foreground/60"
+                }`}
+              >
+                {recorder.state === "recording" ? (
+                  <>
+                    <span className="h-2.5 w-2.5 rounded-full bg-white animate-pulse" />
+                    {t("helpBot.agent.recording", "Spelar in — tryck för att stoppa")}
+                    <span className="tabular-nums">{Math.floor(recorder.elapsedSec / 60)}:{String(recorder.elapsedSec % 60).padStart(2, "0")}</span>
+                  </>
+                ) : (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    {t("helpBot.agent.transcribing", "Tolkar rösten…")}
+                  </>
+                )}
+              </button>
+            ) : (
+              <>
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSend();
+                    }
+                  }}
+                  placeholder={listening ? t("helpBot.agent.listening") : placeholderText}
+                  className="h-11 md:h-9 flex-1 rounded-md border bg-background px-3 text-sm outline-none focus:ring-1 focus:ring-ring"
+                  disabled={loading || capturing}
+                />
+                <Button
+                  size="icon"
+                  variant={listening ? "default" : "outline"}
+                  className={`h-11 w-11 md:h-9 md:w-9 shrink-0 ${listening ? "animate-pulse" : ""}`}
+                  onClick={handleCaptureClick}
+                  disabled={loading || capturing}
+                  title={t("helpBot.agent.captureButton")}
+                  aria-label={t("helpBot.agent.captureButton")}
+                >
+                  <Mic className="h-5 w-5 md:h-4 md:w-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  className="h-11 w-11 md:h-9 md:w-9 shrink-0"
+                  onClick={handleSend}
+                  disabled={loading || capturing || !input.trim()}
+                >
+                  <Send className="h-5 w-5 md:h-4 md:w-4" />
+                </Button>
+              </>
+            )}
           </div>
         </div>
       )}

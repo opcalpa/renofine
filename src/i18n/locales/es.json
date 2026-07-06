@@ -923,6 +923,8 @@
       "detailStatus": "Estado",
       "micDenied": "No puedo usar el micrófono — revisa el permiso del navegador, o escribe tu actualización aquí.",
       "micFailed": "El micrófono no cooperó — inténtalo de nuevo, o escribe tu actualización aquí.",
+      "recording": "Grabando — toca para detener",
+      "transcribing": "Interpretando tu voz…",
       "detailCleared": "se elimina"
     }
   },

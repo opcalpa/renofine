@@ -1,6 +1,8 @@
 import { useState, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { Mic, MicOff } from "lucide-react";
+import { Mic, Square, Loader2 } from "lucide-react";
+import { useVoiceRecorder, isRecorderSupported } from "@/hooks/useVoiceRecorder";
+import { toast } from "sonner";
 
 interface DictationTextareaProps {
   value: string;
@@ -19,8 +21,10 @@ const SPEECH_LANGS: Record<string, string> = {
 };
 
 /**
- * Textarea with browser speech-to-text dictation (webkitSpeechRecognition).
- * The mic button only renders when the browser supports speech recognition.
+ * Textarea with voice dictation. Primary path records audio (MediaRecorder)
+ * and transcribes server-side (Whisper) — works on iOS Safari and hears
+ * Swedish building terms well. Web Speech is kept as a fallback for the rare
+ * browser with speech recognition but no MediaRecorder.
  */
 export function DictationTextarea({
   value,
@@ -35,18 +39,30 @@ export function DictationTextarea({
   // Text present when the mic was started — each onresult event carries the
   // full accumulated transcript, so we always append to this snapshot.
   const baseTextRef = useRef("");
+  const valueRef = useRef(value);
+  valueRef.current = value;
 
   const hasSpeech =
     typeof window !== "undefined" &&
     ("webkitSpeechRecognition" in window || "SpeechRecognition" in window);
 
-  const toggleVoice = useCallback(() => {
-    if (listening && recognitionRef.current) {
-      recognitionRef.current.stop();
-      setListening(false);
-      return;
-    }
+  const recorder = useVoiceRecorder({
+    language: i18n.language || "sv",
+    onTranscript: (text) => onChange(`${valueRef.current} ${text}`.trimStart()),
+    onError: (kind) => {
+      if (kind === "no-recorder" && hasSpeech) {
+        startWebSpeech();
+        return;
+      }
+      toast.error(
+        kind === "not-allowed"
+          ? t("planningWizard.micDenied", "Mikrofonen är blockerad — kolla webbläsarens behörighet.")
+          : t("planningWizard.micFailed", "Rösten kunde inte tolkas — prova igen eller skriv."),
+      );
+    },
+  });
 
+  const startWebSpeech = useCallback(() => {
     const SpeechRecognitionCtor =
       (window as unknown as Record<string, unknown>).webkitSpeechRecognition ||
       (window as unknown as Record<string, unknown>).SpeechRecognition;
@@ -57,7 +73,7 @@ export function DictationTextarea({
     recognition.continuous = true;
     recognition.interimResults = true;
 
-    baseTextRef.current = value;
+    baseTextRef.current = valueRef.current;
     recognition.onresult = (event: SpeechRecognitionEvent) => {
       let transcript = "";
       for (let i = 0; i < event.results.length; i++) {
@@ -71,7 +87,28 @@ export function DictationTextarea({
     recognitionRef.current = recognition;
     recognition.start();
     setListening(true);
-  }, [listening, value, onChange, i18n.language]);
+  }, [i18n.language, onChange]);
+
+  const toggleVoice = useCallback(() => {
+    if (listening && recognitionRef.current) {
+      recognitionRef.current.stop();
+      setListening(false);
+      return;
+    }
+    if (recorder.state === "recording") {
+      recorder.stop();
+      return;
+    }
+    if (recorder.state === "transcribing") return;
+    if (isRecorderSupported()) {
+      void recorder.start();
+      return;
+    }
+    startWebSpeech();
+  }, [listening, recorder, startWebSpeech]);
+
+  const showMic = isRecorderSupported() || hasSpeech;
+  const active = listening || recorder.state === "recording";
 
   return (
     <div className="relative">
@@ -82,19 +119,32 @@ export function DictationTextarea({
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
       />
-      {hasSpeech && (
+      {showMic && (
         <button
           type="button"
-          className={`absolute bottom-3 right-3 h-8 w-8 rounded-full flex items-center justify-center transition-colors ${
-            listening
+          className={`absolute bottom-3 right-3 h-11 w-11 md:h-9 md:w-9 rounded-full flex items-center justify-center transition-colors shadow-sm ${
+            active
               ? "bg-red-500 text-white animate-pulse"
-              : "bg-muted text-muted-foreground hover:bg-muted-foreground/20"
+              : recorder.state === "transcribing"
+                ? "bg-muted text-muted-foreground"
+                : "bg-primary/10 text-primary hover:bg-primary/20"
           }`}
           onClick={toggleVoice}
+          disabled={recorder.state === "transcribing"}
           title={t("planningWizard.voiceInput", "Voice input")}
+          aria-label={t("planningWizard.voiceInput", "Voice input")}
         >
-          {listening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+          {active
+            ? <Square className="h-4 w-4 fill-current" />
+            : recorder.state === "transcribing"
+              ? <Loader2 className="h-4 w-4 animate-spin" />
+              : <Mic className="h-5 w-5 md:h-4 md:w-4" />}
         </button>
+      )}
+      {recorder.state === "recording" && (
+        <span className="absolute bottom-4 right-16 md:right-14 text-xs font-medium text-red-600 tabular-nums">
+          {Math.floor(recorder.elapsedSec / 60)}:{String(recorder.elapsedSec % 60).padStart(2, "0")}
+        </span>
       )}
     </div>
   );
