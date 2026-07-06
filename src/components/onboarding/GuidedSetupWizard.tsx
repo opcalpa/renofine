@@ -309,8 +309,9 @@ export function GuidedSetupWizard({
         <SummaryStep formData={formData} updateFormData={updateFormData} />
       )}
 
-      {/* Navigation buttons */}
-      <div className="flex items-center justify-between gap-3 pt-4 border-t">
+      {/* Navigation buttons — flex-wrap: three describe-step buttons exceed a
+          390px viewport's min-content width and stretch the whole dialog. */}
+      <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t">
         {stepIndex === 0 ? (
           <Button variant="outline" onClick={onCancel} disabled={analyzing}>
             {t("common.cancel")}
@@ -323,7 +324,7 @@ export function GuidedSetupWizard({
         )}
 
         {currentKey === "describe" ? (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2 ml-auto">
             <Button variant="ghost" onClick={handleFillManually} disabled={analyzing}>
               {t("guidedSetup.fillManually", "Fill in myself")}
             </Button>
