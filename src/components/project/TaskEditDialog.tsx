@@ -1147,7 +1147,9 @@ export const TaskEditDialog = ({
     }
     setTask({ ...task, checklists: updated });
     toast({ description: t("tasks.checklistDeleted", "Checklistan togs bort") });
-    onSaved?.();
+    // NOT onSaved — TasksTab closes the dialog on that (Cowork round 12).
+    // The tasks table refetches via its renaida-data-changed listener instead.
+    window.dispatchEvent(new CustomEvent("renaida-data-changed", { detail: { projectId } }));
   };
 
   const handleGenerateChecklist = async () => {
