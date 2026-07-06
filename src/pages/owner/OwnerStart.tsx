@@ -36,6 +36,8 @@ export default function OwnerStart() {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<OwnerProfile | null>(null);
   const [showGuidedSetup, setShowGuidedSetup] = useState(false);
+  // Path-1 card is mic-branded — opening from it starts recording right away.
+  const [autoVoice, setAutoVoice] = useState(false);
   const [showAIImport, setShowAIImport] = useState(false);
   const [showInviteContractor, setShowInviteContractor] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
@@ -116,7 +118,7 @@ export default function OwnerStart() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-3.5 mt-8 sm:mt-10">
             {/* Path 1: Describe by voice/text (primary) */}
             <button
-              onClick={() => setShowGuidedSetup(true)}
+              onClick={() => { setAutoVoice(true); setShowGuidedSetup(true); }}
               className="rounded-xl p-5 sm:p-6 text-left cursor-pointer flex flex-col gap-3.5 min-h-[180px] sm:min-h-[200px] transition-all hover:scale-[1.01] hover:shadow-md bg-accent-ink text-accent-ink-foreground"
               style={{ background: "var(--accent-ink)", color: "var(--bg)" }}
             >
@@ -235,6 +237,7 @@ export default function OwnerStart() {
             <GuidedSetupWizard
               userType="homeowner"
               profileId={profile.id}
+              autoStartVoice={autoVoice}
               onComplete={(projectId) => {
                 setShowGuidedSetup(false);
                 handleProjectCreated(projectId);

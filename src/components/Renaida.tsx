@@ -540,11 +540,14 @@ export function Renaida() {
       auto: opts.auto,
     });
 
+    // USER_FACING_ errors are written for the user (e.g. the broken-down-budget
+    // refusal) — show them verbatim instead of the generic failure line.
+    const userFacing = result.failed.find((f) => f.error.startsWith("USER_FACING_"))?.error.replace("USER_FACING_", "");
     const content = result.failed.length === 0
       ? (opts.content ?? t("helpBot.agent.applied", { count: result.applied.length }))
       : result.applied.length === 0
-        ? t("helpBot.agent.allFailed")
-        : t("helpBot.agent.partialFailed", { applied: result.applied.length, failed: result.failed.length });
+        ? (userFacing ?? t("helpBot.agent.allFailed"))
+        : `${t("helpBot.agent.partialFailed", { applied: result.applied.length, failed: result.failed.length })}${userFacing ? ` ${userFacing}` : ""}`;
 
     setMessages((prev) => [...prev, { role: "assistant", content, undo: result.undo.length ? result.undo : undefined }]);
     if (result.applied.length > 0) {

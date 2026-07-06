@@ -22,7 +22,10 @@ import {
   MessageSquare,
   ArrowRight,
   Check,
+  Mic,
 } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { GuidedSetupWizard } from "@/components/onboarding/GuidedSetupWizard";
 
 interface ContractorProfile {
   id: string;
@@ -59,6 +62,7 @@ export default function ContractorStart() {
   const [profile, setProfile] = useState<ContractorProfile | null>(null);
   const [showAIImport, setShowAIImport] = useState(false);
   const [showIntake, setShowIntake] = useState(false);
+  const [showVoiceSetup, setShowVoiceSetup] = useState(false);
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(getCompletedSteps);
 
   useEffect(() => {
@@ -208,8 +212,23 @@ export default function ContractorStart() {
             {t("contractorStart.heroDescription", "Renofine ersätter den e-postkedja, det Excel-ark och den WhatsApp-grupp du har för varje projekt. Börja med en kund, en offert eller importera en pågående pärm.")}
           </p>
 
+          {/* Voice-first strip — same promise as the homeowner side: press,
+              talk, and the project scaffolds itself (Carl-kön decision C12). */}
+          <button
+            onClick={() => setShowVoiceSetup(true)}
+            className="mt-8 sm:mt-10 w-full flex items-center gap-3 rounded-xl bg-primary px-4 py-4 text-left text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-foreground/15">
+              <Mic className="h-5 w-5" />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-sm font-medium">{t("contractorStart.voiceCta", "Beskriv jobbet med rösten")}</span>
+              <span className="block text-xs text-primary-foreground/70">{t("contractorStart.voiceCtaDesc", "Prata in projektet — rum och arbetsmoment föreslås åt dig")}</span>
+            </span>
+          </button>
+
           {/* Three entry CTAs — equal weight */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-3.5 mt-8 sm:mt-10">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-3.5 mt-4">
             {/* CTA 1: AI quote */}
             <button
               onClick={() => setShowAIImport(true)}
@@ -360,6 +379,28 @@ export default function ContractorStart() {
         onOpenChange={setShowIntake}
         onCreated={() => setShowIntake(false)}
       />
+
+      {/* Voice-first guided setup */}
+      <Dialog open={showVoiceSetup} onOpenChange={setShowVoiceSetup}>
+        <DialogContent className="md:max-w-4xl max-h-[90vh] overflow-y-auto" onPointerDownOutside={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle>{t("guidedSetup.title", "Berätta om din renovering")}</DialogTitle>
+            <DialogDescription>{t("guidedSetup.titleDesc", "Vi skapar ditt projekt med rum och arbeten baserat på dina svar")}</DialogDescription>
+          </DialogHeader>
+          {profile?.id && (
+            <GuidedSetupWizard
+              userType="contractor"
+              profileId={profile.id}
+              autoStartVoice
+              onComplete={(projectId) => {
+                setShowVoiceSetup(false);
+                navigate(`/projects/${projectId}`);
+              }}
+              onCancel={() => setShowVoiceSetup(false)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       <AppBottomNav />
     </div>

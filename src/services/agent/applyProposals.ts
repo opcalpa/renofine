@@ -81,7 +81,23 @@ async function applyOne(
     case "set_progress": {
       const taskId = action.taskId;
       const { data: prev } = await supabase
-        .from("tasks").select("status,progress,title,description,due_date,start_date,finish_date,budget,priority").eq("id", taskId).single();
+        .from("tasks").select("status,progress,title,description,due_date,start_date,finish_date,budget,priority,hourly_rate,estimated_hours,subcontractor_cost").eq("id", taskId).single();
+
+      // Honest refusal (Carl-kön C9): on tasks whose cost is BUILT FROM PARTS
+      // (hours × rate / subcontractor), tasks.budget isn't shown anywhere — a
+      // silent write there looks like nothing happened. Refuse with guidance
+      // instead of writing an invisible number. USER_FACING_ prefix → Renaida
+      // shows this text verbatim instead of the generic failure line.
+      if (action.type === "update_task" && "budget" in action.changes) {
+        const brokenDown =
+          (prev?.hourly_rate != null && prev?.estimated_hours != null) ||
+          prev?.subcontractor_cost != null;
+        if (brokenDown) {
+          throw new Error(
+            "USER_FACING_Det här arbetets kostnad är nedbruten i delar (timmar, timpris, underentreprenad). Ändra delarna i arbetsrutan istället — om jag skriver en klumpsumma syns den ingenstans.",
+          );
+        }
+      }
 
       const changes = action.type === "set_progress"
         ? { progress: action.progress, ...((action.status ?? (action.progress >= 100 ? "awaiting_review" : undefined)) ? { status: action.status ?? "awaiting_review" } : {}) }

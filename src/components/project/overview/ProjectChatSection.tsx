@@ -276,10 +276,10 @@ export function ProjectChatSection({ projectId, userType, onNavigateToEntity, on
     return () => { supabase.removeChannel(channel); };
   }, [projectId, loadData]);
 
-  // Auto-scroll feed to bottom (newest items)
+  // Feed shows newest first — keep scroll at the top where the news is.
   useEffect(() => {
     if (feedScrollRef.current) {
-      feedScrollRef.current.scrollTop = feedScrollRef.current.scrollHeight;
+      feedScrollRef.current.scrollTop = 0;
     }
   }, [comments, activities, photos, filterMode]);
 
@@ -491,7 +491,9 @@ export function ProjectChatSection({ projectId, userType, onNavigateToEntity, on
   const fullFeed: UnifiedFeedItem[] = [
     ...unifiedFeed,
     ...visiblePhotos.map((p) => ({ type: "photo" as const, created_at: p.createdAt, photo: p })),
-  ].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+  // Newest FIRST — this is a "what just happened?" log, not a chat thread.
+  // (Round-9/12 flag; DMs below keep chat order since those are conversations.)
+  ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   // Multi-select filter
   const typeMap: Record<string, "comments" | "activity" | "photos"> = {

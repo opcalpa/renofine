@@ -10,7 +10,13 @@ import { AppBottomNav } from "@/components/AppBottomNav";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Users, User, BookOpen, Trash2, Loader2, Sparkles, ChevronDown, LayoutGrid, List, Settings2, ShieldCheck, GanttChart, EyeOff } from "lucide-react";
+import { Plus, Users, User, BookOpen, Trash2, Loader2, Sparkles, ChevronDown, LayoutGrid, List, Settings2, ShieldCheck, GanttChart, EyeOff, MoreHorizontal } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { PortfolioTimeline } from "@/components/project/PortfolioTimeline";
 import { TaskEditDialog } from "@/components/project/TaskEditDialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -806,17 +812,30 @@ const Projects = () => {
                             })}
                             <td className="px-2 py-2.5">
                               {(isGuest || (profileId && project.owner_id === profileId)) && !isDemo && (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setDeleteTarget(project);
-                                  }}
-                                >
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                </Button>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 text-muted-foreground"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                                    <DropdownMenuItem
+                                      className="text-destructive focus:text-destructive"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setDeleteTarget(project);
+                                      }}
+                                    >
+                                      <Trash2 className="mr-2 h-3.5 w-3.5" />
+                                      {t("projects.deleteProject", "Ta bort projekt")}
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
                               )}
                             </td>
                           </tr>

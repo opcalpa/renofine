@@ -6,6 +6,7 @@ interface DescribeStepProps {
   onChange: (value: string) => void;
   analyzing: boolean;
   onStartBlank: () => void;
+  autoStartVoice?: boolean;
 }
 
 /**
@@ -14,7 +15,7 @@ interface DescribeStepProps {
  * reviews everything in the following steps. A tertiary escape hatch creates
  * an empty project instead (Renaida can scaffold it by voice afterwards).
  */
-export function DescribeStep({ description, onChange, analyzing, onStartBlank }: DescribeStepProps) {
+export function DescribeStep({ description, onChange, analyzing, onStartBlank, autoStartVoice }: DescribeStepProps) {
   const { t } = useTranslation();
 
   return (
@@ -36,6 +37,7 @@ export function DescribeStep({ description, onChange, analyzing, onStartBlank }:
           "e.g. We're renovating the bathroom and kitchen. New tiles in the bathroom, new cabinet fronts in the kitchen and repainting the whole apartment..."
         )}
         disabled={analyzing}
+        autoStartVoice={autoStartVoice}
       />
 
       <div className="pt-1">

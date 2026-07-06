@@ -30,6 +30,9 @@ interface GuidedSetupWizardProps {
   profileId?: string;
   /** When true, the project is created in guest localStorage instead of Supabase. */
   isGuest?: boolean;
+  /** Start voice recording immediately on the describe step — used when the
+   * launcher was a mic-branded button that promised voice (OwnerStart path 1). */
+  autoStartVoice?: boolean;
 }
 
 type StepKey = "describe" | "rooms" | "workTypes" | "matrix" | "property" | "summary";
@@ -82,6 +85,7 @@ export function GuidedSetupWizard({
   onCancel,
   profileId,
   isGuest = false,
+  autoStartVoice = false,
 }: GuidedSetupWizardProps) {
   const { t, i18n } = useTranslation();
   const [stepIndex, setStepIndex] = useState(0);
@@ -291,6 +295,7 @@ export function GuidedSetupWizard({
           onChange={setDescription}
           analyzing={analyzing}
           onStartBlank={handleStartBlank}
+          autoStartVoice={autoStartVoice}
         />
       )}
       {currentKey === "rooms" && (

@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Mic, Square, Loader2 } from "lucide-react";
 import { useVoiceRecorder, isRecorderSupported } from "@/hooks/useVoiceRecorder";
@@ -10,6 +10,9 @@ interface DictationTextareaProps {
   placeholder?: string;
   disabled?: boolean;
   minHeightClass?: string;
+  /** Start recording as soon as the field mounts — for entry points whose
+   * button already promised voice (e.g. the mic hero card on OwnerStart). */
+  autoStartVoice?: boolean;
 }
 
 const SPEECH_LANGS: Record<string, string> = {
@@ -32,6 +35,7 @@ export function DictationTextarea({
   placeholder,
   disabled,
   minHeightClass = "min-h-[180px]",
+  autoStartVoice = false,
 }: DictationTextareaProps) {
   const { t, i18n } = useTranslation();
   const [listening, setListening] = useState(false);
@@ -110,6 +114,15 @@ export function DictationTextarea({
     }
     startWebSpeech();
   }, [listening, recorder, startWebSpeech]);
+
+  // Auto-start once on mount when the entry point promised voice.
+  const autoStartedRef = useRef(false);
+  useEffect(() => {
+    if (!autoStartVoice || autoStartedRef.current || disabled) return;
+    autoStartedRef.current = true;
+    if (isRecorderSupported()) void recorder.start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoStartVoice, disabled]);
 
   const showMic = isRecorderSupported() || hasSpeech;
   const active = listening || recorder.state === "recording";
