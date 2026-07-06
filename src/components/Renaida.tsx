@@ -701,6 +701,7 @@ export function Renaida() {
 
   const startVoiceCapture = useCallback(() => {
     if (recorder.state === "recording") { recorder.stop(); return; }
+    if (recorder.state === "requesting") { recorder.cancel(); return; }
     if (recorder.state === "transcribing") return;
     if (isRecorderSupported()) { void recorder.start(); return; }
     startWebSpeechCapture();
@@ -1130,7 +1131,7 @@ export function Renaida() {
                   <span className={`flex h-10 w-10 md:h-8 md:w-8 shrink-0 items-center justify-center rounded-full bg-primary-foreground/15 ${recorder.state === "recording" ? "animate-pulse" : ""}`}>
                     {recorder.state === "recording"
                       ? <Square className="h-4 w-4 fill-current" />
-                      : recorder.state === "transcribing"
+                      : recorder.state === "transcribing" || recorder.state === "requesting"
                         ? <Loader2 className="h-4 w-4 animate-spin" />
                         : <Mic className="h-5 w-5 md:h-4 md:w-4" />}
                   </span>
@@ -1140,7 +1141,9 @@ export function Renaida() {
                         ? `${t("helpBot.agent.recording", "Spelar in — tryck för att stoppa")} · ${Math.floor(recorder.elapsedSec / 60)}:${String(recorder.elapsedSec % 60).padStart(2, "0")}`
                         : recorder.state === "transcribing"
                           ? t("helpBot.agent.transcribing", "Tolkar rösten…")
-                          : t("helpBot.agent.voiceHero", "Berätta vad som hänt")}
+                          : recorder.state === "requesting"
+                            ? t("helpBot.agent.micRequesting", "Väntar på mikrofonen…")
+                            : t("helpBot.agent.voiceHero", "Berätta vad som hänt")}
                     </span>
                     <span className="block text-xs text-primary-foreground/70">{t("helpBot.agent.voiceHeroHint", "Säg eller skriv — jag fixar det i projektet")}</span>
                   </span>
@@ -1225,7 +1228,10 @@ export function Renaida() {
           <div className="border-t px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:pb-3 flex gap-2">
             {voiceBusy ? (
               <button
-                onClick={() => recorder.state === "recording" ? recorder.stop() : undefined}
+                onClick={() => {
+                  if (recorder.state === "recording") recorder.stop();
+                  else if (recorder.state === "requesting") recorder.cancel();
+                }}
                 disabled={recorder.state === "transcribing"}
                 className={`flex h-12 md:h-10 flex-1 items-center justify-center gap-2.5 rounded-lg text-sm font-medium text-white transition-colors ${
                   recorder.state === "recording" ? "bg-red-600 hover:bg-red-600/90" : "bg-muted-foreground/60"
@@ -1240,7 +1246,9 @@ export function Renaida() {
                 ) : (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    {t("helpBot.agent.transcribing", "Tolkar rösten…")}
+                    {recorder.state === "requesting"
+                      ? t("helpBot.agent.micRequesting", "Väntar på mikrofonen…")
+                      : t("helpBot.agent.transcribing", "Tolkar rösten…")}
                   </>
                 )}
               </button>

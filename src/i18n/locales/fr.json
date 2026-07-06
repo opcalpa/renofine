@@ -925,6 +925,7 @@
       "micFailed": "Le micro n'a pas coopéré — réessayez, ou écrivez votre mise à jour ici.",
       "recording": "Enregistrement — appuyez pour arrêter",
       "transcribing": "Analyse de votre voix…",
+      "micRequesting": "En attente du micro…",
       "detailCleared": "supprimé"
     }
   },

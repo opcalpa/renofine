@@ -925,6 +925,7 @@
       "micFailed": "Das Mikrofon wollte nicht so recht — versuch es nochmal oder schreibe dein Update hier.",
       "recording": "Aufnahme läuft — zum Stoppen tippen",
       "transcribing": "Deine Stimme wird verarbeitet…",
+      "micRequesting": "Warte auf das Mikrofon…",
       "detailCleared": "wird entfernt"
     }
   },

@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
  * MediaRecorder itself is unavailable.
  */
 
-export type VoiceRecorderState = "idle" | "recording" | "transcribing";
+export type VoiceRecorderState = "idle" | "requesting" | "recording" | "transcribing";
 export type VoiceRecorderError = "not-allowed" | "no-recorder" | "transcribe-failed";
 
 interface UseVoiceRecorderOptions {
@@ -87,11 +87,19 @@ export function useVoiceRecorder({ language, onTranscript, onError }: UseVoiceRe
     }
     if (recorderRef.current?.state === "recording") return;
     try {
+      // Visible "waiting for the mic" state — the permission prompt can take a
+      // while (or hang), and a silent button reads as broken (Cowork round 11).
+      setState("requesting");
+      cancelledRef.current = false;
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      if (cancelledRef.current) {
+        stream.getTracks().forEach((track) => track.stop());
+        setState("idle");
+        return;
+      }
       const mimeType = pickMimeType();
       const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
       chunksRef.current = [];
-      cancelledRef.current = false;
       recorder.ondataavailable = (e) => {
         if (e.data.size > 0) chunksRef.current.push(e.data);
       };

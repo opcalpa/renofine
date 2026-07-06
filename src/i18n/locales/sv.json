@@ -3836,6 +3836,7 @@
       "listening": "Lyssnar…",
       "recording": "Spelar in — tryck för att stoppa",
       "transcribing": "Tolkar rösten…",
+      "micRequesting": "Väntar på mikrofonen…",
       "reviewTitle": "Så här förstod jag det — bekräfta vad som ska göras:",
       "needsClarification": "Det här var jag osäker på:",
       "confirm": "Genomför",

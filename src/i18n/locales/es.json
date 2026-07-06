@@ -925,6 +925,7 @@
       "micFailed": "El micrófono no cooperó — inténtalo de nuevo, o escribe tu actualización aquí.",
       "recording": "Grabando — toca para detener",
       "transcribing": "Interpretando tu voz…",
+      "micRequesting": "Esperando el micrófono…",
       "detailCleared": "se elimina"
     }
   },

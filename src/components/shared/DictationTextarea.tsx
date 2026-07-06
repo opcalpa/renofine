@@ -99,6 +99,10 @@ export function DictationTextarea({
       recorder.stop();
       return;
     }
+    if (recorder.state === "requesting") {
+      recorder.cancel();
+      return;
+    }
     if (recorder.state === "transcribing") return;
     if (isRecorderSupported()) {
       void recorder.start();
@@ -125,7 +129,7 @@ export function DictationTextarea({
           className={`absolute bottom-3 right-3 h-11 w-11 md:h-9 md:w-9 rounded-full flex items-center justify-center transition-colors shadow-sm ${
             active
               ? "bg-red-500 text-white animate-pulse"
-              : recorder.state === "transcribing"
+              : recorder.state === "transcribing" || recorder.state === "requesting"
                 ? "bg-muted text-muted-foreground"
                 : "bg-primary/10 text-primary hover:bg-primary/20"
           }`}
@@ -136,7 +140,7 @@ export function DictationTextarea({
         >
           {active
             ? <Square className="h-4 w-4 fill-current" />
-            : recorder.state === "transcribing"
+            : recorder.state === "transcribing" || recorder.state === "requesting"
               ? <Loader2 className="h-4 w-4 animate-spin" />
               : <Mic className="h-5 w-5 md:h-4 md:w-4" />}
         </button>

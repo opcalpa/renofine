@@ -3837,6 +3837,7 @@
       "listening": "Listening…",
       "recording": "Recording — tap to stop",
       "transcribing": "Making sense of your voice…",
+      "micRequesting": "Waiting for the microphone…",
       "reviewTitle": "Here's what I understood — confirm what to apply:",
       "needsClarification": "I wasn't sure about this:",
       "confirm": "Apply",
