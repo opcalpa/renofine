@@ -13,6 +13,76 @@ Detaljplaner för många items bor i /Users/calpa/Developer/Renofine/.claude/mem
 - Behåll kärnan vass, ingen feature utan tydlig användarnytta
 
 ---
+id: carl-kön
+status: doing
+priority: P1
+tags: [carl, verifiering, produktbeslut]
+created: 2026-07-06
+---
+## 🙋 Carl-kön — allt som väntar på DIG (konsoliderad 2026-07-06)
+
+Samlad kö över manuella verifieringar + produktbeslut + utskick som bara Carl kan
+göra. Claude bockar av/uppdaterar när svar kommit. Buggar som INTE kräver Carl står
+ALDRIG här — de fixas direkt.
+
+### 📱 A. Verifiera för hand (riktig enhet/människa krävs)
+1. **iPhone-rösttestet** ⭐ VIKTIGAST + **BLOCKERAR Taulant-mejlet** — Device: iPhone Safari ·
+   Kontotyp: valfri inloggad. Projekt → Renaida → "Berätta vad som hänt" → säg "logga två
+   timmar på målningen" → stoppa → förslag ska dyka upp. = iOS-genombrottet (Whisper-vägen),
+   live 2026-07-06. Carls insikt: Taulant testar kanske BARA från mobil (okänd plattform) —
+   därför måste detta sitta före utskick. Android/desktop-vägarna är maskinverifierade;
+   riktig iPhone är enda oprövade ledet.
+2. **Mobil ögonkoll av Renaida-omgörningen** (samma pass som 1): tangentbordet får inte
+   täcka skrivfältet i panelen; FAB:en ska gå fri från bottom-nav + notch; inspelningsbaren
+   röd och tydlig; wizard-dialogen ryms på skärmen.
+3. **Wizard-proffs-vägen** — Device: desktop · Kontotyp: Pro (contractor). "+ Nytt projekt"
+   → describe-wizard hela vägen. Aldrig testad (P4-rest; sandbox saknade proffs-läge).
+4. **GSC (Google Search Console)**: öppna duplicate-ärendet → "Validate Fix" + skicka in
+   `https://renofine.com/sitemap.xml` under Sitemaps. (Kvar sedan session 46.)
+
+### 📨 B. Utskick & GTM (bara du)
+5. **Taulant-mejlet** 📦 — VÄNTAR PÅ punkt 1 (iPhone-testet). Utkast v2 (mobil-först-vinklat:
+   "testa från mobilen", iPhone+Android-rösten) klart 2026-07-06 — ligger på urklipp +
+   `taulant-valkomstmejl-v2.txt` i sessionens scratchpad. Efteråt: PostHog-ritualen
+   (filtrera person på hans mejl, recordings samma kväll).
+6. **Peter Muir (33East VC)** — svar väntar (se eget backlog-item).
+7. **Joel Jansson** — uppföljning betatestare (eget item).
+8. **FB-grupper** fortsatt postning + **3 demo-videos** (egna items).
+
+### 🤖 C. Produktbeslut — Renaida/agentflödet
+9. **Budget på nedbrutna tasks**: "höj budgeten till X" på en task där modalen visar
+   labor+material — ska Renaida skriva tasks.budget (osynlig där), fördela på delarna,
+   eller vägra med förklaring? (Varv 10-fynd: skrivningen är idag osynlig i UI:t.)
+10. **Tilldelning**: "säg åt Ahmed att..." faller idag medvetet till add_note. Bygga riktig
+    medlems-resolution (matcha projektmedlemmar, tilldela + notifiera)?
+11. **Två chattar på mobil**: bottom-navens "Chatt" (projektkommentarer) + Renaida-FAB =
+    två pratbubbel-ikoner med olika semantik. Döpa om fliken ("Logg"? "Kommentarer"?),
+    annan ikon, eller slå ihop ingångarna?
+12. **OwnerStart-hjältens mic är dekorativ** — "Beskriv din renovering" öppnar wizarden i
+    textläge. Ska den starta inspelning direkt? + ContractorStart saknar röstingång helt.
+13. **Aktivitetsfeedens ordning**: nyast längst NED (chatt-paradigm) — flippa till nyast
+    överst, eller behålla?
+
+### 🎨 D. Produktbeslut — övrigt UI
+14. **Papperskorg på projektkort** — exponerad radering på kortet; gömma bakom ⋯-meny?
+15. **Metrik-korten på Översikt** (Arbeten/Tidslinje/Budget/Beställningar) — ska de vara
+    klickbara och navigera till sin flik?
+16. **M4 PDF fit-to-width på mobil** — kräver react-pdf (~300KB ny dep). Go/no-go.
+17. **Bundle 7.7MB → code-splitting** — prioriteringsbeslut (halv-/heldag, stor UX-vinst
+    på mobilnät; kan göras utan designval när du säger go).
+
+### ✅ Avklarat ur kön (flyttas hit när verifierat)
+- ~~OwnerStart-routing inloggad~~ (Sigrid-kontot, session 50)
+- ~~Kvitton/dedup/realtime~~ (varv 8–9)
+- ~~Deploy + push av mobil-först-paketet~~ (2026-07-06, `0ffce2b`)
+- ~~C9 budget-vägran, C10 tilldelning, C11 Meddelanden-rename, C12 röst-direkt +
+  proffs-röstingång, C13 nyast överst, D14 papperskorg bakom ⋯, D15 kort redan
+  klickbara~~ — ALLA levererade & live 2026-07-06 (`bc0d4d2` + `7979de2`,
+  agent-route deployad, eval 27/27). Carl godkände alla rekommendationer.
+  KVAR att besluta/göra senare: D16 PDF, D17 startvikt, demo-Renaida (alla
+  medvetet parkerade till efter Taulant-utskicket).
+
+---
 id: fb-grupper-outreach
 status: todo
 priority: P1
