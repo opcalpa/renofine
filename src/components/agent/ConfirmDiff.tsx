@@ -31,7 +31,7 @@ interface ConfirmDiffProps {
 }
 
 const isTaskAction = (a: ProposalAction) =>
-  a.type === "update_task" || a.type === "set_progress" || a.type === "log_time";
+  a.type === "update_task" || a.type === "set_progress" || a.type === "log_time" || a.type === "assign_task";
 
 function unknownTitle(p: AgentProposal): string {
   if (p.action.type === "unknown" && p.action.rawText && !p.action.rawText.trim().startsWith("{")) {
@@ -79,6 +79,9 @@ function actionDetails(
       break;
     case "log_time":
       details.push(`${action.hours} h${action.date ? ` · ${fmtDate(action.date)}` : ""}`);
+      break;
+    case "assign_task":
+      details.push(`${t("helpBot.agent.detailAssignee", "Tilldelas")}: ${action.assigneeName ?? ""}`);
       break;
     case "create_purchase":
       if (action.quantity) details.push(`${action.quantity}${action.unit ? ` ${action.unit}` : " st"}`);

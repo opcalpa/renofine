@@ -3538,6 +3538,7 @@
     },
     "renaida": {
       "taskUpdate": "uppdaterade \"{{name}}\"",
+      "taskAssign": "tilldelade \"{{name}}\"",
       "taskCreate": "skapade arbetet \"{{name}}\"",
       "purchaseRequest": "skapade en inköpsförfrågan för {{name}}",
       "logTime": "loggade {{name}} arbetstid",
@@ -3863,6 +3864,7 @@
       "detailPriority": "Prioritet",
       "detailProgress": "Framsteg",
       "detailStatus": "Status",
+      "detailAssignee": "Tilldelas",
       "micDenied": "Jag får inte använda mikrofonen — kolla webbläsarens mikrofonbehörighet, eller skriv din uppdatering här istället.",
       "micFailed": "Mikrofonen ville inte riktigt — prova igen, eller skriv din uppdatering här istället.",
       "detailCleared": "tas bort"

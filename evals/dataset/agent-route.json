@@ -66,6 +66,16 @@
         "title": "Spackling vardagsrum",
         "status": "to_do"
       }
+    ],
+    "members": [
+      {
+        "id": "m-ahmed",
+        "name": "Ahmed Hassan"
+      },
+      {
+        "id": "m-johan",
+        "name": "Johan Berg"
+      }
     ]
   },
   "cases": [
@@ -332,6 +342,28 @@
           "type": "update_task",
           "taskId": "t-tile",
           "changesNull": "due_date"
+        }
+      ]
+    },
+    {
+      "id": "assign-member",
+      "input": "Säg åt Ahmed att kolla eluttagen i hallen.",
+      "expect": [
+        {
+          "type": "assign_task",
+          "taskId": "t-elec",
+          "assigneeProfileId": "m-ahmed"
+        }
+      ]
+    },
+    {
+      "id": "assign-nonmember-fallback",
+      "input": "Säg åt Ficticious Person att måla.",
+      "expect": [
+        {
+          "type": "add_note",
+          "target": "task",
+          "targetId": "t-paint"
         }
       ]
     }

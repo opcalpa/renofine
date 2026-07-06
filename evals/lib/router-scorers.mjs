@@ -14,6 +14,7 @@ function actionRefs(action) {
   const refs = [];
   if (typeof action.taskId === "string") refs.push(["task", action.taskId]);
   if (typeof action.roomId === "string") refs.push(["room", action.roomId]);
+  if (typeof action.assigneeProfileId === "string") refs.push(["member", action.assigneeProfileId]);
   if ((action.target === "task" || action.target === "room") && typeof action.targetId === "string") {
     refs.push([action.target, action.targetId]);
   }
@@ -29,6 +30,7 @@ function matches(expected, action) {
 
   if (expected.taskId && action.taskId !== expected.taskId) return false;
   if (expected.roomId && action.roomId !== expected.roomId) return false;
+  if (expected.assigneeProfileId && action.assigneeProfileId !== expected.assigneeProfileId) return false;
   if (expected.itemIncludes && !((action.item || action.itemText || "").toLowerCase().includes(expected.itemIncludes.toLowerCase()))) return false;
   if (expected.titleIncludes && !(action.title || "").toLowerCase().includes(expected.titleIncludes.toLowerCase())) return false;
   if (expected.nameIncludes && !(action.name || "").toLowerCase().includes(expected.nameIncludes.toLowerCase())) return false;
@@ -57,7 +59,8 @@ function matches(expected, action) {
 export function scoreRouterCase(c, context, proposals) {
   const taskIds = new Set(context.tasks.map((t) => t.id));
   const roomIds = new Set(context.rooms.map((r) => r.id));
-  const valid = { task: taskIds, room: roomIds };
+  const memberIds = new Set((context.members || []).map((m) => m.id));
+  const valid = { task: taskIds, room: roomIds, member: memberIds };
 
   const list = Array.isArray(proposals) ? proposals : [];
   const actionable = list.filter((p) => p.action && p.action.type !== "unknown");

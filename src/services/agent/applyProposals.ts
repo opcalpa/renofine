@@ -268,6 +268,24 @@ async function applyOne(
       return { kind: "checklist_restore", taskId: action.taskId, before };
     }
 
+    case "assign_task": {
+      // Same write path as TaskEditDialog's assignee select:
+      // tasks.assigned_to_stakeholder_id = a project member's profile id.
+      const { data: prev } = await supabase
+        .from("tasks").select("assigned_to_stakeholder_id,title").eq("id", action.taskId).single();
+
+      const { error } = await supabase.from("tasks")
+        .update({ assigned_to_stakeholder_id: action.assigneeProfileId })
+        .eq("id", action.taskId);
+      if (error) throw new Error(error.message);
+
+      const assigneeName = action.assigneeName ?? "";
+      logActivity(projectId, profileId, "renaida_task_assign", "task", action.taskId,
+        assigneeName ? `${prev?.title ?? ""} → ${assigneeName}` : prev?.title ?? "",
+        { assigneeProfileId: action.assigneeProfileId, assigneeName, before: prev?.assigned_to_stakeholder_id ?? null });
+      return { kind: "task_assignee", taskId: action.taskId, before: { assigned_to_stakeholder_id: prev?.assigned_to_stakeholder_id ?? null } };
+    }
+
     case "add_note": {
       const { data, error } = await supabase.from("comments").insert({
         content: action.text,
@@ -365,6 +383,11 @@ export async function undoProposals(undo: UndoOp[], projectId?: string): Promise
           await supabase.from("tasks").update({
             checklists: op.before.checklists as never,
             progress: op.before.progress,
+          }).eq("id", op.taskId);
+          break;
+        case "task_assignee":
+          await supabase.from("tasks").update({
+            assigned_to_stakeholder_id: op.before.assigned_to_stakeholder_id,
           }).eq("id", op.taskId);
           break;
       }

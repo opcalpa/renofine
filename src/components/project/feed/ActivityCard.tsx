@@ -10,6 +10,7 @@ import type { ActivityLogItem } from "./types";
 // Render those as "Renaida did X" receipt rows so her work stays visible.
 const renaidaActionKeys: Record<string, string> = {
   renaida_task_update: "activity.renaida.taskUpdate",
+  renaida_task_assign: "activity.renaida.taskAssign",
   renaida_task_create: "activity.renaida.taskCreate",
   renaida_room_create: "activity.renaida.roomCreate",
   renaida_purchase_request: "activity.renaida.purchaseRequest",

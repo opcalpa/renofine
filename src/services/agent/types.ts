@@ -37,6 +37,12 @@ export type ProposalAction =
   /** Author checklist moments on a task (appends to a single existing list, else creates one). */
   | { type: "create_checklist"; taskId: string; title?: string; items: string[] }
   | { type: "remove_checklist_item"; taskId: string; itemText: string }
+  /**
+   * Assign a task to a project member (tasks.assigned_to_stakeholder_id = profile id).
+   * assigneeName is resolved server-side from the member list — display only.
+   * The router's normalize step guarantees assigneeProfileId is a real member.
+   */
+  | { type: "assign_task"; taskId: string; assigneeProfileId: string; assigneeName?: string }
   | { type: "add_note"; target: "task" | "room" | "project"; targetId: string; text: string }
   /** Router could not confidently route the input — surface as a question, never apply. */
   | { type: "unknown"; rawText: string; reason: string };
@@ -75,7 +81,8 @@ export type UndoOp =
   | { kind: "delete_purchase"; purchaseOrderId: string; materialId: string }
   | { kind: "delete_comment"; commentId: string }
   | { kind: "delete_time"; timeEntryId: string }
-  | { kind: "checklist_restore"; taskId: string; before: { checklists: unknown; progress: number | null } };
+  | { kind: "checklist_restore"; taskId: string; before: { checklists: unknown; progress: number | null } }
+  | { kind: "task_assignee"; taskId: string; before: { assigned_to_stakeholder_id: string | null } };
 
 /** Below this task-match confidence, a task proposal is shown unchecked (needs confirm/re-pick). */
 export const TASK_MATCH_MIN_CONFIDENCE = 0.7;

@@ -75,7 +75,7 @@ async function main() {
   if (args.cases) cases = cases.filter((c) => args.cases.includes(c.id));
   if (!cases.length) throw new Error("no cases matched --cases filter");
 
-  const system = buildRouterSystem(ctx.language || "sv", ctx.rooms, ctx.tasks);
+  const system = buildRouterSystem(ctx.language || "sv", ctx.rooms, ctx.tasks, [], ctx.members || []);
 
   console.log(`\nRenofine eval · agent-route (router)`);
   console.log(`models: ${args.models.join(", ")}`);

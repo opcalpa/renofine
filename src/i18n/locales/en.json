@@ -3539,6 +3539,7 @@
     },
     "renaida": {
       "taskUpdate": "updated \"{{name}}\"",
+      "taskAssign": "assigned \"{{name}}\"",
       "taskCreate": "created the task \"{{name}}\"",
       "purchaseRequest": "created a purchase request for {{name}}",
       "logTime": "logged {{name}} of work",
@@ -3864,6 +3865,7 @@
       "detailPriority": "Priority",
       "detailProgress": "Progress",
       "detailStatus": "Status",
+      "detailAssignee": "Assigned to",
       "micDenied": "I'm not allowed to use the microphone — check the browser's mic permission, or type your update here instead.",
       "micFailed": "The microphone didn't quite cooperate — try again, or type your update here instead.",
       "detailCleared": "cleared"
