@@ -535,7 +535,9 @@ export function ProjectChatSection({ projectId, userType, onNavigateToEntity, on
       })
     : filteredFeed;
 
-  const displayedItems = showAll ? searchedFeed : searchedFeed.slice(-ITEMS_LIMIT);
+  // Feed is newest-first: the visible window is the FIRST N items. (slice(-N)
+  // after the flip showed the OLDEST events until "Show older" — round 13.)
+  const displayedItems = showAll ? searchedFeed : searchedFeed.slice(0, ITEMS_LIMIT);
   const hasMore = searchedFeed.length > ITEMS_LIMIT && !showAll;
 
   const locale = getDateLocale(i18n.language);
@@ -814,12 +816,13 @@ export function ProjectChatSection({ projectId, userType, onNavigateToEntity, on
               <div className="py-3" />
             ) : (
               <div className="space-y-2">
+                {displayedItems.map(renderFeedItem)}
+                {/* Older items now live BELOW the newest-first window */}
                 {hasMore && (
-                  <Button variant="ghost" size="sm" className="w-full text-muted-foreground text-xs mb-2" onClick={() => setShowAll(true)}>
+                  <Button variant="ghost" size="sm" className="w-full text-muted-foreground text-xs mt-2" onClick={() => setShowAll(true)}>
                     {t("feed.showOlder", "Show older ({{count}})").replace("{{count}}", String(filteredFeed.length))}
                   </Button>
                 )}
-                {displayedItems.map(renderFeedItem)}
               </div>
             )}
           </div>
