@@ -47,74 +47,98 @@ När allt är grönt: skicka Taulant-mejlet (ligger på urklipp / se item taulan
 Rapportera till Claude: vilken punkt + vad du såg. Grönt på 1–5 = skicka mejlet.
 
 ---
+id: wizard-proffs-test
+status: todo
+priority: P2
+tags: [carl, verifiering]
+created: 2026-07-06
+---
+## Testa wizard-vägen som proffs (aldrig körd)
+
+**Device:** desktop (eller mobil) · **Kontotyp:** Pro (contractor, t.ex. testkonto enligt
+konvention carl.palmquist+proLäge@gmail.com). Gör: "+ Nytt projekt" → describe-wizarden
+hela vägen till färdigt projekt. Kolla även nya gröna röstknappen "Beskriv jobbet med
+rösten" på proffsens startsida (kräver konto med 0 projekt). Rapportera konstigheter
+till Claude. (P4-rest från session 50 — Claude saknar proffs-testläge i sandbox.)
+
+---
+id: gsc-validate-sitemap
+status: todo
+priority: P2
+tags: [carl, seo]
+created: 2026-07-06
+---
+## Google Search Console: Validate Fix + skicka in sitemap
+
+Öppna GSC → duplicate-without-canonical-ärendet → tryck "Validate Fix". Sedan under
+Sitemaps: skicka in `https://renofine.com/sitemap.xml`. ~3 minuter. (Kvar sedan
+session 46 — canonical-taggarna och sitemapen är live sedan dess, Google behöver
+bara få startskottet.)
+
+---
+id: pdf-mobil-fitwidth
+status: todo
+priority: P3
+tags: [mobil, parkerad-till-efter-taulant]
+created: 2026-07-06
+---
+## PDF-läsning på mobil (fit-to-width)
+
+PDF:er (offerter/ritningar) blir för breda och pyttesmå på mobilskärm. Fix kräver
+react-pdf (~300KB tyngre förstaladdning) — beslutat VÄNTA till efter Taulant-utskicket,
+och göras ihop med startvikt-uppdelningen nedan så vikten inte känns.
+
+---
+id: startvikt-code-splitting
+status: todo
+priority: P3
+tags: [mobil, prestanda, parkerad-till-efter-taulant]
+created: 2026-07-06
+---
+## Dela upp appens startvikt (7.7MB → ladda det man öppnar)
+
+Första besöket laddar hela appen inkl. 3D-vyn och ritverktyget. På byggarbetsplats-nät
+= trög första start. Fix: ladda tunga delar först när de öppnas. Ingen design behövs —
+Carl säger go efter Taulant-utskicket, ~1 dags jobb.
+
+---
+id: demo-renaida-prova
+status: todo
+priority: P3
+tags: [gtm, demo, parkerad-till-efter-taulant]
+created: 2026-07-06
+---
+## Prova-Renaida i öppna demon (utloggade ser henne inte alls)
+
+Kallbesökaren som klickar "Se demoprojekt" ser aldrig Renaida-knappen (kräver konto) —
+vår häftigaste grej är osynlig för exakt den vi vill övertyga. Idé: begränsad prova-
+Renaida i demon som visar känslan utan att spara något. Beslutat: efter Taulant.
+
+---
 id: carl-kön
-status: doing
+status: done
 priority: P1
 tags: [carl, verifiering, produktbeslut]
 created: 2026-07-06
+updated: 2026-07-06
 ---
-## 🙋 Carl-kön — allt som väntar på DIG (konsoliderad 2026-07-06)
+## 🙋 Carl-kön (konsoliderings-logg — UPPSTYCKAD i egna kort)
 
-Samlad kö över manuella verifieringar + produktbeslut + utskick som bara Carl kan
-göra. Claude bockar av/uppdaterar när svar kommit. Buggar som INTE kräver Carl står
-ALDRIG här — de fixas direkt.
+Denna samlingslista är ersatt av egna To Do-kort (regel: allt som väntar på Carl =
+eget kort med status todo, direkt). Kvarvarande Carl-kort: `iphone-rosttest` (P1,
+blockerar Taulant), `wizard-proffs-test`, `gsc-validate-sitemap` + befintliga
+`taulant-bara-lead`, Peter Muir, Joel, FB/demo-videos. Parkerade byggen:
+`pdf-mobil-fitwidth`, `startvikt-code-splitting`, `demo-renaida-prova`.
 
-### 📱 A. Verifiera för hand (riktig enhet/människa krävs)
-1. **iPhone-rösttestet** ⭐ VIKTIGAST + **BLOCKERAR Taulant-mejlet** — Device: iPhone Safari ·
-   Kontotyp: valfri inloggad. Projekt → Renaida → "Berätta vad som hänt" → säg "logga två
-   timmar på målningen" → stoppa → förslag ska dyka upp. = iOS-genombrottet (Whisper-vägen),
-   live 2026-07-06. Carls insikt: Taulant testar kanske BARA från mobil (okänd plattform) —
-   därför måste detta sitta före utskick. Android/desktop-vägarna är maskinverifierade;
-   riktig iPhone är enda oprövade ledet.
-2. **Mobil ögonkoll av Renaida-omgörningen** (samma pass som 1): tangentbordet får inte
-   täcka skrivfältet i panelen; FAB:en ska gå fri från bottom-nav + notch; inspelningsbaren
-   röd och tydlig; wizard-dialogen ryms på skärmen.
-3. **Wizard-proffs-vägen** — Device: desktop · Kontotyp: Pro (contractor). "+ Nytt projekt"
-   → describe-wizard hela vägen. Aldrig testad (P4-rest; sandbox saknade proffs-läge).
-4. **GSC (Google Search Console)**: öppna duplicate-ärendet → "Validate Fix" + skicka in
-   `https://renofine.com/sitemap.xml` under Sitemaps. (Kvar sedan session 46.)
-
-### 📨 B. Utskick & GTM (bara du)
-5. **Taulant-mejlet** 📦 — VÄNTAR PÅ punkt 1 (iPhone-testet). Utkast v2 (mobil-först-vinklat:
-   "testa från mobilen", iPhone+Android-rösten) klart 2026-07-06 — ligger på urklipp +
-   `taulant-valkomstmejl-v2.txt` i sessionens scratchpad. Efteråt: PostHog-ritualen
-   (filtrera person på hans mejl, recordings samma kväll).
-6. **Peter Muir (33East VC)** — svar väntar (se eget backlog-item).
-7. **Joel Jansson** — uppföljning betatestare (eget item).
-8. **FB-grupper** fortsatt postning + **3 demo-videos** (egna items).
-
-### 🤖 C. Produktbeslut — Renaida/agentflödet
-9. **Budget på nedbrutna tasks**: "höj budgeten till X" på en task där modalen visar
-   labor+material — ska Renaida skriva tasks.budget (osynlig där), fördela på delarna,
-   eller vägra med förklaring? (Varv 10-fynd: skrivningen är idag osynlig i UI:t.)
-10. **Tilldelning**: "säg åt Ahmed att..." faller idag medvetet till add_note. Bygga riktig
-    medlems-resolution (matcha projektmedlemmar, tilldela + notifiera)?
-11. **Två chattar på mobil**: bottom-navens "Chatt" (projektkommentarer) + Renaida-FAB =
-    två pratbubbel-ikoner med olika semantik. Döpa om fliken ("Logg"? "Kommentarer"?),
-    annan ikon, eller slå ihop ingångarna?
-12. **OwnerStart-hjältens mic är dekorativ** — "Beskriv din renovering" öppnar wizarden i
-    textläge. Ska den starta inspelning direkt? + ContractorStart saknar röstingång helt.
-13. **Aktivitetsfeedens ordning**: nyast längst NED (chatt-paradigm) — flippa till nyast
-    överst, eller behålla?
-
-### 🎨 D. Produktbeslut — övrigt UI
-14. **Papperskorg på projektkort** — exponerad radering på kortet; gömma bakom ⋯-meny?
-15. **Metrik-korten på Översikt** (Arbeten/Tidslinje/Budget/Beställningar) — ska de vara
-    klickbara och navigera till sin flik?
-16. **M4 PDF fit-to-width på mobil** — kräver react-pdf (~300KB ny dep). Go/no-go.
-17. **Bundle 7.7MB → code-splitting** — prioriteringsbeslut (halv-/heldag, stor UX-vinst
-    på mobilnät; kan göras utan designval när du säger go).
-
-### ✅ Avklarat ur kön (flyttas hit när verifierat)
-- ~~OwnerStart-routing inloggad~~ (Sigrid-kontot, session 50)
-- ~~Kvitton/dedup/realtime~~ (varv 8–9)
-- ~~Deploy + push av mobil-först-paketet~~ (2026-07-06, `0ffce2b`)
-- ~~C9 budget-vägran, C10 tilldelning, C11 Meddelanden-rename, C12 röst-direkt +
-  proffs-röstingång, C13 nyast överst, D14 papperskorg bakom ⋯, D15 kort redan
-  klickbara~~ — ALLA levererade & live 2026-07-06 (`bc0d4d2` + `7979de2`,
-  agent-route deployad, eval 27/27). Carl godkände alla rekommendationer.
-  KVAR att besluta/göra senare: D16 PDF, D17 startvikt, demo-Renaida (alla
-  medvetet parkerade till efter Taulant-utskicket).
+### ✅ Leverans-logg 2026-07-06
+- Mobil-först-paketet: Whisper-röst (iPhone+Android), tangentbordssäker panel,
+  44px touch-mål, FAB-fix, wizard-dialogfix (`0ffce2b` m.fl.)
+- Varv 12-buggarna: flik överlever reload, checklist-papperskorg persisterar +
+  håller dialogen öppen, tabell synkas efter Renaida (`bf094fc`, `754f985`)
+- Alla 7 godkända produktbeslut: budget-vägran, riktig tilldelning (eval 27/27,
+  agent-route deployad), Meddelanden-rename, röst-direkt + proffs-röstingång,
+  nyast överst, papperskorg bakom ⋯, kort-klickbarhet verifierad
+  (`bc0d4d2` + `7979de2`)
 
 ---
 id: fb-grupper-outreach
