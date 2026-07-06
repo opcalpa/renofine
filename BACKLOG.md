@@ -13,6 +13,40 @@ Detaljplaner för många items bor i /Users/calpa/Developer/Renofine/.claude/mem
 - Behåll kärnan vass, ingen feature utan tydlig användarnytta
 
 ---
+id: iphone-rosttest
+status: todo
+priority: P1
+tags: [carl, verifiering, mobil, taulant]
+created: 2026-07-06
+---
+## 📱 iPhone-rösttestet — BLOCKERAR Taulant-mejlet (⏱ ~10 min)
+
+Allt testas på **renofine.com** i mobilens Safari, inloggad med ditt vanliga konto,
+i **demo-projektet** (inget viktigt kan gå sönder; Renaida frågar alltid först + Ångra finns).
+När allt är grönt: skicka Taulant-mejlet (ligger på urklipp / se item taulant-bara-lead).
+
+1. **Prata med Renaida** ⭐ — Demo-projektet → runda gröna knappen nere till höger →
+   "Berätta vad som hänt" → tillåt mikrofon → säg "logga två timmar på målningen" →
+   tryck stopp. RÄTT: "Tolkar rösten…" → förslagskort med Genomför-knapp.
+   FEL: inget händer, eller fastnar >15 sek på "Tolkar rösten…".
+2. **Tangentbordet** — tryck i textfältet längst ned i Renaida-rutan. RÄTT: fältet
+   syns ovanför tangentbordet. FEL: du skriver i blindo bakom tangentbordet.
+3. **Inspelningsläget** — starta rösten igen. RÄTT: knappen blir RÖD, "Spelar in —
+   tryck för att stoppa" + sekundklocka. Ska vara omöjligt att missa.
+4. **Gröna knappen vs menyn** — bläddra genom flikarna längst ned. RÄTT: Renaida-
+   knappen svävar strax OVANFÖR menyraden utan att täcka någon knapp.
+5. **Skapa projekt med rösten** — Start → Skapa → "Berätta om din renovering" →
+   micken i skrivrutan → prata. RÄTT: orden blir text, inget sticker ut utanför
+   skärmen. Tryck Avbryt efteråt (skapa inget).
+6. **Flik-minnet** — inne i projekt: tryck Inköp → ladda om sidan. RÄTT: du landar
+   på Inköp igen (inte Översikt).
+7. **Checklist-papperskorgen** — öppna ett arbete → skapa checklista "TEST" → spara →
+   öppna igen → papperskorgen på checklistan → stäng UTAN spara → öppna igen.
+   RÄTT: borta, och rutan stängdes inte vid papperskorgstrycket. FEL: återuppstått.
+
+Rapportera till Claude: vilken punkt + vad du såg. Grönt på 1–5 = skicka mejlet.
+
+---
 id: carl-kön
 status: doing
 priority: P1
