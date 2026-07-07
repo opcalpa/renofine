@@ -1,0 +1,761 @@
+{
+  "args": {
+    "models": [
+      "gpt-4o-mini"
+    ],
+    "judge": "gpt-4o",
+    "cases": null,
+    "judgeOn": true
+  },
+  "summary": [
+    {
+      "model": "gpt-4o-mini",
+      "n": 19,
+      "passed": 19,
+      "recall": 1,
+      "fp": 0,
+      "invented": 0,
+      "critical": 0,
+      "judgeAvg": 3.9473684210526314,
+      "errors": 0
+    }
+  ],
+  "rows": [
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "seal-done",
+      "score": {
+        "id": "seal-done",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "The proposal accurately reflects the note's intent that the waterproofing in the bathroom is complete."
+      },
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Tätskiktet i badrummet är klart.",
+          "confidence": 0.9,
+          "action": {
+            "type": "set_progress",
+            "taskId": "t-seal",
+            "progress": 100,
+            "status": "done"
+          },
+          "matchConfidence": 0.9,
+          "candidateTaskIds": [
+            "t-seal"
+          ]
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "buy-tiles",
+      "score": {
+        "id": "buy-tiles",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "The proposal accurately captures the user's intent to order ten square meters of tiles for the bathroom."
+      },
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Beställ tio kvm klinker till badrummet.",
+          "confidence": 0.9,
+          "action": {
+            "type": "create_purchase",
+            "roomId": "r-bath",
+            "item": "klinker",
+            "quantity": 10,
+            "unit": "kvm"
+          },
+          "matchConfidence": 1,
+          "candidateTaskIds": []
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "combo-progress-and-purchase",
+      "score": {
+        "id": "combo-progress-and-purchase",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 2,
+          "expected": 2
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 2
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "The proposals accurately reflect the note's intent: marking the waterproofing as complete and ordering tiles for the bathroom."
+      },
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Tätskiktet i badrummet är klart.",
+          "confidence": 0.9,
+          "action": {
+            "type": "set_progress",
+            "taskId": "t-seal",
+            "progress": 100,
+            "status": "done"
+          },
+          "matchConfidence": 0.9,
+          "candidateTaskIds": [
+            "t-seal"
+          ]
+        },
+        {
+          "summary": "Beställ tio kvadratmeter klinker till badrummet.",
+          "confidence": 0.8,
+          "action": {
+            "type": "create_purchase",
+            "roomId": "r-bath",
+            "item": "klinker",
+            "quantity": 10,
+            "unit": "kvm"
+          },
+          "matchConfidence": 0.8,
+          "candidateTaskIds": []
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "unknown-garage",
+      "score": {
+        "id": "unknown-garage",
+        "kind": "unknown",
+        "ok": true,
+        "recall": {
+          "found": 0,
+          "expected": 0
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": {
+        "score": 1,
+        "criticalIssues": [
+          "The note clearly mentions work on the garage and double garage roofs, but the proposal incorrectly states 'unknown room'."
+        ],
+        "notes": "The proposal fails to recognize the specific work done on the garage and double garage roofs."
+      },
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Okänt rum nämnt i anteckningen.",
+          "confidence": 0,
+          "action": {
+            "type": "unknown",
+            "rawText": "taket på garaget och dubbelgaraget",
+            "reason": "Rummen finns inte i projektet."
+          }
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "add-task-room",
+      "score": {
+        "id": "add-task-room",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "The proposal accurately captures the user's intent to change the door handles in the bedroom."
+      },
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Skapa en uppgift för att byta dörrhandtag i sovrummet.",
+          "confidence": 0.8,
+          "action": {
+            "type": "create_task",
+            "roomId": "r-bed",
+            "title": "Byta dörrhandtag",
+            "description": "Byta dörrhandtagen i sovrummet."
+          },
+          "matchConfidence": 0.5,
+          "candidateTaskIds": []
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "buy-no-room",
+      "score": {
+        "id": "buy-no-room",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "The proposal accurately captures the intent to order a new kitchen faucet."
+      },
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Beställ en ny köksblandare.",
+          "confidence": 0.8,
+          "action": {
+            "type": "create_purchase",
+            "roomId": "r-kitchen",
+            "item": "köksblandare"
+          },
+          "matchConfidence": 1,
+          "candidateTaskIds": []
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "chitchat",
+      "score": {
+        "id": "chitchat",
+        "kind": "empty",
+        "ok": true,
+        "recall": {
+          "found": 0,
+          "expected": 0
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 0
+      },
+      "judge": {
+        "score": 1,
+        "criticalIssues": [
+          "The note describes a positive experience on the construction site, but no proposals were made to reflect this."
+        ],
+        "notes": "The note's positive sentiment about the construction day should be captured in the proposals."
+      },
+      "error": null,
+      "proposals": []
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "progress-partial",
+      "score": {
+        "id": "progress-partial",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "The proposal accurately reflects the note's intent that the painting is approximately halfway done."
+      },
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Målningen är ungefär halvklar.",
+          "confidence": 0.6,
+          "action": {
+            "type": "set_progress",
+            "taskId": "t-paint",
+            "progress": 50
+          },
+          "matchConfidence": 0.6,
+          "candidateTaskIds": [
+            "t-paint"
+          ]
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "wrong-room-trap",
+      "score": {
+        "id": "wrong-room-trap",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": {
+        "score": 3,
+        "criticalIssues": [],
+        "notes": "The proposal correctly identifies that the tiling in the bathroom has started, but the progress percentage of 50% is debatable as the note only states that it has begun, not how far along it is."
+      },
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Kakelsättningen i badrummet är påbörjad.",
+          "confidence": 0.8,
+          "action": {
+            "type": "set_progress",
+            "taskId": "t-tile",
+            "progress": 50,
+            "status": "in_progress"
+          },
+          "matchConfidence": 0.85,
+          "candidateTaskIds": [
+            "t-tile"
+          ]
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "lister-checklist-not-room",
+      "score": {
+        "id": "lister-checklist-not-room",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "The proposal accurately reflects the note's intent that the trim has been installed in the living room."
+      },
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Listerna är monterade i Vardagsrummet.",
+          "confidence": 0.9,
+          "action": {
+            "type": "toggle_checklist",
+            "taskId": "t-trim",
+            "itemText": "Montera lister",
+            "completed": true
+          },
+          "matchConfidence": 0.9,
+          "candidateTaskIds": [
+            "t-trim"
+          ]
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "no-matching-task-borra-trap",
+      "score": {
+        "id": "no-matching-task-borra-trap",
+        "kind": "no-confident-mutation",
+        "ok": true,
+        "recall": {
+          "found": 0,
+          "expected": 0
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": {
+        "score": 1,
+        "criticalIssues": [
+          "The proposal suggests an 'unknown' action which is not implied by the note.",
+          "The proposal fails to acknowledge that the floor heating is both 'inkopplad' (connected) and 'klar' (ready)."
+        ],
+        "notes": "The note clearly states that the floor heating is connected and ready, but the proposal does not accurately reflect this."
+      },
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Golvvärmen i badrummet är klar.",
+          "confidence": 0.5,
+          "action": {
+            "type": "unknown",
+            "rawText": "Golvvärmen i badrummet är inkopplad och klar.",
+            "reason": "Det finns ingen uppgift som matchar golvvärme."
+          },
+          "matchConfidence": 0,
+          "candidateTaskIds": []
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "log-time-on-task",
+      "score": {
+        "id": "log-time-on-task",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "The proposal accurately captures the user's note about working three hours on painting."
+      },
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Logga tre timmar på målningen.",
+          "confidence": 0.9,
+          "action": {
+            "type": "log_time",
+            "taskId": "t-paint",
+            "hours": 3
+          },
+          "matchConfidence": 0.9,
+          "candidateTaskIds": [
+            "t-paint"
+          ]
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "toggle-checklist-item",
+      "score": {
+        "id": "toggle-checklist-item",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "The proposal accurately reflects the note's intent that the trim installation is complete."
+      },
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Montera lister är klart.",
+          "confidence": 0.9,
+          "action": {
+            "type": "toggle_checklist",
+            "taskId": "t-trim",
+            "itemText": "Montera lister",
+            "completed": true
+          },
+          "matchConfidence": 0.9,
+          "candidateTaskIds": [
+            "t-trim"
+          ]
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "ambiguous-same-trade",
+      "score": {
+        "id": "ambiguous-same-trade",
+        "kind": "ambiguous-pick",
+        "ok": true,
+        "recall": {
+          "found": 0,
+          "expected": 0
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": {
+        "score": 1,
+        "criticalIssues": [
+          "The proposal specifies the bedroom ('sovrummet') while the note only mentions 'one of the rooms' without specifying which one."
+        ],
+        "notes": "The note indicates completion of spackling in an unspecified room, but the proposal incorrectly assumes it is the bedroom."
+      },
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Spacklingen är klar i sovrummet.",
+          "confidence": 0.6,
+          "action": {
+            "type": "set_progress",
+            "taskId": "t-spackle-bed",
+            "progress": 100
+          },
+          "matchConfidence": 0.6,
+          "candidateTaskIds": [
+            "t-spackle-bed",
+            "t-spackle-living"
+          ]
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "scaffold-new-room",
+      "score": {
+        "id": "scaffold-new-room",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 2,
+          "expected": 2
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 2
+      },
+      "judge": {
+        "score": 3,
+        "criticalIssues": [
+          "The proposal to 'create a room for tvättstugan' is not implied by the note, which only mentions renovating and tiling."
+        ],
+        "notes": "The task for tiling is correctly captured, but creating a new room was not mentioned in the note."
+      },
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Skapa ett rum för tvättstugan.",
+          "confidence": 0.9,
+          "action": {
+            "type": "create_room",
+            "name": "Tvättstuga"
+          }
+        },
+        {
+          "summary": "Skapa en uppgift för kakelsättning i tvättstugan.",
+          "confidence": 0.9,
+          "action": {
+            "type": "create_task",
+            "roomName": "Tvättstuga",
+            "title": "Kakelsättning tvättstuga"
+          }
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "checklist-authoring",
+      "score": {
+        "id": "checklist-authoring",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "The proposal accurately captures the user's request to create a checklist for tiling, including all specified steps."
+      },
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Skapa en checklista för kakelsättningen.",
+          "confidence": 0.9,
+          "action": {
+            "type": "create_checklist",
+            "taskId": "t-tile",
+            "items": [
+              "Primer",
+              "Tätskikt vägg",
+              "Tätskikt golv",
+              "Sätta kakel",
+              "Foga"
+            ]
+          },
+          "matchConfidence": 1,
+          "candidateTaskIds": [
+            "t-tile"
+          ]
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "instruction-say-to-trade",
+      "score": {
+        "id": "instruction-say-to-trade",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "The proposal accurately captures the note's instruction to ensure the ceiling receives two coats of paint."
+      },
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Notera att taket ska ha två strykningar.",
+          "confidence": 0.9,
+          "action": {
+            "type": "add_note",
+            "target": "task",
+            "targetId": "t-paint",
+            "text": "Taket ska ha två strykningar."
+          }
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "instruction-remind",
+      "score": {
+        "id": "instruction-remind",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "The proposal accurately captures the note's instruction to ensure the trim is installed last."
+      },
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Notera att listerna monteras allra sist.",
+          "confidence": 0.9,
+          "action": {
+            "type": "add_note",
+            "target": "task",
+            "targetId": "t-trim",
+            "text": "Listerna monteras allra sist."
+          },
+          "matchConfidence": 1,
+          "candidateTaskIds": [
+            "t-trim"
+          ]
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "instruction-room-scope",
+      "score": {
+        "id": "instruction-room-scope",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "The proposal accurately captures the user's instruction to add a note about not starting work in the bathroom before the 15th."
+      },
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Lägg till en notering för badrummet.",
+          "confidence": 0.9,
+          "action": {
+            "type": "add_note",
+            "target": "room",
+            "targetId": "r-bath",
+            "text": "inga arbeten där före den 15:e."
+          },
+          "matchConfidence": 1,
+          "candidateTaskIds": []
+        }
+      ]
+    }
+  ]
+}

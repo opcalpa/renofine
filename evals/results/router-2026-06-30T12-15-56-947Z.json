@@ -1,0 +1,217 @@
+{
+  "args": {
+    "models": [
+      "gpt-4o-mini"
+    ],
+    "judge": "gpt-4o",
+    "cases": null,
+    "judgeOn": false
+  },
+  "summary": [
+    {
+      "model": "gpt-4o-mini",
+      "n": 10,
+      "passed": 8,
+      "recall": 0.875,
+      "fp": 1,
+      "invented": 0,
+      "critical": 1,
+      "judgeAvg": null,
+      "errors": 0
+    }
+  ],
+  "rows": [
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "seal-done",
+      "score": {
+        "id": "seal-done",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "buy-tiles",
+      "score": {
+        "id": "buy-tiles",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "combo-progress-and-purchase",
+      "score": {
+        "id": "combo-progress-and-purchase",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 2,
+          "expected": 2
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 2
+      },
+      "judge": null,
+      "error": null
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "unknown-garage",
+      "score": {
+        "id": "unknown-garage",
+        "kind": "unknown",
+        "ok": true,
+        "recall": {
+          "found": 0,
+          "expected": 0
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "add-task-room",
+      "score": {
+        "id": "add-task-room",
+        "kind": "expect",
+        "ok": false,
+        "recall": {
+          "found": 0,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [
+          "missed the only expected action"
+        ],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "buy-no-room",
+      "score": {
+        "id": "buy-no-room",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "chitchat",
+      "score": {
+        "id": "chitchat",
+        "kind": "empty",
+        "ok": false,
+        "recall": {
+          "found": 0,
+          "expected": 0
+        },
+        "falsePositives": 1,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "progress-partial",
+      "score": {
+        "id": "progress-partial",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "wrong-room-trap",
+      "score": {
+        "id": "wrong-room-trap",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "lister-done-no-invent",
+      "score": {
+        "id": "lister-done-no-invent",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null
+    }
+  ]
+}

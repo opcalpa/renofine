@@ -1,0 +1,96 @@
+{
+  "args": {
+    "models": [
+      "gpt-4o-mini"
+    ],
+    "judge": "gpt-4o",
+    "cases": [
+      "assign-member",
+      "assign-nonmember-fallback"
+    ],
+    "judgeOn": false
+  },
+  "summary": [
+    {
+      "model": "gpt-4o-mini",
+      "n": 2,
+      "passed": 1,
+      "recall": 0.5,
+      "fp": 1,
+      "invented": 0,
+      "critical": 1,
+      "judgeAvg": null,
+      "errors": 0
+    }
+  ],
+  "rows": [
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "assign-member",
+      "score": {
+        "id": "assign-member",
+        "kind": "expect",
+        "ok": false,
+        "recall": {
+          "found": 0,
+          "expected": 1
+        },
+        "falsePositives": 1,
+        "inventedIds": [],
+        "critical": [
+          "missed the only expected action"
+        ],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Notera att Ahmed behöver kolla eluttagen i hallen.",
+          "confidence": 0.8,
+          "action": {
+            "type": "add_note",
+            "target": "project",
+            "targetId": "project",
+            "text": "Ahmed behöver kolla eluttagen i hallen."
+          }
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "assign-nonmember-fallback",
+      "score": {
+        "id": "assign-nonmember-fallback",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Notera att målaren behöver måla.",
+          "confidence": 0.5,
+          "action": {
+            "type": "add_note",
+            "target": "task",
+            "targetId": "t-paint",
+            "text": "Säg åt Ficticious Person att måla."
+          },
+          "matchConfidence": 0.85,
+          "candidateTaskIds": [
+            "t-paint"
+          ]
+        }
+      ]
+    }
+  ]
+}

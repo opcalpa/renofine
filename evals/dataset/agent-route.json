@@ -366,6 +366,17 @@
           "targetId": "t-paint"
         }
       ]
+    },
+    {
+      "id": "curated-purchase-title",
+      "input": "Behöver köpa mer spikar 3 mm",
+      "expect": [
+        {
+          "type": "create_purchase",
+          "itemIncludes": "spikar",
+          "itemExcludes": "behöver"
+        }
+      ]
     }
   ]
 }

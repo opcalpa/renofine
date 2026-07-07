@@ -3870,7 +3870,9 @@
       "micDenied": "I'm not allowed to use the microphone — check the browser's mic permission, or type your update here instead.",
       "micFailed": "The microphone didn't quite cooperate — try again, or type your update here instead.",
       "detailCleared": "cleared",
-      "usingProject": "I’m working from your project “{{name}}”."
+      "usingProject": "I’m working from your project “{{name}}”.",
+      "openTask": "Open the task “{{title}}”",
+      "openPurchase": "Open the order “{{title}}”"
     },
     "autonomy": {
       "suggest": "Suggest first",

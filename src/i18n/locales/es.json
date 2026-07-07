@@ -928,7 +928,9 @@
       "transcribing": "Interpretando tu voz…",
       "micRequesting": "Esperando el micrófono…",
       "detailCleared": "se elimina",
-      "usingProject": "Estoy trabajando sobre tu proyecto «{{name}}»."
+      "usingProject": "Estoy trabajando sobre tu proyecto «{{name}}».",
+      "openTask": "Abrir la tarea «{{title}}»",
+      "openPurchase": "Abrir el pedido «{{title}}»"
     }
   },
   "hotspots": {

@@ -3869,7 +3869,9 @@
       "micDenied": "Jag får inte använda mikrofonen — kolla webbläsarens mikrofonbehörighet, eller skriv din uppdatering här istället.",
       "micFailed": "Mikrofonen ville inte riktigt — prova igen, eller skriv din uppdatering här istället.",
       "detailCleared": "tas bort",
-      "usingProject": "Jag utgår från ditt projekt ”{{name}}”."
+      "usingProject": "Jag utgår från ditt projekt ”{{name}}”.",
+      "openTask": "Öppna arbetet ”{{title}}”",
+      "openPurchase": "Öppna köpordern ”{{title}}”"
     },
     "autonomy": {
       "suggest": "Föreslå först",

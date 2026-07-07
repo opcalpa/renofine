@@ -1,0 +1,215 @@
+{
+  "args": {
+    "models": [
+      "gpt-4o-mini"
+    ],
+    "langs": [
+      "sv"
+    ],
+    "judge": "gpt-4o-mini",
+    "cases": null,
+    "judgeOn": true
+  },
+  "summary": [
+    {
+      "model": "gpt-4o-mini",
+      "n": 8,
+      "structPass": 8,
+      "countPass": 7,
+      "vbRatio": 0.6666666666666666,
+      "judgeAvg": 2.75,
+      "critical": 18,
+      "errors": 0
+    }
+  ],
+  "rows": [
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "bathroom-waterproof-before-tile",
+      "lang": "sv",
+      "structureOk": true,
+      "countOk": false,
+      "count": 11,
+      "verbatim": {
+        "total": 0,
+        "pass": 0,
+        "missing": [],
+        "ratio": 1
+      },
+      "judge": {
+        "score": 1,
+        "criticalIssues": [
+          "the wall is not primed/prepped before the waterproofing",
+          "the waterproofing membrane (tätskikt) is applied BEFORE any tiling"
+        ],
+        "notes": "The checklist has critical issues regarding the order of operations, specifically that the wall preparation step is missing before applying the waterproofing membrane, which is essential for proper adhesion and effectiveness. Additionally, the waterproofing is applied before any tiling, which is correct, but the lack of wall preparation makes this dangerous."
+      },
+      "error": null
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "ceiling-paint-not-wall",
+      "lang": "sv",
+      "structureOk": true,
+      "countOk": true,
+      "count": 10,
+      "verbatim": {
+        "total": 1,
+        "pass": 1,
+        "missing": [],
+        "ratio": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "Checklist is correct and safe, follows logical order, and adheres to all room specifications."
+      },
+      "error": null
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "click-floor-acclimatize",
+      "lang": "sv",
+      "structureOk": true,
+      "countOk": true,
+      "count": 10,
+      "verbatim": {
+        "total": 2,
+        "pass": 0,
+        "missing": [
+          "Kährs Ek Nouveau Snow",
+          "14 mm"
+        ],
+        "ratio": 0
+      },
+      "judge": {
+        "score": 3,
+        "criticalIssues": [
+          "the floorboards are acclimatized in the room before laying",
+          "an underlay/foam is installed before the boards",
+          "skirting (fotlist) is installed AFTER the floor, not before"
+        ],
+        "notes": "Checklist is usable but has notable gaps. It does not mention acclimatizing the floorboards, which is critical. The installation of the underlay is correctly placed before laying the floor, but the checklist does not explicitly state that the underlay must be installed. The skirting installation step is correctly placed after the floor, but it should be emphasized that it must be done after the floor is laid."
+      },
+      "error": null
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "wall-prep-accent",
+      "lang": "sv",
+      "structureOk": true,
+      "countOk": true,
+      "count": 10,
+      "verbatim": {
+        "total": 2,
+        "pass": 2,
+        "missing": [],
+        "ratio": 1
+      },
+      "judge": {
+        "score": 3,
+        "criticalIssues": [
+          "surfaces are filled (spackel) and sanded before painting",
+          "primer/grundning before the topcoat",
+          "masking at the start, cleanup at the end",
+          "no purchasing or ordering steps"
+        ],
+        "notes": "The checklist is mostly logical but lacks critical steps such as applying primer before the topcoat and ensuring surfaces are filled and sanded before painting. Additionally, it includes a mention of purchasing materials, which is not allowed."
+      },
+      "error": null
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "demolition-shutoff-first",
+      "lang": "sv",
+      "structureOk": true,
+      "countOk": true,
+      "count": 9,
+      "verbatim": {
+        "total": 0,
+        "pass": 0,
+        "missing": [],
+        "ratio": 1
+      },
+      "judge": {
+        "score": 3,
+        "criticalIssues": [
+          "water (and any electricity in the wet zone) is shut off before demolition begins",
+          "the room is sealed off / dust protection is set up before bilning",
+          "debris is collected and removed"
+        ],
+        "notes": "Checklist is usable but lacks critical safety steps such as shutting off water and electricity, and sealing the room for dust protection. Cleanup steps are vague and do not explicitly mention the removal of debris."
+      },
+      "error": null
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "no-purchasing-kitchen-doors",
+      "lang": "sv",
+      "structureOk": true,
+      "countOk": true,
+      "count": 10,
+      "verbatim": {
+        "total": 0,
+        "pass": 0,
+        "missing": [],
+        "ratio": 1
+      },
+      "judge": {
+        "score": 3,
+        "criticalIssues": [
+          "there are NO purchasing or ordering steps (no 'köp', 'beställ', 'inhandla', 'buy', 'order')",
+          "doors are removed and labeled, cleaned/degreased, sanded, primed and painted, then refitted",
+          "drying time between coats is mentioned"
+        ],
+        "notes": "Checklist is mostly correct but includes a purchasing step (mentioning a specific paint brand), lacks explicit mention of labeling the doors, and does not specify the drying time between coats clearly."
+      },
+      "error": null
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "minimal-input-spackla",
+      "lang": "sv",
+      "structureOk": true,
+      "countOk": true,
+      "count": 9,
+      "verbatim": {
+        "total": 0,
+        "pass": 0,
+        "missing": [],
+        "ratio": 1
+      },
+      "judge": {
+        "score": 3,
+        "criticalIssues": [
+          "steps are not in logical order: cleaning should be before filling (spackel)"
+        ],
+        "notes": "The checklist is mostly correct but has a notable gap in the logical order of steps. Cleaning the walls should occur before applying the spackel to ensure proper adhesion."
+      },
+      "error": null
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "spotlights-electrical-scope",
+      "lang": "sv",
+      "structureOk": true,
+      "countOk": true,
+      "count": 9,
+      "verbatim": {
+        "total": 0,
+        "pass": 0,
+        "missing": [],
+        "ratio": 1
+      },
+      "judge": {
+        "score": 1,
+        "criticalIssues": [
+          "the final 230V connection is done by a certified electrician (behörig elektriker), not framed as casual DIY",
+          "the power is turned off at the fuse/breaker before any wiring work"
+        ],
+        "notes": "The checklist includes critical steps that are out of order and does not ensure safety, such as not turning off the power before wiring work and implying that the final electrical connection can be done by a non-professional."
+      },
+      "error": null
+    }
+  ]
+}

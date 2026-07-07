@@ -1,0 +1,383 @@
+{
+  "args": {
+    "models": [
+      "gpt-4o-mini"
+    ],
+    "judge": "gpt-4o",
+    "cases": null,
+    "judgeOn": false
+  },
+  "summary": [
+    {
+      "model": "gpt-4o-mini",
+      "n": 11,
+      "passed": 11,
+      "recall": 1,
+      "fp": 0,
+      "invented": 0,
+      "critical": 0,
+      "judgeAvg": null,
+      "errors": 0
+    }
+  ],
+  "rows": [
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "seal-done",
+      "score": {
+        "id": "seal-done",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Tätskiktet i badrummet är klart.",
+          "confidence": 0.9,
+          "action": {
+            "type": "set_progress",
+            "taskId": "t-seal",
+            "progress": 100,
+            "status": "done"
+          },
+          "matchConfidence": 0.9,
+          "candidateTaskIds": [
+            "t-seal"
+          ]
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "buy-tiles",
+      "score": {
+        "id": "buy-tiles",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Beställa tio kvm klinker till badrummet.",
+          "confidence": 0.9,
+          "action": {
+            "type": "create_purchase",
+            "roomId": "r-bath",
+            "item": "klinker",
+            "quantity": 10,
+            "unit": "kvm"
+          },
+          "matchConfidence": 1,
+          "candidateTaskIds": []
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "combo-progress-and-purchase",
+      "score": {
+        "id": "combo-progress-and-purchase",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 2,
+          "expected": 2
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 2
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Tätskiktet i badrummet är klart",
+          "confidence": 0.9,
+          "action": {
+            "type": "set_progress",
+            "taskId": "t-seal",
+            "progress": 100,
+            "status": "done"
+          },
+          "matchConfidence": 0.9,
+          "candidateTaskIds": [
+            "t-seal"
+          ]
+        },
+        {
+          "summary": "Behöver beställa tio kvm klinker till badrummet",
+          "confidence": 0.8,
+          "action": {
+            "type": "create_purchase",
+            "roomId": "r-bath",
+            "item": "klinker",
+            "quantity": 10,
+            "unit": "kvm"
+          },
+          "matchConfidence": 0.8
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "unknown-garage",
+      "score": {
+        "id": "unknown-garage",
+        "kind": "unknown",
+        "ok": true,
+        "recall": {
+          "found": 0,
+          "expected": 0
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 0
+      },
+      "judge": null,
+      "error": null,
+      "proposals": []
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "add-task-room",
+      "score": {
+        "id": "add-task-room",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Skapa en uppgift för att byta dörrhandtag i sovrummet.",
+          "confidence": 0.8,
+          "action": {
+            "type": "create_task",
+            "roomId": "r-bed",
+            "title": "Byta dörrhandtag",
+            "description": "Byta ut dörrhandtagen i sovrummet."
+          },
+          "matchConfidence": 0.6,
+          "candidateTaskIds": []
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "buy-no-room",
+      "score": {
+        "id": "buy-no-room",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Behöver beställa en ny köksblandare.",
+          "confidence": 0.9,
+          "action": {
+            "type": "create_purchase",
+            "roomId": "r-kitchen",
+            "item": "köksblandare"
+          },
+          "matchConfidence": 1,
+          "candidateTaskIds": []
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "chitchat",
+      "score": {
+        "id": "chitchat",
+        "kind": "empty",
+        "ok": true,
+        "recall": {
+          "found": 0,
+          "expected": 0
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 0
+      },
+      "judge": null,
+      "error": null,
+      "proposals": []
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "progress-partial",
+      "score": {
+        "id": "progress-partial",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Målningen är halvklar.",
+          "confidence": 0.8,
+          "action": {
+            "type": "set_progress",
+            "taskId": "t-paint",
+            "progress": 50,
+            "status": "in_progress"
+          },
+          "matchConfidence": 0.8,
+          "candidateTaskIds": [
+            "t-paint"
+          ]
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "wrong-room-trap",
+      "score": {
+        "id": "wrong-room-trap",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Sätt status på kakelsättning i badrummet till påbörjad.",
+          "confidence": 0.8,
+          "action": {
+            "type": "set_progress",
+            "taskId": "t-tile",
+            "progress": 50,
+            "status": "in_progress"
+          },
+          "matchConfidence": 0.8,
+          "candidateTaskIds": [
+            "t-tile"
+          ]
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "lister-done-no-invent",
+      "score": {
+        "id": "lister-done-no-invent",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Montera lister i Vardagsrum är klart.",
+          "confidence": 0.9,
+          "action": {
+            "type": "set_progress",
+            "taskId": "t-trim",
+            "progress": 100,
+            "status": "done"
+          },
+          "matchConfidence": 0.9,
+          "candidateTaskIds": [
+            "t-trim"
+          ]
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "no-matching-task-borra-trap",
+      "score": {
+        "id": "no-matching-task-borra-trap",
+        "kind": "no-confident-mutation",
+        "ok": true,
+        "recall": {
+          "found": 0,
+          "expected": 0
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Golvvärmen i badrummet är klar.",
+          "confidence": 0.5,
+          "action": {
+            "type": "unknown",
+            "rawText": "Golvvärmen i badrummet är inkopplad och klar.",
+            "reason": "Det finns ingen uppgift för golvvärme i projektet."
+          },
+          "matchConfidence": 0,
+          "candidateTaskIds": []
+        }
+      ]
+    }
+  ]
+}

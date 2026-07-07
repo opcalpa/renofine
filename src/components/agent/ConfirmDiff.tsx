@@ -84,7 +84,12 @@ function actionDetails(
       details.push(`${t("helpBot.agent.detailAssignee", "Tilldelas")}: ${action.assigneeName ?? ""}`);
       break;
     case "create_purchase":
-      if (action.quantity) details.push(`${action.quantity}${action.unit ? ` ${action.unit}` : " st"}`);
+      // The item string becomes the order's name — show it so the user
+      // confirms the curated title, not just the summary sentence.
+      details.push(`${action.item}${action.quantity ? ` · ${action.quantity}${action.unit ? ` ${action.unit}` : " st"}` : ""}`);
+      break;
+    case "create_task":
+      details.push(action.title);
       break;
     case "add_note":
       details.push(`”${action.text.length > 90 ? action.text.slice(0, 90) + "…" : action.text}”`);

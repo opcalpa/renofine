@@ -1,0 +1,204 @@
+{
+  "args": {
+    "models": [
+      "gpt-4o-mini"
+    ],
+    "judge": "gpt-4o",
+    "cases": [
+      "assign-member",
+      "assign-nonmember-fallback",
+      "instruction-say-to-trade",
+      "instruction-remind",
+      "instruction-room-scope"
+    ],
+    "judgeOn": false
+  },
+  "summary": [
+    {
+      "model": "gpt-4o-mini",
+      "n": 5,
+      "passed": 4,
+      "recall": 0.8,
+      "fp": 1,
+      "invented": 0,
+      "critical": 1,
+      "judgeAvg": null,
+      "errors": 0
+    }
+  ],
+  "rows": [
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "instruction-say-to-trade",
+      "score": {
+        "id": "instruction-say-to-trade",
+        "kind": "expect",
+        "ok": false,
+        "recall": {
+          "found": 0,
+          "expected": 1
+        },
+        "falsePositives": 1,
+        "inventedIds": [],
+        "critical": [
+          "missed the only expected action"
+        ],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Tilldela målningen att taket ska ha två strykningar.",
+          "confidence": 0.8,
+          "action": {
+            "type": "assign_task",
+            "taskId": "t-paint",
+            "assigneeProfileId": "m-johan"
+          },
+          "matchConfidence": 0.85,
+          "candidateTaskIds": [
+            "t-paint"
+          ]
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "instruction-remind",
+      "score": {
+        "id": "instruction-remind",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Lägg till en påminnelse om att listerna monteras sist.",
+          "confidence": 0.8,
+          "action": {
+            "type": "add_note",
+            "target": "task",
+            "targetId": "t-trim",
+            "text": "Listerna monteras allra sist."
+          },
+          "matchConfidence": 1,
+          "candidateTaskIds": [
+            "t-trim"
+          ]
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "instruction-room-scope",
+      "score": {
+        "id": "instruction-room-scope",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Lägg till en instruktion för badrummet: inga arbeten där före den 15:e.",
+          "confidence": 0.9,
+          "action": {
+            "type": "add_note",
+            "target": "room",
+            "targetId": "r-bath",
+            "text": "inga arbeten där före den 15:e."
+          },
+          "matchConfidence": 1,
+          "candidateTaskIds": []
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "assign-member",
+      "score": {
+        "id": "assign-member",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Tilldela eluttag och belysning till Ahmed.",
+          "confidence": 0.9,
+          "action": {
+            "type": "assign_task",
+            "taskId": "t-elec",
+            "assigneeProfileId": "m-ahmed"
+          },
+          "matchConfidence": 0.9,
+          "candidateTaskIds": [
+            "t-elec"
+          ]
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "assign-nonmember-fallback",
+      "score": {
+        "id": "assign-nonmember-fallback",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Notera att målaren behöver måla.",
+          "confidence": 0.5,
+          "action": {
+            "type": "add_note",
+            "target": "task",
+            "targetId": "t-paint",
+            "text": "Säg åt Ficticious Person att måla."
+          },
+          "matchConfidence": 0.85,
+          "candidateTaskIds": [
+            "t-paint"
+          ]
+        }
+      ]
+    }
+  ]
+}

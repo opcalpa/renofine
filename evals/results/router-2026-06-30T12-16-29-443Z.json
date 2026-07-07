@@ -1,0 +1,90 @@
+{
+  "args": {
+    "models": [
+      "gpt-4o-mini"
+    ],
+    "judge": "gpt-4o",
+    "cases": [
+      "add-task-room",
+      "chitchat"
+    ],
+    "judgeOn": false
+  },
+  "summary": [
+    {
+      "model": "gpt-4o-mini",
+      "n": 2,
+      "passed": 1,
+      "recall": 0,
+      "fp": 0,
+      "invented": 0,
+      "critical": 1,
+      "judgeAvg": null,
+      "errors": 0
+    }
+  ],
+  "rows": [
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "add-task-room",
+      "score": {
+        "id": "add-task-room",
+        "kind": "expect",
+        "ok": false,
+        "recall": {
+          "found": 0,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [
+          "missed the only expected action"
+        ],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Byta dörrhandtag i sovrummet.",
+          "confidence": 0.5,
+          "action": {
+            "type": "unknown",
+            "rawText": "byta dörrhandtagen i sovrummet",
+            "reason": "Ingen specifik uppgift för dörrhandtag finns."
+          }
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "chitchat",
+      "score": {
+        "id": "chitchat",
+        "kind": "empty",
+        "ok": true,
+        "recall": {
+          "found": 0,
+          "expected": 0
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Inga specifika åtgärder att föreslå.",
+          "confidence": 0,
+          "action": {
+            "type": "unknown",
+            "rawText": "Det var en riktigt bra dag på bygget idag, sol och fin stämning.",
+            "reason": "Ingen specifik åtgärd nämnd."
+          }
+        }
+      ]
+    }
+  ]
+}

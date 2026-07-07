@@ -1,0 +1,63 @@
+{
+  "args": {
+    "models": [
+      "gpt-4o-mini"
+    ],
+    "judge": "gpt-4o",
+    "cases": [
+      "ambiguous-same-trade"
+    ],
+    "judgeOn": false
+  },
+  "summary": [
+    {
+      "model": "gpt-4o-mini",
+      "n": 1,
+      "passed": 1,
+      "recall": 1,
+      "fp": 0,
+      "invented": 0,
+      "critical": 0,
+      "judgeAvg": null,
+      "errors": 0
+    }
+  ],
+  "rows": [
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "ambiguous-same-trade",
+      "score": {
+        "id": "ambiguous-same-trade",
+        "kind": "ambiguous-pick",
+        "ok": true,
+        "recall": {
+          "found": 0,
+          "expected": 0
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Spacklingen är klar i ett av rummen.",
+          "confidence": 0.6,
+          "action": {
+            "type": "set_progress",
+            "taskId": "t-spackle-bed",
+            "progress": 100,
+            "status": "done"
+          },
+          "matchConfidence": 0.6,
+          "candidateTaskIds": [
+            "t-spackle-bed",
+            "t-spackle-living"
+          ]
+        }
+      ]
+    }
+  ]
+}

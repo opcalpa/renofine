@@ -1,0 +1,233 @@
+{
+  "args": {
+    "models": [
+      "gpt-4o-mini"
+    ],
+    "judge": "gpt-4o",
+    "cases": [
+      "plan-deadline",
+      "plan-start-date",
+      "plan-budget",
+      "plan-priority",
+      "checklist-remove-item"
+    ],
+    "judgeOn": true
+  },
+  "summary": [
+    {
+      "model": "gpt-4o-mini",
+      "n": 5,
+      "passed": 5,
+      "recall": 1,
+      "fp": 0,
+      "invented": 0,
+      "critical": 0,
+      "judgeAvg": 3.4,
+      "errors": 0
+    }
+  ],
+  "rows": [
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "plan-deadline",
+      "score": {
+        "id": "plan-deadline",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": {
+        "score": 1,
+        "criticalIssues": [
+          "Proposed due date '2026-07-10' does not match the note's instruction for a Friday deadline."
+        ],
+        "notes": "The proposal incorrectly sets a specific date instead of ensuring the deadline is on a Friday as instructed."
+      },
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Sätt deadline på fredag för kakelsättningen.",
+          "confidence": 0.9,
+          "action": {
+            "type": "update_task",
+            "taskId": "t-tile",
+            "changes": {
+              "due_date": "2026-07-10"
+            }
+          },
+          "matchConfidence": 0.9,
+          "candidateTaskIds": [
+            "t-tile"
+          ]
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "plan-start-date",
+      "score": {
+        "id": "plan-start-date",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": {
+        "score": 1,
+        "criticalIssues": [
+          "Proposed start date '2026-07-06' does not match the note's instruction to start on 'måndag' (Monday)."
+        ],
+        "notes": "The proposal incorrectly sets a specific date that does not align with the note's instruction to start painting on the upcoming Monday."
+      },
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Sätt startdatum för målningen till måndag.",
+          "confidence": 0.9,
+          "action": {
+            "type": "update_task",
+            "taskId": "t-paint",
+            "changes": {
+              "start_date": "2026-07-06"
+            }
+          },
+          "matchConfidence": 0.9,
+          "candidateTaskIds": [
+            "t-paint"
+          ]
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "plan-budget",
+      "score": {
+        "id": "plan-budget",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "The proposal accurately captures the user's request to increase the budget for floor sanding to 15,000 kronor."
+      },
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Höj budgeten för golvslipningen till 15000 kronor.",
+          "confidence": 0.9,
+          "action": {
+            "type": "update_task",
+            "taskId": "t-floor",
+            "changes": {
+              "budget": 15000
+            }
+          },
+          "matchConfidence": 0.9,
+          "candidateTaskIds": [
+            "t-floor"
+          ]
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "plan-priority",
+      "score": {
+        "id": "plan-priority",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "The proposal accurately captures the note's intent to prioritize tiling."
+      },
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Sätt hög prioritet på kakelsättningen.",
+          "confidence": 0.9,
+          "action": {
+            "type": "update_task",
+            "taskId": "t-tile",
+            "changes": {
+              "priority": "high"
+            }
+          },
+          "matchConfidence": 0.9,
+          "candidateTaskIds": [
+            "t-tile"
+          ]
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "checklist-remove-item",
+      "score": {
+        "id": "checklist-remove-item",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": {
+        "score": 5,
+        "criticalIssues": [],
+        "notes": "The proposal accurately reflects the user's instruction to remove the mounting item from the trim checklist."
+      },
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Ta bort punkten om montering från listernas checklista.",
+          "confidence": 0.9,
+          "action": {
+            "type": "remove_checklist_item",
+            "taskId": "t-trim",
+            "itemText": "Montera lister"
+          },
+          "matchConfidence": 1,
+          "candidateTaskIds": [
+            "t-trim"
+          ]
+        }
+      ]
+    }
+  ]
+}

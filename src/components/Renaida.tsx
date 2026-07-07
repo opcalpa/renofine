@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback, type ReactNode } from "react";
-import { Send, X, Lightbulb, BookOpen, Wrench, FileText, ArrowLeft, Mic, Sparkles, ChevronDown, MessageCircle, Square, Loader2 } from "lucide-react";
+import { Send, X, Lightbulb, BookOpen, Wrench, FileText, ArrowLeft, Mic, Sparkles, ChevronDown, MessageCircle, Square, Loader2, ExternalLink } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useVoiceRecorder, isRecorderSupported } from "@/hooks/useVoiceRecorder";
 import { useVisualViewportHeight } from "@/hooks/useVisualViewportHeight";
@@ -74,6 +75,8 @@ interface Message {
    *  against a resolved fallback project (panel opened outside a project) —
    *  apply/undo must NOT fall back to the store's (null) projectId then. */
   projectId?: string;
+  /** Deep links to objects this message's apply created ("open the order"). */
+  links?: { label: string; to: string }[];
 }
 
 /** Build ConfirmDiff proposals from proactive suggestions, with localized summaries. */
@@ -225,6 +228,7 @@ export function Renaida() {
   const [renaidaAsleep, setRenaidaAsleep] = useState(false);
   const [remindersExpanded, setRemindersExpanded] = useState(false);
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
   // Keyboard-aware panel height (iOS overlays fixed elements without resizing).
   const vvBox = useVisualViewportHeight(open && isMobile);
 
@@ -584,7 +588,15 @@ export function Renaida() {
         ? (userFacing ?? t("helpBot.agent.allFailed"))
         : `${t("helpBot.agent.partialFailed", { applied: result.applied.length, failed: result.failed.length })}${userFacing ? ` ${userFacing}` : ""}`;
 
-    setMessages((prev) => [...prev, { role: "assistant", content, undo: result.undo.length ? result.undo : undefined, projectId }]);
+    // Created objects get a direct "open it" link (Carl 7 Jul: a bare
+    // "genomförde 1 ändring" leaves you hunting for what was created where).
+    const links = result.created.map((c) => ({
+      label: c.type === "purchase"
+        ? t("helpBot.agent.openPurchase", { title: c.title })
+        : t("helpBot.agent.openTask", { title: c.title }),
+      to: `/projects/${projectId}?tab=${c.type === "purchase" ? "purchases" : "tasks"}&entityId=${c.id}`,
+    }));
+    setMessages((prev) => [...prev, { role: "assistant", content, undo: result.undo.length ? result.undo : undefined, projectId, links: links.length ? links : undefined }]);
     if (result.applied.length > 0) {
       // Overview cards (useOverviewData) are not React Query — nudge them to refetch.
       window.dispatchEvent(new CustomEvent("renaida-data-changed", { detail: { projectId } }));
@@ -1152,6 +1164,21 @@ export function Renaida() {
                       >
                         {action.icon}
                         {t(action.labelKey, action.fallback)}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {/* Direct links to objects this apply created */}
+                {msg.links && msg.links.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-2 ml-1">
+                    {msg.links.map((link, j) => (
+                      <button
+                        key={j}
+                        onClick={() => { setOpen(false); navigate(link.to); }}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-background px-3.5 py-2 text-sm font-medium text-primary hover:bg-primary/5 transition-colors md:gap-1 md:px-2.5 md:py-1 md:text-xs"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5 md:h-3 md:w-3" />
+                        {link.label}
                       </button>
                     ))}
                   </div>

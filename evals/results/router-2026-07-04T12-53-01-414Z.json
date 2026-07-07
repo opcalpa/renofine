@@ -1,0 +1,123 @@
+{
+  "args": {
+    "models": [
+      "gpt-4o-mini"
+    ],
+    "judge": "gpt-4o",
+    "cases": null,
+    "judgeOn": true
+  },
+  "summary": [
+    {
+      "model": "gpt-4o-mini",
+      "n": 0,
+      "passed": 0,
+      "recall": 1,
+      "fp": 0,
+      "invented": 0,
+      "critical": 0,
+      "judgeAvg": null,
+      "errors": 14
+    }
+  ],
+  "rows": [
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "seal-done",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "buy-tiles",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "combo-progress-and-purchase",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "unknown-garage",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "add-task-room",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "buy-no-room",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "chitchat",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "progress-partial",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "wrong-room-trap",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "lister-checklist-not-room",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "no-matching-task-borra-trap",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "log-time-on-task",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "toggle-checklist-item",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "ambiguous-same-trade",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    }
+  ]
+}

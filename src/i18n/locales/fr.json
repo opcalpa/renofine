@@ -928,7 +928,9 @@
       "transcribing": "Analyse de votre voix…",
       "micRequesting": "En attente du micro…",
       "detailCleared": "supprimé",
-      "usingProject": "Je me base sur votre projet « {{name}} »."
+      "usingProject": "Je me base sur votre projet « {{name}} ».",
+      "openTask": "Ouvrir la tâche « {{title}} »",
+      "openPurchase": "Ouvrir la commande « {{title}} »"
     }
   },
   "hotspots": {

@@ -1,0 +1,112 @@
+{
+  "args": {
+    "models": [
+      "gpt-4o-mini"
+    ],
+    "judge": "gpt-4o",
+    "cases": [
+      "plan-deadline",
+      "plan-start-date"
+    ],
+    "judgeOn": true
+  },
+  "summary": [
+    {
+      "model": "gpt-4o-mini",
+      "n": 2,
+      "passed": 2,
+      "recall": 1,
+      "fp": 0,
+      "invented": 0,
+      "critical": 0,
+      "judgeAvg": 1,
+      "errors": 0
+    }
+  ],
+  "rows": [
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "plan-deadline",
+      "score": {
+        "id": "plan-deadline",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": {
+        "score": 1,
+        "criticalIssues": [
+          "Proposed due date '2026-07-10' does not match the note's instruction to set the deadline for Friday."
+        ],
+        "notes": "The proposal incorrectly sets the due date to '2026-07-10' instead of the upcoming Friday as instructed in the note."
+      },
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Sätt deadline på fredag för kakelsättningen.",
+          "confidence": 0.9,
+          "action": {
+            "type": "update_task",
+            "taskId": "t-tile",
+            "changes": {
+              "due_date": "2026-07-10"
+            }
+          },
+          "matchConfidence": 0.9,
+          "candidateTaskIds": [
+            "t-tile"
+          ]
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "plan-start-date",
+      "score": {
+        "id": "plan-start-date",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": {
+        "score": 1,
+        "criticalIssues": [
+          "Proposed start date '2026-07-06' does not match the note's instruction to start on 'måndag' (Monday)."
+        ],
+        "notes": "The proposal incorrectly interprets the start date, which should align with the upcoming Monday, not a specific date in 2026."
+      },
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Målningen av väggar och tak ska börja på måndag.",
+          "confidence": 0.9,
+          "action": {
+            "type": "update_task",
+            "taskId": "t-paint",
+            "changes": {
+              "start_date": "2026-07-06"
+            }
+          },
+          "matchConfidence": 0.9,
+          "candidateTaskIds": [
+            "t-paint"
+          ]
+        }
+      ]
+    }
+  ]
+}

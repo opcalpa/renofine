@@ -13,11 +13,19 @@ import { createRequestPurchase } from "@/lib/createRequestPurchase";
 import type { ActionableProposal, AgentProposal, UndoOp } from "./types";
 import { isActionable } from "./types";
 
+export interface CreatedRef {
+  type: "task" | "purchase";
+  id: string;
+  title: string;
+}
+
 export interface ApplyResult {
   applied: AgentProposal[];
   failed: { proposal: AgentProposal; error: string }[];
   /** Reverse-order list of undo operations for the applied changes. */
   undo: UndoOp[];
+  /** Objects this batch created — lets the confirmation link straight to them. */
+  created: CreatedRef[];
 }
 
 interface ChecklistGroup {
@@ -307,7 +315,7 @@ export async function applyProposals(
   accepted: AgentProposal[],
   projectId: string,
 ): Promise<ApplyResult> {
-  const result: ApplyResult = { applied: [], failed: [], undo: [] };
+  const result: ApplyResult = { applied: [], failed: [], undo: [], created: [] };
   const actionable = accepted.filter(isActionable);
   if (actionable.length === 0) return result;
 
@@ -316,7 +324,7 @@ export async function applyProposals(
     profileId = await getProfileId();
   } catch (e) {
     const error = e instanceof Error ? e.message : "Okänt fel";
-    return { applied: [], failed: accepted.map((proposal) => ({ proposal, error })), undo: [] };
+    return { applied: [], failed: accepted.map((proposal) => ({ proposal, error })), undo: [], created: [] };
   }
 
   // Rooms first so create_task roomName references resolve within the batch.
@@ -331,6 +339,12 @@ export async function applyProposals(
       const undo = await applyOne(proposal, projectId, profileId, createdRoomsByName);
       result.applied.push(proposal);
       result.undo.unshift(undo); // reverse order for undo
+      // Created objects → refs for "open it" links in the confirmation
+      if (undo.kind === "delete_task" && proposal.action.type === "create_task") {
+        result.created.push({ type: "task", id: undo.taskId, title: proposal.action.title });
+      } else if (undo.kind === "delete_purchase" && proposal.action.type === "create_purchase") {
+        result.created.push({ type: "purchase", id: undo.purchaseOrderId, title: proposal.action.item });
+      }
     } catch (e) {
       result.failed.push({ proposal, error: e instanceof Error ? e.message : "Okänt fel" });
     }
