@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { GuestProvider } from "@/contexts/GuestContext";
 import { MeasurementProvider } from "@/contexts/MeasurementContext";
 import "@/i18n/config";
@@ -54,11 +54,14 @@ import { Renaida } from "./components/Renaida";
 import { BetaBanner } from "./components/BetaBanner";
 import { Canonical } from "./components/seo/Canonical";
 
-/** Only show Renaida on authenticated/app pages, not public landing pages */
+/** Only show Renaida on authenticated/app pages, not public landing pages.
+ *  MUST live inside BrowserRouter and read useLocation — window.location read
+ *  once at mount froze visibility to the initial URL: a session that started
+ *  on the landing page never got the FAB at all (Carl's iPhone finding 7 Jul). */
 function AuthenticatedRenaida() {
-  const path = typeof window !== "undefined" ? window.location.pathname : "";
+  const { pathname } = useLocation();
   const publicPaths = ["/", "/auth", "/landing-test", "/about", "/contact", "/terms", "/privacy", "/tips"];
-  if (publicPaths.includes(path) || path.startsWith("/w/") || path.startsWith("/intake/") || path.startsWith("/quotes/") || path.startsWith("/invoices/")) {
+  if (publicPaths.includes(pathname) || pathname.startsWith("/w/") || pathname.startsWith("/intake/") || pathname.startsWith("/quotes/") || pathname.startsWith("/invoices/")) {
     return null;
   }
   return <Renaida />;
@@ -131,8 +134,8 @@ const App = () => (
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <AuthenticatedRenaida />
           </BrowserRouter>
-          <AuthenticatedRenaida />
         </TooltipProvider>
         </MeasurementProvider>
       </GuestProvider>
