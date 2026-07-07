@@ -927,7 +927,8 @@
       "recording": "Aufnahme läuft — zum Stoppen tippen",
       "transcribing": "Deine Stimme wird verarbeitet…",
       "micRequesting": "Warte auf das Mikrofon…",
-      "detailCleared": "wird entfernt"
+      "detailCleared": "wird entfernt",
+      "usingProject": "Ich gehe von deinem Projekt „{{name}}“ aus."
     }
   },
   "hotspots": {

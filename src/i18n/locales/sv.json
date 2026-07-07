@@ -3868,7 +3868,8 @@
       "detailAssignee": "Tilldelas",
       "micDenied": "Jag får inte använda mikrofonen — kolla webbläsarens mikrofonbehörighet, eller skriv din uppdatering här istället.",
       "micFailed": "Mikrofonen ville inte riktigt — prova igen, eller skriv din uppdatering här istället.",
-      "detailCleared": "tas bort"
+      "detailCleared": "tas bort",
+      "usingProject": "Jag utgår från ditt projekt ”{{name}}”."
     },
     "autonomy": {
       "suggest": "Föreslå först",

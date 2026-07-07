@@ -14,6 +14,7 @@ import { applyProposals, undoProposals } from "@/services/agent/applyProposals";
 import { type AgentProposal, type UndoOp, TASK_MATCH_MIN_CONFIDENCE, isActionable } from "@/services/agent/types";
 import { recordCorrection, getAutonomyMode, setAutonomyMode } from "@/services/agent/renaidaMemory";
 import { fetchProactiveSuggestions, type RenaidaSuggestion } from "@/services/agent/renaidaSuggestions";
+import { resolveFallbackProject } from "@/services/agent/defaultProject";
 import { analytics, AnalyticsEvents } from "@/lib/analytics";
 
 /** Action-type histogram + task-target ids, for the Renaida learning-loop sensor events. */
@@ -69,6 +70,10 @@ interface Message {
   undo?: UndoOp[];
   /** Marks a proactively-surfaced suggestion message (Fas 3b) — shown once per open. */
   suggestion?: boolean;
+  /** Project the proposals/undo in this message act on. Set when capture ran
+   *  against a resolved fallback project (panel opened outside a project) —
+   *  apply/undo must NOT fall back to the store's (null) projectId then. */
+  projectId?: string;
 }
 
 /** Build ConfirmDiff proposals from proactive suggestions, with localized summaries. */
@@ -227,6 +232,8 @@ export function Renaida() {
   const inputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const flashTimerRef = useRef<number | undefined>(undefined);
+  // Fallback project already announced in this panel session (capture outside a project)
+  const announcedFallbackRef = useRef<string | null>(null);
   const sleepTimerRef = useRef<number | undefined>(undefined);
 
   // --- Renaida mood machine: idle → hello/think/talk/happy, sleep when idle ---
@@ -549,7 +556,7 @@ export function Renaida() {
         ? (userFacing ?? t("helpBot.agent.allFailed"))
         : `${t("helpBot.agent.partialFailed", { applied: result.applied.length, failed: result.failed.length })}${userFacing ? ` ${userFacing}` : ""}`;
 
-    setMessages((prev) => [...prev, { role: "assistant", content, undo: result.undo.length ? result.undo : undefined }]);
+    setMessages((prev) => [...prev, { role: "assistant", content, undo: result.undo.length ? result.undo : undefined, projectId }]);
     if (result.applied.length > 0) {
       // Overview cards (useOverviewData) are not React Query — nudge them to refetch.
       window.dispatchEvent(new CustomEvent("renaida-data-changed", { detail: { projectId } }));
@@ -586,7 +593,23 @@ export function Renaida() {
     setMessages((prev) => [...prev, { role: "user", content: text.trim() }]);
     setInput("");
 
-    const projectId = useRenaidaStore.getState().projectId;
+    let projectId = useRenaidaStore.getState().projectId;
+    if (!projectId) {
+      // Outside a project (e.g. the start page): act on the user's most
+      // relevant project instead of silently dropping to chat (Carl 2026-07-07,
+      // iPhone finding). Announce which project once so it's never implicit.
+      const fallback = await resolveFallbackProject().catch(() => null);
+      if (fallback) {
+        projectId = fallback.id;
+        if (announcedFallbackRef.current !== fallback.id) {
+          announcedFallbackRef.current = fallback.id;
+          setMessages((prev) => [...prev, {
+            role: "assistant",
+            content: t("helpBot.agent.usingProject", { name: fallback.name }),
+          }]);
+        }
+      }
+    }
     if (!projectId) {
       if (opts?.fallbackToChat) {
         void sendMessage(text, { skipUserMessage: true });
@@ -623,7 +646,7 @@ export function Renaida() {
           return;
         }
         analytics.capture(AnalyticsEvents.RENAIDA_PROPOSED, { kind, resolved: true, ...s });
-        setMessages((prev) => [...prev, { role: "assistant", content: "", proposals: res.proposals }]);
+        setMessages((prev) => [...prev, { role: "assistant", content: "", proposals: res.proposals, projectId }]);
       }
       flashRenaida("talk", 1400);
     } catch {
@@ -716,8 +739,8 @@ export function Renaida() {
     else startVoiceCapture();
   }, [input, captureUpdate, startVoiceCapture]);
 
-  const handleApplyProposals = useCallback(async (msgIndex: number, accepted: AgentProposal[], original: AgentProposal[], phrase: string) => {
-    const projectId = useRenaidaStore.getState().projectId;
+  const handleApplyProposals = useCallback(async (msgIndex: number, accepted: AgentProposal[], original: AgentProposal[], phrase: string, msgProjectId?: string) => {
+    const projectId = msgProjectId ?? useRenaidaStore.getState().projectId;
     if (!projectId) return;
 
     // Correction signal: a task-targeting proposal whose accepted taskId differs
@@ -749,9 +772,9 @@ export function Renaida() {
     await applyAndReport(accepted, projectId, { auto: false, corrected: corrections.length });
   }, [applyAndReport]);
 
-  const handleUndo = useCallback(async (msgIndex: number, ops: UndoOp[]) => {
+  const handleUndo = useCallback(async (msgIndex: number, ops: UndoOp[], msgProjectId?: string) => {
     setMessages((prev) => prev.map((m, i) => (i === msgIndex ? { ...m, undo: undefined } : m)));
-    const projectId = useRenaidaStore.getState().projectId;
+    const projectId = msgProjectId ?? useRenaidaStore.getState().projectId;
     await undoProposals(ops, projectId ?? undefined);
     analytics.capture(AnalyticsEvents.RENAIDA_UNDONE, { count: ops.length });
     window.dispatchEvent(new CustomEvent("renaida-data-changed", { detail: { projectId } }));
@@ -1062,7 +1085,7 @@ export function Renaida() {
                       <ConfirmDiff
                         proposals={msg.proposals}
                         applying={applying}
-                        onConfirm={(accepted) => handleApplyProposals(i, accepted, msg.proposals ?? [], messages[i - 1]?.content ?? "")}
+                        onConfirm={(accepted) => handleApplyProposals(i, accepted, msg.proposals ?? [], messages[i - 1]?.content ?? "", msg.projectId)}
                         onDismiss={() => handleDismissProposals(i)}
                       />
                     </div>
@@ -1109,7 +1132,7 @@ export function Renaida() {
                 {msg.undo && msg.undo.length > 0 && (
                   <div className="mt-2 ml-1">
                     <button
-                      onClick={() => handleUndo(i, msg.undo!)}
+                      onClick={() => handleUndo(i, msg.undo!, msg.projectId)}
                       className="inline-flex items-center gap-1.5 rounded-full border bg-background px-3.5 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors md:gap-1 md:px-2.5 md:py-1 md:text-xs"
                     >
                       <ArrowLeft className="h-3.5 w-3.5 md:h-3 md:w-3" />

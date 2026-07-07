@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, ChevronDown, FolderOpen, Lock, BookOpen, Loader2, MessageSquare, PartyPopper, X, Zap, FileText, LayoutGrid } from "lucide-react";
 import { isDemoProject, refreshDemoProjectDates } from "@/services/demoProjectService";
 import { normalizeStatus } from "@/lib/projectStatus";
+import { rememberLastProject } from "@/lib/autoEntry";
 import { ProjectDetailSkeleton } from "@/components/ui/skeleton-screens";
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -256,6 +257,7 @@ const ProjectDetail = () => {
   useEffect(() => {
     if (!project?.id) return;
     useRenaidaStore.getState().setProject(project.id, project.name, project.country);
+    rememberLastProject(project.id); // auto-entry + Renaida fallback target
     return () => useRenaidaStore.getState().clearProject();
   }, [project?.id, project?.name, project?.country]);
 

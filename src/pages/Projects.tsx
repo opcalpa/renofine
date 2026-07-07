@@ -54,6 +54,7 @@ import {
 } from "@/services/guestStorageService";
 
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
+import { consumeAutoEntry, getLastProjectId } from "@/lib/autoEntry";
 // On permanent chunk-load failure (stale build), clear the A/B sticky flag so
 // the user isn't trapped in a broken redesigned dashboard after page reload.
 const DashboardRedesign = lazyWithRetry(
@@ -227,6 +228,18 @@ const Projects = () => {
   const [createIntakeOpen, setCreateIntakeOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Auto-entry (Carl 2026-07-07): a fresh app load that lands here continues
+  // into the last visited (else newest) real project. Explicit navigation back
+  // to Start stays put — consumeAutoEntry is true only once, on initial load.
+  useEffect(() => {
+    if (authLoading || loading) return;
+    if (!consumeAutoEntry()) return;
+    if (isGuest || !profileId || nonDemoProjects.length === 0) return;
+    const remembered = getLastProjectId();
+    const target = nonDemoProjects.find((p) => p.id === remembered) ?? nonDemoProjects[0];
+    navigate(`/projects/${target.id}`, { replace: true });
+  }, [authLoading, loading, isGuest, profileId, nonDemoProjects, navigate]);
 
   // Data fetching handled by useProjectsData hook
 
