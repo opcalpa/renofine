@@ -64,11 +64,20 @@ function logActivity(
   }).then(() => {}, () => {});
 }
 
+/** Created objects carry the user's original words in their description —
+ *  the curated title says WHAT, the transcript preserves exactly what was said. */
+function withTranscript(description: string | null | undefined, sourceText?: string): string | null {
+  const src = sourceText?.trim();
+  if (!src) return description?.trim() || null;
+  return [description?.trim(), `”${src}”`].filter(Boolean).join("\n\n");
+}
+
 async function applyOne(
   proposal: ActionableProposal,
   projectId: string,
   profileId: string,
   createdRoomsByName: Map<string, string>,
+  sourceText?: string,
 ): Promise<UndoOp> {
   const { action } = proposal;
 
@@ -143,7 +152,7 @@ async function applyOne(
         // loop round 7: panel showed "Inget rum" when only room_id was set.
         room_ids: resolvedRoomId ? [resolvedRoomId] : [],
         title: action.title,
-        description: action.description ?? null,
+        description: withTranscript(action.description, sourceText),
         status: "to_do",
         priority: "medium",
         created_by_user_id: profileId,
@@ -157,7 +166,7 @@ async function applyOne(
     case "create_purchase": {
       // Visible order: a request-PO + linked material (respects the PO invariant),
       // not an orphan planned material. Price unknown from voice → total 0.
-      const description = [action.quantity, action.unit].filter(Boolean).join(" ") || null;
+      const description = withTranscript([action.quantity, action.unit].filter(Boolean).join(" ") || null, sourceText);
       const { purchaseOrderId, materialId } = await createRequestPurchase({
         projectId,
         createdByUserId: profileId,
@@ -314,6 +323,7 @@ async function applyOne(
 export async function applyProposals(
   accepted: AgentProposal[],
   projectId: string,
+  sourceText?: string,
 ): Promise<ApplyResult> {
   const result: ApplyResult = { applied: [], failed: [], undo: [], created: [] };
   const actionable = accepted.filter(isActionable);
@@ -336,7 +346,7 @@ export async function applyProposals(
 
   for (const proposal of ordered) {
     try {
-      const undo = await applyOne(proposal, projectId, profileId, createdRoomsByName);
+      const undo = await applyOne(proposal, projectId, profileId, createdRoomsByName, sourceText);
       result.applied.push(proposal);
       result.undo.unshift(undo); // reverse order for undo
       // Created objects → refs for "open it" links in the confirmation

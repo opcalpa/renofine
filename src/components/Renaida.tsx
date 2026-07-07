@@ -77,6 +77,9 @@ interface Message {
   projectId?: string;
   /** Deep links to objects this message's apply created ("open the order"). */
   links?: { label: string; to: string }[];
+  /** The user utterance that produced this proposals bubble. NOT messages[i-1]
+   *  — the fallback-project announce can sit between the two. */
+  sourcePhrase?: string;
 }
 
 /** Build ConfirmDiff proposals from proactive suggestions, with localized summaries. */
@@ -566,10 +569,10 @@ export function Renaida() {
   const applyAndReport = useCallback(async (
     accepted: AgentProposal[],
     projectId: string,
-    opts: { auto: boolean; corrected?: number; content?: string },
+    opts: { auto: boolean; corrected?: number; content?: string; sourceText?: string },
   ) => {
     setApplying(true);
-    const result = await applyProposals(accepted, projectId);
+    const result = await applyProposals(accepted, projectId, opts.sourceText);
     setApplying(false);
 
     analytics.capture(AnalyticsEvents.RENAIDA_APPLIED, {
@@ -682,11 +685,12 @@ export function Renaida() {
           await applyAndReport([single], projectId, {
             auto: true,
             content: t("helpBot.agent.autoApplied", { summary: single.summary }),
+            sourceText: text.trim(),
           });
           return;
         }
         analytics.capture(AnalyticsEvents.RENAIDA_PROPOSED, { kind, resolved: true, ...s });
-        setMessages((prev) => [...prev, { role: "assistant", content: "", proposals: res.proposals, projectId }]);
+        setMessages((prev) => [...prev, { role: "assistant", content: "", proposals: res.proposals, projectId, sourcePhrase: text.trim() }]);
       }
       flashRenaida("talk", 1400);
     } catch {
@@ -809,7 +813,7 @@ export function Renaida() {
 
     // Clear the source proposals bubble, then apply + append the result.
     setMessages((prev) => prev.map((m, i) => (i === msgIndex ? { ...m, proposals: undefined } : m)));
-    await applyAndReport(accepted, projectId, { auto: false, corrected: corrections.length });
+    await applyAndReport(accepted, projectId, { auto: false, corrected: corrections.length, sourceText: phrase });
   }, [applyAndReport]);
 
   const handleUndo = useCallback(async (msgIndex: number, ops: UndoOp[], msgProjectId?: string) => {
@@ -1125,7 +1129,7 @@ export function Renaida() {
                       <ConfirmDiff
                         proposals={msg.proposals}
                         applying={applying}
-                        onConfirm={(accepted) => handleApplyProposals(i, accepted, msg.proposals ?? [], messages[i - 1]?.content ?? "", msg.projectId)}
+                        onConfirm={(accepted) => handleApplyProposals(i, accepted, msg.proposals ?? [], msg.sourcePhrase ?? messages[i - 1]?.content ?? "", msg.projectId)}
                         onDismiss={() => handleDismissProposals(i)}
                       />
                     </div>
