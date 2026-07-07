@@ -1024,7 +1024,8 @@
     "checklistDeleted": "Checklist deleted",
     "deleteConfirmTitle": "Delete \"{{title}}\"?",
     "deleteConfirmDesc": "The task is permanently deleted, including its checklist and links. This cannot be undone.",
-    "budgetOptional": "Budget (optional)"
+    "budgetOptional": "Budget (optional)",
+    "editPartsInstead": "The cost is broken down into parts — edit the parts instead"
   },
   "tasksTable": {
     "columns": "Columns",

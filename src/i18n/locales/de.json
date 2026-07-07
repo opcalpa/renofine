@@ -2027,7 +2027,9 @@
     "taskTitle": "Aufgabentitel",
     "taskTitlePlaceholder": "Neue Schränke installieren",
     "title": "Aufgaben",
-    "viewOnFloorPlan": "Auf Grundriss anzeigen"
+    "viewOnFloorPlan": "Auf Grundriss anzeigen",
+    "subcontractorCost": "Subunternehmerkosten",
+    "editPartsInstead": "Die Kosten sind in Teile aufgeschlüsselt — bearbeite die Teile stattdessen"
   },
   "templateGallery": {
     "allCategories": "Alle Kategorien",

@@ -1567,12 +1567,20 @@ export const TaskEditDialog = ({
               })()
               ) : (
               (() => {
-                const laborVal = task.task_cost_type === "subcontractor"
+                const isSubcontractorType = task.task_cost_type === "subcontractor";
+                const laborVal = isSubcontractorType
                   ? (task.subcontractor_cost || 0)
                   : (task.estimated_hours || 0) * (task.hourly_rate || 0);
+                // Mixed model: planning table/Renaida can set UE alongside own labor — include it or the total lies
+                const ueVal = isSubcontractorType
+                  ? 0
+                  : (task.subcontractor_cost || 0) * (1 + (task.markup_percent || 0) / 100);
                 const materialVal = task.material_estimate || 0;
-                const computedTotal = laborVal + materialVal;
-                const displayTotal = (laborVal > 0 || materialVal > 0) ? computedTotal : (task.budget || 0);
+                const computedTotal = laborVal + ueVal + materialVal;
+                // Stored budget is what the tasks table and budget view show — prefer it so surfaces agree
+                const displayTotal = (task.budget || 0) > 0 ? (task.budget || 0) : computedTotal;
+                // Lump-editing labor overwrites subcontractor_cost — unsafe when a real UE part exists
+                const laborLumpEditable = ueVal === 0;
 
                 const updateLabor = (val: number | null) => {
                   const newLabor = val || 0;
@@ -1586,7 +1594,7 @@ export const TaskEditDialog = ({
 
                 const updateMaterial = (val: number | null) => {
                   const newMaterial = val || 0;
-                  const newTotal = laborVal + newMaterial;
+                  const newTotal = laborVal + ueVal + newMaterial;
                   setTask({ ...task, material_estimate: val, budget: newTotal || null });
                 };
 
@@ -1631,7 +1639,7 @@ export const TaskEditDialog = ({
                             ? t("tasks.subcontractorCost", "UE-kostnad")
                             : t("tasks.rotLaborCost", "Arbetskostnad")}
                         </span>
-                        {editingBudgetField === "labor" ? (
+                        {editingBudgetField === "labor" && laborLumpEditable ? (
                           <div className="flex items-center gap-1">
                             <Input
                               autoFocus
@@ -1650,14 +1658,23 @@ export const TaskEditDialog = ({
                         ) : (
                           <button
                             type="button"
-                            className="text-sm tabular-nums hover:bg-muted px-2 py-0.5 rounded transition-colors cursor-text"
-                            onDoubleClick={() => setEditingBudgetField("labor")}
-                            title={t("common.doubleClickToEdit", "Dubbelklicka för att redigera")}
+                            className={`text-sm tabular-nums px-2 py-0.5 rounded transition-colors ${laborLumpEditable ? "hover:bg-muted cursor-text" : "cursor-default"}`}
+                            onDoubleClick={() => { if (laborLumpEditable) setEditingBudgetField("labor"); }}
+                            title={laborLumpEditable
+                              ? t("common.doubleClickToEdit", "Dubbelklicka för att redigera")
+                              : t("tasks.editPartsInstead", "Kostnaden är nedbruten i delar — redigera delarna istället")}
                           >
                             {laborVal > 0 ? `${Math.round(laborVal).toLocaleString("sv-SE")} kr` : <span className="text-muted-foreground/40">0 kr</span>}
                           </button>
                         )}
                       </div>
+                      {/* Subcontractor row — display only, set via planning table/Renaida */}
+                      {ueVal > 0 && (
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-xs text-muted-foreground">{t("tasks.subcontractorCost", "UE-kostnad")}</span>
+                          <span className="text-sm tabular-nums px-2 py-0.5">{Math.round(ueVal).toLocaleString("sv-SE")} kr</span>
+                        </div>
+                      )}
                       {/* Material row — click to edit */}
                       <div className="flex items-center justify-between gap-3">
                         <span className="text-xs text-muted-foreground">{t("tasks.materialBudget", "Materialbudget")}</span>

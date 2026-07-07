@@ -2027,7 +2027,9 @@
     "taskTitle": "Titre de la tâche",
     "taskTitlePlaceholder": "Installer de nouvelles armoires",
     "title": "Tâches",
-    "viewOnFloorPlan": "Voir sur le plan"
+    "viewOnFloorPlan": "Voir sur le plan",
+    "subcontractorCost": "Coût sous-traitant",
+    "editPartsInstead": "Le coût est décomposé en parties — modifiez les parties directement"
   },
   "templateGallery": {
     "allCategories": "Toutes les catégories",

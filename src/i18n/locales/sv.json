@@ -1024,7 +1024,8 @@
     "checklistDeleted": "Checklistan togs bort",
     "deleteConfirmTitle": "Ta bort \"{{title}}\"?",
     "deleteConfirmDesc": "Arbetet tas bort permanent, inklusive dess checklista och kopplingar. Detta går inte att ångra.",
-    "budgetOptional": "Budget (valfritt)"
+    "budgetOptional": "Budget (valfritt)",
+    "editPartsInstead": "Kostnaden är nedbruten i delar — redigera delarna istället"
   },
   "tasksTable": {
     "columns": "Kolumner",

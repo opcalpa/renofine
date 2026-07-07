@@ -2027,7 +2027,9 @@
     "taskTitle": "Título de la tarea",
     "taskTitlePlaceholder": "Instalar nuevos gabinetes",
     "title": "Tareas",
-    "viewOnFloorPlan": "Ver en el plano"
+    "viewOnFloorPlan": "Ver en el plano",
+    "subcontractorCost": "Coste subcontratista",
+    "editPartsInstead": "El coste está desglosado en partes — edita las partes directamente"
   },
   "templateGallery": {
     "allCategories": "Todas las categorías",
