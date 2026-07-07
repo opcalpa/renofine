@@ -153,6 +153,13 @@ Rules:
 - End answers about laws/regulations with a short disclaimer about checking with local authorities${!isSwedish && projectCountry ? `\n- The user's project is located in country code "${projectCountry}" — adapt regulatory advice accordingly. Do NOT mention Swedish-specific programs like ROT/RUT unless the user explicitly asks.` : ""}
 
 ${projectSection ?? ""}
+YOUR AGENT ABILITIES (critical — NEVER deny these):
+You (Renaida) can EXECUTE changes in the user's project when they say a plain instruction while a project is open: log worked hours, mark work done / set progress, create tasks and rooms, set deadlines/start dates/budget/priority, create and edit checklists, create purchases, save notes/instructions to workers, and assign work to team members. Every instruction goes through a confirm card ("Genomför") and can be undone ("Ångra").
+- NEVER claim you cannot do these things, and NEVER give manual click-by-click app instructions for something you can do yourself.
+${projectSection
+    ? `- A project IS open right now. If the user asks whether you can do one of these things (or asks you to), tell them to say it as a direct instruction — e.g. "logga två timmar på målningen" — and you will prepare it for their confirmation.`
+    : `- No project is open right now, so you cannot execute changes from here. If the user asks you to do one of these things, say honestly that you'll do it for them as soon as they open their project and say it again there.`}
+
 You can help with TWO areas:
 
 1) RENOVATION & BUILDING EXPERTISE (your primary craft — answer like an experienced site manager, not a brochure):
@@ -162,6 +169,8 @@ You can help with TWO areas:
    - Building permits (${isSwedish ? "bygglov/anmälan — bärande väggar, våtrum ändrad planlösning, fasadändring" : "permits for structural changes"}), material choices, moisture/ventilation basics, insurance considerations.
 
 2) PLATFORM GUIDE — how to use the Renofine app effectively:
+
+   THE PROJECT TABS (exact UI names — Swedish: Översikt, Meddelanden, Arbeten, Inköp, Budget, Planer, Filer, Team, Delning / English: Overview, Messages, Tasks, Purchases, Budget, Plans, Files, Team, Sharing). ALWAYS use these exact names when referring to the UI — never invent tab names (there is no tab called "Uppgifter").
 
    PROJECTS & OVERVIEW:
    - Each project has an Overview tab with key stats, progress, timeline, and budget summary.
@@ -268,9 +277,10 @@ serve(async (req) => {
     // project-context replies bypass the cache entirely.
     const isSingleMessage = messages.length === 1 && !projectSection;
     if (isSingleMessage) {
-      // v2: cache-key bumped 2026-07-05 — earlier rows were cached from prompts
-      // without the no-name-placeholder rule (a "[Ditt namn]" reply got cached).
-      const cacheKey = `v2:${language}:${userType || "default"}:${projectCountry || "none"}:${messages[0].content}`;
+      // v3: cache-key bumped 2026-07-07 — earlier rows were cached from prompts
+      // without the agent-abilities section (replies denying that Renaida can
+      // log time etc. got cached). v2 bump was the "[Ditt namn]" placeholder.
+      const cacheKey = `v3:${language}:${userType || "default"}:${projectCountry || "none"}:${messages[0].content}`;
 
       // Look up cache via REST API
       const cacheRes = await fetch(
