@@ -46,6 +46,14 @@ När allt är grönt: skicka Taulant-mejlet (ligger på urklipp / se item taulan
 
 Rapportera till Claude: vilken punkt + vad du såg. Grönt på 1–5 = skicka mejlet.
 
+**2026-07-07 — första rundan körd, största missen hittad & fixad samma dag:**
+Carl testade rösten på prod från STARTSIDAN (inte inne i ett projekt) → allt föll
+tyst till chatten som ljög ("kan inte logga timmar") och hittade på fliknamn.
+Fixat & live (`830f25f` + help-bot v19): Renaida agerar nu från startsidan
+(annonserar vilket projekt hon utgår från), färsk app-load landar direkt i senaste
+projektet, hjälp-boten förnekar aldrig sina förmågor. **Kör om punkt 1–5 ovan** —
+nu ska rösten ge förslagskort även om du inte hunnit in i ett projekt.
+
 ---
 id: wizard-proffs-test
 status: todo
@@ -292,7 +300,17 @@ inne i projektet (uttag/klart/timmar) → expertfråga ("vilken ordning i badrum
 taulant.bara@icloud.com, (2) titta hans session recordings i sin helhet, (3) följ eventen
 renaida_proposed/applied/corrected/dismissed + signup→projekt-tratten, (4) notera var han
 fastnar/avbryter → nästa fix. Kärnfrågan i mejlet = hans norrstjärna: sparar det TID?
-**Nästa:** Carl skickar mejlet (efter push). När Taulant testat → PostHog-ritualen + ev. samtal.
+**2026-07-04 — Taulant bekräftade beta-test** ("skicka över den när du tycker att den är
+redo"), lovade ärlig feedback, upprepade norrstjärnan: sparar det TID i vardagen?
+**2026-07-07 — Carl svarade (2 mejl, 17:17+17:22):** presenterade Renaida vid namn
+(Ren-ofine + AI), ärlig "tekniken finns delvis, förbättras konstant"-ton, och ställde
+två discovery-frågor: (1) vilka verktyg/lösningar använder han idag (Excel/Sheets/annat?),
+(2) desktop eller mobil — var i vardagen? **Bollen hos Taulant.** Samma dag levererades
+tre fixar som avväpnar hans troliga första-snubblingar: Renaida agerar från startsidan,
+färsk load landar i senaste projektet, hjälp-boten förnekar inte sina förmågor.
+**Nästa:** när Taulant svarar → uppdatera välkomst-/testmejlet (v2-utkast i session
+51-scratchpad; ska skrivas om för nya beteendet) och skicka testvägen. Spara hans svar
+om verktyg + mobil/desktop i minnet (ICP-data). När han testat → PostHog-ritualen ovan.
 Bevaka advisor-/partnerlutning.
 
 ---
