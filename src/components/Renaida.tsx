@@ -227,6 +227,34 @@ export function Renaida() {
   const isMobile = useIsMobile();
   // Keyboard-aware panel height (iOS overlays fixed elements without resizing).
   const vvBox = useVisualViewportHeight(open && isMobile);
+
+  // Full-screen mobile panel: lock the page behind while open. iOS Safari
+  // scrolls the DOCUMENT when the keyboard opens (and lets gestures scroll the
+  // page behind the overlay) — after the keyboard closes the page stays offset
+  // and this fixed panel's header sits above the visible viewport (Carl's
+  // iPhone screenshot 7 Jul: chat bubbles but no header/close button).
+  useEffect(() => {
+    if (!open || !isMobile) return;
+    const body = document.body;
+    const scrollY = window.scrollY;
+    const prev = {
+      position: body.style.position, top: body.style.top,
+      left: body.style.left, right: body.style.right, width: body.style.width,
+    };
+    body.style.position = "fixed";
+    body.style.top = `-${scrollY}px`;
+    body.style.left = "0";
+    body.style.right = "0";
+    body.style.width = "100%";
+    return () => {
+      body.style.position = prev.position;
+      body.style.top = prev.top;
+      body.style.left = prev.left;
+      body.style.right = prev.right;
+      body.style.width = prev.width;
+      window.scrollTo(0, scrollY);
+    };
+  }, [open, isMobile]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
