@@ -167,6 +167,12 @@ export function ConfirmDiff({ proposals, applying = false, onConfirm, onDismiss 
         {actionable.map((p) => {
           const taskAction = isTaskAction(p.action);
           const showPicker = taskAction && (p.candidates?.length ?? 0) > 0 && (lowMatch(p) || (p.candidates?.length ?? 0) > 1);
+          // The summary sentence embeds the router's original task pick — when the
+          // user re-picks in the dropdown, show the new target or the text lies
+          const originalTaskId = taskAction && "taskId" in p.action ? p.action.taskId : undefined;
+          const overriddenTitle = taskOverride[p.id] && taskOverride[p.id] !== originalTaskId
+            ? p.candidates?.find((c) => c.id === taskOverride[p.id])?.title
+            : undefined;
           return (
             <li key={p.id} className="flex items-start gap-2">
               <Checkbox
@@ -180,7 +186,10 @@ export function ConfirmDiff({ proposals, applying = false, onConfirm, onDismiss 
                 <label htmlFor={`prop-${p.id}`} className="cursor-pointer leading-snug">
                   <span>{p.summary}</span>
                   <Badge variant="secondary" className="ml-2 align-middle text-[10px]">{p.action.type}</Badge>
-                  {lowMatch(p) && (
+                  {overriddenTitle && (
+                    <span className="ml-1 text-xs font-medium text-primary">→ {overriddenTitle}</span>
+                  )}
+                  {lowMatch(p) && !overriddenTitle && (
                     <span className="ml-1 text-[10px] text-amber-600">{t("helpBot.agent.uncertainMatch")}</span>
                   )}
                 </label>
