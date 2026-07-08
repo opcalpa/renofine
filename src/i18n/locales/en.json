@@ -3873,6 +3873,7 @@
       "detailCleared": "cleared",
       "usingProject": "I’m working from your project “{{name}}”.",
       "openTask": "Open the task “{{title}}”",
+      "editTask": "Open & edit “{{title}}”",
       "openPurchase": "Open the order “{{title}}”"
     },
     "autonomy": {

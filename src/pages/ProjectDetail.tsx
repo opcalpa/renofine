@@ -284,6 +284,12 @@ const ProjectDetail = () => {
         // Strip the transient deep-link params but KEEP ?tab= — clearing it
         // meant a reload always landed on Översikt (round-10 flag).
         setSearchParams({ tab: tabParam }, { replace: true });
+      } else if (entityParam || sectionParam) {
+        // Deep link within the CURRENT tab (e.g. Renaida's receipt links while
+        // already on Arbeten) — same handling, no tab switch needed.
+        setOpenEntityId(entityParam);
+        if (sectionParam) setPendingSection(sectionParam);
+        setSearchParams({ tab: tabParam }, { replace: true });
       }
     } else if (entityParam) {
       setOpenEntityId(entityParam);

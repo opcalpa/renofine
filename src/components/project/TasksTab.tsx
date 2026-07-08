@@ -603,6 +603,19 @@ const TasksTab = ({ projectId, projectName, projectStatus, tasksScope = 'all', t
     setEditDialogOpen(true);
   };
 
+  // Auto-open a specific task from a deep link (?entityId= — notifications,
+  // Renaida's "open & edit" receipt links). Mirrors PurchaseRequestsTab.
+  useEffect(() => {
+    if (!openEntityId || loading) return;
+    const task = tasks.find((t) => t.id === openEntityId);
+    if (task) {
+      setEditingTask(task);
+      setEditVariant("dialog");
+      setEditDialogOpen(true);
+    }
+    onEntityOpened?.();
+  }, [openEntityId, loading, tasks, onEntityOpened]);
+
   // Group tasks by status (supporting both old and new status values)
   // Note: 'done' is a legacy status that should be merged into 'completed'
   const statusOrder = ['planned', 'to_do', 'in_progress', 'waiting', 'awaiting_review', 'completed', 'cancelled'] as const;

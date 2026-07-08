@@ -26,6 +26,8 @@ export interface ApplyResult {
   undo: UndoOp[];
   /** Objects this batch created — lets the confirmation link straight to them. */
   created: CreatedRef[];
+  /** Existing objects this batch changed — for "open & edit" links next to Undo. */
+  modified: CreatedRef[];
 }
 
 interface ChecklistGroup {
@@ -325,7 +327,7 @@ export async function applyProposals(
   projectId: string,
   sourceText?: string,
 ): Promise<ApplyResult> {
-  const result: ApplyResult = { applied: [], failed: [], undo: [], created: [] };
+  const result: ApplyResult = { applied: [], failed: [], undo: [], created: [], modified: [] };
   const actionable = accepted.filter(isActionable);
   if (actionable.length === 0) return result;
 
@@ -334,7 +336,7 @@ export async function applyProposals(
     profileId = await getProfileId();
   } catch (e) {
     const error = e instanceof Error ? e.message : "Okänt fel";
-    return { applied: [], failed: accepted.map((proposal) => ({ proposal, error })), undo: [], created: [] };
+    return { applied: [], failed: accepted.map((proposal) => ({ proposal, error })), undo: [], created: [], modified: [] };
   }
 
   // Rooms first so create_task roomName references resolve within the batch.
@@ -343,6 +345,7 @@ export async function applyProposals(
     ...actionable.filter((p) => p.action.type !== "create_room"),
   ];
   const createdRoomsByName = new Map<string, string>();
+  const modifiedTaskIds = new Set<string>();
 
   for (const proposal of ordered) {
     try {
@@ -355,9 +358,31 @@ export async function applyProposals(
       } else if (undo.kind === "delete_purchase" && proposal.action.type === "create_purchase") {
         result.created.push({ type: "purchase", id: undo.purchaseOrderId, title: proposal.action.item });
       }
+      // Changed-in-place tasks → refs for "open & edit" links next to Undo
+      switch (undo.kind) {
+        case "task_fields":
+        case "checklist_restore":
+        case "task_assignee":
+          modifiedTaskIds.add(undo.taskId);
+          break;
+        case "delete_time":
+          if (proposal.action.type === "log_time" && proposal.action.taskId) modifiedTaskIds.add(proposal.action.taskId);
+          break;
+        case "delete_comment":
+          if (proposal.action.type === "add_note" && proposal.action.target === "task" && proposal.action.targetId) {
+            modifiedTaskIds.add(proposal.action.targetId);
+          }
+          break;
+      }
     } catch (e) {
       result.failed.push({ proposal, error: e instanceof Error ? e.message : "Okänt fel" });
     }
+  }
+
+  if (modifiedTaskIds.size > 0) {
+    const { data } = await supabase
+      .from("tasks").select("id,title").in("id", [...modifiedTaskIds]);
+    result.modified = (data ?? []).map((t) => ({ type: "task" as const, id: t.id, title: t.title ?? "" }));
   }
   return result;
 }

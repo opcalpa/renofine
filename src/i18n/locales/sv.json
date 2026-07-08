@@ -3872,6 +3872,7 @@
       "detailCleared": "tas bort",
       "usingProject": "Jag utgår från ditt projekt ”{{name}}”.",
       "openTask": "Öppna arbetet ”{{title}}”",
+      "editTask": "Öppna & redigera ”{{title}}”",
       "openPurchase": "Öppna köpordern ”{{title}}”"
     },
     "autonomy": {

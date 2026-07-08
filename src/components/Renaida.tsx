@@ -603,12 +603,23 @@ export function Renaida() {
 
     // Created objects get a direct "open it" link (Carl 7 Jul: a bare
     // "genomförde 1 ändring" leaves you hunting for what was created where).
-    const links = result.created.map((c) => ({
-      label: c.type === "purchase"
-        ? t("helpBot.agent.openPurchase", { title: c.title })
-        : t("helpBot.agent.openTask", { title: c.title }),
-      to: `/projects/${projectId}?tab=${c.type === "purchase" ? "purchases" : "tasks"}&entityId=${c.id}`,
-    }));
+    // Changed objects get an "open & edit" link next to Undo (Carl 8 Jul) —
+    // undo isn't the only follow-up; often you want to adjust what she did.
+    const createdIds = new Set(result.created.map((c) => c.id));
+    const links = [
+      ...result.created.map((c) => ({
+        label: c.type === "purchase"
+          ? t("helpBot.agent.openPurchase", { title: c.title })
+          : t("helpBot.agent.openTask", { title: c.title }),
+        to: `/projects/${projectId}?tab=${c.type === "purchase" ? "purchases" : "tasks"}&entityId=${c.id}`,
+      })),
+      ...result.modified
+        .filter((m) => !createdIds.has(m.id))
+        .map((m) => ({
+          label: t("helpBot.agent.editTask", { title: m.title }),
+          to: `/projects/${projectId}?tab=tasks&entityId=${m.id}`,
+        })),
+    ];
     setMessages((prev) => [...prev, { role: "assistant", content, undo: result.undo.length ? result.undo : undefined, projectId, links: links.length ? links : undefined }]);
     if (result.applied.length > 0) {
       // Overview cards (useOverviewData) are not React Query — nudge them to refetch.
