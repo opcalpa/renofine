@@ -1390,6 +1390,10 @@ const ProjectDetail = () => {
                 openEntityId={activeTab === "tasks" ? openEntityId : null}
                 onEntityOpened={() => setOpenEntityId(null)}
                 onNavigateToRoom={handleNavigateToRoomById}
+                onOpenRoomDetails={(roomId) => {
+                  const room = roomsData.find((r: { id: string }) => r.id === roomId);
+                  if (room) handleRoomClick(room);
+                }}
                 showTimeline={permissions.timeline !== 'none'}
                 userType={effectiveUserType}
                 currency={project?.currency}

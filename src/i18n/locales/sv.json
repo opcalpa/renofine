@@ -1311,7 +1311,8 @@
     "viewCards": "Kort",
     "viewTable": "Tabell",
     "searchPlaceholderV2": "Sök rum, anteckningar, material…",
-    "photoCover": "Bild"
+    "photoCover": "Bild",
+    "openRoom": "Öppna rumsdetaljer"
   },
   "profile": {
     "title": "Profilinställningar",

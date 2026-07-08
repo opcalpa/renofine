@@ -1311,7 +1311,8 @@
     "viewCards": "Cards",
     "viewTable": "Table",
     "searchPlaceholderV2": "Search rooms, notes, materials…",
-    "photoCover": "Photo"
+    "photoCover": "Photo",
+    "openRoom": "Open room details"
   },
   "spacePlanner": {
     "title": "Area",

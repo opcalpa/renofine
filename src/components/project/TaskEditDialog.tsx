@@ -662,6 +662,8 @@ interface TaskEditDialogProps {
   currency?: string | null;
   projectStatus?: string | null;
   variant?: "dialog" | "sheet";
+  /** Makes the selected room names links into the room's detail view. */
+  onOpenRoom?: (roomId: string) => void;
 }
 
 export const TaskEditDialog = ({
@@ -673,6 +675,7 @@ export const TaskEditDialog = ({
   currency,
   projectStatus,
   variant = "dialog",
+  onOpenRoom,
 }: TaskEditDialogProps) => {
   const isPlanning = projectStatus === "planning";
   const { t } = useTranslation();
@@ -1237,17 +1240,36 @@ export const TaskEditDialog = ({
                     <PopoverTrigger asChild>
                       <Button variant="outline" className="w-full justify-start font-normal text-sm h-10 bg-white dark:bg-background border-border/40 hover:border-primary/30">
                         {(() => {
-                          const ids = task.room_ids || (task.room_id ? [task.room_id] : []);
+                          const ids = task.room_ids?.length ? task.room_ids : (task.room_id ? [task.room_id] : []);
                           if (ids.length === 0) return <span className="text-muted-foreground">{t("tasks.noRoom")}</span>;
-                          const names = ids.map((id) => rooms.find((r) => r.id === id)?.name).filter(Boolean);
-                          return names.join(", ");
+                          const linked = ids.map((id) => rooms.find((r) => r.id === id)).filter((r): r is typeof rooms[number] => !!r);
+                          if (!onOpenRoom) return linked.map((r) => r.name).join(", ");
+                          // Room names link into the room; the rest of the field opens the picker
+                          return (
+                            <>
+                              <span className="truncate">
+                                {linked.map((r, i) => (
+                                  <span key={r.id}>
+                                    {i > 0 && <span>, </span>}
+                                    <span
+                                      className="text-primary hover:underline cursor-pointer"
+                                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); onOpenRoom(r.id); }}
+                                    >
+                                      {r.name}
+                                    </span>
+                                  </span>
+                                ))}
+                              </span>
+                              <ChevronDown className="ml-auto h-4 w-4 shrink-0 text-muted-foreground" />
+                            </>
+                          );
                         })()}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-56 p-1" align="start">
                       <div className="space-y-0.5">
                         {rooms.map((room) => {
-                          const ids = task.room_ids || (task.room_id ? [task.room_id] : []);
+                          const ids = task.room_ids?.length ? task.room_ids : (task.room_id ? [task.room_id] : []);
                           const checked = ids.includes(room.id);
                           return (
                             <label
@@ -1335,7 +1357,7 @@ export const TaskEditDialog = ({
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">{t("tasks.room")}</Label>
-                    <MultiRoomSelect rooms={rooms} selectedIds={task.room_ids?.length ? task.room_ids : (task.room_id ? [task.room_id] : [])} onChange={(ids) => setTask({ ...task, room_ids: ids, room_id: ids[0] || null })} />
+                    <MultiRoomSelect rooms={rooms} selectedIds={task.room_ids?.length ? task.room_ids : (task.room_id ? [task.room_id] : [])} onChange={(ids) => setTask({ ...task, room_ids: ids, room_id: ids[0] || null })} onOpenRoom={onOpenRoom} />
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">{t("tasks.costCenter")}</Label>

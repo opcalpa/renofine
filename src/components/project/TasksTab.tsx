@@ -120,12 +120,14 @@ interface TasksTabProps {
   openEntityId?: string | null;
   onEntityOpened?: () => void;
   onNavigateToRoom?: (roomId: string) => void;
+  /** Opens the room detail dialog (specs/photos), as opposed to the floor plan. */
+  onOpenRoomDetails?: (roomId: string) => void;
   showTimeline?: boolean;
   currency?: string | null;
   userType?: string | null;
 }
 
-const TasksTab = ({ projectId, projectName, projectStatus, tasksScope = 'all', tasksAccess = 'edit', openEntityId, onEntityOpened, onNavigateToRoom, showTimeline = true, currency, userType }: TasksTabProps) => {
+const TasksTab = ({ projectId, projectName, projectStatus, tasksScope = 'all', tasksAccess = 'edit', openEntityId, onEntityOpened, onNavigateToRoom, onOpenRoomDetails, showTimeline = true, currency, userType }: TasksTabProps) => {
   const { t } = useTranslation();
   const isPlanning = projectStatus === "planning";
   const isBuilder = userType !== "homeowner";
@@ -1556,6 +1558,7 @@ const TasksTab = ({ projectId, projectName, projectStatus, tasksScope = 'all', t
           currency={currency}
           projectStatus={projectStatus}
           variant={editVariant}
+          onOpenRoom={onOpenRoomDetails}
         />
         {/* Legacy inline edit dialog removed — all task editing uses TaskEditDialog */}
       </div>
