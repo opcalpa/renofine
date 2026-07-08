@@ -3847,6 +3847,7 @@
       "dismiss": "Avfärda",
       "applying": "Genomför…",
       "applied": "Klart — genomförde {{count}} ändring(ar).",
+      "appliedIntro": "Klart — det här genomförde jag:",
       "autoApplied": "Klart automatiskt — {{summary}}",
       "partialFailed": "Genomförde {{applied}}, {{failed}} misslyckades.",
       "allFailed": "Hmm, det gick inte igenom. Försök igen?",

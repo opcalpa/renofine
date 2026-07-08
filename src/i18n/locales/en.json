@@ -3848,6 +3848,7 @@
       "dismiss": "Dismiss",
       "applying": "Applying…",
       "applied": "Done — applied {{count}} change(s).",
+      "appliedIntro": "Done — here's what I did:",
       "autoApplied": "Done automatically — {{summary}}",
       "partialFailed": "Applied {{applied}}, {{failed}} failed.",
       "allFailed": "Hmm, that didn't go through. Try again?",

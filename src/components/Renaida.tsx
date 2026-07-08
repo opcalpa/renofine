@@ -8,7 +8,7 @@ import { useRenaidaStore, type RenaidaAutonomy } from "@/stores/renaidaStore";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
-import { ConfirmDiff } from "@/components/agent/ConfirmDiff";
+import { ConfirmDiff, actionDetails } from "@/components/agent/ConfirmDiff";
 import { RenaidaAvatar, type RenaidaState } from "@/components/renaida/RenaidaAvatar";
 import { routeAgentInput } from "@/services/agent/routeClient";
 import { applyProposals, undoProposals } from "@/services/agent/applyProposals";
@@ -585,11 +585,21 @@ export function Renaida() {
     // USER_FACING_ errors are written for the user (e.g. the broken-down-budget
     // refusal) — show them verbatim instead of the generic failure line.
     const userFacing = result.failed.find((f) => f.error.startsWith("USER_FACING_"))?.error.replace("USER_FACING_", "");
+    // Bullet receipt: what was actually executed, with concrete values (Carl
+    // 8 Jul: a bare "genomförde 1 ändring(ar)" says nothing to come back to).
+    const appliedList = result.applied
+      .map((p) => {
+        const details = actionDetails(p.action, t, i18n.language);
+        return `• ${p.summary}${details.length ? ` — ${details.join(" · ")}` : ""}`;
+      })
+      .join("\n");
     const content = result.failed.length === 0
-      ? (opts.content ?? t("helpBot.agent.applied", { count: result.applied.length }))
+      ? (opts.content ?? (appliedList
+          ? `${t("helpBot.agent.appliedIntro", { count: result.applied.length })}\n${appliedList}`
+          : t("helpBot.agent.applied", { count: result.applied.length })))
       : result.applied.length === 0
         ? (userFacing ?? t("helpBot.agent.allFailed"))
-        : `${t("helpBot.agent.partialFailed", { applied: result.applied.length, failed: result.failed.length })}${userFacing ? ` ${userFacing}` : ""}`;
+        : `${t("helpBot.agent.partialFailed", { applied: result.applied.length, failed: result.failed.length })}${userFacing ? ` ${userFacing}` : ""}${appliedList ? `\n${appliedList}` : ""}`;
 
     // Created objects get a direct "open it" link (Carl 7 Jul: a bare
     // "genomförde 1 ändring" leaves you hunting for what was created where).
@@ -624,7 +634,7 @@ export function Renaida() {
       }
     }
     return result;
-  }, [t, flashRenaida]);
+  }, [t, i18n.language, flashRenaida]);
 
   // --- Agentic capture: route a quick update → proposals → ConfirmDiff (or auto-apply) ---
   // With fallbackToChat (the unified entry): when the router finds no actionable
@@ -682,9 +692,10 @@ export function Renaida() {
           // Progressive trust: very sure + single action → do it now, offer Undo.
           analytics.capture(AnalyticsEvents.RENAIDA_PROPOSED, { kind, resolved: true, auto: true, ...s });
           flashRenaida("talk", 1400);
+          const autoDetails = actionDetails(single.action, t, i18n.language);
           await applyAndReport([single], projectId, {
             auto: true,
-            content: t("helpBot.agent.autoApplied", { summary: single.summary }),
+            content: `${t("helpBot.agent.autoApplied", { summary: single.summary })}${autoDetails.length ? `\n• ${autoDetails.join(" · ")}` : ""}`,
             sourceText: text.trim(),
           });
           return;

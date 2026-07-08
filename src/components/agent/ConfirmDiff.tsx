@@ -43,8 +43,10 @@ function unknownTitle(p: AgentProposal): string {
 /**
  * Concrete values a proposal will write — shown under the summary so the user
  * confirms actual dates/amounts/items, not just a sentence about them.
+ * Also used by the applied-receipt bubble (Renaida.tsx) so the confirmation
+ * lists WHAT was executed, not just how many changes.
  */
-function actionDetails(
+export function actionDetails(
   action: ProposalAction,
   t: (key: string, fallback?: string, opts?: Record<string, unknown>) => string,
   locale: string,
@@ -147,11 +149,17 @@ export function ConfirmDiff({ proposals, applying = false, onConfirm, onDismiss 
         continue;
       }
       let action = p.action;
+      let summary = p.summary;
       const override = taskOverride[p.id];
       if (override && isTaskAction(action)) {
+        // The summary sentence embeds the router's original task pick — carry
+        // the re-picked target into it so the applied receipt doesn't lie.
+        const prevId = "taskId" in action ? action.taskId : undefined;
+        const newTitle = p.candidates?.find((c) => c.id === override)?.title;
+        if (newTitle && override !== prevId) summary = `${summary} → ${newTitle}`;
         action = { ...action, taskId: override } as ProposalAction;
       }
-      out.push({ ...p, action });
+      out.push({ ...p, action, summary });
     }
     return out;
   };
