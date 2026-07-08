@@ -308,10 +308,17 @@ två discovery-frågor: (1) vilka verktyg/lösningar använder han idag (Excel/S
 (2) desktop eller mobil — var i vardagen? **Bollen hos Taulant.** Samma dag levererades
 tre fixar som avväpnar hans troliga första-snubblingar: Renaida agerar från startsidan,
 färsk load landar i senaste projektet, hjälp-boten förnekar inte sina förmågor.
-**Nästa:** när Taulant svarar → uppdatera välkomst-/testmejlet (v2-utkast i session
-51-scratchpad; ska skrivas om för nya beteendet) och skicka testvägen. Spara hans svar
-om verktyg + mobil/desktop i minnet (ICP-data). När han testat → PostHog-ritualen ovan.
-Bevaka advisor-/partnerlutning.
+**2026-07-08 — Taulant svarade på desktop/mobil-frågan (ICP-GULD):** validerar Carls
+strategi ordagrant — "datorn är där man planerar och administrerar, mobilen är verktyget
+man använder i farten"; varnar för appar som gör mobilen till desktop-kopia. Mobil på
+bygget = foto, kvittoskanning, röst-/snabbanteckning, markera klart, lägga till inköp,
+dagens planering ("ska gå snabbt, inte kännas omständligt"). Hans drömexempel ordagrant:
+"Köket är färdigmålat. Det saknas lister och vi behöver beställa tio meter golvsockel."
+→ nu GOLDEN-CASE `taulant-north-star` i evalen (29/29 PASS, agent-route v20): målning
+100% + lister-not på befintlig task (dubblettregel tillagd) + köporder "Golvsockel · 10
+meter" kurerad. OBS: verktygsfrågan (Excel/Sheets/annat?) EJ besvarad än — följ upp.
+**Nästa:** Carl skickar testmejlet (uppdaterat utkast klart, se scratchpad session 52)
+→ PostHog-ritualen ovan. Bevaka advisor-/partnerlutning.
 
 ---
 id: agent-mode-additive-flag
