@@ -1029,16 +1029,12 @@
     "tabOverview": "Översikt",
     "tabEconomy": "Ekonomi",
     "tabChecklists": "Checklistor",
-    "tabPhotos": "Foton",
-    "tabNotes": "Anteckningar",
     "tabRelated": "Relaterat",
-    "customerWishes": "Kundens önskemål",
-    "customerWishesPlaceholder": "Vad vill kunden ha gjort? Beskrivning av arbetet…",
-    "customerWishesHint": "Syns för alla i projektet, även inbjudna arbetare.",
     "internalNotes": "Interna anteckningar",
     "internalNotesPlaceholder": "Interna anteckningar — syns inte för arbetare…",
     "internalNotesHint": "Bara för dig och ditt team — delas aldrig med arbetare.",
-    "noChecklistsYet": "Inga checklistor ännu — lägg till en eller generera från rummet."
+    "noChecklistsYet": "Inga checklistor ännu — lägg till en eller generera från rummet.",
+    "descriptionSharedHint": "Syns för alla i projektet, även inbjudna arbetare."
   },
   "tasksTable": {
     "columns": "Kolumner",

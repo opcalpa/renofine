@@ -1,14 +1,18 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Info } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
+import { Textarea } from "@/components/ui/textarea";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { MultiRoomSelect } from "@/components/shared/MultiRoomSelect";
+import { EntityPhotoGallery } from "@/components/shared/EntityPhotoGallery";
+import { CommentsSection } from "@/components/comments/CommentsSection";
 import { TipList } from "@/components/ui/TipCard";
 import type { ContextualTip } from "@/lib/contextualTips";
 import { DEFAULT_COST_CENTERS } from "@/lib/costCenters";
@@ -20,6 +24,7 @@ interface OverviewTabProps {
   task: Task;
   patch: (updates: Partial<Task>) => void;
   isPlanning: boolean;
+  projectId: string;
   rooms: TaskRoom[];
   teamMembers: { id: string; name: string; role?: string }[];
   dependencies: { id: string; title: string; status: string }[];
@@ -28,10 +33,13 @@ interface OverviewTabProps {
   onOpenRoom?: (roomId: string) => void;
 }
 
+type NoteView = "description" | "internal";
+
 export function OverviewTab({
   task,
   patch,
   isPlanning,
+  projectId,
   rooms,
   teamMembers,
   dependencies,
@@ -41,6 +49,8 @@ export function OverviewTab({
 }: OverviewTabProps) {
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
+  const [noteView, setNoteView] = useState<NoteView>("description");
+  const internalSupported = "internal_notes" in task;
 
   const fmtDate = (iso?: string) => {
     if (!iso) return "—";
@@ -51,25 +61,66 @@ export function OverviewTab({
     });
   };
 
-  // Quick-info cards, mirrors the room card's Snabbinfo
-  const quickInfo = (
-    <div>
-      <span className="rf-section-label mb-2 block">{t("rooms.quickInfo", "Snabbinfo")}</span>
-      <div className="grid grid-cols-2 gap-2">
-        {[
-          { k: t("rooms.createdAt", "Skapat"), v: fmtDate(task.created_at) },
-          { k: t("rooms.updatedAt", "Uppdaterat"), v: fmtDate(task.updated_at) },
-        ].map((s) => (
-          <div
-            key={s.k}
-            className="rounded-md border px-3 py-2"
-            style={{ borderColor: "var(--rf-hairline)", background: "var(--rf-paper-2)" }}
-          >
-            <div className="rf-section-label mb-0.5">{s.k}</div>
-            <div style={{ fontSize: 13, color: "var(--rf-ink)" }}>{s.v}</div>
-          </div>
-        ))}
+  // ── Description / internal notes switch (task description is the work
+  // description shown to workers; internal notes never leave the team.
+  // "Kundens önskemål" stays a ROOM-level concept — no duplicate data points.)
+  const segment = (key: NoteView, label: string) => {
+    const active = noteView === key;
+    return (
+      <button
+        key={key}
+        type="button"
+        onClick={() => setNoteView(key)}
+        className="rounded-full px-3 py-1.5 text-xs font-medium transition-colors"
+        style={{
+          background: active ? "var(--rf-ink)" : "transparent",
+          color: active ? "var(--rf-paper)" : "var(--rf-fg-muted)",
+        }}
+      >
+        {label}
+      </button>
+    );
+  };
+
+  const notesSection = (
+    <div className="space-y-2">
+      <div
+        className="inline-flex w-fit items-center gap-1 rounded-full border p-1"
+        style={{ borderColor: "var(--rf-hairline)", background: "var(--rf-surface)" }}
+      >
+        {segment("description", t("tasks.description", "Beskrivning"))}
+        {internalSupported && segment("internal", t("tasks.internalNotes", "Interna anteckningar"))}
       </div>
+      {noteView === "description" ? (
+        <div className="space-y-1.5">
+          <Textarea
+            id="edit-task-description"
+            value={task.description || ""}
+            onChange={(e) => patch({ description: e.target.value })}
+            rows={3}
+            placeholder={t("tasks.descriptionPlaceholder", "Lägg till detaljer, material eller instruktioner…")}
+            className="rounded-lg text-sm"
+          />
+          <p className="text-xs text-muted-foreground">
+            {t("tasks.descriptionSharedHint", "Syns för alla i projektet, även inbjudna arbetare.")}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-1.5">
+          <Textarea
+            id="edit-task-internal-notes"
+            value={task.internal_notes || ""}
+            onChange={(e) => patch({ internal_notes: e.target.value })}
+            rows={3}
+            placeholder={t("tasks.internalNotesPlaceholder", "Interna anteckningar — syns inte för arbetare…")}
+            className="rounded-lg text-sm"
+            style={{ background: "var(--rf-paper-2)" }}
+          />
+          <p className="text-xs text-muted-foreground">
+            {t("tasks.internalNotesHint", "Bara för dig och ditt team — delas aldrig med arbetare.")}
+          </p>
+        </div>
+      )}
     </div>
   );
 
@@ -99,15 +150,49 @@ export function OverviewTab({
     </div>
   );
 
+  // Quick-info cards, mirrors the room card's Snabbinfo
+  const quickInfo = (
+    <div>
+      <span className="rf-section-label mb-2 block">{t("rooms.quickInfo", "Snabbinfo")}</span>
+      <div className="grid grid-cols-2 gap-2">
+        {[
+          { k: t("rooms.createdAt", "Skapat"), v: fmtDate(task.created_at) },
+          { k: t("rooms.updatedAt", "Uppdaterat"), v: fmtDate(task.updated_at) },
+        ].map((s) => (
+          <div
+            key={s.k}
+            className="rounded-md border px-3 py-2"
+            style={{ borderColor: "var(--rf-hairline)", background: "var(--rf-paper-2)" }}
+          >
+            <div className="rf-section-label mb-0.5">{s.k}</div>
+            <div style={{ fontSize: 13, color: "var(--rf-ink)" }}>{s.v}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const photosSection = (
+    <div>
+      <span className="rf-section-label mb-2 block">{t("entityPhotos.photos", "Foton")}</span>
+      <EntityPhotoGallery entityId={task.id} entityType="task" projectId={projectId} />
+    </div>
+  );
+
+  const commentsSection = (
+    <div className="pt-3 border-t" style={{ borderColor: "var(--rf-hairline)" }}>
+      <CommentsSection taskId={task.id} projectId={projectId} />
+    </div>
+  );
+
   return (
     <div className="flex flex-col gap-5 px-6 py-5">
       {tips.length > 0 && <TipList tips={tips} onDismiss={dismissTip} maxTips={1} compact />}
 
+      {notesSection}
+
       {isPlanning ? (
-        <>
-          {roomField}
-          {quickInfo}
-        </>
+        roomField
       ) : (
         <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-3">
@@ -243,9 +328,12 @@ export function OverviewTab({
               />
             </div>
           </div>
-          {quickInfo}
         </>
       )}
+
+      {photosSection}
+      {quickInfo}
+      {commentsSection}
     </div>
   );
 }

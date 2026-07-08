@@ -1029,16 +1029,12 @@
     "tabOverview": "Overview",
     "tabEconomy": "Economy",
     "tabChecklists": "Checklists",
-    "tabPhotos": "Photos",
-    "tabNotes": "Notes",
     "tabRelated": "Related",
-    "customerWishes": "Customer wishes",
-    "customerWishesPlaceholder": "What does the customer want done? Description of the work…",
-    "customerWishesHint": "Visible to everyone in the project, including invited workers.",
     "internalNotes": "Internal notes",
     "internalNotesPlaceholder": "Internal notes — not visible to workers…",
     "internalNotesHint": "Only for you and your team — never shared with workers.",
-    "noChecklistsYet": "No checklists yet — add one or generate from the room."
+    "noChecklistsYet": "No checklists yet — add one or generate from the room.",
+    "descriptionSharedHint": "Visible to everyone in the project, including invited workers."
   },
   "tasksTable": {
     "columns": "Columns",

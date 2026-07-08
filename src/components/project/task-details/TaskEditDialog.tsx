@@ -45,8 +45,6 @@ import { type Task, type TaskRoom, type MaterialItem } from "./types";
 import { OverviewTab } from "./tabs/OverviewTab";
 import { EconomyTab } from "./tabs/EconomyTab";
 import { ChecklistsTab } from "./tabs/ChecklistsTab";
-import { PhotosTab } from "./tabs/PhotosTab";
-import { NotesTab } from "./tabs/NotesTab";
 import { RelatedTab, type TaskDependency } from "./tabs/RelatedTab";
 
 // ---------------------------------------------------------------------------
@@ -149,7 +147,7 @@ interface TaskEditDialogProps {
   onOpenRoom?: (roomId: string) => void;
 }
 
-type TabKey = "overview" | "economy" | "checklists" | "photos" | "notes" | "related";
+type TabKey = "overview" | "economy" | "checklists" | "related";
 
 export const TaskEditDialog = ({
   taskId,
@@ -178,7 +176,6 @@ export const TaskEditDialog = ({
   const [rotSubsidyPercent, setRotSubsidyPercent] = useState(30);
   const [rotMaxPerPerson, setRotMaxPerPerson] = useState(50000);
   const [profileDefaultRate, setProfileDefaultRate] = useState<number | null>(null);
-  const [photoCount, setPhotoCount] = useState(0);
   const [profileLaborCostPercent, setProfileLaborCostPercent] = useState<number | null>(null);
   const [userType, setUserType] = useState<string | null>(null);
   const [taskProfileId, setTaskProfileId] = useState<string | null>(null);
@@ -242,14 +239,6 @@ export const TaskEditDialog = ({
       data.material_items = plannedItems.length > 0 ? plannedItems : undefined;
 
       setTask(data);
-
-      // Quick photo count for the tab badge
-      supabase
-        .from("photos")
-        .select("id", { count: "exact", head: true })
-        .eq("linked_to_type", "task")
-        .eq("linked_to_id", data.id)
-        .then(({ count }) => setPhotoCount(count || 0));
 
       // Material spend = non-planned materials linked to this task
       const actualSpend = allMaterials
@@ -605,8 +594,6 @@ export const TaskEditDialog = ({
     { k: "overview", label: t("tasks.tabOverview", "Översikt") },
     { k: "economy", label: t("tasks.tabEconomy", "Ekonomi") },
     { k: "checklists", label: t("tasks.tabChecklists", "Checklistor"), count: checklistCount },
-    { k: "photos", label: t("tasks.tabPhotos", "Foton"), count: photoCount },
-    { k: "notes", label: t("tasks.tabNotes", "Anteckningar") },
     { k: "related", label: t("tasks.tabRelated", "Relaterat") },
   ];
 
@@ -659,6 +646,7 @@ export const TaskEditDialog = ({
                 task={task}
                 patch={patch}
                 isPlanning={isPlanning}
+                projectId={projectId}
                 rooms={rooms}
                 teamMembers={teamMembers}
                 dependencies={dependencies}
@@ -692,8 +680,6 @@ export const TaskEditDialog = ({
               />
             )}
             {tab === "checklists" && <ChecklistsTab task={task} patch={patch} projectId={projectId} />}
-            {tab === "photos" && <PhotosTab taskId={task.id} projectId={projectId} onPhotoCount={setPhotoCount} />}
-            {tab === "notes" && <NotesTab task={task} patch={patch} projectId={projectId} />}
             {tab === "related" && (
               <RelatedTab
                 task={task}
