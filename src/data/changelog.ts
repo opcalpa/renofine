@@ -10,6 +10,19 @@ export interface ChangelogEntry {
 export const DEMO_PROJECT_PATH = "/projects/demo";
 
 export const changelog: ChangelogEntry[] = [
+  // ── 2026-07-08 ──
+  {
+    date: "2026-07-08",
+    title: "Arbetskortet fick flikar — som rumskortet",
+    description: "Arbetsdialogen är omstrukturerad med samma flikupplägg som rumsdetaljerna: Översikt, Ekonomi, Checklistor, Foton, Anteckningar och Relaterat. Allt ekonomiskt (budget, ROT, kostnadsuppföljning) är samlat under Ekonomi, och under Anteckningar växlar du mellan Kundens önskemål och nya Interna anteckningar — de interna delas aldrig med inbjudna arbetare. Rumsnamnet i dialogen är dessutom klickbart och tar dig direkt in i rummets detaljer.",
+    tags: ["Arbeten", "Förbättring"],
+  },
+  {
+    date: "2026-07-08",
+    title: "Renaida kvitterar exakt vad hon gjorde",
+    description: "När Renaida genomför en ändring listar hon nu punkt för punkt vad som utfördes med konkreta värden (t.ex. \"Framsteg: 50 %\") i stället för bara \"genomförde 1 ändring\". Bredvid Ångra finns nu också en knapp som öppnar det som ändrades eller skapades — direkt till rätt arbete eller köporder.",
+    tags: ["Renaida", "Förbättring"],
+  },
   // ── 2026-05-18 ──
   {
     date: "2026-05-18",
