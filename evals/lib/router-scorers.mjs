@@ -22,11 +22,17 @@ function actionRefs(action) {
 }
 
 function matches(expected, action) {
-  const typeOk =
-    STATE_FAMILY.has(expected.type) && STATE_FAMILY.has(action.type)
+  // typeAnyOf: several action types are equally correct (e.g. "det saknas
+  // lister" → add_note on the task OR unticking its checklist item)
+  const typeOk = expected.typeAnyOf
+    ? expected.typeAnyOf.includes(action.type)
+    : STATE_FAMILY.has(expected.type) && STATE_FAMILY.has(action.type)
       ? true
       : expected.type === action.type;
   if (!typeOk) return false;
+
+  // refId: the entity the action points at, regardless of field name
+  if (expected.refId && (action.taskId ?? action.targetId) !== expected.refId) return false;
 
   if (expected.taskId && action.taskId !== expected.taskId) return false;
   if (expected.roomId && action.roomId !== expected.roomId) return false;

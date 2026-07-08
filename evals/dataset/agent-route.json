@@ -377,6 +377,30 @@
           "itemExcludes": "behöver"
         }
       ]
+    },
+    {
+      "id": "taulant-north-star",
+      "input": "Köket är färdigmålat. Det saknas lister och vi behöver beställa tio meter golvsockel.",
+      "expect": [
+        {
+          "type": "set_progress",
+          "taskId": "t-paint",
+          "progressMin": 100
+        },
+        {
+          "type": "create_purchase",
+          "itemIncludes": "golvsockel",
+          "itemExcludes": "behöver",
+          "quantity": 10
+        },
+        {
+          "typeAnyOf": [
+            "add_note",
+            "toggle_checklist"
+          ],
+          "refId": "t-trim"
+        }
+      ]
     }
   ]
 }
