@@ -67,6 +67,36 @@ nu ska rösten ge förslagskort även om du inte hunnit in i ett projekt.
     tryckbara och öppnar objektet de handlar om.
 
 ---
+id: renaida-doc-d1-kvitto-faktura
+status: todo
+priority: P1
+tags: [renaida, agent, dokument, inkop, mobil]
+created: 2026-07-09
+---
+## 📄 D1: Kvitto + faktura via Renaida (foto/fil in i panelen)
+Kamera/filknapp i Renaida-panelen → classify-document → process-document-v2 (FINNS redan, union-schema) → resultatet blir FÖRSLAG i samma kuvert → ConfirmDiff (vendor, summa, radantal, ROT) → Genomför → klickbart kvitto + Ångra. Ny action `import_purchase` i applyProposals som återanvänder kvitto-spar-flödet. **Carls beslut: skapar ALLTID inköpsorder (delivered/invoiced) + materialrader — inköpslistan är sanningen.** = Taulants "ute på bygget vill jag skanna ett kvitto" ordagrant. ~1 dag. **VÄNTA tills Taulants första testrunda landat** (flytta inte målet under testet); blir "kolla vad hon lärt sig"-uppföljningen. Plan: .claude-minnet project_renaida_document_flows.
+
+---
+id: renaida-doc-d2-offert-scope
+status: todo
+priority: P2
+tags: [renaida, agent, dokument, offert]
+created: 2026-07-09
+---
+## 📄 D2: Offert/scope via Renaida → handoff till befintlig granskning
+Tunga dokument (rum+arbeten-matriser) ska INTE klämmas in som chattkort. Renaida tar emot filen, klassificerar, öppnar QuoteReviewDialog/PlanningSmartImport FÖRIFYLLD och kvitterar utfallet i aktivitetsflödet efteråt. **Carls beslut: handoff, inte allt-i-chatten** (tydlighet > chattifiering). Därefter D3: röst + foto i samma capture ("här är kvittot från Bauhaus, lägg det på badrummet"). ~1 dag.
+
+---
+id: renaida-role-gated-actions
+status: todo
+priority: P2
+tags: [renaida, agent, roller, arkitektur]
+created: 2026-07-09
+---
+## 🎭 Roll-gated action-katalog + Renaida som vägvisare
+Routern får onboarding_user_type i kontexten + action-vitlista per roll (samma princip som dual-view-gaten). Samma yttrande landar olika: "jag fick en offert" → hemägare: "ladda upp den så lägger jag in den"; byggare: "vill du att jag förbereder en offert?" (generate-quote-items finns, Renaida-väg saknas). Byggarflöden: skapa offert, förbereda faktura, ÄTA. Hemägarflöden: ta emot/scanna, planera mot egen budget. **+ Vägvisar-principen (Carl 2026-07-09): features som inte motiverar exekvering inne hos Renaida ska hon GUIDA till** — ny `open_feature`-action som öppnar rätt flik/dialog (gärna förifylld) via befintliga deep-links (?tab=&entityId=, open:-syntaxen); användaren kanske aldrig hittat featuren själv.
+
+---
 id: wizard-proffs-test
 status: todo
 priority: P2
