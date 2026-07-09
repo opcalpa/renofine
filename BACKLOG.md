@@ -54,6 +54,18 @@ Fixat & live (`830f25f` + help-bot v19): Renaida agerar nu från startsidan
 projektet, hjälp-boten förnekar aldrig sina förmågor. **Kör om punkt 1–5 ovan** —
 nu ska rösten ge förslagskort även om du inte hunnit in i ett projekt.
 
+**2026-07-09 — stort UI-paket live, 3 nya testpunkter (allt på renofine.com):**
+8. **Kvittolänkarna** — säg "beställ tio meter golvsockel" → Genomför. RÄTT:
+   kvittot listar i punktform vad som gjordes, och punktraden är GRÖN LÄNK —
+   tryck på den → köpordern öppnas. Ångra efteråt.
+9. **Nya arbetskortet** — öppna ett arbete. RÄTT: 3 flikar (Översikt/Ekonomi/
+   Relaterat); Översikt har Beskrivning⇄Interna anteckningar-växel, checklistor
+   med "Generera med AI", foton, chip-rad ("1 köporder" = tryckbar) och
+   kommentarer längst ned. Kugghjulet uppe till höger döljer fält du inte
+   använder. Rumsnamnet = länk in i rummet.
+10. **Aktivitetsflödet** — Översikt → Aktivitet. RÄTT: Renaida-kvittoraderna är
+    tryckbara och öppnar objektet de handlar om.
+
 ---
 id: wizard-proffs-test
 status: todo
