@@ -20,7 +20,8 @@
     "statusChanged": "a changé le statut de",
     "renaida": {
       "undo": "a annulé ses dernières modifications",
-      "checklistCreate": "a créé une check-list dans « {{name}} »"
+      "checklistCreate": "a créé une check-list dans « {{name}} »",
+      "purchaseImport": "a importé un document de {{name}} comme bon d'achat"
     }
   },
   "admin": {
@@ -930,7 +931,16 @@
       "detailCleared": "supprimé",
       "usingProject": "Je me base sur votre projet « {{name}} ».",
       "openTask": "Ouvrir la tâche « {{title}} »",
-      "openPurchase": "Ouvrir la commande « {{title}} »"
+      "openPurchase": "Ouvrir la commande « {{title}} »",
+      "attachDocument": "Photographier ou joindre un reçu/une facture",
+      "docQuoteDetected": "Ceci ressemble à un devis ou un descriptif — mieux vaut l'examiner en détail sous [Fichiers](open:/projects/{{projectId}}?tab=files). Téléversez-le là-bas et les pièces et travaux seront interprétés pour vous.",
+      "docUnreadable": "Je n'ai rien pu lire sur cette image — essayez une photo plus nette prise bien à plat, ou enregistrez l'achat manuellement sous Achats.",
+      "docError": "La lecture du document a échoué — réessayez dans un instant, ou enregistrez l'achat manuellement sous Achats.",
+      "docReceiptSummary": "Reçu de {{vendor}} — enregistré comme bon d'achat (livré)",
+      "docInvoiceSummary": "Facture de {{vendor}} — enregistrée comme bon d'achat (facturée)",
+      "detailLines": "{{count}} lignes",
+      "detailInvoiceNo": "N° de facture",
+      "detailDue": "Échéance"
     }
   },
   "hotspots": {

@@ -90,6 +90,20 @@ export function actionDetails(
       // confirms the curated title, not just the summary sentence.
       details.push(`${action.item}${action.quantity ? ` · ${action.quantity}${action.unit ? ` ${action.unit}` : " st"}` : ""}`);
       break;
+    case "import_purchase": {
+      // A scanned document writes MONEY — every extracted number is shown
+      // before Genomför so the user confirms amounts, not a sentence.
+      details.push(`${action.total.toLocaleString(locale)} kr`);
+      if (action.documentDate) details.push(fmtDate(action.documentDate));
+      if (action.lineItems.length > 1) details.push(t("helpBot.agent.detailLines", "{{count}} rader", { count: action.lineItems.length }));
+      else if (action.lineItems.length === 1) details.push(action.lineItems[0].description);
+      if (action.rotAmount) details.push(`ROT: ${action.rotAmount.toLocaleString(locale)} kr`);
+      if (action.documentType === "invoice") {
+        if (action.invoiceNumber) details.push(`${t("helpBot.agent.detailInvoiceNo", "Fakturanr")}: ${action.invoiceNumber}`);
+        if (action.dueDate) details.push(`${t("helpBot.agent.detailDue", "Förfaller")}: ${fmtDate(action.dueDate)}`);
+      }
+      break;
+    }
     case "create_task":
       details.push(action.title);
       break;

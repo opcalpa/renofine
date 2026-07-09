@@ -3568,7 +3568,8 @@
       "forUser": "for {{name}}",
       "roomCreate": "created the room \"{{name}}\"",
       "undo": "reverted her latest changes",
-      "checklistCreate": "created a checklist in \"{{name}}\""
+      "checklistCreate": "created a checklist in \"{{name}}\"",
+      "purchaseImport": "scanned in a document from {{name}} as a purchase order"
     },
     "openEntity": "Open"
   },
@@ -3890,7 +3891,16 @@
       "micFailed": "The microphone didn't quite cooperate — try again, or type your update here instead.",
       "detailCleared": "cleared",
       "usingProject": "I’m working from your project “{{name}}”.",
-      "autoAppliedIntro": "Done automatically — here's what I did:"
+      "autoAppliedIntro": "Done automatically — here's what I did:",
+      "attachDocument": "Photograph or attach a receipt/invoice",
+      "docQuoteDetected": "This looks like a quote or a scope document — it deserves a full review under [Files](open:/projects/{{projectId}}?tab=files). Upload it there and rooms and work items get interpreted for you.",
+      "docUnreadable": "I couldn't read anything from that image — try a sharper photo taken straight from above, or register the purchase manually under Purchases.",
+      "docError": "Reading the document failed — try again in a moment, or register the purchase manually under Purchases.",
+      "docReceiptSummary": "Receipt from {{vendor}} — saved as a purchase order (delivered)",
+      "docInvoiceSummary": "Invoice from {{vendor}} — saved as a purchase order (billed)",
+      "detailLines": "{{count}} lines",
+      "detailInvoiceNo": "Invoice no",
+      "detailDue": "Due"
     },
     "autonomy": {
       "suggest": "Suggest first",

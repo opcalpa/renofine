@@ -44,6 +44,29 @@ export type ProposalAction =
    */
   | { type: "assign_task"; taskId: string; assigneeProfileId: string; assigneeName?: string }
   | { type: "add_note"; target: "task" | "room" | "project"; targetId: string; text: string }
+  /**
+   * AI-scanned receipt/invoice → one purchase order + its material line items
+   * (the PO invariant: every scanned document lives in Inköp as a first-class
+   * order). Built CLIENT-SIDE from process-document-v2 output — the router
+   * never emits this. The image file travels via the in-memory attachment
+   * registry (documentCapture.ts), keyed by attachmentKey, because File
+   * objects don't belong in a serializable action.
+   */
+  | {
+      type: "import_purchase";
+      documentType: "receipt" | "invoice";
+      vendorName: string;
+      total: number;
+      vatAmount?: number | null;
+      /** YYYY-MM-DD — purchase/delivery date from the document. */
+      documentDate?: string | null;
+      dueDate?: string | null;
+      invoiceNumber?: string | null;
+      ocrNumber?: string | null;
+      rotAmount?: number | null;
+      lineItems: { description: string; quantity: number; unitPrice: number | null; total: number | null }[];
+      attachmentKey?: string;
+    }
   /** Router could not confidently route the input — surface as a question, never apply. */
   | { type: "unknown"; rawText: string; reason: string };
 
@@ -82,7 +105,9 @@ export type UndoOp =
   | { kind: "delete_comment"; commentId: string }
   | { kind: "delete_time"; timeEntryId: string }
   | { kind: "checklist_restore"; taskId: string; before: { checklists: unknown; progress: number | null } }
-  | { kind: "task_assignee"; taskId: string; before: { assigned_to_stakeholder_id: string | null } };
+  | { kind: "task_assignee"; taskId: string; before: { assigned_to_stakeholder_id: string | null } }
+  /** Imported document purchase: N material rows + the PO + uploaded file/links. */
+  | { kind: "delete_import_purchase"; purchaseOrderId: string; materialIds: string[]; filePath?: string | null };
 
 /** Below this task-match confidence, a task proposal is shown unchecked (needs confirm/re-pick). */
 export const TASK_MATCH_MIN_CONFIDENCE = 0.7;

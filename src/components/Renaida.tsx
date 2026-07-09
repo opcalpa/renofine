@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, type ReactNode } from "react";
-import { Send, X, Lightbulb, BookOpen, Wrench, FileText, ArrowLeft, Mic, Sparkles, ChevronDown, MessageCircle, Square, Loader2 } from "lucide-react";
+import { Send, X, Lightbulb, BookOpen, Wrench, FileText, ArrowLeft, Mic, Sparkles, ChevronDown, MessageCircle, Square, Loader2, Paperclip } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useVoiceRecorder, isRecorderSupported } from "@/hooks/useVoiceRecorder";
@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ConfirmDiff, actionDetails } from "@/components/agent/ConfirmDiff";
 import { RenaidaAvatar, type RenaidaState } from "@/components/renaida/RenaidaAvatar";
 import { routeAgentInput } from "@/services/agent/routeClient";
+import { captureDocument } from "@/services/agent/documentCapture";
 import { applyProposals, undoProposals } from "@/services/agent/applyProposals";
 import { type AgentProposal, type UndoOp, TASK_MATCH_MIN_CONFIDENCE, isActionable } from "@/services/agent/types";
 import { recordCorrection, getAutonomyMode, setAutonomyMode } from "@/services/agent/renaidaMemory";
@@ -39,6 +40,9 @@ const AUTO_APPLY_MIN_MATCH = 0.85;
 
 function qualifiesForAutoApply(p: AgentProposal): boolean {
   if (!isActionable(p)) return false;
+  // Scanned documents write MONEY (an order + its amounts) — always confirmed
+  // by a human, even on autopilot.
+  if (p.action.type === "import_purchase") return false;
   if ((p.confidence ?? 0) < AUTO_APPLY_MIN_CONFIDENCE) return false;
   // Task-targeting actions must ALSO clear a high match bar (right task, not just right intent).
   const taskId = "taskId" in p.action ? p.action.taskId : undefined;
@@ -264,6 +268,7 @@ export function Renaida() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const flashTimerRef = useRef<number | undefined>(undefined);
   // Fallback project already announced in this panel session (capture outside a project)
@@ -804,6 +809,84 @@ export function Renaida() {
     if (input.trim()) captureUpdate(input, "text", { fallbackToChat: true });
     else startVoiceCapture();
   }, [input, captureUpdate, startVoiceCapture]);
+
+  // --- Document capture (D1): photograph/upload a receipt or invoice → the same
+  // propose→confirm→undo loop as voice. Renaida conducts the existing
+  // process-document-v2 brain; heavy documents (quotes/scopes) are guided to
+  // their dedicated review surface instead of being mangled into an order.
+  const handleDocumentSelected = useCallback(async (file: File) => {
+    if (capturing || loading) return;
+
+    setMessages((prev) => [...prev, { role: "user", content: `📎 ${file.name}` }]);
+
+    let projectId = useRenaidaStore.getState().projectId;
+    if (!projectId) {
+      const fallback = await resolveFallbackProject().catch(() => null);
+      if (fallback) {
+        projectId = fallback.id;
+        if (announcedFallbackRef.current !== fallback.id) {
+          announcedFallbackRef.current = fallback.id;
+          setMessages((prev) => [...prev, {
+            role: "assistant",
+            content: t("helpBot.agent.usingProject", { name: fallback.name }),
+          }]);
+        }
+      }
+    }
+    if (!projectId) {
+      setMessages((prev) => [...prev, { role: "assistant", content: t("helpBot.agent.noProject") }]);
+      return;
+    }
+
+    setCapturing(true);
+    wakeRenaida();
+    try {
+      const res = await captureDocument(file);
+      if (res.kind === "quote_or_scope") {
+        // Wayfinder (Carl 2026-07-09): a quote deserves its full review surface —
+        // guide there instead of forcing it through a chat card. D2 = prefilled handoff.
+        analytics.capture(AnalyticsEvents.RENAIDA_PROPOSED, { kind: "document", resolved: false, docType: "quote_or_scope" });
+        setMessages((prev) => [...prev, {
+          role: "assistant",
+          content: t("helpBot.agent.docQuoteDetected", {
+            defaultValue: "Det här ser ut som en offert eller ett underlag — den granskar du bäst med full genomgång under [Filer](open:/projects/{{projectId}}?tab=files). Ladda upp den där, så tolkas rum och arbeten åt dig.",
+            projectId,
+          }),
+        }]);
+      } else if (res.kind === "unreadable") {
+        analytics.capture(AnalyticsEvents.RENAIDA_PROPOSED, { kind: "document", resolved: false, docType: "unreadable" });
+        setMessages((prev) => [...prev, {
+          role: "assistant",
+          content: t("helpBot.agent.docUnreadable", "Jag kunde tyvärr inte läsa ut något ur bilden — prova ett skarpare foto rakt ovanifrån, eller registrera inköpet manuellt under Inköp."),
+        }]);
+      } else {
+        const proposal: AgentProposal = {
+          id: crypto.randomUUID(),
+          summary: t(
+            res.kind === "invoice" ? "helpBot.agent.docInvoiceSummary" : "helpBot.agent.docReceiptSummary",
+            {
+              defaultValue: res.kind === "invoice"
+                ? "Faktura från {{vendor}} — sparas som inköpsorder (fakturerad)"
+                : "Kvitto från {{vendor}} — sparas som inköpsorder (levererad)",
+              vendor: res.action.vendorName,
+            },
+          ),
+          confidence: res.confidence,
+          action: res.action,
+        };
+        analytics.capture(AnalyticsEvents.RENAIDA_PROPOSED, { kind: "document", resolved: true, count: 1, actionTypes: ["import_purchase"] });
+        setMessages((prev) => [...prev, { role: "assistant", content: "", proposals: [proposal], projectId, sourcePhrase: file.name }]);
+      }
+      flashRenaida("talk", 1400);
+    } catch {
+      setMessages((prev) => [...prev, {
+        role: "assistant",
+        content: t("helpBot.agent.docError", "Dokumentläsningen gick fel — prova igen om en stund, eller registrera inköpet manuellt under Inköp."),
+      }]);
+    } finally {
+      setCapturing(false);
+    }
+  }, [capturing, loading, t, wakeRenaida, flashRenaida]);
 
   const handleApplyProposals = useCallback(async (msgIndex: number, accepted: AgentProposal[], original: AgentProposal[], phrase: string, msgProjectId?: string) => {
     const projectId = msgProjectId ?? useRenaidaStore.getState().projectId;
@@ -1350,6 +1433,31 @@ export function Renaida() {
               </button>
             ) : (
               <>
+                {/* Receipt/invoice photo — image capture goes through the same
+                    propose→confirm→undo loop as voice (D1). accept="image/*"
+                    gives iOS the camera + library picker. */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    e.target.value = "";
+                    if (f) void handleDocumentSelected(f);
+                  }}
+                />
+                <Button
+                  size="icon"
+                  variant="outline"
+                  className="h-11 w-11 md:h-9 md:w-9 shrink-0"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={loading || capturing}
+                  title={t("helpBot.agent.attachDocument", "Fota eller bifoga kvitto/faktura")}
+                  aria-label={t("helpBot.agent.attachDocument", "Fota eller bifoga kvitto/faktura")}
+                >
+                  <Paperclip className="h-5 w-5 md:h-4 md:w-4" />
+                </Button>
                 <input
                   ref={inputRef}
                   type="text"

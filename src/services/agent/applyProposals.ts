@@ -10,6 +10,8 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import { createRequestPurchase } from "@/lib/createRequestPurchase";
+import { generateDocumentFilename } from "@/services/receiptAnalysisService";
+import { takeAttachment } from "./documentCapture";
 import type { ActionableProposal, AgentProposal, UndoOp } from "./types";
 import { isActionable } from "./types";
 
@@ -188,6 +190,121 @@ async function applyOne(
       return { kind: "delete_purchase", purchaseOrderId, materialId };
     }
 
+    case "import_purchase": {
+      // Mirrors QuickReceiptCaptureModal's ai_receipt/ai_invoice branches:
+      // 1 PO (status=delivered) + N material rows, so every scanned document
+      // lives in Inköp as a first-class order (Carl's decision 2026-07-09).
+      const isInvoice = action.documentType === "invoice";
+      const dateStr = action.documentDate ?? new Date().toISOString().slice(0, 10);
+      const file = takeAttachment(action.attachmentKey);
+      // Unique suffix: the same receipt scanned twice yields the same
+      // vendor+date+amount name — without it the second upload overwrites the
+      // first order's file, and undoing one import would delete the other's
+      // attachment (path-keyed cleanup).
+      const filename = generateDocumentFilename(
+        action.documentType, action.vendorName, dateStr, action.total, action.invoiceNumber,
+      ).replace(/\.jpg$/, `_${crypto.randomUUID().slice(0, 8)}.jpg`);
+      const storagePath = file
+        ? `projects/${projectId}/${isInvoice ? "Fakturor" : "Kvitton"}/${filename}`
+        : null;
+
+      const { data: po, error: poError } = await supabase
+        .from("purchase_orders")
+        .insert({
+          project_id: projectId,
+          vendor_name: action.vendorName,
+          total: action.total,
+          status: "delivered",
+          source: isInvoice ? "ai_invoice" : "ai_receipt",
+          delivered_at: dateStr,
+          ordered_at: dateStr,
+          invoice_number: isInvoice ? action.invoiceNumber ?? null : null,
+          ocr_number: isInvoice ? action.ocrNumber ?? null : null,
+          invoice_due_date: isInvoice ? action.dueDate ?? null : null,
+          receipt_file_path: storagePath,
+          created_by_user_id: profileId,
+        })
+        .select("id")
+        .single();
+      if (poError || !po) throw new Error(poError?.message ?? "Kunde inte skapa inköpsorder");
+
+      // Invoice lines await payment (billed/0); receipt lines are already paid.
+      const matRows = (action.lineItems.length
+        ? action.lineItems.map((li) => ({
+            name: li.description,
+            quantity: li.quantity || 1,
+            price_per_unit: li.unitPrice,
+            price_total: li.total,
+            paid_amount: isInvoice ? 0 : li.total ?? 0,
+          }))
+        : [{
+            name: `${isInvoice ? "Faktura" : "Kvitto"} - ${action.vendorName}`,
+            quantity: 1,
+            price_per_unit: action.total,
+            price_total: action.total,
+            paid_amount: isInvoice ? 0 : action.total,
+          }]
+      ).map((row) => ({
+        ...row,
+        project_id: projectId,
+        purchase_order_id: po.id,
+        vendor_name: action.vendorName,
+        unit: "st",
+        status: isInvoice ? "billed" : "paid",
+        created_by_user_id: profileId,
+      }));
+
+      const { data: createdMats, error: matError } = await supabase
+        .from("materials").insert(matRows).select("id");
+      if (matError) {
+        // Don't leave a half-imported order behind — the PO invariant says
+        // an order without its lines is a lie in the purchase list.
+        await supabase.from("purchase_orders").delete().eq("id", po.id);
+        throw new Error(matError.message);
+      }
+      const materialIds = (createdMats ?? []).map((m) => m.id);
+
+      // Upload the document image + link it, same shape as the manual scan flow.
+      if (file && storagePath) {
+        const { error: uploadError } = await supabase.storage
+          .from("project-files")
+          .upload(storagePath, file, { upsert: true });
+        if (!uploadError && materialIds[0]) {
+          void supabase.from("task_file_links").insert({
+            project_id: projectId,
+            file_path: storagePath,
+            file_name: filename,
+            file_type: action.documentType,
+            file_size: file.size,
+            mime_type: file.type,
+            linked_by_user_id: profileId,
+            material_id: materialIds[0],
+          }).then(() => {}, () => {});
+          const { data: { publicUrl } } = supabase.storage
+            .from("project-files").getPublicUrl(storagePath);
+          void supabase.from("photos").insert({
+            linked_to_type: "material",
+            linked_to_id: materialIds[0],
+            url: publicUrl,
+            caption: filename,
+            uploaded_by_user_id: profileId,
+          }).then(() => {}, () => {});
+        }
+      }
+
+      logActivity(projectId, profileId, "renaida_purchase_import", "purchase_order", po.id, action.vendorName, {
+        documentType: action.documentType,
+        total: action.total,
+        lines: action.lineItems.length,
+      });
+      return {
+        kind: "delete_import_purchase",
+        purchaseOrderId: po.id,
+        materialIds,
+        filePath: file ? storagePath : null,
+      };
+    }
+
     case "log_time": {
       const date = action.date ?? new Date().toISOString().slice(0, 10);
       const { data, error } = await supabase.from("time_entries").insert({
@@ -361,6 +478,8 @@ export async function applyProposals(
         result.created.push({ type: "purchase", id: undo.purchaseOrderId, title: proposal.action.item, proposalId: proposal.id });
       } else if (undo.kind === "delete_room" && proposal.action.type === "create_room") {
         result.created.push({ type: "room", id: undo.roomId, title: proposal.action.name, proposalId: proposal.id });
+      } else if (undo.kind === "delete_import_purchase" && proposal.action.type === "import_purchase") {
+        result.created.push({ type: "purchase", id: undo.purchaseOrderId, title: proposal.action.vendorName, proposalId: proposal.id });
       }
       // Changed-in-place tasks → refs for "open & edit" links next to Undo
       switch (undo.kind) {
@@ -426,6 +545,17 @@ export async function undoProposals(undo: UndoOp[], projectId?: string): Promise
           await supabase.from("materials").delete().eq("id", op.materialId);
           await supabase.from("purchase_orders").delete().eq("id", op.purchaseOrderId);
           break;
+        case "delete_import_purchase":
+          if (op.materialIds.length) {
+            await supabase.from("photos").delete().in("linked_to_id", op.materialIds).eq("linked_to_type", "material");
+            await supabase.from("materials").delete().in("id", op.materialIds);
+          }
+          await supabase.from("purchase_orders").delete().eq("id", op.purchaseOrderId);
+          if (op.filePath) {
+            await supabase.from("task_file_links").delete().eq("file_path", op.filePath);
+            await supabase.storage.from("project-files").remove([op.filePath]);
+          }
+          break;
         case "delete_comment":
           await supabase.from("comments").delete().eq("id", op.commentId);
           break;
@@ -463,6 +593,7 @@ export async function undoProposals(undo: UndoOp[], projectId?: string): Promise
           case "delete_task": return [op.taskId];
           case "delete_room": return [op.roomId];
           case "delete_purchase": return [op.purchaseOrderId, op.materialId];
+          case "delete_import_purchase": return [op.purchaseOrderId, ...op.materialIds];
           case "delete_comment": return [op.commentId];
           case "delete_time": return [op.timeEntryId];
           default: return [];

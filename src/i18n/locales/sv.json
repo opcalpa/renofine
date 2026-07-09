@@ -3567,7 +3567,8 @@
       "forUser": "åt {{name}}",
       "roomCreate": "skapade rummet \"{{name}}\"",
       "undo": "ångrade sina senaste ändringar",
-      "checklistCreate": "skapade en checklista i \"{{name}}\""
+      "checklistCreate": "skapade en checklista i \"{{name}}\"",
+      "purchaseImport": "läste in ett dokument från {{name}} som inköpsorder"
     },
     "openEntity": "Öppna"
   },
@@ -3889,7 +3890,16 @@
       "micFailed": "Mikrofonen ville inte riktigt — prova igen, eller skriv din uppdatering här istället.",
       "detailCleared": "tas bort",
       "usingProject": "Jag utgår från ditt projekt ”{{name}}”.",
-      "autoAppliedIntro": "Klart automatiskt — det här fixade jag direkt:"
+      "autoAppliedIntro": "Klart automatiskt — det här fixade jag direkt:",
+      "attachDocument": "Fota eller bifoga kvitto/faktura",
+      "docQuoteDetected": "Det här ser ut som en offert eller ett underlag — den granskar du bäst med full genomgång under [Filer](open:/projects/{{projectId}}?tab=files). Ladda upp den där, så tolkas rum och arbeten åt dig.",
+      "docUnreadable": "Jag kunde tyvärr inte läsa ut något ur bilden — prova ett skarpare foto rakt ovanifrån, eller registrera inköpet manuellt under Inköp.",
+      "docError": "Dokumentläsningen gick fel — prova igen om en stund, eller registrera inköpet manuellt under Inköp.",
+      "docReceiptSummary": "Kvitto från {{vendor}} — sparas som inköpsorder (levererad)",
+      "docInvoiceSummary": "Faktura från {{vendor}} — sparas som inköpsorder (fakturerad)",
+      "detailLines": "{{count}} rader",
+      "detailInvoiceNo": "Fakturanr",
+      "detailDue": "Förfaller"
     },
     "autonomy": {
       "suggest": "Föreslå först",

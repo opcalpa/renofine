@@ -20,7 +20,8 @@
     "statusChanged": "cambió el estado de",
     "renaida": {
       "undo": "deshizo sus últimos cambios",
-      "checklistCreate": "creó una lista de verificación en \"{{name}}\""
+      "checklistCreate": "creó una lista de verificación en \"{{name}}\"",
+      "purchaseImport": "escaneó un documento de {{name}} como orden de compra"
     }
   },
   "admin": {
@@ -930,7 +931,16 @@
       "detailCleared": "se elimina",
       "usingProject": "Estoy trabajando sobre tu proyecto «{{name}}».",
       "openTask": "Abrir la tarea «{{title}}»",
-      "openPurchase": "Abrir el pedido «{{title}}»"
+      "openPurchase": "Abrir el pedido «{{title}}»",
+      "attachDocument": "Fotografiar o adjuntar un recibo/una factura",
+      "docQuoteDetected": "Esto parece un presupuesto o un pliego — se revisa mejor con calma en [Archivos](open:/projects/{{projectId}}?tab=files). Súbelo allí y las habitaciones y trabajos se interpretarán por ti.",
+      "docUnreadable": "No pude leer nada en la imagen — prueba con una foto más nítida tomada desde arriba, o registra la compra manualmente en Compras.",
+      "docError": "La lectura del documento falló — inténtalo de nuevo en un momento, o registra la compra manualmente en Compras.",
+      "docReceiptSummary": "Recibo de {{vendor}} — guardado como orden de compra (entregado)",
+      "docInvoiceSummary": "Factura de {{vendor}} — guardada como orden de compra (facturada)",
+      "detailLines": "{{count}} líneas",
+      "detailInvoiceNo": "N.º de factura",
+      "detailDue": "Vence"
     }
   },
   "hotspots": {

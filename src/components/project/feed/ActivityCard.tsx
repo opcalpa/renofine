@@ -15,6 +15,7 @@ const renaidaActionKeys: Record<string, string> = {
   renaida_task_create: "activity.renaida.taskCreate",
   renaida_room_create: "activity.renaida.roomCreate",
   renaida_purchase_request: "activity.renaida.purchaseRequest",
+  renaida_purchase_import: "activity.renaida.purchaseImport",
   renaida_log_time: "activity.renaida.logTime",
   renaida_checklist: "activity.renaida.checklist",
   renaida_checklist_create: "activity.renaida.checklistCreate",
