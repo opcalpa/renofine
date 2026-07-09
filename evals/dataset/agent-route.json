@@ -401,6 +401,27 @@
           "refId": "t-trim"
         }
       ]
+    },
+    {
+      "id": "polite-question-create-room",
+      "input": "Kan du skapa ett gästrum?",
+      "expect": [
+        {
+          "type": "create_room",
+          "nameIncludes": "gästrum"
+        }
+      ]
+    },
+    {
+      "id": "polite-question-priority",
+      "input": "Skulle du kunna sätta hög prioritet på kakelsättningen?",
+      "expect": [
+        {
+          "type": "update_task",
+          "taskId": "t-tile",
+          "changesPriority": "high"
+        }
+      ]
     }
   ]
 }
