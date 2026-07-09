@@ -14,7 +14,7 @@ export const changelog: ChangelogEntry[] = [
   {
     date: "2026-07-08",
     title: "Arbetskortet fick flikar — som rumskortet",
-    description: "Arbetsdialogen är omstrukturerad med samma upplägg som rumsdetaljerna: Översikt, Ekonomi, Checklistor och Relaterat. Översikt samlar det centrala — beskrivning (med växel till nya Interna anteckningar, som aldrig delas med inbjudna arbetare), status, datum, framsteg, foton och kommentarer. Allt ekonomiskt (budget, ROT, kostnadsuppföljning) ligger under Ekonomi. Rumsnamnet i dialogen är dessutom klickbart och tar dig direkt in i rummets detaljer.",
+    description: "Arbetsdialogen är omstrukturerad med samma upplägg som rumsdetaljerna: Översikt, Ekonomi och Relaterat. Översikt samlar det centrala — beskrivning (med växel till nya Interna anteckningar, som aldrig delas med inbjudna arbetare), checklistor med ny AI-generering direkt från beskrivningen, status, datum, framsteg, foton och kommentarer, plus en kompakt inforad där kopplade köpordrar och beroenden visas som klickbara antal. Relaterat listar arbetets köpordrar, beroenden, rumsdetaljer och filer. Rumsnamnet i dialogen är dessutom klickbart och tar dig direkt in i rummets detaljer.",
     tags: ["Arbeten", "Förbättring"],
   },
   {

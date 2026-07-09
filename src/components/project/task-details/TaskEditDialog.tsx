@@ -42,10 +42,10 @@ import { useContextualTips } from "@/hooks/useContextualTips";
 import { DEFAULT_COST_CENTERS } from "@/lib/costCenters";
 import { detectWorkType, parseEstimationSettings, type RecipeEstimationSettings } from "@/lib/materialRecipes";
 import { type Task, type TaskRoom, type MaterialItem } from "./types";
+import { useNavigate } from "react-router-dom";
 import { OverviewTab } from "./tabs/OverviewTab";
 import { EconomyTab } from "./tabs/EconomyTab";
-import { ChecklistsTab } from "./tabs/ChecklistsTab";
-import { RelatedTab, type TaskDependency } from "./tabs/RelatedTab";
+import { RelatedTab, type TaskDependency, type RelatedPurchaseOrder } from "./tabs/RelatedTab";
 
 // ---------------------------------------------------------------------------
 // Task title — click-to-edit with read mode as default
@@ -147,7 +147,7 @@ interface TaskEditDialogProps {
   onOpenRoom?: (roomId: string) => void;
 }
 
-type TabKey = "overview" | "economy" | "checklists" | "related";
+type TabKey = "overview" | "economy" | "related";
 
 export const TaskEditDialog = ({
   taskId,
@@ -163,6 +163,7 @@ export const TaskEditDialog = ({
   const isPlanning = projectStatus === "planning";
   const { t } = useTranslation();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const { showTaxDeduction } = useTaxDeductionVisible();
   const permissions = useProjectPermissions(projectId);
   const [task, setTask] = useState<Task | null>(null);
@@ -187,6 +188,7 @@ export const TaskEditDialog = ({
   const [estimationSettings, setEstimationSettings] = useState<RecipeEstimationSettings | null>(null);
   const [dependencies, setDependencies] = useState<TaskDependency[]>([]);
   const [allProjectTasks, setAllProjectTasks] = useState<{ id: string; title: string; status: string; finish_date: string | null }[]>([]);
+  const [relatedPOs, setRelatedPOs] = useState<RelatedPurchaseOrder[]>([]);
 
   const patch = useCallback((updates: Partial<Task>) => {
     setTask((prev) => (prev ? { ...prev, ...updates } : prev));
@@ -218,7 +220,7 @@ export const TaskEditDialog = ({
       // Fetch linked materials for this task
       const { data: linkedMaterials } = await supabase
         .from("materials")
-        .select("id, name, quantity, unit, price_per_unit, price_total, markup_percent, status, exclude_from_budget")
+        .select("id, name, quantity, unit, price_per_unit, price_total, markup_percent, status, exclude_from_budget, purchase_order_id")
         .eq("task_id", taskId);
 
       // Split into planned items (editable in pricing) vs actual spend
@@ -245,6 +247,32 @@ export const TaskEditDialog = ({
         .filter((m) => m.status !== "planned" && !m.exclude_from_budget)
         .reduce((sum, m) => sum + (m.price_total ?? ((m.quantity || 0) * (m.price_per_unit || 0))), 0);
       setMaterialSpent(actualSpend);
+
+      // Related purchase orders — grouped from the task's material lines
+      const linesByPO = new Map<string, string[]>();
+      for (const m of allMaterials) {
+        if (m.purchase_order_id) {
+          linesByPO.set(m.purchase_order_id, [...(linesByPO.get(m.purchase_order_id) ?? []), m.name]);
+        }
+      }
+      if (linesByPO.size > 0) {
+        const { data: pos } = await supabase
+          .from("purchase_orders")
+          .select("id, status, total, vendor_name")
+          .in("id", [...linesByPO.keys()]);
+        setRelatedPOs((pos ?? []).map((po) => {
+          const names = linesByPO.get(po.id) ?? [];
+          return {
+            id: po.id,
+            label: names[0] ? `${names[0]}${names.length > 1 ? ` +${names.length - 1}` : ""}` : po.vendor_name ?? "—",
+            status: po.status,
+            total: po.total,
+            vendorName: po.vendor_name,
+          };
+        }));
+      } else {
+        setRelatedPOs([]);
+      }
 
       // Fetch dependencies (what this task depends on)
       const { data: deps } = await supabase
@@ -589,12 +617,10 @@ export const TaskEditDialog = ({
     }
   };
 
-  const checklistCount = (task?.checklists || []).length;
   const tabs: { k: TabKey; label: string; count?: number }[] = [
     { k: "overview", label: t("tasks.tabOverview", "Översikt") },
     { k: "economy", label: t("tasks.tabEconomy", "Ekonomi") },
-    { k: "checklists", label: t("tasks.tabChecklists", "Checklistor"), count: checklistCount },
-    { k: "related", label: t("tasks.tabRelated", "Relaterat") },
+    { k: "related", label: t("tasks.tabRelated", "Relaterat"), count: dependencies.length + relatedPOs.length },
   ];
 
   return (
@@ -653,6 +679,8 @@ export const TaskEditDialog = ({
                 tips={taskTips}
                 dismissTip={dismissTip}
                 onOpenRoom={onOpenRoom}
+                relatedPOCount={relatedPOs.length}
+                onShowRelated={() => setTab("related")}
               />
             )}
             {tab === "economy" && (
@@ -679,7 +707,6 @@ export const TaskEditDialog = ({
                 syncPlannedMaterials={syncPlannedMaterials}
               />
             )}
-            {tab === "checklists" && <ChecklistsTab task={task} patch={patch} projectId={projectId} />}
             {tab === "related" && (
               <RelatedTab
                 task={task}
@@ -687,6 +714,12 @@ export const TaskEditDialog = ({
                 dependencies={dependencies}
                 setDependencies={setDependencies}
                 allProjectTasks={allProjectTasks}
+                relatedPOs={relatedPOs}
+                currency={currency}
+                onOpenPurchase={(poId) => {
+                  onOpenChange(false);
+                  navigate(`/projects/${projectId}?tab=purchases&entityId=${poId}`);
+                }}
               />
             )}
           </div>

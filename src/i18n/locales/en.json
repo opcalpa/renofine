@@ -990,7 +990,7 @@
     "checklists": "Checklists",
     "checklist": "Checklist",
     "addChecklist": "Add Checklist",
-    "generateChecklist": "Generate from room",
+    "generateChecklist": "Generate with AI",
     "checklistGenerated": "Checklist generated from room specs",
     "addItem": "Add item...",
     "updateTask": "Update Task",
@@ -1028,13 +1028,16 @@
     "editPartsInstead": "The cost is broken down into parts — edit the parts instead",
     "tabOverview": "Overview",
     "tabEconomy": "Economy",
-    "tabChecklists": "Checklists",
     "tabRelated": "Related",
     "internalNotes": "Internal notes",
     "internalNotesPlaceholder": "Internal notes — not visible to workers…",
     "internalNotesHint": "Only for you and your team — never shared with workers.",
-    "noChecklistsYet": "No checklists yet — add one or generate from the room.",
-    "descriptionSharedHint": "Visible to everyone in the project, including invited workers."
+    "descriptionSharedHint": "Visible to everyone in the project, including invited workers.",
+    "purchaseOrderOne": "purchase order",
+    "purchaseOrderMany": "purchase orders",
+    "dependencyOne": "dependency",
+    "dependencyMany": "dependencies",
+    "relatedPurchases": "Purchase orders"
   },
   "tasksTable": {
     "columns": "Columns",

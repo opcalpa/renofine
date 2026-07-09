@@ -990,7 +990,7 @@
     "checklists": "Checklistor",
     "checklist": "Checklista",
     "addChecklist": "Lägg till checklista",
-    "generateChecklist": "Generera från rum",
+    "generateChecklist": "Generera med AI",
     "checklistGenerated": "Checklista genererad från rumspecifikation",
     "addItem": "Lägg till punkt...",
     "updateTask": "Uppdatera arbete",
@@ -1028,13 +1028,16 @@
     "editPartsInstead": "Kostnaden är nedbruten i delar — redigera delarna istället",
     "tabOverview": "Översikt",
     "tabEconomy": "Ekonomi",
-    "tabChecklists": "Checklistor",
     "tabRelated": "Relaterat",
     "internalNotes": "Interna anteckningar",
     "internalNotesPlaceholder": "Interna anteckningar — syns inte för arbetare…",
     "internalNotesHint": "Bara för dig och ditt team — delas aldrig med arbetare.",
-    "noChecklistsYet": "Inga checklistor ännu — lägg till en eller generera från rummet.",
-    "descriptionSharedHint": "Syns för alla i projektet, även inbjudna arbetare."
+    "descriptionSharedHint": "Syns för alla i projektet, även inbjudna arbetare.",
+    "purchaseOrderOne": "köporder",
+    "purchaseOrderMany": "köpordrar",
+    "dependencyOne": "beroende",
+    "dependencyMany": "beroenden",
+    "relatedPurchases": "Köpordrar"
   },
   "tasksTable": {
     "columns": "Kolumner",

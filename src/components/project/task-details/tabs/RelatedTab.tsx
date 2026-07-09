@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TaskRoomDetails } from "@/components/shared/TaskRoomDetails";
 import { TaskFilesList } from "../../TaskFilesList";
+import { formatCurrency } from "@/lib/currency";
 import { type Task, taskRoomIdList } from "../types";
 
 export interface TaskDependency {
@@ -15,20 +16,62 @@ export interface TaskDependency {
   finish_date: string | null;
 }
 
+export interface RelatedPurchaseOrder {
+  id: string;
+  label: string;
+  status: string;
+  total: number;
+  vendorName: string | null;
+}
+
 interface RelatedTabProps {
   task: Task;
   projectId: string;
   dependencies: TaskDependency[];
   setDependencies: React.Dispatch<React.SetStateAction<TaskDependency[]>>;
   allProjectTasks: { id: string; title: string; status: string; finish_date: string | null }[];
+  relatedPOs: RelatedPurchaseOrder[];
+  currency?: string | null;
+  onOpenPurchase: (poId: string) => void;
 }
 
-export function RelatedTab({ task, projectId, dependencies, setDependencies, allProjectTasks }: RelatedTabProps) {
+export function RelatedTab({ task, projectId, dependencies, setDependencies, allProjectTasks, relatedPOs, currency, onOpenPurchase }: RelatedTabProps) {
   const { t } = useTranslation();
   const taskRoomIds = taskRoomIdList(task);
 
   return (
     <div className="flex flex-col gap-5 px-6 py-5">
+      {/* Related purchase orders — from the task's material lines */}
+      {relatedPOs.length > 0 && (
+        <div>
+          <span className="rf-section-label mb-2 block">
+            {t("tasks.relatedPurchases", "Köpordrar")} ({relatedPOs.length})
+          </span>
+          <div className="space-y-1.5">
+            {relatedPOs.map((po) => (
+              <button
+                key={po.id}
+                type="button"
+                onClick={() => onOpenPurchase(po.id)}
+                className="flex w-full items-center justify-between gap-2 rounded-md border px-3 py-2 text-left text-sm hover:bg-accent transition-colors"
+                style={{ borderColor: "var(--rf-hairline)", background: "var(--rf-paper-2)" }}
+              >
+                <span className="min-w-0 truncate">
+                  {po.label}
+                  {po.vendorName && <span className="ml-1.5 text-xs text-muted-foreground">· {po.vendorName}</span>}
+                </span>
+                <span className="flex shrink-0 items-center gap-2">
+                  {po.total > 0 && <span className="rf-num text-xs tabular-nums">{formatCurrency(po.total, currency)}</span>}
+                  <span className="rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+                    {t(`purchaseOrderStatus.${po.status}`, po.status)}
+                  </span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Dependencies */}
       <div>
         <span className="rf-section-label mb-2 block">

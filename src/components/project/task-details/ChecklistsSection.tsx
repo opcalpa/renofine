@@ -8,15 +8,17 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import type { Task, Checklist, ChecklistItem } from "../types";
+import type { Task, Checklist, ChecklistItem } from "./types";
 
-interface ChecklistsTabProps {
+interface ChecklistsSectionProps {
   task: Task;
   patch: (updates: Partial<Task>) => void;
   projectId: string;
 }
 
-export function ChecklistsTab({ task, patch, projectId }: ChecklistsTabProps) {
+/** Checklist editor — lives directly under the description on Översikt
+ *  (Carl 9 Jul: checklists are popular, keep them one scroll away). */
+export function ChecklistsSection({ task, patch, projectId }: ChecklistsSectionProps) {
   const { t } = useTranslation();
   const { toast } = useToast();
   const [generating, setGenerating] = useState(false);
@@ -48,27 +50,28 @@ export function ChecklistsTab({ task, patch, projectId }: ChecklistsTabProps) {
   };
 
   const handleGenerateChecklist = async () => {
-    if (!task.room_id) return;
     setGenerating(true);
     try {
-      const { data: roomData } = await supabase
-        .from("rooms")
-        .select("name, wall_spec, floor_spec, ceiling_spec, joinery_spec, dimensions")
-        .eq("id", task.room_id)
-        .single();
-
-      if (!roomData) throw new Error("Room not found");
+      // Room specs enrich the prompt when the task has a room; the generator
+      // only requires a title, so description-only tasks work too.
+      const { data: roomData } = task.room_id
+        ? await supabase
+            .from("rooms")
+            .select("name, wall_spec, floor_spec, ceiling_spec, joinery_spec, dimensions")
+            .eq("id", task.room_id)
+            .single()
+        : { data: null };
 
       const { data: result, error } = await supabase.functions.invoke("generate-work-checklist", {
         body: {
           taskTitle: task.title,
           taskDescription: task.description,
-          roomName: roomData.name,
-          wallSpec: roomData.wall_spec,
-          floorSpec: roomData.floor_spec,
-          ceilingSpec: roomData.ceiling_spec,
-          joinerySpec: roomData.joinery_spec,
-          dimensions: roomData.dimensions,
+          roomName: roomData?.name,
+          wallSpec: roomData?.wall_spec,
+          floorSpec: roomData?.floor_spec,
+          ceilingSpec: roomData?.ceiling_spec,
+          joinerySpec: roomData?.joinery_spec,
+          dimensions: roomData?.dimensions,
         },
       });
 
@@ -86,8 +89,12 @@ export function ChecklistsTab({ task, patch, projectId }: ChecklistsTabProps) {
   };
 
   return (
-    <div className="flex flex-col gap-3 px-6 py-5">
-      <div className="flex gap-2 flex-wrap">
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <span className="rf-section-label">
+          {t("tasks.checklists")}{(task.checklists || []).length > 0 ? ` (${(task.checklists || []).length})` : ""}
+        </span>
+        <div className="flex gap-2 flex-wrap">
         <Button
           type="button"
           variant="outline"
@@ -104,29 +111,24 @@ export function ChecklistsTab({ task, patch, projectId }: ChecklistsTabProps) {
           <Plus className="h-3 w-3 mr-1" />
           {t("tasks.addChecklist")}
         </Button>
-        {task.room_id && (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleGenerateChecklist}
-            disabled={generating}
-          >
-            {generating ? (
-              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-            ) : (
-              <Sparkles className="h-3 w-3 mr-1" />
-            )}
-            {t("tasks.generateChecklist", "Generate from room")}
-          </Button>
-        )}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={handleGenerateChecklist}
+          disabled={generating}
+        >
+          {generating ? (
+            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+          ) : (
+            <Sparkles className="h-3 w-3 mr-1" />
+          )}
+          {t("tasks.generateChecklist", "Generera med AI")}
+        </Button>
+        </div>
       </div>
 
-      {(task.checklists || []).length === 0 && (
-        <p className="text-sm text-muted-foreground py-4 text-center">
-          {t("tasks.noChecklistsYet", "Inga checklistor ännu — lägg till en eller generera från rummet.")}
-        </p>
-      )}
+
 
       {(task.checklists || []).map((checklist, clIdx) => {
         const completedCount = checklist.items.filter((i) => i.completed).length;

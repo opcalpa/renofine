@@ -18,6 +18,7 @@ import type { ContextualTip } from "@/lib/contextualTips";
 import { DEFAULT_COST_CENTERS } from "@/lib/costCenters";
 import { parseLocalDate, formatLocalDate } from "@/lib/dateUtils";
 import { useToast } from "@/hooks/use-toast";
+import { ChecklistsSection } from "../ChecklistsSection";
 import { type Task, type TaskRoom, taskRoomIdList } from "../types";
 
 interface OverviewTabProps {
@@ -31,6 +32,8 @@ interface OverviewTabProps {
   tips: ContextualTip[];
   dismissTip: (id: string) => void;
   onOpenRoom?: (roomId: string) => void;
+  relatedPOCount: number;
+  onShowRelated: () => void;
 }
 
 type NoteView = "description" | "internal";
@@ -46,6 +49,8 @@ export function OverviewTab({
   tips,
   dismissTip,
   onOpenRoom,
+  relatedPOCount,
+  onShowRelated,
 }: OverviewTabProps) {
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
@@ -150,25 +155,41 @@ export function OverviewTab({
     </div>
   );
 
-  // Quick-info cards, mirrors the room card's Snabbinfo
+  // Quick-info chip row — compact, wraps to screen width, relation chips only
+  // when non-empty; counts are clickable and jump to Relaterat (Carl 9 Jul).
+  const infoChip = (label: string, onClick?: () => void) =>
+    onClick ? (
+      <button
+        key={label}
+        type="button"
+        onClick={onClick}
+        className="rounded-full border px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/5 transition-colors"
+        style={{ borderColor: "var(--rf-hairline)", background: "var(--rf-paper-2)" }}
+      >
+        {label}
+      </button>
+    ) : (
+      <span
+        key={label}
+        className="rounded-full border px-2.5 py-1 text-xs"
+        style={{ borderColor: "var(--rf-hairline)", background: "var(--rf-paper-2)", color: "var(--rf-fg-muted)" }}
+      >
+        {label}
+      </span>
+    );
+
   const quickInfo = (
-    <div>
-      <span className="rf-section-label mb-2 block">{t("rooms.quickInfo", "Snabbinfo")}</span>
-      <div className="grid grid-cols-2 gap-2">
-        {[
-          { k: t("rooms.createdAt", "Skapat"), v: fmtDate(task.created_at) },
-          { k: t("rooms.updatedAt", "Uppdaterat"), v: fmtDate(task.updated_at) },
-        ].map((s) => (
-          <div
-            key={s.k}
-            className="rounded-md border px-3 py-2"
-            style={{ borderColor: "var(--rf-hairline)", background: "var(--rf-paper-2)" }}
-          >
-            <div className="rf-section-label mb-0.5">{s.k}</div>
-            <div style={{ fontSize: 13, color: "var(--rf-ink)" }}>{s.v}</div>
-          </div>
-        ))}
-      </div>
+    <div className="flex flex-wrap items-center gap-1.5">
+      {infoChip(`${t("rooms.createdAt", "Skapat")} ${fmtDate(task.created_at)}`)}
+      {infoChip(`${t("rooms.updatedAt", "Uppdaterat")} ${fmtDate(task.updated_at)}`)}
+      {relatedPOCount > 0 && infoChip(
+        `${relatedPOCount} ${relatedPOCount === 1 ? t("tasks.purchaseOrderOne", "köporder") : t("tasks.purchaseOrderMany", "köpordrar")}`,
+        onShowRelated,
+      )}
+      {dependencies.length > 0 && infoChip(
+        `${dependencies.length} ${dependencies.length === 1 ? t("tasks.dependencyOne", "beroende") : t("tasks.dependencyMany", "beroenden")}`,
+        onShowRelated,
+      )}
     </div>
   );
 
@@ -190,6 +211,8 @@ export function OverviewTab({
       {tips.length > 0 && <TipList tips={tips} onDismiss={dismissTip} maxTips={1} compact />}
 
       {notesSection}
+
+      <ChecklistsSection task={task} patch={patch} projectId={projectId} />
 
       {isPlanning ? (
         roomField
