@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, type ReactNode } from "react";
-import { Send, X, Lightbulb, BookOpen, Wrench, FileText, ArrowLeft, Mic, Sparkles, ChevronDown, MessageCircle, Square, Loader2, ExternalLink } from "lucide-react";
+import { Send, X, Lightbulb, BookOpen, Wrench, FileText, ArrowLeft, Mic, Sparkles, ChevronDown, MessageCircle, Square, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useVoiceRecorder, isRecorderSupported } from "@/hooks/useVoiceRecorder";
@@ -75,8 +75,6 @@ interface Message {
    *  against a resolved fallback project (panel opened outside a project) —
    *  apply/undo must NOT fall back to the store's (null) projectId then. */
   projectId?: string;
-  /** Deep links to objects this message's apply created ("open the order"). */
-  links?: { label: string; to: string }[];
   /** The user utterance that produced this proposals bubble. NOT messages[i-1]
    *  — the fallback-project announce can sit between the two. */
   sourcePhrase?: string;
@@ -141,7 +139,8 @@ function renderBold(text: string, keyPrefix: string): ReactNode[] {
 
 /**
  * MessageContent — Renders message text with:
- * - Clickable [text](navigate:target) links
+ * - Clickable [text](navigate:target) links (tab targets via OverviewTab)
+ * - Clickable [text](open:/path) links (router paths — e.g. receipt bullets)
  * - Dismiss buttons [x](dismiss:reminderId)
  * - **bold** inline formatting
  */
@@ -150,19 +149,19 @@ function MessageContent({ content, onNavigate, onDismiss }: {
   onNavigate: (action: string) => void;
   onDismiss?: (id: string) => void;
 }) {
-  // Parse [text](navigate:target) and [x](dismiss:id) patterns
-  const parts = content.split(/(\[[^\]]*\]\((?:navigate|dismiss):[^)]+\))/g);
+  // Parse [text](navigate:target), [text](open:path) and [x](dismiss:id) patterns
+  const parts = content.split(/(\[[^\]]*\]\((?:navigate|open|dismiss):[^)]+\))/g);
 
   return (
     <>
       {parts.map((part, i) => {
-        const navMatch = part.match(/^\[([^\]]+)\]\(navigate:([^)]+)\)$/);
+        const navMatch = part.match(/^\[([^\]]+)\]\((navigate|open):([^)]+)\)$/);
         if (navMatch) {
           return (
             <span key={i} className="inline-flex items-center gap-1">
               <button
                 className="text-primary hover:underline font-medium inline"
-                onClick={() => onNavigate(`navigate:${navMatch[2]}`)}
+                onClick={() => onNavigate(`${navMatch[2]}:${navMatch[3]}`)}
               >
                 {navMatch[1]}
               </button>
@@ -569,7 +568,7 @@ export function Renaida() {
   const applyAndReport = useCallback(async (
     accepted: AgentProposal[],
     projectId: string,
-    opts: { auto: boolean; corrected?: number; content?: string; sourceText?: string },
+    opts: { auto: boolean; corrected?: number; sourceText?: string },
   ) => {
     setApplying(true);
     const result = await applyProposals(accepted, projectId, opts.sourceText);
@@ -587,40 +586,43 @@ export function Renaida() {
     const userFacing = result.failed.find((f) => f.error.startsWith("USER_FACING_"))?.error.replace("USER_FACING_", "");
     // Bullet receipt: what was actually executed, with concrete values (Carl
     // 8 Jul: a bare "genomförde 1 ändring(ar)" says nothing to come back to).
-    const appliedList = result.applied
-      .map((p) => {
-        const details = actionDetails(p.action, t, i18n.language);
-        return `• ${p.summary}${details.length ? ` — ${details.join(" · ")}` : ""}`;
-      })
-      .join("\n");
+    // Each bullet that created or changed an object IS the link to it (Carl
+    // 9 Jul) — created rooms/tasks/orders and edited tasks open on tap.
+    const pathForProposal = (p: AgentProposal): string | undefined => {
+      const created = result.created.find((c) => c.proposalId === p.id);
+      if (created) {
+        if (created.type === "room") return `/projects/${projectId}?room=${created.id}`;
+        return `/projects/${projectId}?tab=${created.type === "purchase" ? "purchases" : "tasks"}&entityId=${created.id}`;
+      }
+      const a = p.action;
+      const taskId = "taskId" in a && a.taskId
+        ? a.taskId
+        : a.type === "add_note" && a.target === "task"
+          ? a.targetId
+          : undefined;
+      if (taskId && result.modified.some((m) => m.id === taskId)) {
+        return `/projects/${projectId}?tab=tasks&entityId=${taskId}`;
+      }
+      return undefined;
+    };
+    const bulletFor = (p: AgentProposal): string => {
+      const details = actionDetails(p.action, t, i18n.language);
+      const path = pathForProposal(p);
+      const summary = path ? `[${p.summary}](open:${path})` : p.summary;
+      return `• ${summary}${details.length ? ` — ${details.join(" · ")}` : ""}`;
+    };
+    const appliedList = result.applied.map(bulletFor).join("\n");
     const content = result.failed.length === 0
-      ? (opts.content ?? (appliedList
-          ? `${t("helpBot.agent.appliedIntro", { count: result.applied.length })}\n${appliedList}`
-          : t("helpBot.agent.applied", { count: result.applied.length })))
+      ? (opts.auto && result.applied.length === 1
+          ? `${t("helpBot.agent.autoAppliedIntro", "Klart automatiskt — det här fixade jag direkt:")}\n${appliedList}`
+          : appliedList
+            ? `${t("helpBot.agent.appliedIntro", { count: result.applied.length })}\n${appliedList}`
+            : t("helpBot.agent.applied", { count: result.applied.length }))
       : result.applied.length === 0
         ? (userFacing ?? t("helpBot.agent.allFailed"))
         : `${t("helpBot.agent.partialFailed", { applied: result.applied.length, failed: result.failed.length })}${userFacing ? ` ${userFacing}` : ""}${appliedList ? `\n${appliedList}` : ""}`;
 
-    // Created objects get a direct "open it" link (Carl 7 Jul: a bare
-    // "genomförde 1 ändring" leaves you hunting for what was created where).
-    // Changed objects get an "open & edit" link next to Undo (Carl 8 Jul) —
-    // undo isn't the only follow-up; often you want to adjust what she did.
-    const createdIds = new Set(result.created.map((c) => c.id));
-    const links = [
-      ...result.created.map((c) => ({
-        label: c.type === "purchase"
-          ? t("helpBot.agent.openPurchase", { title: c.title })
-          : t("helpBot.agent.openTask", { title: c.title }),
-        to: `/projects/${projectId}?tab=${c.type === "purchase" ? "purchases" : "tasks"}&entityId=${c.id}`,
-      })),
-      ...result.modified
-        .filter((m) => !createdIds.has(m.id))
-        .map((m) => ({
-          label: t("helpBot.agent.editTask", { title: m.title }),
-          to: `/projects/${projectId}?tab=tasks&entityId=${m.id}`,
-        })),
-    ];
-    setMessages((prev) => [...prev, { role: "assistant", content, undo: result.undo.length ? result.undo : undefined, projectId, links: links.length ? links : undefined }]);
+    setMessages((prev) => [...prev, { role: "assistant", content, undo: result.undo.length ? result.undo : undefined, projectId }]);
     if (result.applied.length > 0) {
       // Overview cards (useOverviewData) are not React Query — nudge them to refetch.
       window.dispatchEvent(new CustomEvent("renaida-data-changed", { detail: { projectId } }));
@@ -703,10 +705,8 @@ export function Renaida() {
           // Progressive trust: very sure + single action → do it now, offer Undo.
           analytics.capture(AnalyticsEvents.RENAIDA_PROPOSED, { kind, resolved: true, auto: true, ...s });
           flashRenaida("talk", 1400);
-          const autoDetails = actionDetails(single.action, t, i18n.language);
           await applyAndReport([single], projectId, {
             auto: true,
-            content: `${t("helpBot.agent.autoApplied", { summary: single.summary })}${autoDetails.length ? `\n• ${autoDetails.join(" · ")}` : ""}`,
             sourceText: text.trim(),
           });
           return;
@@ -953,8 +953,12 @@ export function Renaida() {
       // Dispatch a custom event that OverviewTab listens to for navigation
       window.dispatchEvent(new CustomEvent("renaida-navigate", { detail: target }));
       setOpen(false);
+    } else if (action.startsWith("open:")) {
+      // Router path — receipt bullets link straight to the object they touched
+      navigate(action.replace("open:", ""));
+      setOpen(false);
     }
-  }, [startFeedbackMode, t, buildGreeting, setAutonomyChoice]);
+  }, [startFeedbackMode, t, buildGreeting, setAutonomyChoice, navigate]);
 
   const handleDismissReminder = useCallback((reminderId: string) => {
     // Dispatch event to OverviewTab to dismiss the reminder
@@ -1190,21 +1194,6 @@ export function Renaida() {
                       >
                         {action.icon}
                         {t(action.labelKey, action.fallback)}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {/* Direct links to objects this apply created */}
-                {msg.links && msg.links.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-2 ml-1">
-                    {msg.links.map((link, j) => (
-                      <button
-                        key={j}
-                        onClick={() => { setOpen(false); navigate(link.to); }}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-background px-3.5 py-2 text-sm font-medium text-primary hover:bg-primary/5 transition-colors md:gap-1 md:px-2.5 md:py-1 md:text-xs"
-                      >
-                        <ExternalLink className="h-3.5 w-3.5 md:h-3 md:w-3" />
-                        {link.label}
                       </button>
                     ))}
                   </div>

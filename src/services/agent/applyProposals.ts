@@ -14,9 +14,11 @@ import type { ActionableProposal, AgentProposal, UndoOp } from "./types";
 import { isActionable } from "./types";
 
 export interface CreatedRef {
-  type: "task" | "purchase";
+  type: "task" | "purchase" | "room";
   id: string;
   title: string;
+  /** Which accepted proposal produced this object — lets the receipt link its bullet. */
+  proposalId?: string;
 }
 
 export interface ApplyResult {
@@ -354,9 +356,11 @@ export async function applyProposals(
       result.undo.unshift(undo); // reverse order for undo
       // Created objects → refs for "open it" links in the confirmation
       if (undo.kind === "delete_task" && proposal.action.type === "create_task") {
-        result.created.push({ type: "task", id: undo.taskId, title: proposal.action.title });
+        result.created.push({ type: "task", id: undo.taskId, title: proposal.action.title, proposalId: proposal.id });
       } else if (undo.kind === "delete_purchase" && proposal.action.type === "create_purchase") {
-        result.created.push({ type: "purchase", id: undo.purchaseOrderId, title: proposal.action.item });
+        result.created.push({ type: "purchase", id: undo.purchaseOrderId, title: proposal.action.item, proposalId: proposal.id });
+      } else if (undo.kind === "delete_room" && proposal.action.type === "create_room") {
+        result.created.push({ type: "room", id: undo.roomId, title: proposal.action.name, proposalId: proposal.id });
       }
       // Changed-in-place tasks → refs for "open & edit" links next to Undo
       switch (undo.kind) {

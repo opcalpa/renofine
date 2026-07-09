@@ -3859,7 +3859,6 @@
       "applying": "Applying…",
       "applied": "Done — applied {{count}} change(s).",
       "appliedIntro": "Done — here's what I did:",
-      "autoApplied": "Done automatically — {{summary}}",
       "partialFailed": "Applied {{applied}}, {{failed}} failed.",
       "allFailed": "Hmm, that didn't go through. Try again?",
       "routeError": "I couldn't process that. Try again?",
@@ -3882,9 +3881,7 @@
       "micFailed": "The microphone didn't quite cooperate — try again, or type your update here instead.",
       "detailCleared": "cleared",
       "usingProject": "I’m working from your project “{{name}}”.",
-      "openTask": "Open the task “{{title}}”",
-      "editTask": "Open & edit “{{title}}”",
-      "openPurchase": "Open the order “{{title}}”"
+      "autoAppliedIntro": "Done automatically — here's what I did:"
     },
     "autonomy": {
       "suggest": "Suggest first",

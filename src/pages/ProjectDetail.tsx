@@ -264,6 +264,30 @@ const ProjectDetail = () => {
   // Pending scroll anchor (e.g. "chat" → scroll to #project-chat after tab renders)
   const [pendingSection, setPendingSection] = useState<string | null>(null);
 
+  // Deep link to a room's detail dialog (?room= — e.g. Renaida's receipt after
+  // creating a room). Fetched fresh by id: roomsData may predate the creation.
+  useEffect(() => {
+    const roomParam = searchParams.get("room");
+    if (!roomParam || !project?.id) return;
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete("room");
+      return next;
+    }, { replace: true });
+    supabase
+      .from("rooms")
+      .select("*")
+      .eq("id", roomParam)
+      .eq("project_id", project.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) {
+          setSelectedRoom(data);
+          setShowRoomDialog(true);
+        }
+      });
+  }, [searchParams, project?.id, setSearchParams]);
+
   // Sync ?tab=, ?subtab=, ?section=, and ?entityId= search params (handles navigation from notifications, etc.)
   useEffect(() => {
     const tabParam = searchParams.get("tab");

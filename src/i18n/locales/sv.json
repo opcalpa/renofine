@@ -3858,7 +3858,6 @@
       "applying": "Genomför…",
       "applied": "Klart — genomförde {{count}} ändring(ar).",
       "appliedIntro": "Klart — det här genomförde jag:",
-      "autoApplied": "Klart automatiskt — {{summary}}",
       "partialFailed": "Genomförde {{applied}}, {{failed}} misslyckades.",
       "allFailed": "Hmm, det gick inte igenom. Försök igen?",
       "routeError": "Jag kunde inte tolka det. Försök igen?",
@@ -3881,9 +3880,7 @@
       "micFailed": "Mikrofonen ville inte riktigt — prova igen, eller skriv din uppdatering här istället.",
       "detailCleared": "tas bort",
       "usingProject": "Jag utgår från ditt projekt ”{{name}}”.",
-      "openTask": "Öppna arbetet ”{{title}}”",
-      "editTask": "Öppna & redigera ”{{title}}”",
-      "openPurchase": "Öppna köpordern ”{{title}}”"
+      "autoAppliedIntro": "Klart automatiskt — det här fixade jag direkt:"
     },
     "autonomy": {
       "suggest": "Föreslå först",
