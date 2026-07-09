@@ -10,6 +10,13 @@ export interface ChangelogEntry {
 export const DEMO_PROJECT_PATH = "/projects/demo";
 
 export const changelog: ChangelogEntry[] = [
+  // ── 2026-07-10 ──
+  {
+    date: "2026-07-10",
+    title: "Fota kvittot — Renaida bokför det",
+    description: "Renaida-panelen har fått en kamera/gem-knapp: fota eller ladda upp ett kvitto eller en faktura, så läser Renaida ut leverantör, belopp, datum och varje rad — och föreslår en färdig inköpsorder som du bekräftar med ett tryck. Ordern hamnar i Inköp med underlaget bifogat och alla rader som material, och allt går att ångra. Belopp visas alltid innan något genomförs, och dokumentimporter körs aldrig automatiskt ens i Autopilot-läget. Offerter känns igen och guidas till den fulla granskningen under Filer.",
+    tags: ["Renaida", "Inköp", "Ny funktion"],
+  },
   // ── 2026-07-08 ──
   {
     date: "2026-07-08",

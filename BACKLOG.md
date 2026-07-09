@@ -68,13 +68,15 @@ nu ska rösten ge förslagskort även om du inte hunnit in i ett projekt.
 
 ---
 id: renaida-doc-d1-kvitto-faktura
-status: todo
+status: done
 priority: P1
 tags: [renaida, agent, dokument, inkop, mobil]
 created: 2026-07-09
+updated: 2026-07-10
+done: 2026-07-10 — Byggd + E2E-verifierad lokalt (commit 1e02d26): foto → process-document-v2 → import_purchase-förslag (belopp/datum/rader synliga före Genomför) → PO delivered/ai_receipt + materialrader + underlag uppladdat & länkat → klickbar kvittorad → Ångra tar bort allt. Aldrig auto-apply (pengar bekräftas alltid). Offert/scope → vägvisning till Filer. Unik filnamnssuffix (kollisionsbugg hittad genom att köra E2E två ggr). EJ PUSHAD/DEPLOYAD ännu — Carls beslut om timing mot Taulants testrunda.
 ---
 ## 📄 D1: Kvitto + faktura via Renaida (foto/fil in i panelen)
-Kamera/filknapp i Renaida-panelen → classify-document → process-document-v2 (FINNS redan, union-schema) → resultatet blir FÖRSLAG i samma kuvert → ConfirmDiff (vendor, summa, radantal, ROT) → Genomför → klickbart kvitto + Ångra. Ny action `import_purchase` i applyProposals som återanvänder kvitto-spar-flödet. **Carls beslut: skapar ALLTID inköpsorder (delivered/invoiced) + materialrader — inköpslistan är sanningen.** = Taulants "ute på bygget vill jag skanna ett kvitto" ordagrant. ~1 dag. **VÄNTA tills Taulants första testrunda landat** (flytta inte målet under testet); blir "kolla vad hon lärt sig"-uppföljningen. Plan: .claude-minnet project_renaida_document_flows.
+Kamera/filknapp i Renaida-panelen → classify-document → process-document-v2 (FINNS redan, union-schema) → resultatet blir FÖRSLAG i samma kuvert → ConfirmDiff (vendor, summa, radantal, ROT) → Genomför → klickbart kvitto + Ångra. Ny action `import_purchase` i applyProposals som återanvänder kvitto-spar-flödet. **Carls beslut: skapar ALLTID inköpsorder (delivered/invoiced) + materialrader — inköpslistan är sanningen.** = Taulants "ute på bygget vill jag skanna ett kvitto" ordagrant. Plan: .claude-minnet project_renaida_document_flows.
 
 ---
 id: renaida-doc-d2-offert-scope
