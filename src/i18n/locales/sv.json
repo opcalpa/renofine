@@ -1037,7 +1037,12 @@
     "purchaseOrderMany": "köpordrar",
     "dependencyOne": "beroende",
     "dependencyMany": "beroenden",
-    "relatedPurchases": "Köpordrar"
+    "relatedPurchases": "Köpordrar",
+    "fieldSettings": "Visa/dölj fält",
+    "fieldSettingsTitle": "Visa fält",
+    "fieldInUse": "används",
+    "fieldHasContent": "Har innehåll — visas alltid",
+    "fieldSettingsHint": "Fält med innehåll visas alltid. Gäller bara dig, på den här enheten."
   },
   "tasksTable": {
     "columns": "Kolumner",

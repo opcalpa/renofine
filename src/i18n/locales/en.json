@@ -1037,7 +1037,12 @@
     "purchaseOrderMany": "purchase orders",
     "dependencyOne": "dependency",
     "dependencyMany": "dependencies",
-    "relatedPurchases": "Purchase orders"
+    "relatedPurchases": "Purchase orders",
+    "fieldSettings": "Show/hide fields",
+    "fieldSettingsTitle": "Show fields",
+    "fieldInUse": "in use",
+    "fieldHasContent": "Has content — always shown",
+    "fieldSettingsHint": "Fields with content are always shown. Applies only to you, on this device."
   },
   "tasksTable": {
     "columns": "Columns",

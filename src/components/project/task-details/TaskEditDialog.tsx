@@ -46,6 +46,18 @@ import { useNavigate } from "react-router-dom";
 import { OverviewTab } from "./tabs/OverviewTab";
 import { EconomyTab } from "./tabs/EconomyTab";
 import { RelatedTab, type TaskDependency, type RelatedPurchaseOrder } from "./tabs/RelatedTab";
+import { FieldVisibilityMenu, type FieldVisibilityItem } from "./FieldVisibilityMenu";
+
+// Per-user, device-local show/hide of optional dialog fields
+const FIELD_PREFS_KEY = "rf-task-field-prefs";
+
+function loadFieldPrefs(): Record<string, boolean> {
+  try {
+    return JSON.parse(localStorage.getItem(FIELD_PREFS_KEY) ?? "{}");
+  } catch {
+    return {};
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Task title — click-to-edit with read mode as default
@@ -189,6 +201,17 @@ export const TaskEditDialog = ({
   const [dependencies, setDependencies] = useState<TaskDependency[]>([]);
   const [allProjectTasks, setAllProjectTasks] = useState<{ id: string; title: string; status: string; finish_date: string | null }[]>([]);
   const [relatedPOs, setRelatedPOs] = useState<RelatedPurchaseOrder[]>([]);
+  const [photoCount, setPhotoCount] = useState(0);
+  const [commentCount, setCommentCount] = useState(0);
+  const [fieldPrefs, setFieldPrefs] = useState<Record<string, boolean>>(loadFieldPrefs);
+
+  const updateFieldPref = useCallback((key: string, visible: boolean) => {
+    setFieldPrefs((prev) => {
+      const next = { ...prev, [key]: visible };
+      try { localStorage.setItem(FIELD_PREFS_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+      return next;
+    });
+  }, []);
 
   const patch = useCallback((updates: Partial<Task>) => {
     setTask((prev) => (prev ? { ...prev, ...updates } : prev));
@@ -241,6 +264,19 @@ export const TaskEditDialog = ({
       data.material_items = plannedItems.length > 0 ? plannedItems : undefined;
 
       setTask(data);
+
+      // Counts for the visibility safeguard: sections with content always render
+      supabase
+        .from("photos")
+        .select("id", { count: "exact", head: true })
+        .eq("linked_to_type", "task")
+        .eq("linked_to_id", data.id)
+        .then(({ count }) => setPhotoCount(count || 0));
+      supabase
+        .from("comments")
+        .select("id", { count: "exact", head: true })
+        .eq("task_id", data.id)
+        .then(({ count }) => setCommentCount(count || 0));
 
       // Material spend = non-planned materials linked to this task
       const actualSpend = allMaterials
@@ -623,6 +659,16 @@ export const TaskEditDialog = ({
     { k: "related", label: t("tasks.tabRelated", "Relaterat"), count: dependencies.length + relatedPOs.length },
   ];
 
+  const fieldItems: FieldVisibilityItem[] = task ? [
+    { key: "checklists", label: t("tasks.checklists"), hasContent: (task.checklists || []).length > 0 },
+    { key: "photos", label: t("entityPhotos.photos", "Foton"), hasContent: photoCount > 0 },
+    { key: "comments", label: t("feed.comments", "Kommentarer"), hasContent: commentCount > 0 },
+    { key: "quickInfo", label: t("rooms.quickInfo", "Snabbinfo"), hasContent: relatedPOs.length > 0 || dependencies.length > 0 },
+    { key: "priority", label: t("tasks.priority"), hasContent: task.priority !== "medium" },
+    { key: "assignee", label: t("tasks.assignTo"), hasContent: !!task.assigned_to_stakeholder_id },
+    { key: "category", label: t("tasks.costCenter"), hasContent: (task.cost_centers || []).length > 0 },
+  ] : [];
+
   return (
     <TaskEditWrapper variant={variant} open={open} onOpenChange={onOpenChange} title={task?.title} onTitleChange={task ? (title: string) => patch({ title }) : undefined} t={t}>
       {loading ? (
@@ -663,6 +709,9 @@ export const TaskEditDialog = ({
                 </button>
               );
             })}
+            <div className="ml-auto flex items-center self-center pl-2">
+              <FieldVisibilityMenu items={fieldItems} prefs={fieldPrefs} onChange={updateFieldPref} />
+            </div>
           </div>
 
           {/* Tab content */}
@@ -681,6 +730,9 @@ export const TaskEditDialog = ({
                 onOpenRoom={onOpenRoom}
                 relatedPOCount={relatedPOs.length}
                 onShowRelated={() => setTab("related")}
+                fieldPrefs={fieldPrefs}
+                photoCount={photoCount}
+                commentCount={commentCount}
               />
             )}
             {tab === "economy" && (

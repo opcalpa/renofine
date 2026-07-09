@@ -34,6 +34,10 @@ interface OverviewTabProps {
   onOpenRoom?: (roomId: string) => void;
   relatedPOCount: number;
   onShowRelated: () => void;
+  /** Per-user show/hide prefs — fields with content always render regardless. */
+  fieldPrefs: Record<string, boolean>;
+  photoCount: number;
+  commentCount: number;
 }
 
 type NoteView = "description" | "internal";
@@ -51,11 +55,16 @@ export function OverviewTab({
   onOpenRoom,
   relatedPOCount,
   onShowRelated,
+  fieldPrefs,
+  photoCount,
+  commentCount,
 }: OverviewTabProps) {
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
   const [noteView, setNoteView] = useState<NoteView>("description");
   const internalSupported = "internal_notes" in task;
+  // Hidden fields stay visible while they hold content — nothing disappears silently
+  const showField = (key: string, hasContent: boolean) => (fieldPrefs[key] ?? true) || hasContent;
 
   const fmtDate = (iso?: string) => {
     if (!iso) return "—";
@@ -212,7 +221,9 @@ export function OverviewTab({
 
       {notesSection}
 
-      <ChecklistsSection task={task} patch={patch} projectId={projectId} />
+      {showField("checklists", (task.checklists || []).length > 0) && (
+        <ChecklistsSection task={task} patch={patch} projectId={projectId} />
+      )}
 
       {isPlanning ? (
         roomField
@@ -250,6 +261,7 @@ export function OverviewTab({
                 );
               })()}
             </div>
+            {showField("priority", task.priority !== "medium") && (
             <div className="space-y-1.5">
               <Label className="rf-section-label">{t("tasks.priority")}</Label>
               <Select value={task.priority} onValueChange={(value) => patch({ priority: value })}>
@@ -261,6 +273,8 @@ export function OverviewTab({
                 </SelectContent>
               </Select>
             </div>
+            )}
+            {showField("assignee", !!task.assigned_to_stakeholder_id) && (
             <div className="space-y-1.5">
               <Label className="rf-section-label">{t("tasks.assignTo")}</Label>
               <Select
@@ -278,10 +292,12 @@ export function OverviewTab({
                 </SelectContent>
               </Select>
             </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-3">
             {roomField}
+            {showField("category", (task.cost_centers || []).length > 0) && (
             <div className="space-y-1.5">
               <Label className="rf-section-label">{t("tasks.costCenter")}</Label>
               <Popover>
@@ -318,6 +334,7 @@ export function OverviewTab({
                 </PopoverContent>
               </Popover>
             </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-3">
@@ -354,9 +371,9 @@ export function OverviewTab({
         </>
       )}
 
-      {photosSection}
-      {quickInfo}
-      {commentsSection}
+      {showField("photos", photoCount > 0) && photosSection}
+      {showField("quickInfo", relatedPOCount > 0 || dependencies.length > 0) && quickInfo}
+      {showField("comments", commentCount > 0) && commentsSection}
     </div>
   );
 }
