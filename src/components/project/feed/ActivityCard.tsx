@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { formatDistanceToNow } from "date-fns";
 import { getDateLocale } from "@/lib/dateFnsLocale";
@@ -55,16 +56,43 @@ interface ActivityCardProps {
   onAvatarClick?: (profileId: string, name: string) => void;
 }
 
+/** Deep link to the entity a feed row talks about — the receipt should take
+ *  you to the thing, not leave you hunting (Taulant: "sparar på rätt ställe").
+ *  Deleted entities and undo rows get no link; the object is gone. */
+function entityPath(activity: ActivityLogItem): string | null {
+  if (activity.action === "deleted" || activity.action === "renaida_undo") return null;
+  const base = `/projects/${activity.project_id}`;
+  const type = activity.entity_type as string;
+  // Renaida's note rows point at a comment — link to the task it sits on
+  if (type === "comment") {
+    const target = activity.changes?.target;
+    const targetId = activity.changes?.targetId;
+    return target === "task" && typeof targetId === "string" ? `${base}?tab=tasks&entityId=${targetId}` : null;
+  }
+  if (!activity.entity_id) return null;
+  if (type === "task") return `${base}?tab=tasks&entityId=${activity.entity_id}`;
+  if (type === "purchase_order" || type === "material") return `${base}?tab=purchases&entityId=${activity.entity_id}`;
+  if (type === "room") return `${base}?room=${activity.entity_id}`;
+  return null;
+}
+
 export const ActivityCard = ({ activity, onAvatarClick }: ActivityCardProps) => {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const actorName = activity.actor?.name || t("common.unassigned");
   const entityName = activity.entity_name || "";
+  const linkPath = entityPath(activity);
 
   // Renaida receipt row — her avatar, her name, a warm phrase per action.
   if (activity.action.startsWith("renaida_")) {
     const phraseKey = renaidaActionKeys[activity.action] ?? "activity.renaida.generic";
     return (
-      <div className="flex items-start gap-3 px-3 py-2 rounded-lg border-l-2 border-l-primary bg-primary/5">
+      <div
+        className={`flex items-start gap-3 px-3 py-2 rounded-lg border-l-2 border-l-primary bg-primary/5 ${linkPath ? "cursor-pointer hover:bg-primary/10 transition-colors" : ""}`}
+        onClick={linkPath ? () => navigate(linkPath) : undefined}
+        role={linkPath ? "link" : undefined}
+        title={linkPath ? t("activity.openEntity", "Öppna") : undefined}
+      >
         <RenaidaAvatar state="idle" size={24} className="flex-shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0">
           <p className="text-sm">
@@ -116,7 +144,17 @@ export const ActivityCard = ({ activity, onAvatarClick }: ActivityCardProps) => 
           {entityName && (
             <>
               {" "}
-              <span className="font-medium">{entityName}</span>
+              {linkPath ? (
+                <button
+                  type="button"
+                  className="font-medium text-primary hover:underline"
+                  onClick={() => navigate(linkPath)}
+                >
+                  {entityName}
+                </button>
+              ) : (
+                <span className="font-medium">{entityName}</span>
+              )}
             </>
           )}
           {activity.action === "status_changed" && activity.changes?.old && activity.changes?.new && (

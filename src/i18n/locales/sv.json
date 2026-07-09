@@ -3568,7 +3568,8 @@
       "roomCreate": "skapade rummet \"{{name}}\"",
       "undo": "ångrade sina senaste ändringar",
       "checklistCreate": "skapade en checklista i \"{{name}}\""
-    }
+    },
+    "openEntity": "Öppna"
   },
   "notifications": {
     "title": "Aviseringar",

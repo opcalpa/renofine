@@ -3569,7 +3569,8 @@
       "roomCreate": "created the room \"{{name}}\"",
       "undo": "reverted her latest changes",
       "checklistCreate": "created a checklist in \"{{name}}\""
-    }
+    },
+    "openEntity": "Open"
   },
   "notifications": {
     "title": "Notifications",
