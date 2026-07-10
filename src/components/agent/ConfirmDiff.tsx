@@ -51,8 +51,13 @@ export function actionDetails(
   t: (key: string, fallback?: string, opts?: Record<string, unknown>) => string,
   locale: string,
 ): string[] {
-  const fmtDate = (d: string) =>
-    new Date(`${d}T12:00:00`).toLocaleDateString(locale, { day: "numeric", month: "short" });
+  // Year is shown whenever it isn't the current one — a 2022 receipt reading
+  // "25 juni" looks current and only reveals its age after the order exists.
+  const fmtDate = (d: string) => {
+    const date = new Date(`${d}T12:00:00`);
+    const sameYear = date.getFullYear() === new Date().getFullYear();
+    return date.toLocaleDateString(locale, { day: "numeric", month: "short", ...(sameYear ? {} : { year: "numeric" }) });
+  };
   const details: string[] = [];
 
   switch (action.type) {

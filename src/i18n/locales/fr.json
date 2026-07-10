@@ -834,7 +834,8 @@
     "uploadedFiles": "Fichiers téléchargés",
     "uploading": "Téléchargement...",
     "useAsBackground": "Utiliser comme image de fond",
-    "viewDownload": "Voir/Télécharger"
+    "viewDownload": "Voir/Télécharger",
+    "deleteFileConfirmation": "Voulez-vous vraiment supprimer « {{name}} » ? Cette action est irréversible."
   },
   "floormap": {
     "addText": "Ajouter du texte",
@@ -943,7 +944,8 @@
       "detailDue": "Échéance",
       "docQuoteHandoff": "Ceci ressemble à un devis — j'ouvre la révision pour que vous puissiez vérifier les pièces, travaux et montants avant tout enregistrement.",
       "docScopeHandoff": "Ceci ressemble à un descriptif — j'ouvre l'import de planification pour que vous puissiez vérifier les pièces et travaux avant tout enregistrement.",
-      "docHandoffDone": "Terminé — le document est importé et ses pièces, travaux et montants sont maintenant dans le projet."
+      "docHandoffDone": "Terminé — le document est importé et ses pièces, travaux et montants sont maintenant dans le projet.",
+      "nothingToUndo": "Il n'y a plus rien à annuler dans cette conversation — dites-moi ce que vous voulez changer et je m'en occupe."
     }
   },
   "hotspots": {

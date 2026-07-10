@@ -125,6 +125,8 @@ export interface AgentRouteRequest {
 
 export interface AgentRouteResponse {
   proposals: AgentProposal[];
+  /** Honest pre-Genomför refusals from the normalize guards (e.g. broken-down budget). */
+  refusals?: string[];
   transcript: string;
 }
 

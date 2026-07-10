@@ -2150,7 +2150,8 @@
     "linkedFiles": "Kopplade filer",
     "noLinkedFiles": "Inga kopplade filer",
     "unlinkFile": "Koppla bort fil",
-    "fileUnlinked": "Fil bortkopplad"
+    "fileUnlinked": "Fil bortkopplad",
+    "deleteFileConfirmation": "Är du säker på att du vill ta bort ”{{name}}”? Det går inte att ångra."
   },
   "fileStats": {
     "quote": "Offerter",
@@ -3902,7 +3903,8 @@
       "detailDue": "Förfaller",
       "docQuoteHandoff": "Det här ser ut som en offert — jag öppnar granskningen så att du kan gå igenom rum, arbeten och belopp innan något sparas.",
       "docScopeHandoff": "Det här ser ut som en arbetsbeskrivning — jag öppnar planeringsimporten så att du kan granska rum och arbeten innan något sparas.",
-      "docHandoffDone": "Klart — dokumentet är inläst och rum, arbeten och belopp ligger nu i projektet."
+      "docHandoffDone": "Klart — dokumentet är inläst och rum, arbeten och belopp ligger nu i projektet.",
+      "nothingToUndo": "Det finns inget kvar att ångra i den här konversationen — säg vad du vill ändra så fixar jag det."
     },
     "autonomy": {
       "suggest": "Föreslå först",

@@ -252,13 +252,18 @@ const QUOTE_TOOL = {
 
 // ---------- Receipt / invoice extraction (vision API) ----------
 
-const RECEIPT_SYSTEM = `Du analyserar svenska kvitton och fakturor och extraherar strukturerade fält.
+const RECEIPT_SYSTEM = `Du analyserar svenska byggdokument (kvitton, fakturor, offerter, arbetsbeskrivningar) och extraherar strukturerade fält.
 
-STEG 1 — Bestäm dokumenttyp:
-- KVITTO: kassakvitto, betalat direkt, ingen förfallodag, ingen fakturanr/OCR
-- FAKTURA: "Faktura", "Fakturanummer", "Förfallodatum", "OCR", bankgiro/plusgiro
+STEG 1 — Bestäm dokumenttyp (VIKTIGAST — fel typ ger fel flöde i appen):
+- KVITTO (receipt): kassakvitto, betalat direkt, ingen förfallodag, ingen fakturanr/OCR
+- FAKTURA (invoice): "Faktura", "Fakturanummer", "Förfallodatum", "OCR", bankgiro/plusgiro — ett KRAV på betalning för utfört arbete/levererad vara
+- OFFERT (quote): "Offert", "Anbud", "Offertnummer", giltighetstid, "pris ex moms" som ERBJUDANDE — ett förslag på FRAMTIDA arbete, inget betalkrav. En offert är ALDRIG en faktura, även om den har nummer och belopp.
+- ARBETSBESKRIVNING (scope): rumslista/arbetsmoment utan priser eller med grov budget — beskriver VAD som ska göras
+- ANNAT (other): dokumentet är inget av ovanstående (skärmdump, ritning, foto utan dokument, oläsligt). Hitta ALDRIG på en leverantör eller ett belopp — välj other och sätt confidence lågt.
 
-STEG 2 — Extrahera fält. Belopp i SEK som tal (inte sträng). Datum YYYY-MM-DD.
+För OFFERT/ARBETSBESKRIVNING/ANNAT: sätt bara document_type + confidence; övriga fält null och line_items tom — appen skickar dokumentet till rätt granskningsyta.
+
+STEG 2 — För KVITTO/FAKTURA: extrahera fält. Belopp i SEK som tal (inte sträng). Datum YYYY-MM-DD.
 
 För KVITTON: due_date, invoice_number, ocr_number ska vara null.
 För FAKTUROR: fyll i due_date + invoice_number + ocr_number om synligt.
@@ -281,7 +286,7 @@ const RECEIPT_TOOL = {
   input_schema: {
     type: 'object',
     properties: {
-      document_type: { type: 'string', enum: ['receipt', 'invoice'] },
+      document_type: { type: 'string', enum: ['receipt', 'invoice', 'quote', 'scope', 'other'] },
       vendor_name: { type: ['string', 'null'] },
       total_amount: { type: ['number', 'null'] },
       vat_amount: { type: ['number', 'null'] },
@@ -369,7 +374,10 @@ function sanitizeStr(v: unknown): string | null {
 }
 
 function expandReceiptResult(raw: Record<string, unknown>): ExtractionResult {
-  const docType = raw.document_type === 'invoice' ? 'invoice' : 'receipt';
+  const validTypes = ['receipt', 'invoice', 'quote', 'scope', 'other'] as const;
+  const docType = (validTypes as readonly string[]).includes(String(raw.document_type))
+    ? (raw.document_type as ExtractionResult['document_type'])
+    : 'receipt';
   const receiptData: ReceiptData = {
     vendor_name: sanitizeStr(raw.vendor_name),
     total_amount: numOrNull(raw.total_amount),

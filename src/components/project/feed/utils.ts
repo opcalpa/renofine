@@ -225,11 +225,22 @@ export async function fetchProjectActivities(projectId: string): Promise<Activit
       .filter((r) => r.action === "renaida_undo")
       .flatMap((r) => (Array.isArray(r.changes?.entityIds) ? (r.changes.entityIds as string[]) : []))
   );
-  return rows.filter((r) => {
-    if (r.action === "created" && createdByRenaida.has(`${r.entity_type}:${r.entity_id}`)) return false;
-    if (r.action === "deleted" && undoneByRenaida.has(r.entity_id)) return false;
-    return true;
-  });
+  // Entities later deleted (by undo or by hand) — their earlier rows stay as
+  // history but must not render a link to something that no longer exists.
+  const deletedIds = new Set(
+    rows.filter((r) => r.action === "deleted").map((r) => r.entity_id).filter(Boolean)
+  );
+  return rows
+    .filter((r) => {
+      if (r.action === "created" && createdByRenaida.has(`${r.entity_type}:${r.entity_id}`)) return false;
+      if (r.action === "deleted" && undoneByRenaida.has(r.entity_id)) return false;
+      return true;
+    })
+    .map((r) =>
+      r.entity_id && (undoneByRenaida.has(r.entity_id) || deletedIds.has(r.entity_id))
+        ? { ...r, entityGone: true }
+        : r
+    );
 }
 
 export function mergeIntoUnifiedFeed(

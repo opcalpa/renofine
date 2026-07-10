@@ -82,9 +82,13 @@ export async function captureDocument(file: File): Promise<DocumentCaptureResult
 
   const type = data?.document_type;
   if (type === "quote" || type === "scope") return { kind: type };
+  if (type === "other") return { kind: "unreadable" };
 
   const r = data?.receiptData;
   if (!r || (!r.vendor_name && !r.total_amount)) return { kind: "unreadable" };
+  // Hallucination guard (loop-varv 14, A8): a "receipt" without a positive total
+  // is not a purchase — refuse honestly instead of proposing a 0 kr order.
+  if (!r.total_amount || r.total_amount <= 0) return { kind: "unreadable" };
 
   const documentType = type === "invoice" ? "invoice" : "receipt";
   const attachmentKey = crypto.randomUUID();

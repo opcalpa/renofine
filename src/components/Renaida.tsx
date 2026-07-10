@@ -109,6 +109,13 @@ interface InlineAction {
   icon?: React.ReactNode;
 }
 
+/**
+ * The conversation must survive component remounts — route changes can unmount
+ * the panel, and with it every Undo button mid-errand (loop-varv 14, bugg 1).
+ * Module-scoped and session-only: a page reload intentionally starts fresh.
+ */
+let messagesCache: Message[] = [];
+
 /** Remove the first-run autonomy chips once a mode has been picked — stale
  * "choose a mode" buttons after the choice read as a bug. */
 function stripAutonomyIntro(messages: Message[]): Message[] {
@@ -222,7 +229,15 @@ export function Renaida() {
   const renaidaProjectName = useRenaidaStore((s) => s.projectName);
   const autonomy = useRenaidaStore((s) => s.autonomy);
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, rawSetMessages] = useState<Message[]>(() => messagesCache);
+  // Every write mirrors into the module cache so a remount restores the thread.
+  const setMessages = useCallback((updater: Message[] | ((prev: Message[]) => Message[])) => {
+    rawSetMessages((prev) => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      messagesCache = next;
+      return next;
+    });
+  }, []);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [userType, setUserType] = useState<string | null>(null);
@@ -403,12 +418,17 @@ export function Renaida() {
     };
   }, [t, userName]);
 
-  // Reset conversation when language changes
+  // Reset conversation when language ACTUALLY changes — this effect also fires
+  // on mount, which used to wipe the restored thread on every remount
+  // (loop-varv 14, bugg 1: history + Undo gone after tab navigation).
   const currentLang = i18n.language;
+  const langRef = useRef(currentLang);
   useEffect(() => {
+    if (langRef.current === currentLang) return;
+    langRef.current = currentLang;
     setMessages([]);
     setFeedbackMode(null);
-  }, [currentLang]);
+  }, [currentLang, setMessages]);
 
   useEffect(() => {
     if (open && messages.length === 0) {
@@ -668,6 +688,25 @@ export function Renaida() {
     setMessages((prev) => [...prev, { role: "user", content: text.trim() }]);
     setInput("");
 
+    // Deterministic undo intent (loop-varv 14, bugg 2): "ångra …" must never go
+    // to the LLM — the router can only propose forward actions, so it answered
+    // in circles. Reverse the latest undoable receipt directly instead.
+    if (/^\s*(ångra|angra|undo)\b/i.test(text) && text.trim().length <= 80) {
+      const lastUndoable = [...messagesCache]
+        .map((m, i) => ({ m, i }))
+        .filter(({ m }) => !!m.undo?.length)
+        .pop();
+      if (lastUndoable) {
+        void handleUndoRef.current?.(lastUndoable.i, lastUndoable.m.undo!, lastUndoable.m.projectId);
+      } else {
+        setMessages((prev) => [...prev, {
+          role: "assistant",
+          content: t("helpBot.agent.nothingToUndo", "Det finns inget kvar att ångra i den här konversationen — säg vad du vill ändra så fixar jag det."),
+        }]);
+      }
+      return;
+    }
+
     let projectId = useRenaidaStore.getState().projectId;
     if (!projectId) {
       // Outside a project (e.g. the start page): act on the user's most
@@ -698,14 +737,22 @@ export function Renaida() {
     wakeRenaida();
     try {
       const res = await routeAgentInput({ kind, content: text.trim() }, projectId, i18n.language?.slice(0, 2) || "sv");
+      // Pre-Genomför refusals (loop-varv 14, B3/B4): shown BEFORE the card so a
+      // partially-refused multi-field update never promises the refused part.
+      if (res.refusals?.length) {
+        setMessages((prev) => [...prev, { role: "assistant", content: res.refusals!.join("\n\n") }]);
+      }
       if (!res.proposals.length) {
-        analytics.capture(AnalyticsEvents.RENAIDA_PROPOSED, { kind, count: 0, resolved: false, fellBackToChat: !!opts?.fallbackToChat });
-        if (opts?.fallbackToChat) {
+        analytics.capture(AnalyticsEvents.RENAIDA_PROPOSED, { kind, count: 0, resolved: false, fellBackToChat: !!opts?.fallbackToChat, refused: !!res.refusals?.length });
+        if (res.refusals?.length) {
+          // The refusal IS the answer — don't re-ask the chat model.
+        } else if (opts?.fallbackToChat) {
           setCapturing(false);
           void sendMessage(text, { skipUserMessage: true });
           return;
+        } else {
+          setMessages((prev) => [...prev, { role: "assistant", content: t("helpBot.agent.noProposals") }]);
         }
-        setMessages((prev) => [...prev, { role: "assistant", content: t("helpBot.agent.noProposals") }]);
       } else {
         const s = summarizeProposals(res.proposals);
         const single = res.proposals.length === 1 ? res.proposals[0] : null;
@@ -962,7 +1009,11 @@ export function Renaida() {
     analytics.capture(AnalyticsEvents.RENAIDA_UNDONE, { count: ops.length });
     window.dispatchEvent(new CustomEvent("renaida-data-changed", { detail: { projectId } }));
     setMessages((prev) => [...prev, { role: "assistant", content: t("helpBot.agent.undone") }]);
-  }, [t]);
+  }, [t, setMessages]);
+
+  // Lets captureUpdate (declared above) reach the undo path for typed "ångra …".
+  const handleUndoRef = useRef<typeof handleUndo>();
+  useEffect(() => { handleUndoRef.current = handleUndo; });
 
   const handleDismissProposals = useCallback((msgIndex: number) => {
     analytics.capture(AnalyticsEvents.RENAIDA_DISMISSED, {});

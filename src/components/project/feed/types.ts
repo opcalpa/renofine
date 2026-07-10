@@ -43,6 +43,9 @@ export interface ActivityLogItem {
   changes: Record<string, unknown>;
   created_at: string;
   actor: { name: string; email: string } | null;
+  /** Set at fetch time when the entity was later undone/deleted — rows stay as
+   *  history but must not link to something that no longer exists. */
+  entityGone?: boolean;
 }
 
 export interface PhotoFeedItem {

@@ -51,7 +51,15 @@ const LANGUAGE_NAMES: Record<string, string> = {
 };
 
 interface RoomCtx { id: string; name: string }
-interface TaskCtx { id: string; title: string; status: string | null; checklistItems?: string[] }
+interface TaskCtx {
+  id: string;
+  title: string;
+  status: string | null;
+  checklistItems?: string[];
+  hourly_rate?: number | null;
+  estimated_hours?: number | null;
+  subcontractor_cost?: number | null;
+}
 interface MemoryCtx { kind: string; key: string; value: string }
 interface MemberCtx { id: string; name: string }
 
@@ -92,7 +100,7 @@ async function fetchContext(projectId: string, authHeader: string): Promise<{ ro
       { headers },
     ),
     fetch(
-      `${supabaseRestUrl("tasks")}?project_id=eq.${projectId}&select=id,title,status,checklists&order=created_at.desc&limit=200`,
+      `${supabaseRestUrl("tasks")}?project_id=eq.${projectId}&select=id,title,status,checklists,hourly_rate,estimated_hours,subcontractor_cost&order=created_at.desc&limit=200`,
       { headers },
     ),
     // Renaida's learned facts about this user (project-specific + global).
@@ -305,12 +313,16 @@ function normalizeProposals(
   tasks: TaskCtx[],
   members: MemberCtx[],
   inputText: string,
-): NormalizedProposal[] {
+): { proposals: NormalizedProposal[]; refusals: string[] } {
   const roomIds = new Set(rooms.map((r) => r.id));
   const taskIds = new Set(tasks.map((t) => t.id));
   const taskTitle = new Map(tasks.map((t) => [t.id, t.title]));
+  const taskById = new Map(tasks.map((t) => [t.id, t]));
   const memberById = new Map(members.map((m) => [m.id, m]));
   const out: NormalizedProposal[] = [];
+  // Honest refusals surfaced BEFORE Genomför (loop-varv 14, B3/B4): a proposal
+  // card must never promise a change the apply step will refuse.
+  const refusals: string[] = [];
 
   for (const p of raw) {
     const action = p.action;
@@ -357,7 +369,24 @@ function normalizeProposals(
           if (raw.start_date === null || (typeof raw.start_date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(raw.start_date))) clean.start_date = raw.start_date;
           if (raw.budget === null || (typeof raw.budget === "number" && raw.budget >= 0)) clean.budget = raw.budget;
           if (raw.priority === "low" || raw.priority === "medium" || raw.priority === "high") clean.priority = raw.priority;
+          // Broken-down-cost guard (mirrors the apply-time refusal, but BEFORE the
+          // card promises anything): tasks.budget isn't shown anywhere when cost is
+          // built from parts — drop the budget change, keep the rest, and say so.
+          if ("budget" in clean && clean.budget !== null) {
+            const tctx = taskById.get(action.taskId as string);
+            const brokenDown = tctx &&
+              ((tctx.hourly_rate != null && tctx.estimated_hours != null) || tctx.subcontractor_cost != null);
+            if (brokenDown) {
+              delete clean.budget;
+              refusals.push(
+                `Budgeten på ”${taskTitle.get(action.taskId as string) ?? "arbetet"}” lät jag vara — kostnaden är nedbruten i delar (timmar, timpris, underentreprenad). Ändra delarna i arbetsrutan istället.`,
+              );
+            }
+          }
           if (Object.keys(clean).length === 0) {
+            // Everything the user asked for was refused — that's an answer, not
+            // an unknown: skip the proposal, the refusal text explains why.
+            if (refusals.length > 0) break;
             toUnknown("Ingen giltig ändring att göra");
             break;
           }
@@ -433,8 +462,16 @@ function normalizeProposals(
           ? memberById.get(action.assigneeProfileId)
           : undefined;
         if (!member) {
+          // The summary must not keep promising an assignment that won't happen
+          // (loop-varv 14, B7b) — say what actually gets saved, and why.
+          const requestedName = typeof action.assigneeName === "string" && action.assigneeName.trim()
+            ? action.assigneeName.trim()
+            : null;
+          const honestSummary = requestedName
+            ? `Sparar en anteckning på ”${taskTitle.get(action.taskId as string) ?? "arbetet"}” — ${requestedName} finns inte i teamet, så ingen tilldelning görs`
+            : `Sparar en anteckning på ”${taskTitle.get(action.taskId as string) ?? "arbetet"}”`;
           out.push({
-            id, summary, confidence,
+            id, summary: honestSummary, confidence,
             action: { type: "add_note", target: "task", targetId: action.taskId, text: inputText },
           });
           break;
@@ -503,7 +540,7 @@ function normalizeProposals(
     }
   }
 
-  return out;
+  return { proposals: out, refusals };
 }
 
 serve(async (req) => {
@@ -578,7 +615,7 @@ serve(async (req) => {
       parsed = { proposals: [] };
     }
 
-    const proposals = normalizeProposals(
+    const { proposals, refusals } = normalizeProposals(
       Array.isArray(parsed.proposals) ? parsed.proposals : [],
       rooms,
       tasks,
@@ -587,7 +624,7 @@ serve(async (req) => {
     );
 
     return new Response(
-      JSON.stringify({ proposals, transcript: input.content }),
+      JSON.stringify({ proposals, refusals, transcript: input.content }),
       { headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } },
     );
   } catch (error) {

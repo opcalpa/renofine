@@ -62,6 +62,7 @@ interface ActivityCardProps {
  *  Deleted entities and undo rows get no link; the object is gone. */
 function entityPath(activity: ActivityLogItem): string | null {
   if (activity.action === "deleted" || activity.action === "renaida_undo") return null;
+  if (activity.entityGone) return null;
   const base = `/projects/${activity.project_id}`;
   const type = activity.entity_type as string;
   // Renaida's note rows point at a comment — link to the task it sits on

@@ -2714,7 +2714,8 @@
     "linkedFiles": "Linked Files",
     "noLinkedFiles": "No linked files",
     "unlinkFile": "Unlink file",
-    "fileUnlinked": "File unlinked"
+    "fileUnlinked": "File unlinked",
+    "deleteFileConfirmation": "Are you sure you want to delete “{{name}}”? This cannot be undone."
   },
   "fileStats": {
     "quote": "Quotes",
@@ -3903,7 +3904,8 @@
       "detailDue": "Due",
       "docQuoteHandoff": "This looks like a quote — I'm opening the review so you can go through rooms, work items and amounts before anything is saved.",
       "docScopeHandoff": "This looks like a scope document — I'm opening the planning import so you can review rooms and work items before anything is saved.",
-      "docHandoffDone": "Done — the document is imported and its rooms, work items and amounts are now in the project."
+      "docHandoffDone": "Done — the document is imported and its rooms, work items and amounts are now in the project.",
+      "nothingToUndo": "There's nothing left to undo in this conversation — tell me what you want changed and I'll fix it."
     },
     "autonomy": {
       "suggest": "Suggest first",
