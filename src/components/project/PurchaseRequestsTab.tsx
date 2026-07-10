@@ -804,6 +804,7 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
       });
       exitSelectMode();
       fetchMaterials();
+      fetchPurchaseOrders();
     } catch (error: unknown) {
       console.error("Bulk delete error:", error);
       toast({
