@@ -6000,6 +6000,8 @@
     "importDone": "Quote imported",
     "importResult": "{{tasks}} tasks and {{rooms}} rooms added to the project",
     "importError": "Could not import",
+    "roomsPartialFail": "Not all rooms could be created",
+    "roomsPartialFailDesc": "{{failed}} of {{total}} rooms failed to create — material lines linked to them have no room.",
     "importing": "Importing...",
     "importButton": "Import to project",
     "unknownVendor": "Unknown vendor",

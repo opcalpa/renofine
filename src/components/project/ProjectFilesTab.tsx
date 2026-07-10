@@ -1758,13 +1758,9 @@ const ProjectFilesTab = ({ projectId, projectName, filesAccess = "view", onNavig
         open={!!quoteReviewFile}
         onOpenChange={(o) => { if (!o) setQuoteReviewFile(null); }}
         file={quoteReviewFile}
-        onImportComplete={() => {
-          fetchFiles();
-          toast({
-            title: t("quoteReview.importDone", "Offert importerad"),
-            description: t("quoteReview.importDoneDesc", "Arbeten och rum har skapats i projektet."),
-          });
-        }}
+        {/* The dialog toasts its own import receipt with real created-counts —
+            a second static toast here would shadow it and overstate the result. */}
+        onImportComplete={() => fetchFiles()}
       />
 
       {/* Batch Smart Upload Dialog (drag-and-drop) */}

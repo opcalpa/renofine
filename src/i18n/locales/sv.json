@@ -6000,6 +6000,8 @@
     "importDone": "Offert importerad",
     "importResult": "{{tasks}} arbeten och {{rooms}} rum tillagda i projektet",
     "importError": "Kunde inte importera",
+    "roomsPartialFail": "Alla rum kunde inte skapas",
+    "roomsPartialFailDesc": "{{failed}} av {{total}} rum gick inte att skapa — materialrader kopplade till dem saknar rum.",
     "importing": "Importerar...",
     "importButton": "Importera till projekt",
     "unknownVendor": "Okänd leverantör",

@@ -408,10 +408,13 @@ export function QuoteReviewDialog({
         // ----- Mode B: 1 stub task (or use linked task) + N materials -----
         let bucketTaskId = linkTaskId;
         if (!bucketTaskId) {
-          const totalBudget = selectedTasks.reduce(
+          // Quotes are often a lump sum without line-item prices — prefer the
+          // quote total (like mode A) so the budget task never lands at null.
+          const lineSum = selectedTasks.reduce(
             (s, tk) => s + ((tk.estimatedCost || 0) + (tk.materialCost || 0)),
             0,
           );
+          const totalBudget = quoteMetadata?.totalAmount || lineSum;
           const stubTitle = quoteMetadata?.vendorName
             ? t("quoteReview.materialBudgetTitle", {
                 defaultValue: "Materialbudget — {{vendor}}",
@@ -454,14 +457,27 @@ export function QuoteReviewDialog({
         });
       }
 
+      // Report what was actually CREATED, not what was selected — a failed
+      // room insert is logged and skipped above, and the toast must not lie.
       toast({
         title: t("quoteReview.importDone", "Offert importerad"),
         description: t("quoteReview.importResult", {
           defaultValue: "{{rooms}} rum och {{tasks}} arbeten skapade",
-          rooms: selectedRooms.length,
+          rooms: createdRoomIds.size,
           tasks: selectedTasks.length,
         }),
       });
+      if (createdRoomIds.size < selectedRooms.length) {
+        toast({
+          title: t("quoteReview.roomsPartialFail", "Alla rum kunde inte skapas"),
+          description: t("quoteReview.roomsPartialFailDesc", {
+            defaultValue: "{{failed}} av {{total}} rum gick inte att skapa — materialrader kopplade till dem saknar rum.",
+            failed: selectedRooms.length - createdRoomIds.size,
+            total: selectedRooms.length,
+          }),
+          variant: "destructive",
+        });
+      }
 
       // File is now referenced by purchase_orders.receipt_file_path — clear
       // tempPath so the dialog's onOpenChange cleanup doesn't delete it.
