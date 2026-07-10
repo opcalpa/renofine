@@ -102,6 +102,14 @@ export function actionDetails(
       if (action.documentDate) details.push(fmtDate(action.documentDate));
       if (action.lineItems.length > 1) details.push(t("helpBot.agent.detailLines", "{{count}} rader", { count: action.lineItems.length }));
       else if (action.lineItems.length === 1) details.push(action.lineItems[0].description);
+      // Reconciliation flag (loop-varv 14, friktion 3): a builder booking against
+      // the receipt must see when the read line amounts don't add up to the total.
+      const lineSum = action.lineItems.reduce((s, li) => s + (li.total ?? 0), 0);
+      if (action.lineItems.length > 1 && lineSum > 0 && Math.abs(lineSum - action.total) > 1) {
+        details.push(t("helpBot.agent.detailLineSumMismatch", "⚠️ Radbeloppen (≈{{sum}} kr) summerar inte till totalen — kontrollera raderna", {
+          sum: Math.round(lineSum).toLocaleString(locale),
+        }));
+      }
       if (action.rotAmount) details.push(`ROT: ${action.rotAmount.toLocaleString(locale)} kr`);
       if (action.documentType === "invoice") {
         if (action.invoiceNumber) details.push(`${t("helpBot.agent.detailInvoiceNo", "Fakturanr")}: ${action.invoiceNumber}`);

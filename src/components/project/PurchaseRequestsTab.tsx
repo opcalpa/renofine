@@ -260,6 +260,18 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
     }
   }, [currentProfileId, projectId, isProjectOwner, permissionsResolved]);
 
+  // Renaida creates/undoes orders while this tab is mounted — refetch on her
+  // signal so the list never shows an order that was just reversed (varv 14).
+  useEffect(() => {
+    const onChanged = () => {
+      fetchMaterials();
+      fetchPurchaseOrders();
+    };
+    window.addEventListener("renaida-data-changed", onChanged);
+    return () => window.removeEventListener("renaida-data-changed", onChanged);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId]);
+
   // Auto-open a specific entity (material OR purchase order) from a deep link
   useEffect(() => {
     if (!openEntityId) return;

@@ -273,6 +273,8 @@ ROT-avdrag (vanligt på fakturor från entreprenör):
 - Svenskt personnummer (YYYYMMDD-XXXX eller YYMMDD-XXXX) → rot_personnummer
 
 line_items: en entry per rad om synliga. Tom array om oklart.
+- quantity = ANTALET enheter, unit_price = á-priset, total = radens summa. "VINGLAS 8 * 54,90 → 439,20" betyder quantity 8, unit_price 54.90, total 439.20 — slå ALDRIG ihop antalet i totalen utan att fylla quantity.
+- Behåll ören exakt (34,90 → 34.90, inte 35). Radernas total ska summera till kvittots totalbelopp.
 
 KRITISKT — när ett fält inte syns eller är oläsligt, returnera **null** (JSON null).
 Använd ALDRIG platshållare som "<UNKNOWN>", "N/A", "okänt", "saknas", "?" eller tom sträng.

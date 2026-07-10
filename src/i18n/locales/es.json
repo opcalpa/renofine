@@ -945,7 +945,8 @@
       "docQuoteHandoff": "Esto parece un presupuesto — abro la revisión para que puedas repasar habitaciones, trabajos e importes antes de guardar nada.",
       "docScopeHandoff": "Esto parece un pliego — abro la importación de planificación para que puedas revisar habitaciones y trabajos antes de guardar nada.",
       "docHandoffDone": "Listo — el documento está importado y sus habitaciones, trabajos e importes ya están en el proyecto.",
-      "nothingToUndo": "No queda nada que deshacer en esta conversación — dime qué quieres cambiar y lo arreglo."
+      "nothingToUndo": "No queda nada que deshacer en esta conversación — dime qué quieres cambiar y lo arreglo.",
+      "detailLineSumMismatch": "⚠️ Los importes de las líneas (≈{{sum}} kr) no suman el total — revisa las líneas"
     }
   },
   "hotspots": {
