@@ -65,6 +65,10 @@ nu ska rösten ge förslagskort även om du inte hunnit in i ett projekt.
    använder. Rumsnamnet = länk in i rummet.
 10. **Aktivitetsflödet** — Översikt → Aktivitet. RÄTT: Renaida-kvittoraderna är
     tryckbara och öppnar objektet de handlar om.
+11. **Fota ett kvitto** ⭐ NYTT — Renaida-rutan → gem-knappen bredvid textfältet →
+    "Ta foto" → fota valfritt kvitto du har hemma. RÄTT: förslagskort med
+    leverantör, belopp, datum och antal rader → Genomför → tryck på kvittoraden →
+    du landar på ordern i Inköp med bilden som underlag → Ångra tar bort allt.
 
 ---
 id: renaida-doc-d1-kvitto-faktura
