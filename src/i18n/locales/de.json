@@ -932,7 +932,7 @@
       "usingProject": "Ich gehe von deinem Projekt „{{name}}“ aus.",
       "openTask": "Aufgabe „{{title}}“ öffnen",
       "openPurchase": "Bestellung „{{title}}“ öffnen",
-      "attachDocument": "Beleg/Rechnung fotografieren oder anhängen",
+      "attachDocument": "Beleg, Rechnung oder Angebot fotografieren oder anhängen",
       "docQuoteDetected": "Das sieht wie ein Angebot oder ein Leistungsverzeichnis aus — am besten prüfst du es vollständig unter [Dateien](open:/projects/{{projectId}}?tab=files). Lade es dort hoch, dann werden Räume und Arbeiten für dich interpretiert.",
       "docUnreadable": "Ich konnte auf dem Bild leider nichts lesen — versuche ein schärferes Foto direkt von oben, oder erfasse den Einkauf manuell unter Einkäufe.",
       "docError": "Das Lesen des Dokuments ist fehlgeschlagen — versuche es gleich noch einmal oder erfasse den Einkauf manuell unter Einkäufe.",
@@ -940,7 +940,10 @@
       "docInvoiceSummary": "Rechnung von {{vendor}} — wird als Bestellung gespeichert (in Rechnung gestellt)",
       "detailLines": "{{count}} Zeilen",
       "detailInvoiceNo": "Rechnungsnr",
-      "detailDue": "Fällig"
+      "detailDue": "Fällig",
+      "docQuoteHandoff": "Das sieht wie ein Angebot aus — ich öffne die Prüfung, damit du Räume, Arbeiten und Beträge durchgehen kannst, bevor etwas gespeichert wird.",
+      "docScopeHandoff": "Das sieht wie ein Leistungsverzeichnis aus — ich öffne den Planungsimport, damit du Räume und Arbeiten prüfen kannst, bevor etwas gespeichert wird.",
+      "docHandoffDone": "Fertig — das Dokument ist importiert und seine Räume, Arbeiten und Beträge sind jetzt im Projekt."
     }
   },
   "hotspots": {

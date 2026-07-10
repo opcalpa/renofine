@@ -5,7 +5,7 @@
  * as AIProjectImportModal, but targets an existing project in planning phase.
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Dialog,
@@ -83,6 +83,8 @@ interface PlanningSmartImportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onImportComplete?: () => void;
+  /** Prefilled handoff (e.g. Renaida document capture): analyzed on open, skipping the upload step. */
+  initialFile?: File | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -228,6 +230,7 @@ export function PlanningSmartImportDialog({
   open,
   onOpenChange,
   onImportComplete,
+  initialFile,
 }: PlanningSmartImportDialogProps) {
   const { t } = useTranslation();
   const { toast } = useToast();
@@ -267,11 +270,8 @@ export function PlanningSmartImportDialog({
     setEditingMaterialKey(null);
   }, []);
 
-  // ---- File select + AI extraction ----
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  // ---- File intake + AI extraction — shared by the picker and prefilled handoffs ----
+  const processFile = useCallback(async (file: File) => {
     const ext = file.name.toLowerCase().split(".").pop();
     if (!["pdf", "txt", "docx", "doc"].includes(ext || "")) {
       toast({
@@ -414,9 +414,23 @@ export function PlanningSmartImportDialog({
       });
     } finally {
       setExtracting(false);
-      e.target.value = "";
     }
+  }, [projectId, t, toast]);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (file) void processFile(file);
   };
+
+  // Prefilled handoff (Renaida D2): analyze the handed-over file as soon as we open.
+  const handledInitialFileRef = useRef<File | null>(null);
+  useEffect(() => {
+    if (!open || !initialFile) return;
+    if (handledInitialFileRef.current === initialFile) return;
+    handledInitialFileRef.current = initialFile;
+    void processFile(initialFile);
+  }, [open, initialFile, processFile]);
 
   // ---- Import into existing project ----
   const handleImport = async () => {

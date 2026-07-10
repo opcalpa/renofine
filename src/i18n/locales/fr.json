@@ -932,7 +932,7 @@
       "usingProject": "Je me base sur votre projet « {{name}} ».",
       "openTask": "Ouvrir la tâche « {{title}} »",
       "openPurchase": "Ouvrir la commande « {{title}} »",
-      "attachDocument": "Photographier ou joindre un reçu/une facture",
+      "attachDocument": "Photographier ou joindre un reçu, une facture ou un devis",
       "docQuoteDetected": "Ceci ressemble à un devis ou un descriptif — mieux vaut l'examiner en détail sous [Fichiers](open:/projects/{{projectId}}?tab=files). Téléversez-le là-bas et les pièces et travaux seront interprétés pour vous.",
       "docUnreadable": "Je n'ai rien pu lire sur cette image — essayez une photo plus nette prise bien à plat, ou enregistrez l'achat manuellement sous Achats.",
       "docError": "La lecture du document a échoué — réessayez dans un instant, ou enregistrez l'achat manuellement sous Achats.",
@@ -940,7 +940,10 @@
       "docInvoiceSummary": "Facture de {{vendor}} — enregistrée comme bon d'achat (facturée)",
       "detailLines": "{{count}} lignes",
       "detailInvoiceNo": "N° de facture",
-      "detailDue": "Échéance"
+      "detailDue": "Échéance",
+      "docQuoteHandoff": "Ceci ressemble à un devis — j'ouvre la révision pour que vous puissiez vérifier les pièces, travaux et montants avant tout enregistrement.",
+      "docScopeHandoff": "Ceci ressemble à un descriptif — j'ouvre l'import de planification pour que vous puissiez vérifier les pièces et travaux avant tout enregistrement.",
+      "docHandoffDone": "Terminé — le document est importé et ses pièces, travaux et montants sont maintenant dans le projet."
     }
   },
   "hotspots": {

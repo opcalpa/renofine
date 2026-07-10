@@ -18,6 +18,8 @@ import { recordCorrection, getAutonomyMode, setAutonomyMode } from "@/services/a
 import { fetchProactiveSuggestions, type RenaidaSuggestion } from "@/services/agent/renaidaSuggestions";
 import { resolveFallbackProject } from "@/services/agent/defaultProject";
 import { analytics, AnalyticsEvents } from "@/lib/analytics";
+import { QuoteReviewDialog } from "@/components/project/QuoteReviewDialog";
+import { PlanningSmartImportDialog } from "@/components/project/overview/PlanningSmartImportDialog";
 
 /** Action-type histogram + task-target ids, for the Renaida learning-loop sensor events. */
 function summarizeProposals(proposals: AgentProposal[]) {
@@ -228,6 +230,8 @@ export function Renaida() {
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
   const [feedbackMode, setFeedbackMode] = useState<FeedbackMode>(null);
   const [capturing, setCapturing] = useState(false);
+  /** D2: a quote/scope document handed off to its dedicated review dialog, prefilled. */
+  const [docHandoff, setDocHandoff] = useState<{ kind: "quote" | "scope"; file: File; projectId: string } | null>(null);
   const [listening, setListening] = useState(false);
   const [applying, setApplying] = useState(false);
   const [renaidaFlash, setRenaidaFlash] = useState<RenaidaState | null>(null);
@@ -842,17 +846,33 @@ export function Renaida() {
     wakeRenaida();
     try {
       const res = await captureDocument(file);
-      if (res.kind === "quote_or_scope") {
-        // Wayfinder (Carl 2026-07-09): a quote deserves its full review surface —
-        // guide there instead of forcing it through a chat card. D2 = prefilled handoff.
-        analytics.capture(AnalyticsEvents.RENAIDA_PROPOSED, { kind: "document", resolved: false, docType: "quote_or_scope" });
-        setMessages((prev) => [...prev, {
-          role: "assistant",
-          content: t("helpBot.agent.docQuoteDetected", {
-            defaultValue: "Det här ser ut som en offert eller ett underlag — den granskar du bäst med full genomgång under [Filer](open:/projects/{{projectId}}?tab=files). Ladda upp den där, så tolkas rum och arbeten åt dig.",
-            projectId,
-          }),
-        }]);
+      if (res.kind === "quote" || res.kind === "scope") {
+        // D2 (Carl 2026-07-09): heavy documents deserve their full review surface —
+        // open it FOR the user, prefilled. Photographed quotes can't ride the
+        // text-extraction dialogs, so images keep the wayfinder message instead.
+        const isPdf = (file.type || "").toLowerCase().includes("pdf") || file.name.toLowerCase().endsWith(".pdf");
+        analytics.capture(AnalyticsEvents.RENAIDA_PROPOSED, { kind: "document", resolved: false, docType: res.kind, handoff: isPdf });
+        if (isPdf) {
+          setMessages((prev) => [...prev, {
+            role: "assistant",
+            content: t(
+              res.kind === "quote" ? "helpBot.agent.docQuoteHandoff" : "helpBot.agent.docScopeHandoff",
+              res.kind === "quote"
+                ? "Det här ser ut som en offert — jag öppnar granskningen så att du kan gå igenom rum, arbeten och belopp innan något sparas."
+                : "Det här ser ut som en arbetsbeskrivning — jag öppnar planeringsimporten så att du kan granska rum och arbeten innan något sparas.",
+            ),
+          }]);
+          setDocHandoff({ kind: res.kind, file, projectId });
+          setOpen(false);
+        } else {
+          setMessages((prev) => [...prev, {
+            role: "assistant",
+            content: t("helpBot.agent.docQuoteDetected", {
+              defaultValue: "Det här ser ut som en offert eller ett underlag — den granskar du bäst med full genomgång under [Filer](open:/projects/{{projectId}}?tab=files). Ladda upp den där, så tolkas rum och arbeten åt dig.",
+              projectId,
+            }),
+          }]);
+        }
       } else if (res.kind === "unreadable") {
         analytics.capture(AnalyticsEvents.RENAIDA_PROPOSED, { kind: "document", resolved: false, docType: "unreadable" });
         setMessages((prev) => [...prev, {
@@ -887,6 +907,20 @@ export function Renaida() {
       setCapturing(false);
     }
   }, [capturing, loading, t, wakeRenaida, flashRenaida]);
+
+  // D2: the dedicated review dialog finished importing — acknowledge in the feed
+  // so the conversation reflects what actually happened, and nudge data consumers.
+  const handleDocHandoffComplete = useCallback(() => {
+    const handoff = docHandoff;
+    analytics.capture(AnalyticsEvents.RENAIDA_APPLIED, { kind: "document_handoff", docType: handoff?.kind });
+    if (handoff) {
+      window.dispatchEvent(new CustomEvent("renaida-data-changed", { detail: { projectId: handoff.projectId } }));
+    }
+    setMessages((prev) => [...prev, {
+      role: "assistant",
+      content: t("helpBot.agent.docHandoffDone", "Klart — dokumentet är inläst och rum, arbeten och belopp ligger nu i projektet."),
+    }]);
+  }, [docHandoff, t]);
 
   const handleApplyProposals = useCallback(async (msgIndex: number, accepted: AgentProposal[], original: AgentProposal[], phrase: string, msgProjectId?: string) => {
     const projectId = msgProjectId ?? useRenaidaStore.getState().projectId;
@@ -1433,13 +1467,13 @@ export function Renaida() {
               </button>
             ) : (
               <>
-                {/* Receipt/invoice photo — image capture goes through the same
-                    propose→confirm→undo loop as voice (D1). accept="image/*"
-                    gives iOS the camera + library picker. */}
+                {/* Receipt/invoice photo or PDF — capture goes through the same
+                    propose→confirm→undo loop as voice (D1/D2). image/* keeps the
+                    iOS camera + library picker; PDFs ride the document path. */}
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/*,application/pdf"
                   className="hidden"
                   onChange={(e) => {
                     const f = e.target.files?.[0];
@@ -1453,8 +1487,8 @@ export function Renaida() {
                   className="h-11 w-11 md:h-9 md:w-9 shrink-0"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={loading || capturing}
-                  title={t("helpBot.agent.attachDocument", "Fota eller bifoga kvitto/faktura")}
-                  aria-label={t("helpBot.agent.attachDocument", "Fota eller bifoga kvitto/faktura")}
+                  title={t("helpBot.agent.attachDocument", "Fota eller bifoga kvitto, faktura eller offert")}
+                  aria-label={t("helpBot.agent.attachDocument", "Fota eller bifoga kvitto, faktura eller offert")}
                 >
                   <Paperclip className="h-5 w-5 md:h-4 md:w-4" />
                 </Button>
@@ -1496,6 +1530,27 @@ export function Renaida() {
             )}
           </div>
         </div>
+      )}
+
+      {/* D2: prefilled handoff — Renaida conducts, the dedicated dialog reviews.
+          Rendered outside the panel so the review survives the panel closing. */}
+      {docHandoff?.kind === "quote" && (
+        <QuoteReviewDialog
+          projectId={docHandoff.projectId}
+          open
+          onOpenChange={(o) => { if (!o) setDocHandoff(null); }}
+          file={docHandoff.file}
+          onImportComplete={handleDocHandoffComplete}
+        />
+      )}
+      {docHandoff?.kind === "scope" && (
+        <PlanningSmartImportDialog
+          projectId={docHandoff.projectId}
+          open
+          onOpenChange={(o) => { if (!o) setDocHandoff(null); }}
+          initialFile={docHandoff.file}
+          onImportComplete={handleDocHandoffComplete}
+        />
       )}
     </>
   );

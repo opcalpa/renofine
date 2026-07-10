@@ -3891,7 +3891,7 @@
       "detailCleared": "tas bort",
       "usingProject": "Jag utgår från ditt projekt ”{{name}}”.",
       "autoAppliedIntro": "Klart automatiskt — det här fixade jag direkt:",
-      "attachDocument": "Fota eller bifoga kvitto/faktura",
+      "attachDocument": "Fota eller bifoga kvitto, faktura eller offert",
       "docQuoteDetected": "Det här ser ut som en offert eller ett underlag — den granskar du bäst med full genomgång under [Filer](open:/projects/{{projectId}}?tab=files). Ladda upp den där, så tolkas rum och arbeten åt dig.",
       "docUnreadable": "Jag kunde tyvärr inte läsa ut något ur bilden — prova ett skarpare foto rakt ovanifrån, eller registrera inköpet manuellt under Inköp.",
       "docError": "Dokumentläsningen gick fel — prova igen om en stund, eller registrera inköpet manuellt under Inköp.",
@@ -3899,7 +3899,10 @@
       "docInvoiceSummary": "Faktura från {{vendor}} — sparas som inköpsorder (fakturerad)",
       "detailLines": "{{count}} rader",
       "detailInvoiceNo": "Fakturanr",
-      "detailDue": "Förfaller"
+      "detailDue": "Förfaller",
+      "docQuoteHandoff": "Det här ser ut som en offert — jag öppnar granskningen så att du kan gå igenom rum, arbeten och belopp innan något sparas.",
+      "docScopeHandoff": "Det här ser ut som en arbetsbeskrivning — jag öppnar planeringsimporten så att du kan granska rum och arbeten innan något sparas.",
+      "docHandoffDone": "Klart — dokumentet är inläst och rum, arbeten och belopp ligger nu i projektet."
     },
     "autonomy": {
       "suggest": "Föreslå först",

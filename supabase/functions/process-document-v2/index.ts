@@ -315,7 +315,7 @@ const RECEIPT_TOOL = {
 };
 
 interface AnthropicContentBlock {
-  type: 'text' | 'image';
+  type: 'text' | 'image' | 'document';
   text?: string;
   source?: { type: 'base64'; media_type: string; data: string };
 }
@@ -767,19 +767,26 @@ serve(async (req) => {
       (!mode_hint && !mode && !!imageBase64);
 
     if (isReceiptMode) {
-      if (!imageBase64) {
-        throw new Error('imageBase64 is required for receipt/invoice mode');
+      // PDFs ride the same classification/extraction pass as photos — Claude takes
+      // them natively as document blocks, so a PDF invoice gets document_type +
+      // receiptData instead of being forced through the quote/scope text path.
+      const isPdf =
+        (mimeType || '').toLowerCase().includes('pdf') ||
+        (fileName || '').toLowerCase().endsWith('.pdf');
+      const docBase64 = imageBase64 || fileBase64;
+      if (!docBase64) {
+        throw new Error('imageBase64 or fileBase64 is required for receipt/invoice mode');
       }
       const mediaType = (mimeType || 'image/jpeg').toLowerCase();
-      console.log('v2 receipt request:', { fileName, hint: mode_hint, mediaType });
+      console.log('v2 receipt request:', { fileName, hint: mode_hint, mediaType, isPdf });
+      const inputBlock: AnthropicContentBlock = isPdf
+        ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: docBase64 } }
+        : { type: 'image', source: { type: 'base64', media_type: mediaType, data: docBase64 } };
       const raw = await callAnthropicVision(
         apiKey,
         RECEIPT_SYSTEM,
         [
-          {
-            type: 'image',
-            source: { type: 'base64', media_type: mediaType, data: imageBase64 },
-          },
+          inputBlock,
           { type: 'text', text: 'Analysera dokumentet och kalla extract_receipt-verktyget.' },
         ],
         RECEIPT_TOOL,

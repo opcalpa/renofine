@@ -201,9 +201,10 @@ async function applyOne(
       // vendor+date+amount name — without it the second upload overwrites the
       // first order's file, and undoing one import would delete the other's
       // attachment (path-keyed cleanup).
+      const isPdf = !!file && ((file.type || "").includes("pdf") || file.name.toLowerCase().endsWith(".pdf"));
       const filename = generateDocumentFilename(
         action.documentType, action.vendorName, dateStr, action.total, action.invoiceNumber,
-      ).replace(/\.jpg$/, `_${crypto.randomUUID().slice(0, 8)}.jpg`);
+      ).replace(/\.jpg$/, `_${crypto.randomUUID().slice(0, 8)}.${isPdf ? "pdf" : "jpg"}`);
       const storagePath = file
         ? `projects/${projectId}/${isInvoice ? "Fakturor" : "Kvitton"}/${filename}`
         : null;
@@ -280,15 +281,19 @@ async function applyOne(
             linked_by_user_id: profileId,
             material_id: materialIds[0],
           }).then(() => {}, () => {});
-          const { data: { publicUrl } } = supabase.storage
-            .from("project-files").getPublicUrl(storagePath);
-          void supabase.from("photos").insert({
-            linked_to_type: "material",
-            linked_to_id: materialIds[0],
-            url: publicUrl,
-            caption: filename,
-            uploaded_by_user_id: profileId,
-          }).then(() => {}, () => {});
+          // Photo gallery is images-only — a PDF invoice still gets its
+          // task_file_links row above, which is what the Files surfaces read.
+          if (!isPdf) {
+            const { data: { publicUrl } } = supabase.storage
+              .from("project-files").getPublicUrl(storagePath);
+            void supabase.from("photos").insert({
+              linked_to_type: "material",
+              linked_to_id: materialIds[0],
+              url: publicUrl,
+              caption: filename,
+              uploaded_by_user_id: profileId,
+            }).then(() => {}, () => {});
+          }
         }
       }
 

@@ -3892,7 +3892,7 @@
       "detailCleared": "cleared",
       "usingProject": "I’m working from your project “{{name}}”.",
       "autoAppliedIntro": "Done automatically — here's what I did:",
-      "attachDocument": "Photograph or attach a receipt/invoice",
+      "attachDocument": "Photograph or attach a receipt, invoice or quote",
       "docQuoteDetected": "This looks like a quote or a scope document — it deserves a full review under [Files](open:/projects/{{projectId}}?tab=files). Upload it there and rooms and work items get interpreted for you.",
       "docUnreadable": "I couldn't read anything from that image — try a sharper photo taken straight from above, or register the purchase manually under Purchases.",
       "docError": "Reading the document failed — try again in a moment, or register the purchase manually under Purchases.",
@@ -3900,7 +3900,10 @@
       "docInvoiceSummary": "Invoice from {{vendor}} — saved as a purchase order (billed)",
       "detailLines": "{{count}} lines",
       "detailInvoiceNo": "Invoice no",
-      "detailDue": "Due"
+      "detailDue": "Due",
+      "docQuoteHandoff": "This looks like a quote — I'm opening the review so you can go through rooms, work items and amounts before anything is saved.",
+      "docScopeHandoff": "This looks like a scope document — I'm opening the planning import so you can review rooms and work items before anything is saved.",
+      "docHandoffDone": "Done — the document is imported and its rooms, work items and amounts are now in the project."
     },
     "autonomy": {
       "suggest": "Suggest first",

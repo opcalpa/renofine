@@ -30,8 +30,8 @@ interface UnifiedExtractionResult {
 
 export type DocumentCaptureResult =
   | { kind: "receipt" | "invoice"; action: Extract<ProposalAction, { type: "import_purchase" }>; confidence: number }
-  /** Heavy documents (quote/scope) are reviewed in their dedicated dialogs — D2. */
-  | { kind: "quote_or_scope" }
+  /** Heavy documents get a prefilled handoff to their dedicated review dialog (D2). */
+  | { kind: "quote" | "scope" }
   | { kind: "unreadable" };
 
 /**
@@ -66,21 +66,22 @@ function fileToBase64(file: File): Promise<string> {
  * routed to its proper review surface instead of being mangled into an order.
  */
 export async function captureDocument(file: File): Promise<DocumentCaptureResult> {
-  const imageBase64 = await fileToBase64(file);
+  const base64 = await fileToBase64(file);
+  const isPdf =
+    (file.type || "").toLowerCase().includes("pdf") ||
+    file.name.toLowerCase().endsWith(".pdf");
   const { data, error } = await supabase.functions.invoke<UnifiedExtractionResult>(
     "process-document-v2",
     {
-      body: {
-        imageBase64,
-        mimeType: file.type || "image/jpeg",
-        mode_hint: "receipt",
-      },
+      body: isPdf
+        ? { fileBase64: base64, mimeType: file.type || "application/pdf", fileName: file.name, mode_hint: "receipt" }
+        : { imageBase64: base64, mimeType: file.type || "image/jpeg", mode_hint: "receipt" },
     },
   );
   if (error) throw new Error(error.message || "Document analysis failed");
 
   const type = data?.document_type;
-  if (type === "quote" || type === "scope") return { kind: "quote_or_scope" };
+  if (type === "quote" || type === "scope") return { kind: type };
 
   const r = data?.receiptData;
   if (!r || (!r.vendor_name && !r.total_amount)) return { kind: "unreadable" };
