@@ -759,6 +759,7 @@ serve(async (req) => {
       fileName,
       mode,
       mode_hint,
+      userNote,
     } = body as {
       fileUrl?: string;
       fileBase64?: string;
@@ -768,6 +769,8 @@ serve(async (req) => {
       fileName?: string;
       mode?: string;
       mode_hint?: ModeHint;
+      /** D3: the user's words at capture time — extraction guidance, not data. */
+      userNote?: string;
     };
 
     // Receipt/invoice mode: vision path. Triggered by explicit mode_hint OR by
@@ -792,12 +795,15 @@ serve(async (req) => {
       const inputBlock: AnthropicContentBlock = isPdf
         ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: docBase64 } }
         : { type: 'image', source: { type: 'base64', media_type: mediaType, data: docBase64 } };
+      const noteLine = typeof userNote === 'string' && userNote.trim()
+        ? `\n\nAnvändarens kommentar vid uppladdningen (kan hjälpa tolkningen — t.ex. dokumenttyp eller leverantör — men hitta ALDRIG på fält utifrån den): "${userNote.trim().slice(0, 500)}"`
+        : '';
       const raw = await callAnthropicVision(
         apiKey,
         RECEIPT_SYSTEM,
         [
           inputBlock,
-          { type: 'text', text: 'Analysera dokumentet och kalla extract_receipt-verktyget.' },
+          { type: 'text', text: `Analysera dokumentet och kalla extract_receipt-verktyget.${noteLine}` },
         ],
         RECEIPT_TOOL,
         4096,

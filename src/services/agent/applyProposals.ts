@@ -252,6 +252,9 @@ async function applyOne(
         vendor_name: action.vendorName,
         unit: "st",
         status: isInvoice ? "billed" : "paid",
+        // D3: room attribution from the user's capture-time words — same shape
+        // as the manual "allocate order to room" action (room lives on the lines).
+        room_id: action.roomId ?? null,
         created_by_user_id: profileId,
       }));
 

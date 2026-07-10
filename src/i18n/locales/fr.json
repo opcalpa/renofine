@@ -946,7 +946,8 @@
       "docScopeHandoff": "Ceci ressemble à un descriptif — j'ouvre l'import de planification pour que vous puissiez vérifier les pièces et travaux avant tout enregistrement.",
       "docHandoffDone": "Terminé — le document est importé et ses pièces, travaux et montants sont maintenant dans le projet.",
       "nothingToUndo": "Il n'y a plus rien à annuler dans cette conversation — dites-moi ce que vous voulez changer et je m'en occupe.",
-      "detailLineSumMismatch": "⚠️ Les montants des lignes (≈{{sum}} kr) ne correspondent pas au total — vérifiez les lignes"
+      "detailLineSumMismatch": "⚠️ Les montants des lignes (≈{{sum}} kr) ne correspondent pas au total — vérifiez les lignes",
+      "detailRoom": "Pièce"
     }
   },
   "hotspots": {

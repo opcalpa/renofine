@@ -61,21 +61,54 @@ function fileToBase64(file: File): Promise<string> {
 }
 
 /**
+ * D3: the user's words at capture time can point the document at a room —
+ * "här är kvittot från Bauhaus, lägg det på badrummet". Match project room
+ * names against the utterance (Swedish definite forms like "badrummet"
+ * contain the room name "badrum", so substring matching covers them).
+ */
+async function resolveRoomFromNote(
+  projectId: string,
+  note: string,
+): Promise<{ id: string; name: string } | null> {
+  const { data } = await supabase
+    .from("rooms")
+    .select("id,name")
+    .eq("project_id", projectId);
+  if (!data?.length) return null;
+  const noteLower = note.toLowerCase();
+  let best: { id: string; name: string } | null = null;
+  for (const room of data) {
+    const name = (room.name ?? "").trim();
+    if (name.length < 3) continue;
+    if (noteLower.includes(name.toLowerCase())) {
+      if (!best || name.length > best.name.length) best = { id: room.id, name };
+    }
+  }
+  return best;
+}
+
+/**
  * Analyze a photographed/uploaded document and shape it as an import_purchase
  * action. The AI decides the document type itself — a quote dropped here is
  * routed to its proper review surface instead of being mangled into an order.
+ * userNote (D3) is the user's typed/spoken words at capture time: it guides
+ * the extraction and can attribute the order to a room.
  */
-export async function captureDocument(file: File): Promise<DocumentCaptureResult> {
+export async function captureDocument(
+  file: File,
+  opts?: { projectId?: string; userNote?: string },
+): Promise<DocumentCaptureResult> {
   const base64 = await fileToBase64(file);
   const isPdf =
     (file.type || "").toLowerCase().includes("pdf") ||
     file.name.toLowerCase().endsWith(".pdf");
+  const userNote = opts?.userNote?.trim() || undefined;
   const { data, error } = await supabase.functions.invoke<UnifiedExtractionResult>(
     "process-document-v2",
     {
       body: isPdf
-        ? { fileBase64: base64, mimeType: file.type || "application/pdf", fileName: file.name, mode_hint: "receipt" }
-        : { imageBase64: base64, mimeType: file.type || "image/jpeg", mode_hint: "receipt" },
+        ? { fileBase64: base64, mimeType: file.type || "application/pdf", fileName: file.name, mode_hint: "receipt", userNote }
+        : { imageBase64: base64, mimeType: file.type || "image/jpeg", mode_hint: "receipt", userNote },
     },
   );
   if (error) throw new Error(error.message || "Document analysis failed");
@@ -93,6 +126,10 @@ export async function captureDocument(file: File): Promise<DocumentCaptureResult
   const documentType = type === "invoice" ? "invoice" : "receipt";
   const attachmentKey = crypto.randomUUID();
   attachmentRegistry.set(attachmentKey, file);
+
+  const room = userNote && opts?.projectId
+    ? await resolveRoomFromNote(opts.projectId, userNote).catch(() => null)
+    : null;
 
   return {
     kind: documentType,
@@ -115,6 +152,8 @@ export async function captureDocument(file: File): Promise<DocumentCaptureResult
         total: li.total ?? null,
       })),
       attachmentKey,
+      roomId: room?.id ?? null,
+      roomName: room?.name ?? null,
     },
   };
 }

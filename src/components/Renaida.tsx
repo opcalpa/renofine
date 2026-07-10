@@ -868,7 +868,15 @@ export function Renaida() {
   const handleDocumentSelected = useCallback(async (file: File) => {
     if (capturing || loading) return;
 
-    setMessages((prev) => [...prev, { role: "user", content: `📎 ${file.name}` }]);
+    // D3: words already typed when the file is picked travel WITH the document —
+    // "här är kvittot från Bauhaus, lägg det på badrummet" guides extraction
+    // and can attribute the order to a room.
+    const userNote = input.trim();
+    if (userNote) setInput("");
+    setMessages((prev) => [...prev, {
+      role: "user",
+      content: userNote ? `📎 ${file.name} — ”${userNote}”` : `📎 ${file.name}`,
+    }]);
 
     let projectId = useRenaidaStore.getState().projectId;
     if (!projectId) {
@@ -892,7 +900,7 @@ export function Renaida() {
     setCapturing(true);
     wakeRenaida();
     try {
-      const res = await captureDocument(file);
+      const res = await captureDocument(file, { projectId, userNote: userNote || undefined });
       if (res.kind === "quote" || res.kind === "scope") {
         // D2 (Carl 2026-07-09): heavy documents deserve their full review surface —
         // open it FOR the user, prefilled. Photographed quotes can't ride the
@@ -953,7 +961,7 @@ export function Renaida() {
     } finally {
       setCapturing(false);
     }
-  }, [capturing, loading, t, wakeRenaida, flashRenaida]);
+  }, [capturing, loading, input, t, wakeRenaida, flashRenaida, setMessages]);
 
   // D2: the dedicated review dialog finished importing — acknowledge in the feed
   // so the conversation reflects what actually happened, and nudge data consumers.

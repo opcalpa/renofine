@@ -3905,7 +3905,8 @@
       "docScopeHandoff": "Det här ser ut som en arbetsbeskrivning — jag öppnar planeringsimporten så att du kan granska rum och arbeten innan något sparas.",
       "docHandoffDone": "Klart — dokumentet är inläst och rum, arbeten och belopp ligger nu i projektet.",
       "nothingToUndo": "Det finns inget kvar att ångra i den här konversationen — säg vad du vill ändra så fixar jag det.",
-      "detailLineSumMismatch": "⚠️ Radbeloppen (≈{{sum}} kr) summerar inte till totalen — kontrollera raderna"
+      "detailLineSumMismatch": "⚠️ Radbeloppen (≈{{sum}} kr) summerar inte till totalen — kontrollera raderna",
+      "detailRoom": "Rum"
     },
     "autonomy": {
       "suggest": "Föreslå först",

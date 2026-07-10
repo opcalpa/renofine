@@ -66,6 +66,10 @@ export type ProposalAction =
       rotAmount?: number | null;
       lineItems: { description: string; quantity: number; unitPrice: number | null; total: number | null }[];
       attachmentKey?: string;
+      /** D3: room attribution from the user's words at capture time
+       *  ("här är kvittot, lägg det på badrummet") — allocates the order's lines. */
+      roomId?: string | null;
+      roomName?: string | null;
     }
   /** Router could not confidently route the input — surface as a question, never apply. */
   | { type: "unknown"; rawText: string; reason: string };

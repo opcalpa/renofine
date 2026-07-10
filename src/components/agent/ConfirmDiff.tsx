@@ -111,6 +111,7 @@ export function actionDetails(
         }));
       }
       if (action.rotAmount) details.push(`ROT: ${action.rotAmount.toLocaleString(locale)} kr`);
+      if (action.roomName) details.push(`${t("helpBot.agent.detailRoom", "Rum")}: ${action.roomName}`);
       if (action.documentType === "invoice") {
         if (action.invoiceNumber) details.push(`${t("helpBot.agent.detailInvoiceNo", "Fakturanr")}: ${action.invoiceNumber}`);
         if (action.dueDate) details.push(`${t("helpBot.agent.detailDue", "Förfaller")}: ${fmtDate(action.dueDate)}`);
