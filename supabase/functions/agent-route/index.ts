@@ -118,8 +118,15 @@ async function fetchContext(projectId: string, authHeader: string): Promise<{ ro
   const rooms = roomsRes.ok ? await roomsRes.json() : [];
   const tasksRaw = tasksRes.ok ? await tasksRes.json() : [];
   const memories: MemoryCtx[] = memRes.ok ? await memRes.json() : [];
-  const tasks: TaskCtx[] = tasksRaw.map((t: { id: string; title: string; status: string | null; checklists?: unknown }) => ({
+  const tasks: TaskCtx[] = tasksRaw.map((t: {
+    id: string; title: string; status: string | null; checklists?: unknown;
+    hourly_rate?: number | null; estimated_hours?: number | null; subcontractor_cost?: number | null;
+  }) => ({
     id: t.id, title: t.title, status: t.status, checklistItems: extractChecklistItems(t.checklists),
+    // Cost-breakdown fields feed the budget-refusal guard in normalizeProposals.
+    hourly_rate: t.hourly_rate ?? null,
+    estimated_hours: t.estimated_hours ?? null,
+    subcontractor_cost: t.subcontractor_cost ?? null,
   }));
   return { rooms, tasks, memories, members };
 }
