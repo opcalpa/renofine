@@ -302,6 +302,18 @@
       ]
     },
     {
+      "id": "plan-deadline-onsdag",
+      "input": "Kakelsättningen ska vara klar på onsdag.",
+      "expect": [
+        {
+          "type": "update_task",
+          "taskId": "t-tile",
+          "changesHasDate": "due_date",
+          "changesDateWeekday": 3
+        }
+      ]
+    },
+    {
       "id": "plan-budget",
       "input": "Höj budgeten för golvslipningen till 15000 kronor.",
       "expect": [

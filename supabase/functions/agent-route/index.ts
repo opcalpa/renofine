@@ -150,6 +150,21 @@ ${lines.join("\n")}
 `;
 }
 
+const WEEKDAYS_EN = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+/** "Wednesday / onsdag" — the user names weekdays in their own language, so the
+ *  date table must carry that name too; the model mistranslates otherwise
+ *  ("på onsdag" resolved to a Monday, 2026-07-10). */
+function weekdayLabel(d: Date, language: string): string {
+  const en = WEEKDAYS_EN[d.getUTCDay()];
+  if (language === "en") return en;
+  try {
+    return `${en} / ${new Intl.DateTimeFormat(language, { weekday: "long", timeZone: "UTC" }).format(d)}`;
+  } catch {
+    return en;
+  }
+}
+
 function buildSystemPrompt(language: string, rooms: RoomCtx[], tasks: TaskCtx[], memories: MemoryCtx[], members: MemberCtx[]): string {
   const langName = LANGUAGE_NAMES[language] || "English";
   const roomList = rooms.length
@@ -174,10 +189,10 @@ You are given the project's REAL rooms and tasks. You may ONLY reference ids tha
 NEVER invent an id. If the note refers to something you cannot confidently map to an existing
 id, emit an "unknown" proposal asking for clarification instead of guessing.
 
-TODAY is ${new Date().toISOString().slice(0, 10)} (${["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][new Date().getUTCDay()]}). When resolving relative dates ("på fredag", "imorgon", "nästa vecka"), LOOK THEM UP in this table — do not compute them yourself:
+TODAY is ${new Date().toISOString().slice(0, 10)} (${weekdayLabel(new Date(), language)}). Relative dates ("på fredag", "imorgon", "nästa vecka") are resolved ONLY via the table below. A named weekday ("på onsdag", "on Wednesday") means the FIRST row below whose weekday matches that name — find that row and copy its date EXACTLY. NEVER compute a date yourself, and NEVER output a date whose table row names a different weekday than the user said:
 ${Array.from({ length: 14 }, (_, i) => {
   const d = new Date(Date.now() + (i + 1) * 86400000);
-  return `  ${["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][d.getUTCDay()]} = ${d.toISOString().slice(0, 10)}`;
+  return `  ${weekdayLabel(d, language)} = ${d.toISOString().slice(0, 10)}`;
 }).join("\n")}
 
 ROOMS:
