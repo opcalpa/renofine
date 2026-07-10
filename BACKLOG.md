@@ -366,9 +366,18 @@ dagens planering ("ska gå snabbt, inte kännas omständligt"). Hans drömexempe
 "Köket är färdigmålat. Det saknas lister och vi behöver beställa tio meter golvsockel."
 → nu GOLDEN-CASE `taulant-north-star` i evalen (29/29 PASS, agent-route v20): målning
 100% + lister-not på befintlig task (dubblettregel tillagd) + köporder "Golvsockel · 10
-meter" kurerad. OBS: verktygsfrågan (Excel/Sheets/annat?) EJ besvarad än — följ upp.
-**Nästa:** Carl skickar testmejlet (uppdaterat utkast klart, se scratchpad session 52)
-→ PostHog-ritualen ovan. Bevaka advisor-/partnerlutning.
+meter" kurerad.
+**2026-07-09 23:47 — Taulant svarade (STORT):** (1) **testar Renaida ordentligt de närmaste
+dagarna, mobilen först** — lovar rak feedback ("säger det rakt ut"); (2) **verktygsfrågan
+BESVARAD: Excel** — "budget, material och lite planering, även om det blir ganska utspritt
+med bilder, kvitton och anteckningar" = ordagrant problemet D1/D2-kvittoskanningen löser;
+(3) **två nya frågor: App Store/Google Play-planer + långsiktiga visionen — uttryckligen
+"ur ett investerarperspektiv"** (intent-frågan från juni därmed i praktiken besvarad:
+han VILL påverka/investera). **Svarsutkast klart 2026-07-10** (Excel-kroken + kvittoskanningen,
+ärligt webbapp-först-svar på App Store, kort vision + förslag om videocall för
+investerarsamtalet): scratchpad `taulant-svar-excel-appstore-vision.txt`, på urklipp.
+**Nästa:** Carl skickar svaret → Taulant testar (PROD har nu D1+D2+ångra-paketet live) →
+PostHog-ritualen ovan → videocall om visionen/investering.
 
 ---
 id: agent-mode-additive-flag
