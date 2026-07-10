@@ -932,7 +932,7 @@ export function Renaida() {
         analytics.capture(AnalyticsEvents.RENAIDA_PROPOSED, { kind: "document", resolved: false, docType: "unreadable" });
         setMessages((prev) => [...prev, {
           role: "assistant",
-          content: t("helpBot.agent.docUnreadable", "Jag kunde tyvärr inte läsa ut något ur bilden — prova ett skarpare foto rakt ovanifrån, eller registrera inköpet manuellt under Inköp."),
+          content: t("helpBot.agent.docUnreadable", "Jag kunde tyvärr inte läsa ut något ur dokumentet — prova ett skarpare foto rakt ovanifrån, en annan fil, eller registrera inköpet manuellt under Inköp."),
         }]);
       } else {
         const proposal: AgentProposal = {

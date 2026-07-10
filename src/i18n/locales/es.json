@@ -935,7 +935,7 @@
       "openPurchase": "Abrir el pedido «{{title}}»",
       "attachDocument": "Fotografiar o adjuntar un recibo, una factura o un presupuesto",
       "docQuoteDetected": "Esto parece un presupuesto o un pliego — se revisa mejor con calma en [Archivos](open:/projects/{{projectId}}?tab=files). Súbelo allí y las habitaciones y trabajos se interpretarán por ti.",
-      "docUnreadable": "No pude leer nada en la imagen — prueba con una foto más nítida tomada desde arriba, o registra la compra manualmente en Compras.",
+      "docUnreadable": "No pude leer nada del documento — prueba con una foto más nítida desde arriba, otro archivo, o registra la compra manualmente en Compras.",
       "docError": "La lectura del documento falló — inténtalo de nuevo en un momento, o registra la compra manualmente en Compras.",
       "docReceiptSummary": "Recibo de {{vendor}} — guardado como orden de compra (entregado)",
       "docInvoiceSummary": "Factura de {{vendor}} — guardada como orden de compra (facturada)",

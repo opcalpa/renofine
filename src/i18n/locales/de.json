@@ -935,7 +935,7 @@
       "openPurchase": "Bestellung „{{title}}“ öffnen",
       "attachDocument": "Beleg, Rechnung oder Angebot fotografieren oder anhängen",
       "docQuoteDetected": "Das sieht wie ein Angebot oder ein Leistungsverzeichnis aus — am besten prüfst du es vollständig unter [Dateien](open:/projects/{{projectId}}?tab=files). Lade es dort hoch, dann werden Räume und Arbeiten für dich interpretiert.",
-      "docUnreadable": "Ich konnte auf dem Bild leider nichts lesen — versuche ein schärferes Foto direkt von oben, oder erfasse den Einkauf manuell unter Einkäufe.",
+      "docUnreadable": "Ich konnte aus dem Dokument leider nichts lesen — versuche ein schärferes Foto direkt von oben, eine andere Datei, oder erfasse den Einkauf manuell unter Einkäufe.",
       "docError": "Das Lesen des Dokuments ist fehlgeschlagen — versuche es gleich noch einmal oder erfasse den Einkauf manuell unter Einkäufe.",
       "docReceiptSummary": "Beleg von {{vendor}} — wird als Bestellung gespeichert (geliefert)",
       "docInvoiceSummary": "Rechnung von {{vendor}} — wird als Bestellung gespeichert (in Rechnung gestellt)",

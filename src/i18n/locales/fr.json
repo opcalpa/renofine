@@ -935,7 +935,7 @@
       "openPurchase": "Ouvrir la commande « {{title}} »",
       "attachDocument": "Photographier ou joindre un reçu, une facture ou un devis",
       "docQuoteDetected": "Ceci ressemble à un devis ou un descriptif — mieux vaut l'examiner en détail sous [Fichiers](open:/projects/{{projectId}}?tab=files). Téléversez-le là-bas et les pièces et travaux seront interprétés pour vous.",
-      "docUnreadable": "Je n'ai rien pu lire sur cette image — essayez une photo plus nette prise bien à plat, ou enregistrez l'achat manuellement sous Achats.",
+      "docUnreadable": "Je n'ai rien pu lire dans ce document — essayez une photo plus nette prise bien à plat, un autre fichier, ou enregistrez l'achat manuellement sous Achats.",
       "docError": "La lecture du document a échoué — réessayez dans un instant, ou enregistrez l'achat manuellement sous Achats.",
       "docReceiptSummary": "Reçu de {{vendor}} — enregistré comme bon d'achat (livré)",
       "docInvoiceSummary": "Facture de {{vendor}} — enregistrée comme bon d'achat (facturée)",
