@@ -84,10 +84,12 @@ Kamera/filknapp i Renaida-panelen → classify-document → process-document-v2 
 
 ---
 id: renaida-doc-d2-offert-scope
-status: todo
+status: done
 priority: P2
 tags: [renaida, agent, dokument, offert]
 created: 2026-07-09
+updated: 2026-07-10
+done: 2026-07-10 — Byggd + E2E-verifierad lokalt (commit 4740caa + 8e5e666): gem-knappen tar PDF (Claude document-block i process-document-v2:s kvitto-path, deployad), faktura-PDF → import_purchase (Tretti-fakturan exakt rätt, .pdf-underlag, full Ångra), offert-PDF → QuoteReviewDialog FÖRIFYLLD (SLD-offerten: 120 000 kr, 2 rum, 10 rader — allt rätt), arbetsbeskrivning → PlanningSmartImport förifylld (ny initialFile-prop), Renaida kvitterar i panelen efteråt. VIKTIG BUGG HITTAD PÅ VÄGEN: RECEIPT_TOOL-schemat tillät bara receipt/invoice → offerter TVINGADES bli fakturor; nu quote/scope/other + hallucination-vakt (0 kr → unreadable). Fotade offerter (bilder) behåller vägvisning till Filer (text-extraktion kan ej läsa bilder). EJ PUSHAD till prod ännu.
 ---
 ## 📄 D2: Offert/scope via Renaida → handoff till befintlig granskning
 Tunga dokument (rum+arbeten-matriser) ska INTE klämmas in som chattkort. Renaida tar emot filen, klassificerar, öppnar QuoteReviewDialog/PlanningSmartImport FÖRIFYLLD och kvitterar utfallet i aktivitetsflödet efteråt. **Carls beslut: handoff, inte allt-i-chatten** (tydlighet > chattifiering). Därefter D3: röst + foto i samma capture ("här är kvittot från Bauhaus, lägg det på badrummet"). ~1 dag.

@@ -13,6 +13,18 @@ export const changelog: ChangelogEntry[] = [
   // ── 2026-07-10 ──
   {
     date: "2026-07-10",
+    title: "Skicka PDF:er till Renaida — offerter öppnar granskningen åt dig",
+    description: "Gem-knappen i Renaida-panelen tar nu även PDF:er. En faktura eller ett kvitto som PDF blir samma bekräfta-först-förslag som ett foto, med underlaget sparat på ordern. Och laddar du upp en offert eller en arbetsbeskrivning känner Renaida igen den och öppnar rätt granskningsyta åt dig — förifylld med rum, arbeten och belopp — i stället för att du ska leta upp importen själv. Efteråt kvitterar hon i panelen vad som lades in.",
+    tags: ["Renaida", "Inköp", "Planering", "Ny funktion"],
+  },
+  {
+    date: "2026-07-10",
+    title: "Renaida ångrar på uppmaning och tappar aldrig tråden",
+    description: "Skriv \"ångra\" så backar Renaida sin senaste ändring — utan omvägar. Konversationen (och Ångra-knappen) överlever nu också flikbyten och navigering, så du kan kolla resultatet och ångra efteråt. Dessutom: förslagskorten visar årtal på äldre kvitton, varnar när radbeloppen inte summerar till totalen, och en bild som inte är ett kvitto får ett ärligt \"kunde inte läsa\" i stället för ett gissat förslag. Ber du om en budgetändring på ett arbete vars kostnad är nedbruten i delar säger Renaida ifrån redan innan du bekräftar — och genomför resten av ändringen som vanligt.",
+    tags: ["Renaida", "Förbättring"],
+  },
+  {
+    date: "2026-07-10",
     title: "Fota kvittot — Renaida bokför det",
     description: "Renaida-panelen har fått en kamera/gem-knapp: fota eller ladda upp ett kvitto eller en faktura, så läser Renaida ut leverantör, belopp, datum och varje rad — och föreslår en färdig inköpsorder som du bekräftar med ett tryck. Ordern hamnar i Inköp med underlaget bifogat och alla rader som material, och allt går att ångra. Belopp visas alltid innan något genomförs, och dokumentimporter körs aldrig automatiskt ens i Autopilot-läget. Offerter känns igen och guidas till den fulla granskningen under Filer.",
     tags: ["Renaida", "Inköp", "Ny funktion"],
