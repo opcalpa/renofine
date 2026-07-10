@@ -105,6 +105,22 @@ created: 2026-07-09
 Routern får onboarding_user_type i kontexten + action-vitlista per roll (samma princip som dual-view-gaten). Samma yttrande landar olika: "jag fick en offert" → hemägare: "ladda upp den så lägger jag in den"; byggare: "vill du att jag förbereder en offert?" (generate-quote-items finns, Renaida-väg saknas). Byggarflöden: skapa offert, förbereda faktura, ÄTA. Hemägarflöden: ta emot/scanna, planera mot egen budget. **+ Vägvisar-principen (Carl 2026-07-09): features som inte motiverar exekvering inne hos Renaida ska hon GUIDA till** — ny `open_feature`-action som öppnar rätt flik/dialog (gärna förifylld) via befintliga deep-links (?tab=&entityId=, open:-syntaxen); användaren kanske aldrig hittat featuren själv.
 
 ---
+id: rot-totalsemantik-beslut
+status: todo
+priority: P2
+tags: [carl, produktbeslut, renaida, dokument]
+created: 2026-07-10
+---
+## 💰 ROT-totalsemantik på fakturaimport (Carls beslut)
+
+Saprunoff-fakturan (varv 15): förslagskortet visade "att betala" (56 890 kr) som
+ordertotal — men det är beloppet EFTER ROT-avdrag. Ordern/budgeten borde spegla
+kostnaden, inte kassaflödet. **Rekommendation:** extrahera brutto som total +
+visa "Att betala efter ROT: X kr" som separat rad i kortet och på ordern.
+Alternativ: behåll att-betala som total men labela tydligt (bryter mot
+moms/belopps-regeln "alla belopp labellade"). Säg vilket, så bygger Claude.
+
+---
 id: wizard-proffs-test
 status: todo
 priority: P2
