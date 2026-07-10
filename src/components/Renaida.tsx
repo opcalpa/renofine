@@ -12,7 +12,7 @@ import { ConfirmDiff, actionDetails } from "@/components/agent/ConfirmDiff";
 import { RenaidaAvatar, type RenaidaState } from "@/components/renaida/RenaidaAvatar";
 import { routeAgentInput } from "@/services/agent/routeClient";
 import { captureDocument } from "@/services/agent/documentCapture";
-import { applyProposals, undoProposals } from "@/services/agent/applyProposals";
+import { applyProposals, undoProposals, fetchLatestUndoable } from "@/services/agent/applyProposals";
 import { type AgentProposal, type UndoOp, TASK_MATCH_MIN_CONFIDENCE, isActionable } from "@/services/agent/types";
 import { recordCorrection, getAutonomyMode, setAutonomyMode } from "@/services/agent/renaidaMemory";
 import { fetchProactiveSuggestions, type RenaidaSuggestion } from "@/services/agent/renaidaSuggestions";
@@ -84,6 +84,8 @@ interface Message {
   /** The user utterance that produced this proposals bubble. NOT messages[i-1]
    *  — the fallback-project announce can sit between the two. */
   sourcePhrase?: string;
+  /** Persisted undo-stack row backing this message's undo ops (survives reloads). */
+  undoStackId?: string | null;
 }
 
 /** Build ConfirmDiff proposals from proactive suggestions, with localized summaries. */
@@ -423,6 +425,8 @@ export function Renaida() {
   // (loop-varv 14, bugg 1: history + Undo gone after tab navigation).
   const currentLang = i18n.language;
   const langRef = useRef(currentLang);
+  /** One restorable-undo offer per project per mount — never spam the greeting. */
+  const offeredUndoRef = useRef<string | null>(null);
   useEffect(() => {
     if (langRef.current === currentLang) return;
     langRef.current = currentLang;
@@ -448,13 +452,33 @@ export function Renaida() {
         });
       }
       setMessages(initial);
+
+      // Undo survives reloads: a fresh thread means any recent un-undone batch
+      // lost its Undo button — offer it back from the persisted stack.
+      const pid = useRenaidaStore.getState().projectId;
+      if (pid && offeredUndoRef.current !== pid) {
+        offeredUndoRef.current = pid;
+        void fetchLatestUndoable(pid).then((r) => {
+          if (!r) return;
+          setMessages((prev) => (prev.length <= 2 ? [...prev, {
+            role: "assistant",
+            content: t("helpBot.agent.restorableUndo", {
+              defaultValue: "Senaste ändringen jag gjorde här: ”{{label}}” — den går fortfarande att ångra.",
+              label: r.label,
+            }),
+            undo: r.ops,
+            undoStackId: r.id,
+            projectId: pid,
+          }] : prev));
+        }).catch(() => {});
+      }
     }
     // Desktop: focus for immediate typing. Mobile: DON'T — autofocus pops the
     // keyboard over the voice-first entry the moment the panel opens.
     if (open && !isMobile) {
       inputRef.current?.focus();
     }
-  }, [open, messages.length, buildGreeting, t, isMobile]);
+  }, [open, messages.length, buildGreeting, t, isMobile, setMessages]);
 
   // Update greeting when reminders change (if user hasn't sent any messages yet)
   useEffect(() => {
@@ -651,7 +675,7 @@ export function Renaida() {
         ? (userFacing ?? t("helpBot.agent.allFailed"))
         : `${t("helpBot.agent.partialFailed", { applied: result.applied.length, failed: result.failed.length })}${userFacing ? ` ${userFacing}` : ""}${appliedList ? `\n${appliedList}` : ""}`;
 
-    setMessages((prev) => [...prev, { role: "assistant", content, undo: result.undo.length ? result.undo : undefined, projectId }]);
+    setMessages((prev) => [...prev, { role: "assistant", content, undo: result.undo.length ? result.undo : undefined, undoStackId: result.undoStackId ?? undefined, projectId }]);
     if (result.applied.length > 0) {
       // Overview cards (useOverviewData) are not React Query — nudge them to refetch.
       window.dispatchEvent(new CustomEvent("renaida-data-changed", { detail: { projectId } }));
@@ -697,13 +721,31 @@ export function Renaida() {
         .filter(({ m }) => !!m.undo?.length)
         .pop();
       if (lastUndoable) {
-        void handleUndoRef.current?.(lastUndoable.i, lastUndoable.m.undo!, lastUndoable.m.projectId);
-      } else {
-        setMessages((prev) => [...prev, {
-          role: "assistant",
-          content: t("helpBot.agent.nothingToUndo", "Det finns inget kvar att ångra i den här konversationen — säg vad du vill ändra så fixar jag det."),
-        }]);
+        void handleUndoRef.current?.(lastUndoable.i, lastUndoable.m.undo!, lastUndoable.m.projectId, lastUndoable.m.undoStackId);
+        return;
       }
+      // Reload fallback: the thread is gone but the batch is persisted in the
+      // undo stack — "allt går att ångra" must survive a page load.
+      const storeProjectId = useRenaidaStore.getState().projectId;
+      if (storeProjectId) {
+        const restorable = await fetchLatestUndoable(storeProjectId).catch(() => null);
+        if (restorable) {
+          setCapturing(true);
+          try {
+            await undoProposals(restorable.ops, storeProjectId, restorable.id);
+            analytics.capture(AnalyticsEvents.RENAIDA_UNDONE, { count: restorable.ops.length, restored: true });
+            window.dispatchEvent(new CustomEvent("renaida-data-changed", { detail: { projectId: storeProjectId } }));
+            setMessages((prev) => [...prev, { role: "assistant", content: t("helpBot.agent.undone") }]);
+          } finally {
+            setCapturing(false);
+          }
+          return;
+        }
+      }
+      setMessages((prev) => [...prev, {
+        role: "assistant",
+        content: t("helpBot.agent.nothingToUndo", "Det finns inget kvar att ångra i den här konversationen — säg vad du vill ändra så fixar jag det."),
+      }]);
       return;
     }
 
@@ -1010,10 +1052,10 @@ export function Renaida() {
     await applyAndReport(accepted, projectId, { auto: false, corrected: corrections.length, sourceText: phrase });
   }, [applyAndReport]);
 
-  const handleUndo = useCallback(async (msgIndex: number, ops: UndoOp[], msgProjectId?: string) => {
+  const handleUndo = useCallback(async (msgIndex: number, ops: UndoOp[], msgProjectId?: string, undoStackId?: string | null) => {
     setMessages((prev) => prev.map((m, i) => (i === msgIndex ? { ...m, undo: undefined } : m)));
     const projectId = msgProjectId ?? useRenaidaStore.getState().projectId;
-    await undoProposals(ops, projectId ?? undefined);
+    await undoProposals(ops, projectId ?? undefined, undoStackId);
     analytics.capture(AnalyticsEvents.RENAIDA_UNDONE, { count: ops.length });
     window.dispatchEvent(new CustomEvent("renaida-data-changed", { detail: { projectId } }));
     setMessages((prev) => [...prev, { role: "assistant", content: t("helpBot.agent.undone") }]);
@@ -1378,7 +1420,7 @@ export function Renaida() {
                 {msg.undo && msg.undo.length > 0 && (
                   <div className="mt-2 ml-1">
                     <button
-                      onClick={() => handleUndo(i, msg.undo!, msg.projectId)}
+                      onClick={() => handleUndo(i, msg.undo!, msg.projectId, msg.undoStackId)}
                       className="inline-flex items-center gap-1.5 rounded-full border bg-background px-3.5 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors md:gap-1 md:px-2.5 md:py-1 md:text-xs"
                     >
                       <ArrowLeft className="h-3.5 w-3.5 md:h-3 md:w-3" />

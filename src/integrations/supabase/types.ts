@@ -2866,6 +2866,58 @@ export type Database = {
           },
         ]
       }
+      renaida_undo_stack: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          ops: Json
+          profile_id: string
+          project_id: string
+          undone_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label: string
+          ops: Json
+          profile_id: string
+          project_id: string
+          undone_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          ops?: Json
+          profile_id?: string
+          project_id?: string
+          undone_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "renaida_undo_stack_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "professional_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "renaida_undo_stack_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "renaida_undo_stack_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       renaida_user_memory: {
         Row: {
           created_at: string
@@ -3490,6 +3542,7 @@ export type Database = {
           floor_plan_position: Json | null
           hourly_rate: number | null
           id: string
+          internal_notes: string | null
           invoice_due_date: string | null
           invoice_number: string | null
           invoiced_amount: number | null
@@ -3541,6 +3594,7 @@ export type Database = {
           floor_plan_position?: Json | null
           hourly_rate?: number | null
           id?: string
+          internal_notes?: string | null
           invoice_due_date?: string | null
           invoice_number?: string | null
           invoiced_amount?: number | null
@@ -3592,6 +3646,7 @@ export type Database = {
           floor_plan_position?: Json | null
           hourly_rate?: number | null
           id?: string
+          internal_notes?: string | null
           invoice_due_date?: string | null
           invoice_number?: string | null
           invoiced_amount?: number | null

@@ -947,7 +947,8 @@
       "docHandoffDone": "Fertig — das Dokument ist importiert und seine Räume, Arbeiten und Beträge sind jetzt im Projekt.",
       "nothingToUndo": "In diesem Gespräch gibt es nichts mehr rückgängig zu machen — sag mir, was du ändern willst, und ich erledige es.",
       "detailLineSumMismatch": "⚠️ Die Zeilenbeträge (≈{{sum}} kr) ergeben nicht die Summe — prüfe die Zeilen",
-      "detailRoom": "Raum"
+      "detailRoom": "Raum",
+      "restorableUndo": "Die letzte Änderung, die ich hier gemacht habe: „{{label}}“ — sie lässt sich noch rückgängig machen."
     }
   },
   "hotspots": {

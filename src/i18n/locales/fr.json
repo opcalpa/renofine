@@ -947,7 +947,8 @@
       "docHandoffDone": "Terminé — le document est importé et ses pièces, travaux et montants sont maintenant dans le projet.",
       "nothingToUndo": "Il n'y a plus rien à annuler dans cette conversation — dites-moi ce que vous voulez changer et je m'en occupe.",
       "detailLineSumMismatch": "⚠️ Les montants des lignes (≈{{sum}} kr) ne correspondent pas au total — vérifiez les lignes",
-      "detailRoom": "Pièce"
+      "detailRoom": "Pièce",
+      "restorableUndo": "Le dernier changement que j'ai fait ici : « {{label}} » — il peut encore être annulé."
     }
   },
   "hotspots": {

@@ -32,6 +32,32 @@ export interface ApplyResult {
   created: CreatedRef[];
   /** Existing objects this batch changed — for "open & edit" links next to Undo. */
   modified: CreatedRef[];
+  /** Persisted undo-stack row for this batch — lets undo survive a reload. */
+  undoStackId?: string | null;
+}
+
+/** A persisted, still-revertable Renaida batch (renaida_undo_stack row). */
+export interface RestorableUndo {
+  id: string;
+  label: string;
+  ops: UndoOp[];
+  createdAt: string;
+}
+
+/** Newest un-undone batch Renaida applied for this user in this project (<48h). */
+export async function fetchLatestUndoable(projectId: string): Promise<RestorableUndo | null> {
+  const cutoff = new Date(Date.now() - 48 * 3600 * 1000).toISOString();
+  const { data } = await supabase
+    .from("renaida_undo_stack")
+    .select("id,label,ops,created_at")
+    .eq("project_id", projectId)
+    .is("undone_at", null)
+    .gte("created_at", cutoff)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!data || !Array.isArray(data.ops)) return null;
+  return { id: data.id, label: data.label, ops: data.ops as unknown as UndoOp[], createdAt: data.created_at };
 }
 
 interface ChecklistGroup {
@@ -515,6 +541,29 @@ export async function applyProposals(
       .from("tasks").select("id,title").in("id", [...modifiedTaskIds]);
     result.modified = (data ?? []).map((t) => ({ type: "task" as const, id: t.id, title: t.title ?? "" }));
   }
+
+  // Persist the batch's reversal ops so undo survives a reload (loop round 15:
+  // a receipt import couldn't be reverted after navigation). Best-effort — a
+  // failed insert must never fail the apply itself.
+  if (result.undo.length > 0) {
+    try {
+      const first = result.applied[0]?.summary?.trim() || "Renaida-ändring";
+      const label = (result.applied.length > 1 ? `${first} (+${result.applied.length - 1})` : first).slice(0, 200);
+      const { data: stackRow } = await supabase
+        .from("renaida_undo_stack")
+        .insert({
+          profile_id: profileId,
+          project_id: projectId,
+          label,
+          ops: JSON.parse(JSON.stringify(result.undo)),
+        })
+        .select("id")
+        .single();
+      result.undoStackId = stackRow?.id ?? null;
+    } catch {
+      result.undoStackId = null;
+    }
+  }
   return result;
 }
 
@@ -524,7 +573,7 @@ export async function applyProposals(
  * row is logged — the original receipt rows stay (audit history), this row
  * marks them as undone instead of leaving them misleading.
  */
-export async function undoProposals(undo: UndoOp[], projectId?: string): Promise<void> {
+export async function undoProposals(undo: UndoOp[], projectId?: string, undoStackId?: string | null): Promise<void> {
   for (const op of undo) {
     try {
       switch (op.kind) {
@@ -609,5 +658,14 @@ export async function undoProposals(undo: UndoOp[], projectId?: string): Promise
       });
       logActivity(projectId, profile.id, "renaida_undo", "project", projectId, "", { ops: undo.length, entityIds });
     }
+  }
+
+  // Spend the persisted batch — it must not be offered for undo again.
+  if (undoStackId) {
+    void supabase
+      .from("renaida_undo_stack")
+      .update({ undone_at: new Date().toISOString() })
+      .eq("id", undoStackId)
+      .then(() => {}, () => {});
   }
 }

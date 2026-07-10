@@ -947,7 +947,8 @@
       "docHandoffDone": "Listo — el documento está importado y sus habitaciones, trabajos e importes ya están en el proyecto.",
       "nothingToUndo": "No queda nada que deshacer en esta conversación — dime qué quieres cambiar y lo arreglo.",
       "detailLineSumMismatch": "⚠️ Los importes de las líneas (≈{{sum}} kr) no suman el total — revisa las líneas",
-      "detailRoom": "Habitación"
+      "detailRoom": "Habitación",
+      "restorableUndo": "El último cambio que hice aquí: «{{label}}» — todavía se puede deshacer."
     }
   },
   "hotspots": {
