@@ -1752,14 +1752,14 @@ const ProjectFilesTab = ({ projectId, projectName, filesAccess = "view", onNavig
         onComplete={() => fetchFiles()}
       />
 
-      {/* Quote Review Dialog */}
+      {/* Quote Review Dialog — the dialog toasts its own import receipt with the
+          real created-counts; a second static toast here would shadow it and
+          overstate the result, so onImportComplete only refreshes the file list. */}
       <QuoteReviewDialog
         projectId={projectId}
         open={!!quoteReviewFile}
         onOpenChange={(o) => { if (!o) setQuoteReviewFile(null); }}
         file={quoteReviewFile}
-        {/* The dialog toasts its own import receipt with real created-counts —
-            a second static toast here would shadow it and overstate the result. */}
         onImportComplete={() => fetchFiles()}
       />
 
