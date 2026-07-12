@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Info } from "lucide-react";
 import { Label } from "@/components/ui/label";
@@ -40,8 +39,6 @@ interface OverviewTabProps {
   commentCount: number;
 }
 
-type NoteView = "description" | "internal";
-
 export function OverviewTab({
   task,
   patch,
@@ -61,7 +58,6 @@ export function OverviewTab({
 }: OverviewTabProps) {
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
-  const [noteView, setNoteView] = useState<NoteView>("description");
   const internalSupported = "internal_notes" in task;
   // Hidden fields stay visible while they hold content — nothing disappears silently
   const showField = (key: string, hasContent: boolean) => (fieldPrefs[key] ?? true) || hasContent;
@@ -75,68 +71,49 @@ export function OverviewTab({
     });
   };
 
-  // ── Description / internal notes switch (task description is the work
-  // description shown to workers; internal notes never leave the team.
-  // "Kundens önskemål" stays a ROOM-level concept — no duplicate data points.)
-  const segment = (key: NoteView, label: string) => {
-    const active = noteView === key;
-    return (
-      <button
-        key={key}
-        type="button"
-        onClick={() => setNoteView(key)}
-        className="rounded-full px-3 py-1.5 text-xs font-medium transition-colors"
-        style={{
-          background: active ? "var(--rf-ink)" : "transparent",
-          color: active ? "var(--rf-paper)" : "var(--rf-fg-muted)",
-        }}
-      >
-        {label}
-      </button>
-    );
-  };
-
-  const notesSection = (
-    <div className="space-y-2">
-      <div
-        className="inline-flex w-fit items-center gap-1 rounded-full border p-1"
-        style={{ borderColor: "var(--rf-hairline)", background: "var(--rf-surface)" }}
-      >
-        {segment("description", t("tasks.description", "Beskrivning"))}
-        {internalSupported && segment("internal", t("tasks.internalNotes", "Interna anteckningar"))}
-      </div>
-      {noteView === "description" ? (
-        <div className="space-y-1.5">
-          <Textarea
-            id="edit-task-description"
-            value={task.description || ""}
-            onChange={(e) => patch({ description: e.target.value })}
-            rows={3}
-            placeholder={t("tasks.descriptionPlaceholder", "Lägg till detaljer, material eller instruktioner…")}
-            className="rounded-lg text-sm"
-          />
-          <p className="text-xs text-muted-foreground">
-            {t("tasks.descriptionSharedHint", "Syns för alla i projektet, även inbjudna arbetare.")}
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-1.5">
-          <Textarea
-            id="edit-task-internal-notes"
-            value={task.internal_notes || ""}
-            onChange={(e) => patch({ internal_notes: e.target.value })}
-            rows={3}
-            placeholder={t("tasks.internalNotesPlaceholder", "Interna anteckningar — syns inte för arbetare…")}
-            className="rounded-lg text-sm"
-            style={{ background: "var(--rf-paper-2)" }}
-          />
-          <p className="text-xs text-muted-foreground">
-            {t("tasks.internalNotesHint", "Bara för dig och ditt team — delas aldrig med arbetare.")}
-          </p>
-        </div>
-      )}
+  // Description is the PRIMARY field — always visible, never hidden behind a
+  // toggle. It's the work description shown to workers. (Carl 2026-07-12)
+  const descriptionSection = (
+    <div className="space-y-1.5">
+      <Label className="rf-section-label" htmlFor="edit-task-description">
+        {t("tasks.description", "Beskrivning")}
+      </Label>
+      <Textarea
+        id="edit-task-description"
+        value={task.description || ""}
+        onChange={(e) => patch({ description: e.target.value })}
+        rows={3}
+        placeholder={t("tasks.descriptionPlaceholder", "Lägg till detaljer, material eller instruktioner…")}
+        className="rounded-lg text-sm"
+      />
+      <p className="text-xs text-muted-foreground">
+        {t("tasks.descriptionSharedHint", "Syns för alla i projektet, även inbjudna arbetare.")}
+      </p>
     </div>
   );
+
+  // Internal notes live in their OWN separated section (below the checklists),
+  // so the description above is never missed. Never shared with workers.
+  // ("Kundens önskemål" stays a ROOM-level concept — no duplicate data points.)
+  const internalNotesSection = internalSupported ? (
+    <div className="space-y-1.5">
+      <Label className="rf-section-label" htmlFor="edit-task-internal-notes">
+        {t("tasks.internalNotes", "Interna anteckningar")}
+      </Label>
+      <Textarea
+        id="edit-task-internal-notes"
+        value={task.internal_notes || ""}
+        onChange={(e) => patch({ internal_notes: e.target.value })}
+        rows={3}
+        placeholder={t("tasks.internalNotesPlaceholder", "Interna anteckningar — syns inte för arbetare…")}
+        className="rounded-lg text-sm"
+        style={{ background: "var(--rf-paper-2)" }}
+      />
+      <p className="text-xs text-muted-foreground">
+        {t("tasks.internalNotesHint", "Bara för dig och ditt team — delas aldrig med arbetare.")}
+      </p>
+    </div>
+  ) : null;
 
   const roomField = (
     <div className="space-y-1.5">
@@ -219,11 +196,13 @@ export function OverviewTab({
     <div className="flex flex-col gap-5 px-6 py-5">
       {tips.length > 0 && <TipList tips={tips} onDismiss={dismissTip} maxTips={1} compact />}
 
-      {notesSection}
+      {descriptionSection}
 
       {showField("checklists", (task.checklists || []).length > 0) && (
         <ChecklistsSection task={task} patch={patch} projectId={projectId} />
       )}
+
+      {internalNotesSection}
 
       {isPlanning ? (
         roomField
