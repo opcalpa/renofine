@@ -9,9 +9,10 @@ export async function routeAgentInput(
   input: AgentRouteInput,
   projectId: string,
   language: string,
+  userType?: string | null,
 ): Promise<AgentRouteResponse> {
   const { data, error } = await supabase.functions.invoke("agent-route", {
-    body: { input, projectId, language },
+    body: { input, projectId, language, userType: userType ?? null },
   });
 
   if (error) throw new Error(error.message);

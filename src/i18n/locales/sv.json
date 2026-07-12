@@ -3907,6 +3907,7 @@
       "nothingToUndo": "Det finns inget kvar att ångra i den här konversationen — säg vad du vill ändra så fixar jag det.",
       "detailLineSumMismatch": "⚠️ Radbeloppen (≈{{sum}} kr) summerar inte till totalen — kontrollera raderna",
       "detailToPayAfterRot": "Att betala efter ROT: {{net}} kr",
+      "detailOpens": "Öppnar: {{label}}",
       "detailRoom": "Rum",
       "restorableUndo": "Senaste ändringen jag gjorde här: ”{{label}}” — den går fortfarande att ångra."
     },

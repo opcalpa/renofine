@@ -131,6 +131,9 @@ export function actionDetails(
     case "add_note":
       details.push(`”${action.text.length > 90 ? action.text.slice(0, 90) + "…" : action.text}”`);
       break;
+    case "open_feature":
+      details.push(t("helpBot.agent.detailOpens", "Öppnar: {{label}}", { label: action.label }));
+      break;
   }
   return details;
 }

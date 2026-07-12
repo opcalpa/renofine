@@ -45,6 +45,12 @@ export type ProposalAction =
   | { type: "assign_task"; taskId: string; assigneeProfileId: string; assigneeName?: string }
   | { type: "add_note"; target: "task" | "room" | "project"; targetId: string; text: string }
   /**
+   * Feature guidance ("vägvisare", Carl 2026-07-12): opens the right screen for
+   * something Renaida shouldn't fill inline — contractor quote/invoice creation.
+   * Applying it NAVIGATES; it writes no data and has no undo.
+   */
+  | { type: "open_feature"; feature: "new_quote" | "new_invoice"; label: string }
+  /**
    * AI-scanned receipt/invoice → one purchase order + its material line items
    * (the PO invariant: every scanned document lives in Inköp as a first-class
    * order). Built CLIENT-SIDE from process-document-v2 output — the router

@@ -3908,6 +3908,7 @@
       "nothingToUndo": "There's nothing left to undo in this conversation — tell me what you want changed and I'll fix it.",
       "detailLineSumMismatch": "⚠️ Line amounts (≈{{sum}} kr) don't add up to the total — check the lines",
       "detailToPayAfterRot": "To pay after ROT: {{net}} kr",
+      "detailOpens": "Opens: {{label}}",
       "detailRoom": "Room",
       "restorableUndo": "The last change I made here: “{{label}}” — it can still be undone."
     },

@@ -434,6 +434,17 @@
           "changesPriority": "high"
         }
       ]
+    },
+    {
+      "id": "prepare-quote-open-feature",
+      "userType": "contractor",
+      "input": "Kan du förbereda en offert till kunden?",
+      "expect": [
+        {
+          "type": "open_feature",
+          "feature": "new_quote"
+        }
+      ]
     }
   ]
 }

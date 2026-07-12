@@ -49,6 +49,7 @@ function matches(expected, action) {
   if (expected.progressMax != null && !(Number(action.progress) <= expected.progressMax)) return false;
   if (expected.target && action.target !== expected.target) return false;
   if (expected.targetId && action.targetId !== expected.targetId) return false;
+  if (expected.feature && action.feature !== expected.feature) return false;
   if (expected.itemsMin != null && !(Array.isArray(action.items) && action.items.length >= expected.itemsMin)) return false;
   if (expected.changesHasDate && !/^\d{4}-\d{2}-\d{2}$/.test(action.changes?.[expected.changesHasDate] ?? "")) return false;
   if (expected.changesDateWeekday != null) {

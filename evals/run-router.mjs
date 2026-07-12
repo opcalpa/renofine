@@ -87,7 +87,12 @@ async function main() {
     for (const c of cases) {
       const row = { model, caseId: c.id, score: null, judge: null, error: null };
       try {
-        const raw = await callModel(model, system, c.input, { temperature: GEN_TEMPERATURE, jsonObject: true, label: `router:${c.id}` });
+        // A case may carry userType to test role-gated behavior (e.g. open_feature
+        // for a contractor); otherwise the shared neutral prompt is used.
+        const caseSystem = c.userType
+          ? buildRouterSystem(ctx.language || "sv", ctx.rooms, ctx.tasks, [], ctx.members || [], c.userType)
+          : system;
+        const raw = await callModel(model, caseSystem, c.input, { temperature: GEN_TEMPERATURE, jsonObject: true, label: `router:${c.id}` });
         const parsed = safeParseJson(raw);
         if (!parsed.ok) {
           row.error = "unparseable JSON";

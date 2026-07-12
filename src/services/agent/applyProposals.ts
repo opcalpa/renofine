@@ -34,6 +34,8 @@ export interface ApplyResult {
   modified: CreatedRef[];
   /** Persisted undo-stack row for this batch — lets undo survive a reload. */
   undoStackId?: string | null;
+  /** Set when an open_feature proposal was applied — the caller navigates here. */
+  navigateTo?: string;
 }
 
 /** A persisted, still-revertable Renaida batch (renaida_undo_stack row). */
@@ -502,10 +504,21 @@ export async function applyProposals(
     return { applied: [], failed: accepted.map((proposal) => ({ proposal, error })), undo: [], created: [], modified: [] };
   }
 
+  // open_feature proposals only NAVIGATE — they write nothing and have no undo,
+  // so handle them outside the DB apply loop. (Carl 2026-07-12)
+  const FEATURE_PATHS: Record<string, string> = { new_quote: "/quotes/new", new_invoice: "/invoices/new" };
+  for (const proposal of actionable) {
+    if (proposal.action.type === "open_feature") {
+      result.applied.push(proposal);
+      if (!result.navigateTo) result.navigateTo = FEATURE_PATHS[proposal.action.feature];
+    }
+  }
+  const dbActionable = actionable.filter((p) => p.action.type !== "open_feature");
+
   // Rooms first so create_task roomName references resolve within the batch.
   const ordered = [
-    ...actionable.filter((p) => p.action.type === "create_room"),
-    ...actionable.filter((p) => p.action.type !== "create_room"),
+    ...dbActionable.filter((p) => p.action.type === "create_room"),
+    ...dbActionable.filter((p) => p.action.type !== "create_room"),
   ];
   const createdRoomsByName = new Map<string, string>();
   const modifiedTaskIds = new Set<string>();

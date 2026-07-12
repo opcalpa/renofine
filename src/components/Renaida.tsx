@@ -45,6 +45,8 @@ function qualifiesForAutoApply(p: AgentProposal): boolean {
   // Scanned documents write MONEY (an order + its amounts) — always confirmed
   // by a human, even on autopilot.
   if (p.action.type === "import_purchase") return false;
+  // open_feature navigates the user away — never do that without a tap.
+  if (p.action.type === "open_feature") return false;
   if ((p.confidence ?? 0) < AUTO_APPLY_MIN_CONFIDENCE) return false;
   // Task-targeting actions must ALSO clear a high match bar (right task, not just right intent).
   const taskId = "taskId" in p.action ? p.action.taskId : undefined;
@@ -699,8 +701,13 @@ export function Renaida() {
         }
       }
     }
+    if (result.navigateTo) {
+      // open_feature ("vägvisare"): take the user to the screen Renaida opened.
+      navigate(result.navigateTo);
+      setOpen(false);
+    }
     return result;
-  }, [t, i18n.language, flashRenaida]);
+  }, [t, i18n.language, flashRenaida, navigate]);
 
   // --- Agentic capture: route a quick update → proposals → ConfirmDiff (or auto-apply) ---
   // With fallbackToChat (the unified entry): when the router finds no actionable
@@ -778,7 +785,7 @@ export function Renaida() {
     setCapturing(true);
     wakeRenaida();
     try {
-      const res = await routeAgentInput({ kind, content: text.trim() }, projectId, i18n.language?.slice(0, 2) || "sv");
+      const res = await routeAgentInput({ kind, content: text.trim() }, projectId, i18n.language?.slice(0, 2) || "sv", userType);
       // Pre-Genomför refusals (loop-varv 14, B3/B4): shown BEFORE the card so a
       // partially-refused multi-field update never promises the refused part.
       if (res.refusals?.length) {
