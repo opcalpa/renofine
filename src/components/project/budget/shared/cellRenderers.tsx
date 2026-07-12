@@ -525,6 +525,13 @@ export function renderCell(col: ColumnDef, row: DisplayRow, ctx: CellContext): R
     case "hourlyRate":
     case "subcontractorCost":
     case "rotAmount": {
+      // Imported purchase orders carry ROT read-only (attributed once per order);
+      // only task ROT is inline-editable. (Carl 2026-07-12)
+      if (row.type === "purchase") {
+        return (row.rotAmount ?? 0) > 0
+          ? <span className="text-green-700">{formatCurrency(row.rotAmount ?? 0, currency)}</span>
+          : <span className="text-muted-foreground/30">{"–"}</span>;
+      }
       if (row.type !== "task" || row.id.startsWith("__")) return <span className="text-muted-foreground/30">{"–"}</span>;
       const numFieldMap: Record<string, number | undefined> = {
         estimatedHours: row.estimatedHours,
@@ -737,7 +744,11 @@ export function renderFooterCell(col: ColumnDef, ctx: FooterCellContext): ReactN
       return <span className={`font-bold ${totals.matBudget > 0 ? matFooterColor : ""}`}>{formatCurrency(totalMatRemaining, currency)}</span>;
     }
     case "rotAmount": {
-      const totalRot = rows.filter(r => r.type === "task").reduce((sum, r) => sum + (r.rotAmount ?? 0), 0);
+      // Sum ROT from tasks AND imported purchase orders (rot attributed once per
+      // order to its first line row). (Carl 2026-07-12)
+      const totalRot = rows
+        .filter(r => r.type === "task" || r.type === "purchase")
+        .reduce((sum, r) => sum + (r.rotAmount ?? 0), 0);
       return totalRot > 0 ? <span className="font-bold text-green-700">{formatCurrency(totalRot, currency)}</span> : null;
     }
     default:

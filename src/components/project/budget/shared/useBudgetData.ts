@@ -24,6 +24,7 @@ export interface PurchaseOrderInfo {
   status: string;
   vendor: string;
   total: number;
+  rotAmount: number;
 }
 
 export interface UseBudgetDataResult {
@@ -115,7 +116,7 @@ export function useBudgetData(projectId: string): UseBudgetDataResult {
           .not("material_id", "is", null),
         supabase
           .from("purchase_orders")
-          .select("id, status, vendor_name, total")
+          .select("id, status, vendor_name, total, rot_amount")
           .eq("project_id", projectId),
       ]);
 
@@ -193,6 +194,7 @@ export function useBudgetData(projectId: string): UseBudgetDataResult {
             status: po.status,
             vendor: po.vendor_name,
             total: po.total ?? 0,
+            rotAmount: (po as Record<string, unknown>).rot_amount as number ?? 0,
           });
         }
       }
@@ -362,9 +364,20 @@ export function useBudgetData(projectId: string): UseBudgetDataResult {
       }
 
       // 4. Purchase rows (actual orders/invoices that consume budget posts)
+      // A purchase order's ROT deduction is attributed once — to the first line
+      // row of that order — so the budget's ROT column shows it exactly once per
+      // order, not per line (Carl 2026-07-12).
+      const poRotSeen = new Set<string>();
       const purchaseRows: BudgetRow[] = purchaseMaterials.map((m) => {
         const attachmentCount = materialDocCounts.get(m.id) || 0;
         const purchaseTotal = m.price_total ?? (((m.quantity || 0) * (m.price_per_unit || 0)) || 0);
+        const poId = m.purchase_order_id ?? undefined;
+        const poRot = poId ? (poInfoMap.get(poId)?.rotAmount ?? 0) : 0;
+        let rowRot = 0;
+        if (poId && poRot > 0 && !poRotSeen.has(poId)) {
+          poRotSeen.add(poId);
+          rowRot = poRot;
+        }
         return {
           id: m.id,
           name: m.name,
@@ -399,6 +412,7 @@ export function useBudgetData(projectId: string): UseBudgetDataResult {
           }),
           phase: derivePurchasePhase(m),
           purchaseOrderId: m.purchase_order_id ?? undefined,
+          rotAmount: rowRot || undefined,
         };
       });
 

@@ -110,7 +110,14 @@ export function actionDetails(
           sum: Math.round(lineSum).toLocaleString(locale),
         }));
       }
-      if (action.rotAmount) details.push(`ROT: ${action.rotAmount.toLocaleString(locale)} kr`);
+      // ROT lowers what the user pays: show the deduction and the net to pay so
+      // the card matches the order it creates (total = net). (Carl 2026-07-12)
+      if (action.rotAmount) {
+        details.push(`ROT: -${action.rotAmount.toLocaleString(locale)} kr`);
+        details.push(t("helpBot.agent.detailToPayAfterRot", "Att betala efter ROT: {{net}} kr", {
+          net: Math.max(0, action.total - action.rotAmount).toLocaleString(locale),
+        }));
+      }
       if (action.roomName) details.push(`${t("helpBot.agent.detailRoom", "Rum")}: ${action.roomName}`);
       if (action.documentType === "invoice") {
         if (action.invoiceNumber) details.push(`${t("helpBot.agent.detailInvoiceNo", "Fakturanr")}: ${action.invoiceNumber}`);

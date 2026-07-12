@@ -235,12 +235,22 @@ async function applyOne(
         ? `projects/${projectId}/${isInvoice ? "Fakturor" : "Kvitton"}/${filename}`
         : null;
 
+      // ROT semantics (Carl 2026-07-12): ROT lowers what the user actually pays,
+      // so the order total = NET (gross − ROT deduction). We store the deduction
+      // separately so the budget can surface all utilized ROT in its own column;
+      // gross is derivable as total + rot_amount. Material line rows stay at their
+      // truthful gross line values (the receipt/invoice prints gross lines).
+      const grossTotal = action.total;
+      const rotAmount = action.rotAmount ?? 0;
+      const netTotal = Math.max(0, grossTotal - rotAmount);
+
       const { data: po, error: poError } = await supabase
         .from("purchase_orders")
         .insert({
           project_id: projectId,
           vendor_name: action.vendorName,
-          total: action.total,
+          total: netTotal,
+          rot_amount: rotAmount || null,
           status: "delivered",
           source: isInvoice ? "ai_invoice" : "ai_receipt",
           delivered_at: dateStr,

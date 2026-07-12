@@ -2518,6 +2518,7 @@ export type Database = {
           receipt_file_path: string | null
           receipt_matched_at: string | null
           receipt_total: number | null
+          rot_amount: number | null
           source: string | null
           status: string
           supplier_id: string | null
@@ -2540,6 +2541,7 @@ export type Database = {
           receipt_file_path?: string | null
           receipt_matched_at?: string | null
           receipt_total?: number | null
+          rot_amount?: number | null
           source?: string | null
           status?: string
           supplier_id?: string | null
@@ -2562,6 +2564,7 @@ export type Database = {
           receipt_file_path?: string | null
           receipt_matched_at?: string | null
           receipt_total?: number | null
+          rot_amount?: number | null
           source?: string | null
           status?: string
           supplier_id?: string | null
