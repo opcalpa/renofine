@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { autoGenerateMaterials } from "./planningWizardService";
+import { scaffoldProject } from "./scaffoldProject";
 // Re-export shared types/utils from workTypeUtils for backward compatibility
 export type { WorkType, RoomPriority, PropertyType } from "./workTypeUtils";
 export { workTypeToCostCenter, getWorkTypeLabel, getWorkTypeIcon, getWorkTypes, getRoomSuggestions } from "./workTypeUtils";
@@ -326,82 +327,44 @@ export async function createProjectFromGuidedSetup(
   },
   creatorProfileId: string
 ): Promise<{ projectId: string }> {
-  // 1. Create project
-  const { data: project, error: projectError } = await supabase
-    .from("projects")
-    .insert({
-      name: input.projectName,
-      owner_id: creatorProfileId,
-      address: input.address || null,
-      postal_code: input.postalCode || null,
-      city: input.city || null,
-      country: input.country || "SE",
-      status: "planning",
-    })
-    .select("id")
-    .single();
-
-  if (projectError || !project) {
-    console.error("Failed to create project:", projectError);
-    throw new Error(projectError?.message || "Failed to create project");
-  }
-
-  // 2. Create rooms with optional dimensions
-  const roomNameToId = new Map<string, string>();
-  for (const room of input.rooms) {
-    const { data, error } = await supabase
-      .from("rooms")
-      .insert({
-        project_id: project.id,
+  // Delegates to the shared scaffoldProject engine (single source of truth for
+  // project creation). Guided setup builds final task titles + dimensions here;
+  // the engine owns the inserts + room→task resolution.
+  const { projectId } = await scaffoldProject(
+    {
+      project: {
+        name: input.projectName,
+        address: input.address || null,
+        postalCode: input.postalCode || null,
+        city: input.city || null,
+        country: input.country || "SE",
+        status: "planning",
+      },
+      rooms: input.rooms.map((room) => ({
         name: room.name,
-        ceiling_height_mm: room.ceiling_height_mm || null,
-        dimensions: (room.area_sqm || room.width_mm || room.height_mm)
-          ? {
-              ...(room.area_sqm ? { area_sqm: room.area_sqm } : {}),
-              ...(room.width_mm ? { width_mm: room.width_mm } : {}),
-              ...(room.height_mm ? { height_mm: room.height_mm } : {}),
-            }
-          : null,
-      })
-      .select("id")
-      .single();
+        ceilingHeightMm: room.ceiling_height_mm || null,
+        dimensions:
+          room.area_sqm || room.width_mm || room.height_mm
+            ? {
+                ...(room.area_sqm ? { area_sqm: room.area_sqm } : {}),
+                ...(room.width_mm ? { width_mm: room.width_mm } : {}),
+                ...(room.height_mm ? { height_mm: room.height_mm } : {}),
+              }
+            : null,
+      })),
+      tasks: input.tasks.map((task) => ({
+        title: task.roomName
+          ? `${task.workTypeLabel} - ${task.roomName}`
+          : task.workTypeLabel,
+        roomName: task.roomName,
+        costCenter: task.costCenter,
+      })),
+      markOnboardingComplete: true,
+    },
+    creatorProfileId
+  );
 
-    if (error) {
-      console.error("Failed to create room:", error);
-      continue;
-    }
-    roomNameToId.set(room.name, data.id);
-  }
-
-  // 3. Create tasks from flat list
-  for (const task of input.tasks) {
-    const title = task.roomName
-      ? `${task.workTypeLabel} - ${task.roomName}`
-      : task.workTypeLabel;
-    const roomId = task.roomName ? roomNameToId.get(task.roomName) : null;
-
-    const { error } = await supabase.from("tasks").insert({
-      project_id: project.id,
-      room_id: roomId || null,
-      title,
-      status: "planned",
-      priority: "medium",
-      cost_center: task.costCenter,
-      created_by_user_id: creatorProfileId,
-    });
-
-    if (error) {
-      console.error("Failed to create task:", error);
-    }
-  }
-
-  // 4. Mark onboarding step as complete
-  await supabase
-    .from("profiles")
-    .update({ onboarding_created_project: true })
-    .eq("id", creatorProfileId);
-
-  return { projectId: project.id };
+  return { projectId };
 }
 
 // =============================================================================
