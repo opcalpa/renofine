@@ -46,6 +46,7 @@ import {
   Shield,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { scaffoldProject } from "@/services/scaffoldProject";
 import {
   ExtractedRoom,
   ExtractedTask,
@@ -463,160 +464,87 @@ export function PlanningSmartImportDialog({
 
       if (!profile) throw new Error("Profil hittades inte");
 
-      // File already uploaded to projects/{projectId}/ — no move needed
-
-      const createdRoomIds = new Map<string, string>();
-
-      // Create rooms
-      for (const room of selectedRooms) {
-        const { data: roomData, error: roomErr } = await supabase
-          .from("rooms")
-          .insert({
-            project_id: projectId,
+      // File already uploaded to projects/{projectId}/ — no move needed.
+      // Delegate rooms/tasks/materials creation into the EXISTING project to the
+      // shared scaffoldProject engine (VAT normalization stays here in the caller).
+      const scaffoldResult = await scaffoldProject(
+        {
+          existingProjectId: projectId,
+          rooms: selectedRooms.map((room) => ({
             name: room.name,
             description: room.description,
-            dimensions: room.estimatedAreaSqm
-              ? { estimatedAreaSqm: room.estimatedAreaSqm }
-              : null,
-          })
-          .select("id")
-          .single();
+            dimensions: room.estimatedAreaSqm ? { estimatedAreaSqm: room.estimatedAreaSqm } : null,
+          })),
+          tasks: selectedTasks.map((task) => {
+            const costCenter =
+              TASK_CATEGORY_TO_COST_CENTER[task.category as TaskCategory] || "construction";
 
-        if (roomErr) {
-          console.error("Error creating room:", roomErr);
-          continue;
-        }
-        createdRoomIds.set(room.name.toLowerCase(), roomData.id);
-      }
+            const materialEstimate = task.materialChildren.reduce(
+              (sum, child) => sum + (child.estimatedCost || 0),
+              0
+            ) || task.materialCost || null;
 
-      // Create tasks linked to rooms + material budgets
-      let createdTaskCount = 0;
-      let createdMaterialCount = 0;
+            const estimatedCost = task.estimatedCost != null
+              ? Math.round(task.isIncludingVat ? task.estimatedCost / (1 + VAT_RATE) : task.estimatedCost)
+              : null;
 
-      for (const task of selectedTasks) {
-        let roomId: string | null = null;
-        if (task.roomName) {
-          roomId =
-            createdRoomIds.get(task.roomName.toLowerCase()) || null;
-        }
+            const materialEstimateExVat = materialEstimate != null
+              ? Math.round(task.isIncludingVat ? materialEstimate / (1 + VAT_RATE) : materialEstimate)
+              : null;
 
-        const costCenter =
-          TASK_CATEGORY_TO_COST_CENTER[task.category as TaskCategory] ||
-          "construction";
+            return {
+              title: task.title,
+              description: task.description,
+              roomName: task.roomName || null,
+              status: "to_do",
+              costCenter,
+              taskCostType: "subcontractor",
+              subcontractorCost: estimatedCost,
+              materialEstimate: materialEstimateExVat,
+              budget: estimatedCost != null || materialEstimateExVat != null
+                ? (estimatedCost || 0) + (materialEstimateExVat || 0)
+                : null,
+              rotEligible: task.rotEligible || false,
+              rotAmount: task.rotAmount || null,
+              materials: task.materialChildren.map((child) => ({
+                name: child.title,
+                description: child.description,
+                priceTotalExVat: child.estimatedCost != null
+                  ? Math.round(child.isIncludingVat ? child.estimatedCost / (1 + VAT_RATE) : child.estimatedCost)
+                  : null,
+              })),
+            };
+          }),
+          standaloneMaterials: standaloneMaterials
+            .filter((m) => m.selected)
+            .map((mat) => ({
+              name: mat.title,
+              description: mat.description,
+              priceTotalExVat: mat.estimatedCost != null
+                ? Math.round(mat.isIncludingVat ? mat.estimatedCost / (1 + VAT_RATE) : mat.estimatedCost)
+                : null,
+            })),
+        },
+        profile.id
+      );
 
-        // Calculate material estimate from children
-        const materialEstimate = task.materialChildren.reduce(
-          (sum, child) => sum + (child.estimatedCost || 0),
-          0
-        ) || task.materialCost || null;
-
-        // Store costs ex VAT in database
-        const estimatedCost = task.estimatedCost != null
-          ? Math.round(task.isIncludingVat ? task.estimatedCost / (1 + VAT_RATE) : task.estimatedCost)
-          : null;
-
-        const materialEstimateExVat = materialEstimate != null
-          ? Math.round(task.isIncludingVat ? materialEstimate / (1 + VAT_RATE) : materialEstimate)
-          : null;
-
-        const { data: taskData, error: taskErr } = await supabase.from("tasks").insert({
-          project_id: projectId,
-          room_id: roomId,
-          title: task.title,
-          description: task.description,
-          status: "to_do",
-          priority: "medium",
-          created_by_user_id: profile.id,
-          cost_center: costCenter,
-          task_cost_type: "subcontractor",
-          subcontractor_cost: estimatedCost,
-          material_estimate: materialEstimateExVat,
-          budget: estimatedCost != null || materialEstimateExVat != null
-            ? (estimatedCost || 0) + (materialEstimateExVat || 0)
-            : null,
-          rot_eligible: task.rotEligible || false,
-          rot_amount: task.rotAmount || null,
-        }).select("id").single();
-
-        if (taskErr) {
-          console.error("Error creating task:", taskErr);
-          continue;
-        }
-
-        createdTaskCount++;
-
-        // Create planned material budget items for material children
-        for (const child of task.materialChildren) {
-          const matCostExVat = child.estimatedCost != null
-            ? Math.round(child.isIncludingVat ? child.estimatedCost / (1 + VAT_RATE) : child.estimatedCost)
-            : null;
-
-          const { error: matErr } = await supabase.from("materials").insert({
-            project_id: projectId,
-            task_id: taskData.id,
-            room_id: roomId,
-            name: child.title,
-            description: child.description,
-            price_total: matCostExVat,
-            status: "planned",
-            created_by_user_id: profile.id,
-          });
-
-          if (matErr) {
-            console.error("Error creating planned material:", matErr);
-          } else {
-            createdMaterialCount++;
-          }
-        }
-      }
-
-      // Create standalone materials (unmatched)
-      const selectedStandalone = standaloneMaterials.filter((m) => m.selected);
-      for (const mat of selectedStandalone) {
-        const matCostExVat = mat.estimatedCost != null
-          ? Math.round(mat.isIncludingVat ? mat.estimatedCost / (1 + VAT_RATE) : mat.estimatedCost)
-          : null;
-
-        const { error: matErr } = await supabase.from("materials").insert({
-          project_id: projectId,
-          task_id: null,
-          name: mat.title,
-          description: mat.description,
-          price_total: matCostExVat,
-          status: "planned",
-          created_by_user_id: profile.id,
-        });
-
-        if (matErr) {
-          console.error("Error creating standalone material:", matErr);
-        } else {
-          createdMaterialCount++;
-        }
-      }
+      const createdTaskCount = scaffoldResult.taskIds.length;
+      const createdMaterialCount = scaffoldResult.materialCount;
 
       // Link uploaded document to all created tasks
-      if (uploadedFile) {
-        const { data: newTasks } = await supabase
-          .from("tasks")
-          .select("id")
-          .eq("project_id", projectId)
-          .order("created_at", { ascending: false })
-          .limit(createdTaskCount);
-
-        if (newTasks && newTasks.length > 0) {
-          const fileType = uploadedFile.file.type?.includes("pdf") ? "quote" : "document";
-          const links = newTasks.map((t) => ({
-            project_id: projectId,
-            task_id: t.id,
-            file_path: uploadedFile.tempPath,
-            file_name: uploadedFile.name,
-            file_type: fileType,
-            vendor_name: quoteMetadata?.vendorName || null,
-            invoice_amount: quoteMetadata?.totalAmount || null,
-            invoice_date: quoteMetadata?.quoteDate || null,
-          }));
-          await supabase.from("task_file_links").insert(links);
-        }
+      if (uploadedFile && scaffoldResult.taskIds.length > 0) {
+        const fileType = uploadedFile.file.type?.includes("pdf") ? "quote" : "document";
+        const links = scaffoldResult.taskIds.map((taskId) => ({
+          project_id: projectId,
+          task_id: taskId,
+          file_path: uploadedFile.tempPath,
+          file_name: uploadedFile.name,
+          file_type: fileType,
+          vendor_name: quoteMetadata?.vendorName || null,
+          invoice_amount: quoteMetadata?.totalAmount || null,
+          invoice_date: quoteMetadata?.quoteDate || null,
+        }));
+        await supabase.from("task_file_links").insert(links);
       }
 
       // Update project total_budget from quote metadata

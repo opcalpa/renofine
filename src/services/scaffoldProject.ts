@@ -63,7 +63,8 @@ export interface ScaffoldTaskInput {
 }
 
 export interface ScaffoldProjectInput {
-  project: {
+  /** Project meta — required when creating a NEW project (omit when populating an existing one). */
+  project?: {
     name: string;
     description?: string | null;
     address?: string | null;
@@ -75,11 +76,18 @@ export interface ScaffoldProjectInput {
     status?: string;
     totalBudget?: number | null;
   };
+  /**
+   * Populate an EXISTING project instead of creating one. When set, `project` is
+   * ignored and no project row / onboarding flag is touched — the engine just
+   * adds rooms/tasks/materials. Lets importers into existing projects share the
+   * same insert + room→task resolution logic.
+   */
+  existingProjectId?: string;
   rooms: ScaffoldRoomInput[];
   tasks: ScaffoldTaskInput[];
   /** Materials not linked to any task. */
   standaloneMaterials?: ScaffoldMaterialInput[];
-  /** Set profiles.onboarding_created_project = true after creation. */
+  /** Set profiles.onboarding_created_project = true after creation (new projects only). */
   markOnboardingComplete?: boolean;
 }
 
@@ -128,29 +136,37 @@ export async function scaffoldProject(
 ): Promise<ScaffoldResult> {
   const decisions: ScaffoldDecision[] = [];
 
-  // 1. Create project (fatal on failure — mirrors every existing caller)
-  const { data: project, error: projectError } = await supabase
-    .from("projects")
-    .insert({
-      name: input.project.name,
-      description: input.project.description ?? null,
-      owner_id: creatorProfileId,
-      address: input.project.address ?? null,
-      postal_code: input.project.postalCode ?? null,
-      city: input.project.city ?? null,
-      country: input.project.country ?? "SE",
-      status: input.project.status ?? "planning",
-      total_budget: input.project.totalBudget ?? null,
-    })
-    .select("id")
-    .single();
+  // 1. Resolve the target project: use an existing one, or create a new one.
+  let projectId: string;
+  if (input.existingProjectId) {
+    projectId = input.existingProjectId;
+  } else if (input.project) {
+    // Create project (fatal on failure — mirrors every existing caller)
+    const { data: project, error: projectError } = await supabase
+      .from("projects")
+      .insert({
+        name: input.project.name,
+        description: input.project.description ?? null,
+        owner_id: creatorProfileId,
+        address: input.project.address ?? null,
+        postal_code: input.project.postalCode ?? null,
+        city: input.project.city ?? null,
+        country: input.project.country ?? "SE",
+        status: input.project.status ?? "planning",
+        total_budget: input.project.totalBudget ?? null,
+      })
+      .select("id")
+      .single();
 
-  if (projectError || !project) {
-    console.error("scaffoldProject: failed to create project:", projectError);
-    throw new Error(projectError?.message || "Failed to create project");
+    if (projectError || !project) {
+      console.error("scaffoldProject: failed to create project:", projectError);
+      throw new Error(projectError?.message || "Failed to create project");
+    }
+    projectId = project.id;
+    decisions.push({ kind: "project", label: input.project.name });
+  } else {
+    throw new Error("scaffoldProject: either project or existingProjectId is required");
   }
-  const projectId = project.id;
-  decisions.push({ kind: "project", label: input.project.name });
 
   // 2. Create rooms (best-effort), building a name→id map
   const roomIds = new Map<string, string>();
