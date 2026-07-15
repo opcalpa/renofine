@@ -42,6 +42,7 @@ import {
   PanelLeftOpen,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { scaffoldProject } from '@/services/scaffoldProject';
 import { Switch } from '@/components/ui/switch';
 import { Package, Shield, AlertTriangle } from 'lucide-react';
 import {
@@ -337,92 +338,10 @@ export function AIProjectImportModal({ open, onOpenChange, onProjectCreated }: A
 
       if (!profile) throw new Error('Profil hittades inte');
 
-      // 1. Create project
-      let projectId: string;
-
-      const projectPayload = {
-        name: projectName.trim(),
-        description: summary || null,
-        owner_id: profile.id,
-        total_budget: quoteMetadata?.totalAmount || null,
-      };
-
-      // Try insert with select (same as Projects.tsx)
-      const { data: insertResult, error: projErr } = await supabase
-        .from('projects')
-        .insert(projectPayload)
-        .select()
-        .single();
-
-      if (projErr) {
-        // Fallback: plain insert then query
-        console.error('[AI Import] Insert failed:', projErr.message, '— trying plain insert');
-        const { error: plainErr } = await supabase
-          .from('projects')
-          .insert(projectPayload);
-
-        if (plainErr) throw new Error(plainErr.message);
-
-        const { data: found } = await supabase
-          .from('projects')
-          .select('id')
-          .eq('owner_id', profile.id)
-          .eq('name', projectPayload.name)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
-
-        if (!found) throw new Error('Projekt skapades men kunde inte hittas');
-        projectId = found.id;
-      } else {
-        projectId = insertResult.id;
-      }
-
-      // Move uploaded document into project files
-      let uploadedFilePath: string | null = null;
-      if (uploadedFile) {
-        const safeName = uploadedFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-        const destPath = `projects/${projectId}/${Date.now()}-${safeName}`;
-        await supabase.storage.from('project-files').upload(destPath, uploadedFile.file);
-        uploadedFilePath = destPath;
-        if (uploadedFile.tempPath) {
-          supabase.storage.from('project-files').remove([uploadedFile.tempPath]);
-        }
-      }
-
-      const createdRoomIds = new Map<string, string>();
-
-      // 2. Create rooms
-      for (const room of selectedRooms) {
-        const { data: roomData, error: roomErr } = await supabase
-          .from('rooms')
-          .insert({
-            project_id: projectId,
-            name: room.name,
-            description: room.description,
-            dimensions: room.estimatedAreaSqm
-              ? { estimatedAreaSqm: room.estimatedAreaSqm }
-              : null,
-          })
-          .select('id')
-          .single();
-
-        if (roomErr) {
-          console.error('Error creating room:', roomErr);
-          continue;
-        }
-        createdRoomIds.set(room.name.toLowerCase(), roomData.id);
-      }
-
-      // 3. Create tasks linked to rooms + material budgets
-      let createdMaterialCount = 0;
-
-      for (const task of selectedTasks) {
-        let roomId: string | null = null;
-        if (task.roomName) {
-          roomId = createdRoomIds.get(task.roomName.toLowerCase()) || null;
-        }
-
+      // Delegate creation to the shared scaffoldProject engine. VAT normalization
+      // (costs → ex VAT) stays here in the caller; the engine takes ex-VAT values
+      // and owns the project/rooms/tasks/materials inserts + room→task resolution.
+      const scaffoldTasks = selectedTasks.map((task) => {
         const costCenter = TASK_CATEGORY_TO_COST_CENTER[task.category as TaskCategory] || 'construction';
 
         // Calculate material estimate from children
@@ -440,84 +359,74 @@ export function AIProjectImportModal({ open, onOpenChange, onProjectCreated }: A
           ? Math.round(task.isIncludingVat ? materialEstimate / (1 + VAT_RATE) : materialEstimate)
           : null;
 
-        const { data: taskData, error: taskErr } = await supabase.from('tasks').insert({
-          project_id: projectId,
-          room_id: roomId,
+        return {
           title: task.title,
           description: task.description,
+          roomName: task.roomName || null,
           status: 'to_do',
-          priority: 'medium',
-          created_by_user_id: profile.id,
-          cost_center: costCenter,
-          task_cost_type: 'subcontractor',
-          subcontractor_cost: estimatedCost,
-          material_estimate: materialEstimateExVat,
+          costCenter,
+          taskCostType: 'subcontractor',
+          subcontractorCost: estimatedCost,
+          materialEstimate: materialEstimateExVat,
           budget: estimatedCost != null || materialEstimateExVat != null
             ? (estimatedCost || 0) + (materialEstimateExVat || 0)
             : null,
-          rot_eligible: task.rotEligible || false,
-          rot_amount: task.rotAmount || null,
-        }).select('id').single();
-
-        if (taskErr) {
-          console.error('Error creating task:', taskErr);
-          continue;
-        }
-
-        // Create planned material budget items for material children
-        for (const child of task.materialChildren) {
-          const matCostExVat = child.estimatedCost != null
-            ? Math.round(child.isIncludingVat ? child.estimatedCost / (1 + VAT_RATE) : child.estimatedCost)
-            : null;
-
-          const { error: matErr } = await supabase.from('materials').insert({
-            project_id: projectId,
-            task_id: taskData.id,
-            room_id: roomId,
+          rotEligible: task.rotEligible || false,
+          rotAmount: task.rotAmount || null,
+          materials: task.materialChildren.map((child) => ({
             name: child.title,
             description: child.description,
-            price_total: matCostExVat,
-            status: 'planned',
-            created_by_user_id: profile.id,
-          });
+            priceTotalExVat: child.estimatedCost != null
+              ? Math.round(child.isIncludingVat ? child.estimatedCost / (1 + VAT_RATE) : child.estimatedCost)
+              : null,
+          })),
+        };
+      });
 
-          if (!matErr) createdMaterialCount++;
+      const scaffoldResult = await scaffoldProject(
+        {
+          project: {
+            name: projectName.trim(),
+            description: summary || null,
+            totalBudget: quoteMetadata?.totalAmount || null,
+          },
+          rooms: selectedRooms.map((room) => ({
+            name: room.name,
+            description: room.description,
+            dimensions: room.estimatedAreaSqm ? { estimatedAreaSqm: room.estimatedAreaSqm } : null,
+          })),
+          tasks: scaffoldTasks,
+          standaloneMaterials: standaloneMaterials
+            .filter((m) => m.selected)
+            .map((mat) => ({
+              name: mat.title,
+              description: mat.description,
+              priceTotalExVat: mat.estimatedCost != null
+                ? Math.round(mat.isIncludingVat ? mat.estimatedCost / (1 + VAT_RATE) : mat.estimatedCost)
+                : null,
+            })),
+        },
+        profile.id
+      );
+
+      const projectId = scaffoldResult.projectId;
+
+      // Move uploaded document into project files + link to all created tasks
+      if (uploadedFile) {
+        const safeName = uploadedFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const uploadedFilePath = `projects/${projectId}/${Date.now()}-${safeName}`;
+        await supabase.storage.from('project-files').upload(uploadedFilePath, uploadedFile.file);
+        if (uploadedFile.tempPath) {
+          supabase.storage.from('project-files').remove([uploadedFile.tempPath]);
         }
-      }
 
-      // Create standalone materials (unmatched)
-      for (const mat of standaloneMaterials.filter((m) => m.selected)) {
-        const matCostExVat = mat.estimatedCost != null
-          ? Math.round(mat.isIncludingVat ? mat.estimatedCost / (1 + VAT_RATE) : mat.estimatedCost)
-          : null;
-
-        const { error: matErr } = await supabase.from('materials').insert({
-          project_id: projectId,
-          task_id: null,
-          name: mat.title,
-          description: mat.description,
-          price_total: matCostExVat,
-          status: 'planned',
-          created_by_user_id: profile.id,
-        });
-
-        if (!matErr) createdMaterialCount++;
-      }
-
-      // Link uploaded document to all created tasks (single source file, multiple links)
-      if (uploadedFilePath) {
-        const { data: allTasks } = await supabase
-          .from('tasks')
-          .select('id')
-          .eq('project_id', projectId);
-
-        if (allTasks && allTasks.length > 0) {
-          const fileType = uploadedFile?.file.type?.includes('pdf') ? 'quote' : 'document';
-          const links = allTasks.map((t) => ({
+        if (scaffoldResult.taskIds.length > 0) {
+          const fileType = uploadedFile.file.type?.includes('pdf') ? 'quote' : 'document';
+          const links = scaffoldResult.taskIds.map((taskId) => ({
             project_id: projectId,
-            task_id: t.id,
-            file_path: uploadedFilePath!,
-            file_name: uploadedFile?.name || 'document',
+            task_id: taskId,
+            file_path: uploadedFilePath,
+            file_name: uploadedFile.name || 'document',
             file_type: fileType,
             vendor_name: quoteMetadata?.vendorName || null,
             invoice_amount: quoteMetadata?.totalAmount || null,
