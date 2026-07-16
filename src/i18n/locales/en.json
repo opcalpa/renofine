@@ -3881,6 +3881,8 @@
       "willCreateTask": "Will create a task",
       "undo": "Undo",
       "undone": "Undone — reverted the changes.",
+      "undoPartial": "I reverted {{reverted}}, but {{failed}} couldn't be undone — you can try again.",
+      "undoFailed": "I couldn't undo that change — please try again.",
       "detailDeadline": "Deadline",
       "detailStart": "Start",
       "detailBudget": "Budget",

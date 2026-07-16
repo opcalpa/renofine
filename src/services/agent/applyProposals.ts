@@ -596,7 +596,15 @@ export async function applyProposals(
  * row is logged — the original receipt rows stay (audit history), this row
  * marks them as undone instead of leaving them misleading.
  */
-export async function undoProposals(undo: UndoOp[], projectId?: string, undoStackId?: string | null): Promise<void> {
+export interface UndoOutcome {
+  total: number;
+  reverted: number;
+  failed: number;
+}
+
+export async function undoProposals(undo: UndoOp[], projectId?: string, undoStackId?: string | null): Promise<UndoOutcome> {
+  let reverted = 0;
+  let failed = 0;
   for (const op of undo) {
     try {
       switch (op.kind) {
@@ -654,8 +662,9 @@ export async function undoProposals(undo: UndoOp[], projectId?: string, undoStac
           }).eq("id", op.taskId);
           break;
       }
+      reverted++;
     } catch {
-      // best-effort
+      failed++;
     }
   }
 
@@ -683,12 +692,14 @@ export async function undoProposals(undo: UndoOp[], projectId?: string, undoStac
     }
   }
 
-  // Spend the persisted batch — it must not be offered for undo again.
-  if (undoStackId) {
+  // Spend the persisted batch only when FULLY reverted — a partial undo stays
+  // available so the user can retry the rest (deletes/field-restores are idempotent).
+  if (undoStackId && failed === 0) {
     void supabase
       .from("renaida_undo_stack")
       .update({ undone_at: new Date().toISOString() })
       .eq("id", undoStackId)
       .then(() => {}, () => {});
   }
+  return { total: undo.length, reverted, failed };
 }

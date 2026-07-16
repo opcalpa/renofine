@@ -739,10 +739,16 @@ export function Renaida() {
         if (restorable) {
           setCapturing(true);
           try {
-            await undoProposals(restorable.ops, storeProjectId, restorable.id);
-            analytics.capture(AnalyticsEvents.RENAIDA_UNDONE, { count: restorable.ops.length, restored: true });
+            const outcome = await undoProposals(restorable.ops, storeProjectId, restorable.id);
+            analytics.capture(AnalyticsEvents.RENAIDA_UNDONE, { count: restorable.ops.length, restored: true, failed: outcome.failed });
             window.dispatchEvent(new CustomEvent("renaida-data-changed", { detail: { projectId: storeProjectId } }));
-            setMessages((prev) => [...prev, { role: "assistant", content: t("helpBot.agent.undone") }]);
+            setMessages((prev) => [...prev, { role: "assistant", content:
+              outcome.failed === 0
+                ? t("helpBot.agent.undone")
+                : outcome.reverted === 0
+                  ? t("helpBot.agent.undoFailed")
+                  : t("helpBot.agent.undoPartial", { reverted: outcome.reverted, failed: outcome.failed }),
+            }]);
           } finally {
             setCapturing(false);
           }
@@ -1062,10 +1068,16 @@ export function Renaida() {
   const handleUndo = useCallback(async (msgIndex: number, ops: UndoOp[], msgProjectId?: string, undoStackId?: string | null) => {
     setMessages((prev) => prev.map((m, i) => (i === msgIndex ? { ...m, undo: undefined } : m)));
     const projectId = msgProjectId ?? useRenaidaStore.getState().projectId;
-    await undoProposals(ops, projectId ?? undefined, undoStackId);
-    analytics.capture(AnalyticsEvents.RENAIDA_UNDONE, { count: ops.length });
+    const outcome = await undoProposals(ops, projectId ?? undefined, undoStackId);
+    analytics.capture(AnalyticsEvents.RENAIDA_UNDONE, { count: ops.length, failed: outcome.failed });
     window.dispatchEvent(new CustomEvent("renaida-data-changed", { detail: { projectId } }));
-    setMessages((prev) => [...prev, { role: "assistant", content: t("helpBot.agent.undone") }]);
+    setMessages((prev) => [...prev, { role: "assistant", content:
+      outcome.failed === 0
+        ? t("helpBot.agent.undone")
+        : outcome.reverted === 0
+          ? t("helpBot.agent.undoFailed")
+          : t("helpBot.agent.undoPartial", { reverted: outcome.reverted, failed: outcome.failed }),
+    }]);
   }, [t, setMessages]);
 
   // Lets captureUpdate (declared above) reach the undo path for typed "ångra …".
