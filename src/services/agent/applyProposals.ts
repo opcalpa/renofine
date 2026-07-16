@@ -521,9 +521,25 @@ export async function applyProposals(
     ...dbActionable.filter((p) => p.action.type !== "create_room"),
   ];
   const createdRoomsByName = new Map<string, string>();
+  const failedRoomNames = new Set<string>();
   const modifiedTaskIds = new Set<string>();
 
   for (const proposal of ordered) {
+    // Don't orphan a task onto a room whose creation failed earlier in THIS batch.
+    // Rooms are applied first, so failedRoomNames is complete by the time tasks run.
+    if (
+      proposal.action.type === "create_task" &&
+      !proposal.action.roomId &&
+      proposal.action.roomName &&
+      failedRoomNames.has(proposal.action.roomName.trim().toLowerCase())
+    ) {
+      result.failed.push({
+        proposal,
+        error: `Rummet "${proposal.action.roomName}" kunde inte skapas — hoppade över arbetet för att inte lämna det utan rum.`,
+      });
+      continue;
+    }
+
     try {
       const undo = await applyOne(proposal, projectId, profileId, createdRoomsByName, sourceText);
       result.applied.push(proposal);
@@ -555,6 +571,9 @@ export async function applyProposals(
           break;
       }
     } catch (e) {
+      if (proposal.action.type === "create_room") {
+        failedRoomNames.add(proposal.action.name.trim().toLowerCase());
+      }
       result.failed.push({ proposal, error: e instanceof Error ? e.message : "Okänt fel" });
     }
   }
