@@ -1,0 +1,170 @@
+/**
+ * SelectTool v1 — click select, shift-click add/remove, marquee on empty
+ * space, drag to move selection (junction-aware for walls), Delete to remove.
+ */
+
+import { FloorMapShape, LineCoordinates } from '../../types';
+import { useFloorMapStore } from '../../store';
+import { BaseTool, ToolPointerEvent } from './BaseTool';
+import { execute } from '../core/commands';
+import { beginGesture, endGesture } from '../core/executor';
+import { snap } from '../snapping/SnapEngine';
+import { Point, useEditorUiStore } from '../state/uiStore';
+
+type DragMode =
+  | { kind: 'none' }
+  | { kind: 'maybe-marquee'; start: Point }
+  | { kind: 'marquee'; start: Point }
+  | { kind: 'move'; start: Point; last: Point; ids: string[] };
+
+function shapeBounds(shape: FloorMapShape): { minX: number; minY: number; maxX: number; maxY: number } | null {
+  const c = shape.coordinates as Record<string, unknown>;
+  if (!c) return null;
+  if ('x1' in c) {
+    const lc = shape.coordinates as LineCoordinates;
+    return {
+      minX: Math.min(lc.x1, lc.x2),
+      minY: Math.min(lc.y1, lc.y2),
+      maxX: Math.max(lc.x1, lc.x2),
+      maxY: Math.max(lc.y1, lc.y2),
+    };
+  }
+  if ('points' in c) {
+    const points = c.points as Point[];
+    if (!points?.length) return null;
+    return {
+      minX: Math.min(...points.map((p) => p.x)),
+      minY: Math.min(...points.map((p) => p.y)),
+      maxX: Math.max(...points.map((p) => p.x)),
+      maxY: Math.max(...points.map((p) => p.y)),
+    };
+  }
+  if ('left' in c) {
+    const left = c.left as number;
+    const top = c.top as number;
+    return { minX: left, minY: top, maxX: left + (c.width as number), maxY: top + (c.height as number) };
+  }
+  if ('cx' in c) {
+    const cx = c.cx as number;
+    const cy = c.cy as number;
+    const r = c.radius as number;
+    return { minX: cx - r, minY: cy - r, maxX: cx + r, maxY: cy + r };
+  }
+  if ('x' in c) {
+    const x = c.x as number;
+    const y = c.y as number;
+    return { minX: x, minY: y, maxX: x + ((c.width as number) || 0), maxY: y + ((c.height as number) || 0) };
+  }
+  return null;
+}
+
+export class SelectTool extends BaseTool {
+  readonly id = 'select';
+
+  private drag: DragMode = { kind: 'none' };
+
+  deactivate(): void {
+    this.drag = { kind: 'none' };
+    useEditorUiStore.getState().setMarquee(null);
+  }
+
+  onPointerDown(e: ToolPointerEvent): void {
+    if (e.button !== 0) return;
+    const store = useFloorMapStore.getState();
+
+    if (e.hitShape && !e.hitShape.locked) {
+      const id = e.hitShape.id;
+      const selected = store.selectedShapeIds;
+      if (e.shiftKey) {
+        store.setSelectedShapeIds(
+          selected.includes(id) ? selected.filter((s) => s !== id) : [...selected, id]
+        );
+      } else if (!selected.includes(id)) {
+        store.setSelectedShapeIds([id]);
+      }
+      const ids = useFloorMapStore.getState().selectedShapeIds;
+      this.drag = { kind: 'move', start: e.world, last: e.world, ids };
+      beginGesture('Flytta');
+      return;
+    }
+
+    // Empty space: begin (potential) marquee; plain click clears selection.
+    if (!e.shiftKey) store.clearSelection();
+    this.drag = { kind: 'maybe-marquee', start: e.world };
+  }
+
+  onPointerMove(e: ToolPointerEvent): void {
+    const ui = useEditorUiStore.getState();
+
+    if (this.drag.kind === 'maybe-marquee') {
+      if (Math.hypot(e.world.x - this.drag.start.x, e.world.y - this.drag.start.y) > 2) {
+        this.drag = { kind: 'marquee', start: this.drag.start };
+      }
+    }
+
+    if (this.drag.kind === 'marquee') {
+      ui.setMarquee({ start: this.drag.start, end: e.world });
+      return;
+    }
+
+    if (this.drag.kind === 'move') {
+      // Move incrementally with grid-snapped delta from the last position;
+      // the whole gesture becomes ONE undo entry via the transaction in onPointerUp.
+      const result = snap({ point: e.world, disabled: e.metaOrCtrl, ignoreIds: this.drag.ids });
+      const dx = result.point.x - this.drag.last.x;
+      const dy = result.point.y - this.drag.last.y;
+      if (dx === 0 && dy === 0) return;
+      this.moveSelection(this.drag.ids, dx, dy);
+      this.drag = { ...this.drag, last: result.point };
+    }
+  }
+
+  onPointerUp(e: ToolPointerEvent): void {
+    const ui = useEditorUiStore.getState();
+    const store = useFloorMapStore.getState();
+
+    if (this.drag.kind === 'marquee') {
+      const { start } = this.drag;
+      const minX = Math.min(start.x, e.world.x);
+      const maxX = Math.max(start.x, e.world.x);
+      const minY = Math.min(start.y, e.world.y);
+      const maxY = Math.max(start.y, e.world.y);
+      const hitIds = store.shapes
+        .filter((s) => s.planId === store.currentPlanId || !s.planId)
+        .filter((s) => !s.locked && s.type !== 'image')
+        .filter((s) => {
+          const b = shapeBounds(s);
+          return b && b.minX >= minX && b.maxX <= maxX && b.minY >= minY && b.maxY <= maxY;
+        })
+        .map((s) => s.id);
+      const merged = e.shiftKey
+        ? Array.from(new Set([...store.selectedShapeIds, ...hitIds]))
+        : hitIds;
+      store.setSelectedShapeIds(merged);
+      ui.setMarquee(null);
+    }
+
+    if (this.drag.kind === 'move') endGesture();
+    this.drag = { kind: 'none' };
+  }
+
+  // v1 moves the selection rigidly; walls connected to unselected walls keep
+  // their own endpoints. Junction-aware topology editing arrives with the
+  // room phase.
+  private moveSelection(ids: string[], dx: number, dy: number): void {
+    execute('shape.move', { ids, dx, dy });
+  }
+
+  onKeyDown(e: KeyboardEvent): boolean {
+    const store = useFloorMapStore.getState();
+    if ((e.key === 'Delete' || e.key === 'Backspace') && store.selectedShapeIds.length > 0) {
+      execute('shape.delete', { ids: store.selectedShapeIds });
+      return true;
+    }
+    if (e.key === 'Escape' && store.selectedShapeIds.length > 0) {
+      store.clearSelection();
+      return true;
+    }
+    return false;
+  }
+}

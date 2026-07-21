@@ -3,6 +3,8 @@ import { SimpleToolbar } from "./SimpleToolbar";
 import { HomeownerToolbar } from "./HomeownerToolbar";
 import { MobileCanvasToolbar } from "./MobileCanvasToolbar";
 import { UnifiedKonvaCanvas } from "./UnifiedKonvaCanvas";
+import { EditorCanvas } from "./editor/EditorCanvas";
+import { isEditorV2Enabled } from "./editor/flag";
 import { RoomElevationView } from "./RoomElevationView";
 import { RoomDetailDialog } from "./RoomDetailDialog";
 import { RoomPickerDialog } from "./RoomPickerDialog";
@@ -329,7 +331,14 @@ export const FloorMapEditor = ({ projectId, projectName, onBack, backLabel, isRe
         )}
 
         {/* Main Canvas Area - Switch based on viewMode */}
-        {viewMode === 'floor' && (
+        {viewMode === 'floor' && isEditorV2Enabled() && (
+          <main className="flex-1 overflow-hidden relative">
+            <EditorCanvas isReadOnly={isReadOnly && !isDemo} />
+            {!isReadOnly && <PropertyInsightsPanel />}
+          </main>
+        )}
+
+        {viewMode === 'floor' && !isEditorV2Enabled() && (
           <main className="flex-1 overflow-hidden canvas-scroll-area relative">
             <UnifiedKonvaCanvas
               onRoomCreated={() => {
