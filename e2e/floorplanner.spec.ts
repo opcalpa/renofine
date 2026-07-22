@@ -141,6 +141,12 @@ test.describe('Floor planner v2', () => {
     expect(rooms.length).toBe(1);
     expect(rooms[0].area).toBeCloseTo(12, 1);
 
+    // The naming dialog opens for the new room — cancel keeps the room.
+    const namingDialog = page.getByRole('dialog');
+    await expect(namingDialog).toBeVisible({ timeout: 5000 });
+    await namingDialog.getByRole('button', { name: /avbryt/i }).click();
+    await expect(namingDialog).not.toBeVisible();
+
     // Deleting a wall must NOT delete the room (detached, undoable)
     await page.keyboard.press('v');
     await page.mouse.click(box.x + 500, box.y + 200);

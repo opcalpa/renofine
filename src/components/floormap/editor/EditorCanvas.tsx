@@ -18,6 +18,7 @@ import { loadShapesForPlan, saveShapesForPlan } from '../utils/plans';
 import Grid from '../canvas/Grid';
 import { calculateFitToContent } from '../canvas/utils/fitToContent';
 import { EditorHud } from './EditorHud';
+import { RoomNamingController } from './RoomNamingController';
 import { WallsLayer } from './render/WallsLayer';
 import { LegacyShapesLayer } from './render/LegacyShapesLayer';
 import { OverlayLayer } from './render/OverlayLayer';
@@ -215,11 +216,15 @@ export const EditorCanvas = ({ isReadOnly }: EditorCanvasProps) => {
           stageRef.current && controller.onPointerUp(e, stageRef.current),
         onDblClick: (e: KonvaEventObject<MouseEvent>) =>
           stageRef.current && controller.onDoubleClick(e, stageRef.current),
+        // Konva emits 'pointerdblclick' (not 'dblclick') for pointer-event input
+        onPointerDblClick: (e: KonvaEventObject<PointerEvent>) =>
+          stageRef.current && controller.onDoubleClick(e, stageRef.current),
       };
 
   return (
     <div ref={containerRef} className="relative w-full h-full bg-muted/30" data-testid="editor-v2-canvas">
       <EditorHud />
+      <RoomNamingController isReadOnly={isReadOnly} />
       <Stage
         ref={stageRef}
         width={size.width}

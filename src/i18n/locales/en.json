@@ -2522,7 +2522,10 @@
     "unlockImage": "Unlock image",
     "imageLocked": "Image locked — draw on top. Unlock via the button at the bottom right.",
     "imageUnlocked": "Image unlocked and can be moved again.",
-    "saveFailed": "Could not save the floor plan"
+    "saveFailed": "Could not save the floor plan",
+    "roomLinked": "Room linked to \"{{name}}\"",
+    "roomSaved": "Room \"{{name}}\" saved to the project",
+    "roomSaveFailed": "Could not save the room to the project — it remains on the drawing"
   },
   "canvas": {
     "settings": "Drawing Settings",

@@ -190,6 +190,12 @@ export class SelectTool extends BaseTool {
     execute('shape.move', { ids, dx, dy });
   }
 
+  onDoubleClick(e: ToolPointerEvent): void {
+    if (e.hitShape?.type === 'room') {
+      useEditorUiStore.getState().setNamingShapeId(e.hitShape.id);
+    }
+  }
+
   onKeyDown(e: KeyboardEvent): boolean {
     const store = useFloorMapStore.getState();
     if ((e.key === 'Delete' || e.key === 'Backspace') && store.selectedShapeIds.length > 0) {

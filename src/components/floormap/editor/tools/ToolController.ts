@@ -85,7 +85,7 @@ export class ToolController {
     if (event) this.active.onPointerUp(event);
   }
 
-  onDoubleClick(e: KonvaEventObject<MouseEvent>, stage: Konva.Stage): void {
+  onDoubleClick(e: KonvaEventObject<MouseEvent | PointerEvent>, stage: Konva.Stage): void {
     const event = this.toEvent(e, stage);
     if (event) this.active.onDoubleClick(event);
   }

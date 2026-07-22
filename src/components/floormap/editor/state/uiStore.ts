@@ -43,6 +43,8 @@ interface EditorUiState {
   canRedo: boolean;
   /** Bumped on every committed change — used by autosave. */
   dirtyCounter: number;
+  /** Room shape awaiting the naming dialog (dblclick or new auto-room). */
+  namingShapeId: string | null;
 
   setDraft: (points: Point[], cursor: Point | null, label: string | null) => void;
   clearDraft: () => void;
@@ -51,6 +53,7 @@ interface EditorUiState {
   setMarquee: (m: { start: Point; end: Point } | null) => void;
   setHistoryFlags: (canUndo: boolean, canRedo: boolean) => void;
   markDirty: () => void;
+  setNamingShapeId: (id: string | null) => void;
 }
 
 export const useEditorUiStore = create<EditorUiState>((set) => ({
@@ -64,6 +67,7 @@ export const useEditorUiStore = create<EditorUiState>((set) => ({
   canUndo: false,
   canRedo: false,
   dirtyCounter: 0,
+  namingShapeId: null,
 
   setDraft: (points, cursor, label) =>
     set({ draftPoints: points, draftCursor: cursor, draftLabel: label }),
@@ -74,4 +78,5 @@ export const useEditorUiStore = create<EditorUiState>((set) => ({
   setMarquee: (m) => set({ marquee: m }),
   setHistoryFlags: (canUndo, canRedo) => set({ canUndo, canRedo }),
   markDirty: () => set((s) => ({ dirtyCounter: s.dirtyCounter + 1 })),
+  setNamingShapeId: (id) => set({ namingShapeId: id }),
 }));

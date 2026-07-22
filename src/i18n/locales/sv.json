@@ -1958,7 +1958,10 @@
     "unlockImage": "Lås upp bild",
     "imageLocked": "Bilden är låst — rita ovanpå. Lås upp via knappen nere till höger.",
     "imageUnlocked": "Bilden är upplåst och kan flyttas igen.",
-    "saveFailed": "Kunde inte spara planritningen"
+    "saveFailed": "Kunde inte spara planritningen",
+    "roomLinked": "Rummet kopplades till \"{{name}}\"",
+    "roomSaved": "Rummet \"{{name}}\" sparades i projektet",
+    "roomSaveFailed": "Kunde inte spara rummet i projektet — det finns kvar på ritningen"
   },
   "canvas": {
     "settings": "Ritinställningar",

@@ -117,7 +117,7 @@ export function buildRoomReconcilePatches(shapes: FloorMapShape[]): Patch[] {
       name: `Rum ${roomCounter}`,
       area: parseFloat(faceAreaM2(face).toFixed(2)),
       planId: planId || undefined,
-      metadata: { autoDetected: true },
+      metadata: { autoDetected: true, needsNaming: true },
       zIndex: -10,
     };
     patches.push({ op: 'add', shape });
