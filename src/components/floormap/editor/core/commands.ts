@@ -196,6 +196,25 @@ export const commands = {
     return shape;
   },
 
+  'opening.setWidth'(params: { id: string; widthMM: number }): void {
+    const shapes = getShapes();
+    const shape = shapes.find((s) => s.id === params.id);
+    if (!shape || shape.type !== 'opening' || !shape.parentWallId) return;
+    const wall = shapes.find((s) => s.id === shape.parentWallId);
+    const frame = wall ? wallFrame(wall) : null;
+    if (!frame) return;
+    const wallLengthMM = worldToMm(frame.length);
+    const widthMM = Math.round(Math.max(300, Math.min(params.widthMM, wallLengthMM)));
+    // Re-clamp the position so the resized opening still fits on the wall.
+    const t = clampPosition(shape.positionOnWall ?? 0.5, mmToWorld(widthMM), frame);
+    commit('Ändra öppningsbredd', [
+      makeUpdatePatch(shape, {
+        metadata: { ...shape.metadata, widthMM },
+        positionOnWall: t,
+      }),
+    ]);
+  },
+
   'opening.flip'(params: { id: string }): void {
     const shape = getShapes().find((s) => s.id === params.id);
     if (!shape || shape.type !== 'opening') return;

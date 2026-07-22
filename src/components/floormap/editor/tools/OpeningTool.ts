@@ -13,6 +13,7 @@ import { BaseTool, ToolPointerEvent } from './BaseTool';
 import { execute } from '../core/commands';
 import {
   findNearestWall,
+  openingCornerGuides,
   openingPlacement,
   OPENING_DEFAULT_WIDTH_MM,
 } from '../geometry/openingGeometry';
@@ -33,6 +34,7 @@ export class OpeningTool extends BaseTool {
   deactivate(): void {
     this.hover = null;
     useEditorUiStore.getState().setOpeningGhost(null);
+    useEditorUiStore.getState().setSnapFeedback([], []);
   }
 
   onPointerMove(e: ToolPointerEvent): void {
@@ -42,17 +44,18 @@ export class OpeningTool extends BaseTool {
     if (!hit) {
       this.hover = null;
       useEditorUiStore.getState().setOpeningGhost(null);
+      useEditorUiStore.getState().setSnapFeedback([], []);
       return;
     }
     this.hover = { wallId: hit.wall.id, t: hit.t };
     const widthMM = OPENING_DEFAULT_WIDTH_MM[this.kind];
-    const placement = openingPlacement(
-      { positionOnWall: hit.t, metadata: { widthMM } },
-      hit.wall
-    );
+    const ghost = { positionOnWall: hit.t, metadata: { widthMM } };
+    const placement = openingPlacement(ghost, hit.wall);
     useEditorUiStore
       .getState()
       .setOpeningGhost(placement ? { rect: placement.rect, valid: true } : null);
+    // Live corner distances while aiming, same readout as when sliding
+    useEditorUiStore.getState().setSnapFeedback([], openingCornerGuides(ghost, hit.wall));
   }
 
   onPointerDown(e: ToolPointerEvent): void {

@@ -5,7 +5,8 @@
  * editor commands, so each is one undoable step.
  */
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { FloorMapShape } from '../types';
 import {
   AlignCenterHorizontal,
   AlignCenterVertical,
@@ -39,6 +40,52 @@ import type { AlignMode } from './core/selectionOps';
 
 const BUTTON_CLASS =
   'flex h-8 w-8 items-center justify-center rounded-md text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors';
+
+/** Width (mm) editor for a single selected opening; commits on Enter/blur. */
+const OpeningWidthInput = ({ opening }: { opening: FloorMapShape }) => {
+  const { t } = useTranslation();
+  const currentWidth = (opening.metadata?.widthMM as number) ?? 900;
+  const [value, setValue] = useState(String(currentWidth));
+
+  useEffect(() => {
+    setValue(String(currentWidth));
+  }, [opening.id, currentWidth]);
+
+  const commitWidth = () => {
+    const widthMM = parseInt(value, 10);
+    if (Number.isFinite(widthMM) && widthMM > 0 && widthMM !== currentWidth) {
+      execute('opening.setWidth', { id: opening.id, widthMM });
+    } else {
+      setValue(String(currentWidth));
+    }
+  };
+
+  return (
+    <label
+      className="flex items-center gap-1 pl-1.5 pr-2 text-xs text-gray-500"
+      title={t('floormap.selection.openingWidth', 'Öppningens bredd (mm)')}
+    >
+      <input
+        type="number"
+        className="h-7 w-16 rounded-md border px-1.5 text-right text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-primary"
+        value={value}
+        min={300}
+        step={10}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={commitWidth}
+        onKeyDown={(e) => {
+          e.stopPropagation();
+          if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+          if (e.key === 'Escape') {
+            setValue(String(currentWidth));
+            (e.target as HTMLInputElement).blur();
+          }
+        }}
+      />
+      mm
+    </label>
+  );
+};
 
 export const FloatingSelectionToolbar = () => {
   const { t } = useTranslation();
@@ -87,13 +134,16 @@ export const FloatingSelectionToolbar = () => {
       }}
     >
       {singleOpening ? (
-        <button
-          className={BUTTON_CLASS}
-          title={t('floormap.selection.flipOpening', 'Vänd öppning (F)')}
-          onClick={() => execute('opening.flip', { id: selected[0].id })}
-        >
-          <ArrowLeftRight className="h-4 w-4" />
-        </button>
+        <>
+          <OpeningWidthInput opening={selected[0]} />
+          <button
+            className={BUTTON_CLASS}
+            title={t('floormap.selection.flipOpening', 'Vänd öppning (F)')}
+            onClick={() => execute('opening.flip', { id: selected[0].id })}
+          >
+            <ArrowLeftRight className="h-4 w-4" />
+          </button>
+        </>
       ) : (
         canTransform && (
           <>

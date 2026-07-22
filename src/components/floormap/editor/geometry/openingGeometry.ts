@@ -8,7 +8,7 @@
  */
 
 import { FloorMapShape, LineCoordinates } from '../../types';
-import { mmToWorld } from '../core/units';
+import { formatWorldAsMm, mmToWorld } from '../core/units';
 
 export interface Point {
   x: number;
@@ -110,6 +110,26 @@ export function openingPlacement(
     widthWorld,
     frame,
   };
+}
+
+/**
+ * Corner-distance readout while sliding/placing an opening: one guide from
+ * each wall end to the nearest opening edge, labelled in mm. Rendered by the
+ * OverlayLayer's snap-guide pass.
+ */
+export function openingCornerGuides(
+  opening: Pick<FloorMapShape, 'positionOnWall' | 'metadata'>,
+  wall: FloorMapShape
+): { from: Point; to: Point; distanceLabel: string }[] {
+  const placement = openingPlacement(opening, wall);
+  if (!placement) return [];
+  const { frame, edgeStart, edgeEnd } = placement;
+  const startDist = Math.hypot(edgeStart.x - frame.a.x, edgeStart.y - frame.a.y);
+  const endDist = Math.hypot(frame.b.x - edgeEnd.x, frame.b.y - edgeEnd.y);
+  return [
+    { from: frame.a, to: edgeStart, distanceLabel: formatWorldAsMm(startDist) },
+    { from: edgeEnd, to: frame.b, distanceLabel: formatWorldAsMm(endDist) },
+  ];
 }
 
 /** Nearest wall on the plan within a world-distance threshold. */

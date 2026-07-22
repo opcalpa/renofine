@@ -11,6 +11,7 @@ import { beginGesture, endGesture } from '../core/executor';
 import { snap } from '../snapping/SnapEngine';
 import { mmToWorld } from '../core/units';
 import { shapeBounds } from '../geometry/bounds';
+import { openingCornerGuides } from '../geometry/openingGeometry';
 import { Point, useEditorUiStore } from '../state/uiStore';
 
 type DragMode =
@@ -109,7 +110,19 @@ export class SelectTool extends BaseTool {
       if (dx === 0 && dy === 0) return;
       this.moveSelection(this.drag.ids, dx, dy);
       this.drag = { ...this.drag, last: result.point };
+      this.updateOpeningGuides(this.drag.ids);
     }
+  }
+
+  /** Corner-distance readout while a single opening slides along its wall. */
+  private updateOpeningGuides(ids: string[]): void {
+    if (ids.length !== 1) return;
+    const shapes = useFloorMapStore.getState().shapes;
+    const opening = shapes.find((s) => s.id === ids[0]);
+    if (opening?.type !== 'opening' || !opening.parentWallId) return;
+    const wall = shapes.find((s) => s.id === opening.parentWallId);
+    if (!wall) return;
+    useEditorUiStore.getState().setSnapFeedback([], openingCornerGuides(opening, wall));
   }
 
   onPointerUp(e: ToolPointerEvent): void {

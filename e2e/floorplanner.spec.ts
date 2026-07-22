@@ -23,6 +23,7 @@ declare global {
         canUndo: boolean;
         canRedo: boolean;
         measurements: Array<{ from: { x: number; y: number }; to: { x: number; y: number } }>;
+        snapGuides: Array<{ distanceLabel?: string }>;
       };
       getTool: () => string;
     };
@@ -305,6 +306,48 @@ test.describe('Floor planner v2', () => {
     // Horizontal → vertical
     expect(Math.abs(wall.x1 - wall.x2)).toBeLessThan(1);
     expect(Math.abs(wall.y1 - wall.y2)).toBeGreaterThan(100);
+  });
+
+  test('opening width edits from the selection toolbar and shows corner distances', async ({ page }) => {
+    await openDemoPlanner(page);
+    const canvas = page.getByTestId('editor-v2-canvas');
+    const box = (await canvas.boundingBox())!;
+
+    // Wall + door in the middle
+    await page.keyboard.press('w');
+    await page.mouse.move(box.x + 300, box.y + 350);
+    await page.mouse.down();
+    await page.mouse.up();
+    await page.mouse.move(box.x + 800, box.y + 350);
+    await page.mouse.down();
+    await page.mouse.up();
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('d');
+    await page.mouse.move(box.x + 550, box.y + 352);
+    await page.waitForTimeout(100);
+    // Aiming shows the corner-distance readout
+    const aimGuides = await page.evaluate(
+      () => window.__rfEditorDebug!.getUi().snapGuides.filter((g) => g.distanceLabel).length
+    );
+    expect(aimGuides).toBe(2);
+    await page.mouse.down();
+    await page.mouse.up();
+
+    // Select the door → width input appears → set 1200 mm
+    await page.keyboard.press('v');
+    await page.mouse.click(box.x + 550, box.y + 350);
+    const input = page.getByTestId('selection-toolbar').locator('input[type="number"]');
+    await expect(input).toBeVisible();
+    await input.fill('1200');
+    await input.press('Enter');
+
+    const width = await page.evaluate(
+      () =>
+        (window.__rfEditorDebug!.getShapes().find((s) => s.type === 'opening') as {
+          metadata?: { widthMM?: number };
+        })?.metadata?.widthMM
+    );
+    expect(width).toBe(1200);
   });
 
   test('fast drawing of separate wall chains commits every chain', async ({ page }) => {

@@ -1984,7 +1984,8 @@
       "distributeH": "Jämnt horisontellt",
       "distributeV": "Jämnt vertikalt",
       "delete": "Radera (Delete)",
-      "alignMenu": "Justera & fördela"
+      "alignMenu": "Justera & fördela",
+      "openingWidth": "Öppningens bredd (mm)"
     }
   },
   "canvas": {

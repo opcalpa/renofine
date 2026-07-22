@@ -2548,7 +2548,8 @@
       "distributeH": "Evenly horizontally",
       "distributeV": "Evenly vertically",
       "delete": "Delete (Delete)",
-      "alignMenu": "Align & distribute"
+      "alignMenu": "Align & distribute",
+      "openingWidth": "Opening width (mm)"
     }
   },
   "canvas": {
