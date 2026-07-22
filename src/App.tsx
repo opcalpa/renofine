@@ -1,5 +1,6 @@
 import * as Sentry from "@sentry/react";
 import { Toaster } from "@/components/ui/toaster";
+import { isEditorV2Enabled } from "@/components/floormap/editor/flag";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -68,6 +69,11 @@ function AuthenticatedRenaida() {
 }
 
 const queryClient = new QueryClient();
+
+// Consume ?editor=v2|v1 at app startup — ProjectDetail's tab-sync rewrites
+// the query string before the floor planner mounts, so the flag must be
+// persisted to localStorage before any param stripping happens.
+isEditorV2Enabled();
 
 const ErrorFallback = () => (
   <div className="min-h-screen flex items-center justify-center bg-background p-4">
