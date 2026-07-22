@@ -15,7 +15,8 @@ type DragMode =
   | { kind: 'none' }
   | { kind: 'maybe-marquee'; start: Point }
   | { kind: 'marquee'; start: Point }
-  | { kind: 'move'; start: Point; last: Point; ids: string[] };
+  | { kind: 'move'; start: Point; last: Point; ids: string[] }
+  | { kind: 'junction'; at: Point; wallIds: string[] };
 
 function shapeBounds(shape: FloorMapShape): { minX: number; minY: number; maxX: number; maxY: number } | null {
   const c = shape.coordinates as Record<string, unknown>;
@@ -72,6 +73,24 @@ export class SelectTool extends BaseTool {
     if (e.button !== 0) return;
     const store = useFloorMapStore.getState();
 
+    // Junction handle: drag moves every wall endpoint meeting at that point.
+    if (e.hitName?.startsWith('junction:')) {
+      const [, xs, ys] = e.hitName.split(':');
+      const at = { x: parseFloat(xs), y: parseFloat(ys) };
+      const wallIds = store.shapes
+        .filter((s) => s.type === 'wall' && s.coordinates && 'x1' in (s.coordinates as object))
+        .filter((s) => {
+          const c = s.coordinates as LineCoordinates;
+          return (
+            Math.hypot(c.x1 - at.x, c.y1 - at.y) < 1 || Math.hypot(c.x2 - at.x, c.y2 - at.y) < 1
+          );
+        })
+        .map((s) => s.id);
+      this.drag = { kind: 'junction', at, wallIds };
+      beginGesture('Flytta hörn');
+      return;
+    }
+
     if (e.hitShape && !e.hitShape.locked) {
       const id = e.hitShape.id;
       const selected = store.selectedShapeIds;
@@ -104,6 +123,19 @@ export class SelectTool extends BaseTool {
 
     if (this.drag.kind === 'marquee') {
       ui.setMarquee({ start: this.drag.start, end: e.world });
+      return;
+    }
+
+    if (this.drag.kind === 'junction') {
+      const result = snap({
+        point: e.world,
+        disabled: e.metaOrCtrl,
+        ignoreIds: this.drag.wallIds,
+      });
+      ui.setSnapFeedback(result.glyphs, result.guides);
+      if (result.point.x === this.drag.at.x && result.point.y === this.drag.at.y) return;
+      execute('junction.move', { at: this.drag.at, to: result.point });
+      this.drag = { ...this.drag, at: result.point };
       return;
     }
 
@@ -144,7 +176,10 @@ export class SelectTool extends BaseTool {
       ui.setMarquee(null);
     }
 
-    if (this.drag.kind === 'move') endGesture();
+    if (this.drag.kind === 'move' || this.drag.kind === 'junction') {
+      endGesture();
+      ui.setSnapFeedback([], []);
+    }
     this.drag = { kind: 'none' };
   }
 

@@ -20,6 +20,8 @@ export interface ToolPointerEvent {
   altKey: boolean;
   /** Topmost shape under the pointer, if any. */
   hitShape: FloorMapShape | null;
+  /** Raw Konva node name under the pointer (e.g. "junction:x:y" handles). */
+  hitName: string | null;
   /** Mouse button: 0 left, 1 middle, 2 right. */
   button: number;
 }

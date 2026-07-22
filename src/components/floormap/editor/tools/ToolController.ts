@@ -65,6 +65,7 @@ export class ToolController {
       metaOrCtrl: e.evt.metaKey || e.evt.ctrlKey,
       altKey: e.evt.altKey,
       hitShape,
+      hitName: targetId || null,
       button: e.evt.button ?? 0,
     };
   }

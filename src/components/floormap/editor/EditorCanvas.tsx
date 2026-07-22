@@ -24,6 +24,7 @@ import { OverlayLayer } from './render/OverlayLayer';
 import { ToolController } from './tools/ToolController';
 import { resetHistory, canUndo, canRedo, undo, redo } from './core/executor';
 import { execute } from './core/commands';
+import { migrateShapes } from './migration/migrateShapes';
 import { useEditorUiStore } from './state/uiStore';
 
 const MIN_ZOOM = 0.1;
@@ -70,7 +71,7 @@ export const EditorCanvas = ({ isReadOnly }: EditorCanvasProps) => {
     if (!currentPlanId) return;
     let cancelled = false;
     (async () => {
-      const loaded = await loadShapesForPlan(currentPlanId);
+      const loaded = migrateShapes(await loadShapesForPlan(currentPlanId));
       if (cancelled) return;
       useFloorMapStore.getState().setShapes(loaded);
       resetHistory();

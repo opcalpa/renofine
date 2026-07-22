@@ -19,6 +19,8 @@ export class WallTool extends BaseTool {
 
   private points: Point[] = [];
   private lastSnapped: Point | null = null;
+  private lastDownScreen: Point | null = null;
+  private prevDownScreen: Point | null = null;
 
   deactivate(): void {
     this.finish();
@@ -52,6 +54,8 @@ export class WallTool extends BaseTool {
 
   onPointerDown(e: ToolPointerEvent): void {
     if (e.button !== 0) return;
+    this.prevDownScreen = this.lastDownScreen;
+    this.lastDownScreen = { ...e.screen };
     const target = this.lastSnapped ?? e.world;
 
     // Clicking the start point closes the loop.
@@ -70,6 +74,21 @@ export class WallTool extends BaseTool {
   }
 
   onDoubleClick(): void {
+    // Konva's double-click fires on two QUICK clicks even far apart, which
+    // would cut fast polyline drawing short. Only treat it as "finish" when
+    // both clicks landed on (nearly) the same spot.
+    if (
+      this.prevDownScreen &&
+      this.lastDownScreen &&
+      Math.hypot(
+        this.lastDownScreen.x - this.prevDownScreen.x,
+        this.lastDownScreen.y - this.prevDownScreen.y
+      ) > 8
+    ) {
+      return;
+    }
+    // Drop the duplicate vertex the second click just added.
+    if (this.points.length >= 2) this.points.pop();
     this.finish();
   }
 
@@ -129,6 +148,8 @@ export class WallTool extends BaseTool {
   private cancel(): void {
     this.points = [];
     this.lastSnapped = null;
+    this.lastDownScreen = null;
+    this.prevDownScreen = null;
     this.ui().clearDraft();
     this.ui().setSnapFeedback([], []);
   }
