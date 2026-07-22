@@ -206,6 +206,14 @@ export class SelectTool extends BaseTool {
       store.clearSelection();
       return true;
     }
+    // F flips the hinge/side of a selected opening
+    if (e.key.toLowerCase() === 'f' && store.selectedShapeIds.length === 1) {
+      const shape = store.shapes.find((s) => s.id === store.selectedShapeIds[0]);
+      if (shape?.type === 'opening') {
+        execute('opening.flip', { id: shape.id });
+        return true;
+      }
+    }
     return false;
   }
 }

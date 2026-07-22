@@ -21,6 +21,7 @@ import { EditorHud } from './EditorHud';
 import { RoomNamingController } from './RoomNamingController';
 import { WallsLayer } from './render/WallsLayer';
 import { LegacyShapesLayer } from './render/LegacyShapesLayer';
+import { OpeningsLayer } from './render/OpeningsLayer';
 import { OverlayLayer } from './render/OverlayLayer';
 import { ToolController } from './tools/ToolController';
 import { resetHistory, canUndo, canRedo, undo, redo } from './core/executor';
@@ -256,6 +257,12 @@ export const EditorCanvas = ({ isReadOnly }: EditorCanvasProps) => {
             selectedIds={selectedShapeIds}
             zoom={viewState.zoom}
             showDimensions
+          />
+          <OpeningsLayer
+            shapes={shapes}
+            planId={currentPlanId}
+            selectedIds={selectedShapeIds}
+            zoom={viewState.zoom}
           />
         </Layer>
         <Layer listening={false}>

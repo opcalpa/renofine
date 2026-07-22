@@ -14,6 +14,7 @@ import { BaseTool, ToolPointerEvent } from './BaseTool';
 import { SelectTool } from './SelectTool';
 import { WallTool } from './WallTool';
 import { PanTool } from './PanTool';
+import { OpeningTool } from './OpeningTool';
 import { undo, redo } from '../core/executor';
 
 export class ToolController {
@@ -22,7 +23,16 @@ export class ToolController {
   private spacePan: { previous: BaseTool } | null = null;
 
   constructor() {
-    for (const tool of [new SelectTool(), new WallTool(), new PanTool()]) {
+    for (const tool of [
+      new SelectTool(),
+      new WallTool(),
+      new PanTool(),
+      // Legacy toolbar tool ids map straight onto the v2 opening tool.
+      new OpeningTool('door_line', 'door'),
+      new OpeningTool('window_line', 'window'),
+      new OpeningTool('sliding_door_line', 'sliding'),
+      new OpeningTool('opening_line', 'passage'),
+    ]) {
       this.tools.set(tool.id, tool);
     }
     this.active = this.tools.get('select')!;
@@ -129,6 +139,7 @@ export class ToolController {
         v: 'select',
         w: 'wall',
         h: 'pan',
+        d: 'door_line',
       };
       const tool = toolByKey[e.key.toLowerCase()];
       if (tool) {

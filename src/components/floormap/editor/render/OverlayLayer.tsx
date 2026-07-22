@@ -30,6 +30,7 @@ export const OverlayLayer: React.FC<OverlayLayerProps> = ({ zoom }) => {
   const snapGlyphs = useEditorUiStore((s) => s.snapGlyphs);
   const snapGuides = useEditorUiStore((s) => s.snapGuides);
   const marquee = useEditorUiStore((s) => s.marquee);
+  const openingGhost = useEditorUiStore((s) => s.openingGhost);
 
   const px = (n: number) => n / zoom;
 
@@ -134,6 +135,19 @@ export const OverlayLayer: React.FC<OverlayLayerProps> = ({ zoom }) => {
           perfectDrawEnabled={false}
         />
       ))}
+
+      {/* Opening placement ghost */}
+      {openingGhost && (
+        <Line
+          points={openingGhost.rect.flatMap((p) => [p.x, p.y])}
+          closed
+          fill="rgba(37, 99, 235, 0.25)"
+          stroke="#2563eb"
+          strokeWidth={px(1.5)}
+          dash={[px(5), px(3)]}
+          perfectDrawEnabled={false}
+        />
+      )}
 
       {/* Marquee */}
       {marquee && (

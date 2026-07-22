@@ -157,6 +157,37 @@ test.describe('Floor planner v2', () => {
     expect(stillThere).toBe(1);
   });
 
+  test('door placement snaps to a wall and slides along it', async ({ page }) => {
+    await openDemoPlanner(page);
+    const canvas = page.getByTestId('editor-v2-canvas');
+    const box = (await canvas.boundingBox())!;
+
+    // One wall
+    await page.keyboard.press('w');
+    await page.mouse.move(box.x + 300, box.y + 350);
+    await page.mouse.down();
+    await page.mouse.up();
+    await page.mouse.move(box.x + 800, box.y + 350);
+    await page.mouse.down();
+    await page.mouse.up();
+    await page.keyboard.press('Enter');
+
+    // Door tool (D) → click near the wall
+    await page.keyboard.press('d');
+    await page.mouse.move(box.x + 550, box.y + 352);
+    await page.waitForTimeout(100);
+    await page.mouse.down();
+    await page.mouse.up();
+
+    const door = await page.evaluate(() => {
+      const d = window.__rfEditorDebug!.getShapes().find((s) => s.type === 'opening') as
+        | { openingKind?: string; parentWallId?: string; metadata?: { widthMM?: number } }
+        | undefined;
+      return d && { kind: d.openingKind, hosted: !!d.parentWallId, widthMM: d.metadata?.widthMM };
+    });
+    expect(door).toEqual({ kind: 'door', hosted: true, widthMM: 890 });
+  });
+
   test('undo and redo work as single steps', async ({ page }) => {
     await openDemoPlanner(page);
     const canvas = page.getByTestId('editor-v2-canvas');

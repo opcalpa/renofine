@@ -140,6 +140,8 @@ export interface FloorMapShape {
   endAnchor?: AnchorSide;
   // Door/window specific properties
   openingDirection?: 'left' | 'right'; // For door_line - which way the door opens
+  /** v2 wall-hosted openings: which kind of opening a type:'opening' shape is. */
+  openingKind?: 'door' | 'window' | 'sliding' | 'passage';
   coordinates: LineCoordinates | RectangleCoordinates | CircleCoordinates | PolygonCoordinates | SymbolCoordinates | TextCoordinates | BezierCoordinates;
   heightMM?: number; // Wall height for elevation/3D view (for walls/lines)
   thicknessMM?: number; // Wall thickness (for walls/lines)

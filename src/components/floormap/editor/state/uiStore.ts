@@ -45,6 +45,8 @@ interface EditorUiState {
   dirtyCounter: number;
   /** Room shape awaiting the naming dialog (dblclick or new auto-room). */
   namingShapeId: string | null;
+  /** Ghost preview while placing an opening on a wall. */
+  openingGhost: { rect: Point[]; valid: boolean } | null;
 
   setDraft: (points: Point[], cursor: Point | null, label: string | null) => void;
   clearDraft: () => void;
@@ -54,6 +56,7 @@ interface EditorUiState {
   setHistoryFlags: (canUndo: boolean, canRedo: boolean) => void;
   markDirty: () => void;
   setNamingShapeId: (id: string | null) => void;
+  setOpeningGhost: (g: { rect: Point[]; valid: boolean } | null) => void;
 }
 
 export const useEditorUiStore = create<EditorUiState>((set) => ({
@@ -68,6 +71,7 @@ export const useEditorUiStore = create<EditorUiState>((set) => ({
   canRedo: false,
   dirtyCounter: 0,
   namingShapeId: null,
+  openingGhost: null,
 
   setDraft: (points, cursor, label) =>
     set({ draftPoints: points, draftCursor: cursor, draftLabel: label }),
@@ -79,4 +83,5 @@ export const useEditorUiStore = create<EditorUiState>((set) => ({
   setHistoryFlags: (canUndo, canRedo) => set({ canUndo, canRedo }),
   markDirty: () => set((s) => ({ dirtyCounter: s.dirtyCounter + 1 })),
   setNamingShapeId: (id) => set({ namingShapeId: id }),
+  setOpeningGhost: (g) => set({ openingGhost: g }),
 }));

@@ -12,6 +12,13 @@ import { getAdminDefaults } from '../../canvas/constants';
 import { commit, getShapes, transaction } from './executor';
 import { Patch, makeUpdatePatch } from './patches';
 import { mmToWorld, worldToMm } from './units';
+import {
+  wallFrame,
+  openingPlacement,
+  projectOntoWall,
+  clampPosition,
+  OPENING_DEFAULT_WIDTH_MM,
+} from '../geometry/openingGeometry';
 import { useFloorMapStore } from '../../store';
 
 export interface Point {
@@ -59,6 +66,21 @@ function planId(): string | undefined {
   return useFloorMapStore.getState().currentPlanId || undefined;
 }
 
+/**
+ * Openings carry no world geometry — moving one slides it along its host
+ * wall by projecting the moved center back onto the wall.
+ */
+function slideOpening(shape: FloorMapShape, dx: number, dy: number, shapes: FloorMapShape[]): Partial<FloorMapShape> {
+  const wall = shapes.find((s) => s.id === shape.parentWallId);
+  if (!wall) return {};
+  const frame = wallFrame(wall);
+  const placement = openingPlacement(shape, wall);
+  if (!frame || !placement) return {};
+  const moved = { x: placement.center.x + dx, y: placement.center.y + dy };
+  const { t } = projectOntoWall(moved, frame);
+  return { positionOnWall: clampPosition(t, placement.widthWorld, frame) };
+}
+
 function translateCoordinates(shape: FloorMapShape, dx: number, dy: number): Partial<FloorMapShape> {
   const c = shape.coordinates as Record<string, unknown>;
   if ('x1' in c) {
@@ -87,6 +109,14 @@ export function isWall(shape: FloorMapShape): boolean {
 
 export interface ShapeAddParams {
   shape: Omit<FloorMapShape, 'id' | 'planId'> & Partial<Pick<FloorMapShape, 'id' | 'planId'>>;
+}
+
+export interface OpeningAddParams {
+  wallId: string;
+  /** Center position along the wall, 0–1. */
+  t: number;
+  kind: NonNullable<FloorMapShape['openingKind']>;
+  widthMM?: number;
 }
 
 export const commands = {
@@ -132,10 +162,45 @@ export const commands = {
     const patches: Patch[] = [];
     for (const shape of shapes) {
       if (!ids.has(shape.id)) continue;
-      const updates = translateCoordinates(shape, params.dx, params.dy);
+      const updates =
+        shape.type === 'opening' && shape.parentWallId
+          ? slideOpening(shape, params.dx, params.dy, shapes)
+          : translateCoordinates(shape, params.dx, params.dy);
       if (Object.keys(updates).length > 0) patches.push(makeUpdatePatch(shape, updates));
     }
     commit('Flytta', patches);
+  },
+
+  'opening.add'(params: OpeningAddParams): FloorMapShape | null {
+    const wall = getShapes().find((s) => s.id === params.wallId);
+    if (!wall) return null;
+    const frame = wallFrame(wall);
+    if (!frame) return null;
+    const widthMM = params.widthMM ?? OPENING_DEFAULT_WIDTH_MM[params.kind] ?? 900;
+    const t = clampPosition(params.t, mmToWorld(widthMM), frame);
+    const shape: FloorMapShape = {
+      id: uuidv4(),
+      type: 'opening',
+      openingKind: params.kind,
+      parentWallId: params.wallId,
+      positionOnWall: t,
+      openingDirection: 'left',
+      coordinates: { x1: 0, y1: 0, x2: 0, y2: 0 }, // derived at render time from the wall
+      planId: planId(),
+      metadata: { widthMM },
+    };
+    commit('Placera öppning', [{ op: 'add', shape }]);
+    return shape;
+  },
+
+  'opening.flip'(params: { id: string }): void {
+    const shape = getShapes().find((s) => s.id === params.id);
+    if (!shape || shape.type !== 'opening') return;
+    commit('Vänd öppning', [
+      makeUpdatePatch(shape, {
+        openingDirection: shape.openingDirection === 'right' ? 'left' : 'right',
+      }),
+    ]);
   },
 
   'junction.move'(params: JunctionMoveParams): void {
