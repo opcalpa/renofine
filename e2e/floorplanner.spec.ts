@@ -113,6 +113,44 @@ test.describe('Floor planner v2', () => {
     expect(lengths).toContain(2400);
   });
 
+  test('closing a wall loop auto-creates a room with correct area', async ({ page }) => {
+    await openDemoPlanner(page);
+    const canvas = page.getByTestId('editor-v2-canvas');
+    const box = (await canvas.boundingBox())!;
+    const click = async (x: number, y: number) => {
+      await page.mouse.move(box.x + x, box.y + y);
+      await page.mouse.down();
+      await page.mouse.up();
+      await page.waitForTimeout(60);
+    };
+
+    await page.keyboard.press('w');
+    // 400×300 world units = 4×3 m = 12 m²
+    await click(300, 200);
+    await click(700, 200);
+    await click(700, 500);
+    await click(300, 500);
+    await click(300, 200); // close the loop
+
+    const rooms = await page.evaluate(() =>
+      window.__rfEditorDebug!
+        .getShapes()
+        .filter((s) => s.type === 'room')
+        .map((s) => ({ area: (s as { area?: number }).area }))
+    );
+    expect(rooms.length).toBe(1);
+    expect(rooms[0].area).toBeCloseTo(12, 1);
+
+    // Deleting a wall must NOT delete the room (detached, undoable)
+    await page.keyboard.press('v');
+    await page.mouse.click(box.x + 500, box.y + 200);
+    await page.keyboard.press('Delete');
+    const stillThere = await page.evaluate(
+      () => window.__rfEditorDebug!.getShapes().filter((s) => s.type === 'room').length
+    );
+    expect(stillThere).toBe(1);
+  });
+
   test('undo and redo work as single steps', async ({ page }) => {
     await openDemoPlanner(page);
     const canvas = page.getByTestId('editor-v2-canvas');

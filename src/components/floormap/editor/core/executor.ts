@@ -11,6 +11,7 @@ import { useFloorMapStore } from '../../store';
 import { FloorMapShape } from '../../types';
 import { Patch, applyPatches, invertPatches } from './patches';
 import { useEditorUiStore } from '../state/uiStore';
+import { buildRoomReconcilePatches } from '../geometry/roomReconciler';
 
 export interface HistoryEntry {
   label: string;
@@ -45,17 +46,45 @@ export function getShapes(): FloorMapShape[] {
   return useFloorMapStore.getState().shapes;
 }
 
+function touchesWalls(patches: Patch[], shapes: FloorMapShape[]): boolean {
+  const wallIds = new Set(shapes.filter((s) => s.type === 'wall').map((s) => s.id));
+  return patches.some((p) =>
+    p.op === 'update'
+      ? wallIds.has(p.id) && p.after.coordinates !== undefined
+      : p.shape.type === 'wall'
+  );
+}
+
+let reconciling = false;
+
 /**
  * Apply patches as one undoable step (or accumulate into the open transaction).
+ * Wall mutations trigger room reconciliation (auto-rooms from closed wall
+ * loops) inside the same undo entry, so undo is always atomic.
  * Returns the patches for callers that need the result (e.g. created ids).
  */
 export function commit(label: string, patches: Patch[]): Patch[] {
   if (patches.length === 0) return patches;
   setShapes(applyPatches(getShapes(), patches));
+
+  let all = patches;
+  if (!reconciling && touchesWalls(patches, getShapes())) {
+    reconciling = true;
+    try {
+      const roomPatches = buildRoomReconcilePatches(getShapes());
+      if (roomPatches.length > 0) {
+        setShapes(applyPatches(getShapes(), roomPatches));
+        all = [...patches, ...roomPatches];
+      }
+    } finally {
+      reconciling = false;
+    }
+  }
+
   if (state.pending) {
-    state.pending.patches.push(...patches);
+    state.pending.patches.push(...all);
   } else {
-    pushEntry({ label, patches });
+    pushEntry({ label, patches: all });
   }
   useEditorUiStore.getState().markDirty();
   return patches;

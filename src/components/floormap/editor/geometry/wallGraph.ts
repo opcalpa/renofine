@@ -29,10 +29,20 @@ export interface WallOutline {
   points: Point[];
 }
 
+export interface Face {
+  /** Closed polygon (junction points, first point not repeated). */
+  points: Point[];
+  /** Absolute area in world units². */
+  area: number;
+  centroid: Point;
+}
+
 export interface WallGraph {
   junctions: Junction[];
   junctionByWallEnd: Map<string, Junction>; // key `${wallId}:start|end`
   outlines: WallOutline[];
+  /** Interior faces (closed wall loops) — the auto-detected rooms. */
+  faces: Face[];
 }
 
 const JUNCTION_MERGE_EPS = 0.5; // world units
@@ -151,6 +161,120 @@ function cornerPoints(
   return { left, right };
 }
 
+/**
+ * Planar face detection: walk half-edges always taking the sharpest turn in a
+ * consistent direction; every interior region enclosed by walls comes out as
+ * one face. The outer (unbounded) face is discarded by orientation sign, tiny
+ * slivers by a minimum area.
+ */
+function detectFaces(junctions: Junction[], walls: WallSeg[]): Face[] {
+  // Graph nodes = junctions; edges = walls between junction indices.
+  const nodeIndex = new Map<Junction, number>();
+  junctions.forEach((j, i) => nodeIndex.set(j, i));
+  const findNode = (p: Point) =>
+    junctions.findIndex((j) => Math.hypot(j.at.x - p.x, j.at.y - p.y) < JUNCTION_MERGE_EPS);
+
+  interface Edge {
+    a: number;
+    b: number;
+  }
+  const edges: Edge[] = [];
+  for (const wall of walls) {
+    const a = findNode(wall.a);
+    const b = findNode(wall.b);
+    if (a === -1 || b === -1 || a === b) continue;
+    edges.push({ a, b });
+  }
+
+  // Per-node outgoing half-edges sorted by angle.
+  const outgoing = new Map<number, { to: number; edgeIdx: number; angle: number }[]>();
+  edges.forEach((edge, edgeIdx) => {
+    for (const [from, to] of [
+      [edge.a, edge.b],
+      [edge.b, edge.a],
+    ] as const) {
+      const list = outgoing.get(from) ?? [];
+      const p = junctions[from].at;
+      const q = junctions[to].at;
+      list.push({ to, edgeIdx, angle: Math.atan2(q.y - p.y, q.x - p.x) });
+      outgoing.set(from, list);
+    }
+  });
+  for (const list of outgoing.values()) list.sort((l, r) => l.angle - r.angle);
+
+  const visited = new Set<string>();
+  const faces: Face[] = [];
+
+  edges.forEach((edge, edgeIdx) => {
+    for (const [from, to] of [
+      [edge.a, edge.b],
+      [edge.b, edge.a],
+    ] as const) {
+      const startKey = `${edgeIdx}:${from}`;
+      if (visited.has(startKey)) continue;
+
+      const polygonNodes: number[] = [];
+      let u = from;
+      let v = to;
+      let currentEdge = edgeIdx;
+      let steps = 0;
+      let ok = false;
+
+      while (steps++ < edges.length * 2 + 4) {
+        visited.add(`${currentEdge}:${u}`);
+        polygonNodes.push(u);
+        // At v, arriving from u: pick the next outgoing half-edge just
+        // before the reverse direction in angular order (sharpest turn).
+        const list = outgoing.get(v)!;
+        const backAngle = Math.atan2(
+          junctions[u].at.y - junctions[v].at.y,
+          junctions[u].at.x - junctions[v].at.x
+        );
+        // Index of the half-edge closest below backAngle (wrap around).
+        let next = list[0];
+        let bestDelta = Infinity;
+        for (const cand of list) {
+          let delta = backAngle - cand.angle;
+          while (delta <= 0) delta += 2 * Math.PI;
+          if (delta < bestDelta - 1e-12) {
+            bestDelta = delta;
+            next = cand;
+          }
+        }
+        u = v;
+        v = next.to;
+        currentEdge = next.edgeIdx;
+        if (u === from && v === to && currentEdge === edgeIdx) {
+          ok = true;
+          break;
+        }
+      }
+      if (!ok || polygonNodes.length < 3) continue;
+
+      const points = polygonNodes.map((n) => ({ ...junctions[n].at }));
+      let signed = 0;
+      for (let i = 0; i < points.length; i++) {
+        const p = points[i];
+        const q = points[(i + 1) % points.length];
+        signed += p.x * q.y - q.x * p.y;
+      }
+      signed /= 2;
+      // Screen coords have y down: interior faces from this walk come out
+      // with negative signed area; the outer face is the positive one.
+      if (signed >= 0) continue;
+      const area = Math.abs(signed);
+      if (area < 100) continue; // < ~1 m² at standard scale — sliver guard is per-caller
+      const centroid = {
+        x: points.reduce((s, p) => s + p.x, 0) / points.length,
+        y: points.reduce((s, p) => s + p.y, 0) / points.length,
+      };
+      faces.push({ points, area, centroid });
+    }
+  });
+
+  return faces;
+}
+
 function computeGraph(shapes: FloorMapShape[], planId: string | null): WallGraph {
   const walls: WallSeg[] = shapes
     .filter((s) => isWallShape(s) && (!planId || s.planId === planId))
@@ -188,7 +312,7 @@ function computeGraph(shapes: FloorMapShape[], planId: string | null): WallGraph
     };
   });
 
-  return { junctions, junctionByWallEnd, outlines };
+  return { junctions, junctionByWallEnd, outlines, faces: detectFaces(junctions, walls) };
 }
 
 let cache: { shapes: FloorMapShape[]; planId: string | null; graph: WallGraph } | null = null;
