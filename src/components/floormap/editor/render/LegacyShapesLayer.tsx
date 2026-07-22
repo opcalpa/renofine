@@ -29,22 +29,45 @@ interface LegacyShapesLayerProps {
 
 const SELECT_COLOR = '#2563eb';
 
-const BackgroundImage: React.FC<{ shape: FloorMapShape }> = ({ shape }) => {
+const BackgroundImage: React.FC<{ shape: FloorMapShape; isSelected: boolean; zoom: number }> = ({
+  shape,
+  isSelected,
+  zoom,
+}) => {
   const [image] = useImage(shape.imageUrl ?? '', 'anonymous');
   const c = shape.coordinates as SymbolCoordinates;
   if (!image) return null;
+  // Uploads create the shape with width/height 0 — fall back to natural size
+  // (capped) exactly like the legacy ImageShape did.
+  let width = c.width;
+  let height = c.height;
+  if (!width || width < 10 || !height || height < 10) {
+    const scale = Math.min(1, 800 / Math.max(image.width, image.height));
+    width = image.width * scale;
+    height = image.height * scale;
+  }
   return (
-    <KonvaImage
-      name={shape.id}
-      image={image}
-      x={c.x}
-      y={c.y}
-      width={c.width}
-      height={c.height}
-      opacity={shape.imageOpacity ?? 0.5}
-      listening={!shape.locked}
-      perfectDrawEnabled={false}
-    />
+    <Group name={shape.id} x={c.x} y={c.y} listening={!shape.locked}>
+      <KonvaImage
+        name={shape.id}
+        image={image}
+        width={width}
+        height={height}
+        opacity={shape.imageOpacity ?? 0.5}
+        perfectDrawEnabled={false}
+      />
+      {(isSelected || shape.locked) && (
+        <Rect
+          width={width}
+          height={height}
+          stroke={shape.locked ? '#9ca3af' : '#2563eb'}
+          strokeWidth={1.5 / zoom}
+          dash={shape.locked ? [6 / zoom, 4 / zoom] : undefined}
+          listening={false}
+          perfectDrawEnabled={false}
+        />
+      )}
+    </Group>
   );
 };
 
@@ -250,7 +273,12 @@ export const LegacyShapesLayer: React.FC<LegacyShapesLayerProps> = ({
     <>
       {visible.map((shape) =>
         shape.type === 'image' ? (
-          <BackgroundImage key={shape.id} shape={shape} />
+          <BackgroundImage
+            key={shape.id}
+            shape={shape}
+            isSelected={selected.has(shape.id)}
+            zoom={zoom}
+          />
         ) : (
           renderShape(shape, selected.has(shape.id), zoom)
         )

@@ -1950,7 +1950,15 @@
       "tooLarge": "Max 10MB",
       "added": "\"{{name}}\" tillagd",
       "uploadFailed": "Kunde inte ladda upp"
-    }
+    },
+    "editorV2Badge": "Ny ritmotor · beta",
+    "editorV2SwitchBack": "Byt till gamla editorn",
+    "editorV2SwitchShort": "Byt till v1",
+    "lockImagePosition": "Lås bildposition",
+    "unlockImage": "Lås upp bild",
+    "imageLocked": "Bilden är låst — rita ovanpå. Lås upp via knappen nere till höger.",
+    "imageUnlocked": "Bilden är upplåst och kan flyttas igen.",
+    "saveFailed": "Kunde inte spara planritningen"
   },
   "canvas": {
     "settings": "Ritinställningar",

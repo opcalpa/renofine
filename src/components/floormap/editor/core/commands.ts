@@ -85,7 +85,21 @@ export function isWall(shape: FloorMapShape): boolean {
   return shape.type === 'wall' && !!(shape.coordinates as LineCoordinates) && 'x1' in (shape.coordinates as object);
 }
 
+export interface ShapeAddParams {
+  shape: Omit<FloorMapShape, 'id' | 'planId'> & Partial<Pick<FloorMapShape, 'id' | 'planId'>>;
+}
+
 export const commands = {
+  'shape.add'(params: ShapeAddParams): FloorMapShape {
+    const shape: FloorMapShape = {
+      ...params.shape,
+      id: params.shape.id ?? uuidv4(),
+      planId: params.shape.planId ?? planId(),
+    } as FloorMapShape;
+    commit('Lägg till', [{ op: 'add', shape }]);
+    return shape;
+  },
+
   'wall.draw'(params: WallDrawParams): FloorMapShape[] {
     if (!params.points || params.points.length < 2) return [];
     const defaults = getAdminDefaults();

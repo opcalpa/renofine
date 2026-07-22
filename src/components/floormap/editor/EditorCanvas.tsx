@@ -16,11 +16,14 @@ import { useTranslation } from 'react-i18next';
 import { useFloorMapStore } from '../store';
 import { loadShapesForPlan, saveShapesForPlan } from '../utils/plans';
 import Grid from '../canvas/Grid';
+import { calculateFitToContent } from '../canvas/utils/fitToContent';
+import { EditorHud } from './EditorHud';
 import { WallsLayer } from './render/WallsLayer';
 import { LegacyShapesLayer } from './render/LegacyShapesLayer';
 import { OverlayLayer } from './render/OverlayLayer';
 import { ToolController } from './tools/ToolController';
 import { resetHistory, canUndo, canRedo, undo, redo } from './core/executor';
+import { execute } from './core/commands';
 import { useEditorUiStore } from './state/uiStore';
 
 const MIN_ZOOM = 0.1;
@@ -60,7 +63,9 @@ export const EditorCanvas = ({ isReadOnly }: EditorCanvasProps) => {
     return () => observer.disconnect();
   }, []);
 
-  // Load shapes for the current plan
+  // Load shapes for the current plan, then zoom to fit its content so
+  // freshly imported plans (AI import lands on a new plan) are visible
+  // immediately instead of sitting off-screen.
   useEffect(() => {
     if (!currentPlanId) return;
     let cancelled = false;
@@ -69,6 +74,12 @@ export const EditorCanvas = ({ isReadOnly }: EditorCanvasProps) => {
       if (cancelled) return;
       useFloorMapStore.getState().setShapes(loaded);
       resetHistory();
+      const el = containerRef.current;
+      const planShapes = loaded.filter((s) => s.planId === currentPlanId || !s.planId);
+      if (el && planShapes.length > 0) {
+        const fitted = calculateFitToContent(planShapes, el.clientWidth, el.clientHeight);
+        if (fitted) useFloorMapStore.getState().setViewState(fitted);
+      }
     })();
     return () => {
       cancelled = true;
@@ -146,6 +157,7 @@ export const EditorCanvas = ({ isReadOnly }: EditorCanvasProps) => {
       getUi: () => useEditorUiStore.getState(),
       getView: () => useFloorMapStore.getState().viewState,
       getTool: () => useFloorMapStore.getState().activeTool,
+      execute,
       isReadOnly,
     };
     return () => {
@@ -205,7 +217,8 @@ export const EditorCanvas = ({ isReadOnly }: EditorCanvasProps) => {
       };
 
   return (
-    <div ref={containerRef} className="w-full h-full bg-muted/30" data-testid="editor-v2-canvas">
+    <div ref={containerRef} className="relative w-full h-full bg-muted/30" data-testid="editor-v2-canvas">
+      <EditorHud />
       <Stage
         ref={stageRef}
         width={size.width}

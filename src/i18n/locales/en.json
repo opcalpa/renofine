@@ -2514,7 +2514,15 @@
       "tooLarge": "Max 10MB",
       "added": "\"{{name}}\" added",
       "uploadFailed": "Could not upload"
-    }
+    },
+    "editorV2Badge": "New drawing engine · beta",
+    "editorV2SwitchBack": "Switch to the old editor",
+    "editorV2SwitchShort": "Use v1",
+    "lockImagePosition": "Lock image position",
+    "unlockImage": "Unlock image",
+    "imageLocked": "Image locked — draw on top. Unlock via the button at the bottom right.",
+    "imageUnlocked": "Image unlocked and can be moved again.",
+    "saveFailed": "Could not save the floor plan"
   },
   "canvas": {
     "settings": "Drawing Settings",
