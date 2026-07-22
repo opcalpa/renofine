@@ -83,9 +83,12 @@ export const WallsLayer: React.FC<WallsLayerProps> = ({
           const midY = (c.y1 + c.y2) / 2;
           let angle = (Math.atan2(c.y2 - c.y1, c.x2 - c.x1) * 180) / Math.PI;
           if (angle > 90 || angle < -90) angle += 180; // keep text upright
+          // Clickable (name="dim:<wallId>") — the select tool opens an inline
+          // length editor; typing a new value moves the wall's freer endpoint.
           return (
             <Text
               key={`dim-${outline.wallId}`}
+              name={`dim:${outline.wallId}`}
               x={midX}
               y={midY}
               offsetY={14 / zoom}
@@ -93,7 +96,6 @@ export const WallsLayer: React.FC<WallsLayerProps> = ({
               fontSize={11 / zoom}
               fill="#374151"
               rotation={angle}
-              listening={false}
               perfectDrawEnabled={false}
             />
           );

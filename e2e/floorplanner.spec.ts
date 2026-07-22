@@ -350,6 +350,39 @@ test.describe('Floor planner v2', () => {
     expect(width).toBe(1200);
   });
 
+  test('clicking a dimension label and typing a new length moves the wall', async ({ page }) => {
+    await openDemoPlanner(page);
+    const canvas = page.getByTestId('editor-v2-canvas');
+    const box = (await canvas.boundingBox())!;
+
+    // One horizontal wall 300→600 (3000 mm)
+    await page.keyboard.press('w');
+    await page.mouse.move(box.x + 300, box.y + 300);
+    await page.mouse.down();
+    await page.mouse.up();
+    await page.mouse.move(box.x + 600, box.y + 300);
+    await page.mouse.down();
+    await page.mouse.up();
+    await page.keyboard.press('Enter');
+
+    // Click the label just above the wall midpoint → inline editor opens.
+    // The Konva Text's x is its LEFT edge (at the midpoint), so aim a few px in.
+    await page.keyboard.press('v');
+    await page.mouse.click(box.x + 465, box.y + 291);
+    const input = page.getByTestId('wall-length-input');
+    await expect(input).toBeVisible();
+    await expect(input).toHaveValue('3000');
+    await input.fill('4000');
+    await input.press('Enter');
+
+    const length = await page.evaluate(() => {
+      const w = window.__rfEditorDebug!.getShapes().find((s) => s.type === 'wall')!;
+      const c = w.coordinates as { x1: number; y1: number; x2: number; y2: number };
+      return Math.round(Math.hypot(c.x2 - c.x1, c.y2 - c.y1) * 10);
+    });
+    expect(length).toBe(4000);
+  });
+
   test('fast drawing of separate wall chains commits every chain', async ({ page }) => {
     // Regression: Konva synthesizes a dblclick across a finished chain (the
     // Enter that ended it), which used to swallow the next chain's first

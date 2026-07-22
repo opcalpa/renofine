@@ -56,6 +56,8 @@ interface EditorUiState {
   openingGhost: { rect: Point[]; valid: boolean } | null;
   /** Laid-down measure-tool distances (cleared when the tool deactivates). */
   measurements: Measurement[];
+  /** Wall whose dimension label is being edited inline (click on the label). */
+  wallLengthEditId: string | null;
 
   setDraft: (points: Point[], cursor: Point | null, label: string | null) => void;
   clearDraft: () => void;
@@ -68,6 +70,7 @@ interface EditorUiState {
   setRoomDetailsRoomId: (id: string | null) => void;
   setOpeningGhost: (g: { rect: Point[]; valid: boolean } | null) => void;
   setMeasurements: (m: Measurement[]) => void;
+  setWallLengthEditId: (id: string | null) => void;
 }
 
 export const useEditorUiStore = create<EditorUiState>((set) => ({
@@ -85,6 +88,7 @@ export const useEditorUiStore = create<EditorUiState>((set) => ({
   roomDetailsRoomId: null,
   openingGhost: null,
   measurements: [],
+  wallLengthEditId: null,
 
   setDraft: (points, cursor, label) =>
     set({ draftPoints: points, draftCursor: cursor, draftLabel: label }),
@@ -99,4 +103,5 @@ export const useEditorUiStore = create<EditorUiState>((set) => ({
   setRoomDetailsRoomId: (id) => set({ roomDetailsRoomId: id }),
   setOpeningGhost: (g) => set({ openingGhost: g }),
   setMeasurements: (m) => set({ measurements: m }),
+  setWallLengthEditId: (id) => set({ wallLengthEditId: id }),
 }));

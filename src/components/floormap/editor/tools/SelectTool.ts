@@ -35,6 +35,12 @@ export class SelectTool extends BaseTool {
     if (e.button !== 0) return;
     const store = useFloorMapStore.getState();
 
+    // Dimension label: open the inline length editor instead of selecting.
+    if (e.hitName?.startsWith('dim:')) {
+      useEditorUiStore.getState().setWallLengthEditId(e.hitName.slice(4));
+      return;
+    }
+
     // Junction handle: drag moves every wall endpoint meeting at that point.
     if (e.hitName?.startsWith('junction:')) {
       const [, xs, ys] = e.hitName.split(':');

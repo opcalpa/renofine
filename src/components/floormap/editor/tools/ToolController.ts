@@ -86,7 +86,12 @@ export class ToolController {
 
   onPointerDown(e: KonvaEventObject<MouseEvent | PointerEvent>, stage: Konva.Stage): void {
     const event = this.toEvent(e, stage);
-    if (event) this.active.onPointerDown(event);
+    if (!event) return;
+    // Clicking a dimension label opens an autofocused inline editor. Cancel
+    // the pointerdown so the compat mousedown's default action (moving focus
+    // to the page body) doesn't immediately blur-close that editor.
+    if (event.hitName?.startsWith('dim:')) e.evt.preventDefault();
+    this.active.onPointerDown(event);
   }
 
   onPointerMove(e: KonvaEventObject<MouseEvent | PointerEvent>, stage: Konva.Stage): void {
