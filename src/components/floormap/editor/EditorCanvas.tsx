@@ -75,11 +75,23 @@ export const EditorCanvas = ({ isReadOnly }: EditorCanvasProps) => {
     (async () => {
       const loaded = migrateShapes(await loadShapesForPlan(currentPlanId));
       if (cancelled) return;
-      useFloorMapStore.getState().setShapes(loaded);
-      resetHistory();
+
+      // The user may have drawn while the plan was still loading (plan id
+      // resolves asynchronously on first open). Never wipe those edits —
+      // merge them on top of the loaded shapes and adopt them into the plan.
+      const store = useFloorMapStore.getState();
+      const loadedIds = new Set(loaded.map((s) => s.id));
+      const localUnsaved = canUndo()
+        ? store.shapes
+            .filter((s) => !loadedIds.has(s.id))
+            .map((s) => (s.planId ? s : { ...s, planId: currentPlanId }))
+        : [];
+      store.setShapes([...loaded, ...localUnsaved]);
+      if (localUnsaved.length === 0) resetHistory();
+
       const el = containerRef.current;
       const planShapes = loaded.filter((s) => s.planId === currentPlanId || !s.planId);
-      if (el && planShapes.length > 0) {
+      if (el && planShapes.length > 0 && localUnsaved.length === 0) {
         const fitted = calculateFitToContent(planShapes, el.clientWidth, el.clientHeight);
         if (fitted) useFloorMapStore.getState().setViewState(fitted);
       }
