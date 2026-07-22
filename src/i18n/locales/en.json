@@ -2525,7 +2525,8 @@
     "saveFailed": "Could not save the floor plan",
     "roomLinked": "Room linked to \"{{name}}\"",
     "roomSaved": "Room \"{{name}}\" saved to the project",
-    "roomSaveFailed": "Could not save the room to the project — it remains on the drawing"
+    "roomSaveFailed": "Could not save the room to the project — it remains on the drawing",
+    "roomDetailsLoadFailed": "Could not load the room details"
   },
   "canvas": {
     "settings": "Drawing Settings",

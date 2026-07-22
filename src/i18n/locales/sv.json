@@ -1961,7 +1961,8 @@
     "saveFailed": "Kunde inte spara planritningen",
     "roomLinked": "Rummet kopplades till \"{{name}}\"",
     "roomSaved": "Rummet \"{{name}}\" sparades i projektet",
-    "roomSaveFailed": "Kunde inte spara rummet i projektet — det finns kvar på ritningen"
+    "roomSaveFailed": "Kunde inte spara rummet i projektet — det finns kvar på ritningen",
+    "roomDetailsLoadFailed": "Kunde inte hämta rumsdetaljerna"
   },
   "canvas": {
     "settings": "Ritinställningar",

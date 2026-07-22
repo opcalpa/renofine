@@ -5,6 +5,8 @@ import { MobileCanvasToolbar } from "./MobileCanvasToolbar";
 import { UnifiedKonvaCanvas } from "./UnifiedKonvaCanvas";
 import { EditorCanvas } from "./editor/EditorCanvas";
 import { isEditorV2Enabled } from "./editor/flag";
+import { useEditorUiStore } from "./editor/state/uiStore";
+import { supabase } from "@/integrations/supabase/client";
 import { RoomElevationView } from "./RoomElevationView";
 import { RoomDetailDialog } from "./RoomDetailDialog";
 import { RoomPickerDialog } from "./RoomPickerDialog";
@@ -235,6 +237,32 @@ export const FloorMapEditor = ({ projectId, projectName, onBack, backLabel, isRe
     setSelectedRoom(room);
     setRoomDialogOpen(true);
   };
+
+  // v2 editor: double-clicking a linked room on the canvas requests the
+  // room-details panel (same Sheet as the rooms list) via the editor ui store.
+  const roomDetailsRoomId = useEditorUiStore((s) => s.roomDetailsRoomId);
+  useEffect(() => {
+    if (!roomDetailsRoomId) return;
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from("rooms")
+        .select("*")
+        .eq("id", roomDetailsRoomId)
+        .maybeSingle();
+      useEditorUiStore.getState().setRoomDetailsRoomId(null);
+      if (cancelled) return;
+      if (error || !data) {
+        toast.error(t("floormap.roomDetailsLoadFailed", "Kunde inte hämta rumsdetaljerna"));
+        return;
+      }
+      setSelectedRoom(data);
+      setRoomDialogOpen(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [roomDetailsRoomId, t]);
 
   const handleRoomUpdated = () => {
     // Refresh rooms list
