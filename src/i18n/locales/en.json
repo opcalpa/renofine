@@ -2528,7 +2528,9 @@
     "roomSaveFailed": "Could not save the room to the project — it remains on the drawing",
     "roomDetailsLoadFailed": "Could not load the room details",
     "showOnPlan": "Show on floor plan",
-    "roomNotOnPlan": "The room is not drawn on any floor plan"
+    "roomNotOnPlan": "The room is not drawn on any floor plan",
+    "placeOnPlan": "Place on floor plan",
+    "roomPlacedAdjust": "\"{{name}}\" is placed — drag the corners to adjust the dimensions"
   },
   "canvas": {
     "settings": "Drawing Settings",

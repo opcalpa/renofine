@@ -186,14 +186,27 @@ export function RoomHeroV2({
                 />
               )}
             </div>
-            {/* Drawn-on-plan indicator: click → jump to the room on the canvas */}
-            {hasShape && onShowOnPlan && (
+            {/* Plan link: filled pin = drawn (jump to it); dashed pin = not
+                drawn yet (pre-place it on the canvas, ready to adjust) */}
+            {onShowOnPlan && (
               <button
                 type="button"
                 onClick={onShowOnPlan}
-                title={t('floormap.showOnPlan', 'Visa på planritningen')}
+                title={
+                  hasShape
+                    ? t('floormap.showOnPlan', 'Visa på planritningen')
+                    : t('floormap.placeOnPlan', 'Placera på planritningen')
+                }
                 className="absolute -top-1.5 -right-1.5 flex h-6 w-6 items-center justify-center rounded-full shadow-sm transition-transform hover:scale-110"
-                style={{ background: 'var(--rf-green-soft)', color: 'var(--rf-green-soft-fg)' }}
+                style={
+                  hasShape
+                    ? { background: 'var(--rf-green-soft)', color: 'var(--rf-green-soft-fg)' }
+                    : {
+                        background: 'var(--rf-surface)',
+                        color: 'var(--rf-fg-muted)',
+                        border: '1.5px dashed var(--rf-fg-muted)',
+                      }
+                }
               >
                 <MapPin className="h-3.5 w-3.5" />
               </button>

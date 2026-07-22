@@ -28,6 +28,7 @@ import { ToolController } from './tools/ToolController';
 import { resetHistory, canUndo, canRedo, undo, redo } from './core/executor';
 import { execute } from './core/commands';
 import { migrateShapes } from './migration/migrateShapes';
+import { placeRoomOnPlan } from './placeRoomFromList';
 import { useEditorUiStore } from './state/uiStore';
 
 const MIN_ZOOM = 0.1;
@@ -139,6 +140,40 @@ export const EditorCanvas = ({ isReadOnly }: EditorCanvasProps) => {
     })();
   }, [pendingFocusRoomId, shapes, t]);
 
+  // "Placera på planritningen": pre-place an unplaced room at view center,
+  // then center/select it so the user can immediately adjust the corners.
+  const pendingPlaceRoom = useFloorMapStore((s) => s.pendingPlaceRoom);
+  useEffect(() => {
+    if (!pendingPlaceRoom || !currentPlanId || isReadOnly) return;
+    const store = useFloorMapStore.getState();
+    // Already placed (stale request or double-fire): just focus it.
+    const existing = store.shapes.find(
+      (s) => s.type === 'room' && s.roomId === pendingPlaceRoom.roomId
+    );
+    store.setPendingPlaceRoom(null);
+    if (existing) {
+      store.centerOnRoom(pendingPlaceRoom.roomId);
+      return;
+    }
+    const el = containerRef.current;
+    const { viewState: view } = store;
+    const viewCenter = {
+      x: ((el?.clientWidth ?? 1200) / 2 - view.panX) / view.zoom,
+      y: ((el?.clientHeight ?? 800) / 2 - view.panY) / view.zoom,
+    };
+    const placed = placeRoomOnPlan(pendingPlaceRoom, viewCenter);
+    if (placed) {
+      useFloorMapStore.getState().centerOnRoom(pendingPlaceRoom.roomId);
+      toast.success(
+        t(
+          'floormap.roomPlacedAdjust',
+          '"{{name}}" är utplacerat — dra i hörnen för att justera måtten',
+          { name: pendingPlaceRoom.name }
+        )
+      );
+    }
+  }, [pendingPlaceRoom, currentPlanId, isReadOnly, t]);
+
   // Keep the controller in sync with the store tool
   useEffect(() => {
     controller.setActiveTool(activeTool);
@@ -211,6 +246,8 @@ export const EditorCanvas = ({ isReadOnly }: EditorCanvasProps) => {
       getView: () => useFloorMapStore.getState().viewState,
       getTool: () => useFloorMapStore.getState().activeTool,
       execute,
+      placeRoom: (req: { roomId: string; name: string; color?: string | null; areaSqm?: number | null }) =>
+        useFloorMapStore.getState().setPendingPlaceRoom(req),
       isReadOnly,
     };
     return () => {

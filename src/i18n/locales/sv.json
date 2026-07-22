@@ -1964,7 +1964,9 @@
     "roomSaveFailed": "Kunde inte spara rummet i projektet — det finns kvar på ritningen",
     "roomDetailsLoadFailed": "Kunde inte hämta rumsdetaljerna",
     "showOnPlan": "Visa på planritningen",
-    "roomNotOnPlan": "Rummet är inte utritat på någon planritning"
+    "roomNotOnPlan": "Rummet är inte utritat på någon planritning",
+    "placeOnPlan": "Placera på planritningen",
+    "roomPlacedAdjust": "\"{{name}}\" är utplacerat — dra i hörnen för att justera måtten"
   },
   "canvas": {
     "settings": "Ritinställningar",

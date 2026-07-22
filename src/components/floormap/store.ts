@@ -92,6 +92,9 @@ interface FloorMapStore {
   /** Room to center/select on the canvas once its plan is loaded (set from
    *  the room-details "show on plan" link; consumed by the v2 editor). */
   pendingFocusRoomId: string | null;
+  /** Unplaced room to pre-place on the canvas (room-details "place on plan"
+   *  link): the v2 editor drops walls + room at view center for adjusting. */
+  pendingPlaceRoom: { roomId: string; name: string; color?: string | null; areaSqm?: number | null } | null;
 
   // History for Undo/Redo
   history: FloorMapShape[][];
@@ -150,6 +153,7 @@ interface FloorMapStore {
   setPendingRoomPlacement: (room: { roomId: string; roomName: string; color?: string } | null) => void;
   setPendingItemPlacement: (link: { itemId: string; roomId: string; subtype: string } | null) => void;
   setPendingFocusRoomId: (roomId: string | null) => void;
+  setPendingPlaceRoom: (room: { roomId: string; name: string; color?: string | null; areaSqm?: number | null } | null) => void;
   centerOnRoom: (roomId: string) => void;
   
   // Actions - Drawing state
@@ -263,6 +267,7 @@ export const useFloorMapStore = create<FloorMapStore>((set, get) => ({
   pendingRoomPlacement: null, // NEW: For placing existing room from list onto canvas
   pendingItemLink: null, // E3: room_items row to link to the next placed object
   pendingFocusRoomId: null,
+  pendingPlaceRoom: null,
   history: [[]],
   historyIndex: 0,
   isDrawing: false,
@@ -497,6 +502,7 @@ export const useFloorMapStore = create<FloorMapStore>((set, get) => ({
   }),
 
   setPendingFocusRoomId: (roomId) => set({ pendingFocusRoomId: roomId }),
+  setPendingPlaceRoom: (room) => set({ pendingPlaceRoom: room }),
 
   // Center view on a specific room by roomId
   centerOnRoom: (roomId) => set((state) => {

@@ -73,14 +73,24 @@ export function RoomDetailDialog({
   const { t } = useTranslation();
   const navigate = useNavigate();
 
-  // "Visa på planritningen": close, arm the focus request, and jump to the
-  // drawing view — the v2 editor centers/selects the room once loaded.
+  // "Visa på planritningen" / "Placera på planritningen": close, arm the
+  // request, and jump to the drawing view. Placed rooms get centered;
+  // unplaced rooms get pre-placed at view center, ready to adjust.
   const hasPlanShape = !!(room?.floor_plan_position as { points?: unknown[] } | null)?.points?.length;
-  const handleShowOnPlan = hasPlanShape
+  const handleShowOnPlan = room
     ? () => {
-        if (!room) return;
         onOpenChange(false);
-        useFloorMapStore.getState().setPendingFocusRoomId(room.id);
+        const store = useFloorMapStore.getState();
+        if (hasPlanShape) {
+          store.setPendingFocusRoomId(room.id);
+        } else {
+          store.setPendingPlaceRoom({
+            roomId: room.id,
+            name: room.name,
+            color: (room as { color?: string | null }).color ?? null,
+            areaSqm: (room.dimensions as { area_sqm?: number } | null)?.area_sqm ?? null,
+          });
+        }
         navigate({ search: "?tab=spaceplanner&subtab=floorplan" });
       }
     : undefined;
