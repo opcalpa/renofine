@@ -2530,7 +2530,26 @@
     "showOnPlan": "Show on floor plan",
     "roomNotOnPlan": "The room is not drawn on any floor plan",
     "placeOnPlan": "Place on floor plan",
-    "roomPlacedAdjust": "\"{{name}}\" is placed — drag the corners to adjust the dimensions"
+    "roomPlacedAdjust": "\"{{name}}\" is placed — drag the corners to adjust the dimensions",
+    "selection": {
+      "rotate90": "Rotate 90°",
+      "mirrorH": "Mirror horizontally",
+      "mirrorV": "Mirror vertically",
+      "duplicate": "Duplicate (Cmd+D)",
+      "flipOpening": "Flip opening (F)",
+      "align": "Align",
+      "alignLeft": "Left edges",
+      "alignCenterX": "Center horizontally",
+      "alignRight": "Right edges",
+      "alignTop": "Top edges",
+      "alignCenterY": "Center vertically",
+      "alignBottom": "Bottom edges",
+      "distribute": "Distribute",
+      "distributeH": "Evenly horizontally",
+      "distributeV": "Evenly vertically",
+      "delete": "Delete (Delete)",
+      "alignMenu": "Align & distribute"
+    }
   },
   "canvas": {
     "settings": "Drawing Settings",

@@ -8,7 +8,60 @@
 
 import React from 'react';
 import { Line, Circle, Rect, Text, Group } from 'react-konva';
-import { useEditorUiStore } from '../state/uiStore';
+import { useEditorUiStore, Measurement } from '../state/uiStore';
+import { formatWorldAsMm } from '../core/units';
+
+/** A finished measure-tool distance: line, end ticks, centered mm badge. */
+const MeasurementMark: React.FC<{ m: Measurement; px: (n: number) => number }> = ({ m, px }) => {
+  const dx = m.to.x - m.from.x;
+  const dy = m.to.y - m.from.y;
+  const length = Math.hypot(dx, dy) || 1;
+  const tick = px(6);
+  const nx = (-dy / length) * tick;
+  const ny = (dx / length) * tick;
+  const midX = (m.from.x + m.to.x) / 2;
+  const midY = (m.from.y + m.to.y) / 2;
+  const label = formatWorldAsMm(length);
+  const labelWidth = px(label.length * 6.5 + 12);
+  return (
+    <Group listening={false}>
+      <Line
+        points={[m.from.x, m.from.y, m.to.x, m.to.y]}
+        stroke="#dc2626"
+        strokeWidth={px(1.5)}
+        perfectDrawEnabled={false}
+      />
+      {[m.from, m.to].map((p, i) => (
+        <Line
+          key={i}
+          points={[p.x - nx, p.y - ny, p.x + nx, p.y + ny]}
+          stroke="#dc2626"
+          strokeWidth={px(1.5)}
+          perfectDrawEnabled={false}
+        />
+      ))}
+      <Rect
+        x={midX - labelWidth / 2}
+        y={midY - px(22)}
+        width={labelWidth}
+        height={px(16)}
+        fill="#dc2626"
+        cornerRadius={px(3)}
+        perfectDrawEnabled={false}
+      />
+      <Text
+        x={midX - labelWidth / 2}
+        y={midY - px(18.5)}
+        width={labelWidth}
+        align="center"
+        text={label}
+        fontSize={px(10)}
+        fill="#ffffff"
+        perfectDrawEnabled={false}
+      />
+    </Group>
+  );
+};
 
 interface OverlayLayerProps {
   zoom: number;
@@ -31,6 +84,7 @@ export const OverlayLayer: React.FC<OverlayLayerProps> = ({ zoom }) => {
   const snapGuides = useEditorUiStore((s) => s.snapGuides);
   const marquee = useEditorUiStore((s) => s.marquee);
   const openingGhost = useEditorUiStore((s) => s.openingGhost);
+  const measurements = useEditorUiStore((s) => s.measurements);
 
   const px = (n: number) => n / zoom;
 
@@ -40,6 +94,11 @@ export const OverlayLayer: React.FC<OverlayLayerProps> = ({ zoom }) => {
 
   return (
     <>
+      {/* Laid-down measurements */}
+      {measurements.map((m, i) => (
+        <MeasurementMark key={i} m={m} px={px} />
+      ))}
+
       {/* Committed draft polyline */}
       {draftPoints.length >= 2 && (
         <Line

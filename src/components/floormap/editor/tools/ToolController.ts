@@ -15,7 +15,10 @@ import { SelectTool } from './SelectTool';
 import { WallTool } from './WallTool';
 import { PanTool } from './PanTool';
 import { OpeningTool } from './OpeningTool';
+import { MeasureTool } from './MeasureTool';
 import { undo, redo } from '../core/executor';
+import { execute } from '../core/commands';
+import { copySelection, cutSelection, pasteClipboard } from '../core/clipboard';
 
 export class ToolController {
   private tools: Map<string, BaseTool> = new Map();
@@ -27,6 +30,7 @@ export class ToolController {
       new SelectTool(),
       new WallTool(),
       new PanTool(),
+      new MeasureTool(),
       // Legacy toolbar tool ids map straight onto the v2 opening tool.
       new OpeningTool('door_line', 'door'),
       new OpeningTool('window_line', 'window'),
@@ -121,6 +125,29 @@ export class ToolController {
       return true;
     }
 
+    // Clipboard + duplicate + select all
+    if (mod && e.key.toLowerCase() === 'c') {
+      return copySelection() > 0;
+    }
+    if (mod && e.key.toLowerCase() === 'x') {
+      return cutSelection() > 0;
+    }
+    if (mod && e.key.toLowerCase() === 'v') {
+      return pasteClipboard().length > 0;
+    }
+    if (mod && e.key.toLowerCase() === 'd') {
+      if (store.selectedShapeIds.length === 0) return false;
+      execute('selection.duplicate', { ids: store.selectedShapeIds });
+      return true;
+    }
+    if (mod && e.key.toLowerCase() === 'a') {
+      const ids = store.shapes
+        .filter((s) => (s.planId === store.currentPlanId || !s.planId) && !s.locked && s.type !== 'image')
+        .map((s) => s.id);
+      store.setSelectedShapeIds(ids);
+      return true;
+    }
+
     // Space → transient pan
     if (e.key === ' ' && !this.spacePan) {
       this.spacePan = { previous: this.active };
@@ -140,6 +167,7 @@ export class ToolController {
         w: 'wall',
         h: 'pan',
         d: 'door_line',
+        m: 'measure',
       };
       const tool = toolByKey[e.key.toLowerCase()];
       if (tool) {

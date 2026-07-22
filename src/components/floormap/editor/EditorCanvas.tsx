@@ -19,6 +19,7 @@ import { loadShapesForPlan, saveShapesForPlan } from '../utils/plans';
 import Grid from '../canvas/Grid';
 import { calculateFitToContent } from '../canvas/utils/fitToContent';
 import { EditorHud } from './EditorHud';
+import { FloatingSelectionToolbar } from './FloatingSelectionToolbar';
 import { RoomNamingController } from './RoomNamingController';
 import { WallsLayer } from './render/WallsLayer';
 import { LegacyShapesLayer } from './render/LegacyShapesLayer';
@@ -312,6 +313,7 @@ export const EditorCanvas = ({ isReadOnly }: EditorCanvasProps) => {
   return (
     <div ref={containerRef} className="relative w-full h-full bg-muted/30" data-testid="editor-v2-canvas">
       <EditorHud />
+      {!isReadOnly && <FloatingSelectionToolbar />}
       <RoomNamingController isReadOnly={isReadOnly} />
       <Stage
         ref={stageRef}

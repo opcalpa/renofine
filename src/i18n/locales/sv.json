@@ -1966,7 +1966,26 @@
     "showOnPlan": "Visa på planritningen",
     "roomNotOnPlan": "Rummet är inte utritat på någon planritning",
     "placeOnPlan": "Placera på planritningen",
-    "roomPlacedAdjust": "\"{{name}}\" är utplacerat — dra i hörnen för att justera måtten"
+    "roomPlacedAdjust": "\"{{name}}\" är utplacerat — dra i hörnen för att justera måtten",
+    "selection": {
+      "rotate90": "Rotera 90°",
+      "mirrorH": "Spegla horisontellt",
+      "mirrorV": "Spegla vertikalt",
+      "duplicate": "Duplicera (Cmd+D)",
+      "flipOpening": "Vänd öppning (F)",
+      "align": "Justera",
+      "alignLeft": "Vänsterkanter",
+      "alignCenterX": "Centrera horisontellt",
+      "alignRight": "Högerkanter",
+      "alignTop": "Överkanter",
+      "alignCenterY": "Centrera vertikalt",
+      "alignBottom": "Underkanter",
+      "distribute": "Fördela",
+      "distributeH": "Jämnt horisontellt",
+      "distributeV": "Jämnt vertikalt",
+      "delete": "Radera (Delete)",
+      "alignMenu": "Justera & fördela"
+    }
   },
   "canvas": {
     "settings": "Ritinställningar",

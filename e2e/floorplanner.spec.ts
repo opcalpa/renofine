@@ -19,7 +19,11 @@ declare global {
         coordinates: Record<string, number>;
         metadata?: { lengthMM?: number };
       }>;
-      getUi: () => { canUndo: boolean; canRedo: boolean };
+      getUi: () => {
+        canUndo: boolean;
+        canRedo: boolean;
+        measurements: Array<{ from: { x: number; y: number }; to: { x: number; y: number } }>;
+      };
       getTool: () => string;
     };
   }
@@ -186,6 +190,151 @@ test.describe('Floor planner v2', () => {
       return d && { kind: d.openingKind, hosted: !!d.parentWallId, widthMM: d.metadata?.widthMM };
     });
     expect(door).toEqual({ kind: 'door', hosted: true, widthMM: 890 });
+  });
+
+  test('measure tool lays down a measurement without creating shapes', async ({ page }) => {
+    await openDemoPlanner(page);
+    const canvas = page.getByTestId('editor-v2-canvas');
+    const box = (await canvas.boundingBox())!;
+
+    const shapeCount = () => page.evaluate(() => window.__rfEditorDebug!.getShapes().length);
+    const before = await shapeCount();
+
+    await page.keyboard.press('m');
+    await page.mouse.move(box.x + 300, box.y + 300);
+    await page.mouse.down();
+    await page.mouse.up();
+    await page.mouse.move(box.x + 500, box.y + 300);
+    await page.mouse.down();
+    await page.mouse.up();
+
+    const measurements = await page.evaluate(
+      () => window.__rfEditorDebug!.getUi().measurements
+    );
+    expect(measurements.length).toBe(1);
+    expect(await shapeCount()).toBe(before);
+
+    // Switching back to select clears the measurements (ephemeral by design)
+    await page.keyboard.press('v');
+    expect(
+      await page.evaluate(() => window.__rfEditorDebug!.getUi().measurements.length)
+    ).toBe(0);
+  });
+
+  test('duplicate (Cmd+D) copies the selection and undoes as one step', async ({ page }) => {
+    await openDemoPlanner(page);
+    const canvas = page.getByTestId('editor-v2-canvas');
+    const box = (await canvas.boundingBox())!;
+
+    await page.keyboard.press('w');
+    await page.mouse.move(box.x + 300, box.y + 300);
+    await page.mouse.down();
+    await page.mouse.up();
+    await page.mouse.move(box.x + 500, box.y + 300);
+    await page.mouse.down();
+    await page.mouse.up();
+    await page.keyboard.press('Enter');
+
+    const wallCount = () =>
+      page.evaluate(() => window.__rfEditorDebug!.getShapes().filter((s) => s.type === 'wall').length);
+    const drawn = await wallCount();
+
+    await page.keyboard.press('v');
+    await page.keyboard.press('ControlOrMeta+a');
+    await page.keyboard.press('ControlOrMeta+d');
+    expect(await wallCount()).toBe(drawn * 2);
+    await page.keyboard.press('ControlOrMeta+z');
+    expect(await wallCount()).toBe(drawn);
+  });
+
+  test('copy/paste (Cmd+C/V) recreates the selection with fresh ids', async ({ page }) => {
+    await openDemoPlanner(page);
+    const canvas = page.getByTestId('editor-v2-canvas');
+    const box = (await canvas.boundingBox())!;
+
+    await page.keyboard.press('w');
+    await page.mouse.move(box.x + 320, box.y + 420);
+    await page.mouse.down();
+    await page.mouse.up();
+    await page.mouse.move(box.x + 520, box.y + 420);
+    await page.mouse.down();
+    await page.mouse.up();
+    await page.keyboard.press('Enter');
+
+    const wallIds = () =>
+      page.evaluate(() =>
+        window.__rfEditorDebug!.getShapes().filter((s) => s.type === 'wall').map((s) => s.id)
+      );
+    const before = await wallIds();
+
+    await page.keyboard.press('v');
+    await page.keyboard.press('ControlOrMeta+a');
+    await page.keyboard.press('ControlOrMeta+c');
+    await page.keyboard.press('ControlOrMeta+v');
+
+    const after = await wallIds();
+    expect(after.length).toBe(before.length * 2);
+    expect(new Set(after).size).toBe(after.length);
+  });
+
+  test('selection toolbar rotates a wall 90 degrees', async ({ page }) => {
+    await openDemoPlanner(page);
+    const canvas = page.getByTestId('editor-v2-canvas');
+    const box = (await canvas.boundingBox())!;
+
+    // One horizontal wall
+    await page.keyboard.press('w');
+    await page.mouse.move(box.x + 300, box.y + 350);
+    await page.mouse.down();
+    await page.mouse.up();
+    await page.mouse.move(box.x + 500, box.y + 350);
+    await page.mouse.down();
+    await page.mouse.up();
+    await page.keyboard.press('Enter');
+
+    // Select it → floating toolbar appears → rotate
+    await page.keyboard.press('v');
+    await page.mouse.click(box.x + 400, box.y + 350);
+    await expect(page.getByTestId('selection-toolbar')).toBeVisible();
+    await page.getByTitle('Rotera 90°').click();
+
+    const wall = await page.evaluate(() => {
+      const walls = window.__rfEditorDebug!.getShapes().filter((s) => s.type === 'wall');
+      return walls[walls.length - 1].coordinates as { x1: number; y1: number; x2: number; y2: number };
+    });
+    // Horizontal → vertical
+    expect(Math.abs(wall.x1 - wall.x2)).toBeLessThan(1);
+    expect(Math.abs(wall.y1 - wall.y2)).toBeGreaterThan(100);
+  });
+
+  test('fast drawing of separate wall chains commits every chain', async ({ page }) => {
+    // Regression: Konva synthesizes a dblclick across a finished chain (the
+    // Enter that ended it), which used to swallow the next chain's first
+    // vertex when drawing quickly.
+    await openDemoPlanner(page);
+    const canvas = page.getByTestId('editor-v2-canvas');
+    const box = (await canvas.boundingBox())!;
+    const click = async (x: number, y: number) => {
+      await page.mouse.move(box.x + x, box.y + y);
+      await page.mouse.down();
+      await page.mouse.up();
+    };
+
+    await page.keyboard.press('w');
+    await click(300, 300);
+    await click(400, 300);
+    await page.keyboard.press('Enter');
+    await click(500, 360);
+    await click(600, 360);
+    await page.keyboard.press('Enter');
+    await click(700, 420);
+    await click(800, 420);
+    await page.keyboard.press('Enter');
+
+    const walls = await page.evaluate(
+      () => window.__rfEditorDebug!.getShapes().filter((s) => s.type === 'wall').length
+    );
+    expect(walls).toBe(3);
   });
 
   test('undo and redo work as single steps', async ({ page }) => {

@@ -76,10 +76,11 @@ export class WallTool extends BaseTool {
   onDoubleClick(): void {
     // Konva's double-click fires on two QUICK clicks even far apart, which
     // would cut fast polyline drawing short. Only treat it as "finish" when
-    // both clicks landed on (nearly) the same spot.
+    // both clicks belong to the CURRENT chain (a dblclick can be synthesized
+    // across a just-finished chain, where prevDownScreen is null) and landed
+    // on (nearly) the same spot.
+    if (!this.prevDownScreen || !this.lastDownScreen) return;
     if (
-      this.prevDownScreen &&
-      this.lastDownScreen &&
       Math.hypot(
         this.lastDownScreen.x - this.prevDownScreen.x,
         this.lastDownScreen.y - this.prevDownScreen.y

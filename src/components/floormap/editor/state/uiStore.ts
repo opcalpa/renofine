@@ -24,6 +24,11 @@ export interface SnapGuideLine {
   distanceLabel?: string;
 }
 
+export interface Measurement {
+  from: Point;
+  to: Point;
+}
+
 interface EditorUiState {
   /** Wall polyline being drawn (committed vertices, world coords). */
   draftPoints: Point[];
@@ -49,6 +54,8 @@ interface EditorUiState {
   roomDetailsRoomId: string | null;
   /** Ghost preview while placing an opening on a wall. */
   openingGhost: { rect: Point[]; valid: boolean } | null;
+  /** Laid-down measure-tool distances (cleared when the tool deactivates). */
+  measurements: Measurement[];
 
   setDraft: (points: Point[], cursor: Point | null, label: string | null) => void;
   clearDraft: () => void;
@@ -60,6 +67,7 @@ interface EditorUiState {
   setNamingShapeId: (id: string | null) => void;
   setRoomDetailsRoomId: (id: string | null) => void;
   setOpeningGhost: (g: { rect: Point[]; valid: boolean } | null) => void;
+  setMeasurements: (m: Measurement[]) => void;
 }
 
 export const useEditorUiStore = create<EditorUiState>((set) => ({
@@ -76,6 +84,7 @@ export const useEditorUiStore = create<EditorUiState>((set) => ({
   namingShapeId: null,
   roomDetailsRoomId: null,
   openingGhost: null,
+  measurements: [],
 
   setDraft: (points, cursor, label) =>
     set({ draftPoints: points, draftCursor: cursor, draftLabel: label }),
@@ -89,4 +98,5 @@ export const useEditorUiStore = create<EditorUiState>((set) => ({
   setNamingShapeId: (id) => set({ namingShapeId: id }),
   setRoomDetailsRoomId: (id) => set({ roomDetailsRoomId: id }),
   setOpeningGhost: (g) => set({ openingGhost: g }),
+  setMeasurements: (m) => set({ measurements: m }),
 }));

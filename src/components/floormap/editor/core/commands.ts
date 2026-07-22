@@ -20,6 +20,7 @@ import {
   OPENING_DEFAULT_WIDTH_MM,
 } from '../geometry/openingGeometry';
 import { useFloorMapStore } from '../../store';
+import { selectionOps } from './selectionOps';
 
 export interface Point {
   x: number;
@@ -120,6 +121,8 @@ export interface OpeningAddParams {
 }
 
 export const commands = {
+  ...selectionOps,
+
   'shape.add'(params: ShapeAddParams): FloorMapShape {
     const shape: FloorMapShape = {
       ...params.shape,

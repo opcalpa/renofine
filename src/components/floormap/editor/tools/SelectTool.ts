@@ -3,12 +3,14 @@
  * space, drag to move selection (junction-aware for walls), Delete to remove.
  */
 
-import { FloorMapShape, LineCoordinates } from '../../types';
+import { LineCoordinates } from '../../types';
 import { useFloorMapStore } from '../../store';
 import { BaseTool, ToolPointerEvent } from './BaseTool';
 import { execute } from '../core/commands';
 import { beginGesture, endGesture } from '../core/executor';
 import { snap } from '../snapping/SnapEngine';
+import { mmToWorld } from '../core/units';
+import { shapeBounds } from '../geometry/bounds';
 import { Point, useEditorUiStore } from '../state/uiStore';
 
 type DragMode =
@@ -17,47 +19,6 @@ type DragMode =
   | { kind: 'marquee'; start: Point }
   | { kind: 'move'; start: Point; last: Point; ids: string[] }
   | { kind: 'junction'; at: Point; wallIds: string[] };
-
-function shapeBounds(shape: FloorMapShape): { minX: number; minY: number; maxX: number; maxY: number } | null {
-  const c = shape.coordinates as Record<string, unknown>;
-  if (!c) return null;
-  if ('x1' in c) {
-    const lc = shape.coordinates as LineCoordinates;
-    return {
-      minX: Math.min(lc.x1, lc.x2),
-      minY: Math.min(lc.y1, lc.y2),
-      maxX: Math.max(lc.x1, lc.x2),
-      maxY: Math.max(lc.y1, lc.y2),
-    };
-  }
-  if ('points' in c) {
-    const points = c.points as Point[];
-    if (!points?.length) return null;
-    return {
-      minX: Math.min(...points.map((p) => p.x)),
-      minY: Math.min(...points.map((p) => p.y)),
-      maxX: Math.max(...points.map((p) => p.x)),
-      maxY: Math.max(...points.map((p) => p.y)),
-    };
-  }
-  if ('left' in c) {
-    const left = c.left as number;
-    const top = c.top as number;
-    return { minX: left, minY: top, maxX: left + (c.width as number), maxY: top + (c.height as number) };
-  }
-  if ('cx' in c) {
-    const cx = c.cx as number;
-    const cy = c.cy as number;
-    const r = c.radius as number;
-    return { minX: cx - r, minY: cy - r, maxX: cx + r, maxY: cy + r };
-  }
-  if ('x' in c) {
-    const x = c.x as number;
-    const y = c.y as number;
-    return { minX: x, minY: y, maxX: x + ((c.width as number) || 0), maxY: y + ((c.height as number) || 0) };
-  }
-  return null;
-}
 
 export class SelectTool extends BaseTool {
   readonly id = 'select';
@@ -216,6 +177,21 @@ export class SelectTool extends BaseTool {
       const shape = store.shapes.find((s) => s.id === store.selectedShapeIds[0]);
       if (shape?.type === 'opening') {
         execute('opening.flip', { id: shape.id });
+        return true;
+      }
+    }
+    // Arrow keys nudge the selection: 10 mm, Shift = 100 mm
+    if (e.key.startsWith('Arrow') && store.selectedShapeIds.length > 0) {
+      const step = mmToWorld(e.shiftKey ? 100 : 10);
+      const delta: Record<string, { dx: number; dy: number }> = {
+        ArrowLeft: { dx: -step, dy: 0 },
+        ArrowRight: { dx: step, dy: 0 },
+        ArrowUp: { dx: 0, dy: -step },
+        ArrowDown: { dx: 0, dy: step },
+      };
+      const d = delta[e.key];
+      if (d) {
+        execute('shape.move', { ids: store.selectedShapeIds, ...d });
         return true;
       }
     }
