@@ -12,6 +12,7 @@ import { FloorMapShape } from '../../types';
 import { Patch, applyPatches, invertPatches } from './patches';
 import { useEditorUiStore } from '../state/uiStore';
 import { buildRoomReconcilePatches } from '../geometry/roomReconciler';
+import { buildOpeningSyncPatches } from '../geometry/openingSync';
 
 export interface HistoryEntry {
   label: string;
@@ -55,6 +56,13 @@ function touchesWalls(patches: Patch[], shapes: FloorMapShape[]): boolean {
   );
 }
 
+function touchesOpenings(patches: Patch[], shapes: FloorMapShape[]): boolean {
+  const openingIds = new Set(shapes.filter((s) => s.type === 'opening').map((s) => s.id));
+  return patches.some((p) =>
+    p.op === 'update' ? openingIds.has(p.id) : p.shape.type === 'opening'
+  );
+}
+
 let reconciling = false;
 
 /**
@@ -68,13 +76,24 @@ export function commit(label: string, patches: Patch[]): Patch[] {
   setShapes(applyPatches(getShapes(), patches));
 
   let all = patches;
-  if (!reconciling && touchesWalls(patches, getShapes())) {
+  const wallsTouched = !reconciling && touchesWalls(patches, getShapes());
+  const openingsTouched = !reconciling && touchesOpenings(patches, getShapes());
+  if (wallsTouched || openingsTouched) {
     reconciling = true;
     try {
-      const roomPatches = buildRoomReconcilePatches(getShapes());
-      if (roomPatches.length > 0) {
-        setShapes(applyPatches(getShapes(), roomPatches));
-        all = [...patches, ...roomPatches];
+      if (wallsTouched) {
+        const roomPatches = buildRoomReconcilePatches(getShapes());
+        if (roomPatches.length > 0) {
+          setShapes(applyPatches(getShapes(), roomPatches));
+          all = [...all, ...roomPatches];
+        }
+      }
+      // Keep openings' derived world coordinates fresh (elevation view +
+      // legacy editor read them) whenever walls or openings changed.
+      const openingPatches = buildOpeningSyncPatches(getShapes());
+      if (openingPatches.length > 0) {
+        setShapes(applyPatches(getShapes(), openingPatches));
+        all = [...all, ...openingPatches];
       }
     } finally {
       reconciling = false;

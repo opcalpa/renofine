@@ -40,6 +40,7 @@ import { useFloorMapStore } from './store';
 import { InlineCommentPopover } from '@/components/comments/InlineCommentPopover';
 import { supabase } from '@/integrations/supabase/client';
 import { FloorMapShape, PolygonCoordinates, LineCoordinates, WallObjectCategory, WallRelativePosition } from './types';
+import { v2OpeningsAsLegacy } from './editor/geometry/openingSync';
 import { WallDirection, getDirectionLabel, getDirectionIcon } from './utils/roomWalls';
 import { getAdminDefaults } from './canvas/constants';
 import { cn } from '@/lib/utils';
@@ -325,7 +326,7 @@ function analyzeRoomDirections(
     s.planId === room.planId
   );
 
-  const openings = allShapes.filter(s =>
+  const openings = [...allShapes, ...v2OpeningsAsLegacy(allShapes)].filter(s =>
     ['door_line', 'window_line', 'sliding_door_line'].includes(s.type) &&
     s.planId === room.planId
   );
@@ -504,7 +505,7 @@ function analyzeRoomSegments(
     s.planId === room.planId
   );
 
-  const openings = allShapes.filter(s =>
+  const openings = [...allShapes, ...v2OpeningsAsLegacy(allShapes)].filter(s =>
     ['door_line', 'window_line', 'sliding_door_line'].includes(s.type) &&
     s.planId === room.planId
   );

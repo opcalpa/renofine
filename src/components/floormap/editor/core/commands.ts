@@ -165,10 +165,16 @@ export const commands = {
     const patches: Patch[] = [];
     for (const shape of shapes) {
       if (!ids.has(shape.id)) continue;
-      const updates =
-        shape.type === 'opening' && shape.parentWallId
-          ? slideOpening(shape, params.dx, params.dy, shapes)
-          : translateCoordinates(shape, params.dx, params.dy);
+      if (shape.type === 'opening' && shape.parentWallId) {
+        // When the host wall moves too, the opening rides along with it (the
+        // derived-coordinate sync follows the wall) — sliding it as well
+        // would move it double.
+        if (ids.has(shape.parentWallId)) continue;
+        const updates = slideOpening(shape, params.dx, params.dy, shapes);
+        if (Object.keys(updates).length > 0) patches.push(makeUpdatePatch(shape, updates));
+        continue;
+      }
+      const updates = translateCoordinates(shape, params.dx, params.dy);
       if (Object.keys(updates).length > 0) patches.push(makeUpdatePatch(shape, updates));
     }
     commit('Flytta', patches);

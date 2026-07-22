@@ -350,6 +350,49 @@ test.describe('Floor planner v2', () => {
     expect(width).toBe(1200);
   });
 
+  test('moving wall and opening together moves the opening once, with synced coordinates', async ({ page }) => {
+    // Regression: when an opening AND its host wall were both selected, the
+    // opening both slid along the wall and rode the wall's translation —
+    // moving double. It must ride along only.
+    await openDemoPlanner(page);
+    const canvas = page.getByTestId('editor-v2-canvas');
+    const box = (await canvas.boundingBox())!;
+
+    await page.keyboard.press('w');
+    await page.mouse.move(box.x + 300, box.y + 350);
+    await page.mouse.down();
+    await page.mouse.up();
+    await page.mouse.move(box.x + 800, box.y + 350);
+    await page.mouse.down();
+    await page.mouse.up();
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('d');
+    await page.mouse.move(box.x + 550, box.y + 352);
+    await page.waitForTimeout(100);
+    await page.mouse.down();
+    await page.mouse.up();
+
+    const doorState = () =>
+      page.evaluate(() => {
+        const d = window.__rfEditorDebug!.getShapes().find((s) => s.type === 'opening') as {
+          positionOnWall?: number;
+          coordinates: { x1: number };
+        };
+        return { pos: d.positionOnWall, x1: d.coordinates.x1 };
+      });
+    const before = await doorState();
+    // The executor sync writes real derived coordinates (elevation reads them)
+    expect(before.x1).toBeGreaterThan(0);
+
+    // Select everything and nudge right (Shift = 100 mm = 10 world units)
+    await page.keyboard.press('v');
+    await page.keyboard.press('ControlOrMeta+a');
+    await page.keyboard.press('Shift+ArrowRight');
+    const after = await doorState();
+    expect(after.pos).toBeCloseTo(before.pos!, 5);
+    expect(after.x1 - before.x1).toBeCloseTo(10, 1);
+  });
+
   test('clicking a dimension label and typing a new length moves the wall', async ({ page }) => {
     await openDemoPlanner(page);
     const canvas = page.getByTestId('editor-v2-canvas');
