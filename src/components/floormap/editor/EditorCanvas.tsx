@@ -14,6 +14,7 @@ import { KonvaEventObject } from 'konva/lib/Node';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { useFloorMapStore } from '../store';
+import { supabase } from '@/integrations/supabase/client';
 import { loadShapesForPlan, saveShapesForPlan } from '../utils/plans';
 import Grid from '../canvas/Grid';
 import { calculateFitToContent } from '../canvas/utils/fitToContent';
@@ -100,6 +101,43 @@ export const EditorCanvas = ({ isReadOnly }: EditorCanvasProps) => {
       cancelled = true;
     };
   }, [currentPlanId]);
+
+  // "Visa på planritningen" from room details: center + select the room's
+  // shape once its plan is loaded; switch plan first if it lives elsewhere.
+  const pendingFocusRoomId = useFloorMapStore((s) => s.pendingFocusRoomId);
+  const focusLookupRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!pendingFocusRoomId) return;
+    const store = useFloorMapStore.getState();
+    const target = store.shapes.find(
+      (s) => s.type === 'room' && s.roomId === pendingFocusRoomId
+    );
+    if (target) {
+      store.centerOnRoom(pendingFocusRoomId);
+      store.setPendingFocusRoomId(null);
+      focusLookupRef.current = null;
+      return;
+    }
+    // Not on the loaded plan — look up which plan hosts it (once per request).
+    if (focusLookupRef.current === pendingFocusRoomId) return;
+    focusLookupRef.current = pendingFocusRoomId;
+    (async () => {
+      const { data } = await supabase
+        .from('floor_map_shapes')
+        .select('plan_id')
+        .eq('room_id', pendingFocusRoomId)
+        .limit(1)
+        .maybeSingle();
+      const fresh = useFloorMapStore.getState();
+      if (fresh.pendingFocusRoomId !== pendingFocusRoomId) return;
+      if (data?.plan_id && data.plan_id !== fresh.currentPlanId) {
+        fresh.setCurrentPlanId(data.plan_id); // load effect re-runs → this effect centers
+      } else if (!data?.plan_id) {
+        fresh.setPendingFocusRoomId(null);
+        toast.info(t('floormap.roomNotOnPlan', 'Rummet är inte utritat på någon planritning'));
+      }
+    })();
+  }, [pendingFocusRoomId, shapes, t]);
 
   // Keep the controller in sync with the store tool
   useEffect(() => {

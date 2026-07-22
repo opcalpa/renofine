@@ -89,6 +89,9 @@ interface FloorMapStore {
   pendingTemplateId: string | null; // Template ID from Template Gallery
   pendingRoomPlacement: { roomId: string; roomName: string; color?: string } | null; // Room from list to place on canvas
   pendingItemLink: { itemId: string; roomId: string } | null; // room_items row to link to the next placed object (E3)
+  /** Room to center/select on the canvas once its plan is loaded (set from
+   *  the room-details "show on plan" link; consumed by the v2 editor). */
+  pendingFocusRoomId: string | null;
 
   // History for Undo/Redo
   history: FloorMapShape[][];
@@ -146,6 +149,7 @@ interface FloorMapStore {
   setPendingTemplateId: (templateId: string | null) => void;
   setPendingRoomPlacement: (room: { roomId: string; roomName: string; color?: string } | null) => void;
   setPendingItemPlacement: (link: { itemId: string; roomId: string; subtype: string } | null) => void;
+  setPendingFocusRoomId: (roomId: string | null) => void;
   centerOnRoom: (roomId: string) => void;
   
   // Actions - Drawing state
@@ -258,6 +262,7 @@ export const useFloorMapStore = create<FloorMapStore>((set, get) => ({
   pendingTemplateId: null, // NEW: For template gallery placement
   pendingRoomPlacement: null, // NEW: For placing existing room from list onto canvas
   pendingItemLink: null, // E3: room_items row to link to the next placed object
+  pendingFocusRoomId: null,
   history: [[]],
   historyIndex: 0,
   isDrawing: false,
@@ -490,6 +495,8 @@ export const useFloorMapStore = create<FloorMapStore>((set, get) => ({
     pendingRoomPlacement: null,
     activeTool: link ? 'object' : 'select',
   }),
+
+  setPendingFocusRoomId: (roomId) => set({ pendingFocusRoomId: roomId }),
 
   // Center view on a specific room by roomId
   centerOnRoom: (roomId) => set((state) => {

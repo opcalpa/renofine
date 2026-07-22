@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Pencil, ChevronDown } from "lucide-react";
+import { Pencil, ChevronDown, MapPin } from "lucide-react";
 import { useMeasurement } from "@/contexts/MeasurementContext";
 import {
   Popover,
@@ -21,6 +21,8 @@ interface RoomHeroV2Props {
   updateFormData: (updates: Partial<RoomFormData>) => void;
   areaSqm?: number;
   perimeterMm?: number;
+  /** When the room is drawn on a plan: navigate to it on the canvas. */
+  onShowOnPlan?: () => void;
 }
 
 const STATUS_PILL_STYLE: Record<string, { bg: string; fg: string }> = {
@@ -129,6 +131,7 @@ export function RoomHeroV2({
   updateFormData,
   areaSqm,
   perimeterMm,
+  onShowOnPlan,
 }: RoomHeroV2Props) {
   const { t } = useTranslation();
   const ms = useMeasurement();
@@ -183,6 +186,18 @@ export function RoomHeroV2({
                 />
               )}
             </div>
+            {/* Drawn-on-plan indicator: click → jump to the room on the canvas */}
+            {hasShape && onShowOnPlan && (
+              <button
+                type="button"
+                onClick={onShowOnPlan}
+                title={t('floormap.showOnPlan', 'Visa på planritningen')}
+                className="absolute -top-1.5 -right-1.5 flex h-6 w-6 items-center justify-center rounded-full shadow-sm transition-transform hover:scale-110"
+                style={{ background: 'var(--rf-green-soft)', color: 'var(--rf-green-soft-fg)' }}
+              >
+                <MapPin className="h-3.5 w-3.5" />
+              </button>
+            )}
             <div className="absolute -bottom-1 -right-1">
               <CanvasSettingsPopover
                 roomId={room?.id ?? null}

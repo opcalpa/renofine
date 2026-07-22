@@ -23,6 +23,8 @@ interface RoomDetailFormV2Props {
   ) => void;
   showPinterest?: boolean;
   onPlaceItemOnPlan?: (args: { itemId: string; roomId: string; subtype: string }) => void;
+  /** Room is drawn on a plan → navigate to it on the canvas. */
+  onShowOnPlan?: () => void;
 }
 
 type TabKey = "overview" | "material" | "measurements" | "photos" | "checklists" | "comments" | "related";
@@ -44,6 +46,7 @@ export function RoomDetailFormV2({
   updateSpec,
   showPinterest,
   onPlaceItemOnPlan,
+  onShowOnPlan,
 }: RoomDetailFormV2Props) {
   const { t } = useTranslation();
   const isNewRoom = !room;
@@ -110,6 +113,7 @@ export function RoomDetailFormV2({
         updateFormData={updateFormData}
         areaSqm={areaSqm}
         perimeterMm={perimeterMm}
+        onShowOnPlan={onShowOnPlan}
       />
 
       {/* ALWAYS-VISIBLE NOTES */}

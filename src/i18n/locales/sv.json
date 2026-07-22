@@ -1962,7 +1962,9 @@
     "roomLinked": "Rummet kopplades till \"{{name}}\"",
     "roomSaved": "Rummet \"{{name}}\" sparades i projektet",
     "roomSaveFailed": "Kunde inte spara rummet i projektet — det finns kvar på ritningen",
-    "roomDetailsLoadFailed": "Kunde inte hämta rumsdetaljerna"
+    "roomDetailsLoadFailed": "Kunde inte hämta rumsdetaljerna",
+    "showOnPlan": "Visa på planritningen",
+    "roomNotOnPlan": "Rummet är inte utritat på någon planritning"
   },
   "canvas": {
     "settings": "Ritinställningar",

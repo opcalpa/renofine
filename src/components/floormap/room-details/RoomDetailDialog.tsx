@@ -30,6 +30,8 @@ import { RoomDetailFormV2 } from "./v2/RoomDetailFormV2";
 import { useRoomForm } from "./hooks/useRoomForm";
 import { useTranslation } from "react-i18next";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useFloorMapStore } from "../store";
 import type { RoomDetailDialogProps } from "./types";
 
 // Feature flag — flip to false to fall back to the accordion-based v1 form.
@@ -69,6 +71,19 @@ export function RoomDetailDialog({
       }
     : undefined;
   const { t } = useTranslation();
+  const navigate = useNavigate();
+
+  // "Visa på planritningen": close, arm the focus request, and jump to the
+  // drawing view — the v2 editor centers/selects the room once loaded.
+  const hasPlanShape = !!(room?.floor_plan_position as { points?: unknown[] } | null)?.points?.length;
+  const handleShowOnPlan = hasPlanShape
+    ? () => {
+        if (!room) return;
+        onOpenChange(false);
+        useFloorMapStore.getState().setPendingFocusRoomId(room.id);
+        navigate({ search: "?tab=spaceplanner&subtab=floorplan" });
+      }
+    : undefined;
   const isDesktop = useIsDesktop();
   const {
     formData,
@@ -202,6 +217,7 @@ export function RoomDetailDialog({
                   updateSpec={updateSpec}
                   showPinterest={showPinterest}
                   onPlaceItemOnPlan={handlePlaceItemOnPlan}
+                  onShowOnPlan={handleShowOnPlan}
                 />
               </div>
             ) : (
@@ -278,6 +294,7 @@ export function RoomDetailDialog({
                 updateSpec={updateSpec}
                 showPinterest={showPinterest}
                 onPlaceItemOnPlan={handlePlaceItemOnPlan}
+                  onShowOnPlan={handleShowOnPlan}
               />
             </div>
 
