@@ -25,6 +25,7 @@ import { WallLengthEditor } from './WallLengthEditor';
 import { TextEditor } from './TextEditor';
 import { RoomNamingController } from './RoomNamingController';
 import { WallsLayer } from './render/WallsLayer';
+import { DimensionChainLayer } from './render/DimensionChainLayer';
 import { LegacyShapesLayer } from './render/LegacyShapesLayer';
 import { ObjectsLayer } from './render/ObjectsLayer';
 import { OpeningsLayer } from './render/OpeningsLayer';
@@ -33,6 +34,7 @@ import { ToolController } from './tools/ToolController';
 import { resetHistory, canUndo, canRedo, undo, redo } from './core/executor';
 import { execute } from './core/commands';
 import { migrateShapes } from './migration/migrateShapes';
+import { computeObjectPlacement, placeObjectWithLinkage } from './objects/placeObject';
 import { placeRoomOnPlan } from './placeRoomFromList';
 import { useEditorUiStore } from './state/uiStore';
 
@@ -326,8 +328,47 @@ export const EditorCanvas = ({ isReadOnly }: EditorCanvasProps) => {
           stageRef.current && controller.onDoubleClick(e, stageRef.current),
       };
 
+  // Drag-and-drop from the object panel: live snap ghost while hovering,
+  // drop = same placement pipeline as click-to-place (one undo step, E3 link).
+  const dropWorld = (e: React.DragEvent): { x: number; y: number } | null => {
+    const el = containerRef.current;
+    if (!el) return null;
+    const rect = el.getBoundingClientRect();
+    const view = useFloorMapStore.getState().viewState;
+    return {
+      x: (e.clientX - rect.left - view.panX) / view.zoom,
+      y: (e.clientY - rect.top - view.panY) / view.zoom,
+    };
+  };
+
+  const dndHandlers = isReadOnly
+    ? {}
+    : {
+        onDragOver: (e: React.DragEvent) => {
+          if (!e.dataTransfer.types.includes('application/x-renofine-object')) return;
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'copy';
+        },
+        onDrop: (e: React.DragEvent) => {
+          const defId = e.dataTransfer.getData('application/x-renofine-object');
+          if (!defId) return;
+          e.preventDefault();
+          const world = dropWorld(e);
+          if (!world) return;
+          const placement = computeObjectPlacement(defId, world, e.metaKey || e.ctrlKey);
+          if (placement) placeObjectWithLinkage(defId, placement);
+          useFloorMapStore.getState().setPendingObjectId(null);
+          useEditorUiStore.getState().setObjectGhost(null);
+        },
+      };
+
   return (
-    <div ref={containerRef} className="relative w-full h-full bg-muted/30" data-testid="editor-v2-canvas">
+    <div
+      ref={containerRef}
+      className="relative w-full h-full bg-muted/30"
+      data-testid="editor-v2-canvas"
+      {...dndHandlers}
+    >
       <EditorHud />
       <ZoomCluster containerSize={size} />
       {!isReadOnly && <FloatingSelectionToolbar />}
@@ -381,6 +422,12 @@ export const EditorCanvas = ({ isReadOnly }: EditorCanvasProps) => {
           />
         </Layer>
         <Layer listening={false}>
+          <DimensionChainLayer
+            shapes={shapes}
+            planId={currentPlanId}
+            selectedIds={selectedShapeIds}
+            zoom={viewState.zoom}
+          />
           <OverlayLayer zoom={viewState.zoom} />
         </Layer>
       </Stage>

@@ -188,6 +188,12 @@ export const ObjectLibraryPanel: React.FC<ObjectLibraryPanelProps> = ({
                       <button
                         key={obj.id}
                         onClick={() => onSelectObject(obj)}
+                        draggable
+                        onDragStart={(e) => {
+                          // v2 canvas accepts drops of this type (click-to-place still works)
+                          e.dataTransfer.setData('application/x-renofine-object', obj.id);
+                          e.dataTransfer.effectAllowed = 'copy';
+                        }}
                         className={cn(
                           "flex flex-col items-center p-2 rounded-lg border-2 transition-all hover:bg-muted/50",
                           isSelected

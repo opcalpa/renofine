@@ -658,4 +658,51 @@ test.describe('Floor planner v2', () => {
     expect(placed.roomRoomId).toBeTruthy();
     expect(placed.objRoomId).toBe(placed.roomRoomId);
   });
+
+  test('drag-and-drop from the object panel places a wall-snapped object', async ({ page }) => {
+    await openDemoPlanner(page);
+    const canvas = page.getByTestId('editor-v2-canvas');
+    const box = (await canvas.boundingBox())!;
+    const click = async (x: number, y: number) => {
+      await page.mouse.move(box.x + x, box.y + y);
+      await page.mouse.down();
+      await page.mouse.up();
+    };
+
+    await page.keyboard.press('w');
+    await click(300, 300);
+    await click(600, 300);
+    await click(600, 500);
+    await click(300, 500);
+    await click(300, 300);
+    await page.keyboard.press('Escape');
+
+    const result = await page.evaluate(() => {
+      const container = document.querySelector('[data-testid="editor-v2-canvas"]')!;
+      const rect = container.getBoundingClientRect();
+      const dt = new DataTransfer();
+      dt.setData('application/x-renofine-object', 'plumbing_toilet');
+      const mk = (type: string, x: number, y: number) =>
+        new DragEvent(type, {
+          bubbles: true,
+          cancelable: true,
+          clientX: rect.left + x,
+          clientY: rect.top + y,
+          dataTransfer: dt,
+        });
+      container.dispatchEvent(mk('dragover', 450, 490));
+      container.dispatchEvent(mk('drop', 450, 490));
+      const objs = window
+        .__rfEditorDebug!.getShapes()
+        .filter((s) => (s as { metadata?: { isUnifiedObject?: boolean } }).metadata?.isUnifiedObject) as Array<{
+        name?: string;
+        wallRelative?: unknown;
+      }>;
+      const dropped = objs[objs.length - 1];
+      return { count: objs.length, name: dropped?.name, wallAttached: !!dropped?.wallRelative };
+    });
+    expect(result.count).toBe(1);
+    expect(result.name).toBe('Toalett');
+    expect(result.wallAttached).toBe(true);
+  });
 });

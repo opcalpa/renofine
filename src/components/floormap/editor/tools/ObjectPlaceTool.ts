@@ -11,10 +11,9 @@
 import { useFloorMapStore } from '../../store';
 import { getUnifiedObjectById } from '../../objectLibrary';
 import { BaseTool, ToolPointerEvent } from './BaseTool';
-import { execute } from '../core/commands';
 import { mmToWorld } from '../core/units';
 import { trySnapObjectToWall } from '../objects/objectModel';
-import { findLinkedRoomAt, resolveRoomItemLinkage } from '../sync/roomItemSync';
+import { objectCaptureMargin, placeObjectWithLinkage } from '../objects/placeObject';
 import { useEditorUiStore } from '../state/uiStore';
 
 export class ObjectPlaceTool extends BaseTool {
@@ -32,10 +31,8 @@ export class ObjectPlaceTool extends BaseTool {
     useEditorUiStore.getState().setSnapFeedback([], []);
   }
 
-  /** Capture margin beyond the flush distance: max(20 screen px, 150 mm). */
   private captureMargin(): number {
-    const zoom = useFloorMapStore.getState().viewState.zoom || 1;
-    return Math.max(20 / zoom, mmToWorld(150));
+    return objectCaptureMargin();
   }
 
   onPointerMove(e: ToolPointerEvent): void {
@@ -80,24 +77,8 @@ export class ObjectPlaceTool extends BaseTool {
     const store = useFloorMapStore.getState();
     const defId = store.pendingObjectId;
     if (!defId) return;
-    const def = getUnifiedObjectById(defId);
     const placement = this.last ?? { center: e.world, rotation: 0, wallRelative: null };
-
-    // E3: the room this placement belongs to — armed link's room wins,
-    // otherwise the linked room whose polygon contains the drop point.
-    const linkedRoomId =
-      store.pendingItemLink?.roomId ??
-      findLinkedRoomAt(placement.center, store.shapes, store.currentPlanId)?.roomId ??
-      null;
-
-    const shape = execute('object.place', {
-      definitionId: defId,
-      center: placement.center,
-      rotation: placement.rotation,
-      wallRelative: placement.wallRelative,
-      roomId: linkedRoomId,
-    });
-    if (shape && def) resolveRoomItemLinkage(shape, def);
+    placeObjectWithLinkage(defId, placement);
 
     // Placed + selected (drop semantics) — return to the select tool.
     store.setPendingObjectId(null);
