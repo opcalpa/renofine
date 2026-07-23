@@ -2549,7 +2549,18 @@
       "distributeV": "Evenly vertically",
       "delete": "Delete (Delete)",
       "alignMenu": "Align & distribute",
-      "openingWidth": "Opening width (mm)"
+      "openingWidth": "Opening width (mm)",
+      "showWallView": "Show wall view — openings, objects and finishes on this wall",
+      "wallView": "Wall view"
+    },
+    "view2d": "2D",
+    "viewSettings": "View",
+    "zoom": {
+      "in": "Zoom in",
+      "out": "Zoom out",
+      "to100": "Zoom to 100%",
+      "fit": "Fit to plan",
+      "menu": "Zoom options"
     }
   },
   "canvas": {
@@ -4637,7 +4648,9 @@
     "roomNeedsPoints": "The room needs at least 3 points to show elevation view.",
     "noWall": "No wall drawn",
     "wallCoverage": "wall",
-    "noEdgeForDirection": "No room edge for this direction"
+    "noEdgeForDirection": "No room edge for this direction",
+    "backToFloorPlan": "Floor plan",
+    "wallCounter": "Wall {{n}} of {{total}}"
   },
   "wallElevation": {
     "title": "Wall Elevation View",

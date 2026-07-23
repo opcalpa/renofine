@@ -20,6 +20,7 @@ import Grid from '../canvas/Grid';
 import { calculateFitToContent } from '../canvas/utils/fitToContent';
 import { EditorHud } from './EditorHud';
 import { FloatingSelectionToolbar } from './FloatingSelectionToolbar';
+import { ZoomCluster } from './ZoomCluster';
 import { WallLengthEditor } from './WallLengthEditor';
 import { TextEditor } from './TextEditor';
 import { RoomNamingController } from './RoomNamingController';
@@ -38,6 +39,11 @@ import { useEditorUiStore } from './state/uiStore';
 const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 8;
 const AUTOSAVE_DEBOUNCE_MS = 2500;
+
+// v2 defaults wall dimensions ON (click-a-label editing depends on seeing
+// them) while the shared store default is off for v1's hover-tooltip model.
+// Applied once per session so the view-settings toggle still sticks.
+let v2DimensionDefaultApplied = false;
 
 interface EditorCanvasProps {
   isReadOnly?: boolean;
@@ -59,6 +65,13 @@ export const EditorCanvas = ({ isReadOnly }: EditorCanvasProps) => {
   const dirtyCounter = useEditorUiStore((s) => s.dirtyCounter);
 
   const controller = useMemo(() => new ToolController(), []);
+
+  useEffect(() => {
+    if (v2DimensionDefaultApplied) return;
+    v2DimensionDefaultApplied = true;
+    const store = useFloorMapStore.getState();
+    if (!store.projectSettings.showDimensions) store.toggleDimensions();
+  }, []);
 
   // Container-driven stage sizing
   useEffect(() => {
@@ -316,6 +329,7 @@ export const EditorCanvas = ({ isReadOnly }: EditorCanvasProps) => {
   return (
     <div ref={containerRef} className="relative w-full h-full bg-muted/30" data-testid="editor-v2-canvas">
       <EditorHud />
+      <ZoomCluster containerSize={size} />
       {!isReadOnly && <FloatingSelectionToolbar />}
       {!isReadOnly && <WallLengthEditor />}
       {!isReadOnly && <TextEditor />}
@@ -344,13 +358,14 @@ export const EditorCanvas = ({ isReadOnly }: EditorCanvasProps) => {
             planId={currentPlanId}
             selectedIds={selectedShapeIds}
             zoom={viewState.zoom}
+            showAreaLabels={projectSettings.showAreaLabels}
           />
           <WallsLayer
             shapes={shapes}
             planId={currentPlanId}
             selectedIds={selectedShapeIds}
             zoom={viewState.zoom}
-            showDimensions
+            showDimensions={projectSettings.showDimensions}
           />
           <OpeningsLayer
             shapes={shapes}

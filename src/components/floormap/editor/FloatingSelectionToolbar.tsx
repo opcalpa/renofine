@@ -20,6 +20,7 @@ import {
   Copy,
   FlipHorizontal2,
   FlipVertical2,
+  PanelTop,
   RotateCw,
   Trash2,
 } from 'lucide-react';
@@ -37,6 +38,42 @@ import { useEditorUiStore } from './state/uiStore';
 import { execute } from './core/commands';
 import { unionBounds } from './geometry/bounds';
 import type { AlignMode } from './core/selectionOps';
+import { pointInPolygon } from '../utils/roomItemLink';
+
+/**
+ * The room a wall belongs to: probe just inside the wall on both sides of
+ * its midpoint (walls sit ON room boundaries, so the midpoint itself is
+ * ambiguous). World units are px-at-zoom-1 (150 mm wall ≈ 15 units).
+ */
+const findRoomForWall = (
+  wall: FloorMapShape,
+  shapes: FloorMapShape[],
+  currentPlanId: string | null
+): FloorMapShape | null => {
+  const c = wall.coordinates as { x1: number; y1: number; x2: number; y2: number };
+  if (c?.x1 === undefined) return null;
+  const mid = { x: (c.x1 + c.x2) / 2, y: (c.y1 + c.y2) / 2 };
+  const len = Math.hypot(c.x2 - c.x1, c.y2 - c.y1) || 1;
+  const normal = { x: -(c.y2 - c.y1) / len, y: (c.x2 - c.x1) / len };
+  const rooms = shapes.filter(
+    (s) =>
+      s.type === 'room' &&
+      (s.planId === currentPlanId || !s.planId) &&
+      s.coordinates &&
+      'points' in s.coordinates &&
+      Array.isArray((s.coordinates as { points: unknown }).points)
+  );
+  for (const dist of [12, 30]) {
+    for (const side of [1, -1]) {
+      const probe = { x: mid.x + normal.x * dist * side, y: mid.y + normal.y * dist * side };
+      const hit = rooms.find((r) =>
+        pointInPolygon(probe, (r.coordinates as { points: { x: number; y: number }[] }).points)
+      );
+      if (hit) return hit;
+    }
+  }
+  return null;
+};
 
 const BUTTON_CLASS =
   'flex h-8 w-8 items-center justify-center rounded-md text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors';
@@ -117,6 +154,10 @@ export const FloatingSelectionToolbar = () => {
 
   const ids = selected.map((s) => s.id);
   const singleOpening = selected.length === 1 && selected[0].type === 'opening';
+  const singleWall = selected.length === 1 && selected[0].type === 'wall';
+  const wallRoom = singleWall
+    ? findRoomForWall(selected[0], shapes, useFloorMapStore.getState().currentPlanId)
+    : null;
   const canTransform = transformables.length > 0;
   const canAlign = transformables.length >= 2;
   const canDistribute = transformables.length >= 3;
@@ -242,6 +283,25 @@ export const FloatingSelectionToolbar = () => {
             )}
           </DropdownMenuContent>
         </DropdownMenu>
+      )}
+
+      {singleWall && wallRoom && (
+        <>
+          <div className="mx-0.5 h-5 w-px bg-gray-200" />
+          <button
+            className="flex h-8 items-center gap-1.5 rounded-md px-2 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
+            data-testid="show-wall-view"
+            title={t('floormap.selection.showWallView', 'Visa väggvy — öppningar, objekt och ytor på denna vägg')}
+            onClick={() =>
+              useEditorUiStore
+                .getState()
+                .setElevationRequest({ roomShapeId: wallRoom.id, wallId: selected[0].id })
+            }
+          >
+            <PanelTop className="h-4 w-4" />
+            {t('floormap.selection.wallView', 'Väggvy')}
+          </button>
+        </>
       )}
 
       <div className="mx-0.5 h-5 w-px bg-gray-200" />

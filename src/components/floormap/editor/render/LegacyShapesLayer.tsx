@@ -25,6 +25,8 @@ interface LegacyShapesLayerProps {
   planId: string | null;
   selectedIds: string[];
   zoom: number;
+  /** Whether room labels include the computed area (view setting). */
+  showAreaLabels?: boolean;
 }
 
 const SELECT_COLOR = '#2563eb';
@@ -71,7 +73,12 @@ const BackgroundImage: React.FC<{ shape: FloorMapShape; isSelected: boolean; zoo
   );
 };
 
-function renderShape(shape: FloorMapShape, isSelected: boolean, zoom: number): React.ReactNode {
+function renderShape(
+  shape: FloorMapShape,
+  isSelected: boolean,
+  zoom: number,
+  showAreaLabels: boolean
+): React.ReactNode {
   const stroke = isSelected ? SELECT_COLOR : shape.strokeColor || '#374151';
   const strokeWidth = Math.max(0.75, (shape.strokeWidth ?? 1.5) / zoom);
 
@@ -97,7 +104,7 @@ function renderShape(shape: FloorMapShape, isSelected: boolean, zoom: number): R
             <Text
               x={cx}
               y={cy}
-              text={shape.area ? `${shape.name}\n${shape.area.toFixed(1)} m²` : shape.name}
+              text={shape.area && showAreaLabels ? `${shape.name}\n${shape.area.toFixed(1)} m²` : shape.name}
               fontSize={13 / zoom}
               fill="#1f2937"
               align="center"
@@ -261,6 +268,7 @@ export const LegacyShapesLayer: React.FC<LegacyShapesLayerProps> = ({
   planId,
   selectedIds,
   zoom,
+  showAreaLabels = true,
 }) => {
   const selected = new Set(selectedIds);
   const visible = shapes
@@ -282,7 +290,7 @@ export const LegacyShapesLayer: React.FC<LegacyShapesLayerProps> = ({
             zoom={zoom}
           />
         ) : (
-          renderShape(shape, selected.has(shape.id), zoom)
+          renderShape(shape, selected.has(shape.id), zoom, showAreaLabels)
         )
       )}
     </>

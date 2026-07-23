@@ -92,9 +92,9 @@ export const EditorHud = () => {
         </div>
       )}
 
-      {/* Unlock chip while any image on the plan is locked */}
+      {/* Unlock chip while any image on the plan is locked (above the zoom cluster) */}
       {lockedImages.length > 0 && (
-        <div className="absolute bottom-4 right-4 z-20">
+        <div className="absolute bottom-16 right-4 z-20">
           <Button variant="secondary" size="sm" className="shadow-md" onClick={unlockImages}>
             <LockOpen className="h-4 w-4 mr-1.5" />
             {t('floormap.unlockImage', 'Lås upp bild')}

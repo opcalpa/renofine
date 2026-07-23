@@ -548,4 +548,56 @@ test.describe('Floor planner v2', () => {
     await page.keyboard.press('ControlOrMeta+Shift+z');
     expect(await count()).toBe(drawn);
   });
+
+  test('v2 top bar has no elevation tab and the zoom cluster zooms', async ({ page }) => {
+    await openDemoPlanner(page);
+
+    // Segment control: 2D + 3D only — elevation is contextual (per wall) in v2
+    await expect(page.getByRole('button', { name: '2D' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '3D' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Väggvy', exact: true })).toHaveCount(0);
+
+    const cluster = page.getByTestId('zoom-cluster');
+    await expect(cluster).toBeVisible();
+    const pct = async () => parseInt((await cluster.textContent())!.match(/(\d+)%/)![1], 10);
+    const before = await pct();
+    await cluster.locator('button').first().click(); // −
+    expect(await pct()).toBeLessThan(before);
+    await cluster.locator('button').last().click(); // +
+    expect(await pct()).toBe(before);
+  });
+
+  test('selecting a wall offers "Väggvy" and opens elevation with breadcrumb', async ({ page }) => {
+    await openDemoPlanner(page);
+    const canvas = page.getByTestId('editor-v2-canvas');
+    const box = (await canvas.boundingBox())!;
+    const click = async (x: number, y: number) => {
+      await page.mouse.move(box.x + x, box.y + y);
+      await page.mouse.down();
+      await page.mouse.up();
+    };
+
+    // Closed loop → auto-room
+    await page.keyboard.press('w');
+    await click(300, 300);
+    await click(600, 300);
+    await click(600, 500);
+    await click(300, 500);
+    await click(300, 300);
+
+    // Select the bottom wall → wall-view button appears in the selection toolbar
+    await page.keyboard.press('v');
+    await click(450, 500);
+    const wallViewBtn = page.getByTestId('show-wall-view');
+    await expect(wallViewBtn).toBeVisible();
+    await wallViewBtn.click();
+
+    // Elevation opens directly (no room picker) with the wall counter breadcrumb
+    await expect(page.getByText(/Vägg \d+ av 4/)).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Välj rum för väggvy' })).toHaveCount(0);
+
+    // Breadcrumb back returns to the floor plan
+    await page.getByRole('button', { name: 'Planritning' }).click();
+    await expect(page.getByTestId('editor-v2-canvas')).toBeVisible();
+  });
 });

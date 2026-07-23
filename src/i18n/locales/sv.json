@@ -1985,7 +1985,18 @@
       "distributeV": "Jämnt vertikalt",
       "delete": "Radera (Delete)",
       "alignMenu": "Justera & fördela",
-      "openingWidth": "Öppningens bredd (mm)"
+      "openingWidth": "Öppningens bredd (mm)",
+      "showWallView": "Visa väggvy — öppningar, objekt och ytor på denna vägg",
+      "wallView": "Väggvy"
+    },
+    "view2d": "2D",
+    "viewSettings": "Visning",
+    "zoom": {
+      "in": "Zooma in",
+      "out": "Zooma ut",
+      "to100": "Zooma till 100 %",
+      "fit": "Anpassa till ritningen",
+      "menu": "Zoomalternativ"
     }
   },
   "canvas": {
@@ -4637,7 +4648,9 @@
     "roomNeedsPoints": "Rummet behöver minst 3 punkter för att visa elevationsvy.",
     "noWall": "Ingen vägg ritad",
     "wallCoverage": "vägg",
-    "noEdgeForDirection": "Ingen rumskant för denna riktning"
+    "noEdgeForDirection": "Ingen rumskant för denna riktning",
+    "backToFloorPlan": "Planritning",
+    "wallCounter": "Vägg {{n}} av {{total}}"
   },
   "wallElevation": {
     "title": "Väggvy",

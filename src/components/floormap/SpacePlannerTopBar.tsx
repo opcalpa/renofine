@@ -42,6 +42,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { createPlanInDB, deletePlanFromDB, updatePlanInDB } from "./utils/plans";
+import { isEditorV2Enabled } from "./editor/flag";
+import { ViewSettingsPopover } from "./editor/ViewSettingsPopover";
 
 interface SpacePlannerTopBarProps {
   projectId: string;
@@ -79,6 +81,7 @@ export const SpacePlannerTopBar = ({ projectId, projectName, onBack, backLabel, 
     toggleGrid,
   } = useFloorMapStore();
   const gridVisible = useFloorMapStore(s => s.projectSettings.gridVisible);
+  const editorV2 = isEditorV2Enabled();
   const [showNewPlanDialog, setShowNewPlanDialog] = useState(false);
   const [newPlanName, setNewPlanName] = useState("");
   const [newPlanDescription, setNewPlanDescription] = useState("");
@@ -435,20 +438,21 @@ export const SpacePlannerTopBar = ({ projectId, projectName, onBack, backLabel, 
       </div>
 
       <div className="ml-auto flex items-center gap-2">
-        {/* Grid toggle — always visible in top bar */}
-        {!isReadOnly && viewMode === 'floor' && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={toggleGrid}
-            className={cn(
-              "h-8 px-2 gap-1.5 text-xs",
-              gridVisible ? "text-blue-600 bg-blue-50 hover:bg-blue-100" : "text-muted-foreground"
-            )}
-            title={gridVisible ? "Dölj rutnät" : "Visa rutnät"}
-          >
-            <Grid3X3 className="h-4 w-4" />
-          </Button>
+        {/* View settings (v2: full popover — display-only, safe in read-only; v1: plain grid toggle) */}
+        {editorV2 && viewMode === 'floor' && <ViewSettingsPopover />}
+        {!editorV2 && !isReadOnly && viewMode === 'floor' && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleGrid}
+              className={cn(
+                "h-8 px-2 gap-1.5 text-xs",
+                gridVisible ? "text-blue-600 bg-blue-50 hover:bg-blue-100" : "text-muted-foreground"
+              )}
+              title={gridVisible ? "Dölj rutnät" : "Visa rutnät"}
+            >
+              <Grid3X3 className="h-4 w-4" />
+            </Button>
         )}
 
         <div className="flex items-center bg-muted/50 rounded-lg p-1">
@@ -459,17 +463,20 @@ export const SpacePlannerTopBar = ({ projectId, projectName, onBack, backLabel, 
             className="h-8 px-2 md:px-3 text-xs"
           >
             <Map className="h-4 w-4 md:mr-1" />
-            <span className="hidden md:inline">{t("Floor Plan")}</span>
+            <span className="hidden md:inline">{editorV2 ? t("floormap.view2d", "2D") : t("Floor Plan")}</span>
           </Button>
-          <Button
-            variant={viewMode === "elevation" ? "secondary" : "ghost"}
-            size="sm"
-            onClick={() => setViewMode("elevation")}
-            className="h-8 px-2 md:px-3 text-xs"
-          >
-            <PanelTop className="h-4 w-4 md:mr-1" />
-            <span className="hidden md:inline">{t("floormap.elevationView")}</span>
-          </Button>
+          {/* v2: elevation is reached from a selected wall (contextual), never a global tab */}
+          {!editorV2 && (
+            <Button
+              variant={viewMode === "elevation" ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("elevation")}
+              className="h-8 px-2 md:px-3 text-xs"
+            >
+              <PanelTop className="h-4 w-4 md:mr-1" />
+              <span className="hidden md:inline">{t("floormap.elevationView")}</span>
+            </Button>
+          )}
           <Button
             variant={viewMode === "3d" ? "secondary" : "ghost"}
             size="sm"
@@ -477,7 +484,7 @@ export const SpacePlannerTopBar = ({ projectId, projectName, onBack, backLabel, 
             className="h-8 px-2 md:px-3 text-xs"
           >
             <Box className="h-4 w-4 md:mr-1" />
-            <span className="hidden md:inline">{t("3D View")}</span>
+            <span className="hidden md:inline">{editorV2 ? "3D" : t("3D View")}</span>
           </Button>
         </div>
       </div>

@@ -62,12 +62,35 @@ export const FloorMapEditor = ({ projectId, projectName, onBack, backLabel, isRe
 
   // Room-based elevation view state
   const [elevationRoom, setElevationRoom] = useState<FloorMapShape | null>(null);
+  const [elevationWallId, setElevationWallId] = useState<string | null>(null);
   const [roomPickerOpen, setRoomPickerOpen] = useState(false);
+
+  // v2: "Visa väggvy" on a selected wall requests elevation for its room+wall.
+  // The ref suppresses the room picker: setViewMode (zustand) re-renders
+  // synchronously before React has flushed setElevationRoom, so the picker
+  // effect would otherwise see elevation-without-room and open on top.
+  const elevationRequestInFlightRef = useRef(false);
+  const elevationRequest = useEditorUiStore((s) => s.elevationRequest);
+  useEffect(() => {
+    if (!elevationRequest) return;
+    useEditorUiStore.getState().setElevationRequest(null);
+    const room = useFloorMapStore
+      .getState()
+      .shapes.find((s) => s.id === elevationRequest.roomShapeId);
+    if (!room) return;
+    elevationRequestInFlightRef.current = true;
+    setElevationRoom(room);
+    setElevationWallId(elevationRequest.wallId);
+    setRoomPickerOpen(false);
+    useFloorMapStore.getState().setViewMode('elevation');
+  }, [elevationRequest]);
 
   // Show room picker when entering elevation mode without a room selected
   // Auto-select room if one is already selected on the floor plan
   useEffect(() => {
     if (viewMode === 'elevation' && !elevationRoom) {
+      // A wall-view request is mid-flight — its room arrives on the next flush.
+      if (elevationRequestInFlightRef.current) return;
       // Check if a room is already selected on the floor plan
       if (selectedShapeIds.length === 1) {
         const selectedShape = shapes.find(s => s.id === selectedShapeIds[0]);
@@ -86,6 +109,8 @@ export const FloorMapEditor = ({ projectId, projectName, onBack, backLabel, isRe
   useEffect(() => {
     if (viewMode !== 'elevation') {
       setElevationRoom(null);
+      setElevationWallId(null);
+      elevationRequestInFlightRef.current = false;
     }
   }, [viewMode]);
 
@@ -408,8 +433,10 @@ export const FloorMapEditor = ({ projectId, projectName, onBack, backLabel, isRe
               <RoomElevationView
                 room={elevationRoom}
                 projectId={projectId}
+                initialWallId={elevationWallId ?? undefined}
                 onClose={() => {
                   setElevationRoom(null);
+                  setElevationWallId(null);
                   useFloorMapStore.getState().setViewMode('floor');
                 }}
               />

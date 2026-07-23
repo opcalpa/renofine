@@ -60,6 +60,8 @@ interface EditorUiState {
   wallLengthEditId: string | null;
   /** Text shape being edited inline (placement or double-click). */
   textEditId: string | null;
+  /** Request from the canvas to open the wall elevation view ("Visa väggvy"). */
+  elevationRequest: { roomShapeId: string; wallId: string } | null;
   /** Live preview while placing a library object (true footprint, snapped state). */
   objectGhost: {
     definitionId: string;
@@ -84,6 +86,7 @@ interface EditorUiState {
   setWallLengthEditId: (id: string | null) => void;
   setObjectGhost: (g: EditorUiState['objectGhost']) => void;
   setTextEditId: (id: string | null) => void;
+  setElevationRequest: (r: { roomShapeId: string; wallId: string } | null) => void;
 }
 
 export const useEditorUiStore = create<EditorUiState>((set) => ({
@@ -104,6 +107,7 @@ export const useEditorUiStore = create<EditorUiState>((set) => ({
   wallLengthEditId: null,
   textEditId: null,
   objectGhost: null,
+  elevationRequest: null,
 
   setDraft: (points, cursor, label) =>
     set({ draftPoints: points, draftCursor: cursor, draftLabel: label }),
@@ -121,4 +125,5 @@ export const useEditorUiStore = create<EditorUiState>((set) => ({
   setWallLengthEditId: (id) => set({ wallLengthEditId: id }),
   setObjectGhost: (g) => set({ objectGhost: g }),
   setTextEditId: (id) => set({ textEditId: id }),
+  setElevationRequest: (r) => set({ elevationRequest: r }),
 }));

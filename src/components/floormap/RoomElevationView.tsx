@@ -26,7 +26,7 @@ import { useTranslation } from 'react-i18next';
 import { v4 as uuidv4 } from 'uuid';
 import { Stage, Layer, Rect, Line, Text as KonvaText, Group, Path, Circle as KonvaCircle } from 'react-konva';
 import Konva from 'konva';
-import { ChevronLeft, ChevronRight, X, Compass, ZoomIn, ZoomOut, RotateCcw, Home, Plug, ToggleRight, Circle as CircleIcon, MousePointer2, ChevronDown, MessageCircle, Save, Ruler } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, X, Compass, ZoomIn, ZoomOut, RotateCcw, Home, Plug, ToggleRight, Circle as CircleIcon, MousePointer2, ChevronDown, MessageCircle, Save, Ruler } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -1562,11 +1562,14 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
     <div className="fixed inset-0 bg-gray-900 z-[200] flex flex-col">
       {/* Header */}
       <div className="bg-white border-b shadow-sm px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="h-5 w-5" />
+        <div className="flex items-center gap-2">
+          {/* Breadcrumb: ← Planritning · Rum · Vägg n/N */}
+          <Button variant="ghost" size="sm" onClick={onClose} className="gap-1.5 text-gray-600">
+            <ArrowLeft className="h-4 w-4" />
+            {t('roomElevation.backToFloorPlan', 'Planritning')}
           </Button>
-          <div className="flex items-center gap-3">
+          <span className="text-gray-300">·</span>
+          <div className="flex items-center gap-2">
             {/* Room color indicator */}
             {room?.color && (
               <div
@@ -1575,11 +1578,15 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
               />
             )}
             <div>
-              <h2 className="font-semibold text-lg">
-                {room?.name || t('roomElevation.room', 'Room')} - {t('roomElevation.elevationView', 'Elevation View')}
+              <h2 className="font-semibold text-lg leading-tight">
+                {room?.name || t('roomElevation.room', 'Room')}
               </h2>
               <p className="text-sm text-gray-500">
-                {t('roomElevation.swipeHint', 'Swipe or use arrows to navigate walls')}
+                {t('roomElevation.wallCounter', 'Vägg {{n}} av {{total}}', {
+                  n: currentSegmentIndex + 1,
+                  total: segmentData.length,
+                })}{' '}
+                · {t('roomElevation.swipeHint', 'Swipe or use arrows to navigate walls')}
               </p>
             </div>
           </div>
