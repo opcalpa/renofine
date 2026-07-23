@@ -239,6 +239,8 @@ export const commands = {
     center: Point;
     rotation?: number;
     wallRelative?: FloorMapShape['wallRelative'] | null;
+    /** rooms-table id when placed inside a linked room (E3 mirroring). */
+    roomId?: string | null;
   }): FloorMapShape | null {
     const def = getUnifiedObjectById(params.definitionId);
     if (!def) return null;
@@ -252,6 +254,7 @@ export const commands = {
       params.wallRelative ?? null,
       maxZ + 1
     );
+    if (params.roomId) shape.roomId = params.roomId;
     commit('Placera objekt', [{ op: 'add', shape }]);
     useFloorMapStore.getState().setSelectedShapeIds([shape.id]);
     return shape;

@@ -47,6 +47,8 @@ import { cn } from '@/lib/utils';
 import { formatMeasurement } from './utils/formatting';
 import { useMeasurement } from "@/contexts/MeasurementContext";
 import { wallRelativeToElevation, elevationToWallRelative } from './canvas/utils/wallCoordinates';
+import { createRoomItemForPlacedShape } from './utils/roomItemLink';
+import { isMirroredCategory } from './editor/sync/roomItemSync';
 import { ElevationObjectPanel } from './ElevationObjectPanel';
 import { saveShapesForPlan } from './utils/plans';
 import { HoverInfoTooltip } from './HoverInfoTooltip';
@@ -1426,7 +1428,25 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
         },
       };
 
+      if (room?.roomId) newShape.roomId = room.roomId;
       addShape(newShape);
+
+      // E3 mirroring: a wall-view placement in a linked room becomes that
+      // room's list entry (visible in Rumsdetaljer, the task card and the
+      // shared worker instructions — all read the same room_items record).
+      const planForLink = currentPlanId || room?.planId;
+      if (room?.roomId && projectId && planForLink && isMirroredCategory(selectedUnifiedObject.category)) {
+        createRoomItemForPlacedShape(
+          planForLink,
+          useFloorMapStore.getState().shapes,
+          projectId,
+          room.roomId,
+          newShape,
+          selectedUnifiedObject.category
+        )
+          .then(() => toast.success(t('roomItems.addedFromPlan', 'Tillagt i rummets objektlista')))
+          .catch((err) => console.error('Failed to mirror wall-view object into room items:', err));
+      }
       return;
     }
 
@@ -1491,7 +1511,7 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
 
     // Clear selection after placement (or keep selected for multiple placements)
     // setSelectedPlacement(null); // Uncomment to require re-selection after each placement
-  }, [selectedPlacement, selectedUnifiedObject, visualization, currentSegment, zoom, panX, panY, placementObjects, addShape, currentPlanId, room?.planId]);
+  }, [selectedPlacement, selectedUnifiedObject, visualization, currentSegment, zoom, panX, panY, placementObjects, addShape, currentPlanId, room, projectId, t]);
 
   // Quick comment handlers (PROTOTYPE)
   const handleObjectRightClick = useCallback((

@@ -6751,7 +6751,7 @@
     "clickToPlace": "Click the drawing to place the object",
     "linkedToPlan": "Object linked to the drawing",
     "linkError": "Could not link the object to the item",
-    "addedFromPlan": "Added to the room’s electrical list",
+    "addedFromPlan": "Added to the room’s object list",
     "sectionTitle": "Room objects",
     "category": "Category",
     "catElectrical": "Electrical",
@@ -6768,6 +6768,9 @@
     "askQuestion": "Ask a question",
     "askPlaceholder": "What do you want to ask about this?",
     "questionSent": "Question sent!",
-    "questionFailed": "Could not send question"
+    "questionFailed": "Could not send question",
+    "catKitchen": "Kitchen",
+    "taskSummaryTitle": "Room objects",
+    "onDrawing": "Placed on the drawing"
   }
 }

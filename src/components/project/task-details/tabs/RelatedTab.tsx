@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TaskRoomDetails } from "@/components/shared/TaskRoomDetails";
+import { RoomItemsSummary } from "@/components/shared/RoomItemsSummary";
 import { TaskFilesList } from "../../TaskFilesList";
 import { formatCurrency } from "@/lib/currency";
 import { type Task, taskRoomIdList } from "../types";
@@ -151,6 +152,10 @@ export function RelatedTab({ task, projectId, dependencies, setDependencies, all
           })()}
         </div>
       </div>
+
+      {/* Objects logged/placed in the task's rooms — mirror of the floor plan
+          and room-details lists (same room_items records) */}
+      {taskRoomIds.length > 0 && <RoomItemsSummary roomIds={taskRoomIds} />}
 
       {/* Room details (aggregated from all linked rooms) */}
       {taskRoomIds.length > 0 && (

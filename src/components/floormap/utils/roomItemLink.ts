@@ -44,16 +44,19 @@ export function pointInPolygon(
 }
 
 /**
- * E3.2 reverse — an electrical object drawn directly on the canvas inside a room
- * becomes a room_items entry for that room (canvas → list). Shape is persisted
- * first so the FK target exists (same ordering as linkPlacedItemToShape).
+ * E3.2 reverse — an object drawn directly on the canvas inside a room becomes
+ * a room_items entry for that room (canvas → list). Shape is persisted first
+ * so the FK target exists (same ordering as linkPlacedItemToShape).
+ * Category defaults to 'electrical' (the original E3 flow); v2 passes the
+ * object's own catalog category so plumbing/kitchen mirror the same way.
  */
 export async function createRoomItemForPlacedShape(
   planId: string,
   shapes: FloorMapShape[],
   projectId: string,
   roomId: string,
-  shape: { id: string; name?: string; metadata?: { unifiedObjectId?: unknown } }
+  shape: { id: string; name?: string; metadata?: { unifiedObjectId?: unknown } },
+  category: string = 'electrical'
 ): Promise<void> {
   await saveShapesForPlan(planId, shapes);
 
@@ -64,9 +67,9 @@ export async function createRoomItemForPlacedShape(
   const { error } = await supabase.from('room_items').insert({
     project_id: projectId,
     room_id: roomId,
-    category: 'electrical',
+    category,
     subtype,
-    title: shape.name || subtype || 'El-objekt',
+    title: shape.name || subtype || category,
     representation_kind: 'point',
     floor_map_shape_id: shape.id,
   });

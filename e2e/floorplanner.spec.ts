@@ -600,4 +600,58 @@ test.describe('Floor planner v2', () => {
     await page.getByRole('button', { name: 'Planritning' }).click();
     await expect(page.getByTestId('editor-v2-canvas')).toBeVisible();
   });
+
+  test('object placed inside a linked room gets the room id stamped (E3 mirror)', async ({ page }) => {
+    await openDemoPlanner(page);
+    const canvas = page.getByTestId('editor-v2-canvas');
+    const box = (await canvas.boundingBox())!;
+    const click = async (x: number, y: number) => {
+      await page.mouse.move(box.x + x, box.y + y);
+      await page.mouse.down();
+      await page.mouse.up();
+    };
+
+    // Closed loop → auto-room, then link it to the existing project room "Hall"
+    await page.keyboard.press('w');
+    await click(300, 300);
+    await click(600, 300);
+    await click(600, 500);
+    await click(300, 500);
+    await click(300, 300);
+    await page.keyboard.press('v');
+    await page.mouse.dblclick(box.x + 450, box.y + 400);
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+    // Wait for the project-rooms section (async fetch) so we hit the LINK
+    // button, not the identically named "Vanliga rum" preset.
+    await expect(dialog.getByText('Projektets rum')).toBeVisible();
+    await dialog.getByRole('button', { name: 'Hall', exact: true }).first().click();
+    await dialog.getByRole('button', { name: 'Spara' }).click();
+    await expect(dialog).not.toBeVisible();
+    // The link stamps roomId asynchronously after the dialog closes.
+    await page.waitForFunction(() =>
+      window.__rfEditorDebug!.getShapes().some((s) => s.type === 'room' && (s as { roomId?: string }).roomId)
+    );
+
+    // Place an electrical object inside the room via the rail's object panel
+    await page.getByTestId('tool-objects').click();
+    await page.getByRole('button', { name: /Enkeluttag/ }).first().click();
+    await page.mouse.move(box.x + 450, box.y + 400);
+    await page.mouse.down();
+    await page.mouse.up();
+
+    const placed = await page.evaluate(() => {
+      const obj = window.__rfEditorDebug!
+        .getShapes()
+        .find((s) => (s as { metadata?: { isUnifiedObject?: boolean } }).metadata?.isUnifiedObject) as
+        | { roomId?: string; name?: string }
+        | undefined;
+      const room = window.__rfEditorDebug!.getShapes().find((s) => s.type === 'room') as
+        | { roomId?: string }
+        | undefined;
+      return { objRoomId: obj?.roomId ?? null, roomRoomId: room?.roomId ?? null };
+    });
+    expect(placed.roomRoomId).toBeTruthy();
+    expect(placed.objRoomId).toBe(placed.roomRoomId);
+  });
 });

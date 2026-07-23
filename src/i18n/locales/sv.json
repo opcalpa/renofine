@@ -6751,7 +6751,7 @@
     "clickToPlace": "Klicka på ritningen för att placera objektet",
     "linkedToPlan": "Objektet kopplat till ritningen",
     "linkError": "Kunde inte koppla objektet till posten",
-    "addedFromPlan": "Tillagt i rummets el-lista",
+    "addedFromPlan": "Tillagt i rummets objektlista",
     "sectionTitle": "Rum-objekt",
     "category": "Kategori",
     "catElectrical": "El",
@@ -6768,6 +6768,9 @@
     "askQuestion": "Ställ en fråga",
     "askPlaceholder": "Vad vill du fråga om det här?",
     "questionSent": "Frågan skickad!",
-    "questionFailed": "Kunde inte skicka frågan"
+    "questionFailed": "Kunde inte skicka frågan",
+    "catKitchen": "Kök",
+    "taskSummaryTitle": "Rummets objekt",
+    "onDrawing": "Placerad på ritningen"
   }
 }

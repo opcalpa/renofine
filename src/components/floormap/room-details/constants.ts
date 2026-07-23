@@ -185,6 +185,7 @@ export const LIGHTING_TYPE_OPTIONS = [
 export const ROOM_ITEM_CATEGORIES = [
   { value: "electrical", labelKey: "roomItems.catElectrical" },
   { value: "plumbing", labelKey: "roomItems.catPlumbing" },
+  { value: "kitchen", labelKey: "roomItems.catKitchen" },
   { value: "ventilation", labelKey: "roomItems.catVentilation" },
   { value: "appliance", labelKey: "roomItems.catAppliance" },
 ];
