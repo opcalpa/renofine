@@ -2565,6 +2565,12 @@
       "to100": "Zoom to 100%",
       "fit": "Fit to plan",
       "menu": "Zoom options"
+    },
+    "openingKind": {
+      "door": "Door",
+      "window": "Window",
+      "sliding": "Sliding door",
+      "passage": "Passage"
     }
   },
   "canvas": {

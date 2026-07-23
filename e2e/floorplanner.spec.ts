@@ -750,4 +750,55 @@ test.describe('Floor planner v2', () => {
     expect(custom.w).toBe(2400);
     expect(custom.d).toBe(600);
   });
+
+  test('opening can be placed directly in the wall view at the clicked position', async ({ page }) => {
+    await openDemoPlanner(page);
+    const canvas = page.getByTestId('editor-v2-canvas');
+    const box = (await canvas.boundingBox())!;
+    const click = async (x: number, y: number) => {
+      await page.mouse.move(box.x + x, box.y + y);
+      await page.mouse.down();
+      await page.mouse.up();
+    };
+
+    // Room, then into the wall view via the selected top wall
+    await page.keyboard.press('w');
+    await click(300, 300);
+    await click(600, 300);
+    await click(600, 500);
+    await click(300, 500);
+    await click(300, 300);
+    // Dismiss the naming dialog if it opened for the new auto-room
+    const dialog = page.getByRole('dialog');
+    if (await dialog.isVisible({ timeout: 1500 }).catch(() => false)) {
+      await dialog.getByRole('button', { name: 'Avbryt' }).click();
+    }
+    await page.keyboard.press('v');
+    await click(450, 300);
+    await page.getByTestId('show-wall-view').click();
+    await expect(page.getByText(/Vägg \d+ av 4/)).toBeVisible();
+
+    // Arm the door tool from the elevation rail and click mid-wall
+    await page.getByTestId('elevation-tool-opening').click();
+    await page.getByRole('button', { name: 'Dörr', exact: true }).click();
+    const elevCanvas = page.locator('.fixed.inset-0 .konvajs-content canvas').last();
+    const eb = (await elevCanvas.boundingBox())!;
+    await elevCanvas.click({ position: { x: eb.width / 2, y: eb.height / 2 } });
+
+    // Back on the floor plan the opening exists mid-wall on a real wall
+    await page.getByRole('button', { name: 'Planritning' }).click();
+    await expect(page.getByTestId('editor-v2-canvas')).toBeVisible();
+    const opening = await page.evaluate(() => {
+      const o = window.__rfEditorDebug!
+        .getShapes()
+        .find((s) => s.type === 'opening') as
+        | { openingKind?: string; parentWallId?: string; positionOnWall?: number }
+        | undefined;
+      return { kind: o?.openingKind, hasWall: !!o?.parentWallId, t: o?.positionOnWall };
+    });
+    expect(opening.kind).toBe('door');
+    expect(opening.hasWall).toBe(true);
+    expect(opening.t!).toBeGreaterThan(0.3);
+    expect(opening.t!).toBeLessThan(0.7);
+  });
 });

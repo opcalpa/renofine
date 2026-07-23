@@ -26,7 +26,7 @@ import { useTranslation } from 'react-i18next';
 import { v4 as uuidv4 } from 'uuid';
 import { Stage, Layer, Rect, Line, Text as KonvaText, Group, Path, Circle as KonvaCircle } from 'react-konva';
 import Konva from 'konva';
-import { ArrowLeft, Blocks, ChevronLeft, ChevronRight, X, Compass, ZoomIn, ZoomOut, RotateCcw, Home, Plug, ToggleRight, Circle as CircleIcon, MousePointer2, ChevronDown, MessageCircle, Save, Ruler } from 'lucide-react';
+import { ArrowLeft, Blocks, ChevronLeft, ChevronRight, X, Compass, DoorOpen, ZoomIn, ZoomOut, RotateCcw, Home, Plug, ToggleRight, Circle as CircleIcon, MousePointer2, ChevronDown, MessageCircle, Save, Ruler } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -51,6 +51,8 @@ import { createRoomItemForPlacedShape } from './utils/roomItemLink';
 import { isMirroredCategory } from './editor/sync/roomItemSync';
 import { isEditorV2Enabled } from './editor/flag';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { execute } from './editor/core/commands';
+import { wallFrame, projectOntoWall } from './editor/geometry/openingGeometry';
 import { ElevationObjectPanel } from './ElevationObjectPanel';
 import { saveShapesForPlan } from './utils/plans';
 import { HoverInfoTooltip } from './HoverInfoTooltip';
@@ -711,6 +713,10 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
   // v2 shell: compact left tool rail (same look as the floor-plan rail)
   // replaces the amber placement strip.
   const editorV2 = isEditorV2Enabled();
+  // v2: opening placement directly in the wall view (door/window/sliding/passage)
+  type OpeningKind = 'door' | 'window' | 'sliding' | 'passage';
+  const [selectedOpeningKind, setSelectedOpeningKind] = useState<OpeningKind | null>(null);
+  const [openingMenuOpen, setOpeningMenuOpen] = useState(false);
 
   // Placement object definitions (matching objectLibraryDefinitions.ts)
   const placementObjects: Record<Exclude<PlacementObject, null>, {
@@ -1233,9 +1239,10 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
         goToNextSegment();
       } else if (e.key === 'Escape') {
         // First deselect placement tool, then close on second Escape
-        if (selectedPlacement || selectedUnifiedObject) {
+        if (selectedPlacement || selectedUnifiedObject || selectedOpeningKind) {
           setSelectedPlacement(null);
           setSelectedUnifiedObject(null);
+          setSelectedOpeningKind(null);
         } else {
           onClose();
         }
@@ -1244,7 +1251,7 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [goToPreviousSegment, goToNextSegment, onClose, selectedPlacement]);
+  }, [goToPreviousSegment, goToNextSegment, onClose, selectedPlacement, selectedUnifiedObject, selectedOpeningKind]);
 
   // Calculate visualization data (segment-based)
   const visualization = useMemo(() => {
@@ -1353,7 +1360,7 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
    */
   const handleCanvasClick = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
     // Only handle placement if an object is selected (legacy or unified)
-    const hasPlacement = selectedPlacement || selectedUnifiedObject;
+    const hasPlacement = selectedPlacement || selectedUnifiedObject || selectedOpeningKind;
     if (!hasPlacement || !visualization?.wall || !currentSegment?.hasWall) return;
 
     // Get the click position relative to stage
@@ -1366,6 +1373,26 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
     // Convert to unscaled coordinates
     const x = (pointer.x - panX) / zoom;
     const y = (pointer.y - panY) / zoom;
+
+    // v2: place an opening on the hosted wall at the clicked position.
+    // The view renders along the ROOM EDGE (screen-left = edge.start) while
+    // opening.positionOnWall runs along the WALL's own direction — these can
+    // be anti-parallel, so go via a world point: click fraction along the
+    // edge → world → project onto the wall frame.
+    if (editorV2 && selectedOpeningKind) {
+      const wall = visualization.wall;
+      const edge = currentSegment.edge;
+      const frame = wallFrame(wall);
+      if (!frame || visualization.wallWidth <= 0) return;
+      const f = Math.max(0, Math.min(1, (x - visualization.wallX) / visualization.wallWidth));
+      const worldPoint = {
+        x: edge.start.x + (edge.end.x - edge.start.x) * f,
+        y: edge.start.y + (edge.end.y - edge.start.y) * f,
+      };
+      const { t } = projectOntoWall(worldPoint, frame);
+      execute('opening.add', { wallId: wall.id, t, kind: selectedOpeningKind });
+      return;
+    }
 
     // Handle unified object placement
     if (selectedUnifiedObject) {
@@ -1516,7 +1543,7 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
 
     // Clear selection after placement (or keep selected for multiple placements)
     // setSelectedPlacement(null); // Uncomment to require re-selection after each placement
-  }, [selectedPlacement, selectedUnifiedObject, visualization, currentSegment, zoom, panX, panY, placementObjects, addShape, currentPlanId, room, projectId, t]);
+  }, [selectedPlacement, selectedUnifiedObject, selectedOpeningKind, editorV2, visualization, currentSegment, zoom, panX, panY, placementObjects, addShape, currentPlanId, room, projectId, t]);
 
   // Quick comment handlers (PROTOTYPE)
   const handleObjectRightClick = useCallback((
@@ -1819,7 +1846,7 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
             <button
               className={cn(
                 'flex h-10 w-10 items-center justify-center rounded-lg transition-colors',
-                !selectedPlacement && !selectedUnifiedObject && !isMeasureActive
+                !selectedPlacement && !selectedUnifiedObject && !selectedOpeningKind && !isMeasureActive
                   ? 'bg-primary text-primary-foreground'
                   : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
               )}
@@ -1827,11 +1854,52 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
               onClick={() => {
                 setSelectedPlacement(null);
                 setSelectedUnifiedObject(null);
+                setSelectedOpeningKind(null);
                 if (isMeasureActive) toggleMeasureTool();
               }}
             >
               <MousePointer2 className="h-5 w-5" />
             </button>
+            <Popover open={openingMenuOpen} onOpenChange={setOpeningMenuOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  className={cn(
+                    'flex h-10 w-10 items-center justify-center rounded-lg transition-colors',
+                    selectedOpeningKind
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  )}
+                  title={t('floormap.tools.opening', 'Öppning')}
+                  data-testid="elevation-tool-opening"
+                >
+                  <DoorOpen className="h-5 w-5" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent side="right" align="start" className="ml-2 w-40 p-1 z-[250]">
+                {([
+                  ['door', t('floormap.tools.door', 'Dörr')],
+                  ['window', t('floormap.tools.window', 'Fönster')],
+                  ['sliding', t('floormap.tools.slidingDoor', 'Skjutdörr')],
+                  ['passage', t('floormap.tools.passage', 'Passage')],
+                ] as Array<[OpeningKind, string]>).map(([kind, label]) => (
+                  <button
+                    key={kind}
+                    className={cn(
+                      'flex w-full items-center rounded-md px-2 py-1.5 text-sm transition-colors',
+                      selectedOpeningKind === kind ? 'bg-primary/10 text-primary' : 'hover:bg-gray-100'
+                    )}
+                    onClick={() => {
+                      setSelectedOpeningKind(kind);
+                      setSelectedPlacement(null);
+                      setSelectedUnifiedObject(null);
+                      setOpeningMenuOpen(false);
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </PopoverContent>
+            </Popover>
             <Popover open={objectLibraryOpen} onOpenChange={setObjectLibraryOpen}>
               <PopoverTrigger asChild>
                 <button
@@ -1873,9 +1941,13 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
         )}
 
         {/* v2: floating hint while a placement is armed */}
-        {editorV2 && (selectedPlacement || selectedUnifiedObject) && (
+        {editorV2 && (selectedPlacement || selectedUnifiedObject || selectedOpeningKind) && (
           <div className="absolute left-1/2 top-3 z-20 -translate-x-1/2 rounded-full border bg-white px-3 py-1.5 text-xs text-gray-700 shadow-md">
-            {selectedUnifiedObject?.name ? `${selectedUnifiedObject.name} · ` : ''}
+            {selectedUnifiedObject?.name
+              ? `${selectedUnifiedObject.name} · `
+              : selectedOpeningKind
+                ? `${t(`floormap.openingKind.${selectedOpeningKind}`, selectedOpeningKind === 'door' ? 'Dörr' : selectedOpeningKind === 'window' ? 'Fönster' : selectedOpeningKind === 'sliding' ? 'Skjutdörr' : 'Passage')} · `
+                : ''}
             {t('elevation.clickToPlace', 'Klicka på väggen för att placera')} ·{' '}
             <kbd className="rounded bg-gray-100 px-1 py-0.5 text-[10px]">Esc</kbd>{' '}
             {t('elevation.toDeselect', 'avbryt')}

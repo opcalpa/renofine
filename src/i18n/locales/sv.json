@@ -2001,6 +2001,12 @@
       "to100": "Zooma till 100 %",
       "fit": "Anpassa till ritningen",
       "menu": "Zoomalternativ"
+    },
+    "openingKind": {
+      "door": "Dörr",
+      "window": "Fönster",
+      "sliding": "Skjutdörr",
+      "passage": "Passage"
     }
   },
   "canvas": {
