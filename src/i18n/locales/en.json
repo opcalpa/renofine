@@ -2551,7 +2551,11 @@
       "alignMenu": "Align & distribute",
       "openingWidth": "Opening width (mm)",
       "showWallView": "Show wall view — openings, objects and finishes on this wall",
-      "wallView": "Wall view"
+      "wallView": "Wall view",
+      "customName": "Name",
+      "customNameTitle": "Object name",
+      "customWidth": "Width (mm)",
+      "customDepth": "Depth (mm)"
     },
     "view2d": "2D",
     "viewSettings": "View",
@@ -4686,7 +4690,8 @@
       "doors": "Doors",
       "windows": "Windows",
       "hvac": "HVAC",
-      "lighting": "Lighting"
+      "lighting": "Lighting",
+      "custom": "Custom / DIY"
     }
   },
   "objects": {
@@ -4732,6 +4737,9 @@
       "desk": "Desk",
       "tvBench": "TV bench",
       "bookshelf": "Bookshelf"
+    },
+    "custom": {
+      "box": "Custom object"
     }
   },
   "intake": {

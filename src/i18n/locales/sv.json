@@ -1987,7 +1987,11 @@
       "alignMenu": "Justera & fördela",
       "openingWidth": "Öppningens bredd (mm)",
       "showWallView": "Visa väggvy — öppningar, objekt och ytor på denna vägg",
-      "wallView": "Väggvy"
+      "wallView": "Väggvy",
+      "customName": "Namn",
+      "customNameTitle": "Objektets namn",
+      "customWidth": "Bredd (mm)",
+      "customDepth": "Djup (mm)"
     },
     "view2d": "2D",
     "viewSettings": "Visning",
@@ -4686,7 +4690,8 @@
       "doors": "Dörrar",
       "windows": "Fönster",
       "hvac": "Ventilation",
-      "lighting": "Belysning"
+      "lighting": "Belysning",
+      "custom": "Eget / DIY"
     }
   },
   "objects": {
@@ -4732,6 +4737,9 @@
       "desk": "Skrivbord",
       "tvBench": "TV-bänk",
       "bookshelf": "Bokhylla"
+    },
+    "custom": {
+      "box": "Eget objekt"
     }
   },
   "intake": {

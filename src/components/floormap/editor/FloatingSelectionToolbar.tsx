@@ -39,6 +39,7 @@ import { execute } from './core/commands';
 import { unionBounds } from './geometry/bounds';
 import type { AlignMode } from './core/selectionOps';
 import { pointInPolygon } from '../utils/roomItemLink';
+import { getObjectDef, objectDimensionsMM } from './objects/objectModel';
 
 /**
  * The room a wall belongs to: probe just inside the wall on both sides of
@@ -124,6 +125,95 @@ const OpeningWidthInput = ({ opening }: { opening: FloorMapShape }) => {
   );
 };
 
+/** Name + real dimensions (mm) editor for a single selected custom object. */
+const CustomObjectInputs = ({ shape }: { shape: FloorMapShape }) => {
+  const { t } = useTranslation();
+  const dims = objectDimensionsMM(shape);
+  const [name, setName] = useState(shape.name || '');
+  const [width, setWidth] = useState(String(dims?.width ?? 600));
+  const [depth, setDepth] = useState(String(dims?.depth ?? 600));
+
+  useEffect(() => {
+    setName(shape.name || '');
+    setWidth(String(dims?.width ?? 600));
+    setDepth(String(dims?.depth ?? 600));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shape.id, shape.name, dims?.width, dims?.depth]);
+
+  const commitName = () => {
+    const trimmed = name.trim();
+    if (trimmed && trimmed !== shape.name) {
+      execute('shape.update', { id: shape.id, updates: { name: trimmed } });
+    } else {
+      setName(shape.name || '');
+    }
+  };
+
+  const commitSize = () => {
+    const w = parseInt(width, 10);
+    const d = parseInt(depth, 10);
+    if (!Number.isFinite(w) || !Number.isFinite(d) || w < 50 || d < 50) {
+      setWidth(String(dims?.width ?? 600));
+      setDepth(String(dims?.depth ?? 600));
+      return;
+    }
+    if (w === dims?.width && d === dims?.depth) return;
+    const updates: Partial<FloorMapShape> = {
+      metadata: { ...shape.metadata, customWidthMM: w, customDepthMM: d },
+    };
+    // Wall-hosted custom objects must keep the elevation contract in sync.
+    if (shape.wallRelative) {
+      updates.wallRelative = { ...shape.wallRelative, width: w, depth: d };
+    }
+    execute('shape.update', { id: shape.id, updates });
+  };
+
+  const inputKeys = (commit: () => void) => ({
+    onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
+      e.stopPropagation();
+      if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+      if (e.key === 'Escape') (e.target as HTMLInputElement).blur();
+    },
+    onBlur: commit,
+  });
+
+  return (
+    <div className="flex items-center gap-1 pl-1.5 pr-1 text-xs text-gray-500">
+      <input
+        type="text"
+        className="h-7 w-28 rounded-md border px-1.5 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-primary"
+        value={name}
+        placeholder={t('floormap.selection.customName', 'Namn')}
+        title={t('floormap.selection.customNameTitle', 'Objektets namn')}
+        onChange={(e) => setName(e.target.value)}
+        {...inputKeys(commitName)}
+      />
+      <input
+        type="number"
+        className="h-7 w-16 rounded-md border px-1.5 text-right text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-primary"
+        value={width}
+        min={50}
+        step={10}
+        title={t('floormap.selection.customWidth', 'Bredd (mm)')}
+        onChange={(e) => setWidth(e.target.value)}
+        {...inputKeys(commitSize)}
+      />
+      ×
+      <input
+        type="number"
+        className="h-7 w-16 rounded-md border px-1.5 text-right text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-primary"
+        value={depth}
+        min={50}
+        step={10}
+        title={t('floormap.selection.customDepth', 'Djup (mm)')}
+        onChange={(e) => setDepth(e.target.value)}
+        {...inputKeys(commitSize)}
+      />
+      mm
+    </div>
+  );
+};
+
 export const FloatingSelectionToolbar = () => {
   const { t } = useTranslation();
   const shapes = useFloorMapStore((s) => s.shapes);
@@ -158,6 +248,8 @@ export const FloatingSelectionToolbar = () => {
   const wallRoom = singleWall
     ? findRoomForWall(selected[0], shapes, useFloorMapStore.getState().currentPlanId)
     : null;
+  const singleCustom =
+    selected.length === 1 && getObjectDef(selected[0])?.category === 'custom';
   const canTransform = transformables.length > 0;
   const canAlign = transformables.length >= 2;
   const canDistribute = transformables.length >= 3;
@@ -176,6 +268,8 @@ export const FloatingSelectionToolbar = () => {
         transform: 'translateX(-50%)',
       }}
     >
+      {singleCustom && <CustomObjectInputs shape={selected[0]} />}
+
       {singleOpening ? (
         <>
           <OpeningWidthInput opening={selected[0]} />

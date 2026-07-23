@@ -7,14 +7,19 @@
  */
 
 import React from 'react';
-import { Group, Path, Rect, Circle } from 'react-konva';
+import { Group, Path, Rect, Circle, Text } from 'react-konva';
 import { FloorMapShape } from '../../types';
 import {
   getUnifiedObjectById,
   isObjectCategoryHidden,
   SVGSymbol,
 } from '../../objectLibrary';
-import { getObjectDef, objectFootprintWorld, objectPlacement } from '../objects/objectModel';
+import {
+  getObjectDef,
+  objectDimensionsMM,
+  objectFootprintWorld,
+  objectPlacement,
+} from '../objects/objectModel';
 import { useFloorMapStore } from '../../store';
 import { useEditorUiStore } from '../state/uiStore';
 
@@ -72,6 +77,26 @@ const ObjectShape: React.FC<{
       <Group x={-w / 2} y={-d / 2} listening={false}>
         <SymbolPaths symbol={def.floorPlanSymbol} w={w} d={d} />
       </Group>
+      {/* Custom/DIY objects carry their own name + real dimensions — the whole
+          point is seeing how YOUR measurements fit the room. */}
+      {def.category === 'custom' && (() => {
+        const dims = objectDimensionsMM(shape);
+        const label = `${shape.name || def.name}\n${dims ? `${Math.round(dims.width)}×${Math.round(dims.depth)} mm` : ''}`;
+        return (
+          <Text
+            x={-w / 2}
+            y={-11 / zoom}
+            width={w}
+            align="center"
+            text={label}
+            fontSize={Math.min(11 / zoom, w / 6)}
+            lineHeight={1.2}
+            fill="#854d0e"
+            listening={false}
+            perfectDrawEnabled={false}
+          />
+        );
+      })()}
       {isSelected && (
         <>
           <Rect

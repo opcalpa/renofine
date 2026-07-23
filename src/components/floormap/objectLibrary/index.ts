@@ -45,12 +45,14 @@ export {
 // Definitions - Plumbing & Furniture
 export { PLUMBING_OBJECTS } from './definitions/plumbing';
 export { FURNITURE_OBJECTS } from './definitions/furniture';
+export { CUSTOM_OBJECTS, CUSTOM_BOX } from './definitions/custom';
 
 // Get all objects
 import { ELECTRICAL_OBJECTS } from './definitions/electrical';
 import { KITCHEN_OBJECTS } from './definitions/kitchen';
 import { PLUMBING_OBJECTS } from './definitions/plumbing';
 import { FURNITURE_OBJECTS } from './definitions/furniture';
+import { CUSTOM_OBJECTS } from './definitions/custom';
 import { UnifiedObjectDefinition } from './types';
 
 export const ALL_OBJECTS: UnifiedObjectDefinition[] = [
@@ -58,6 +60,7 @@ export const ALL_OBJECTS: UnifiedObjectDefinition[] = [
   ...KITCHEN_OBJECTS,
   ...PLUMBING_OBJECTS,
   ...FURNITURE_OBJECTS,
+  ...CUSTOM_OBJECTS,
 ];
 
 /**

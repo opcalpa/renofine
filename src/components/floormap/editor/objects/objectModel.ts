@@ -45,14 +45,24 @@ export function objectPlacement(shape: FloorMapShape): { center: Point; rotation
   };
 }
 
-/** Footprint (width × depth) in world units, including the instance scale. */
-export function objectFootprintWorld(shape: FloorMapShape): { w: number; d: number } | null {
+/** Instance dimensions in mm — custom objects override the catalog defaults. */
+export function objectDimensionsMM(shape: FloorMapShape): { width: number; depth: number } | null {
   const def = getObjectDef(shape);
   if (!def) return null;
+  return {
+    width: (shape.metadata?.customWidthMM as number) || def.dimensions.width,
+    depth: (shape.metadata?.customDepthMM as number) || def.dimensions.depth,
+  };
+}
+
+/** Footprint (width × depth) in world units, including the instance scale. */
+export function objectFootprintWorld(shape: FloorMapShape): { w: number; d: number } | null {
+  const dims = objectDimensionsMM(shape);
+  if (!dims) return null;
   const scale = (shape.metadata?.scale as number) || 1;
   return {
-    w: mmToWorld(def.dimensions.width) * scale,
-    d: mmToWorld(def.dimensions.depth) * scale,
+    w: mmToWorld(dims.width) * scale,
+    d: mmToWorld(dims.depth) * scale,
   };
 }
 

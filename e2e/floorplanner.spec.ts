@@ -705,4 +705,49 @@ test.describe('Floor planner v2', () => {
     expect(result.name).toBe('Toalett');
     expect(result.wallAttached).toBe(true);
   });
+
+  test('custom DIY object: place, rename and set real dimensions', async ({ page }) => {
+    await openDemoPlanner(page);
+
+    // Drop a custom box on the empty canvas
+    await page.evaluate(() => {
+      const container = document.querySelector('[data-testid="editor-v2-canvas"]')!;
+      const rect = container.getBoundingClientRect();
+      const dt = new DataTransfer();
+      dt.setData('application/x-renofine-object', 'custom_box');
+      const mk = (type: string) =>
+        new DragEvent(type, {
+          bubbles: true,
+          cancelable: true,
+          clientX: rect.left + 500,
+          clientY: rect.top + 400,
+          dataTransfer: dt,
+        });
+      container.dispatchEvent(mk('dragover'));
+      container.dispatchEvent(mk('drop'));
+    });
+
+    // Selection toolbar shows name + dimension inputs for the custom object
+    const toolbar = page.getByTestId('selection-toolbar');
+    await expect(toolbar).toBeVisible();
+    const inputs = toolbar.locator('input');
+    await inputs.nth(0).fill('Platsbyggd bänk');
+    await inputs.nth(0).press('Enter');
+    await inputs.nth(1).fill('2400');
+    await inputs.nth(1).press('Enter');
+
+    const custom = await page.evaluate(() => {
+      const s = window.__rfEditorDebug!
+        .getShapes()
+        .find(
+          (sh) =>
+            (sh as { metadata?: { unifiedObjectId?: string } }).metadata?.unifiedObjectId ===
+            'custom_box'
+        ) as { name?: string; metadata?: { customWidthMM?: number; customDepthMM?: number } };
+      return { name: s?.name, w: s?.metadata?.customWidthMM, d: s?.metadata?.customDepthMM };
+    });
+    expect(custom.name).toBe('Platsbyggd bänk');
+    expect(custom.w).toBe(2400);
+    expect(custom.d).toBe(600);
+  });
 });

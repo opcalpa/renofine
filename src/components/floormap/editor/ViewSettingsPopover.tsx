@@ -61,7 +61,8 @@ export const ViewSettingsPopover = () => {
           <span className="hidden lg:inline">{t('floormap.viewSettings', 'Visning')}</span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" sideOffset={8} className="w-72">
+      {/* z above the demo banner (z-[59]) which otherwise covers the top rows */}
+      <PopoverContent align="end" sideOffset={8} className="w-72 z-[70]">
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <Label htmlFor="v2-show-grid" className="text-sm font-normal">

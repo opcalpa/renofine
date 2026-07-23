@@ -10,7 +10,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, Plug, Droplets, Sofa, ChevronDown, ChevronRight, ChefHat } from 'lucide-react';
+import { Search, Plug, Droplets, Sofa, ChevronDown, ChevronRight, ChefHat, PencilRuler } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -20,6 +20,7 @@ import { ELECTRICAL_OBJECTS } from './definitions/electrical';
 import { KITCHEN_OBJECTS } from './definitions/kitchen';
 import { PLUMBING_OBJECTS } from './definitions/plumbing';
 import { FURNITURE_OBJECTS } from './definitions/furniture';
+import { CUSTOM_OBJECTS } from './definitions/custom';
 
 // Category configuration
 const CATEGORIES: Array<{
@@ -51,6 +52,12 @@ const CATEGORIES: Array<{
     nameKey: 'objectLibrary.categories.furniture',
     icon: <Sofa className="h-4 w-4" />,
     objects: FURNITURE_OBJECTS,
+  },
+  {
+    id: 'custom',
+    nameKey: 'objectLibrary.categories.custom',
+    icon: <PencilRuler className="h-4 w-4" />,
+    objects: CUSTOM_OBJECTS,
   },
 ];
 

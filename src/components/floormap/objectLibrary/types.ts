@@ -17,7 +17,8 @@ export type ObjectCategory =
   | 'doors'
   | 'windows'
   | 'hvac'
-  | 'lighting';
+  | 'lighting'
+  | 'custom';
 
 export type WallAttachmentSide = 'interior' | 'exterior' | 'both' | 'none';
 
