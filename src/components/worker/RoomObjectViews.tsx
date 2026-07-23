@@ -8,7 +8,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { RoomMiniMap } from "./RoomMiniMap";
 import { WallElevationMiniView } from "./WallElevationMiniView";
-import type { FloorPlanObject, WallObject } from "./roomObjectShared";
+import type { FloorPlanObject, WallNote, WallObject, WallSurface } from "./roomObjectShared";
 
 interface FloorPlanShape {
   id: string;
@@ -25,6 +25,8 @@ interface RoomObjectViewsProps {
   backgroundImage?: { url: string; x: number; y: number } | null;
   floorObjects?: FloorPlanObject[];
   wallObjects?: WallObject[];
+  wallSurfaces?: WallSurface[];
+  wallNotes?: WallNote[];
   ceilingHeightMm?: number | null;
   /** Worker token — enables "ask a question" on tapped objects (W3). */
   token?: string;
@@ -37,13 +39,17 @@ export function RoomObjectViews({
   backgroundImage,
   floorObjects,
   wallObjects,
+  wallSurfaces,
+  wallNotes,
   ceilingHeightMm,
   token,
   className,
 }: RoomObjectViewsProps) {
   const { t } = useTranslation();
 
-  const hasWall = (wallObjects || []).some((o) => o.roomId === highlightRoomId);
+  const hasWall =
+    (wallObjects || []).some((o) => o.roomId === highlightRoomId) ||
+    (wallNotes || []).some((n) => n.roomId === highlightRoomId);
   const hasFloor =
     (shapes && shapes.length > 0) ||
     (floorObjects || []).some((o) => o.roomId === highlightRoomId);
@@ -93,6 +99,8 @@ export function RoomObjectViews({
           objects={wallObjects || []}
           roomId={highlightRoomId}
           ceilingHeightMm={ceilingHeightMm}
+          surfaces={wallSurfaces}
+          notes={wallNotes}
           token={token}
           className={className}
         />

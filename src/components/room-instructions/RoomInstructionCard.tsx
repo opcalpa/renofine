@@ -15,7 +15,7 @@ import {
 import { getStatusBadgeColor } from "@/lib/statusColors";
 import { ColorSwatchRow } from "@/components/worker/ColorSwatchRow";
 import { RoomObjectViews } from "@/components/worker/RoomObjectViews";
-import type { FloorPlanObject, WallObject } from "@/components/worker/roomObjectShared";
+import type { FloorPlanObject, WallNote, WallObject, WallSurface } from "@/components/worker/roomObjectShared";
 import {
   ChevronDown,
   Camera,
@@ -34,6 +34,8 @@ interface RoomInstructionCardProps {
   floorPlanShapes?: FloorPlanShape[];
   floorPlanObjects?: FloorPlanObject[];
   wallObjects?: WallObject[];
+  wallSurfaces?: WallSurface[];
+  wallNotes?: WallNote[];
   /** Worker token — enables "ask a question" on tapped objects (W3). */
   token?: string;
   canToggleChecklist?: boolean;
@@ -55,6 +57,8 @@ export function RoomInstructionCard({
   floorPlanShapes,
   floorPlanObjects,
   wallObjects,
+  wallSurfaces,
+  wallNotes,
   token,
   canToggleChecklist = false,
   canUploadPhotos = false,
@@ -154,12 +158,15 @@ export function RoomInstructionCard({
       {room.id !== "__none__" &&
         ((floorPlanShapes && floorPlanShapes.length > 0) ||
           (floorPlanObjects || []).some((o) => o.roomId === room.id) ||
-          (wallObjects || []).some((o) => o.roomId === room.id)) && (
+          (wallObjects || []).some((o) => o.roomId === room.id) ||
+          (wallNotes || []).some((n) => n.roomId === room.id)) && (
           <RoomObjectViews
             shapes={floorPlanShapes || []}
             highlightRoomId={room.id}
             floorObjects={floorPlanObjects}
             wallObjects={wallObjects}
+            wallSurfaces={wallSurfaces}
+            wallNotes={wallNotes}
             ceilingHeightMm={room.dimensions?.ceiling_height_mm ?? null}
             token={token}
             className="rounded-lg border"

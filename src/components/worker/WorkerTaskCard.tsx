@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { getStatusBadgeColor } from "@/lib/statusColors";
 import { ColorSwatchRow } from "./ColorSwatchRow";
 import { RoomObjectViews } from "./RoomObjectViews";
-import type { FloorPlanObject, WallObject } from "./roomObjectShared";
+import type { FloorPlanObject, WallNote, WallObject, WallSurface } from "./roomObjectShared";
 import { RoomSpecsSummary } from "./RoomSpecsSummary";
 import { WorkerMessageInput } from "./WorkerMessageInput";
 import { MapPin, Ruler, Camera, Loader2, CheckSquare, ImageIcon, MessageCircle } from "lucide-react";
@@ -119,6 +119,8 @@ interface WorkerTaskCardProps {
   floorPlanImage?: { url: string; x: number; y: number } | null;
   floorPlanObjects?: FloorPlanObject[];
   wallObjects?: WallObject[];
+  wallSurfaces?: WallSurface[];
+  wallNotes?: WallNote[];
   onTaskUpdate: (taskId: string, updates: Partial<WorkerTask>) => void;
 }
 
@@ -147,6 +149,8 @@ export function WorkerTaskCard({
   floorPlanImage,
   floorPlanObjects,
   wallObjects,
+  wallSurfaces,
+  wallNotes,
   onTaskUpdate,
 }: WorkerTaskCardProps) {
   const { t } = useTranslation();
@@ -270,7 +274,8 @@ export function WorkerTaskCard({
 
       {/* Floor plan + wall instruction views */}
       {((floorPlan && floorPlan.length > 0) ||
-        (wallObjects || []).some((o) => o.roomId === task.roomId)) &&
+        (wallObjects || []).some((o) => o.roomId === task.roomId) ||
+        (wallNotes || []).some((n) => n.roomId === task.roomId)) &&
         task.room && (
           <div className="px-4 pb-2">
             <div className="rounded-lg bg-muted/30 border p-2">
@@ -280,6 +285,8 @@ export function WorkerTaskCard({
                 backgroundImage={floorPlanImage}
                 floorObjects={floorPlanObjects}
                 wallObjects={wallObjects}
+                wallSurfaces={wallSurfaces}
+                wallNotes={wallNotes}
                 ceilingHeightMm={ceilingH}
                 token={token}
                 className="rounded"

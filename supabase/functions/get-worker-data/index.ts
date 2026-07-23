@@ -271,6 +271,106 @@ serve(async (req) => {
       }
     }
 
+    // 5g. Wall finishes + wall notes (wall-view annotations): the per-wall work
+    //     instruction (material / treatment / color code) and wall-anchored
+    //     text notes placed in the elevation view. Each wall is resolved to
+    //     its room by probing the wall midpoint's both sides against the room
+    //     polygons, so the worker only sees walls in their assigned rooms.
+    const wallSurfaces: Array<{
+      wallId: string;
+      roomId: string;
+      material: string | null;
+      treatment: string | null;
+      treatmentColor: string | null;
+    }> = [];
+    const wallNotes: Array<{
+      id: string;
+      wallId: string;
+      roomId: string;
+      text: string;
+      distanceFromWallStart: number;
+      elevationBottom: number;
+      width: number;
+      height: number;
+    }> = [];
+    if (roomIds.length > 0) {
+      const { data: extraShapes } = await sb
+        .from("floor_map_shapes")
+        .select("id, shape_type, shape_data")
+        .eq("project_id", tokenRecord.project_id)
+        .in("shape_type", ["wall", "text"]);
+
+      const pointInPoly = (pt: { x: number; y: number }, pts: Array<{ x: number; y: number }>) => {
+        let inside = false;
+        for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+          const xi = pts[i].x, yi = pts[i].y, xj = pts[j].x, yj = pts[j].y;
+          if (yi > pt.y !== yj > pt.y && pt.x < ((xj - xi) * (pt.y - yi)) / (yj - yi) + xi) {
+            inside = !inside;
+          }
+        }
+        return inside;
+      };
+      const assignedRoomPolys = floorPlanShapes.filter(
+        (s) => s.roomId && roomIds.includes(s.roomId as string) && Array.isArray(s.points) && (s.points as Array<{ x: number; y: number }>).length >= 3
+      );
+      const wallRoom: Record<string, string> = {};
+      for (const s of extraShapes || []) {
+        if (s.shape_type !== "wall") continue;
+        const c = ((s.shape_data as Record<string, unknown>)?.coordinates || {}) as Record<string, number>;
+        if (typeof c.x1 !== "number") continue;
+        const mid = { x: (c.x1 + c.x2) / 2, y: (c.y1 + c.y2) / 2 };
+        const len = Math.hypot(c.x2 - c.x1, c.y2 - c.y1) || 1;
+        const n = { x: -(c.y2 - c.y1) / len, y: (c.x2 - c.x1) / len };
+        outer: for (const dist of [12, 30]) {
+          for (const side of [1, -1]) {
+            const probe = { x: mid.x + n.x * dist * side, y: mid.y + n.y * dist * side };
+            const hit = assignedRoomPolys.find((r) =>
+              pointInPoly(probe, r.points as Array<{ x: number; y: number }>)
+            );
+            if (hit?.roomId) {
+              wallRoom[s.id] = hit.roomId as string;
+              break outer;
+            }
+          }
+        }
+      }
+
+      for (const s of extraShapes || []) {
+        const sd = (s.shape_data as Record<string, unknown>) || {};
+        if (s.shape_type === "wall") {
+          const roomId = wallRoom[s.id];
+          if (!roomId) continue;
+          const material = (sd.material as string) || null;
+          const treatment = (sd.treatment as string) || null;
+          const treatmentColor = (sd.treatmentColor as string) || null;
+          if (material || treatment || treatmentColor) {
+            wallSurfaces.push({ wallId: s.id, roomId, material, treatment, treatmentColor });
+          }
+        } else if (s.shape_type === "text") {
+          const wr = sd.wallRelative as Record<string, unknown> | undefined;
+          if (
+            sd.shapeViewMode === "elevation" &&
+            wr &&
+            typeof wr.wallId === "string" &&
+            typeof sd.text === "string" &&
+            sd.text &&
+            wallRoom[wr.wallId as string]
+          ) {
+            wallNotes.push({
+              id: s.id,
+              wallId: wr.wallId as string,
+              roomId: wallRoom[wr.wallId as string],
+              text: sd.text as string,
+              distanceFromWallStart: typeof wr.distanceFromWallStart === "number" ? wr.distanceFromWallStart : 0,
+              elevationBottom: typeof wr.elevationBottom === "number" ? wr.elevationBottom : 0,
+              width: typeof wr.width === "number" ? wr.width : 700,
+              height: typeof wr.height === "number" ? wr.height : 250,
+            });
+          }
+        }
+      }
+    }
+
     // 5e. Fetch translations for worker's language
     const workerLang = tokenRecord.worker_language;
     let translationsMap: Record<string, { title: string; description: string | null; checklists: unknown }> = {};
@@ -541,6 +641,8 @@ serve(async (req) => {
       floorPlanImage: backgroundImage,
       floorPlanObjects,
       wallObjects,
+      wallSurfaces,
+      wallNotes,
     }, 200, req);
   } catch (error) {
     console.error("get-worker-data error:", error);

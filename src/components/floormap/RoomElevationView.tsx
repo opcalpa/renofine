@@ -722,6 +722,8 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
   const [textEditShapeId, setTextEditShapeId] = useState<string | null>(null);
   const [textDraft, setTextDraft] = useState('');
   const [wallInfoOpen, setWallInfoOpen] = useState(false);
+  // v2: selected opening in the wall view (slide/width/flip/delete editing)
+  const [selectedElevOpeningId, setSelectedElevOpeningId] = useState<string | null>(null);
 
   // Placement object definitions (matching objectLibraryDefinitions.ts)
   const placementObjects: Record<Exclude<PlacementObject, null>, {
@@ -1244,11 +1246,12 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
         goToNextSegment();
       } else if (e.key === 'Escape') {
         // First deselect placement tool, then close on second Escape
-        if (selectedPlacement || selectedUnifiedObject || selectedOpeningKind || textPlacementArmed) {
+        if (selectedPlacement || selectedUnifiedObject || selectedOpeningKind || textPlacementArmed || selectedElevOpeningId) {
           setSelectedPlacement(null);
           setSelectedUnifiedObject(null);
           setSelectedOpeningKind(null);
           setTextPlacementArmed(false);
+          setSelectedElevOpeningId(null);
         } else {
           onClose();
         }
@@ -1257,7 +1260,12 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [goToPreviousSegment, goToNextSegment, onClose, selectedPlacement, selectedUnifiedObject, selectedOpeningKind, textPlacementArmed]);
+  }, [goToPreviousSegment, goToNextSegment, onClose, selectedPlacement, selectedUnifiedObject, selectedOpeningKind, textPlacementArmed, selectedElevOpeningId]);
+
+  // Selection is per-wall — clear it when navigating to another segment.
+  useEffect(() => {
+    setSelectedElevOpeningId(null);
+  }, [currentSegmentIndex]);
 
   // Calculate visualization data (segment-based)
   const visualization = useMemo(() => {
@@ -2064,6 +2072,56 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
           </div>
         )}
 
+        {/* v2: editing chip for the selected opening — width, flip, delete */}
+        {editorV2 && selectedElevOpeningId && (() => {
+          const op = shapes.find((s) => s.id === selectedElevOpeningId && s.type === 'opening');
+          if (!op) return null;
+          const widthMM = (op.metadata?.widthMM as number) ?? 900;
+          return (
+            <div className="absolute left-1/2 top-3 z-30 flex -translate-x-1/2 items-center gap-1.5 rounded-lg border bg-white p-1.5 shadow-lg">
+              <span className="pl-1 text-xs text-gray-500">
+                {t(`floormap.openingKind.${op.openingKind}`, op.openingKind ?? '')}
+              </span>
+              <input
+                key={`${op.id}-${widthMM}`}
+                type="number"
+                className="h-7 w-16 rounded-md border px-1.5 text-right text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                defaultValue={widthMM}
+                min={300}
+                step={10}
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+                  if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                }}
+                onBlur={(e) => {
+                  const v = parseInt(e.target.value, 10);
+                  if (Number.isFinite(v) && v > 0 && v !== widthMM) {
+                    execute('opening.setWidth', { id: op.id, widthMM: v });
+                  }
+                }}
+              />
+              <span className="text-xs text-gray-400">mm</span>
+              <button
+                className="flex h-7 w-7 items-center justify-center rounded-md text-gray-600 hover:bg-gray-100"
+                title={t('floormap.selection.flipOpening', 'Vänd öppning')}
+                onClick={() => execute('opening.flip', { id: op.id })}
+              >
+                ⇄
+              </button>
+              <button
+                className="flex h-7 w-7 items-center justify-center rounded-md text-gray-600 hover:bg-red-50 hover:text-red-600"
+                title={t('floormap.selection.delete', 'Radera')}
+                onClick={() => {
+                  execute('shape.delete', { ids: [op.id] });
+                  setSelectedElevOpeningId(null);
+                }}
+              >
+                🗑
+              </button>
+            </div>
+          );
+        })()}
+
         {/* v2: wall surface info — the per-wall work instruction (material,
             treatment, color code) + the room's wall color swatch. */}
         {editorV2 && currentSegment?.wall && (
@@ -2371,16 +2429,75 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
                   const openingColor = isWindow ? '#0284c7' : isSlidingDoor ? '#10b981' : '#8b5cf6';
                   const openingFill = isWindow ? '#bae6fd' : isSlidingDoor ? '#d1fae5' : '#e9d5ff';
 
+                  // v2 openings (store shape type 'opening') are editable here:
+                  // slide along the wall, and select for width/flip/delete.
+                  const storeOpening = editorV2
+                    ? shapes.find((st) => st.id === opening.shape.id && st.type === 'opening')
+                    : undefined;
+                  const isOpeningSelected = selectedElevOpeningId === opening.shape.id;
+
                   return (
-                    <Group key={`opening-${index}`}>
+                    <Group
+                      key={`opening-${index}`}
+                      draggable={!!storeOpening}
+                      dragBoundFunc={(pos) => ({ x: pos.x, y: 0 })}
+                      onMouseDown={(e) => {
+                        if (!storeOpening) return;
+                        isDraggingObjectRef.current = true;
+                        e.cancelBubble = true;
+                      }}
+                      onClick={(e) => {
+                        if (!storeOpening) return;
+                        e.cancelBubble = true;
+                        isDraggingObjectRef.current = false;
+                        setSelectedElevOpeningId(opening.shape.id);
+                        setSelectedObjectId(null);
+                      }}
+                      onDragEnd={(e) => {
+                        if (!storeOpening || !currentSegment) return;
+                        e.cancelBubble = true;
+                        isDraggingObjectRef.current = false;
+                        const dx = e.target.x();
+                        e.target.position({ x: 0, y: 0 });
+                        const centerScreen = openingX + openingWidth / 2 + dx;
+                        const f = Math.max(
+                          0,
+                          Math.min(1, (centerScreen - visualization.wallX) / visualization.wallWidth)
+                        );
+                        const edge = currentSegment.edge;
+                        const frame = wallFrame(visualization.wall!);
+                        if (!frame) return;
+                        const worldPoint = {
+                          x: edge.start.x + (edge.end.x - edge.start.x) * f,
+                          y: edge.start.y + (edge.end.y - edge.start.y) * f,
+                        };
+                        const { t: newT } = projectOntoWall(worldPoint, frame);
+                        execute('shape.update', {
+                          id: storeOpening.id,
+                          updates: { positionOnWall: newT },
+                        });
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!storeOpening) return;
+                        const container = e.target.getStage()?.container();
+                        if (container) container.style.cursor = 'ew-resize';
+                      }}
+                      onMouseLeave={(e) => {
+                        const container = e.target.getStage()?.container();
+                        if (container) container.style.cursor = 'grab';
+                      }}
+                    >
                       <Rect
                         x={openingX}
                         y={openingY}
                         width={openingWidth}
                         height={openingHeight}
                         fill={openingFill}
-                        stroke={openingColor}
-                        strokeWidth={2}
+                        stroke={isOpeningSelected ? '#22c55e' : openingColor}
+                        strokeWidth={isOpeningSelected ? 3 : 2}
+                        shadowColor={isOpeningSelected ? '#22c55e' : undefined}
+                        shadowBlur={isOpeningSelected ? 8 : 0}
+                        shadowOpacity={isOpeningSelected ? 0.4 : 0}
                       />
                       {/* Opening label */}
                       <KonvaText

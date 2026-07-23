@@ -39,6 +39,27 @@ export interface WallObject extends RoomObjectInfo {
   height: number;
 }
 
+/** Per-wall finish instruction (material / treatment / color code). */
+export interface WallSurface {
+  wallId: string;
+  roomId: string;
+  material: string | null;
+  treatment: string | null;
+  treatmentColor: string | null;
+}
+
+/** Wall-anchored text note placed in the wall view, in mm. */
+export interface WallNote {
+  id: string;
+  wallId: string;
+  roomId: string;
+  text: string;
+  distanceFromWallStart: number;
+  elevationBottom: number;
+  width: number;
+  height: number;
+}
+
 // Category → marker accent colour. Mirrors ROOM_ITEM_CATEGORIES order.
 export const CATEGORY_COLORS: Record<string, string> = {
   electrical: "#f59e0b",

@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RoomInstructionCard } from "./RoomInstructionCard";
-import type { FloorPlanObject, WallObject } from "@/components/worker/roomObjectShared";
+import type { FloorPlanObject, WallNote, WallObject, WallSurface } from "@/components/worker/roomObjectShared";
 import type { RoomInstruction, FloorPlanShape } from "./types";
 
 interface SwipeableRoomInstructionsProps {
@@ -11,6 +11,8 @@ interface SwipeableRoomInstructionsProps {
   floorPlanShapes?: FloorPlanShape[];
   floorPlanObjects?: FloorPlanObject[];
   wallObjects?: WallObject[];
+  wallSurfaces?: WallSurface[];
+  wallNotes?: WallNote[];
   /** Worker token — enables "ask a question" on tapped objects (W3). */
   token?: string;
   canToggleChecklist?: boolean;
@@ -24,6 +26,8 @@ export function SwipeableRoomInstructions({
   floorPlanShapes,
   floorPlanObjects,
   wallObjects,
+  wallSurfaces,
+  wallNotes,
   token,
   canToggleChecklist,
   canUploadPhotos,
@@ -128,6 +132,8 @@ export function SwipeableRoomInstructions({
               floorPlanShapes={floorPlanShapes}
               floorPlanObjects={floorPlanObjects}
               wallObjects={wallObjects}
+              wallSurfaces={wallSurfaces}
+              wallNotes={wallNotes}
               token={token}
               canToggleChecklist={canToggleChecklist}
               canUploadPhotos={canUploadPhotos}

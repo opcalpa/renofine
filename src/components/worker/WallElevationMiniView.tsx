@@ -15,7 +15,9 @@ import {
   CATEGORY_COLORS,
   CategoryFilterChips,
   ObjectInfoCard,
+  type WallNote,
   type WallObject,
+  type WallSurface,
 } from "./roomObjectShared";
 import { ZoomPanSvg } from "./ZoomPanSvg";
 
@@ -24,6 +26,10 @@ interface WallElevationMiniViewProps {
   /** Render walls for this room only (the card's room). */
   roomId: string | null;
   ceilingHeightMm?: number | null;
+  /** Per-wall finish instructions (material/treatment/color code). */
+  surfaces?: WallSurface[];
+  /** Wall-anchored text notes from the wall view. */
+  notes?: WallNote[];
   /** Worker token — when set, the info card lets the worker ask a question (W3). */
   token?: string;
   className?: string;
@@ -37,6 +43,8 @@ export function WallElevationMiniView({
   objects,
   roomId,
   ceilingHeightMm,
+  surfaces,
+  notes,
   token,
   className,
 }: WallElevationMiniViewProps) {
@@ -46,6 +54,15 @@ export function WallElevationMiniView({
     () => (objects || []).filter((o) => o.roomId === roomId),
     [objects, roomId]
   );
+  const roomNotes = useMemo(
+    () => (notes || []).filter((n) => n.roomId === roomId),
+    [notes, roomId]
+  );
+  const surfaceByWall = useMemo(() => {
+    const map: Record<string, WallSurface> = {};
+    for (const s of surfaces || []) if (s.roomId === roomId) map[s.wallId] = s;
+    return map;
+  }, [surfaces, roomId]);
 
   const presentCategories = useMemo(() => {
     const seen: string[] = [];
@@ -58,35 +75,41 @@ export function WallElevationMiniView({
 
   const wallHeightMM = ceilingHeightMm && ceilingHeightMm > 0 ? ceilingHeightMm : DEFAULT_CEILING_MM;
 
-  // Group visible objects by wall, preserving first-seen order.
+  // Group visible objects (and notes) by wall, preserving first-seen order.
+  // A wall with only a note or a finish still gets a panel.
   const walls = useMemo(() => {
     const order: string[] = [];
     const byWall: Record<string, WallObject[]> = {};
+    const seen = (wallId: string) => {
+      if (!byWall[wallId]) {
+        byWall[wallId] = [];
+        order.push(wallId);
+      }
+    };
     for (const o of roomObjects) {
       if (hiddenCategories.has(o.category)) continue;
-      if (!byWall[o.wallId]) {
-        byWall[o.wallId] = [];
-        order.push(o.wallId);
-      }
+      seen(o.wallId);
       byWall[o.wallId].push(o);
     }
+    for (const n of roomNotes) seen(n.wallId);
     return order.map((wallId) => {
       const objs = byWall[wallId];
-      const maxRight = objs.reduce(
-        (m, o) => Math.max(m, o.distanceFromWallStart + o.width),
-        0
+      const wallNotes = roomNotes.filter((n) => n.wallId === wallId);
+      const maxRight = Math.max(
+        objs.reduce((m, o) => Math.max(m, o.distanceFromWallStart + o.width), 0),
+        wallNotes.reduce((m, n) => Math.max(m, n.distanceFromWallStart + n.width), 0)
       );
       const lengthMM = Math.max(maxRight + WALL_PADDING_MM, MIN_WALL_LENGTH_MM);
-      return { wallId, objs, lengthMM };
+      return { wallId, objs, notes: wallNotes, lengthMM };
     });
-  }, [roomObjects, hiddenCategories]);
+  }, [roomObjects, roomNotes, hiddenCategories]);
 
   const selected = useMemo(
     () => roomObjects.find((o) => o.id === selectedId) || null,
     [roomObjects, selectedId]
   );
 
-  if (roomObjects.length === 0) return null;
+  if (roomObjects.length === 0 && roomNotes.length === 0) return null;
 
   return (
     <div className="space-y-2">
@@ -107,9 +130,25 @@ export function WallElevationMiniView({
 
       {walls.map((wall, i) => (
         <div key={wall.wallId} className="space-y-1">
-          {walls.length > 1 && (
-            <div className="text-xs font-medium text-muted-foreground">
-              {t("roomItems.wall", "Wall")} {i + 1}
+          {(walls.length > 1 || surfaceByWall[wall.wallId]) && (
+            <div className="flex flex-wrap items-baseline gap-x-2 text-xs">
+              {walls.length > 1 && (
+                <span className="font-medium text-muted-foreground">
+                  {t("roomItems.wall", "Wall")} {i + 1}
+                </span>
+              )}
+              {/* Per-wall finish instruction: material · treatment · color code */}
+              {surfaceByWall[wall.wallId] && (
+                <span className="text-muted-foreground">
+                  {[
+                    surfaceByWall[wall.wallId].material,
+                    surfaceByWall[wall.wallId].treatment,
+                    surfaceByWall[wall.wallId].treatmentColor,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </span>
+              )}
             </div>
           )}
           <ZoomPanSvg
@@ -136,6 +175,37 @@ export function WallElevationMiniView({
               stroke="#9ca3af"
               strokeWidth={wallHeightMM * 0.01}
             />
+
+            {/* Wall-anchored notes (yellow stickies from the wall view) */}
+            {wall.notes.map((n) => {
+              const topY = wallHeightMM - (n.elevationBottom + n.height);
+              const fontSize = Math.min(n.height * 0.42, 130);
+              return (
+                <g key={n.id}>
+                  <rect
+                    x={n.distanceFromWallStart}
+                    y={topY}
+                    width={n.width}
+                    height={n.height}
+                    rx={n.height * 0.1}
+                    fill="#fef9c3"
+                    stroke="#eab308"
+                    strokeWidth={wallHeightMM * 0.004}
+                    opacity={0.95}
+                  />
+                  <text
+                    x={n.distanceFromWallStart + n.width / 2}
+                    y={topY + n.height / 2 + fontSize * 0.35}
+                    textAnchor="middle"
+                    fontSize={fontSize}
+                    fill="#713f12"
+                  >
+                    {n.text.length > 28 ? `${n.text.slice(0, 27)}…` : n.text}
+                    <title>{n.text}</title>
+                  </text>
+                </g>
+              );
+            })}
 
             {wall.objs.map((o) => {
               const color = CATEGORY_COLORS[o.category] || "#6b7280";
