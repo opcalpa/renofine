@@ -801,4 +801,64 @@ test.describe('Floor planner v2', () => {
     expect(opening.t!).toBeGreaterThan(0.3);
     expect(opening.t!).toBeLessThan(0.7);
   });
+
+  test('wall view: text note placement and per-wall surface instruction', async ({ page }) => {
+    await openDemoPlanner(page);
+    const canvas = page.getByTestId('editor-v2-canvas');
+    const box = (await canvas.boundingBox())!;
+    const click = async (x: number, y: number) => {
+      await page.mouse.move(box.x + x, box.y + y);
+      await page.mouse.down();
+      await page.mouse.up();
+    };
+
+    await page.keyboard.press('w');
+    await click(300, 300);
+    await click(600, 300);
+    await click(600, 500);
+    await click(300, 500);
+    await click(300, 300);
+    const dialog = page.getByRole('dialog');
+    if (await dialog.isVisible({ timeout: 1500 }).catch(() => false)) {
+      await dialog.getByRole('button', { name: 'Avbryt' }).click();
+    }
+    await page.keyboard.press('v');
+    await click(450, 300);
+    await page.getByTestId('show-wall-view').click();
+    await expect(page.getByText(/Vägg \d+ av 4/)).toBeVisible();
+
+    // Text note: arm, click the wall, type, Enter
+    await page.getByTestId('elevation-tool-text').click();
+    const elevCanvas = page.locator('.fixed.inset-0 .konvajs-content canvas').last();
+    const eb = (await elevCanvas.boundingBox())!;
+    await elevCanvas.click({ position: { x: eb.width * 0.5, y: eb.height * 0.4 } });
+    const noteInput = page.getByPlaceholder('Skriv anteckningen…');
+    await expect(noteInput).toBeVisible();
+    await noteInput.fill('Spotlights 3 st');
+    await noteInput.press('Enter');
+
+    // Surface instruction: open the chip, set material, blur commits
+    await page.getByTestId('wall-surface-chip').click();
+    const materialInput = page.getByPlaceholder('Gips, betong…');
+    await materialInput.fill('Gips');
+    await materialInput.blur();
+    await expect(page.getByTestId('wall-surface-chip')).toContainText('Gips');
+
+    // Back on the plan: the note exists wall-anchored and stays out of the floor view
+    await page.getByRole('button', { name: 'Planritning' }).click();
+    await expect(page.getByTestId('editor-v2-canvas')).toBeVisible();
+    const result = await page.evaluate(() => {
+      const shapes = window.__rfEditorDebug!.getShapes();
+      const note = shapes.find(
+        (s) => s.type === 'text' && (s as { shapeViewMode?: string }).shapeViewMode === 'elevation'
+      ) as { text?: string; wallRelative?: { wallId?: string } } | undefined;
+      const wall = shapes.find(
+        (s) => s.id === note?.wallRelative?.wallId
+      ) as { material?: string } | undefined;
+      return { noteText: note?.text, anchored: !!note?.wallRelative?.wallId, wallMaterial: wall?.material };
+    });
+    expect(result.noteText).toBe('Spotlights 3 st');
+    expect(result.anchored).toBe(true);
+    expect(result.wallMaterial).toBe('Gips');
+  });
 });

@@ -3550,7 +3550,15 @@
     "toDeselect": "avbryt",
     "objectDeleted": "Objekt borttaget",
     "objectCopied": "Objekt kopierat",
-    "objectPasted": "Objekt klistrat in"
+    "objectPasted": "Objekt klistrat in",
+    "noteName": "Anteckning",
+    "noteEmpty": "Dubbelklicka för att skriva…",
+    "notePlaceholder": "Skriv anteckningen…",
+    "wallSurfaceEmpty": "Ange ytskikt för väggen",
+    "wallSurfaceTitle": "Väggens ytskikt (arbetsinstruktion)",
+    "wallMaterial": "Material",
+    "wallTreatment": "Behandling",
+    "wallColorCode": "Färgkod"
   },
   "quickComment": {
     "addComment": "Lägg till kommentar",

@@ -2265,7 +2265,15 @@
     "toDeselect": "to cancel",
     "objectDeleted": "Object deleted",
     "objectCopied": "Object copied",
-    "objectPasted": "Object pasted"
+    "objectPasted": "Object pasted",
+    "noteName": "Note",
+    "noteEmpty": "Double-click to write…",
+    "notePlaceholder": "Write the note…",
+    "wallSurfaceEmpty": "Set wall finish",
+    "wallSurfaceTitle": "Wall finish (work instruction)",
+    "wallMaterial": "Material",
+    "wallTreatment": "Treatment",
+    "wallColorCode": "Color code"
   },
   "quickComment": {
     "addComment": "Add comment",

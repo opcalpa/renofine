@@ -688,7 +688,7 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
 
-  const { shapes, scaleSettings, updateShapeWallRelative, addShape, deleteShape, currentPlanId, undo, redo, canUndo, canRedo } = useFloorMapStore();
+  const { shapes, scaleSettings, updateShapeWallRelative, updateShape, addShape, deleteShape, currentPlanId, undo, redo, canUndo, canRedo } = useFloorMapStore();
   const { pixelsPerMm } = scaleSettings;
   const adminDefaults = getAdminDefaults();
 
@@ -717,6 +717,11 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
   type OpeningKind = 'door' | 'window' | 'sliding' | 'passage';
   const [selectedOpeningKind, setSelectedOpeningKind] = useState<OpeningKind | null>(null);
   const [openingMenuOpen, setOpeningMenuOpen] = useState(false);
+  // v2: text annotations on the wall (sticky-note style, wall-anchored)
+  const [textPlacementArmed, setTextPlacementArmed] = useState(false);
+  const [textEditShapeId, setTextEditShapeId] = useState<string | null>(null);
+  const [textDraft, setTextDraft] = useState('');
+  const [wallInfoOpen, setWallInfoOpen] = useState(false);
 
   // Placement object definitions (matching objectLibraryDefinitions.ts)
   const placementObjects: Record<Exclude<PlacementObject, null>, {
@@ -1239,10 +1244,11 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
         goToNextSegment();
       } else if (e.key === 'Escape') {
         // First deselect placement tool, then close on second Escape
-        if (selectedPlacement || selectedUnifiedObject || selectedOpeningKind) {
+        if (selectedPlacement || selectedUnifiedObject || selectedOpeningKind || textPlacementArmed) {
           setSelectedPlacement(null);
           setSelectedUnifiedObject(null);
           setSelectedOpeningKind(null);
+          setTextPlacementArmed(false);
         } else {
           onClose();
         }
@@ -1251,7 +1257,7 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [goToPreviousSegment, goToNextSegment, onClose, selectedPlacement, selectedUnifiedObject, selectedOpeningKind]);
+  }, [goToPreviousSegment, goToNextSegment, onClose, selectedPlacement, selectedUnifiedObject, selectedOpeningKind, textPlacementArmed]);
 
   // Calculate visualization data (segment-based)
   const visualization = useMemo(() => {
@@ -1360,7 +1366,8 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
    */
   const handleCanvasClick = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
     // Only handle placement if an object is selected (legacy or unified)
-    const hasPlacement = selectedPlacement || selectedUnifiedObject || selectedOpeningKind;
+    const hasPlacement =
+      selectedPlacement || selectedUnifiedObject || selectedOpeningKind || textPlacementArmed;
     if (!hasPlacement || !visualization?.wall || !currentSegment?.hasWall) return;
 
     // Get the click position relative to stage
@@ -1373,6 +1380,52 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
     // Convert to unscaled coordinates
     const x = (pointer.x - panX) / zoom;
     const y = (pointer.y - panY) / zoom;
+
+    // v2: place a wall-anchored text annotation (sticky-note style).
+    if (editorV2 && textPlacementArmed) {
+      const wall = visualization.wall;
+      const scale = visualization.effectiveScale;
+      const notrWpx = 700 * scale;
+      const notrHpx = 250 * scale;
+      const wr = elevationToWallRelative(
+        x - notrWpx / 2,
+        y - notrHpx / 2,
+        notrWpx,
+        notrHpx,
+        wall,
+        visualization.wallHeightMM,
+        scale,
+        visualization.wallX,
+        visualization.wallY
+      );
+      if (!wr || typeof wr.distanceFromWallStart !== 'number') return;
+      const wc = wall.coordinates as { x1: number; y1: number };
+      const newId = crypto.randomUUID();
+      addShape({
+        id: newId,
+        type: 'text',
+        planId: currentPlanId || room?.planId,
+        shapeViewMode: 'elevation',
+        text: '',
+        name: t('elevation.noteName', 'Anteckning'),
+        color: '#fef9c3',
+        coordinates: { x: wc.x1, y: wc.y1 },
+        wallRelative: {
+          wallId: wall.id,
+          distanceFromWallStart: Math.max(0, wr.distanceFromWallStart),
+          perpendicularOffset: 0,
+          elevationBottom: Math.max(0, wr.elevationBottom ?? 1200),
+          width: 700,
+          height: 250,
+          depth: 10,
+        },
+        metadata: { placedInElevation: true },
+      } as FloorMapShape);
+      setTextPlacementArmed(false);
+      setTextEditShapeId(newId);
+      setTextDraft('');
+      return;
+    }
 
     // v2: place an opening on the hosted wall at the clicked position.
     // The view renders along the ROOM EDGE (screen-left = edge.start) while
@@ -1543,7 +1596,7 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
 
     // Clear selection after placement (or keep selected for multiple placements)
     // setSelectedPlacement(null); // Uncomment to require re-selection after each placement
-  }, [selectedPlacement, selectedUnifiedObject, selectedOpeningKind, editorV2, visualization, currentSegment, zoom, panX, panY, placementObjects, addShape, currentPlanId, room, projectId, t]);
+  }, [selectedPlacement, selectedUnifiedObject, selectedOpeningKind, textPlacementArmed, editorV2, visualization, currentSegment, zoom, panX, panY, placementObjects, addShape, currentPlanId, room, projectId, t]);
 
   // Quick comment handlers (PROTOTYPE)
   const handleObjectRightClick = useCallback((
@@ -1855,6 +1908,7 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
                 setSelectedPlacement(null);
                 setSelectedUnifiedObject(null);
                 setSelectedOpeningKind(null);
+                setTextPlacementArmed(false);
                 if (isMeasureActive) toggleMeasureTool();
               }}
             >
@@ -1937,20 +1991,137 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
             >
               <Ruler className="h-5 w-5" />
             </button>
+            <button
+              className={cn(
+                'flex h-10 w-10 items-center justify-center rounded-lg transition-colors',
+                textPlacementArmed
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+              )}
+              title={t('floormap.tools.text', 'Text')}
+              data-testid="elevation-tool-text"
+              onClick={() => {
+                setTextPlacementArmed((v) => !v);
+                setSelectedPlacement(null);
+                setSelectedUnifiedObject(null);
+                setSelectedOpeningKind(null);
+              }}
+            >
+              <span className="text-lg font-serif leading-none">T</span>
+            </button>
           </div>
         )}
 
         {/* v2: floating hint while a placement is armed */}
-        {editorV2 && (selectedPlacement || selectedUnifiedObject || selectedOpeningKind) && (
+        {editorV2 && (selectedPlacement || selectedUnifiedObject || selectedOpeningKind || textPlacementArmed) && (
           <div className="absolute left-1/2 top-3 z-20 -translate-x-1/2 rounded-full border bg-white px-3 py-1.5 text-xs text-gray-700 shadow-md">
             {selectedUnifiedObject?.name
               ? `${selectedUnifiedObject.name} · `
               : selectedOpeningKind
                 ? `${t(`floormap.openingKind.${selectedOpeningKind}`, selectedOpeningKind === 'door' ? 'Dörr' : selectedOpeningKind === 'window' ? 'Fönster' : selectedOpeningKind === 'sliding' ? 'Skjutdörr' : 'Passage')} · `
-                : ''}
+                : textPlacementArmed
+                  ? `${t('elevation.noteName', 'Anteckning')} · `
+                  : ''}
             {t('elevation.clickToPlace', 'Klicka på väggen för att placera')} ·{' '}
             <kbd className="rounded bg-gray-100 px-1 py-0.5 text-[10px]">Esc</kbd>{' '}
             {t('elevation.toDeselect', 'avbryt')}
+          </div>
+        )}
+
+        {/* v2: inline editor for a wall-anchored text note */}
+        {editorV2 && textEditShapeId && (
+          <div className="absolute left-1/2 top-3 z-30 flex -translate-x-1/2 items-center gap-2 rounded-lg border bg-white p-2 shadow-lg">
+            <input
+              autoFocus
+              type="text"
+              className="h-8 w-72 rounded-md border px-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+              placeholder={t('elevation.notePlaceholder', 'Skriv anteckningen…')}
+              value={textDraft}
+              onChange={(e) => setTextDraft(e.target.value)}
+              onKeyDown={(e) => {
+                e.stopPropagation();
+                if (e.key === 'Enter') {
+                  const trimmed = textDraft.trim();
+                  if (trimmed) {
+                    updateShape(textEditShapeId, { text: trimmed });
+                    handleSave();
+                  } else {
+                    // Empty note = never meant to be — remove it
+                    deleteShape(textEditShapeId);
+                  }
+                  setTextEditShapeId(null);
+                }
+                if (e.key === 'Escape') {
+                  const existing = shapes.find((s) => s.id === textEditShapeId);
+                  if (existing && !existing.text) deleteShape(textEditShapeId);
+                  setTextEditShapeId(null);
+                }
+              }}
+            />
+            <span className="text-[10px] text-gray-400">
+              Enter {t('common.save', 'spara')} · Esc {t('common.cancel', 'avbryt')}
+            </span>
+          </div>
+        )}
+
+        {/* v2: wall surface info — the per-wall work instruction (material,
+            treatment, color code) + the room's wall color swatch. */}
+        {editorV2 && currentSegment?.wall && (
+          <div className="absolute bottom-4 left-1/2 z-20 -translate-x-1/2">
+            <Popover open={wallInfoOpen} onOpenChange={setWallInfoOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  className="flex items-center gap-2 rounded-full border bg-white px-3 py-1.5 text-xs text-gray-700 shadow-md transition-colors hover:bg-gray-50"
+                  data-testid="wall-surface-chip"
+                >
+                  {room?.wallSurfaceColor && (
+                    <span
+                      className="h-3.5 w-3.5 rounded-full border border-black/10"
+                      style={{ backgroundColor: room.wallSurfaceColor }}
+                    />
+                  )}
+                  {[
+                    currentSegment.wall.material,
+                    currentSegment.wall.treatment,
+                    currentSegment.wall.treatmentColor,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ') || t('elevation.wallSurfaceEmpty', 'Ange ytskikt för väggen')}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent side="top" align="center" className="w-72 z-[250]">
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground">
+                    {t('elevation.wallSurfaceTitle', 'Väggens ytskikt (arbetsinstruktion)')}
+                  </p>
+                  {(
+                    [
+                      ['material', t('elevation.wallMaterial', 'Material'), 'Gips, betong…'],
+                      ['treatment', t('elevation.wallTreatment', 'Behandling'), 'Målad, tapetserad…'],
+                      ['treatmentColor', t('elevation.wallColorCode', 'Färgkod'), 'NCS S 0300-N…'],
+                    ] as Array<['material' | 'treatment' | 'treatmentColor', string, string]>
+                  ).map(([field, label, placeholder]) => (
+                    <label key={field} className="block text-xs text-muted-foreground">
+                      {label}
+                      <input
+                        type="text"
+                        className="mt-0.5 h-8 w-full rounded-md border px-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                        placeholder={placeholder}
+                        defaultValue={(currentSegment.wall![field] as string) ?? ''}
+                        onKeyDown={(e) => e.stopPropagation()}
+                        onBlur={(e) => {
+                          const value = e.target.value.trim();
+                          if (value !== ((currentSegment.wall![field] as string) ?? '')) {
+                            updateShape(currentSegment.wall!.id, { [field]: value || undefined });
+                            handleSave();
+                          }
+                        }}
+                      />
+                    </label>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
         )}
 
@@ -2349,8 +2520,14 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
                         }
                       }}
                       onDblClick={(e) => {
-                        // Double-click to open comments popover
                         e.cancelBubble = true;
+                        // Text annotations: double-click edits the note text
+                        if (obj.type === 'text') {
+                          setTextEditShapeId(obj.id);
+                          setTextDraft(obj.text ?? '');
+                          return;
+                        }
+                        // Other objects: open the comments popover
                         const stage = e.target.getStage();
                         if (stage) {
                           const containerRect = stage.container().getBoundingClientRect();
@@ -2426,8 +2603,33 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
                         }
                       }}
                     >
-                      {/* Render unified object with SVG symbol, or legacy colored rectangle */}
-                      {obj.metadata?.isUnifiedObject && obj.metadata?.unifiedObjectId ? (() => {
+                      {/* Render text note, unified object with SVG symbol, or legacy colored rectangle */}
+                      {obj.type === 'text' ? (
+                        <>
+                          <Rect
+                            width={displayWidth}
+                            height={displayHeight}
+                            fill="#fef9c3"
+                            stroke={isSelected ? '#22c55e' : isDragging ? '#3b82f6' : '#eab308'}
+                            strokeWidth={isSelected || isDragging ? 2 : 1}
+                            cornerRadius={4}
+                            shadowBlur={4}
+                            shadowOpacity={0.15}
+                          />
+                          <KonvaText
+                            x={6}
+                            y={6}
+                            width={displayWidth - 12}
+                            height={displayHeight - 12}
+                            text={obj.text || t('elevation.noteEmpty', 'Dubbelklicka för att skriva…')}
+                            fontSize={Math.min(12, displayHeight / 3)}
+                            fill={obj.text ? '#713f12' : '#a16207'}
+                            wrap="word"
+                            ellipsis
+                            listening={false}
+                          />
+                        </>
+                      ) : obj.metadata?.isUnifiedObject && obj.metadata?.unifiedObjectId ? (() => {
                         const unifiedDef = getUnifiedObjectById(obj.metadata.unifiedObjectId as string);
                         if (unifiedDef) {
                           const symbol = unifiedDef.elevationSymbol;
