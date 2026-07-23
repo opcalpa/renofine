@@ -235,6 +235,15 @@ export const loadShapesForPlan = async (planId: string): Promise<FloorMapShape[]
         productCode: dbShape.shape_data?.productCode,
         // Wall-relative positioning (for elevation objects like outlets, switches)
         wallRelative: dbShape.shape_data?.wallRelative,
+        // Rotation + object/opening fields; rotation falls back to the copy
+        // in metadata for rows saved while the top-level field was dropped
+        rotation: dbShape.shape_data?.rotation ?? dbShape.shape_data?.metadata?.rotation,
+        objectCategory: dbShape.shape_data?.objectCategory,
+        openingKind: dbShape.shape_data?.openingKind,
+        positionOnWall: dbShape.shape_data?.positionOnWall,
+        openingDirection: dbShape.shape_data?.openingDirection,
+        area: dbShape.shape_data?.area,
+        surfaceTint: dbShape.shape_data?.surfaceTint,
       }));
 
       // Mapped shapes successfully
@@ -342,6 +351,15 @@ export const saveShapesForPlan = async (
           productCode: shape.productCode,
           // Wall-relative positioning (for elevation objects like outlets, switches)
           wallRelative: shape.wallRelative,
+          // Rotation + object/opening fields (dropped before 2026-07 — losing
+          // rotation made wall-snapped objects "lie down" after a reload)
+          rotation: shape.rotation,
+          objectCategory: shape.objectCategory,
+          openingKind: shape.openingKind,
+          positionOnWall: shape.positionOnWall,
+          openingDirection: shape.openingDirection,
+          area: shape.area,
+          surfaceTint: shape.surfaceTint,
         },
         room_id: shape.roomId || null,
       }));

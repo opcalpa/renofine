@@ -39,7 +39,9 @@ export function objectPlacement(shape: FloorMapShape): { center: Point; rotation
       x: (shape.metadata?.placementX as number) || 0,
       y: (shape.metadata?.placementY as number) || 0,
     },
-    rotation: shape.rotation ?? 0,
+    // Fallback to the metadata copy for rows persisted while the top-level
+    // rotation field was dropped by the save path (pre-2026-07 bug).
+    rotation: shape.rotation ?? (shape.metadata?.rotation as number) ?? 0,
   };
 }
 
