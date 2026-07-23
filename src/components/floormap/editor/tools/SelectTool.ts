@@ -293,6 +293,10 @@ export class SelectTool extends BaseTool {
   }
 
   onDoubleClick(e: ToolPointerEvent): void {
+    if (e.hitShape?.type === 'text') {
+      useEditorUiStore.getState().setTextEditId(e.hitShape.id);
+      return;
+    }
     if (e.hitShape?.type !== 'room') return;
     // Linked rooms open the full room-details panel (same as the rooms
     // list); unlinked auto-rooms get the naming dialog first.

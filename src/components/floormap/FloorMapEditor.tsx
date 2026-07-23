@@ -4,6 +4,7 @@ import { HomeownerToolbar } from "./HomeownerToolbar";
 import { MobileCanvasToolbar } from "./MobileCanvasToolbar";
 import { UnifiedKonvaCanvas } from "./UnifiedKonvaCanvas";
 import { EditorCanvas } from "./editor/EditorCanvas";
+import { EditorToolbar } from "./editor/EditorToolbar";
 import { isEditorV2Enabled } from "./editor/flag";
 import { useEditorUiStore } from "./editor/state/uiStore";
 import { supabase } from "@/integrations/supabase/client";
@@ -318,8 +319,12 @@ export const FloorMapEditor = ({ projectId, projectName, onBack, backLabel, isRe
         `
       }} />
       <div className={`flex flex-1 relative ${isDemo ? 'pt-[96px]' : 'pt-14'}`}> {/* Padding for fixed TopBar + optional demo banner */}
-        {/* Left Toolbar - Show in floor plan mode when editable, or always in demo */}
-        {viewMode === 'floor' && (!isReadOnly || isDemo) && (
+        {/* Left Toolbar - Show in floor plan mode when editable, or always in demo.
+            v2: ONE consolidated rail (industry-consensus 8 slots) for both roles. */}
+        {viewMode === 'floor' && (!isReadOnly || isDemo) && isEditorV2Enabled() && (
+          <EditorToolbar projectId={projectId} />
+        )}
+        {viewMode === 'floor' && (!isReadOnly || isDemo) && !isEditorV2Enabled() && (
           simplified ? (
             <>
               {/* Desktop: full vertical toolbar */}

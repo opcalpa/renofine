@@ -21,6 +21,7 @@ import { calculateFitToContent } from '../canvas/utils/fitToContent';
 import { EditorHud } from './EditorHud';
 import { FloatingSelectionToolbar } from './FloatingSelectionToolbar';
 import { WallLengthEditor } from './WallLengthEditor';
+import { TextEditor } from './TextEditor';
 import { RoomNamingController } from './RoomNamingController';
 import { WallsLayer } from './render/WallsLayer';
 import { LegacyShapesLayer } from './render/LegacyShapesLayer';
@@ -317,6 +318,7 @@ export const EditorCanvas = ({ isReadOnly }: EditorCanvasProps) => {
       <EditorHud />
       {!isReadOnly && <FloatingSelectionToolbar />}
       {!isReadOnly && <WallLengthEditor />}
+      {!isReadOnly && <TextEditor />}
       <RoomNamingController isReadOnly={isReadOnly} />
       <Stage
         ref={stageRef}

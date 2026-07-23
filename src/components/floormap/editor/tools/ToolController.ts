@@ -17,6 +17,8 @@ import { PanTool } from './PanTool';
 import { OpeningTool } from './OpeningTool';
 import { MeasureTool } from './MeasureTool';
 import { ObjectPlaceTool } from './ObjectPlaceTool';
+import { RoomRectTool } from './RoomRectTool';
+import { TextTool } from './TextTool';
 import { undo, redo } from '../core/executor';
 import { execute } from '../core/commands';
 import { copySelection, cutSelection, pasteClipboard } from '../core/clipboard';
@@ -33,6 +35,8 @@ export class ToolController {
       new PanTool(),
       new MeasureTool(),
       new ObjectPlaceTool(),
+      new RoomRectTool(),
+      new TextTool(),
       // Legacy toolbar tool ids map straight onto the v2 opening tool.
       new OpeningTool('door_line', 'door'),
       new OpeningTool('window_line', 'window'),
@@ -175,6 +179,8 @@ export class ToolController {
         h: 'pan',
         d: 'door_line',
         m: 'measure',
+        r: 'room',
+        t: 'text',
       };
       const tool = toolByKey[e.key.toLowerCase()];
       if (tool) {

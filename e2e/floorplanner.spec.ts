@@ -472,8 +472,8 @@ test.describe('Floor planner v2', () => {
     await page.keyboard.press('Enter');
     await page.keyboard.press('v');
 
-    // Pick "Toalett" from the object library panel
-    await page.locator('button').filter({ has: page.locator('svg.lucide-plug') }).first().click();
+    // Pick "Toalett" from the object library panel (v2 rail slot)
+    await page.getByTestId('tool-objects').click();
     await page.getByRole('button', { name: /Badrum & VVS/ }).click();
     await page.locator('button[title="Toalett"]').click();
 
