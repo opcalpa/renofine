@@ -129,7 +129,9 @@ export const FloatingSelectionToolbar = () => {
       data-testid="selection-toolbar"
       style={{
         left: anchor.x,
-        top: Math.max(anchor.y - 48, 8),
+        // High enough that the rotation grip (26 px above the selection box)
+        // stays visible below the toolbar.
+        top: Math.max(anchor.y - 84, 8),
         transform: 'translateX(-50%)',
       }}
     >

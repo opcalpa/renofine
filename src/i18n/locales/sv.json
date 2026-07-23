@@ -4667,7 +4667,7 @@
     "categories": {
       "electrical": "El",
       "kitchen": "Kök",
-      "plumbing": "VVS",
+      "plumbing": "Badrum & VVS",
       "furniture": "Möbler",
       "appliances": "Vitvaror",
       "doors": "Dörrar",
@@ -4698,6 +4698,27 @@
       "cooktop": "Häll",
       "rangeHood": "Köksfläkt",
       "sink": "Diskho"
+    },
+    "plumbing": {
+      "toilet": "Toalett",
+      "sink": "Handfat",
+      "shower": "Dusch",
+      "bathtub": "Badkar",
+      "washingMachine": "Tvättmaskin",
+      "floorDrain": "Golvbrunn"
+    },
+    "furniture": {
+      "bedDouble": "Dubbelsäng",
+      "bedSingle": "Enkelsäng",
+      "sofa3": "3-sits soffa",
+      "armchair": "Fåtölj",
+      "diningTable": "Matbord",
+      "chair": "Stol",
+      "coffeeTable": "Soffbord",
+      "wardrobe": "Garderob",
+      "desk": "Skrivbord",
+      "tvBench": "TV-bänk",
+      "bookshelf": "Bokhylla"
     }
   },
   "intake": {

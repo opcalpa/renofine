@@ -13,6 +13,7 @@ import { Patch, applyPatches, invertPatches } from './patches';
 import { useEditorUiStore } from '../state/uiStore';
 import { buildRoomReconcilePatches } from '../geometry/roomReconciler';
 import { buildOpeningSyncPatches } from '../geometry/openingSync';
+import { buildObjectSyncPatches } from '../geometry/objectSync';
 
 export interface HistoryEntry {
   label: string;
@@ -94,6 +95,14 @@ export function commit(label: string, patches: Patch[]): Patch[] {
       if (openingPatches.length > 0) {
         setShapes(applyPatches(getShapes(), openingPatches));
         all = [...all, ...openingPatches];
+      }
+      // Wall-attached library objects follow their wall the same way.
+      if (wallsTouched) {
+        const objectPatches = buildObjectSyncPatches(getShapes());
+        if (objectPatches.length > 0) {
+          setShapes(applyPatches(getShapes(), objectPatches));
+          all = [...all, ...objectPatches];
+        }
       }
     } finally {
       reconciling = false;

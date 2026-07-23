@@ -456,6 +456,75 @@ test.describe('Floor planner v2', () => {
     expect(walls).toBe(3);
   });
 
+  test('library object: place with wall snap + auto-rotate, slide, release, R-rotate', async ({ page }) => {
+    await openDemoPlanner(page);
+    const canvas = page.getByTestId('editor-v2-canvas');
+    const box = (await canvas.boundingBox())!;
+
+    // Wall to host the toilet
+    await page.keyboard.press('w');
+    await page.mouse.move(box.x + 300, box.y + 300);
+    await page.mouse.down();
+    await page.mouse.up();
+    await page.mouse.move(box.x + 900, box.y + 300);
+    await page.mouse.down();
+    await page.mouse.up();
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('v');
+
+    // Pick "Toalett" from the object library panel
+    await page.locator('button').filter({ has: page.locator('svg.lucide-plug') }).first().click();
+    await page.getByRole('button', { name: /Badrum & VVS/ }).click();
+    await page.locator('button[title="Toalett"]').click();
+
+    // Aim near the wall → placed snapped + auto-rotated flush
+    await page.mouse.move(box.x + 550, box.y + 345);
+    await page.waitForTimeout(150);
+    await page.mouse.down();
+    await page.mouse.up();
+
+    const objState = () =>
+      page.evaluate(() => {
+        const o = window.__rfEditorDebug!.getShapes().find(
+          (s) => (s as { metadata?: { isUnifiedObject?: boolean } }).metadata?.isUnifiedObject
+        ) as unknown as {
+          rotation?: number;
+          metadata: { placementX: number; placementY: number };
+          wallRelative?: { distanceFromWallStart: number; width: number };
+        };
+        return o && {
+          rot: o.rotation ?? 0,
+          y: o.metadata.placementY,
+          attached: !!o.wallRelative,
+          dist: o.wallRelative?.distanceFromWallStart,
+          wrWidth: o.wallRelative?.width,
+        };
+      });
+
+    const placed = await objState();
+    expect(placed.attached).toBe(true);
+    expect(placed.rot).toBe(0);
+    // wallRelative is stored in mm: (550-300)=250 world = 2500 mm minus half width 185
+    expect(placed.dist).toBeCloseTo(2315, 0);
+    expect(placed.wrWidth).toBe(370);
+
+    // Slide along the wall: drag right — stays flush (same y), dist grows
+    await page.mouse.move(box.x + 550, box.y + placed.y);
+    await page.mouse.down();
+    await page.mouse.move(box.x + 650, box.y + placed.y + 5);
+    await page.mouse.up();
+    const slid = await objState();
+    expect(slid.attached).toBe(true);
+    expect(slid.y).toBeCloseTo(placed.y, 1);
+    expect(slid.dist!).toBeGreaterThan(placed.dist!);
+
+    // R rotates 90° in place and releases the wall hosting
+    await page.keyboard.press('r');
+    const rotated = await objState();
+    expect(rotated.rot).toBe(90);
+    expect(rotated.attached).toBe(false);
+  });
+
   test('undo and redo work as single steps', async ({ page }) => {
     await openDemoPlanner(page);
     const canvas = page.getByTestId('editor-v2-canvas');

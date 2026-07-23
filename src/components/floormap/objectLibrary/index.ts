@@ -42,17 +42,22 @@ export {
   SINK,
 } from './definitions/kitchen';
 
+// Definitions - Plumbing & Furniture
+export { PLUMBING_OBJECTS } from './definitions/plumbing';
+export { FURNITURE_OBJECTS } from './definitions/furniture';
+
 // Get all objects
 import { ELECTRICAL_OBJECTS } from './definitions/electrical';
 import { KITCHEN_OBJECTS } from './definitions/kitchen';
+import { PLUMBING_OBJECTS } from './definitions/plumbing';
+import { FURNITURE_OBJECTS } from './definitions/furniture';
 import { UnifiedObjectDefinition } from './types';
 
 export const ALL_OBJECTS: UnifiedObjectDefinition[] = [
   ...ELECTRICAL_OBJECTS,
   ...KITCHEN_OBJECTS,
-  // Add more categories here as they're created:
-  // ...PLUMBING_OBJECTS,
-  // ...FURNITURE_OBJECTS,
+  ...PLUMBING_OBJECTS,
+  ...FURNITURE_OBJECTS,
 ];
 
 /**

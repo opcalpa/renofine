@@ -4,6 +4,7 @@
  */
 
 import { FloorMapShape, LineCoordinates } from '../../types';
+import { isUnifiedObjectShape, objectBounds } from '../objects/objectModel';
 
 export interface Point {
   x: number;
@@ -18,6 +19,11 @@ export interface Bounds {
 }
 
 export function shapeBounds(shape: FloorMapShape): Bounds | null {
+  // Library objects: footprint from the catalog definition, not the anchor points.
+  if (isUnifiedObjectShape(shape)) {
+    const b = objectBounds(shape);
+    if (b) return b;
+  }
   const c = shape.coordinates as Record<string, unknown>;
   if (!c) return null;
   if ('x1' in c) {

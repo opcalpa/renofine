@@ -18,6 +18,8 @@ import { cn } from '@/lib/utils';
 import { UnifiedObjectDefinition, ObjectCategory } from './types';
 import { ELECTRICAL_OBJECTS } from './definitions/electrical';
 import { KITCHEN_OBJECTS } from './definitions/kitchen';
+import { PLUMBING_OBJECTS } from './definitions/plumbing';
+import { FURNITURE_OBJECTS } from './definitions/furniture';
 
 // Category configuration
 const CATEGORIES: Array<{
@@ -38,9 +40,18 @@ const CATEGORIES: Array<{
     icon: <ChefHat className="h-4 w-4" />,
     objects: KITCHEN_OBJECTS,
   },
-  // Future categories:
-  // { id: 'plumbing', nameKey: 'objectLibrary.categories.plumbing', icon: <Droplets />, objects: [] },
-  // { id: 'furniture', nameKey: 'objectLibrary.categories.furniture', icon: <Sofa />, objects: [] },
+  {
+    id: 'plumbing',
+    nameKey: 'objectLibrary.categories.plumbing',
+    icon: <Droplets className="h-4 w-4" />,
+    objects: PLUMBING_OBJECTS,
+  },
+  {
+    id: 'furniture',
+    nameKey: 'objectLibrary.categories.furniture',
+    icon: <Sofa className="h-4 w-4" />,
+    objects: FURNITURE_OBJECTS,
+  },
 ];
 
 interface ObjectLibraryPanelProps {

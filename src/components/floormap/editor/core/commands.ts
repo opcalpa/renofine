@@ -21,6 +21,13 @@ import {
 } from '../geometry/openingGeometry';
 import { useFloorMapStore } from '../../store';
 import { selectionOps } from './selectionOps';
+import {
+  buildObjectShape,
+  getObjectDef,
+  isUnifiedObjectShape,
+  objectPlacement,
+} from '../objects/objectModel';
+import { getUnifiedObjectById } from '../../objectLibrary';
 
 export interface Point {
   x: number;
@@ -174,6 +181,31 @@ export const commands = {
         if (Object.keys(updates).length > 0) patches.push(makeUpdatePatch(shape, updates));
         continue;
       }
+      if (isUnifiedObjectShape(shape)) {
+        // Attached object whose host wall moves too: it follows via the
+        // object sync pass — translating it as well would double-move it.
+        if (shape.wallRelative?.wallId && ids.has(shape.wallRelative.wallId)) continue;
+        const { center } = objectPlacement(shape);
+        patches.push(
+          makeUpdatePatch(shape, {
+            // A free translation detaches it from any wall (sync would
+            // otherwise yank it straight back).
+            wallRelative: undefined,
+            coordinates: {
+              points: [
+                { x: center.x + params.dx, y: center.y + params.dy },
+                { x: center.x + params.dx + 1, y: center.y + params.dy + 1 },
+              ],
+            },
+            metadata: {
+              ...shape.metadata,
+              placementX: center.x + params.dx,
+              placementY: center.y + params.dy,
+            },
+          })
+        );
+        continue;
+      }
       const updates = translateCoordinates(shape, params.dx, params.dy);
       if (Object.keys(updates).length > 0) patches.push(makeUpdatePatch(shape, updates));
     }
@@ -200,6 +232,77 @@ export const commands = {
     };
     commit('Placera öppning', [{ op: 'add', shape }]);
     return shape;
+  },
+
+  'object.place'(params: {
+    definitionId: string;
+    center: Point;
+    rotation?: number;
+    wallRelative?: FloorMapShape['wallRelative'] | null;
+  }): FloorMapShape | null {
+    const def = getUnifiedObjectById(params.definitionId);
+    if (!def) return null;
+    const shapes = getShapes();
+    const maxZ = Math.max(0, ...shapes.filter((s) => s.type !== 'room').map((s) => s.zIndex ?? 0), 99);
+    const shape = buildObjectShape(
+      def,
+      params.center,
+      params.rotation ?? 0,
+      planId(),
+      params.wallRelative ?? null,
+      maxZ + 1
+    );
+    commit('Placera objekt', [{ op: 'add', shape }]);
+    useFloorMapStore.getState().setSelectedShapeIds([shape.id]);
+    return shape;
+  },
+
+  /** Absolute move for a single object — used by the drag interaction so
+   * wall capture/slide/release lands exactly where the snap computed. */
+  'object.moveTo'(params: {
+    id: string;
+    center: Point;
+    rotation: number;
+    wallRelative?: FloorMapShape['wallRelative'] | null;
+  }): void {
+    const shape = getShapes().find((s) => s.id === params.id);
+    if (!shape || !isUnifiedObjectShape(shape)) return;
+    commit('Flytta objekt', [
+      makeUpdatePatch(shape, {
+        rotation: params.rotation,
+        wallRelative: params.wallRelative ?? undefined,
+        coordinates: {
+          points: [
+            { x: params.center.x, y: params.center.y },
+            { x: params.center.x + 1, y: params.center.y + 1 },
+          ],
+        },
+        metadata: {
+          ...shape.metadata,
+          placementX: params.center.x,
+          placementY: params.center.y,
+          rotation: params.rotation,
+        },
+      }),
+    ]);
+  },
+
+  /** Rotate a single object in place around its own center. */
+  'object.rotate'(params: { id: string; degrees: number }): void {
+    const shape = getShapes().find((s) => s.id === params.id);
+    if (!shape || !isUnifiedObjectShape(shape)) return;
+    const def = getObjectDef(shape);
+    if (def && !def.wallBehavior.canRotate) return;
+    const { center } = objectPlacement(shape);
+    const rotation = (((shape.rotation ?? 0) + params.degrees) % 360 + 360) % 360;
+    commit('Rotera objekt', [
+      makeUpdatePatch(shape, {
+        rotation,
+        // Manual rotation releases the wall hosting (never fight the user).
+        wallRelative: undefined,
+        metadata: { ...shape.metadata, placementX: center.x, placementY: center.y, rotation },
+      }),
+    ]);
   },
 
   'opening.setWidth'(params: { id: string; widthMM: number }): void {

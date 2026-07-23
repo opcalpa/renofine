@@ -24,6 +24,7 @@ import { WallLengthEditor } from './WallLengthEditor';
 import { RoomNamingController } from './RoomNamingController';
 import { WallsLayer } from './render/WallsLayer';
 import { LegacyShapesLayer } from './render/LegacyShapesLayer';
+import { ObjectsLayer } from './render/ObjectsLayer';
 import { OpeningsLayer } from './render/OpeningsLayer';
 import { OverlayLayer } from './render/OverlayLayer';
 import { ToolController } from './tools/ToolController';
@@ -350,6 +351,12 @@ export const EditorCanvas = ({ isReadOnly }: EditorCanvasProps) => {
             showDimensions
           />
           <OpeningsLayer
+            shapes={shapes}
+            planId={currentPlanId}
+            selectedIds={selectedShapeIds}
+            zoom={viewState.zoom}
+          />
+          <ObjectsLayer
             shapes={shapes}
             planId={currentPlanId}
             selectedIds={selectedShapeIds}

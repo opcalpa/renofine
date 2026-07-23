@@ -12,6 +12,7 @@ import { FloorMapShape } from '../../types';
 import { commit, getShapes } from './executor';
 import { Patch, makeUpdatePatch } from './patches';
 import { boundsCenter, mapShapePoints, shapeBounds, unionBounds, Point } from '../geometry/bounds';
+import { isUnifiedObjectShape, objectPlacement } from '../objects/objectModel';
 import { useFloorMapStore } from '../../store';
 
 export interface SelectionRotateParams {
@@ -49,14 +50,39 @@ function transformable(shape: FloorMapShape, ids: Set<string>): boolean {
   return ids.has(shape.id) && !shape.locked && shape.type !== 'opening' && shape.type !== 'image';
 }
 
+/**
+ * Group transforms move a library object's CENTER through `fn` (its
+ * footprint comes from the catalog, so only placement translates) and detach
+ * it from any wall; other shapes map every coordinate point.
+ */
 function transformPatches(
   ids: string[],
-  fn: (p: Point) => Point
+  fn: (p: Point) => Point,
+  rotationDelta = 0
 ): Patch[] {
   const idSet = new Set(ids);
   const patches: Patch[] = [];
   for (const shape of getShapes()) {
     if (!transformable(shape, idSet)) continue;
+    if (isUnifiedObjectShape(shape)) {
+      const { center, rotation } = objectPlacement(shape);
+      const moved = fn(center);
+      const newRotation = ((rotation + rotationDelta) % 360 + 360) % 360;
+      patches.push(
+        makeUpdatePatch(shape, {
+          rotation: newRotation,
+          wallRelative: undefined,
+          coordinates: {
+            points: [
+              { x: moved.x, y: moved.y },
+              { x: moved.x + 1, y: moved.y + 1 },
+            ],
+          },
+          metadata: { ...shape.metadata, placementX: moved.x, placementY: moved.y, rotation: newRotation },
+        })
+      );
+      continue;
+    }
     const updates = mapShapePoints(shape, fn);
     if (Object.keys(updates).length > 0) patches.push(makeUpdatePatch(shape, updates));
   }
@@ -81,7 +107,7 @@ export const selectionOps = {
       for (let i = 0; i < turns; i++) [x, y] = [-y, x];
       return { x: center.x + x, y: center.y + y };
     };
-    commit('Rotera', transformPatches(params.ids, rotate));
+    commit('Rotera', transformPatches(params.ids, rotate, turns * 90));
   },
 
   'selection.mirror'(params: SelectionMirrorParams): void {
@@ -123,6 +149,16 @@ export const selectionOps = {
       };
       // A copied room shape must not point at the original's rooms row.
       delete copy.roomId;
+      if (isUnifiedObjectShape(copy)) {
+        // Placement is authoritative for objects — offset it too, and let the
+        // copy start detached (it no longer sits flush against the wall).
+        copy.metadata = {
+          ...copy.metadata,
+          placementX: ((copy.metadata?.placementX as number) || 0) + offset.x,
+          placementY: ((copy.metadata?.placementY as number) || 0) + offset.y,
+        };
+        delete copy.wallRelative;
+      }
       patches.push({ op: 'add', shape: copy });
     }
     if (patches.length === 0) return [];

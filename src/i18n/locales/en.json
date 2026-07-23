@@ -4667,7 +4667,7 @@
     "categories": {
       "electrical": "Electrical",
       "kitchen": "Kitchen",
-      "plumbing": "Plumbing",
+      "plumbing": "Bathroom & plumbing",
       "furniture": "Furniture",
       "appliances": "Appliances",
       "doors": "Doors",
@@ -4698,6 +4698,27 @@
       "cooktop": "Cooktop",
       "rangeHood": "Range Hood",
       "sink": "Sink"
+    },
+    "plumbing": {
+      "toilet": "Toilet",
+      "sink": "Washbasin",
+      "shower": "Shower",
+      "bathtub": "Bathtub",
+      "washingMachine": "Washing machine",
+      "floorDrain": "Floor drain"
+    },
+    "furniture": {
+      "bedDouble": "Double bed",
+      "bedSingle": "Single bed",
+      "sofa3": "3-seat sofa",
+      "armchair": "Armchair",
+      "diningTable": "Dining table",
+      "chair": "Chair",
+      "coffeeTable": "Coffee table",
+      "wardrobe": "Wardrobe",
+      "desk": "Desk",
+      "tvBench": "TV bench",
+      "bookshelf": "Bookshelf"
     }
   },
   "intake": {

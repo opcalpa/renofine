@@ -265,6 +265,8 @@ export const LegacyShapesLayer: React.FC<LegacyShapesLayerProps> = ({
   const selected = new Set(selectedIds);
   const visible = shapes
     .filter((s) => s.type !== 'wall')
+    // Library objects render properly in ObjectsLayer
+    .filter((s) => !s.metadata?.isUnifiedObject)
     .filter((s) => !planId || s.planId === planId || !s.planId)
     .filter((s) => s.shapeViewMode !== 'elevation')
     .sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));

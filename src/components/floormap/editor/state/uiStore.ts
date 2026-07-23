@@ -58,6 +58,15 @@ interface EditorUiState {
   measurements: Measurement[];
   /** Wall whose dimension label is being edited inline (click on the label). */
   wallLengthEditId: string | null;
+  /** Live preview while placing a library object (true footprint, snapped state). */
+  objectGhost: {
+    definitionId: string;
+    center: Point;
+    rotation: number;
+    widthWorld: number;
+    depthWorld: number;
+    snapped: boolean;
+  } | null;
 
   setDraft: (points: Point[], cursor: Point | null, label: string | null) => void;
   clearDraft: () => void;
@@ -71,6 +80,7 @@ interface EditorUiState {
   setOpeningGhost: (g: { rect: Point[]; valid: boolean } | null) => void;
   setMeasurements: (m: Measurement[]) => void;
   setWallLengthEditId: (id: string | null) => void;
+  setObjectGhost: (g: EditorUiState['objectGhost']) => void;
 }
 
 export const useEditorUiStore = create<EditorUiState>((set) => ({
@@ -89,6 +99,7 @@ export const useEditorUiStore = create<EditorUiState>((set) => ({
   openingGhost: null,
   measurements: [],
   wallLengthEditId: null,
+  objectGhost: null,
 
   setDraft: (points, cursor, label) =>
     set({ draftPoints: points, draftCursor: cursor, draftLabel: label }),
@@ -104,4 +115,5 @@ export const useEditorUiStore = create<EditorUiState>((set) => ({
   setOpeningGhost: (g) => set({ openingGhost: g }),
   setMeasurements: (m) => set({ measurements: m }),
   setWallLengthEditId: (id) => set({ wallLengthEditId: id }),
+  setObjectGhost: (g) => set({ objectGhost: g }),
 }));

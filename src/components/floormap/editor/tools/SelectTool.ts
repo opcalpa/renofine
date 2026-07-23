@@ -12,6 +12,12 @@ import { snap } from '../snapping/SnapEngine';
 import { mmToWorld } from '../core/units';
 import { shapeBounds } from '../geometry/bounds';
 import { openingCornerGuides } from '../geometry/openingGeometry';
+import {
+  getObjectDef,
+  isUnifiedObjectShape,
+  objectPlacement,
+  trySnapObjectToWall,
+} from '../objects/objectModel';
 import { Point, useEditorUiStore } from '../state/uiStore';
 
 type DragMode =
@@ -19,7 +25,9 @@ type DragMode =
   | { kind: 'maybe-marquee'; start: Point }
   | { kind: 'marquee'; start: Point }
   | { kind: 'move'; start: Point; last: Point; ids: string[] }
-  | { kind: 'junction'; at: Point; wallIds: string[] };
+  | { kind: 'junction'; at: Point; wallIds: string[] }
+  | { kind: 'object-move'; id: string; grabOffset: Point; attached: boolean }
+  | { kind: 'object-rotate'; id: string; center: Point; startPointerAngle: number; startRotation: number };
 
 export class SelectTool extends BaseTool {
   readonly id = 'select';
@@ -39,6 +47,24 @@ export class SelectTool extends BaseTool {
     if (e.hitName?.startsWith('dim:')) {
       useEditorUiStore.getState().setWallLengthEditId(e.hitName.slice(4));
       return;
+    }
+
+    // Rotation grip on a selected library object.
+    if (e.hitName?.startsWith('objrotate:')) {
+      const id = e.hitName.slice(10);
+      const shape = store.shapes.find((s) => s.id === id);
+      if (shape && isUnifiedObjectShape(shape)) {
+        const { center, rotation } = objectPlacement(shape);
+        this.drag = {
+          kind: 'object-rotate',
+          id,
+          center,
+          startPointerAngle: (Math.atan2(e.world.y - center.y, e.world.x - center.x) * 180) / Math.PI,
+          startRotation: rotation,
+        };
+        beginGesture('Rotera objekt');
+        return;
+      }
     }
 
     // Junction handle: drag moves every wall endpoint meeting at that point.
@@ -70,6 +96,19 @@ export class SelectTool extends BaseTool {
         store.setSelectedShapeIds([id]);
       }
       const ids = useFloorMapStore.getState().selectedShapeIds;
+      // A single library object drags with wall-magnet semantics
+      // (capture → slide along wall → release with hysteresis).
+      if (ids.length === 1 && isUnifiedObjectShape(e.hitShape) && ids[0] === e.hitShape.id) {
+        const { center } = objectPlacement(e.hitShape);
+        this.drag = {
+          kind: 'object-move',
+          id: e.hitShape.id,
+          grabOffset: { x: center.x - e.world.x, y: center.y - e.world.y },
+          attached: !!e.hitShape.wallRelative?.wallId,
+        };
+        beginGesture('Flytta objekt');
+        return;
+      }
       this.drag = { kind: 'move', start: e.world, last: e.world, ids };
       beginGesture('Flytta');
       return;
@@ -107,6 +146,16 @@ export class SelectTool extends BaseTool {
       return;
     }
 
+    if (this.drag.kind === 'object-move') {
+      this.dragObject(e);
+      return;
+    }
+
+    if (this.drag.kind === 'object-rotate') {
+      this.rotateObject(e);
+      return;
+    }
+
     if (this.drag.kind === 'move') {
       // Move incrementally with grid-snapped delta from the last position;
       // the whole gesture becomes ONE undo entry via the transaction in onPointerUp.
@@ -118,6 +167,73 @@ export class SelectTool extends BaseTool {
       this.drag = { ...this.drag, last: result.point };
       this.updateOpeningGuides(this.drag.ids);
     }
+  }
+
+  /** Wall-magnet drag for a single object: capture, slide, release (hysteresis). */
+  private dragObject(e: ToolPointerEvent): void {
+    if (this.drag.kind !== 'object-move') return;
+    const store = useFloorMapStore.getState();
+    const shape = store.shapes.find((s) => s.id === (this.drag as { id: string }).id);
+    const def = shape ? getObjectDef(shape) : null;
+    if (!shape || !def) return;
+
+    const target = {
+      x: e.world.x + this.drag.grabOffset.x,
+      y: e.world.y + this.drag.grabOffset.y,
+    };
+    const zoom = store.viewState.zoom || 1;
+    // Release threshold is larger than capture so the object doesn't flicker
+    // on and off the wall right at the boundary.
+    const captureMargin = Math.max(20 / zoom, mmToWorld(150));
+    const releaseMargin = captureMargin + 15 / zoom;
+
+    let snapped: ReturnType<typeof trySnapObjectToWall> = null;
+    if (!e.metaOrCtrl && def.wallBehavior.attachesToWall) {
+      snapped = trySnapObjectToWall(
+        def,
+        target,
+        store.shapes,
+        store.currentPlanId,
+        this.drag.attached ? releaseMargin : captureMargin,
+        shape.wallRelative
+      );
+    }
+
+    if (snapped) {
+      execute('object.moveTo', {
+        id: shape.id,
+        center: snapped.center,
+        rotation: snapped.rotation,
+        wallRelative: snapped.wallRelative,
+      });
+      this.drag = { ...this.drag, attached: true };
+    } else {
+      execute('object.moveTo', {
+        id: shape.id,
+        center: target,
+        rotation: shape.rotation ?? 0,
+        wallRelative: null,
+      });
+      this.drag = { ...this.drag, attached: false };
+    }
+  }
+
+  /** Rotation-grip drag: free angle with soft 45° magnet; Shift = 15° steps. */
+  private rotateObject(e: ToolPointerEvent): void {
+    if (this.drag.kind !== 'object-rotate') return;
+    const { center, startPointerAngle, startRotation, id } = this.drag;
+    const pointerAngle = (Math.atan2(e.world.y - center.y, e.world.x - center.x) * 180) / Math.PI;
+    let rotation = startRotation + (pointerAngle - startPointerAngle);
+    if (e.shiftKey) {
+      rotation = Math.round(rotation / 15) * 15;
+    } else {
+      const nearest45 = Math.round(rotation / 45) * 45;
+      if (Math.abs(rotation - nearest45) <= 3) rotation = nearest45;
+    }
+    rotation = ((rotation % 360) + 360) % 360;
+    execute('object.moveTo', { id, center, rotation, wallRelative: null });
+    // Live angle readout at the cursor
+    useEditorUiStore.getState().setDraft([], e.world, `${Math.round(rotation)}°`);
   }
 
   /** Corner-distance readout while a single opening slides along its wall. */
@@ -156,9 +272,15 @@ export class SelectTool extends BaseTool {
       ui.setMarquee(null);
     }
 
-    if (this.drag.kind === 'move' || this.drag.kind === 'junction') {
+    if (
+      this.drag.kind === 'move' ||
+      this.drag.kind === 'junction' ||
+      this.drag.kind === 'object-move' ||
+      this.drag.kind === 'object-rotate'
+    ) {
       endGesture();
       ui.setSnapFeedback([], []);
+      ui.setDraft([], null, null);
     }
     this.drag = { kind: 'none' };
   }
@@ -196,6 +318,14 @@ export class SelectTool extends BaseTool {
       const shape = store.shapes.find((s) => s.id === store.selectedShapeIds[0]);
       if (shape?.type === 'opening') {
         execute('opening.flip', { id: shape.id });
+        return true;
+      }
+    }
+    // R rotates a selected library object 90° (RoomSketcher's Q convention)
+    if (e.key.toLowerCase() === 'r' && store.selectedShapeIds.length === 1) {
+      const shape = store.shapes.find((s) => s.id === store.selectedShapeIds[0]);
+      if (shape && isUnifiedObjectShape(shape)) {
+        execute('object.rotate', { id: shape.id, degrees: 90 });
         return true;
       }
     }

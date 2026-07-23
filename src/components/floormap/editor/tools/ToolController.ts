@@ -16,6 +16,7 @@ import { WallTool } from './WallTool';
 import { PanTool } from './PanTool';
 import { OpeningTool } from './OpeningTool';
 import { MeasureTool } from './MeasureTool';
+import { ObjectPlaceTool } from './ObjectPlaceTool';
 import { undo, redo } from '../core/executor';
 import { execute } from '../core/commands';
 import { copySelection, cutSelection, pasteClipboard } from '../core/clipboard';
@@ -31,6 +32,7 @@ export class ToolController {
       new WallTool(),
       new PanTool(),
       new MeasureTool(),
+      new ObjectPlaceTool(),
       // Legacy toolbar tool ids map straight onto the v2 opening tool.
       new OpeningTool('door_line', 'door'),
       new OpeningTool('window_line', 'window'),

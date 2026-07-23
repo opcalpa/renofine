@@ -14,6 +14,7 @@ import { useFloorMapStore } from '../../store';
 import { commit, getShapes } from './executor';
 import { Patch } from './patches';
 import { mapShapePoints } from '../geometry/bounds';
+import { isUnifiedObjectShape } from '../objects/objectModel';
 
 let clipboard: FloorMapShape[] = [];
 let pasteCount = 0;
@@ -72,6 +73,14 @@ export function pasteClipboard(): string[] {
       ...mapShapePoints(original, (p) => ({ x: p.x + offset, y: p.y + offset })),
     };
     delete copy.roomId;
+    if (isUnifiedObjectShape(copy)) {
+      copy.metadata = {
+        ...copy.metadata,
+        placementX: ((copy.metadata?.placementX as number) || 0) + offset,
+        placementY: ((copy.metadata?.placementY as number) || 0) + offset,
+      };
+      delete copy.wallRelative;
+    }
     patches.push({ op: 'add', shape: copy });
   }
   if (patches.length === 0) return [];
