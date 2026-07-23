@@ -26,7 +26,7 @@ import { useTranslation } from 'react-i18next';
 import { v4 as uuidv4 } from 'uuid';
 import { Stage, Layer, Rect, Line, Text as KonvaText, Group, Path, Circle as KonvaCircle } from 'react-konva';
 import Konva from 'konva';
-import { ArrowLeft, ChevronLeft, ChevronRight, X, Compass, ZoomIn, ZoomOut, RotateCcw, Home, Plug, ToggleRight, Circle as CircleIcon, MousePointer2, ChevronDown, MessageCircle, Save, Ruler } from 'lucide-react';
+import { ArrowLeft, Blocks, ChevronLeft, ChevronRight, X, Compass, ZoomIn, ZoomOut, RotateCcw, Home, Plug, ToggleRight, Circle as CircleIcon, MousePointer2, ChevronDown, MessageCircle, Save, Ruler } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -49,6 +49,8 @@ import { useMeasurement } from "@/contexts/MeasurementContext";
 import { wallRelativeToElevation, elevationToWallRelative } from './canvas/utils/wallCoordinates';
 import { createRoomItemForPlacedShape } from './utils/roomItemLink';
 import { isMirroredCategory } from './editor/sync/roomItemSync';
+import { isEditorV2Enabled } from './editor/flag';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ElevationObjectPanel } from './ElevationObjectPanel';
 import { saveShapesForPlan } from './utils/plans';
 import { HoverInfoTooltip } from './HoverInfoTooltip';
@@ -706,6 +708,9 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
   // Unified object placement (new SVG-based library)
   const [selectedUnifiedObject, setSelectedUnifiedObject] = useState<UnifiedObjectDefinition | null>(null);
   const [objectLibraryOpen, setObjectLibraryOpen] = useState(false);
+  // v2 shell: compact left tool rail (same look as the floor-plan rail)
+  // replaces the amber placement strip.
+  const editorV2 = isEditorV2Enabled();
 
   // Placement object definitions (matching objectLibraryDefinitions.ts)
   const placementObjects: Record<Exclude<PlacementObject, null>, {
@@ -1664,18 +1669,22 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
           )}
         </div>
 
-        {/* Zoom controls */}
+        {/* Zoom controls (v2: measure lives in the left rail instead) */}
         <div className="flex items-center gap-1">
-          <Button
-            variant={isMeasureActive ? "default" : "ghost"}
-            size="icon"
-            onClick={toggleMeasureTool}
-            className={isMeasureActive ? "bg-red-500 hover:bg-red-600 text-white" : ""}
-            title={t('floormap.measureDistance', 'Mät avstånd')}
-          >
-            <Ruler className="h-4 w-4" />
-          </Button>
-          <div className="w-px h-6 bg-gray-200 mx-1" />
+          {!editorV2 && (
+            <>
+              <Button
+                variant={isMeasureActive ? "default" : "ghost"}
+                size="icon"
+                onClick={toggleMeasureTool}
+                className={isMeasureActive ? "bg-red-500 hover:bg-red-600 text-white" : ""}
+                title={t('floormap.measureDistance', 'Mät avstånd')}
+              >
+                <Ruler className="h-4 w-4" />
+              </Button>
+              <div className="w-px h-6 bg-gray-200 mx-1" />
+            </>
+          )}
           <Button variant="ghost" size="icon" onClick={handleZoomOut}>
             <ZoomOut className="h-4 w-4" />
           </Button>
@@ -1699,7 +1708,9 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
         </div>
       </div>
 
-      {/* Object placement toolbar (Electrical) - merged with navigation */}
+      {/* Object placement toolbar (Electrical) - merged with navigation.
+          v1 only — the v2 shell replaces it with the compact left rail. */}
+      {!editorV2 && (
       <div className="bg-amber-50 border-b border-amber-200 px-4 py-2">
         <div className="flex items-center gap-2 justify-center flex-wrap">
           {/* Select/Pointer tool (deselect placement) */}
@@ -1784,6 +1795,7 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
           )}
         </div>
       </div>
+      )}
 
       {/* Main content area with canvas and optional details panel */}
       <div className="flex-1 flex overflow-hidden">
@@ -1796,11 +1808,88 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
         >
+        {/* v2 shell: compact left tool rail — Välj / Objekt / Mät, same look
+            as the floor-plan rail. (Öppning/Text kräver elevation-stöd som
+            inte finns än — läggs till med elevation-pariteten.) */}
+        {editorV2 && (
+          <div
+            className="absolute left-3 top-1/2 z-20 flex -translate-y-1/2 flex-col items-center gap-1 rounded-xl border bg-white p-1.5 shadow-lg"
+            data-testid="elevation-v2-rail"
+          >
+            <button
+              className={cn(
+                'flex h-10 w-10 items-center justify-center rounded-lg transition-colors',
+                !selectedPlacement && !selectedUnifiedObject && !isMeasureActive
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+              )}
+              title={t('floormap.tools.select', 'Välj')}
+              onClick={() => {
+                setSelectedPlacement(null);
+                setSelectedUnifiedObject(null);
+                if (isMeasureActive) toggleMeasureTool();
+              }}
+            >
+              <MousePointer2 className="h-5 w-5" />
+            </button>
+            <Popover open={objectLibraryOpen} onOpenChange={setObjectLibraryOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  className={cn(
+                    'flex h-10 w-10 items-center justify-center rounded-lg transition-colors',
+                    selectedUnifiedObject
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  )}
+                  title={t('floormap.tools.objects', 'Objekt')}
+                >
+                  <Blocks className="h-5 w-5" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent side="right" align="start" className="ml-2 h-96 w-72 p-0 z-[250]">
+                <ObjectLibraryPanel
+                  onSelectObject={(def) => {
+                    handleSelectUnifiedObject(def);
+                    setObjectLibraryOpen(false);
+                  }}
+                  selectedObjectId={selectedUnifiedObject?.id}
+                  viewMode="elevation"
+                />
+              </PopoverContent>
+            </Popover>
+            <button
+              className={cn(
+                'flex h-10 w-10 items-center justify-center rounded-lg transition-colors',
+                isMeasureActive
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+              )}
+              title={t('floormap.measureDistance', 'Mät avstånd')}
+              onClick={toggleMeasureTool}
+            >
+              <Ruler className="h-5 w-5" />
+            </button>
+          </div>
+        )}
+
+        {/* v2: floating hint while a placement is armed */}
+        {editorV2 && (selectedPlacement || selectedUnifiedObject) && (
+          <div className="absolute left-1/2 top-3 z-20 -translate-x-1/2 rounded-full border bg-white px-3 py-1.5 text-xs text-gray-700 shadow-md">
+            {selectedUnifiedObject?.name ? `${selectedUnifiedObject.name} · ` : ''}
+            {t('elevation.clickToPlace', 'Klicka på väggen för att placera')} ·{' '}
+            <kbd className="rounded bg-gray-100 px-1 py-0.5 text-[10px]">Esc</kbd>{' '}
+            {t('elevation.toDeselect', 'avbryt')}
+          </div>
+        )}
+
         {/* Navigation arrows */}
         <Button
           variant="ghost"
           size="icon"
-          className="absolute left-4 top-1/2 -translate-y-1/2 z-10 h-12 w-12 bg-white/80 hover:bg-white shadow-lg"
+          className={cn(
+            'absolute top-1/2 -translate-y-1/2 z-10 h-12 w-12 bg-white/80 hover:bg-white shadow-lg',
+            editorV2 ? 'left-20' : 'left-4'
+          )}
           onClick={goToPreviousSegment}
         >
           <ChevronLeft className="h-8 w-8" />

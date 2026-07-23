@@ -596,6 +596,10 @@ test.describe('Floor planner v2', () => {
     await expect(page.getByText(/Vägg \d+ av 4/)).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Välj rum för väggvy' })).toHaveCount(0);
 
+    // v2 shell: compact left rail replaces the amber placement strip
+    await expect(page.getByTestId('elevation-v2-rail')).toBeVisible();
+    await expect(page.locator('.bg-amber-50')).toHaveCount(0);
+
     // Breadcrumb back returns to the floor plan
     await page.getByRole('button', { name: 'Planritning' }).click();
     await expect(page.getByTestId('editor-v2-canvas')).toBeVisible();
