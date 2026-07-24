@@ -47,7 +47,8 @@ import { getPatternImage, onPatternLoad, resolveWallPattern } from './canvas/uti
 import { cn } from '@/lib/utils';
 import { formatMeasurement } from './utils/formatting';
 import { useMeasurement } from "@/contexts/MeasurementContext";
-import { wallRelativeToElevation, elevationToWallRelative } from './canvas/utils/wallCoordinates';
+import { wallRelativeToElevation, elevationToWallRelative, getWallGeometry } from './canvas/utils/wallCoordinates';
+import { worldFromWallRelative } from './editor/objects/objectModel';
 import { createRoomItemForPlacedShape } from './utils/roomItemLink';
 import { isMirroredCategory } from './editor/sync/roomItemSync';
 import { isEditorV2Enabled } from './editor/flag';
@@ -148,8 +149,10 @@ interface SegmentData {
   lengthMM: number;
   /** Whether an actual wall covers this edge */
   hasWall: boolean;
-  /** Wall covering this edge (if any) */
+  /** Wall covering this edge (if any) — the best (largest-overlap) match */
   wall: FloorMapShape | null;
+  /** ALL wall shapes lying along this edge (split/partial walls included) */
+  walls: FloorMapShape[];
   /** Wall height in mm */
   wallHeightMM: number;
   /** Openings (doors/windows) on this segment */
@@ -545,16 +548,16 @@ function analyzeRoomSegments(
       edgeIndex: i,
     };
 
-    // Find wall covering this edge
-    let foundWall: FloorMapShape | null = null;
-    let wallHeight = defaultWallHeight;
+    // Find ALL walls covering this edge. An edge can be backed by several wall
+    // shapes (walls split at junctions, partial redraws, long shared walls) —
+    // matching only one hid every object attached to the others in this view.
+    // Overlap-based: unclamped projection of the wall onto the edge line.
+    const matchedWalls: Array<{ wall: FloorMapShape; overlap: number }> = [];
+    const edgeUx = (end.x - start.x) / (lengthPixels || 1);
+    const edgeUy = (end.y - start.y) / (lengthPixels || 1);
 
     for (const wall of walls) {
       const wallCoords = wall.coordinates as LineCoordinates;
-      const wallMid = {
-        x: (wallCoords.x1 + wallCoords.x2) / 2,
-        y: (wallCoords.y1 + wallCoords.y2) / 2,
-      };
 
       // Check wall angle matches edge angle
       const wallDx = wallCoords.x2 - wallCoords.x1;
@@ -565,15 +568,28 @@ function analyzeRoomSegments(
 
       if (!anglesMatch) continue;
 
-      // Check if wall midpoint is close to this edge
-      const { distance } = distanceToLineSegment(wallMid, start, end);
+      // Unclamped projection of both wall endpoints onto the edge axis:
+      // perpendicular distance must be small, and the wall must overlap the
+      // edge span. Handles walls extending past the edge and split walls.
+      const projections = [
+        { x: wallCoords.x1, y: wallCoords.y1 },
+        { x: wallCoords.x2, y: wallCoords.y2 },
+      ].map((p) => ({
+        along: (p.x - start.x) * edgeUx + (p.y - start.y) * edgeUy,
+        perp: Math.abs((p.x - start.x) * -edgeUy + (p.y - start.y) * edgeUx),
+      }));
+      if (Math.max(projections[0].perp, projections[1].perp) > wallTolerancePixels) continue;
+      const tMin = Math.min(projections[0].along, projections[1].along);
+      const tMax = Math.max(projections[0].along, projections[1].along);
+      const overlap = Math.min(tMax, lengthPixels) - Math.max(tMin, 0);
+      if (overlap < 10 * pixelsPerMm) continue; // needs ≥10 mm shared span
 
-      if (distance < wallTolerancePixels) {
-        foundWall = wall;
-        wallHeight = wall.heightMM || defaultWallHeight;
-        break;
-      }
+      matchedWalls.push({ wall, overlap });
     }
+
+    matchedWalls.sort((a, b) => b.overlap - a.overlap);
+    const foundWall = matchedWalls[0]?.wall ?? null;
+    const wallHeight = foundWall?.heightMM || defaultWallHeight;
 
     // Find openings on this edge
     const edgeOpenings: EdgeOpening[] = [];
@@ -621,6 +637,7 @@ function analyzeRoomSegments(
       lengthMM: lengthPixels / pixelsPerMm,
       hasWall: foundWall !== null,
       wall: foundWall,
+      walls: matchedWalls.map((m) => m.wall),
       wallHeightMM: wallHeight,
       openings: edgeOpenings,
     });
@@ -815,16 +832,45 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
 
   const currentSegment = segmentData[currentSegmentIndex];
 
-  // Filter objects attached to the current wall segment
+  // Objects attached to the current wall segment. The edge can be backed by
+  // several wall shapes (split walls) — include objects hosted on ANY of them,
+  // re-expressing secondary hosts in the primary wall's axis so they render at
+  // the right spot. planId matching is tolerant (legacy shapes lack planId).
   const segmentObjects = useMemo(() => {
-    if (!currentSegment?.wall) return [];
+    const primary = currentSegment?.wall;
+    if (!primary) return [];
+    const segWalls = currentSegment.walls?.length ? currentSegment.walls : [primary];
+    const idSet = new Set(segWalls.map((w) => w.id));
+    const primaryGeom = getWallGeometry(primary);
 
-    // Find all shapes with wallRelative data attached to this wall
-    return shapes.filter(s =>
-      s.wallRelative?.wallId === currentSegment.wall?.id &&
-      s.planId === room?.planId
-    );
-  }, [currentSegment, shapes, room?.planId]);
+    return shapes
+      .filter(
+        (s) =>
+          s.wallRelative?.wallId &&
+          idSet.has(s.wallRelative.wallId) &&
+          (!s.planId || !room?.planId || s.planId === room.planId)
+      )
+      .map((s) => {
+        if (!s.wallRelative || s.wallRelative.wallId === primary.id || !primaryGeom) return s;
+        const host = shapes.find((w) => w.id === s.wallRelative!.wallId);
+        if (!host) return s;
+        const derived = worldFromWallRelative(s.wallRelative, host);
+        if (!derived) return s;
+        // Project the object's world centre onto the primary wall's own axis
+        // (the coordinate the renderer uses for distanceFromWallStart).
+        const alongPx =
+          (derived.center.x - primaryGeom.x1) * primaryGeom.unitX +
+          (derived.center.y - primaryGeom.y1) * primaryGeom.unitY;
+        const alongMM = alongPx / pixelsPerMm;
+        return {
+          ...s,
+          wallRelative: {
+            ...s.wallRelative,
+            distanceFromWallStart: alongMM - s.wallRelative.width / 2,
+          },
+        };
+      });
+  }, [currentSegment, shapes, room?.planId, pixelsPerMm]);
 
   // Get the selected object (for details panel)
   const selectedObject = useMemo(() => {
@@ -1684,7 +1730,10 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-gray-900 z-[200] flex flex-col">
+    <div
+      className="fixed inset-0 bg-gray-900 z-[200] flex flex-col"
+      data-elevation-objects={segmentObjects.length}
+    >
       {/* Header */}
       <div className="bg-white border-b shadow-sm px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">

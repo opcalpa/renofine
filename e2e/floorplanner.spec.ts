@@ -987,4 +987,54 @@ test.describe('Floor planner v2', () => {
     await page.keyboard.press(process.platform === 'darwin' ? 'Meta+z' : 'Control+z');
     expect(await shapeCount()).toBe(before);
   });
+
+  test('right-click context menu: tools + recent objects + wall actions', async ({ page }) => {
+    await openDemoPlanner(page);
+    const canvas = page.getByTestId('editor-v2-canvas');
+    const box = (await canvas.boundingBox())!;
+
+    // A wall to right-click on later
+    await page.keyboard.press('w');
+    await page.mouse.move(box.x + 300, box.y + 300);
+    await page.mouse.down();
+    await page.mouse.up();
+    await page.mouse.move(box.x + 700, box.y + 300);
+    await page.mouse.down();
+    await page.mouse.up();
+    await page.keyboard.press('Enter');
+
+    // Place a toilet → lands in the "recent objects" MRU
+    await page.getByTestId('tool-objects').click();
+    await page.getByRole('button', { name: /Badrum & VVS/ }).click();
+    await page.locator('button[title="Toalett"]').click();
+    await page.mouse.move(box.x + 500, box.y + 450);
+    await page.waitForTimeout(150);
+    await page.mouse.down();
+    await page.mouse.up();
+    await page.keyboard.press('v');
+    await page.keyboard.press('Escape');
+
+    // Right-click empty canvas: tools + recent objects
+    await page.mouse.click(box.x + 850, box.y + 550, { button: 'right' });
+    const menu = page.getByTestId('editor-context-menu');
+    await expect(menu).toBeVisible();
+    await expect(menu.getByText('Verktyg')).toBeVisible();
+    await expect(menu.getByText('Senaste objekt')).toBeVisible();
+    await expect(menu.getByText('Toalett')).toBeVisible();
+
+    // Recent object entry arms the object tool with that definition
+    await menu.getByText('Toalett').click();
+    await expect(menu).toHaveCount(0);
+    expect(await page.evaluate(() => window.__rfEditorDebug!.getTool())).toBe('object');
+    await page.keyboard.press('Escape');
+    await page.keyboard.press('v');
+
+    // Right-click ON the wall: selects it and offers wall actions
+    await page.mouse.click(box.x + 350, box.y + 300, { button: 'right' });
+    await expect(menu).toBeVisible();
+    await expect(menu.getByText('Radera')).toBeVisible();
+    await expect(menu.getByText('Rotera 90°')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(menu).toHaveCount(0);
+  });
 });

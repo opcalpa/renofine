@@ -12,6 +12,7 @@ import { execute } from '../core/commands';
 import { mmToWorld } from '../core/units';
 import { trySnapObjectToWall } from './objectModel';
 import { findLinkedRoomAt, resolveRoomItemLinkage } from '../sync/roomItemSync';
+import { pushRecentObject } from '../state/recentObjects';
 
 export interface ObjectPlacement {
   center: { x: number; y: number };
@@ -73,6 +74,9 @@ export function placeObjectWithLinkage(
     wallRelative: placement.wallRelative,
     roomId: linkedRoomId,
   });
-  if (shape) resolveRoomItemLinkage(shape, def);
+  if (shape) {
+    resolveRoomItemLinkage(shape, def);
+    pushRecentObject(definitionId);
+  }
   return shape;
 }

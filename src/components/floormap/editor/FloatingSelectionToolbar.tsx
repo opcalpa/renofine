@@ -46,7 +46,7 @@ import { getObjectDef, objectDimensionsMM } from './objects/objectModel';
  * its midpoint (walls sit ON room boundaries, so the midpoint itself is
  * ambiguous). World units are px-at-zoom-1 (150 mm wall ≈ 15 units).
  */
-const findRoomForWall = (
+export const findRoomForWall = (
   wall: FloorMapShape,
   shapes: FloorMapShape[],
   currentPlanId: string | null

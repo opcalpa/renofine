@@ -1,4 +1,15 @@
 {
+  "contextMenu": {
+    "selection": "Markering",
+    "selectionCount": "{{count}} markerade",
+    "duplicate": "Duplicera",
+    "copy": "Kopiera",
+    "rotate90": "Rotera 90°",
+    "delete": "Radera",
+    "recentObjects": "Senaste objekt",
+    "tools": "Verktyg",
+    "paste": "Klistra in"
+  },
   "templates": {
     "tabLabel": "Mallar",
     "search": "Sök mallar…",

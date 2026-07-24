@@ -1,4 +1,15 @@
 {
+  "contextMenu": {
+    "selection": "Selection",
+    "selectionCount": "{{count}} selected",
+    "duplicate": "Duplicate",
+    "copy": "Copy",
+    "rotate90": "Rotate 90°",
+    "delete": "Delete",
+    "recentObjects": "Recent objects",
+    "tools": "Tools",
+    "paste": "Paste"
+  },
   "templates": {
     "tabLabel": "Templates",
     "search": "Search templates…",

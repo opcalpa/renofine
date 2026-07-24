@@ -24,6 +24,7 @@ import Grid from '../canvas/Grid';
 import { calculateFitToContent } from '../canvas/utils/fitToContent';
 import { EditorHud } from './EditorHud';
 import { FloatingSelectionToolbar } from './FloatingSelectionToolbar';
+import { EditorContextMenu } from './EditorContextMenu';
 import { ZoomCluster } from './ZoomCluster';
 import { WallLengthEditor } from './WallLengthEditor';
 import { TextEditor } from './TextEditor';
@@ -62,6 +63,26 @@ export const EditorCanvas = ({ isReadOnly, roomDataVersion }: EditorCanvasProps)
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
   const [size, setSize] = useState({ width: 800, height: 600 });
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+
+  // Right-click: select the shape under the pointer (if any) and open the
+  // context menu at the cursor. Suppressed in read-only mode.
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (isReadOnly) return;
+    const stage = stageRef.current;
+    if (stage) {
+      stage.setPointersPositions(e.nativeEvent);
+      const pos = stage.getPointerPosition();
+      const hit = pos ? stage.getIntersection(pos) : null;
+      const name = hit?.name();
+      const store = useFloorMapStore.getState();
+      if (name && store.shapes.some((s) => s.id === name) && !store.selectedShapeIds.includes(name)) {
+        store.setSelectedShapeIds([name]);
+      }
+    }
+    setContextMenu({ x: e.clientX, y: e.clientY });
+  };
 
   const shapes = useFloorMapStore((s) => s.shapes);
   const currentPlanId = useFloorMapStore((s) => s.currentPlanId);
@@ -382,8 +403,16 @@ export const EditorCanvas = ({ isReadOnly, roomDataVersion }: EditorCanvasProps)
       ref={containerRef}
       className="relative w-full h-full bg-muted/30"
       data-testid="editor-v2-canvas"
+      onContextMenu={handleContextMenu}
       {...dndHandlers}
     >
+      {contextMenu && !isReadOnly && (
+        <EditorContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
       <EditorHud />
       <ZoomCluster containerSize={size} />
       {!isReadOnly && <FloatingSelectionToolbar />}
