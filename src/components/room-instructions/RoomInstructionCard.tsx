@@ -159,7 +159,8 @@ export function RoomInstructionCard({
         ((floorPlanShapes && floorPlanShapes.length > 0) ||
           (floorPlanObjects || []).some((o) => o.roomId === room.id) ||
           (wallObjects || []).some((o) => o.roomId === room.id) ||
-          (wallNotes || []).some((n) => n.roomId === room.id)) && (
+          (wallNotes || []).some((n) => n.roomId === room.id) ||
+          (wallSurfaces || []).some((s) => s.roomId === room.id)) && (
           <RoomObjectViews
             shapes={floorPlanShapes || []}
             highlightRoomId={room.id}

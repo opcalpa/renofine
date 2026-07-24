@@ -49,7 +49,8 @@ export function RoomObjectViews({
 
   const hasWall =
     (wallObjects || []).some((o) => o.roomId === highlightRoomId) ||
-    (wallNotes || []).some((n) => n.roomId === highlightRoomId);
+    (wallNotes || []).some((n) => n.roomId === highlightRoomId) ||
+    (wallSurfaces || []).some((s) => s.roomId === highlightRoomId);
   const hasFloor =
     (shapes && shapes.length > 0) ||
     (floorObjects || []).some((o) => o.roomId === highlightRoomId);

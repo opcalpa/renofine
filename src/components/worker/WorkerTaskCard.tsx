@@ -275,7 +275,8 @@ export function WorkerTaskCard({
       {/* Floor plan + wall instruction views */}
       {((floorPlan && floorPlan.length > 0) ||
         (wallObjects || []).some((o) => o.roomId === task.roomId) ||
-        (wallNotes || []).some((n) => n.roomId === task.roomId)) &&
+        (wallNotes || []).some((n) => n.roomId === task.roomId) ||
+        (wallSurfaces || []).some((s) => s.roomId === task.roomId)) &&
         task.room && (
           <div className="px-4 pb-2">
             <div className="rounded-lg bg-muted/30 border p-2">

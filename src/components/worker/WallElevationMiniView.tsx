@@ -92,6 +92,7 @@ export function WallElevationMiniView({
       byWall[o.wallId].push(o);
     }
     for (const n of roomNotes) seen(n.wallId);
+    for (const wallId of Object.keys(surfaceByWall)) seen(wallId);
     return order.map((wallId) => {
       const objs = byWall[wallId];
       const wallNotes = roomNotes.filter((n) => n.wallId === wallId);
@@ -102,14 +103,16 @@ export function WallElevationMiniView({
       const lengthMM = Math.max(maxRight + WALL_PADDING_MM, MIN_WALL_LENGTH_MM);
       return { wallId, objs, notes: wallNotes, lengthMM };
     });
-  }, [roomObjects, roomNotes, hiddenCategories]);
+  }, [roomObjects, roomNotes, hiddenCategories, surfaceByWall]);
 
   const selected = useMemo(
     () => roomObjects.find((o) => o.id === selectedId) || null,
     [roomObjects, selectedId]
   );
 
-  if (roomObjects.length === 0 && roomNotes.length === 0) return null;
+  if (roomObjects.length === 0 && roomNotes.length === 0 && Object.keys(surfaceByWall).length === 0) {
+    return null;
+  }
 
   return (
     <div className="space-y-2">
