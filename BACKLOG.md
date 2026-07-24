@@ -1337,7 +1337,7 @@ Cowork-fynd: rita rum → binds till rumsentitet → area/omkrets/volym synkas t
 
 ---
 id: url-subtab-tappas-vid-reload
-status: todo
+status: done
 priority: P3
 tags: [floorplanner, deep-links, cowork-fynd]
 created: 2026-07-23

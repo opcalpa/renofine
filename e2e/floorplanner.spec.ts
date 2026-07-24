@@ -988,6 +988,19 @@ test.describe('Floor planner v2', () => {
     expect(await shapeCount()).toBe(before);
   });
 
+  test('subtab=floorplan survives a reload (deep-link round trip)', async ({ page }) => {
+    await openDemoPlanner(page);
+    // The mirror effect should have written the restorable location
+    await expect(page).toHaveURL(/tab=spaceplanner/);
+    await expect(page).toHaveURL(/subtab=floorplan/);
+
+    // Hard reload on the same URL → straight back into the drawing view,
+    // no manual navigation to Planer needed (was: landed in Rumshantering)
+    await page.reload();
+    await expect(page.getByTestId('editor-v2-canvas')).toBeVisible({ timeout: 15000 });
+    await expect(page).toHaveURL(/subtab=floorplan/);
+  });
+
   test('right-click context menu: tools + recent objects + wall actions', async ({ page }) => {
     await openDemoPlanner(page);
     const canvas = page.getByTestId('editor-v2-canvas');

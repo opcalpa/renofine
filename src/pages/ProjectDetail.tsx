@@ -250,6 +250,10 @@ const ProjectDetail = () => {
     return tabParam && validTabs.includes(tabParam) ? tabParam : "overview";
   });
   const [openEntityId, setOpenEntityId] = useState<string | null>(() => searchParams.get("entityId"));
+  // Declared before the tab/subtab URL-sync effects below (they list it as a
+  // dep). Initialized from the URL — otherwise the mirror effect runs on mount
+  // with null and strips ?subtab= before the sync effect's state lands.
+  const [activeSubTab, setActiveSubTab] = useState<string | null>(() => searchParams.get("subtab"));
 
   // Renaida: publish project identity for the WHOLE visit (survives tab switches —
   // OverviewTab unmounts on other tabs, so it must not own this). Voice capture,
@@ -297,7 +301,13 @@ const ProjectDetail = () => {
     const validTabs = ["overview", "spaceplanner", "files", "tasks", "purchases", "budget", "timetracking", "table", "team", "sharing", "planning", "chat"];
 
     if (tabParam && validTabs.includes(tabParam)) {
-      if (tabParam !== activeTab || subtabParam) {
+      // subtab is part of the restorable location (e.g. spaceplanner+floorplan
+      // over a reload) — only re-handle when it actually differs, and never
+      // strip it from the URL (the old strip sent reloads to Rumshantering).
+      const keptParams = subtabParam
+        ? { tab: tabParam, subtab: subtabParam }
+        : { tab: tabParam };
+      if (tabParam !== activeTab || (subtabParam && subtabParam !== activeSubTab)) {
         setActiveTab(tabParam);
         // Handle subtab navigation (e.g., spaceplanner + rooms)
         if (subtabParam) {
@@ -305,29 +315,35 @@ const ProjectDetail = () => {
         }
         setOpenEntityId(entityParam);
         if (sectionParam) setPendingSection(sectionParam);
-        // Strip the transient deep-link params but KEEP ?tab= — clearing it
-        // meant a reload always landed on Översikt (round-10 flag).
-        setSearchParams({ tab: tabParam }, { replace: true });
+        // Strip the transient deep-link params but KEEP ?tab= (+ ?subtab=) —
+        // clearing tab meant a reload always landed on Översikt (round-10 flag).
+        setSearchParams(keptParams, { replace: true });
       } else if (entityParam || sectionParam) {
         // Deep link within the CURRENT tab (e.g. Renaida's receipt links while
         // already on Arbeten) — same handling, no tab switch needed.
         setOpenEntityId(entityParam);
         if (sectionParam) setPendingSection(sectionParam);
-        setSearchParams({ tab: tabParam }, { replace: true });
+        setSearchParams(keptParams, { replace: true });
       }
     } else if (entityParam) {
       setOpenEntityId(entityParam);
       setSearchParams(activeTab !== "overview" ? { tab: activeTab } : {}, { replace: true });
     }
-  }, [searchParams, activeTab, setSearchParams]);
+  }, [searchParams, activeTab, activeSubTab, setSearchParams]);
 
-  // Mirror the active tab into the URL so a reload restores where you were.
+  // Mirror the active tab (+ spaceplanner subtab) into the URL so a reload
+  // restores where you were — including the floorplan sub-view.
   // replace (not push) — tab switches shouldn't pollute back-button history.
   useEffect(() => {
-    const current = searchParams.get("tab");
-    if ((current ?? "overview") === activeTab) return;
-    setSearchParams(activeTab === "overview" ? {} : { tab: activeTab }, { replace: true });
-  }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
+    const current = searchParams.get("tab") ?? "overview";
+    const currentSub = searchParams.get("subtab");
+    const desiredSub = activeTab === "spaceplanner" ? activeSubTab : null;
+    if (current === activeTab && (currentSub ?? null) === desiredSub) return;
+    const params: Record<string, string> = {};
+    if (activeTab !== "overview") params.tab = activeTab;
+    if (desiredSub) params.subtab = desiredSub;
+    setSearchParams(params, { replace: true });
+  }, [activeTab, activeSubTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Client in quote phase → redirect to quote (they can only see the quote until accepted)
   const isQuotePhase = ["planning", "quote_created", "quote_sent"].includes(project?.status ?? "");
@@ -368,7 +384,6 @@ const ProjectDetail = () => {
     return () => clearTimeout(timer);
   }, [pendingSection, activeTab]);
 
-  const [activeSubTab, setActiveSubTab] = useState<string | null>(null);
   const [selectedRoom, setSelectedRoom] = useState<any>(null);
   const [showRoomDialog, setShowRoomDialog] = useState(false);
   const [showCreateRoomDialog, setShowCreateRoomDialog] = useState(false);
