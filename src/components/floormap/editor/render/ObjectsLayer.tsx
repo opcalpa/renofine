@@ -97,6 +97,21 @@ const ObjectShape: React.FC<{
           />
         );
       })()}
+      {/* Per-object finish (P2): the colour/material instruction reads right
+          on the drawing — "vit", "NCS S 3005-G80Y", "ek". */}
+      {typeof shape.metadata?.finishColor === 'string' && shape.metadata.finishColor && (
+        <Text
+          x={-w / 2 - 60 / zoom}
+          y={d / 2 + 4 / zoom}
+          width={w + 120 / zoom}
+          align="center"
+          text={shape.metadata.finishColor}
+          fontSize={9 / zoom}
+          fill="#6b7280"
+          listening={false}
+          perfectDrawEnabled={false}
+        />
+      )}
       {isSelected && (
         <>
           <Rect

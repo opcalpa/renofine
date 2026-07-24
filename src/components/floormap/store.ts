@@ -44,6 +44,7 @@ export interface ProjectSettings {
   showDimensions: boolean; // Auto-show dimension labels
   showAreaLabels: boolean; // Auto-show area labels for rooms
   showSurfacePatterns: boolean; // Draw floor-finish patterns (herringbone etc.) on rooms
+  showFinishLabels: boolean; // Per-wall finish labels (material · colour code) on the plan
   hiddenObjectCategories: string[]; // Object-library categories hidden on the canvas (per-category filter; generalizes the old El-filter)
 
   // Canvas dimensions (in meters) - NEW
@@ -62,6 +63,7 @@ const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
   showDimensions: false, // Off by default - hover tooltip shows dimensions instead
   showAreaLabels: true,
   showSurfacePatterns: true,
+  showFinishLabels: true,
   hiddenObjectCategories: [], // All object categories visible by default
   canvasWidthMeters: 50, // 50m × 50m working area
   canvasHeightMeters: 50,
@@ -192,6 +194,7 @@ interface FloorMapStore {
   toggleDimensions: () => void;
   toggleAreaLabels: () => void;
   toggleSurfacePatterns: () => void;
+  toggleFinishLabels: () => void;
   toggleObjectCategory: (category: string) => void;
   setCanvasSize: (widthMeters: number, heightMeters: number) => void;
   setCanvasMargin: (marginMeters: number) => void;
@@ -1097,6 +1100,13 @@ export const useFloorMapStore = create<FloorMapStore>((set, get) => ({
     projectSettings: {
       ...state.projectSettings,
       showSurfacePatterns: !state.projectSettings.showSurfacePatterns,
+    },
+  })),
+
+  toggleFinishLabels: () => set((state) => ({
+    projectSettings: {
+      ...state.projectSettings,
+      showFinishLabels: !state.projectSettings.showFinishLabels,
     },
   })),
 

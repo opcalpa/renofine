@@ -45,6 +45,7 @@ export const ViewSettingsPopover = () => {
     toggleDimensions,
     toggleAreaLabels,
     toggleSurfacePatterns,
+    toggleFinishLabels,
     toggleObjectCategory,
     setUnit,
   } = useFloorMapStore();
@@ -150,7 +151,7 @@ export const ViewSettingsPopover = () => {
           {surfacesVisible && (
             <div className="flex items-center justify-between">
               <Label htmlFor="v2-show-patterns" className="text-sm font-normal">
-                {t('canvas.showFloorPatterns', 'Golvmönster')}
+                {t('canvas.showFloorPatterns', 'Ytmönster (golv & vägg)')}
               </Label>
               <Switch
                 id="v2-show-patterns"
@@ -159,6 +160,17 @@ export const ViewSettingsPopover = () => {
               />
             </div>
           )}
+
+          <div className="flex items-center justify-between">
+            <Label htmlFor="v2-show-finish-labels" className="text-sm font-normal">
+              {t('canvas.showFinishLabels', 'Färgkoder på väggar')}
+            </Label>
+            <Switch
+              id="v2-show-finish-labels"
+              checked={projectSettings.showFinishLabels}
+              onCheckedChange={toggleFinishLabels}
+            />
+          </div>
 
           <Separator />
 

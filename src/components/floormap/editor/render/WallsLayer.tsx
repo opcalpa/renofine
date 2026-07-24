@@ -18,6 +18,8 @@ interface WallsLayerProps {
   selectedIds: string[];
   zoom: number;
   showDimensions: boolean;
+  /** Per-wall finish labels (material · colour code) on the plan (P2). */
+  showFinishLabels?: boolean;
 }
 
 export const WallsLayer: React.FC<WallsLayerProps> = ({
@@ -26,6 +28,7 @@ export const WallsLayer: React.FC<WallsLayerProps> = ({
   selectedIds,
   zoom,
   showDimensions,
+  showFinishLabels,
 }) => {
   const graph = getWallGraph(shapes, planId);
   const selected = new Set(selectedIds);
@@ -96,6 +99,39 @@ export const WallsLayer: React.FC<WallsLayerProps> = ({
               fontSize={11 / zoom}
               fill="#374151"
               rotation={angle}
+              perfectDrawEnabled={false}
+            />
+          );
+        })}
+
+      {/* Per-wall finish labels (P2): the surface instruction from the wall
+          view — material · colour code — readable on the plan itself. */}
+      {showFinishLabels &&
+        graph.outlines.map((outline) => {
+          const wall = wallById.get(outline.wallId);
+          if (!wall) return null;
+          const label = [wall.material, wall.treatmentColor].filter(Boolean).join(' · ');
+          if (!label) return null;
+          const c = wall.coordinates as LineCoordinates;
+          const length = Math.hypot(c.x2 - c.x1, c.y2 - c.y1);
+          if (length * zoom < 50) return null; // too small to label
+          const midX = (c.x1 + c.x2) / 2;
+          const midY = (c.y1 + c.y2) / 2;
+          let angle = (Math.atan2(c.y2 - c.y1, c.x2 - c.x1) * 180) / Math.PI;
+          if (angle > 90 || angle < -90) angle += 180;
+          return (
+            <Text
+              key={`finish-${outline.wallId}`}
+              x={midX}
+              y={midY}
+              offsetY={-8 / zoom}
+              text={label}
+              fontSize={9 / zoom}
+              fill="#6b7280"
+              rotation={angle}
+              align="center"
+              offsetX={(label.length * 2.3) / zoom}
+              listening={false}
               perfectDrawEnabled={false}
             />
           );

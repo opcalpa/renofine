@@ -1,4 +1,13 @@
 {
+  "templates": {
+    "tabLabel": "Templates",
+    "search": "Search templates…",
+    "empty": "No templates yet — select something and save it as a template.",
+    "saveSelection": "Save selection as template",
+    "saveHint": "Select shapes on the plan first",
+    "placed": "Template \"{{name}}\" placed",
+    "placeUndoLabel": "Place template"
+  },
   "professions": {
     "carpenter": "Carpenter",
     "electrician": "Electrician",
@@ -2563,7 +2572,9 @@
       "customName": "Name",
       "customNameTitle": "Object name",
       "customWidth": "Width (mm)",
-      "customDepth": "Depth (mm)"
+      "customDepth": "Depth (mm)",
+      "finishColor": "Colour/finish",
+      "finishColorTitle": "Colour or material, e.g. \"white\" or \"NCS S 3005-G80Y\""
     },
     "view2d": "2D",
     "viewSettings": "View",
@@ -2633,7 +2644,8 @@
     "clearStartingView": "Clear starting view",
     "startingViewSaved": "Starting view saved",
     "startingViewCleared": "Starting view cleared — will auto-fit to content",
-    "showFloorPatterns": "Show floor patterns"
+    "showFloorPatterns": "Surface patterns (floor & wall)",
+    "showFinishLabels": "Colour codes on walls"
   },
   "elevationInfo": {
     "rectangle": "Rectangle",
@@ -6745,6 +6757,7 @@
     }
   },
   "roomItems": {
+    "finish": "Colour/finish",
     "electricalItems": "Electrical items",
     "addItem": "Add",
     "empty": "No items logged yet",

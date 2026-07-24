@@ -43,6 +43,7 @@ import { FloorMapShape, PolygonCoordinates, LineCoordinates, WallObjectCategory,
 import { v2OpeningsAsLegacy } from './editor/geometry/openingSync';
 import { WallDirection, getDirectionLabel, getDirectionIcon } from './utils/roomWalls';
 import { getAdminDefaults } from './canvas/constants';
+import { getPatternImage, onPatternLoad, resolveWallPattern } from './canvas/utils/surfacePatterns';
 import { cn } from '@/lib/utils';
 import { formatMeasurement } from './utils/formatting';
 import { useMeasurement } from "@/contexts/MeasurementContext";
@@ -689,6 +690,7 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
   const stageRef = useRef<Konva.Stage>(null);
 
   const { shapes, scaleSettings, updateShapeWallRelative, updateShape, addShape, deleteShape, currentPlanId, undo, redo, canUndo, canRedo } = useFloorMapStore();
+  const showSurfacePatterns = useFloorMapStore((s) => s.projectSettings.showSurfacePatterns);
   const { pixelsPerMm } = scaleSettings;
   const adminDefaults = getAdminDefaults();
 
@@ -1306,6 +1308,16 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
       openings: currentSegment.openings,
     };
   }, [currentSegment, dimensions, pixelsPerMm]);
+
+  // P2: material pattern on the wall face (kakel/klinker → tile grid, sten →
+  // large format, betong → speckle) resolved from the wall's surface
+  // instruction. Tiles are authored at 1 px = 10 mm, hence the ×10 scale.
+  const [, bumpPatternTick] = useState(0);
+  useEffect(() => onPatternLoad(() => bumpPatternTick((n) => n + 1)), []);
+  const wallPatternId = showSurfacePatterns && visualization?.wall
+    ? resolveWallPattern(visualization.wall.material, visualization.wall.treatment)
+    : null;
+  const wallPatternImg = wallPatternId ? getPatternImage(wallPatternId) : null;
 
   /**
    * Handle drag end for wall-attached objects in elevation view.
@@ -2309,8 +2321,24 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
                   />
                 )}
 
-                {/* Wall pattern (brick-like) - only if wall exists */}
-                {visualization.hasWall && Array.from({ length: Math.ceil(visualization.wallHeight / 30) }).map((_, rowIndex) => (
+                {/* Material pattern (kakel/sten/betong) from the wall's surface instruction */}
+                {visualization.hasWall && wallPatternImg && (
+                  <Rect
+                    x={visualization.wallX}
+                    y={visualization.wallY}
+                    width={visualization.wallWidth}
+                    height={visualization.wallHeight}
+                    fillPatternImage={wallPatternImg}
+                    fillPatternRepeat="repeat"
+                    fillPatternScaleX={10 * visualization.effectiveScale}
+                    fillPatternScaleY={10 * visualization.effectiveScale}
+                    listening={false}
+                    perfectDrawEnabled={false}
+                  />
+                )}
+
+                {/* Wall pattern (brick-like) - only if wall exists and no material pattern */}
+                {visualization.hasWall && !wallPatternImg && Array.from({ length: Math.ceil(visualization.wallHeight / 30) }).map((_, rowIndex) => (
                   <Line
                     key={`row-${rowIndex}`}
                     points={[
@@ -2851,6 +2879,17 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
                           x={0}
                           y={displayHeight + 3}
                           text={`↑${formatDim(obj.wallRelative.elevationBottom)}`}
+                          fontSize={8}
+                          fill="#6b7280"
+                        />
+                      )}
+
+                      {/* Per-object finish (P2): colour/material instruction below the object */}
+                      {typeof obj.metadata?.finishColor === 'string' && obj.metadata.finishColor && !isDragging && (
+                        <KonvaText
+                          x={0}
+                          y={displayHeight + (obj.wallRelative.elevationBottom > 0 ? 13 : 3)}
+                          text={obj.metadata.finishColor}
                           fontSize={8}
                           fill="#6b7280"
                         />

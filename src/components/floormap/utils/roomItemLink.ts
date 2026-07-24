@@ -44,6 +44,27 @@ export function pointInPolygon(
 }
 
 /**
+ * P2 — keep the mirrored room_items row's finish in sync when the object's
+ * colour/material instruction (metadata.finishColor) changes on the canvas.
+ * No-op for objects without a mirrored row (furniture, unlinked rooms).
+ */
+export async function updateRoomItemFinishForShape(
+  shapeId: string,
+  finish: string
+): Promise<void> {
+  const { data, error } = await supabase
+    .from('room_items')
+    .select('id, detail')
+    .eq('floor_map_shape_id', shapeId)
+    .limit(1);
+  if (error || !data?.length) return;
+  const detail = { ...((data[0].detail as Record<string, unknown>) || {}) };
+  if (finish) detail.finish = finish;
+  else delete detail.finish;
+  await supabase.from('room_items').update({ detail }).eq('id', data[0].id);
+}
+
+/**
  * E3.2 reverse — an object drawn directly on the canvas inside a room becomes
  * a room_items entry for that room (canvas → list). Shape is persisted first
  * so the FK target exists (same ordering as linkPlacedItemToShape).

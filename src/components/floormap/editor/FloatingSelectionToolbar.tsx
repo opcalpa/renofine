@@ -38,7 +38,7 @@ import { useEditorUiStore } from './state/uiStore';
 import { execute } from './core/commands';
 import { unionBounds } from './geometry/bounds';
 import type { AlignMode } from './core/selectionOps';
-import { pointInPolygon } from '../utils/roomItemLink';
+import { pointInPolygon, updateRoomItemFinishForShape } from '../utils/roomItemLink';
 import { getObjectDef, objectDimensionsMM } from './objects/objectModel';
 
 /**
@@ -214,6 +214,46 @@ const CustomObjectInputs = ({ shape }: { shape: FloorMapShape }) => {
   );
 };
 
+/** Colour/material instruction for a single selected library object (P2). */
+const ObjectFinishInput = ({ shape }: { shape: FloorMapShape }) => {
+  const { t } = useTranslation();
+  const current = typeof shape.metadata?.finishColor === 'string' ? shape.metadata.finishColor : '';
+  const [value, setValue] = useState(current);
+
+  useEffect(() => {
+    setValue(typeof shape.metadata?.finishColor === 'string' ? shape.metadata.finishColor : '');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shape.id, shape.metadata?.finishColor]);
+
+  const commit = () => {
+    const trimmed = value.trim();
+    if (trimmed === current) return;
+    execute('shape.update', {
+      id: shape.id,
+      updates: { metadata: { ...shape.metadata, finishColor: trimmed || undefined } },
+    });
+    // Mirror to the room_items row so the instruction reaches room details +
+    // the worker view. Fire-and-forget: canvas is source of truth.
+    void updateRoomItemFinishForShape(shape.id, trimmed).catch(() => undefined);
+  };
+
+  return (
+    <input
+      type="text"
+      className="h-7 w-28 rounded-md border px-1.5 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-primary"
+      value={value}
+      placeholder={t('floormap.selection.finishColor', 'Kulör/finish')}
+      title={t('floormap.selection.finishColorTitle', 'Kulör eller material, t.ex. "vit" eller "NCS S 3005-G80Y"')}
+      onChange={(e) => setValue(e.target.value)}
+      onKeyDown={(e) => {
+        e.stopPropagation();
+        if (e.key === 'Enter' || e.key === 'Escape') (e.target as HTMLInputElement).blur();
+      }}
+      onBlur={commit}
+    />
+  );
+};
+
 export const FloatingSelectionToolbar = () => {
   const { t } = useTranslation();
   const shapes = useFloorMapStore((s) => s.shapes);
@@ -250,6 +290,7 @@ export const FloatingSelectionToolbar = () => {
     : null;
   const singleCustom =
     selected.length === 1 && getObjectDef(selected[0])?.category === 'custom';
+  const singleObject = selected.length === 1 && !!getObjectDef(selected[0]);
   const canTransform = transformables.length > 0;
   const canAlign = transformables.length >= 2;
   const canDistribute = transformables.length >= 3;
@@ -269,6 +310,7 @@ export const FloatingSelectionToolbar = () => {
       }}
     >
       {singleCustom && <CustomObjectInputs shape={selected[0]} />}
+      {singleObject && <ObjectFinishInput shape={selected[0]} />}
 
       {singleOpening ? (
         <>

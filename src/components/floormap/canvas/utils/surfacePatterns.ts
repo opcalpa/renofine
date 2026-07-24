@@ -32,6 +32,22 @@ export function resolveFloorPattern(
   return null;
 }
 
+/**
+ * Wall-finish pattern from the per-wall surface instruction (P2): tiled walls
+ * (kakel/klinker) and stone/concrete read as their material in the elevation.
+ * Painted/plastered walls return null — the generic brick hatch stays.
+ */
+export function resolveWallPattern(
+  material?: string | null,
+  treatment?: string | null
+): FloorPatternId | null {
+  const spec = `${material ?? ''} ${treatment ?? ''}`;
+  if (/kakel|klinker|tile|flis|mosaik/i.test(spec)) return 'tileGrid';
+  if (/storformat|marmor|granit|sten|stone|marble/i.test(spec)) return 'largeTile';
+  if (/betong|concrete|microcement|mikrocement/i.test(spec)) return 'speckle';
+  return null;
+}
+
 const STROKE = 'rgba(31, 41, 55, 0.16)';
 
 /** Tile SVGs in world px (10 px = 100 mm). */

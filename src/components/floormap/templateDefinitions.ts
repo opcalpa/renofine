@@ -288,6 +288,16 @@ export function placeTemplateShapes(
       coords.x += offsetX;
       coords.y += offsetY;
     }
+    // Unified library objects (v2) position via metadata.placementX/Y
+    // (freehand already offset its metadata above — don't double-shift)
+    if (
+      shape.type !== 'freehand' &&
+      typeof placed.metadata?.placementX === 'number' &&
+      typeof placed.metadata?.placementY === 'number'
+    ) {
+      placed.metadata.placementX += offsetX;
+      placed.metadata.placementY += offsetY;
+    }
     return placed;
   });
 }

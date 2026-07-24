@@ -22,6 +22,8 @@ export interface RoomObjectInfo {
   productLink: string | null;
   quantity: number | null;
   notes: string | null;
+  /** Colour/material instruction from the drawing ("vit", "NCS S 3005-G80Y"). */
+  finish?: string | null;
 }
 
 /** Floor-plan placed object — absolute world position (x,y). */
@@ -146,6 +148,11 @@ export function ObjectInfoCard({
         {object.quantity != null && (
           <div>
             {t("roomItems.quantity", "Qty")}: <span className="rf-num">×{object.quantity}</span>
+          </div>
+        )}
+        {object.finish && (
+          <div>
+            {t("roomItems.finish", "Kulör/finish")}: <span className="text-foreground">{object.finish}</span>
           </div>
         )}
         {object.notes && <div className="whitespace-pre-wrap">{object.notes}</div>}

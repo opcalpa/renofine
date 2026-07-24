@@ -907,4 +907,84 @@ test.describe('Floor planner v2', () => {
     await page.locator('#v2-show-surfaces').click();
     await expect(page.locator('#v2-show-patterns')).toHaveCount(0);
   });
+
+  test('object finish edits from the selection toolbar and lands in metadata', async ({ page }) => {
+    await openDemoPlanner(page);
+    const canvas = page.getByTestId('editor-v2-canvas');
+    const box = (await canvas.boundingBox())!;
+
+    // Place a toilet free-standing
+    await page.getByTestId('tool-objects').click();
+    await page.getByRole('button', { name: /Badrum & VVS/ }).click();
+    await page.locator('button[title="Toalett"]').click();
+    await page.mouse.move(box.x + 500, box.y + 400);
+    await page.waitForTimeout(150);
+    await page.mouse.down();
+    await page.mouse.up();
+
+    // Select it → finish input appears in the selection toolbar
+    await page.keyboard.press('v');
+    await page.mouse.move(box.x + 500, box.y + 400);
+    await page.mouse.down();
+    await page.mouse.up();
+    const finishInput = page.getByPlaceholder('Kulör/finish');
+    await expect(finishInput).toBeVisible();
+    await finishInput.fill('NCS S 3005-G80Y');
+    await finishInput.press('Enter');
+
+    const finish = await page.evaluate(() => {
+      const o = window.__rfEditorDebug!.getShapes().find(
+        (s) => (s as { metadata?: { isUnifiedObject?: boolean } }).metadata?.isUnifiedObject
+      ) as unknown as { metadata?: { finishColor?: string } };
+      return o?.metadata?.finishColor;
+    });
+    expect(finish).toBe('NCS S 3005-G80Y');
+
+    // View settings: the wall colour-code toggle exists
+    await page.keyboard.press('Escape');
+    await page.getByTestId('view-settings-trigger').click();
+    await expect(page.locator('#v2-show-finish-labels')).toHaveAttribute('data-state', 'checked');
+  });
+
+  test('templates tab places a default template as one grouped undo step', async ({ page }) => {
+    await openDemoPlanner(page);
+    // Placement needs currentPlanId — wait for the plan picker to resolve
+    await expect(page.getByRole('button', { name: /Floor Plan|Plan 1/i })).toBeVisible({
+      timeout: 15000,
+    });
+
+    const shapeCount = () =>
+      page.evaluate(() => window.__rfEditorDebug!.getShapes().length);
+    const before = await shapeCount();
+
+    // Objects popover → Mallar tab → place the WC default template
+    await page.getByTestId('tool-objects').click();
+    await page.getByTestId('objects-tab-templates').click();
+    await expect(page.getByPlaceholder('Sök mallar…')).toBeVisible();
+    await page.getByRole('button', { name: 'WC', exact: true }).click();
+
+    const after = await shapeCount();
+    expect(after).toBeGreaterThan(before);
+
+    // All placed shapes share a groupId (the template group contract)
+    const groupInfo = await page.evaluate(() => {
+      const shapes = window.__rfEditorDebug!.getShapes() as Array<{
+        groupId?: string;
+        isGroupLeader?: boolean;
+      }>;
+      const grouped = shapes.filter((s) => s.groupId);
+      return {
+        count: grouped.length,
+        oneGroup: new Set(grouped.map((s) => s.groupId)).size === 1,
+        hasLeader: grouped.some((s) => s.isGroupLeader),
+      };
+    });
+    expect(groupInfo.count).toBeGreaterThan(0);
+    expect(groupInfo.oneGroup).toBe(true);
+    expect(groupInfo.hasLeader).toBe(true);
+
+    // One undo removes the whole template placement
+    await page.keyboard.press(process.platform === 'darwin' ? 'Meta+z' : 'Control+z');
+    expect(await shapeCount()).toBe(before);
+  });
 });

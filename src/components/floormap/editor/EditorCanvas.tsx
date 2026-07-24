@@ -424,6 +424,7 @@ export const EditorCanvas = ({ isReadOnly, roomDataVersion }: EditorCanvasProps)
             selectedIds={selectedShapeIds}
             zoom={viewState.zoom}
             showDimensions={projectSettings.showDimensions}
+            showFinishLabels={projectSettings.showFinishLabels}
           />
           <OpeningsLayer
             shapes={shapes}

@@ -1,4 +1,13 @@
 {
+  "templates": {
+    "tabLabel": "Mallar",
+    "search": "Sök mallar…",
+    "empty": "Inga mallar än — markera något och spara som mall.",
+    "saveSelection": "Spara markering som mall",
+    "saveHint": "Markera former på planen först",
+    "placed": "Mallen \"{{name}}\" placerad",
+    "placeUndoLabel": "Placera mall"
+  },
   "professions": {
     "carpenter": "Snickare",
     "electrician": "Elektriker",
@@ -1991,7 +2000,9 @@
       "customName": "Namn",
       "customNameTitle": "Objektets namn",
       "customWidth": "Bredd (mm)",
-      "customDepth": "Djup (mm)"
+      "customDepth": "Djup (mm)",
+      "finishColor": "Kulör/finish",
+      "finishColorTitle": "Kulör eller material, t.ex. \"vit\" eller \"NCS S 3005-G80Y\""
     },
     "view2d": "2D",
     "viewSettings": "Visning",
@@ -2061,7 +2072,8 @@
     "clearStartingView": "Rensa startvy",
     "startingViewSaved": "Startvy sparad",
     "startingViewCleared": "Startvy rensad — vyn anpassas automatiskt",
-    "showFloorPatterns": "Golvmönster"
+    "showFloorPatterns": "Ytmönster (golv & vägg)",
+    "showFinishLabels": "Färgkoder på väggar"
   },
   "elevationInfo": {
     "rectangle": "Rektangel",
@@ -6745,6 +6757,7 @@
     }
   },
   "roomItems": {
+    "finish": "Kulör/finish",
     "electricalItems": "El-objekt",
     "addItem": "Lägg till",
     "empty": "Inga objekt loggade än",

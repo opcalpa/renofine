@@ -42,6 +42,7 @@ import { AIFloorPlanImport } from '@/components/project/AIFloorPlanImport';
 import { useFloorMapStore } from '../store';
 import { Tool } from '../types';
 import { ObjectLibraryPanel } from '../objectLibrary/ObjectLibraryPanel';
+import { TemplatesPanelV2 } from './TemplatesPanelV2';
 import { uploadPlanImage } from '../utils/uploadPlanImage';
 import { undo, redo } from './core/executor';
 import { useEditorUiStore } from './state/uiStore';
@@ -108,6 +109,7 @@ export const EditorToolbar = ({ projectId }: EditorToolbarProps) => {
 
   const [openingOpen, setOpeningOpen] = useState(false);
   const [objectsOpen, setObjectsOpen] = useState(false);
+  const [objectsTab, setObjectsTab] = useState<'objects' | 'templates'>('objects');
   const [underlayOpen, setUnderlayOpen] = useState(false);
   const [aiImportOpen, setAiImportOpen] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -226,15 +228,44 @@ export const EditorToolbar = ({ projectId }: EditorToolbarProps) => {
             <Blocks className="h-5 w-5" />
           </button>
         </PopoverTrigger>
-        <PopoverContent side="right" align="start" className="ml-2 h-96 w-72 p-0">
-          <ObjectLibraryPanel
-            onSelectObject={(def) => {
-              setPendingObjectId(def.id);
-              setObjectsOpen(false);
-            }}
-            selectedObjectId={pendingObjectId || undefined}
-            viewMode="floorplan"
-          />
+        <PopoverContent side="right" align="start" className="ml-2 flex h-96 w-72 flex-col p-0">
+          {/* Objekt | Mallar tab strip (P2: templates surfaced in v2) */}
+          <div className="flex shrink-0 border-b text-xs">
+            {(
+              [
+                ['objects', t('floormap.tools.objects', 'Objekt')],
+                ['templates', t('templates.tabLabel', 'Mallar')],
+              ] as const
+            ).map(([tab, label]) => (
+              <button
+                key={tab}
+                data-testid={`objects-tab-${tab}`}
+                className={cn(
+                  'flex-1 border-b-2 px-2 py-1.5 font-medium transition-colors',
+                  objectsTab === tab
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-gray-500 hover:text-gray-800'
+                )}
+                onClick={() => setObjectsTab(tab)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="min-h-0 flex-1">
+            {objectsTab === 'objects' ? (
+              <ObjectLibraryPanel
+                onSelectObject={(def) => {
+                  setPendingObjectId(def.id);
+                  setObjectsOpen(false);
+                }}
+                selectedObjectId={pendingObjectId || undefined}
+                viewMode="floorplan"
+              />
+            ) : (
+              <TemplatesPanelV2 onPlaced={() => setObjectsOpen(false)} />
+            )}
+          </div>
         </PopoverContent>
       </Popover>
 
