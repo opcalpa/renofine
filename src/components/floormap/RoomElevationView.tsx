@@ -2649,6 +2649,59 @@ export const RoomElevationView: React.FC<RoomElevationViewProps> = ({
                   );
                 })}
 
+                {/* Auto dimension chain (P2 parity): corner → opening edges →
+                    corner below the floor line, mirroring the plan's chain for
+                    a selected wall. Only when openings give it segments. */}
+                {visualization.openings.length > 0 && (() => {
+                  const chainY = visualization.wallY + visualization.wallHeight + 26;
+                  const marks: number[] = [visualization.wallX];
+                  const sorted = [...visualization.openings].sort((a, b) => a.positionT - b.positionT);
+                  for (const op of sorted) {
+                    const w = (op.widthPixels / pixelsPerMm) * visualization.effectiveScale;
+                    const left = visualization.wallX + op.positionT * visualization.wallWidth - w / 2;
+                    marks.push(
+                      Math.max(visualization.wallX, left),
+                      Math.min(visualization.wallX + visualization.wallWidth, left + w)
+                    );
+                  }
+                  marks.push(visualization.wallX + visualization.wallWidth);
+                  marks.sort((a, b) => a - b);
+                  return (
+                    <Group listening={false}>
+                      <Line
+                        points={[marks[0], chainY, marks[marks.length - 1], chainY]}
+                        stroke="#6b7280"
+                        strokeWidth={1}
+                      />
+                      {marks.map((x, i) => (
+                        <Line
+                          key={`chain-tick-${i}`}
+                          points={[x, chainY - 5, x, chainY + 5]}
+                          stroke="#6b7280"
+                          strokeWidth={1}
+                        />
+                      ))}
+                      {marks.slice(0, -1).map((x, i) => {
+                        const next = marks[i + 1];
+                        if (next - x < 24) return null; // too narrow for a label
+                        const segMM = (next - x) / visualization.effectiveScale;
+                        return (
+                          <KonvaText
+                            key={`chain-label-${i}`}
+                            x={(x + next) / 2 - 40}
+                            y={chainY - 16}
+                            width={80}
+                            align="center"
+                            text={formatDim(segMM)}
+                            fontSize={10}
+                            fill="#374151"
+                          />
+                        );
+                      })}
+                    </Group>
+                  );
+                })()}
+
                 {/* Wall-attached objects (furniture, cabinets, etc.) - DRAGGABLE for bidirectional sync */}
                 {segmentObjects.map((obj) => {
                   if (!obj.wallRelative || !visualization.wall) return null;

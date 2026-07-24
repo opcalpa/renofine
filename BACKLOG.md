@@ -1333,7 +1333,7 @@ tags: [floorplanner, rooms, data-integrity, cowork-fynd]
 created: 2026-07-23
 ---
 ## Rumsmått ligger kvar när ritgeometrin raderas (stale area)
-Cowork-fynd: rita rum → binds till rumsentitet → area/omkrets/volym synkas till rooms-raden. Raderas geometrin från planen ligger måtten KVAR på entiteten (Hall visar nu 14,9 m² från en tillfällig testrektangel). Beslut behövs: nollställa mått vid geometri-radering, markera som "senast uppmätt", eller behåll medvetet. Residual: Halls mått i Carls demo speglar testgeometrin (YTA 14,9 / OMKRETS 15,80 / VOLYM 38,7) — Carl får återställa om orignalvärden fanns.
+Cowork-fynd: rita rum → binds till rumsentitet → area/omkrets/volym synkas till rooms-raden. Raderas geometrin från planen ligger måtten KVAR på entiteten (Hall visar nu 14,9 m² från en tillfällig testrektangel). Beslut behövs: nollställa mått vid geometri-radering, markera som "senast uppmätt", eller behåll medvetet. Residual: Halls mått i Carls demo speglar nu VARV 2-testgeometrin (YTA 18,7 / OMKRETS 17,60 / VOLYM 48,7 per 2026-07-24; varv 1 lämnade 14,9) — Carl får återställa om originalvärden fanns.
 
 ---
 id: url-subtab-tappas-vid-reload
@@ -1387,7 +1387,7 @@ Carls beslut 2026-07-24 ("kör på detta 3"). Golvmönster-tiles (fiskbens, rak 
 
 ---
 id: ytskikt-monster-p2
-status: todo
+status: done
 priority: P2
 tags: [floorplanner, ytskikt, elevation]
 created: 2026-07-24
@@ -1414,3 +1414,93 @@ created: 2026-07-24
 ---
 ## Plattforms-audit: är projektledning logisk per användartyp?
 Carls fråga 2026-07-24: verifiera hela plattformen utifrån de tre perspektiven — (a) BYGGARE som startar/projektleder eget projekt: offerter, fakturor, fakturerande budget, UE-kostnader; (b) HEMÄGARE som projektleder själv: egen bestämd ELLER flytande budget (max spend), fakturerande total och/eller UE; (c) BYGGPROFFS som projektleder och bjuder in privatkunden till den begränsade delningsvyn (Kundvyn). Läs-bara kodaudit först (agent), fynden → backlog-kort + rapport till Carl. Kända regler: role-gating ENBART via onboarding_user_type; moms ex/inc per roll; dual-view-grinden.
+
+---
+id: user-type-builder-budget-fel-falt
+status: todo
+priority: P1
+tags: [audit, budget, byggare, bug]
+created: 2026-07-24
+---
+## CreateProjectDialog skriver byggarens budget till hemägar-privatfältet
+Audit-fynd #4: dialogen skriver ALLTID beloppet till project_private_budget.private_budget_cap ("homeowner's private cap") oavsett roll. En byggares inmatade budget försvinner tyst — BuilderSummaryCards läser aldrig fältet. Fix: roll-medveten skrivning (byggare → ingen/eget fält) eller dölj fältet för contractor.
+
+---
+id: user-type-hemagare-forbrukat-tvetydigt
+status: todo
+priority: P1
+tags: [audit, budget, hemagare]
+created: 2026-07-24
+---
+## Hemägarvyn visar två olika "förbrukat" i samma vy
+Audit-fynd #1: "Kvar att spendera"-kortet räknar committed (accepterade offerter+inköp+ÄTA) medan progressbaren "Förbrukat av budget" räknar fakturerat — två motsägande tal om samma budget. Fix: EN definition som båda läser (del av budget_mode-greppet, se user-type-budget-mode).
+
+---
+id: user-type-budget-mode-saknas
+status: todo
+priority: P2
+tags: [audit, budget, hemagare, produktbeslut]
+created: 2026-07-24
+---
+## Fast vs flytande budget (max spend) för hemägare finns inte
+Audit-fynd #2 + strukturgrepp 3: bara ett enda private_budget_cap (soft cap). Carls beskrivna modell "bestämd ELLER flytande budget" kräver budget_mode ∈ {fixed_cap, floating_max} + konsekvent förbrukat-definition. Produktbeslut: hur ska fast tak bete sig vid överskridande (blockera/varna)?
+
+---
+id: user-type-mottagen-faktura-hemagare
+status: todo
+priority: P2
+tags: [audit, budget, hemagare, ue]
+created: 2026-07-24
+---
+## Förstklassig mottagen-faktura/UE-kostnadspost för hemägare
+Audit-fynd #3 + strukturgrepp 2: invoices är byggarens UTGÅENDE modell; hemägare som anlitar extern firma har inget kostnadsobjekt (bara material/"eget inköp"), och subcontractor_cost är dold i hemägarens kolumnuppsättning. i18n har redan "Received invoices" utan datamodell. Symmetriskt kostnadsobjekt med egen paid_by/paid_at-semantik.
+
+---
+id: user-type-kundvy-persona-kontrakt
+status: todo
+priority: P1
+tags: [audit, kundvy, sakerhet, proffs]
+created: 2026-07-24
+---
+## Inbjuden kund ser råa flikar + ekonomiskydd hänger på feature-flagga
+Audit-fynd #5+#6 + strukturgrepp 4: client-personan mappas till homeowner och får view på Översikt/Arbeten/Ritning/Filer — Kundvyn är EN flik, inte den begränsade vyn. Och är isTeamV2MaskingEnabled av visar ReadOnlyBudgetView builderns kostnader för kunden. Fix: customer-safe-projektion i persona-kontraktet (oavsett flagga) + dedikerad Kundvy-shell; aktivera den döda isInvitedClient-grenen; lägg invited_client i RequireRole-typen.
+
+---
+id: user-type-smaerre-inkonsekvenser
+status: todo
+priority: P3
+tags: [audit, roller, moms]
+created: 2026-07-24
+---
+## Mindre roll-inkonsekvenser: is_professional-dubbelskrivning, paid_amount-semantik, moms per belopp, "Offert"-label
+Audit-fynd #7–#10: (a) is_professional skrivs parallellt i Profile/WelcomeModal — deprecatera som rollkälla; (b) paid_amount flippar betydelse mellan roller oetiketterat; (c) momsmärkning bara som tabell-fotnot — sätt ex/inc-moms per belopp; (d) hemägarens egna estimat rubriceras "Offert".
+
+---
+id: arbetar-lank-utan-utskick
+status: todo
+priority: P3
+tags: [ux, sharing, team, cowork-fynd]
+created: 2026-07-24
+---
+## Arbetar-delningslänk kan bara skapas genom att skicka inbjudan
+Cowork-fynd (varv 2): enda vägen till en arbetar-länk är Skicka jobb → Bjud in person med namn + telefon/e-post + "Skicka inbjudan" — det finns ingen "skapa/kopiera länk utan att skicka". Byggare som vill visa länken på plats, testa den själv, eller dela via annan kanal tvingas hitta på en mottagare. Fix: "Kopiera länk"-variant i steg 2 som genererar token utan utskick (samma återkallnings-flöde).
+
+---
+id: worker-post-gar-ej-radera
+status: todo
+priority: P3
+tags: [ux, team, cowork-fynd]
+created: 2026-07-24
+---
+## Återkallad arbetar-post kan inte tas bort ur teamlistan
+Cowork-fynd (varv 2): X-knappen återkallar åtkomsten men den inaktiva posten ligger kvar under Utgångna/Inaktiva för alltid — ingen radering finns i UI. Ofarligt (revoke-historik) men listan växer med varje testinbjudan/felskick. Fix: "Ta bort ur listan" på återkallade poster (behåll ev. audit-raden i DB).
+
+---
+id: vaggvy-enhet-imperial-i-gast
+status: todo
+priority: P3
+tags: [floorplanner, elevation, i18n, enheter]
+created: 2026-07-24
+---
+## Enhetsformat skiljer mellan plan (mm) och väggvy (m/ft)
+OMVÄRDERAD efter rotorsakning: väggvyn följer measurement-systemet (browser-locale: en-US → ft/tum, svenska → metriskt "2.50 m") — det jag såg som "imperial-bugg" var Playwrights en-US-locale, svenska användare får metriskt. Äkta kvarvarande skav: v2-PLANEN hårdkodar mm (formatWorldAsMm) och ignorerar både measurement-system och projectSettings.unit, så samma vägg visar "2 500 mm" på planen och "2.50 m" i väggvyn. Lågprio: branschen ritar i mm på plan; beslut behövs om väggvyn också ska visa mm (konsekvens) eller planen följa enhetsinställningen.
