@@ -23,6 +23,7 @@ import {
   ProjectRoomOption,
 } from './sync/roomTableSync';
 import { FloorMapShape, PolygonCoordinates } from '../types';
+import { enrichStoreShapesWithRoomData } from '../utils/roomSurfaceSync';
 
 const NAMING_STABILITY_MS = 1200;
 const ROOM_SYNC_DEBOUNCE_MS = 2500;
@@ -116,6 +117,9 @@ export const RoomNamingController = ({ isReadOnly }: RoomNamingControllerProps) 
       clearNeedsNaming(shape, { roomId: existingRoomId, name: roomName, color });
       const updated = useFloorMapStore.getState().shapes.find((s) => s.id === shape.id);
       if (updated) await updateRoomRow(updated);
+      // Pull the room's finishes (tint/pattern/wall colour) onto the shape
+      // right away — linking should bring the whole room, not just the name.
+      await enrichStoreShapesWithRoomData();
       toast.success(t('floormap.roomLinked', 'Rummet kopplades till "{{name}}"', { name: roomName }));
       return;
     }

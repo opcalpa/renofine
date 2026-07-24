@@ -211,6 +211,7 @@ export interface FloorMapShape {
   // Used to tint the room on the canvas as a finish instruction.
   surfaceTint?: string | null; // Floor-finish tint for the room area (floor plan)
   surfaceLabel?: string | null; // Floor finish text (e.g. "Ek", "Klinker")
+  surfacePattern?: string | null; // Floor pattern id (herringbone/plank/tileGrid/...), derived from floor_spec
   wallSurfaceColor?: string | null; // wall_spec.main_color — tints the wall face in elevation
 
   // Image-specific properties (for background images)

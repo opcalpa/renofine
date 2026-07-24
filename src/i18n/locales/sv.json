@@ -2060,7 +2060,8 @@
     "setStartingView": "Ställ in startvy",
     "clearStartingView": "Rensa startvy",
     "startingViewSaved": "Startvy sparad",
-    "startingViewCleared": "Startvy rensad — vyn anpassas automatiskt"
+    "startingViewCleared": "Startvy rensad — vyn anpassas automatiskt",
+    "showFloorPatterns": "Golvmönster"
   },
   "elevationInfo": {
     "rectangle": "Rektangel",

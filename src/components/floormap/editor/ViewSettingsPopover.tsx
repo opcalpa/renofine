@@ -44,8 +44,11 @@ export const ViewSettingsPopover = () => {
     toggleSnap,
     toggleDimensions,
     toggleAreaLabels,
+    toggleSurfacePatterns,
+    toggleObjectCategory,
     setUnit,
   } = useFloorMapStore();
+  const surfacesVisible = !projectSettings.hiddenObjectCategories.includes('surface');
 
   return (
     <Popover>
@@ -132,6 +135,30 @@ export const ViewSettingsPopover = () => {
               onCheckedChange={toggleAreaLabels}
             />
           </div>
+
+          <div className="flex items-center justify-between">
+            <Label htmlFor="v2-show-surfaces" className="text-sm font-normal">
+              {t('canvas.surfaceVisibility', 'Ytor & färg')}
+            </Label>
+            <Switch
+              id="v2-show-surfaces"
+              checked={surfacesVisible}
+              onCheckedChange={() => toggleObjectCategory('surface')}
+            />
+          </div>
+
+          {surfacesVisible && (
+            <div className="flex items-center justify-between">
+              <Label htmlFor="v2-show-patterns" className="text-sm font-normal">
+                {t('canvas.showFloorPatterns', 'Golvmönster')}
+              </Label>
+              <Switch
+                id="v2-show-patterns"
+                checked={projectSettings.showSurfacePatterns}
+                onCheckedChange={toggleSurfacePatterns}
+              />
+            </div>
+          )}
 
           <Separator />
 

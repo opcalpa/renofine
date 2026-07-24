@@ -24,7 +24,7 @@ import { ObjectShape, ObjectDefinition } from './objectLibraryDefinitions';
 import { getTemplateById, placeTemplateShapes, calculateBounds, DEFAULT_TEMPLATES } from './templateDefinitions';
 import { getTemplatePlanId } from './utils/objectTemplates';
 import { getUnifiedObjectById, UnifiedObjectDefinition, isObjectCategoryHidden } from './objectLibrary';
-import { resolveFloorTint } from './canvas/utils/floorMaterialColor';
+import { enrichShapesWithRoomData } from './utils/roomSurfaceSync';
 import { useTranslation } from 'react-i18next';
 
 // Canvas module imports
@@ -727,58 +727,11 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
     const loadShapes = async () => {
       const loadedShapes = await loadShapesForPlan(currentPlanId);
 
-      // Load room names from rooms table for room shapes
-      let finalShapes = loadedShapes;
-      const roomShapes = loadedShapes.filter(s => s.type === 'room' && s.roomId);
-      if (roomShapes.length > 0 && currentProjectId) {
-        try {
-          const roomIds = roomShapes.map(s => s.roomId).filter(Boolean);
-          const { data: rooms, error } = await supabase
-            .from('rooms')
-            .select('id, name, color, wall_spec, floor_spec')
-            .in('id', roomIds);
-
-          if (!error && rooms) {
-            // Map room names and colors to shapes
-            finalShapes = loadedShapes.map(shape => {
-              if (shape.type === 'room' && shape.roomId) {
-                const room = rooms.find(r => r.id === shape.roomId);
-                if (room) {
-                  // Helper to get darker color for stroke
-                  const getDarkerColor = (rgbaColor: string): string => {
-                    const match = rgbaColor?.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
-                    if (match) {
-                      const r = Math.floor(parseInt(match[1]) * 0.7);
-                      const g = Math.floor(parseInt(match[2]) * 0.7);
-                      const b = Math.floor(parseInt(match[3]) * 0.7);
-                      return `rgba(${r}, ${g}, ${b}, 0.8)`;
-                    }
-                    return rgbaColor || 'rgba(41, 91, 172, 0.8)';
-                  };
-
-                  // Surface finishes (E4): floor tint + label for the floor plan,
-                  // wall colour for the elevation. Merged onto the shape so both
-                  // views read them without a second fetch.
-                  const floorSpec = (room.floor_spec || {}) as { material?: string; skirting_color?: string };
-                  const wallSpec = (room.wall_spec || {}) as { main_color?: string };
-                  return {
-                    ...shape,
-                    name: room.name,
-                    color: room.color || shape.color || 'rgba(59, 130, 246, 0.2)',
-                    strokeColor: getDarkerColor(room.color || shape.color || 'rgba(59, 130, 246, 0.2)'),
-                    surfaceTint: resolveFloorTint(floorSpec.material, floorSpec.skirting_color),
-                    surfaceLabel: floorSpec.material || null,
-                    wallSurfaceColor: wallSpec.main_color || null,
-                  };
-                }
-              }
-              return shape;
-            });
-          }
-        } catch (error) {
-          console.error('Error loading room data:', error);
-        }
-      }
+      // Merge rooms-table data (name/colour/finishes) onto linked room shapes
+      // — shared engine with the v2 editor (roomSurfaceSync).
+      const finalShapes = currentProjectId
+        ? await enrichShapesWithRoomData(loadedShapes)
+        : loadedShapes;
 
       setShapes(finalShapes);
 

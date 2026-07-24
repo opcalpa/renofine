@@ -861,4 +861,50 @@ test.describe('Floor planner v2', () => {
     expect(result.anchored).toBe(true);
     expect(result.wallMaterial).toBe('Gips');
   });
+
+  test('floor finish pattern renders from shape data and toggles in view settings', async ({ page }) => {
+    await openDemoPlanner(page);
+    const canvas = page.getByTestId('editor-v2-canvas');
+    const box = (await canvas.boundingBox())!;
+    const click = async (x: number, y: number) => {
+      await page.mouse.move(box.x + x, box.y + y);
+      await page.mouse.down();
+      await page.mouse.up();
+    };
+
+    await page.keyboard.press('w');
+    await click(300, 300);
+    await click(600, 300);
+    await click(600, 500);
+    await click(300, 500);
+    await click(300, 300);
+    const dialog = page.getByRole('dialog');
+    if (await dialog.isVisible({ timeout: 1500 }).catch(() => false)) {
+      await dialog.getByRole('button', { name: 'Avbryt' }).click();
+    }
+
+    // Stamp a floor finish (what room enrichment resolves from floor_spec)
+    const stamped = await page.evaluate(() => {
+      const dbg = window.__rfEditorDebug! as unknown as {
+        getShapes: () => Array<{ id: string; type: string; surfacePattern?: string }>;
+        execute: (name: string, params: unknown) => unknown;
+      };
+      const room = dbg.getShapes().find((s) => s.type === 'room')!;
+      dbg.execute('shape.update', {
+        id: room.id,
+        updates: { surfaceTint: '#d8b98a', surfaceLabel: 'Ekparkett', surfacePattern: 'herringbone' },
+      });
+      return dbg.getShapes().find((s) => s.type === 'room')!.surfacePattern;
+    });
+    expect(stamped).toBe('herringbone');
+
+    // View settings: patterns toggle exists and flips off
+    await page.getByTestId('view-settings-trigger').click();
+    await page.locator('#v2-show-patterns').click();
+    await expect(page.locator('#v2-show-patterns')).toHaveAttribute('data-state', 'unchecked');
+
+    // Surfaces master toggle hides the pattern toggle entirely
+    await page.locator('#v2-show-surfaces').click();
+    await expect(page.locator('#v2-show-patterns')).toHaveCount(0);
+  });
 });

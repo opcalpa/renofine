@@ -2632,7 +2632,8 @@
     "setStartingView": "Set starting view",
     "clearStartingView": "Clear starting view",
     "startingViewSaved": "Starting view saved",
-    "startingViewCleared": "Starting view cleared — will auto-fit to content"
+    "startingViewCleared": "Starting view cleared — will auto-fit to content",
+    "showFloorPatterns": "Show floor patterns"
   },
   "elevationInfo": {
     "rectangle": "Rectangle",

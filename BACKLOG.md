@@ -13,6 +13,74 @@ Detaljplaner för många items bor i /Users/calpa/Developer/Renofine/.claude/mem
 - Behåll kärnan vass, ingen feature utan tydlig användarnytta
 
 ---
+id: scaffold-project-engine
+status: doing
+priority: P2
+tags: [arkitektur, agent, single-source, renaida]
+created: 2026-07-15
+---
+## 🏗️ En motor för projektskapande (single source of truth)
+
+Projekt-*skapande* är idag utspritt över ≥4 ställen som var för sig kör egna
+inserts: `intakeService.createProjectFromGuidedSetup` + inline-kod i
+`AIProjectImportModal`, `PlanningSmartImportDialog`, `QuoteReviewDialog`. Det
+bryter single-source-of-truth och blockerar att en agent (Renaida) kan styra
+projektskapande rent. Konsolidera till EN dokumenterad `scaffoldProject`-motor
+som wizarden, importörerna OCH framtida mapp-ingest/Renaida alla kallar.
+Self-explaining (returnerar skapade id:n + `decisions[]`). Prerekvisit för
+mapp-ingest-snabbstarten och agent-drivet projektskapande.
+
+Se stående riktning [[feedback_agent_readable_architecture]].
+
+**Steg (fasat, ett call site i taget = låg risk):**
+1. ✅ `src/services/scaffoldProject.ts` — motorn + normaliserat input-kontrakt
+   (superset: projekt-meta, rum m. dimensions, tasks m. kostnad/ROT, task- +
+   fristående material) + `existingProjectId` (täcker nytt OCH befintligt projekt).
+   Self-explaining `decisions[]`. (commits 0c47a56, 23d2ea4)
+2. ✅ `createProjectFromGuidedSetup` delegerar (behavior-preserving).
+3. ✅ `AIProjectImportModal` delegerar (commit 2d3bd0b) — VAT i callern, fil-länkning
+   via `taskIds`. Delta: bespoke plain-insert-fallback borttagen (getUser-refreshen
+   täcker stale-token-fallet). ✅ `PlanningSmartImportDialog` delegerar via
+   `existingProjectId` (commit 23d2ea4).
+4. ⛔ `QuoteReviewDialog` MEDVETET UTELÄMNAD — det är ett `purchase_orders`/
+   `external_quotes`-pengaflöde (inköps-domänen/PO-invarianten), inte projekt-
+   skaffoldning. Hör inte hemma i motorn.
+
+**⚠️ KVAR: inloggad E2E** av de tre migrerade vägarna (headless kunde jag bara
+build/typecheck-verifiera). Verifiera: (a) skapa projekt via onboarding-wizarden,
+(b) AI-import av dokument → nytt projekt, (c) PlanningSmartImport i befintligt
+projekt. Alla ska ge rum+arbeten+material som förr.
+
+---
+id: folder-ingest-quickstart
+status: todo
+priority: P2
+tags: [onboarding, agent, renaida, migrering, aktivering, distribution]
+created: 2026-07-15
+---
+## 📁 Mapp-in → färdigt projekt (migrerings-snabbstart)
+
+Släpp en projektmapp → deterministisk motor klassar filerna (kvitto/faktura →
+`import_purchase`, offert/scope → `process-document-v2` → rum+tasks, beskrivning
+→ `parse-renovation-description`-matris, foton → rum-taggade) → EN proposal-batch
+→ ConfirmDiff → luckor frågar Renaida om ("6 foton jag inte kunde placera — vilket
+rum?"). Låter en ny användare "kasta in allt" och känna Renofine utan att fylla i
+från noll — särskilt någon som migrerar från Excel/annat verktyg.
+
+**~80% finns redan:** mapp-gåendet (`BatchSmartUploadDialog.readDroppedItems`,
+`webkitGetAsEntry`, instängt som fil-arkiverare), extraktorerna, destinationen
+(envelope + ConfirmDiff + undo). Bygget: en delad `ingestProjectFolder`-motor +
+`scaffold-project-engine` (ovan) som destination.
+
+**Avgränsning (ärlig):** desktop-migrerings-/aktiverings-wedge för NÄSTA våg —
+EJ Taulant-nu (han är mobil-först, släpper ingen mapp från telefon). Ligger efter
+Tier 1-tillitsfixar + `agent-cost-guardrails` (renoveringsmapp är luddigare än en
+produktkatalog → lutar tyngre på betald LLM-extraktion). Bild-biblioteks-analog:
+släpp befintligt fotobibliotek → auto-taggat per rum/task (samma motor).
+
+Se [[feedback_agent_readable_architecture]] + [[project_agentic_strategy]].
+
+---
 id: iphone-rosttest
 status: todo
 priority: P1
@@ -96,20 +164,36 @@ Tunga dokument (rum+arbeten-matriser) ska INTE klämmas in som chattkort. Renaid
 
 ---
 id: renaida-role-gated-actions
-status: todo
+status: doing
 priority: P2
 tags: [renaida, agent, roller, arkitektur]
 created: 2026-07-09
+progress: 2026-07-12 — commit a8a8636. Router är rollmedveten (onboarding_user_type → prompt-gate + normalize-gate), open_feature-vägvisaren byggd (contractor "förbered en offert" → /quotes/new, navigerar utan DB-skrivning, aldrig auto-apply), mottagen offert = kostnad för båda roller (redan klart via upload-handoff). Eval 33/33 (nytt golden prepare-quote-open-feature + per-fall userType-stöd). agent-route deployad. KVAR = arbetar-Renaida, se eget kort renaida-worker-assistant.
 ---
 ## 🎭 Roll-gated action-katalog + Renaida som vägvisare
 Routern får onboarding_user_type i kontexten + action-vitlista per roll (samma princip som dual-view-gaten). Samma yttrande landar olika: "jag fick en offert" → hemägare: "ladda upp den så lägger jag in den"; byggare: "vill du att jag förbereder en offert?" (generate-quote-items finns, Renaida-väg saknas). Byggarflöden: skapa offert, förbereda faktura, ÄTA. Hemägarflöden: ta emot/scanna, planera mot egen budget. **+ Vägvisar-principen (Carl 2026-07-09): features som inte motiverar exekvering inne hos Renaida ska hon GUIDA till** — ny `open_feature`-action som öppnar rätt flik/dialog (gärna förifylld) via befintliga deep-links (?tab=&entityId=, open:-syntaxen); användaren kanske aldrig hittat featuren själv.
 
+**✅ BESLUT (Carl 2026-07-12):** Renaida gör det som är logiskt för rolltypen,
+frågar bara vid osäkerhet eller flera giltiga val.
+- **Mottagen offert/faktura = kostnad för BÅDE hemägare och byggare** → båda kan
+  ladda upp/scanna den som en kostnad (inte bara hemägare).
+- **Skapa offert = ENDAST byggare.** Renaida förbereder/utkastar dokument (offert,
+  faktura, ÄTA) så gott hon kan → ber om granskning → användaren **Sparar/Skickar
+  själv**. Aldrig auto-skick.
+- **Arbetare — skilj på typ:** instruktions-mottagaren (token/länk-baserad WorkerView,
+  ej fullt konto) får en **förenklad, förtydligad Renaida** med egen välkomstfras som
+  guidar "berätta vad du utfört / hur långt du kommit / ladda upp foto på arbetet".
+  Inbjuden projektmedlem (eget konto) ligger närmare full Renaida.
+- **Personlig kontext som växer över tid = FINNS REDAN** (`renaida_user_memory` /
+  wow-engine, Fas 0–3 live). Utöka den med roll + vokabulär + projektmönster per användare.
+
 ---
 id: rot-totalsemantik-beslut
-status: todo
+status: done
 priority: P2
 tags: [carl, produktbeslut, renaida, dokument]
 created: 2026-07-10
+done: 2026-07-12 — commit 5435390. PO lagrar netto (efter ROT) + nytt rot_amount-fält; budgetens ROT-kolumn matas av importerade köp (en gång per order) + footern summerar; kortet visar brutto→ROT→"Att betala efter ROT". Migration 20260712120000 applicerad på remote. Ej pushad ännu.
 ---
 ## 💰 ROT-totalsemantik på fakturaimport (Carls beslut)
 
@@ -119,6 +203,15 @@ kostnaden, inte kassaflödet. **Rekommendation:** extrahera brutto som total +
 visa "Att betala efter ROT: X kr" som separat rad i kortet och på ordern.
 Alternativ: behåll att-betala som total men labela tydligt (bryter mot
 moms/belopps-regeln "alla belopp labellade"). Säg vilket, så bygger Claude.
+
+**✅ BESLUT (Carl 2026-07-12):** Total = **EFTER ROT** (ROT sänker faktiskt
+användarens kostnad → budget/köporder ska spegla nettot man betalar). MEN:
+spara ALLTID brutto + nyttjat ROT-avdrag per order. Budgetvyn får en **egen
+ROT-avdrag-kolumn/summa** som visar totalt nyttjade avdrag.
+Bygg: extrahera brutto + avdrag + netto; `purchase_orders.total` = netto;
+ny/återanvänd `rot_deduction`-kolumn på purchase_orders (`invoices` har redan
+`total_rot_deduction`); budgetvyn aggregerar summa avdrag i egen kolumn.
+Liten migration krävs om PO saknar rot-kolumn.
 
 ---
 id: wizard-proffs-test
@@ -392,8 +485,14 @@ med bilder, kvitton och anteckningar" = ordagrant problemet D1/D2-kvittoskanning
 han VILL påverka/investera). **Svarsutkast klart 2026-07-10** (Excel-kroken + kvittoskanningen,
 ärligt webbapp-först-svar på App Store, kort vision + förslag om videocall för
 investerarsamtalet): scratchpad `taulant-svar-excel-appstore-vision.txt`, på urklipp.
-**Nästa:** Carl skickar svaret → Taulant testar (PROD har nu D1+D2+ångra-paketet live) →
-PostHog-ritualen ovan → videocall om visionen/investering.
+**2026-07-11 ~11:49 — Carl SKICKADE svaret.** Excel-kroken + kvittoskanningen, ärligt
+webbapp-först på App Store, vision (EN plats, prata med den som smartaste kollegan, mål:
+majoriteten av bygg/renovering via Renofine). **Investerar-vinkeln:** öppnade mjukt för
+samtal/video ("går alltid att boka in ifall du skulle vilja") + ställde nyfiken motfråga
+tillbaka (vill han själv vara med, eller mest nyfiken på affären — intent-skillnaden ej
+100% klar än). Låg tröskel, ingen press, bollen medvetet hos Taulant.
+**Nästa:** Taulant testar mobilen (PROD har D1+D2+D3+ångra-paketet live) → **PostHog-ritualen
+ovan samma kväll han testar** → ev. videocall om vision/investering när HAN initierar.
 
 ---
 id: agent-mode-additive-flag
@@ -412,10 +511,11 @@ befintligt beteende.
 
 ---
 id: agent-cost-guardrails
-status: todo
+status: parked
 priority: P1
 tags: [cost, ai, safety, agent-ui]
 created: 2026-06-26
+updated: 2026-07-16 — PARKERAT (Carls beslut). Vid ~1 medveten betatestare finns ingen akut kostnadsbrand; server-side nyckel + billig mini-modell är enda skyddet idag och det räcker för nu. Återuppta FÖRE arbetar-Renaida (renaida-worker-assistant) eller bredare utrullning — då blir rate-limit/kvot/access-koll (infran finns i parse-renovation-description) nödvändig.
 ---
 ## Kostnadsgrindar för agentflödet
 Bunden deterministisk pipeline (fasta, räknebara steg — ej autonom loop). Behåll
@@ -841,3 +941,476 @@ updated: 2026-06-17
 ## Deploya edge functions (localhost:5002 CORS)
 29 funktioner fick localhost:5002 i CORS-listan. Deployade alla via supabase functions deploy,
 verifierat CORS reflekterar både ny origin + prod. Prod oförändrat.
+
+---
+id: prod-readiness-hardening
+status: todo
+priority: P2
+tags: [hardening, pre-launch, legal, testing, infra]
+created: 2026-07-11
+---
+## 🧪 Pre-launch hardening (parkerad epic — plocka vid ~10+ riktiga användare)
+
+Från prod-readiness-granskning 2026-07-11 (Adams skill, 12 dim, **4.9/10**). Full karta +
+file:line i Claudes minne `project_prod_readiness_review.md`. **Medvetet beslut:** vid ~1 äkta
+extern användare är detta fel fokus (distribution är flaskhalsen). Görs INTE nu — detta är
+kartan för när riktiga användare finns / faktisk launch närmar sig.
+
+**✅ GJORT nu (build-breakern — enda som var akut):** JSX-kommentar mellan attributen på
+`<QuoteReviewDialog>` (`ProjectFilesTab.tsx:1761`) föll `tsc` på TS1005 → `npm run build`/deploy
+failade. Var troligen "CF-bygget hänger"-gåtan i session 56. Fixad, `typecheck:strict` grön.
+⚠️ Kräver `git push` för att nå Cloudflare.
+
+**Top quick-win kvar (billig anständighet, ~5 min):** maska session-replay — Sentry
+`maskAllText/blockAllMedia:true` (`main.tsx:16-17`) + PostHog `text:true` (`analytics.ts:141`).
+Spelar just nu in Taulants skärm omaskad → 2 tredjeparter.
+
+### Legal/GDPR (launch-blockers innan bredare release)
+- Consent-gate före Sentry+PostHog (idag laddar de vid start utan opt-in). OBS: lägger friktion i
+  onboarding → först när man faktiskt launchar, ej under Taulant-test.
+- Deletion/erasure-flöde (finns inte; policyn PÅSTÅR att det går = falskt).
+- Privacy-policy-rewrite: personuppgiftsansvarig, namngivna underbiträden (OpenAI/Anthropic/DeepL/
+  Resend/PostHog/Sentry), laglig grund, AI-processing-disclosure. "Senast uppdaterad" = `new Date()`.
+
+### Dependencies (26 vulns: 2 critical/5 high) — `npm audit fix` klarar det mesta
+- `jspdf@4.2.0` critical CVE på PDF-export. Droppa död `fabric`-dep (+ oanvänd `emptyState.ts`).
+
+### Infra / testing
+- CI saknas (`.github/workflows` tomt). Lägg vitest + workflow (typecheck→lint→evals --no-judge→Playwright).
+- Money-applier (`applyProposals.ts`) + RLS (owner+shared) otestade. 12 test-briefs i minnesfilen.
+- `VITE_PINTEREST_CLIENT_SECRET` i browser-bundlen → flytta till edge-fn + rotera.
+- `.env.example` saknas. Ingen dev/prod-separation (lokal dev skriver mot prod-DB). README dokumenterar fel host.
+
+### Data integrity (money)
+- Wrappa money-multi-writes i Postgres-RPC/transaktion. UNIQUE på invoice_number (dubbelimport-skydd).
+  Non-negative CHECK på money-kolumner. Undo rapporterar success även vid partiellt fel.
+
+### Perf / error handling / API (lägst urgens)
+- Bundle: route-split + manualChunks (rör Taulants mobiltest). N+1 `MaterialsList.tsx:204`. `.limit()` på
+  obundna listor. Retry/backoff på LLM-anrop. `_shared/`-modul (CORS kopierad 33×). Sentry `release`+`setUser`.
+  `ProjectDetail.tsx:969` blank vit skärm vid load-fail. Landing-SEO (meta/OG absoluta URL:er).
+
+---
+id: task-description-primary
+status: done
+priority: P2
+tags: [carl, ux, arbetskort, produktbeslut]
+created: 2026-07-12
+done: 2026-07-12 — commit c773014. Beskrivningen alltid synlig överst på Översikt-fliken, interna anteckningar egen sektion under checklistorna (toggle-växeln borttagen). Ej pushad ännu.
+---
+## 📝 Arbetsbeskrivningen ska premieras — separera interna anteckningar
+
+**✅ BESLUT (Carl 2026-07-12):** Beskrivningen ska visas i FÖRSTA hand (alltid synlig,
+inte gömd bakom en växel). Interna anteckningar separeras till en egen yta — annars
+missar folk beskrivningen. Idag (session 53) bor båda i en toggle-växel på Översikt.
+Bygg: beskrivningen alltid synlig/primär på arbetskortet; flytta interna anteckningar
+till egen sektion så de inte konkurrerar med eller döljer beskrivningen.
+
+---
+id: renaida-worker-assistant
+status: todo
+priority: P2
+tags: [renaida, agent, arbetare, worker, säkerhet]
+created: 2026-07-12
+---
+## 👷 Förenklad arbetar-Renaida (token-baserad, eget bygge)
+
+Carls beslut 2026-07-12 (del (e) av roll-gating): arbetare som bara får instruktioner
+skickade till sig (token/länk-baserad WorkerView, INGET eget konto) ska kunna använda
+en **förenklad, förtydligad Renaida** — egen välkomstfras, guidar "berätta vad du utfört /
+hur långt du kommit / ladda upp foto på arbetet".
+
+**Varför eget bygge (inte del av router-passet):** WorkerView har noll Renaida idag, och
+arbetare autentiseras med share-token, inte JWT — agent-route/help-bot kräver JWT-header,
+så INGEN av dem kan återanvändas rakt av. Kräver: ny/forkad edge-funktion med token-auth
+(säkerhetskänsligt: rate-limit, scope till projektet/uppgifterna arbetaren fått), ny UI-
+komponent i WorkerView, egen enkel prompt. Inbjuden projektmedlem (eget konto) ligger
+närmare full Renaida — separat nivå.
+
+Beror på: kostnadsgrindar (agent-cost-guardrails) bör finnas först, eftersom detta öppnar
+LLM-anrop för en oautentiserad-ish yta.
+
+---
+id: ci-eval-gate
+status: todo
+priority: P2
+tags: [agent-proposed, sil-förslag, ai, evals, ci, safety]
+created: 2026-07-17
+---
+## 🤖 CI-eval-grind — kör golden-suiterna automatiskt på PR (regressionsbarriär)
+
+**Agent-förslag (SIL) — triageras av Carl.** Idag körs alla 4 golden-set manuellt
+lokalt (`node evals/run-*.mjs` med lokalt exporterade nycklar, se `evals/README.md`).
+`.github/` innehåller bara en `.DS_Store` — inga workflows. Router-scorers straffar
+redan "confident mutation on ambiguous/unmatched work" (`evals/lib/router-scorers.mjs`
+:100-126) men värdet realiseras bara om en människa minns att köra det före deploy.
+
+Utan grind har även de täckta motorerna (router, translate, checklist, extraktion)
+inget automatiskt skydd mot att en prompt-edit eller modellbyte regresserar dem vid
+deploy — evalerna blir dokumentation istället för guardrail. **Detta är den billigaste
+höghävstångs-fixen och den låser upp värdet i alla eval-förslagen nedan** (ett nytt
+golden-set skyddar bara mot drift om det körs automatiskt).
+
+**Fix:** GitHub Action som kör sviten på PR:er som rör `supabase/functions/**` eller
+`evals/**`, med per-scorer-trösklar som failar bygget, nycklar som repo-secrets.
+Kör `--no-judge`-läget som snabb gate + judge-läget nightly om kostnad oroar.
+
+Relaterat: `prod-readiness-hardening` nämner CI brett (vitest+workflow) i en parkerad
+epic — detta är den fokuserade eval-gate-biten som är värd att lyfta ut och göra först.
+
+---
+id: eval-financial-extraction
+status: todo
+priority: P2
+tags: [agent-proposed, sil-förslag, ai, evals, extraktion, pengar]
+created: 2026-07-17
+---
+## 🤖 Golden-set för finansiell dokument-extraktion (process-document-v2 är omätt)
+
+**Agent-förslag (SIL) — triageras av Carl.** Detta är exakt den "nästa eval som rör
+användare" som `translate-domain-vs-commodity-eval` pekade ut (*"AI-extraktion — idag
+omätt, fel där korrumperar projekt tyst"*). `supabase/functions/process-document-v2/
+index.ts` extraherar `total_amount`, `vat_amount`, `ocr_number`, `rot_amount` och
+`rot_personnummer` via Anthropic vision (index.ts:345/427) → matar `import_purchase`
+som skriver pengar. `evals/dataset/` har INGET golden-set för något dokument/kvitto/
+faktura. `confidence`-fältet som gatar autopilot är modell-självrapporterat och
+defaultat (`numOrNull(raw.confidence) ?? 0.5` index.ts:399, hårdkodat 0.9 på flera
+grenar ~471/504/532) — aldrig kalibrerat mot facit.
+
+**Risken:** en prompt-tweak eller Anthropic-modellbump kan börja läsa fel total (8→3)
+eller ta fel OCR/betalreferens, och inget i koden fångar det — siffran blir en
+leverantörsbetalning. Renaida tvingar människa-bekräftelse för `import_purchase`
+(Renaida.tsx:44-47), men det skyddar bara *skrivningen*, inte korrektheten i siffrorna
+människan ankras mot.
+
+**Fix:** golden-set med 15–20 riktiga SE-kvitton/fakturor med kända belopp/OCR/ROT +
+exact-match-scorers på pengafälten (`evals/lib`-stil) + wire in i run-script + CI-gaten
+ovan så belopp/OCR-träffsäkerhet blir ett spårat tal över tid. Kompletterar
+per-fält-konfidens-förslaget nedan (evalen mäter, konfidensen surfar osäkerheten).
+
+---
+id: eval-generate-quote-items
+status: todo
+priority: P2
+tags: [agent-proposed, sil-förslag, ai, evals, offert]
+created: 2026-07-17
+---
+## 🤖 generate-quote-items: eval + per-rad-konfidens + frys upp 2024-priserna
+
+**Agent-förslag (SIL) — triageras av Carl.** `supabase/functions/generate-quote-items/
+index.ts` (gpt-4o-mini, temp 0.3) har en SYSTEM_PROMPT som **hårdkodar prisintervall
+uttryckligen märkta "2024"** (t.ex. "Hantverkararbete: 450-650 kr/tim", "Kakel/klinker:
+800-1500 kr/m2"). Funktionen returnerar **inget confidence-fält alls** (grep 'confidence'
+→ 0 träffar), till skillnad från övriga extraktorer, och saknar eval-dataset. Output
+flödar in i QuoteReviewDialog + `src/pages/contractor/CreateQuote*.tsx` och skickas till
+kund som riktiga, pengabärande offerter.
+
+Två tysta drift-problem sammanfaller: (1) prisreferensen är fryst vid 2024 inuti prompten
+utan ägare → blir gammal, (2) utan per-rad-konfidens har granskaren i QuoteReviewDialog
+ingen låg-tillit-flagga att fokusera på (ConfidenceIndicator finns där för andra flöden
+men denna funktion matar den inget) → granskning degraderar till att rubber-stampa
+AI-siffror.
+
+**Fix:** returnera per-rad-konfidens, lägg golden-set som poängsätter kategori-etikett-
+korrekthet + pris-inom-rimligt-band, och flytta pristabellen UT ur prompten till en
+underhållen config som kan uppdateras utan att röra modellanropet.
+
+---
+id: eval-help-bot-rag-grounding
+status: todo
+priority: P3
+tags: [agent-proposed, sil-förslag, ai, moat, safety, evals]
+created: 2026-07-17
+---
+## 🤖 RAG-grunda checklista + expertsvar i svenska byggnormer (Säker Vatten/GVK/BBV/AMA/BBR)
+
+**Agent-förslag (SIL) — triageras av Carl.** Kompletterar `checklist-engine-quality`
+(P1, judge 2.75/5, tätskikt EJ före kakel, saknad acklimatisering/grundning) vars
+föreslagna fix är prompt-härdning + few-shot. Prompt-tweaks ensamt fixar inte
+säkerhetskritisk sekvensering pålitligt — det gängse mönstret för domän-säkerhet är
+retrieval-grundad generering mot auktoritativa källdokument så modellen citerar en
+riktig norm istället för att minnas en. Sverige har kanoniska källor för exakt de
+felklasser som setts: Säker Vatten / GVK / BBV (Byggkeramikrådets branschregler för
+våtrum/tätskikt-före-kakel), AMA Hus, Boverkets byggregler.
+
+Samma grind gäller `help-bot` (`supabase/functions/help-bot/index.ts`): svarar som
+"tailored construction expert" och slår fast hårda säkerhetsordningar ur modellens eget
+minne ("tätskikt i våtrum (KRAV före ytskikt)", index.ts:166); generiska svar cachas
+(index.ts:267-277) → en hallucinerad säkerhetsklaim serveras om till många. Appens
+ursprungsberättelse är en hantverkare som använde fel färg — dålig ordnings-/tätskikts-
+rådgivning är precis den ansvarsrisk produkten finns för att förhindra.
+
+**Fix:** chunk+embed normerna i ett litet retrieval-lager som grundar
+`generate-work-checklist` OCH help-bots expertsvar; hämtade norm-snuttar höjer korrekthet
+OCH ger en citerbar tillitssignal (differentiator vs naiv LLM). Lägg golden Q&A-set med
+LLM-as-judge som poängsätter faktiska/säkerhetsordnings-klaim (speglar den stränga
+granskaren i `evals/run.mjs`). Stärker direkt rum↔arbetsmoment-strukturen Taulant
+validerade som vallgraven.
+
+---
+id: corrections-as-evals-flywheel
+status: todo
+priority: P3
+tags: [agent-proposed, sil-förslag, evals, observability, renaida]
+created: 2026-07-17
+---
+## 🤖 Rättelser-som-evals-svänghjul — auto-utvinn corrected/dismissed till regressions-set
+
+**Agent-förslag (SIL) — triageras av Carl.** Renofine emitterar redan
+`renaida_proposed/applied/corrected/dismissed` till PostHog och instrumenterar
+AI-anrop mot aidev-admin, men inget sluter loopen: varje mänsklig rättelse/avfärdande
+är ett labelat fel-fall som idag bara avdunstar. Det breda, etablerade mönstret
+(LangSmith annotation queues, Braintrust, OpenAI "evals from logs", Anthropics
+"bygg evals från riktiga fel") är att befordra produktions-traces där människan
+överröstade agenten till golden eval-fall automatiskt.
+
+Detta är en distributions-/moat-multiplikator vid ~1–10 riktiga användare: Taulants
+rättelser blir bokstavligen testsviten som stoppar regressioner på exakt hans flöden.
+
+**Konkret:** ett veckojobb läser corrected/dismissed-traces (input + modellförslag +
+människans slutvärde), dedupar, och appenderar kandidat-fall till `evals/dataset/*.json`
+för att Carl ska acceptera/förkasta → matar den befintliga `run.mjs`/`run-checklist.mjs`-
+harnessen + CI-eval-gaten ovan. Distinkt från de handskrivna sviterna och från den
+parkerade `ai-verification-pass`.
+
+---
+id: confidence-in-confirmdiff
+status: todo
+priority: P3
+tags: [agent-proposed, sil-förslag, hitl, data-integritet, renaida]
+created: 2026-07-17
+---
+## 🤖 Per-fält-konfidens synlig i ConfirmDiff (kalibrerad osäkerhet som gransknings-nudge)
+
+**Agent-förslag (SIL) — triageras av Carl.** Backloggens egen notering är att
+extraktionsfel "korrumperar projekt tyst" — och pengaflöden (kvitton/fakturor → PO +
+budget) är precis där ett fel belopp/leverantör gör bestående tyst skada. Det moderna
+HITL-mönstret är inte bara "bekräfta allt" (som tränar användare att rubber-stampa)
+utan selektiv prediktion: modellen returnerar per-fält-konfidens och gransknings-UI:t
+flaggar visuellt bara låg-konfidens-fälten (belopp tvetydigt, leverantör gissad, ROT
+härledd) så människans uppmärksamhet landar där den behövs.
+
+Billig self-consistency (sampla extraktionen 2–3× — oenighet = låg konfidens) eller be
+modellen självskatta per fält funkar utan en tung andra-modell. Uppgraderar befintliga
+ConfirmDiff/hallucination-vakten (`renaida-doc-d1/d2`, vendor/summa/radantal/ROT) från
+binär (läsbar/0kr) till graderad, behåller Carls "bekräfta alltid pengar"-regel intakt,
+och minskar tyst korruption — en Tier-1-tillitsfråga. Distinkt från P4-generiska
+`ai-verification-pass`: detta är osäkerhet gjord synlig i diffen, inte ett dolt extra-anrop.
+
+---
+id: email-delivery-silent-failure
+status: todo
+priority: P2
+tags: [agent-proposed, sil-förslag, bugfix, observability, felhantering]
+created: 2026-07-17
+---
+## 🤖 Offert-/faktura-mejl failar tyst men returnerar success (+ noll Sentry-capture)
+
+**Agent-förslag (SIL) — triageras av Carl.** `src/services/quoteService.ts:358-367`
+skickar offert-mejlet via `await supabase.functions.invoke('send-quote-email', ...)` i
+en try/catch som bara `console.error`ar + kommenterar `// Don't fail`, sedan
+`return true`. supabase-js `functions.invoke` **kastar inte** på icke-2xx edge-svar — det
+returnerar `{ data, error }` — så try/catch fångar bara nätverkskast, medan det faktiska
+felläget (edge-funktion 500) returneras i ett okontrollerat `error` och sväljs helt.
+Samma mönster i `invoiceService.ts:457` (send-invoice-email). Inkonsekvent mot 11 andra
+`functions.invoke`-anropsställen som korrekt destrukturerar `{ data, error }`
+(smartUploadService, receiptAnalysisService, agent/routeClient m.fl.).
+
+Förvärrande: `@sentry/react` är initialiserat (`main.tsx`) och wrappar en ErrorBoundary,
+men `captureException` anropas **0 gånger** i `src`, och `vite.config.ts` har ingen
+`drop_console`/terser-config — så de 394 console-satserna är ENDA spåret av dessa fel,
+och de finns bara i användarens webbläsarkonsol, inte i Sentry.
+
+**Effekt:** en hantverkare får veta att offerten/fakturan skickades när mejlet tyst
+misslyckades — en affärskritisk, kundvänd handling som failar osynligt utan server-side-
+eller Sentry-spår att diagnosticera med. **Fix:** kontrollera `error` från invoke,
+returnera faktiskt utfall, och `captureException` på failväg.
+
+---
+id: dead-code-v1-quote-pages
+status: todo
+priority: P3
+tags: [agent-proposed, sil-förslag, cleanup, dead-code, bundle]
+created: 2026-07-17
+---
+## 🤖 Två fullstora V1-offertsidor (2 248 rader) är död kod — bakom hårdkodat `= true`, ändå bundlade
+
+**Agent-förslag (SIL) — triageras av Carl.** `src/App.tsx:33-34` deklarerar
+`const USE_QUOTE_VIEW_V2 = true;` och `const USE_QUOTE_CREATE_V2 = true;` (vanliga
+konstanter, inte runtime-flaggor). App.tsx:125,129 använder dem bara som
+`flag ? <V2/> : <V1/>`, så `CreateQuote` (`src/pages/contractor/CreateQuote.tsx`, 1218
+rader) och `ViewQuote` (`src/pages/ViewQuote.tsx`, 1030 rader) renderas aldrig. Båda är
+**statiska** imports (App.tsx:27,29) — bara 4 av 27 sid-imports är lazy — så de landar i
+huvud-JS-bundlen varje användare laddar, och `build` kör `typecheck:strict` över dem.
+V1-filerna är orörda sedan 2026-04-28 / 2026-05-08 medan V2 fortsätter utvecklas (commits
+2d3bd0b, 23d2ea4) → de ruttnar ur synk.
+
+2 248 rader onåbar kod som ändå bundlas, typkollas och dyker upp i varje grep/refactor,
+vilseleder alla som läser offert-flödet och blåser upp bundlen. Eftersom toggeln är en
+kompileringstids-literal kan fallbacken ändå aldrig avfyras i prod. **Fix:** ta bort V1-
+filerna + toggeln, eller (om de vill behålla dem) lazy-importera. Bör synka mot
+`scaffold-project-engine`s medvetna QuoteReviewDialog-avgränsning så inget levande rörs.
+
+---
+id: guest-migration-skip-dataloss
+status: todo
+priority: P2
+tags: [agent-proposed, sil-förslag, bugfix, aktivering, konvertering, dataförlust]
+created: 2026-07-17
+---
+## 🤖 "Skip" i gäst→konto-migreringen raderar tyst och permanent arbetet användaren just byggt
+
+**Agent-förslag (SIL) — triageras av Carl.** `src/components/guest/GuestMigrationDialog.tsx`
+`handleSkip` (rad 110-116) kallar `clearAllGuestData()`; den funktionen
+(`src/services/guestStorageService.ts:311-322`) gör `localStorage.removeItem` på varje
+`renofine_guest_*`-nyckel — ingen bekräftelse, ingen ångra. Triggas från
+`src/pages/Auth.tsx` `handleSignIn` (rad 199) i exakt ögonblicket en gäst loggar in på ett
+konto.
+
+Detta är det enda konverteringsögonblicket där en betatestare gör sitt lokala trial till
+ett riktigt konto, och det är en dataförlust-footgun. Knappen läser "Skip"
+(`t('guest.skip','Skip')`) vilket en användare tolkar som "hoppa över dialogen / gör det
+sen", men den förstör varje lokalt byggt projekt, rum, arbete och planritning direkt.
+Den som avfärdar dialogen för att "ta det senare" förlorar exakt det arbete som motiverade
+dem att skapa konto — värsta möjliga första intryck på betalvägen.
+
+**Fix:** gör sekundär-handlingen icke-destruktiv — döp om till "Inte nu" och stäng bara
+(`onOpenChange(false)`); säkerhetsnätet på `/start` erbjuder migreringen igen och
+`hasGuestProjectsToMigrate` överlever medvetet `exitGuestMode`. Radera data bara bakom en
+explicit, separat märkt "Radera mina lokala projekt"-bekräftelse.
+
+---
+id: define-activation-event
+status: todo
+priority: P2
+tags: [agent-proposed, sil-förslag, aktivering, analytics, growth]
+created: 2026-07-17
+---
+## 🤖 Definiera + instrumentera ETT explicit aktiverings-event NU (före FB-distribution)
+
+**Agent-förslag (SIL) — triageras av Carl.** Renofine spårar rika event
+(`renaida_proposed/applied/corrected/dismissed`, signup→projekt-tratten per
+`taulant-bara-lead`) och tittar på session recordings, men det finns **inget enda
+definierat "aktivering nådd"-event/kohort**. Norrstjärnan är kvalitativ ("sparar det
+TID"). Mönster: Reforge/Amplitude North Star + Setup→Aha→Habit-ramverk — välj en mätbar
+värde-milstolpe och gör den till en tratt+kohort.
+
+**Konkret:** avfyra `activation_reached` när ett projekt först korsar en värde-tröskel i
+första sessionen / 7 dagarna (t.ex. första Renaida-förslag APPLIED, eller första kvitto
+skannat, eller första arbete markerat klart). Detta är några rader givet att eventen redan
+finns (`analytics.ts` är wire:ad), och det gör `fb-grupper-outreach`-vågen (mål: 20–30
+testare) mätbar från dag ett istället för att retro-fittas efter att trafiken är borta.
+Billigt nu, ovärderligt i det ögonblick distributionen startar.
+
+---
+id: diy-sketch-vision
+status: todo
+priority: P2
+tags: [floorplanner, diy, homeowner, vision]
+created: 2026-07-23
+---
+## DIY-skissverktyget — "Paint med riktiga mått" (Carls vision, epic)
+Carls ord: space plannern ska bli ett kul och enkelt verktyg för hemägare som vill skissa DIY-lösningar, skräddarsydda möbler och installationer — kasta ut idéer lika enkelt som i Google Slides/Paint, men skalenligt mot din faktiska hemmiljö så du ser hur måtten lirar.
+FÖRSTA SKIVAN LEVERERAD 2026-07-23: "Eget objekt" (custom_box) i objektpanelen — gul skiss-box som placeras/dras in, namn + B×D mm redigeras i selektionsverktygsraden, måtten ritas PÅ objektet. /Users/calpa/Developer/Renofine/src/components/floormap/objectLibrary/definitions/custom.ts
+KVAR I EPICEN: (a) rita-till-storlek (dra upp boxen som RoomRectTool, live-mått), (b) höjd-fält + väggvy-etikett, (c) flera former (L-form, cirkel, hylla), (d) frihandsskiss-läge ovanpå planen, (e) dela/exportera skissen som bild med måttsättning, (f) ev. koppling till material/kapnotor ("så många meter regel behöver du").
+
+---
+id: task-room-unlink-saknas
+status: todo
+priority: P2
+tags: [ux, rooms, tasks, cowork-fynd]
+created: 2026-07-23
+---
+## Arbete↔rum-koppling går att skapa men inte ta bort i UI
+Cowork-fynd (rapport-floorplanner-v2-spegling): Rumsdetaljers Relaterat har Link-knapp för att koppla arbete till rum, men INGEN unlink/ta bort-kontroll någonstans (varken rummets eller arbetets sida). Kopplingen blir permanent via UI. Residual i Carls demo: "Måla hall" är nu länkat till Hall (var inte det före testet) och kan inte avlänkas.
+Fix: unlink-kontroll (hover-X eller meny) på båda sidor + bekräftelse.
+
+---
+id: room-area-stale-efter-geometri-radering
+status: todo
+priority: P3
+tags: [floorplanner, rooms, data-integrity, cowork-fynd]
+created: 2026-07-23
+---
+## Rumsmått ligger kvar när ritgeometrin raderas (stale area)
+Cowork-fynd: rita rum → binds till rumsentitet → area/omkrets/volym synkas till rooms-raden. Raderas geometrin från planen ligger måtten KVAR på entiteten (Hall visar nu 14,9 m² från en tillfällig testrektangel). Beslut behövs: nollställa mått vid geometri-radering, markera som "senast uppmätt", eller behåll medvetet. Residual: Halls mått i Carls demo speglar testgeometrin (YTA 14,9 / OMKRETS 15,80 / VOLYM 38,7) — Carl får återställa om orignalvärden fanns.
+
+---
+id: url-subtab-tappas-vid-reload
+status: todo
+priority: P3
+tags: [floorplanner, deep-links, cowork-fynd]
+created: 2026-07-23
+---
+## Hård reload nollställer &subtab=floorplan → landar i Rumshantering
+Cowork-fynd: `?tab=spaceplanner&subtab=floorplan&editor=v2` överlever inte reload — tab-synken strippar subtab-parametern (samma familj som editor=v2-strippningen, fixad via localStorage-konsumtion i 7ff1981). v2-flaggan bevaras men användaren måste navigera till Planer igen. Fix: konsumera/återställ subtab likadant.
+
+---
+id: demo-seed-ritade-rum
+status: todo
+priority: P3
+tags: [demo, floorplanner, testbarhet]
+created: 2026-07-23
+---
+## Seeda demon med ritade rum på planritningen
+Cowork-fynd: demons Floor Plan 1 är tom — rummen finns bara som entiteter i Rumshantering, inte ritade på planen. Alla flöden som utgår från ritade rum (objektplacering, väggvy, spegling) kräver att testaren först ritar+binder ett rum. Utöka seed_demo_content() med en enkel ritad lägenhetsplan kopplad till rumsentiteterna — hjälper både testloopen och nya användares första intryck av ritvyn.
+
+---
+id: elevation-oppningar-text
+status: todo
+priority: P2
+tags: [floorplanner, elevation, paritet]
+created: 2026-07-23
+---
+## Väggvyn: öppningar + text ritbara direkt i elevation
+Kvarvarande paritetsblock: öppningar (dörr/fönster) och textanteckningar kan idag bara läggas från planritningen. Väggvyns v2-rail (Välj/Objekt/Mät) ska växa med Öppning + Text när elevation-stödet byggs; även ytor/färg-kvalitet och auto-måttkedjor i väggvyn hör hit.
+
+---
+id: objekt-kantsnap-avstandsguider
+status: todo
+priority: P3
+tags: [floorplanner, objekt, snapping]
+created: 2026-07-23
+---
+## Objekt-till-objekt-kantsnap med avståndsguider
+Fas 4-rest (SmartDraw-mönstret): när ett objekt dras nära ett annat ska kanterna snäppa och blå avståndsguider visas (avstånd till grannobjekt/vägg). Även "liknande objekt"-swap och favoriter i objektpanelen hör till fas 4-resten.
+
+---
+id: ytskikt-monster-p1
+status: doing
+priority: P1
+tags: [floorplanner, ytskikt, homeowner-wow]
+created: 2026-07-24
+---
+## Ytskikt P1: golvmönster + ytor/mönster-toggles + enhetlig ytskikts-vokabulär
+Carls beslut 2026-07-24 ("kör på detta 3"). Golvmönster-tiles (fiskbens, rak parkett, klinker, storformat, betong) härledda ur floor_spec.material, renderade på planens rum (Konva fillPattern) + samma tiles i arbetarens SVG-vy. Visning-popovern (v2) får "Ytor & färg" (portas från v1) + "Mönster"-toggle. Gemensam SurfaceSpecFields-komponent (material+behandling+kulör) som första steg mot EN ytskikts-vokabulär över floor/wall/ceiling/joinery-spec (agent-läsbart: en action-typ för Renaida).
+
+---
+id: ytskikt-monster-p2
+status: todo
+priority: P2
+tags: [floorplanner, ytskikt, elevation]
+created: 2026-07-24
+---
+## Ytskikt P2: kakel/mönster i väggvyn + per-objekt-finish + färgkod-chips + templates i v2
+Kakelmönster på våtrumsväggar i väggvyn (samma tile-bibliotek). Per placerat objekt: kulör/material-fält (metadata.finishColor) synligt i etikett/tooltip + speglat till room_items → arbetarvyn ("Skåpstommen vit, luckor NCS S 3005-G80Y"). Färgkod-etiketter togglebara på ytorna. Rums-templates (groupId-systemet finns) framlyfta i v2-objektpanelen.
+
+---
+id: ytskikt-monster-p3-diy2
+status: todo
+priority: P3
+tags: [floorplanner, diy, ytskikt]
+created: 2026-07-24
+---
+## Ytskikt P3 / DIY-skiva 2: fria former + gruppering till eget objekt + takdata till arbetare
+Rita linjer/cirklar/rektanglar i v2 → markera → "Gruppera som eget objekt" (groupId/isGroupLeader finns i typerna) → gruppen får namn + mått som enhet. Takvisualisering lågprio; säkerställ att ceiling_spec presenteras i arbetar-instruktionerna.
+
+---
+id: plattforms-audit-anvandartyper
+status: doing
+priority: P1
+tags: [ux, roles, audit, byggare, hemagare]
+created: 2026-07-24
+---
+## Plattforms-audit: är projektledning logisk per användartyp?
+Carls fråga 2026-07-24: verifiera hela plattformen utifrån de tre perspektiven — (a) BYGGARE som startar/projektleder eget projekt: offerter, fakturor, fakturerande budget, UE-kostnader; (b) HEMÄGARE som projektleder själv: egen bestämd ELLER flytande budget (max spend), fakturerande total och/eller UE; (c) BYGGPROFFS som projektleder och bjuder in privatkunden till den begränsade delningsvyn (Kundvyn). Läs-bara kodaudit först (agent), fynden → backlog-kort + rapport till Carl. Kända regler: role-gating ENBART via onboarding_user_type; moms ex/inc per roll; dual-view-grinden.

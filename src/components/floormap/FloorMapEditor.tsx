@@ -391,7 +391,7 @@ export const FloorMapEditor = ({ projectId, projectName, onBack, backLabel, isRe
         {/* Main Canvas Area - Switch based on viewMode */}
         {viewMode === 'floor' && isEditorV2Enabled() && (
           <main className="flex-1 overflow-hidden relative">
-            <EditorCanvas isReadOnly={isReadOnly && !isDemo} />
+            <EditorCanvas isReadOnly={isReadOnly && !isDemo} roomDataVersion={roomUpdateTrigger} />
             {!isReadOnly && <PropertyInsightsPanel />}
           </main>
         )}

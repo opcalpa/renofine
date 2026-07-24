@@ -7,9 +7,14 @@
  * phases; selection and rigid move already work via the shape `name` id.
  */
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Line, Rect, Circle, Text, Image as KonvaImage, Group } from 'react-konva';
 import useImage from 'use-image';
+import {
+  FloorPatternId,
+  getPatternImage,
+  onPatternLoad,
+} from '../../canvas/utils/surfacePatterns';
 import {
   FloorMapShape,
   LineCoordinates,
@@ -27,7 +32,83 @@ interface LegacyShapesLayerProps {
   zoom: number;
   /** Whether room labels include the computed area (view setting). */
   showAreaLabels?: boolean;
+  /** Whether floor-finish tints render on rooms ("Ytor & färg"). */
+  showSurfaces?: boolean;
+  /** Whether floor-finish patterns (herringbone etc.) render on rooms. */
+  showPatterns?: boolean;
 }
+
+/** The tile image for a floor pattern, re-rendering when it finishes loading. */
+function usePatternImage(id: FloorPatternId | null): HTMLImageElement | null {
+  const [, bump] = useState(0);
+  useEffect(() => {
+    if (!id) return;
+    return onPatternLoad(() => bump((n) => n + 1));
+  }, [id]);
+  return id ? getPatternImage(id) : null;
+}
+
+/** Room polygon with finish tint + optional scale-true floor pattern. */
+const RoomMark: React.FC<{
+  shape: FloorMapShape;
+  isSelected: boolean;
+  zoom: number;
+  showAreaLabels: boolean;
+  showSurfaces: boolean;
+  showPatterns: boolean;
+}> = ({ shape, isSelected, zoom, showAreaLabels, showSurfaces, showPatterns }) => {
+  const c = shape.coordinates as PolygonCoordinates;
+  const patternId =
+    showSurfaces && showPatterns && shape.surfacePattern
+      ? (shape.surfacePattern as FloorPatternId)
+      : null;
+  const patternImg = usePatternImage(patternId);
+  if (!c?.points?.length) return null;
+  const flat = c.points.flatMap((p) => [p.x, p.y]);
+  const cx = c.points.reduce((sum, p) => sum + p.x, 0) / c.points.length;
+  const cy = c.points.reduce((sum, p) => sum + p.y, 0) / c.points.length;
+  const strokeWidth = Math.max(0.75, (shape.strokeWidth ?? 1.5) / zoom);
+  return (
+    <Group>
+      <Line
+        name={shape.id}
+        points={flat}
+        closed
+        fill={(showSurfaces ? shape.surfaceTint : null) || shape.color || 'rgba(96, 165, 250, 0.10)'}
+        stroke={isSelected ? SELECT_COLOR : shape.strokeColor || '#93c5fd'}
+        strokeWidth={strokeWidth}
+        perfectDrawEnabled={false}
+      />
+      {patternImg && (
+        <Line
+          points={flat}
+          closed
+          fillPatternImage={patternImg}
+          fillPatternRepeat="repeat"
+          listening={false}
+          perfectDrawEnabled={false}
+        />
+      )}
+      {shape.name && (
+        <Text
+          x={cx}
+          y={cy}
+          text={
+            shape.area && showAreaLabels
+              ? `${shape.name}\n${shape.area.toFixed(1)} m²`
+              : shape.name
+          }
+          fontSize={13 / zoom}
+          fill="#1f2937"
+          align="center"
+          offsetX={(shape.name.length * 3.5) / zoom}
+          listening={false}
+          perfectDrawEnabled={false}
+        />
+      )}
+    </Group>
+  );
+};
 
 const SELECT_COLOR = '#2563eb';
 
@@ -83,39 +164,6 @@ function renderShape(
   const strokeWidth = Math.max(0.75, (shape.strokeWidth ?? 1.5) / zoom);
 
   switch (shape.type) {
-    case 'room': {
-      const c = shape.coordinates as PolygonCoordinates;
-      if (!c?.points?.length) return null;
-      const flat = c.points.flatMap((p) => [p.x, p.y]);
-      const cx = c.points.reduce((sum, p) => sum + p.x, 0) / c.points.length;
-      const cy = c.points.reduce((sum, p) => sum + p.y, 0) / c.points.length;
-      return (
-        <Group key={shape.id}>
-          <Line
-            name={shape.id}
-            points={flat}
-            closed
-            fill={shape.surfaceTint || shape.color || 'rgba(96, 165, 250, 0.10)'}
-            stroke={isSelected ? SELECT_COLOR : shape.strokeColor || '#93c5fd'}
-            strokeWidth={strokeWidth}
-            perfectDrawEnabled={false}
-          />
-          {shape.name && (
-            <Text
-              x={cx}
-              y={cy}
-              text={shape.area && showAreaLabels ? `${shape.name}\n${shape.area.toFixed(1)} m²` : shape.name}
-              fontSize={13 / zoom}
-              fill="#1f2937"
-              align="center"
-              offsetX={(shape.name.length * 3.5) / zoom}
-              listening={false}
-              perfectDrawEnabled={false}
-            />
-          )}
-        </Group>
-      );
-    }
     case 'line':
     case 'measurement':
     case 'window_line':
@@ -269,6 +317,8 @@ export const LegacyShapesLayer: React.FC<LegacyShapesLayerProps> = ({
   selectedIds,
   zoom,
   showAreaLabels = true,
+  showSurfaces = true,
+  showPatterns = true,
 }) => {
   const selected = new Set(selectedIds);
   const visible = shapes
@@ -288,6 +338,16 @@ export const LegacyShapesLayer: React.FC<LegacyShapesLayerProps> = ({
             shape={shape}
             isSelected={selected.has(shape.id)}
             zoom={zoom}
+          />
+        ) : shape.type === 'room' ? (
+          <RoomMark
+            key={shape.id}
+            shape={shape}
+            isSelected={selected.has(shape.id)}
+            zoom={zoom}
+            showAreaLabels={showAreaLabels}
+            showSurfaces={showSurfaces}
+            showPatterns={showPatterns}
           />
         ) : (
           renderShape(shape, selected.has(shape.id), zoom, showAreaLabels)

@@ -16,6 +16,10 @@ import { useTranslation } from 'react-i18next';
 import { useFloorMapStore } from '../store';
 import { supabase } from '@/integrations/supabase/client';
 import { loadShapesForPlan, saveShapesForPlan } from '../utils/plans';
+import {
+  enrichShapesWithRoomData,
+  enrichStoreShapesWithRoomData,
+} from '../utils/roomSurfaceSync';
 import Grid from '../canvas/Grid';
 import { calculateFitToContent } from '../canvas/utils/fitToContent';
 import { EditorHud } from './EditorHud';
@@ -49,9 +53,11 @@ let v2DimensionDefaultApplied = false;
 
 interface EditorCanvasProps {
   isReadOnly?: boolean;
+  /** Bumped when room details change — re-merges room finishes onto shapes. */
+  roomDataVersion?: number;
 }
 
-export const EditorCanvas = ({ isReadOnly }: EditorCanvasProps) => {
+export const EditorCanvas = ({ isReadOnly, roomDataVersion }: EditorCanvasProps) => {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
@@ -94,7 +100,9 @@ export const EditorCanvas = ({ isReadOnly }: EditorCanvasProps) => {
     if (!currentPlanId) return;
     let cancelled = false;
     (async () => {
-      const loaded = migrateShapes(await loadShapesForPlan(currentPlanId));
+      const loaded = await enrichShapesWithRoomData(
+        migrateShapes(await loadShapesForPlan(currentPlanId))
+      );
       if (cancelled) return;
 
       // The user may have drawn while the plan was still loading (plan id
@@ -121,6 +129,13 @@ export const EditorCanvas = ({ isReadOnly }: EditorCanvasProps) => {
       cancelled = true;
     };
   }, [currentPlanId]);
+
+  // Room details changed (name/colour/finishes) — re-merge onto the shapes
+  // in place without reloading geometry (never clobbers unsaved edits).
+  useEffect(() => {
+    if (!roomDataVersion) return;
+    enrichStoreShapesWithRoomData();
+  }, [roomDataVersion]);
 
   // "Visa på planritningen" from room details: center + select the room's
   // shape once its plan is loaded; switch plan first if it lives elsewhere.
@@ -400,6 +415,8 @@ export const EditorCanvas = ({ isReadOnly }: EditorCanvasProps) => {
             selectedIds={selectedShapeIds}
             zoom={viewState.zoom}
             showAreaLabels={projectSettings.showAreaLabels}
+            showSurfaces={!projectSettings.hiddenObjectCategories.includes('surface')}
+            showPatterns={projectSettings.showSurfacePatterns}
           />
           <WallsLayer
             shapes={shapes}
