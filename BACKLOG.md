@@ -1397,13 +1397,14 @@ Kakelmönster på våtrumsväggar i väggvyn (samma tile-bibliotek). Per placera
 
 ---
 id: ytskikt-monster-p3-diy2
-status: todo
+status: done
 priority: P3
 tags: [floorplanner, diy, ytskikt]
 created: 2026-07-24
 ---
 ## Ytskikt P3 / DIY-skiva 2: fria former + gruppering till eget objekt + takdata till arbetare
 Rita linjer/cirklar/rektanglar i v2 → markera → "Gruppera som eget objekt" (groupId/isGroupLeader finns i typerna) → gruppen får namn + mått som enhet. Takvisualisering lågprio; säkerställ att ceiling_spec presenteras i arbetar-instruktionerna.
+LEVERERAT 2026-07-28 (`00a9904`): (a) Former-flyout i v2-railen (ShapeDrawTool linje/rektangel/cirkel → vanliga FloorMapShapes, renderas av LegacyShapesLayer, valbara/mätbara). (b) selection.group/ungroup — groupId + gruppledare m. namn + uppmätta bounds (mm) i templateInfo; klick på medlem markerar hela gruppen (Figma-stil); Gruppera-knapp + gruppnamn-input + Dela upp-knapp i FloatingSelectionToolbar. (c) Takdata: RoomSpecsSummary-takraden visas nu även på enbart molding_type (taklist); takfärg nådde redan arbetaren via ColorSwatchRow + ceiling_spec går redan hela vägen (ingen edge-deploy). Takvisualisering medvetet utelämnad (låg prio). E2e 28/28, build grönt, live-verifierat.
 
 ---
 id: plattforms-audit-anvandartyper
