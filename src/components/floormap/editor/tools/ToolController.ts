@@ -19,6 +19,7 @@ import { MeasureTool } from './MeasureTool';
 import { ObjectPlaceTool } from './ObjectPlaceTool';
 import { RoomRectTool } from './RoomRectTool';
 import { TextTool } from './TextTool';
+import { ShapeDrawTool } from './ShapeDrawTool';
 import { undo, redo } from '../core/executor';
 import { execute } from '../core/commands';
 import { copySelection, cutSelection, pasteClipboard } from '../core/clipboard';
@@ -37,6 +38,10 @@ export class ToolController {
       new ObjectPlaceTool(),
       new RoomRectTool(),
       new TextTool(),
+      // Free-form sketch primitives (DIY): line / rectangle / circle.
+      new ShapeDrawTool('line'),
+      new ShapeDrawTool('rectangle'),
+      new ShapeDrawTool('circle'),
       // Legacy toolbar tool ids map straight onto the v2 opening tool.
       new OpeningTool('door_line', 'door'),
       new OpeningTool('window_line', 'window'),

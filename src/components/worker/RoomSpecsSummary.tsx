@@ -64,9 +64,11 @@ export function RoomSpecsSummary({ wallSpec, floorSpec, ceilingSpec, joinerySpec
     });
   }
 
-  // Ceiling material
-  if (ceilingSpec?.material) {
-    const parts = [t(`materials.${ceilingSpec.material}`, ceilingSpec.material)];
+  // Ceiling material and/or molding — a taklist without a material still
+  // matters to the worker (the ceiling colour is shown separately as a swatch).
+  if (ceilingSpec?.material || ceilingSpec?.molding_type) {
+    const parts: string[] = [];
+    if (ceilingSpec.material) parts.push(t(`materials.${ceilingSpec.material}`, ceilingSpec.material));
     if (ceilingSpec.molding_type) parts.push(t(`materials.${ceilingSpec.molding_type}`, ceilingSpec.molding_type));
     lines.push({
       icon: <Layers className="h-3.5 w-3.5" />,

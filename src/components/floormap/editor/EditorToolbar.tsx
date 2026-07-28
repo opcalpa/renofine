@@ -13,13 +13,16 @@
 import { useRef, useState } from 'react';
 import {
   Blocks,
+  Circle,
   DoorOpen,
   ImagePlus,
+  Minus,
   MousePointer2,
   PanelsTopLeft,
   PenLine,
   Redo2,
   Ruler,
+  Shapes,
   Sparkles,
   Square,
   Type,
@@ -52,6 +55,12 @@ const OPENING_TOOLS: Array<{ tool: Tool; labelKey: string; fallback: string }> =
   { tool: 'window_line', labelKey: 'floormap.tools.window', fallback: 'Fönster' },
   { tool: 'sliding_door_line', labelKey: 'floormap.tools.slidingDoor', fallback: 'Skjutdörr' },
   { tool: 'opening_line', labelKey: 'floormap.tools.passage', fallback: 'Passage' },
+];
+
+const SHAPE_TOOLS: Array<{ tool: Tool; icon: typeof Minus; labelKey: string; fallback: string }> = [
+  { tool: 'line', icon: Minus, labelKey: 'floormap.tools.line', fallback: 'Linje' },
+  { tool: 'rectangle', icon: Square, labelKey: 'floormap.tools.rectangle', fallback: 'Rektangel' },
+  { tool: 'circle', icon: Circle, labelKey: 'floormap.tools.circle', fallback: 'Cirkel' },
 ];
 
 const RAIL_BUTTON =
@@ -108,6 +117,7 @@ export const EditorToolbar = ({ projectId }: EditorToolbarProps) => {
   const canRedo = useEditorUiStore((s) => s.canRedo);
 
   const [openingOpen, setOpeningOpen] = useState(false);
+  const [shapesOpen, setShapesOpen] = useState(false);
   const [objectsOpen, setObjectsOpen] = useState(false);
   const [objectsTab, setObjectsTab] = useState<'objects' | 'templates'>('objects');
   const [underlayOpen, setUnderlayOpen] = useState(false);
@@ -115,6 +125,7 @@ export const EditorToolbar = ({ projectId }: EditorToolbarProps) => {
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   const isOpeningActive = OPENING_TOOLS.some((o) => o.tool === activeTool);
+  const isShapeActive = SHAPE_TOOLS.some((s) => s.tool === activeTool);
 
   const handleImageFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -288,6 +299,43 @@ export const EditorToolbar = ({ projectId }: EditorToolbarProps) => {
       >
         <Type className="h-5 w-5" />
       </RailButton>
+
+      {/* Former flyout — DIY sketch primitives: line / rectangle / circle */}
+      <Popover open={shapesOpen} onOpenChange={setShapesOpen}>
+        <PopoverTrigger asChild>
+          <button
+            data-testid="tool-shapes"
+            className={cn(
+              RAIL_BUTTON,
+              isShapeActive
+                ? 'bg-primary text-primary-foreground'
+                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+            )}
+            title={t('floormap.tools.shapes', 'Former (linje, rektangel, cirkel)')}
+          >
+            <Shapes className="h-5 w-5" />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent side="right" align="start" className="w-40 p-1 ml-2">
+          {SHAPE_TOOLS.map((s) => (
+            <button
+              key={s.tool}
+              data-testid={`tool-shape-${s.tool}`}
+              className={cn(
+                'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors',
+                activeTool === s.tool ? 'bg-primary/10 text-primary' : 'hover:bg-gray-100'
+              )}
+              onClick={() => {
+                setActiveTool(s.tool);
+                setShapesOpen(false);
+              }}
+            >
+              <s.icon className="h-4 w-4 text-gray-500" />
+              {t(s.labelKey, s.fallback)}
+            </button>
+          ))}
+        </PopoverContent>
+      </Popover>
 
       <div className="my-0.5 h-px w-8 bg-gray-200" />
 

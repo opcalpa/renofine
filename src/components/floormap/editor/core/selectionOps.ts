@@ -13,7 +13,26 @@ import { commit, getShapes } from './executor';
 import { Patch, makeUpdatePatch } from './patches';
 import { boundsCenter, mapShapePoints, shapeBounds, unionBounds, Point } from '../geometry/bounds';
 import { isUnifiedObjectShape, objectPlacement } from '../objects/objectModel';
+import { worldToMm } from './units';
 import { useFloorMapStore } from '../../store';
+
+/** Structural shapes are never folded into a free-form group. */
+const NON_GROUPABLE = new Set<FloorMapShape['type']>(['wall', 'room', 'opening', 'image']);
+
+/** A free shape / object that may be folded into an "eget objekt" group. */
+export function isGroupable(shape: FloorMapShape): boolean {
+  return !shape.locked && !NON_GROUPABLE.has(shape.type);
+}
+
+export interface SelectionGroupParams {
+  ids: string[];
+  /** Display name for the group; defaults to "Eget objekt". */
+  name?: string;
+}
+
+export interface SelectionUngroupParams {
+  ids: string[];
+}
 
 export interface SelectionRotateParams {
   ids: string[];
@@ -96,6 +115,64 @@ function selectionCenter(ids: string[]): Point | null {
 }
 
 export const selectionOps = {
+  /**
+   * Fold the selected free shapes into one named "eget objekt" — they share a
+   * groupId, the first becomes the leader carrying the name + measured bounds
+   * (in mm) so the group reads as a single unit. Selecting any member later
+   * selects the whole group. Walls/rooms/openings are excluded.
+   */
+  'selection.group'(params: SelectionGroupParams): string | null {
+    const idSet = new Set(params.ids);
+    const shapes = getShapes().filter((s) => idSet.has(s.id) && isGroupable(s));
+    if (shapes.length < 2) return null;
+    const groupId = uuidv4();
+    const name = params.name?.trim() || 'Eget objekt';
+    const bounds = unionBounds(shapes);
+    const boundsWidth = bounds ? Math.round(worldToMm(bounds.maxX - bounds.minX)) : 0;
+    const boundsHeight = bounds ? Math.round(worldToMm(bounds.maxY - bounds.minY)) : 0;
+
+    const patches: Patch[] = shapes.map((shape, i) =>
+      makeUpdatePatch(
+        shape,
+        i === 0
+          ? {
+              groupId,
+              isGroupLeader: true,
+              name,
+              templateInfo: {
+                templateId: groupId,
+                templateName: name,
+                boundsWidth,
+                boundsHeight,
+                originalWidth: boundsWidth,
+                originalHeight: boundsHeight,
+              },
+            }
+          : { groupId, isGroupLeader: false }
+      )
+    );
+    commit('Gruppera', patches);
+    useFloorMapStore.getState().setSelectedShapeIds(shapes.map((s) => s.id));
+    return groupId;
+  },
+
+  /** Break every group touched by the selection back into loose shapes. */
+  'selection.ungroup'(params: SelectionUngroupParams): void {
+    const idSet = new Set(params.ids);
+    const groupIds = new Set(
+      getShapes()
+        .filter((s) => idSet.has(s.id) && s.groupId)
+        .map((s) => s.groupId as string)
+    );
+    if (groupIds.size === 0) return;
+    const members = getShapes().filter((s) => s.groupId && groupIds.has(s.groupId));
+    const patches = members.map((s) =>
+      makeUpdatePatch(s, { groupId: undefined, isGroupLeader: undefined, templateInfo: undefined })
+    );
+    commit('Dela upp grupp', patches);
+    useFloorMapStore.getState().setSelectedShapeIds(members.map((s) => s.id));
+  },
+
   'selection.rotate'(params: SelectionRotateParams): void {
     const center = selectionCenter(params.ids);
     if (!center) return;

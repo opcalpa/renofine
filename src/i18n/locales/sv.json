@@ -1929,7 +1929,11 @@
       "eraser": "Sudd",
       "scissors": "Dela linje",
       "glue": "Klistra ihop",
-      "importImage": "Importera bild"
+      "importImage": "Importera bild",
+      "line": "Linje",
+      "rectangle": "Rektangel",
+      "circle": "Cirkel",
+      "shapes": "Former (linje, rektangel, cirkel)"
     },
     "hoverInfo": {
       "wall": "Vägg",
@@ -2013,7 +2017,12 @@
       "customWidth": "Bredd (mm)",
       "customDepth": "Djup (mm)",
       "finishColor": "Kulör/finish",
-      "finishColorTitle": "Kulör eller material, t.ex. \"vit\" eller \"NCS S 3005-G80Y\""
+      "finishColorTitle": "Kulör eller material, t.ex. \"vit\" eller \"NCS S 3005-G80Y\"",
+      "group": "Gruppera",
+      "groupTitle": "Gör markeringen till ett eget objekt",
+      "ungroup": "Dela upp objektet",
+      "groupName": "Namnge objektet",
+      "groupNameTitle": "Namn på det egna objektet"
     },
     "view2d": "2D",
     "viewSettings": "Visning",

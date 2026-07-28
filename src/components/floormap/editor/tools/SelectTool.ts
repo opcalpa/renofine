@@ -88,10 +88,20 @@ export class SelectTool extends BaseTool {
     if (e.hitShape && !e.hitShape.locked) {
       const id = e.hitShape.id;
       const selected = store.selectedShapeIds;
+      // A grouped shape selects (and moves) as its whole "eget objekt" unit —
+      // shift-click still breaks out to toggle the single member.
+      const groupMembers =
+        e.hitShape.groupId && !e.shiftKey
+          ? store.shapes.filter((s) => s.groupId === e.hitShape!.groupId).map((s) => s.id)
+          : null;
       if (e.shiftKey) {
         store.setSelectedShapeIds(
           selected.includes(id) ? selected.filter((s) => s !== id) : [...selected, id]
         );
+      } else if (groupMembers) {
+        const already =
+          groupMembers.length === selected.length && groupMembers.every((m) => selected.includes(m));
+        if (!already) store.setSelectedShapeIds(groupMembers);
       } else if (!selected.includes(id)) {
         store.setSelectedShapeIds([id]);
       }

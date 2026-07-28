@@ -20,9 +20,11 @@ import {
   Copy,
   FlipHorizontal2,
   FlipVertical2,
+  Group,
   PanelTop,
   RotateCw,
   Trash2,
+  Ungroup,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -38,6 +40,7 @@ import { useEditorUiStore } from './state/uiStore';
 import { execute } from './core/commands';
 import { unionBounds } from './geometry/bounds';
 import type { AlignMode } from './core/selectionOps';
+import { isGroupable } from './core/selectionOps';
 import { pointInPolygon, updateRoomItemFinishForShape } from '../utils/roomItemLink';
 import { getObjectDef, objectDimensionsMM } from './objects/objectModel';
 
@@ -254,6 +257,50 @@ const ObjectFinishInput = ({ shape }: { shape: FloorMapShape }) => {
   );
 };
 
+/** Name editor for the leader of a selected group ("eget objekt"). */
+const GroupNameInput = ({ leader }: { leader: FloorMapShape }) => {
+  const { t } = useTranslation();
+  const current = leader.name || '';
+  const [value, setValue] = useState(current);
+
+  useEffect(() => {
+    setValue(leader.name || '');
+  }, [leader.id, leader.name]);
+
+  const commit = () => {
+    const trimmed = value.trim();
+    if (!trimmed || trimmed === current) {
+      setValue(current);
+      return;
+    }
+    execute('shape.update', {
+      id: leader.id,
+      updates: {
+        name: trimmed,
+        templateInfo: leader.templateInfo
+          ? { ...leader.templateInfo, templateName: trimmed }
+          : undefined,
+      },
+    });
+  };
+
+  return (
+    <input
+      type="text"
+      className="h-7 w-32 rounded-md border px-1.5 text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-primary"
+      value={value}
+      placeholder={t('floormap.selection.groupName', 'Namnge objektet')}
+      title={t('floormap.selection.groupNameTitle', 'Namn på det egna objektet')}
+      onChange={(e) => setValue(e.target.value)}
+      onKeyDown={(e) => {
+        e.stopPropagation();
+        if (e.key === 'Enter' || e.key === 'Escape') (e.target as HTMLInputElement).blur();
+      }}
+      onBlur={commit}
+    />
+  );
+};
+
 export const FloatingSelectionToolbar = () => {
   const { t } = useTranslation();
   const shapes = useFloorMapStore((s) => s.shapes);
@@ -291,6 +338,16 @@ export const FloatingSelectionToolbar = () => {
   const singleCustom =
     selected.length === 1 && getObjectDef(selected[0])?.category === 'custom';
   const singleObject = selected.length === 1 && !!getObjectDef(selected[0]);
+
+  // Group detection: a coherent group is >1 shapes all sharing one groupId.
+  const groupIds = new Set(selected.map((s) => s.groupId).filter(Boolean) as string[]);
+  const isCoherentGroup =
+    selected.length > 1 && groupIds.size === 1 && selected.every((s) => !!s.groupId);
+  const groupLeader = isCoherentGroup
+    ? selected.find((s) => s.isGroupLeader) ?? selected[0]
+    : null;
+  const canGroup = !isCoherentGroup && selected.filter(isGroupable).length >= 2;
+
   const canTransform = transformables.length > 0;
   const canAlign = transformables.length >= 2;
   const canDistribute = transformables.length >= 3;
@@ -311,6 +368,7 @@ export const FloatingSelectionToolbar = () => {
     >
       {singleCustom && <CustomObjectInputs shape={selected[0]} />}
       {singleObject && <ObjectFinishInput shape={selected[0]} />}
+      {groupLeader && <GroupNameInput leader={groupLeader} />}
 
       {singleOpening ? (
         <>
@@ -437,6 +495,33 @@ export const FloatingSelectionToolbar = () => {
             <PanelTop className="h-4 w-4" />
             {t('floormap.selection.wallView', 'Väggvy')}
           </button>
+        </>
+      )}
+
+      {(canGroup || isCoherentGroup) && (
+        <>
+          <div className="mx-0.5 h-5 w-px bg-gray-200" />
+          {canGroup && (
+            <button
+              className="flex h-8 items-center gap-1.5 rounded-md px-2 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
+              data-testid="group-shapes"
+              title={t('floormap.selection.groupTitle', 'Gör markeringen till ett eget objekt')}
+              onClick={() => execute('selection.group', { ids })}
+            >
+              <Group className="h-4 w-4" />
+              {t('floormap.selection.group', 'Gruppera')}
+            </button>
+          )}
+          {isCoherentGroup && (
+            <button
+              className={BUTTON_CLASS}
+              data-testid="ungroup-shapes"
+              title={t('floormap.selection.ungroup', 'Dela upp objektet')}
+              onClick={() => execute('selection.ungroup', { ids })}
+            >
+              <Ungroup className="h-4 w-4" />
+            </button>
+          )}
         </>
       )}
 

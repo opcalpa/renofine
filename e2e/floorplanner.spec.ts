@@ -1001,6 +1001,88 @@ test.describe('Floor planner v2', () => {
     await expect(page).toHaveURL(/subtab=floorplan/);
   });
 
+  test('free shapes: draw, group into one named object, then ungroup', async ({ page }) => {
+    await openDemoPlanner(page);
+    const canvas = page.getByTestId('editor-v2-canvas');
+    const box = (await canvas.boundingBox())!;
+    const dragRect = async (x1: number, y1: number, x2: number, y2: number) => {
+      await page.mouse.move(box.x + x1, box.y + y1);
+      await page.mouse.down();
+      await page.mouse.move(box.x + x2, box.y + y2);
+      await page.mouse.up();
+    };
+
+    // Former flyout → rectangle tool, draw two rectangles
+    await page.getByTestId('tool-shapes').click();
+    await page.getByTestId('tool-shape-rectangle').click();
+    await dragRect(300, 300, 420, 400);
+    await dragRect(460, 300, 580, 400);
+
+    const rectCount = () =>
+      page.evaluate(
+        () => window.__rfEditorDebug!.getShapes().filter((s) => s.type === 'rectangle').length
+      );
+    expect(await rectCount()).toBe(2);
+
+    // Select both → floating toolbar → Gruppera
+    await page.keyboard.press('v');
+    await page.keyboard.press('ControlOrMeta+a');
+    await expect(page.getByTestId('selection-toolbar')).toBeVisible();
+    await page.getByTestId('group-shapes').click();
+
+    const grouped = await page.evaluate(() => {
+      const rects = window.__rfEditorDebug!.getShapes().filter((s) => s.type === 'rectangle') as Array<{
+        groupId?: string;
+        isGroupLeader?: boolean;
+        name?: string;
+        templateInfo?: { boundsWidth?: number };
+      }>;
+      return {
+        count: rects.length,
+        oneGroup: new Set(rects.map((r) => r.groupId)).size === 1 && rects.every((r) => r.groupId),
+        leaders: rects.filter((r) => r.isGroupLeader).length,
+        leaderName: rects.find((r) => r.isGroupLeader)?.name,
+        bounds: rects.find((r) => r.isGroupLeader)?.templateInfo?.boundsWidth,
+      };
+    });
+    expect(grouped.oneGroup).toBe(true);
+    expect(grouped.leaders).toBe(1);
+    expect(grouped.leaderName).toBe('Eget objekt');
+    expect(grouped.bounds!).toBeGreaterThan(0);
+
+    // Rename the group via the toolbar name input
+    const nameInput = page.getByPlaceholder('Namnge objektet');
+    await expect(nameInput).toBeVisible();
+    await nameInput.fill('Platsbyggd hylla');
+    await nameInput.press('Enter');
+    const renamed = await page.evaluate(
+      () =>
+        (
+          window.__rfEditorDebug!.getShapes().find(
+            (s) => s.type === 'rectangle' && (s as { isGroupLeader?: boolean }).isGroupLeader
+          ) as { name?: string }
+        )?.name
+    );
+    expect(renamed).toBe('Platsbyggd hylla');
+
+    // Clicking one member re-selects the whole group (Figma-style): the group
+    // name input only shows for a coherent multi-shape group selection.
+    await page.keyboard.press('Escape');
+    await expect(page.getByTestId('selection-toolbar')).toHaveCount(0);
+    await page.mouse.click(box.x + 360, box.y + 350);
+    await expect(page.getByPlaceholder('Namnge objektet')).toBeVisible();
+
+    // Ungroup clears the grouping from every member
+    await page.getByTestId('ungroup-shapes').click();
+    const afterUngroup = await page.evaluate(() =>
+      window.__rfEditorDebug!
+        .getShapes()
+        .filter((s) => s.type === 'rectangle')
+        .some((s) => (s as { groupId?: string }).groupId)
+    );
+    expect(afterUngroup).toBe(false);
+  });
+
   test('right-click context menu: tools + recent objects + wall actions', async ({ page }) => {
     await openDemoPlanner(page);
     const canvas = page.getByTestId('editor-v2-canvas');

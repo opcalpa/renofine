@@ -2501,7 +2501,11 @@
       "eraser": "Eraser",
       "scissors": "Split Line",
       "glue": "Merge",
-      "importImage": "Import image"
+      "importImage": "Import image",
+      "line": "Line",
+      "rectangle": "Rectangle",
+      "circle": "Circle",
+      "shapes": "Shapes (line, rectangle, circle)"
     },
     "hoverInfo": {
       "wall": "Wall",
@@ -2585,7 +2589,12 @@
       "customWidth": "Width (mm)",
       "customDepth": "Depth (mm)",
       "finishColor": "Colour/finish",
-      "finishColorTitle": "Colour or material, e.g. \"white\" or \"NCS S 3005-G80Y\""
+      "finishColorTitle": "Colour or material, e.g. \"white\" or \"NCS S 3005-G80Y\"",
+      "group": "Group",
+      "groupTitle": "Turn the selection into one object",
+      "ungroup": "Ungroup",
+      "groupName": "Name the object",
+      "groupNameTitle": "Name of the custom object"
     },
     "view2d": "2D",
     "viewSettings": "View",
