@@ -1508,13 +1508,14 @@ OMVÄRDERAD efter rotorsakning: väggvyn följer measurement-systemet (browser-l
 
 ---
 id: unify-category-vocabulary
-status: todo
+status: done
 priority: P1
 tags: [floorplanner, arkitektur, agent-readable, objekt-instruktions-audit]
 created: 2026-07-28
 ---
 ## En kategori-vokabulär över objekt ↔ room_items ↔ arbetstyp
 Audit-fynd (objekt-instruktions-audit 2026-07-28): fyra parallella kategori-enums som bara råkar överlappa. (a) ROOM_ITEM_CATEGORIES (`room-details/constants.ts:185`): electrical/plumbing/kitchen/ventilation/appliance; (b) room_items.category DB-doc: electrical/paint/flooring/plumbing/ventilation/appliance (diverges — paint/flooring vs kitchen); (c) objektbibliotek `objectLibrary/types.ts:11`: electrical/plumbing/kitchen/appliances/furniture/doors/windows/hvac/lighting/custom (appliances PLURAL ≠ appliance); (d) arbetstyper `materialRecipes.ts:564`: painting/flooring/tiling/demolition/spackling/sanding/carpentry/electrical/plumbing. Bara subtyper hålls i sync (el-katalogen). Mismatchar: appliance vs appliances, kitchen saknar arbetstyp, painting/flooring/tiling saknar room-item-kategori. Detta är [[feedback_agent_readable_architecture]] materialiserat: EN källa (single source), läsbar vokabulär, ett mappnings-lager där de skiljer sig. Låser upp konsekvent färg + filter över alla ytor. Design-test: kan Renaida uttrycka "visa allt el-arbete" som en action mot EN yta?
+LEVERERAT 2026-07-28 (`559183b`): trade-axeln (el/VVS/kök/vent/vitvara) samlad i src/lib/workCategories.ts (id/labelKey/färg/objekt-alias). Konsumenter deriverar: ROOM_ITEM_CATEGORIES, isMirroredCategory→isWorkCategory (normaliserar appliances→appliance, hvac→ventilation, lighting→electrical), room_items skrivs kanoniskt, worker CATEGORY_COLORS/LABEL_KEYS (kitchen får äntligen färg), v1+v2 filter-labels. Objektbibliotekets palett + estimeringens arbetstyper är EGNA axlar, medvetet ej hopslagna (bryggar via alias resp. där de sammanfaller). AVGRÄNSNING: labor-axel-bryggan (task work-type ↔ item-kategori auto-match) hör till [[room-item-task-scoping]]. Behavior-preserving, 29/29 e2e.
 
 ---
 id: room-item-task-scoping
@@ -1528,13 +1529,14 @@ Audit-fynd: `room_items.task_id` FK + index finns (migration 20260604110000) men
 
 ---
 id: canvas-category-colors
-status: todo
+status: done
 priority: P2
 tags: [floorplanner, ui, objekt-instruktions-audit]
 created: 2026-07-28
 ---
 ## Kategori-färger på editor-canvasen (spegla arbetarvyns färgspråk)
 Audit-fynd: v2 `ObjectsLayer.tsx` ritar alla objekt monokromt `#374151` — ingen färg/ikon per arbetstyp på planritningen. Bakvänt: ARBETARVYN har färg per kategori (`worker/roomObjectShared.tsx:66` CATEGORY_COLORS: el=amber #f59e0b, VVS=blå #3b82f6, vent=cyan #06b6d4, vitvara=lila #a855f7) men den som RITAR ser grått. Fix: spegla CATEGORY_COLORS till ObjectsLayer (stroke/tint per kategori) + ev. i väggvyn, så ritaren ser samma färgspråk som arbetaren och kan läsa "allt el" i en blick. Delvis blockerad av [[unify-category-vocabulary]] (färg bör bindas till den enhetliga vokabulären, inte hårdkodas två ggr).
+LEVERERAT 2026-07-28 (`cfe3387`): ObjectsLayer ger work-item-objekt en svag arbetstyps-tonad platta + tunn ram bakom symbolen (färg ur registret, samma som arbetarvyn). Symbolkonsten orörd (grå strokes hårdkodade), layout-objekt neutrala, markeringsram har företräde.
 
 ---
 id: worker-freetext-translation
