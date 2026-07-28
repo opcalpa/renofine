@@ -26,15 +26,7 @@ import { Switch } from '@/components/ui/switch';
 import { useMeasurement } from '@/contexts/MeasurementContext';
 import { useFloorMapStore } from '../store';
 import { getShapeObjectCategory } from '../objectLibrary';
-
-// Object-library category → [i18n key, fallback]. Mirrors the v1 canvas filter.
-const OBJECT_CATEGORY_LABELS: Record<string, [string, string]> = {
-  electrical: ['roomItems.catElectrical', 'El-objekt'],
-  kitchen: ['canvas.objectCatKitchen', 'Köksobjekt'],
-  plumbing: ['roomItems.catPlumbing', 'VVS'],
-  ventilation: ['roomItems.catVentilation', 'Ventilation'],
-  appliance: ['roomItems.catAppliance', 'Vitvaror'],
-};
+import { WORK_CATEGORY_LABELS } from '@/lib/workCategories';
 
 const GRID_INTERVAL_OPTIONS = [
   { value: 50, labelKey: 'canvas.gridFine' },
@@ -206,7 +198,7 @@ export const ViewSettingsPopover = () => {
               </Label>
               {presentObjectCategories.map((cat) => {
                 const [labelKey, fallback] =
-                  OBJECT_CATEGORY_LABELS[cat] ?? [`roomItems.cat${cat}`, cat];
+                  WORK_CATEGORY_LABELS[cat] ?? [`roomItems.cat${cat}`, cat];
                 return (
                   <div key={cat} className="flex items-center justify-between">
                     <Label htmlFor={`v2-show-cat-${cat}`} className="text-sm font-normal">

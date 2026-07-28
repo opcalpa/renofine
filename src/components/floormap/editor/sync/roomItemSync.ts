@@ -17,13 +17,16 @@ import { useFloorMapStore } from '../../store';
 import { FloorMapShape } from '../../types';
 import { pointInPolygon, linkPlacedItemToShape, createRoomItemForPlacedShape } from '../../utils/roomItemLink';
 import type { UnifiedObjectDefinition } from '../../objectLibrary';
+import { isWorkCategory } from '@/lib/workCategories';
 
-/** Catalog categories that mirror into room_items (work items, not layout). */
-const MIRRORED_CATEGORIES = new Set(['electrical', 'plumbing', 'kitchen', 'ventilation', 'appliance']);
-
-/** Whether objects of this catalog category mirror into room_items. */
+/**
+ * Whether objects of this catalog category mirror into room_items (work items,
+ * not layout). Uses the shared work-category registry, so object-library
+ * aliases (appliances→appliance, hvac→ventilation, lighting→electrical) mirror
+ * correctly; furniture/doors/windows/custom stay canvas-only.
+ */
 export function isMirroredCategory(category: string): boolean {
-  return MIRRORED_CATEGORIES.has(category);
+  return isWorkCategory(category);
 }
 
 /** The linked room (rooms-table row) whose polygon contains the point. */
@@ -69,7 +72,7 @@ export function resolveRoomItemLinkage(shape: FloorMapShape, def: UnifiedObjectD
     return;
   }
 
-  if (shape.roomId && projectId && MIRRORED_CATEGORIES.has(def.category)) {
+  if (shape.roomId && projectId && isMirroredCategory(def.category)) {
     createRoomItemForPlacedShape(planId, store.shapes, projectId, shape.roomId, shape, def.category)
       .then(() =>
         toast.success(i18n.t('roomItems.addedFromPlan', 'Tillagt i rummets objektlista'))

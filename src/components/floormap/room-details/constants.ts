@@ -180,15 +180,10 @@ export const LIGHTING_TYPE_OPTIONS = [
 ];
 
 // Room-item categories (E5.2). The generic per-room list groups items by these.
-// Electrical has a canvas object catalog (subtypes + "place on drawing"); the
-// rest are list-only for now ("log the list"). Rendered in this order.
-export const ROOM_ITEM_CATEGORIES = [
-  { value: "electrical", labelKey: "roomItems.catElectrical" },
-  { value: "plumbing", labelKey: "roomItems.catPlumbing" },
-  { value: "kitchen", labelKey: "roomItems.catKitchen" },
-  { value: "ventilation", labelKey: "roomItems.catVentilation" },
-  { value: "appliance", labelKey: "roomItems.catAppliance" },
-];
+// Room-item categories are the canonical trade axis, now defined once in
+// src/lib/workCategories.ts (shared with the canvas mirror/filter and worker
+// view). Re-exported here so existing importers stay unchanged.
+export { ROOM_ITEM_CATEGORIES } from "@/lib/workCategories";
 
 // Electrical room-item subtypes (E2). Mirrors the unified object library's
 // electrical catalog ids/nameKeys (objectLibrary/definitions/electrical.ts) so a

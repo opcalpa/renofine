@@ -29,19 +29,12 @@ import { getShapeObjectCategory } from "./objectLibrary";
 import { Scale, Unit } from "./utils/formatting";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+// Canvas category filter labels — sourced from the shared work-category registry.
+import { WORK_CATEGORY_LABELS as OBJECT_CATEGORY_LABELS } from "@/lib/workCategories";
 
 // localStorage keys for persistent settings
 const WALL_THICKNESS_KEY = "admin_wallThickness";
 const WALL_HEIGHT_KEY = "admin_wallHeight";
-
-// Object-library category → [i18n key, fallback]. Drives the canvas category filter labels.
-const OBJECT_CATEGORY_LABELS: Record<string, [string, string]> = {
-  electrical: ["roomItems.catElectrical", "El-objekt"],
-  kitchen: ["canvas.objectCatKitchen", "Köksobjekt"],
-  plumbing: ["roomItems.catPlumbing", "VVS"],
-  ventilation: ["roomItems.catVentilation", "Ventilation"],
-  appliance: ["roomItems.catAppliance", "Vitvaror"],
-};
 
 export const CanvasSettingsPopover = () => {
   const { t } = useTranslation();

@@ -8,6 +8,7 @@ import { useTranslation } from "react-i18next";
 import { Check, ExternalLink, Loader2, MessageCircleQuestion, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { WORK_CATEGORY_COLORS, WORK_CATEGORY_LABEL_KEYS, workCategoryColor } from "@/lib/workCategories";
 
 /** Common fields every placed room-item carries, regardless of view layer. */
 export interface RoomObjectInfo {
@@ -62,20 +63,11 @@ export interface WallNote {
   height: number;
 }
 
-// Category → marker accent colour. Mirrors ROOM_ITEM_CATEGORIES order.
-export const CATEGORY_COLORS: Record<string, string> = {
-  electrical: "#f59e0b",
-  plumbing: "#3b82f6",
-  ventilation: "#06b6d4",
-  appliance: "#a855f7",
-};
-
-export const CATEGORY_LABEL_KEYS: Record<string, string> = {
-  electrical: "roomItems.catElectrical",
-  plumbing: "roomItems.catPlumbing",
-  ventilation: "roomItems.catVentilation",
-  appliance: "roomItems.catAppliance",
-};
+// Category → marker accent colour / label key. Sourced from the shared
+// work-category registry (now includes kitchen, which the worker view used to
+// miss and render grey) so the drawer and the worker see one colour language.
+export const CATEGORY_COLORS = WORK_CATEGORY_COLORS;
+export const CATEGORY_LABEL_KEYS = WORK_CATEGORY_LABEL_KEYS;
 
 // Electrical subtype → i18n key (mirrors ELECTRICAL_ITEM_SUBTYPE_OPTIONS). Lets
 // the worker see object titles in their own language for free (no AI), since the
@@ -91,7 +83,7 @@ const ELECTRICAL_SUBTYPE_KEYS: Record<string, string> = {
   ceiling_lamp: "objects.electrical.ceilingLamp",
 };
 
-export const categoryColor = (cat: string): string => CATEGORY_COLORS[cat] || "#6b7280";
+export const categoryColor = (cat: string): string => workCategoryColor(cat);
 
 /** Resolve an object's display title — electrical enums via i18n, else raw/translated. */
 export function useObjectTitle() {
