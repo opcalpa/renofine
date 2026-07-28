@@ -1505,3 +1505,63 @@ created: 2026-07-24
 ---
 ## Enhetsformat skiljer mellan plan (mm) och väggvy (m/ft)
 OMVÄRDERAD efter rotorsakning: väggvyn följer measurement-systemet (browser-locale: en-US → ft/tum, svenska → metriskt "2.50 m") — det jag såg som "imperial-bugg" var Playwrights en-US-locale, svenska användare får metriskt. Äkta kvarvarande skav: v2-PLANEN hårdkodar mm (formatWorldAsMm) och ignorerar både measurement-system och projectSettings.unit, så samma vägg visar "2 500 mm" på planen och "2.50 m" i väggvyn. Lågprio: branschen ritar i mm på plan; beslut behövs om väggvyn också ska visa mm (konsekvens) eller planen följa enhetsinställningen.
+
+---
+id: unify-category-vocabulary
+status: todo
+priority: P1
+tags: [floorplanner, arkitektur, agent-readable, objekt-instruktions-audit]
+created: 2026-07-28
+---
+## En kategori-vokabulär över objekt ↔ room_items ↔ arbetstyp
+Audit-fynd (objekt-instruktions-audit 2026-07-28): fyra parallella kategori-enums som bara råkar överlappa. (a) ROOM_ITEM_CATEGORIES (`room-details/constants.ts:185`): electrical/plumbing/kitchen/ventilation/appliance; (b) room_items.category DB-doc: electrical/paint/flooring/plumbing/ventilation/appliance (diverges — paint/flooring vs kitchen); (c) objektbibliotek `objectLibrary/types.ts:11`: electrical/plumbing/kitchen/appliances/furniture/doors/windows/hvac/lighting/custom (appliances PLURAL ≠ appliance); (d) arbetstyper `materialRecipes.ts:564`: painting/flooring/tiling/demolition/spackling/sanding/carpentry/electrical/plumbing. Bara subtyper hålls i sync (el-katalogen). Mismatchar: appliance vs appliances, kitchen saknar arbetstyp, painting/flooring/tiling saknar room-item-kategori. Detta är [[feedback_agent_readable_architecture]] materialiserat: EN källa (single source), läsbar vokabulär, ett mappnings-lager där de skiljer sig. Låser upp konsekvent färg + filter över alla ytor. Design-test: kan Renaida uttrycka "visa allt el-arbete" som en action mot EN yta?
+
+---
+id: room-item-task-scoping
+status: todo
+priority: P1
+tags: [floorplanner, worker, tasks, data-model, objekt-instruktions-audit]
+created: 2026-07-28
+---
+## Aktivera task_id på room_items — scopa objekt till rätt jobb/arbetare
+Audit-fynd: `room_items.task_id` FK + index finns (migration 20260604110000) men skrivs ALDRIG från klienten. Alla arbets-ytor når objekten via rummet (`.in("room_id", …)`) — `RoomItemsSummary.tsx:45`, `get-worker-data/index.ts:222`. Konsekvens: har köket "Dra el" (elektriker) + "Måla kök" (målare) ser BÅDA arbetskorten och BÅDA arbetarvyerna alla köksobjekt — elektrikern ser målningsgrejer, målaren ser alla uttag. Kategoriseringen finns på objektet men scopingen till rätt jobb saknas. Fix: skriv task_id vid länkning (canvas-placering i länkat rum + rumsdetaljers add/edit), låt arbetskortet/arbetarvyn filtrera på task_id när det finns (fall tillbaka på room_id för äldre data). Största samspels-vinsten; gör de fyra silorna till ETT system i stället för råkade rum-överlapp. Beroende: helst efter [[unify-category-vocabulary]] men kan göras separat.
+
+---
+id: canvas-category-colors
+status: todo
+priority: P2
+tags: [floorplanner, ui, objekt-instruktions-audit]
+created: 2026-07-28
+---
+## Kategori-färger på editor-canvasen (spegla arbetarvyns färgspråk)
+Audit-fynd: v2 `ObjectsLayer.tsx` ritar alla objekt monokromt `#374151` — ingen färg/ikon per arbetstyp på planritningen. Bakvänt: ARBETARVYN har färg per kategori (`worker/roomObjectShared.tsx:66` CATEGORY_COLORS: el=amber #f59e0b, VVS=blå #3b82f6, vent=cyan #06b6d4, vitvara=lila #a855f7) men den som RITAR ser grått. Fix: spegla CATEGORY_COLORS till ObjectsLayer (stroke/tint per kategori) + ev. i väggvyn, så ritaren ser samma färgspråk som arbetaren och kan läsa "allt el" i en blick. Delvis blockerad av [[unify-category-vocabulary]] (färg bör bindas till den enhetliga vokabulären, inte hårdkodas två ggr).
+
+---
+id: worker-freetext-translation
+status: todo
+priority: P2
+tags: [worker, i18n, instruktioner, objekt-instruktions-audit]
+created: 2026-07-28
+---
+## Översätt fri text i arbetsinstruktionerna (wallNotes, ytor, finish, bildtexter)
+Audit-fynd: get-worker-data översätter bara strukturerade titel+notering-fält (task/room/room_item-translations). Visas RÅTT på svenska för polsk/ukrainsk arbetare: (a) `wallNotes.text` (väggförankrade lappar) — WallElevationMiniView.tsx:206; (b) `wallSurfaces` material/behandling/färgkod — WallElevationMiniView.tsx:144; (c) objektens `detail.finish` (t.ex. "vit", "NCS…") — roomObjectShared.tsx:153; (d) instruktionsbildernas `description` — WorkerTaskCard.tsx:363. Exakt de konkreta instruktionerna som betyder mest är oöversatta → urholkar arbetar-språk-löftet. Fix: utöka översättnings-blocket i get-worker-data (edge) eller runtime translate-comments för dessa fält. NCS-koder/färgkoder ska INTE översättas (identifierare) — bara den fria beskrivande texten.
+
+---
+id: room-details-item-editing-parity
+status: todo
+priority: P2
+tags: [floorplanner, rumsdetaljer, ux, objekt-instruktions-audit]
+created: 2026-07-28
+---
+## Rumsdetaljers objekt-dialog: subtyp för alla kategorier + finish + bild
+Audit-fynd: `RoomItemsSection.tsx` add/edit-dialog är halvfärdig utanför el. (a) Subtyp-väljaren visas BARA för electrical (`SUBTYPE_OPTIONS` har bara el, :44) — VVS/kök/vent får ingen subtyp; (b) finish/kulör går inte redigera i dialogen (sätts bara via canvas-sync `roomItemLink.ts:51`); (c) ingen bild per objekt (`ObjectInfoCard` i arbetarvyn är ren text). Fix: subtyp-optioner för alla mirror-kategorier (spegla objektbibliotekets kataloger), finish-fält i dialogen, valfri bild per room_item → visas i arbetarvyns ObjectInfoCard. Gör listan⇄canvas⇄arbetarvy symmetrisk. Relaterat: [[unify-category-vocabulary]] (subtyperna bör komma ur samma katalog).
+
+---
+id: worker-object-markers-icons-images
+status: todo
+priority: P3
+tags: [worker, ui, objekt-instruktions-audit]
+created: 2026-07-28
+---
+## Arbetarvyns objektmarkörer: ikon per kategori + bild per objekt
+Audit-fynd: markörerna i RoomMiniMap/WallElevationMiniView är oetiketterade (bara färg + tapp för ObjectInfoCard, ingen ikon); identitet vilar helt på färg. Och ObjectInfoCard saknar bild per objekt. Fix: ikon per kategori på markören (samma ikonspråk som objektbiblioteket) + rendera valfri objekt-bild i ObjectInfoCard (kräver bild-fältet från [[room-details-item-editing-parity]]). Lågprio läsbarhets-lyft; färgkodningen fungerar redan bra.
