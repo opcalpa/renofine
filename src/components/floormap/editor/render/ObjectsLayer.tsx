@@ -22,8 +22,17 @@ import {
 } from '../objects/objectModel';
 import { useFloorMapStore } from '../../store';
 import { useEditorUiStore } from '../state/uiStore';
+import { normalizeWorkCategory, workCategoryColor } from '@/lib/workCategories';
 
 const SELECT_COLOR = '#2563eb';
+
+/**
+ * Trade accent colour for an object's footprint pad, or null for layout-only
+ * objects (furniture/doors/custom). Mirrors the worker view's category colours
+ * so the person drawing and the worker read the same colour language.
+ */
+const tradeAccent = (category: string): string | null =>
+  normalizeWorkCategory(category) ? workCategoryColor(category) : null;
 
 const SymbolPaths: React.FC<{ symbol: SVGSymbol; w: number; d: number }> = ({ symbol, w, d }) => {
   const [, , vbWidth, vbHeight] = symbol.viewBox.split(' ').map(Number);
@@ -61,17 +70,24 @@ const ObjectShape: React.FC<{
   const { w, d } = footprint;
   const pad = 3 / zoom;
   const gripOffset = 26 / zoom;
+  // Trade colour-coding: a faint tinted pad + thin border behind work-item
+  // objects (electrical/plumbing/kitchen/vent/appliance) so trades read at a
+  // glance. Layout objects (furniture/custom) stay neutral.
+  const accent = tradeAccent(def.category);
 
   return (
     <Group x={center.x} y={center.y} rotation={rotation} name={shape.id}>
-      {/* Hit area covering the footprint */}
+      {/* Hit area covering the footprint — doubles as the trade-colour pad. */}
       <Rect
         name={shape.id}
         x={-w / 2 - pad}
         y={-d / 2 - pad}
         width={w + pad * 2}
         height={d + pad * 2}
-        fill="rgba(0,0,0,0.001)"
+        fill={accent ? `${accent}1f` : 'rgba(0,0,0,0.001)'}
+        stroke={accent && !isSelected ? accent : undefined}
+        strokeWidth={accent && !isSelected ? 1 / zoom : undefined}
+        cornerRadius={2 / zoom}
         perfectDrawEnabled={false}
       />
       <Group x={-w / 2} y={-d / 2} listening={false}>
