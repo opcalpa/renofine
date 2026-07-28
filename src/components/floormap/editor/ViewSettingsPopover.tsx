@@ -4,6 +4,7 @@
  * Only affects what is SHOWN — drawing defaults stay in contextual UI.
  */
 
+import { useMemo } from 'react';
 import { SlidersHorizontal } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
@@ -24,6 +25,16 @@ import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { useMeasurement } from '@/contexts/MeasurementContext';
 import { useFloorMapStore } from '../store';
+import { getShapeObjectCategory } from '../objectLibrary';
+
+// Object-library category → [i18n key, fallback]. Mirrors the v1 canvas filter.
+const OBJECT_CATEGORY_LABELS: Record<string, [string, string]> = {
+  electrical: ['roomItems.catElectrical', 'El-objekt'],
+  kitchen: ['canvas.objectCatKitchen', 'Köksobjekt'],
+  plumbing: ['roomItems.catPlumbing', 'VVS'],
+  ventilation: ['roomItems.catVentilation', 'Ventilation'],
+  appliance: ['roomItems.catAppliance', 'Vitvaror'],
+};
 
 const GRID_INTERVAL_OPTIONS = [
   { value: 50, labelKey: 'canvas.gridFine' },
@@ -48,8 +59,21 @@ export const ViewSettingsPopover = () => {
     toggleFinishLabels,
     toggleObjectCategory,
     setUnit,
+    shapes,
   } = useFloorMapStore();
   const surfacesVisible = !projectSettings.hiddenObjectCategories.includes('surface');
+
+  // Object categories actually present on the canvas — each gets a show/hide
+  // toggle (the store + ObjectsLayer already honour hiddenObjectCategories;
+  // v1's CanvasSettingsPopover had this, v2 was missing it).
+  const presentObjectCategories = useMemo(() => {
+    const set = new Set<string>();
+    for (const s of shapes) {
+      const cat = getShapeObjectCategory(s);
+      if (cat) set.add(cat);
+    }
+    return [...set].sort();
+  }, [shapes]);
 
   return (
     <Popover>
@@ -171,6 +195,34 @@ export const ViewSettingsPopover = () => {
               onCheckedChange={toggleFinishLabels}
             />
           </div>
+
+          {/* Per-work-type filter: show/hide placed objects by category. Only
+              categories actually on the canvas get a toggle. */}
+          {presentObjectCategories.length > 0 && (
+            <>
+              <Separator />
+              <Label className="text-xs font-medium text-muted-foreground">
+                {t('canvas.objectVisibility', 'Visa objekt')}
+              </Label>
+              {presentObjectCategories.map((cat) => {
+                const [labelKey, fallback] =
+                  OBJECT_CATEGORY_LABELS[cat] ?? [`roomItems.cat${cat}`, cat];
+                return (
+                  <div key={cat} className="flex items-center justify-between">
+                    <Label htmlFor={`v2-show-cat-${cat}`} className="text-sm font-normal">
+                      {t(labelKey, fallback)}
+                    </Label>
+                    <Switch
+                      id={`v2-show-cat-${cat}`}
+                      data-testid={`v2-cat-toggle-${cat}`}
+                      checked={!projectSettings.hiddenObjectCategories.includes(cat)}
+                      onCheckedChange={() => toggleObjectCategory(cat)}
+                    />
+                  </div>
+                );
+              })}
+            </>
+          )}
 
           <Separator />
 

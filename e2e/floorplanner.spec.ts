@@ -1001,6 +1001,31 @@ test.describe('Floor planner v2', () => {
     await expect(page).toHaveURL(/subtab=floorplan/);
   });
 
+  test('v2 view settings filters placed objects by work type', async ({ page }) => {
+    await openDemoPlanner(page);
+    const canvas = page.getByTestId('editor-v2-canvas');
+    const box = (await canvas.boundingBox())!;
+
+    // Place a plumbing object so a work-type category is present on the canvas
+    await page.getByTestId('tool-objects').click();
+    await page.getByRole('button', { name: /Badrum & VVS/ }).click();
+    await page.locator('button[title="Toalett"]').click();
+    await page.mouse.move(box.x + 500, box.y + 400);
+    await page.waitForTimeout(150);
+    await page.mouse.down();
+    await page.mouse.up();
+    await page.keyboard.press('v');
+    await page.keyboard.press('Escape');
+
+    // View settings now offers a per-category filter toggle for that category
+    await page.getByTestId('view-settings-trigger').click();
+    const toggle = page.getByTestId('v2-cat-toggle-plumbing');
+    await expect(toggle).toBeVisible();
+    await expect(toggle).toHaveAttribute('data-state', 'checked');
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('data-state', 'unchecked');
+  });
+
   test('free shapes: draw, group into one named object, then ungroup', async ({ page }) => {
     await openDemoPlanner(page);
     const canvas = page.getByTestId('editor-v2-canvas');
