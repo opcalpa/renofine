@@ -1548,24 +1548,26 @@ created: 2026-07-28
 ---
 ## Översätt fri text i arbetsinstruktionerna (wallNotes, ytor, finish, bildtexter)
 Audit-fynd: get-worker-data översätter bara strukturerade titel+notering-fält (task/room/room_item-translations). Visas RÅTT på svenska för polsk/ukrainsk arbetare: (a) `wallNotes.text` (väggförankrade lappar) — WallElevationMiniView.tsx:206; (b) `wallSurfaces` material/behandling/färgkod — WallElevationMiniView.tsx:144; (c) objektens `detail.finish` (t.ex. "vit", "NCS…") — roomObjectShared.tsx:153; (d) instruktionsbildernas `description` — WorkerTaskCard.tsx:363. Exakt de konkreta instruktionerna som betyder mest är oöversatta → urholkar arbetar-språk-löftet. Fix: utöka översättnings-blocket i get-worker-data (edge) eller runtime translate-comments för dessa fält. NCS-koder/färgkoder ska INTE översättas (identifierare) — bara den fria beskrivande texten.
-DELVIS LEVERERAT 2026-07-28 (`eec311d`): **wallNotes** översätts nu i samma runtime-pass som meddelanden (translate-comments, workerLang ∉ {sv,en}), WallElevationMiniView visar översättningen + original i tooltip. Ingen edge-deploy. KVAR: objekt-finish (NCS-koder → identifierare-medveten), väggytornas material/behandling (enum-artat, ev. via i18n i st.f. AI), instruktionsbilders bildtexter.
+DELVIS LEVERERAT 2026-07-28 (`eec311d`): **wallNotes** översätts nu i samma runtime-pass som meddelanden (translate-comments, workerLang ∉ {sv,en}), WallElevationMiniView visar översättningen + original i tooltip. Ingen edge-deploy. KVAR: väggytornas material/behandling (enum-artat, ev. via i18n i st.f. AI), instruktionsbilders bildtexter. **objekt-finish KLART** 2026-07-28 (`bdb99cc`, samma runtime-pass, LLM bevarar NCS-koder).
 
 ---
 id: room-details-item-editing-parity
-status: todo
+status: done
 priority: P2
 tags: [floorplanner, rumsdetaljer, ux, objekt-instruktions-audit]
 created: 2026-07-28
 ---
 ## Rumsdetaljers objekt-dialog: subtyp för alla kategorier + finish + bild
 Audit-fynd: `RoomItemsSection.tsx` add/edit-dialog är halvfärdig utanför el. (a) Subtyp-väljaren visas BARA för electrical (`SUBTYPE_OPTIONS` har bara el, :44) — VVS/kök/vent får ingen subtyp; (b) finish/kulör går inte redigera i dialogen (sätts bara via canvas-sync `roomItemLink.ts:51`); (c) ingen bild per objekt (`ObjectInfoCard` i arbetarvyn är ren text). Fix: subtyp-optioner för alla mirror-kategorier (spegla objektbibliotekets kataloger), finish-fält i dialogen, valfri bild per room_item → visas i arbetarvyns ObjectInfoCard. Gör listan⇄canvas⇄arbetarvy symmetrisk. Relaterat: [[unify-category-vocabulary]] (subtyperna bör komma ur samma katalog).
+LEVERERAT 2026-07-28 (`bdb99cc`): (a) subtyp för alla kategorier (härledd ur getObjectsByCategory); (b) finish-fält i dialogen + på raden; (c) referensbild per objekt (upload→detail.image_url, thumbnail i dialog+rad, renderas i arbetarvyns ObjectInfoCard). place-on-plan gatas fortsatt electrical (utökning = follow-up).
 
 ---
 id: worker-object-markers-icons-images
-status: todo
+status: done
 priority: P3
 tags: [worker, ui, objekt-instruktions-audit]
 created: 2026-07-28
 ---
 ## Arbetarvyns objektmarkörer: ikon per kategori + bild per objekt
 Audit-fynd: markörerna i RoomMiniMap/WallElevationMiniView är oetiketterade (bara färg + tapp för ObjectInfoCard, ingen ikon); identitet vilar helt på färg. Och ObjectInfoCard saknar bild per objekt. Fix: ikon per kategori på markören (samma ikonspråk som objektbiblioteket) + rendera valfri objekt-bild i ObjectInfoCard (kräver bild-fältet från [[room-details-item-editing-parity]]). Lågprio läsbarhets-lyft; färgkodningen fungerar redan bra.
+LEVERERAT 2026-07-28 (`bdb99cc`): kategori-ikon i ObjectInfoCard-pillen (per trade) + referensbild per objekt renderas i kortet (via #6c). AVGRÄNSNING: ikon på själva SVG-markören i mini-kartan/väggvyn utelämnad (fiddligt i rå SVG, lågt värde) — ikonen sitter där detaljen läses (info-kortet).
