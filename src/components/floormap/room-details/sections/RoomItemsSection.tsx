@@ -18,10 +18,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Pencil, Trash2, Check, ExternalLink, Loader2, MapPin, Briefcase } from "lucide-react";
+import { Plus, Pencil, Trash2, Check, ExternalLink, Loader2, MapPin, Briefcase, ImagePlus, X } from "lucide-react";
 import { toast } from "sonner";
 import { ELECTRICAL_ITEM_SUBTYPE_OPTIONS, ROOM_ITEM_CATEGORIES } from "../constants";
 import { matchTaskForCategory, type TaskLite } from "../../utils/roomItemTaskLink";
+import { getObjectsByCategory } from "../../objectLibrary";
 
 // Sentinel for the "no task" option (Radix Select forbids an empty-string value).
 const NO_TASK = "__none__";
@@ -30,6 +31,8 @@ interface RoomItemDetail {
   product_link?: string;
   quantity?: number;
   notes?: string;
+  finish?: string;
+  image_url?: string;
 }
 
 interface RoomItem {
@@ -44,12 +47,21 @@ interface RoomItem {
   task_id: string | null;
 }
 
-// Subtype catalogs per category. Only electrical has one today (it maps to the
-// canvas object library); other categories are free-text list entries.
-const SUBTYPE_OPTIONS: Record<string, { value: string; labelKey: string }[]> = {
-  electrical: ELECTRICAL_ITEM_SUBTYPE_OPTIONS,
+// Room-item trade category → object-library palette category (differs for the
+// aliased ones). Lets every category offer subtypes from the object catalog.
+const OBJECT_CATEGORY_FOR: Record<string, string> = {
+  appliance: "appliances",
+  ventilation: "hvac",
 };
-const subtypesFor = (category: string) => SUBTYPE_OPTIONS[category] ?? [];
+
+// Subtype options per category. Electrical keeps its hand-curated list (the E2
+// canvas mapping); the rest derive their subtypes from the object library so
+// plumbing/kitchen/etc. can also be typed, not just free-text.
+const subtypesFor = (category: string): { value: string; labelKey: string }[] => {
+  if (category === "electrical") return ELECTRICAL_ITEM_SUBTYPE_OPTIONS;
+  const objCat = OBJECT_CATEGORY_FOR[category] ?? category;
+  return getObjectsByCategory(objCat).map((d) => ({ value: d.id, labelKey: d.nameKey }));
+};
 
 interface RoomItemsSectionProps {
   roomId?: string;
@@ -65,6 +77,10 @@ interface EditorState {
   title: string;
   quantity: string;
   productLink: string;
+  /** Colour/material instruction, e.g. "vit" or "NCS S 3005-G80Y". */
+  finish: string;
+  /** Reference photo URL for the object, or "". */
+  imageUrl: string;
   /** Assigned task id, or "" for room-wide. */
   taskId: string;
   /** True once the user picks a task by hand (stops category-driven re-suggest). */
@@ -78,6 +94,8 @@ const emptyEditor: EditorState = {
   title: "",
   quantity: "",
   productLink: "",
+  finish: "",
+  imageUrl: "",
   taskId: "",
   taskTouched: false,
 };
@@ -89,7 +107,32 @@ export function RoomItemsSection({ roomId, projectId, onPlaceOnPlan }: RoomItems
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [editor, setEditor] = useState<EditorState>(emptyEditor);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-selecting the same file
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error(t("roomItems.imageTooLarge", "Bilden är för stor (max 10 MB)"));
+      return;
+    }
+    setUploadingImage(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `room-items/${projectId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("project-files").upload(path, file);
+      if (upErr) throw upErr;
+      const { data } = supabase.storage.from("project-files").getPublicUrl(path);
+      setEditor((prev) => ({ ...prev, imageUrl: data.publicUrl }));
+    } catch (err) {
+      console.error("Failed to upload room-item image:", err);
+      toast.error(t("roomItems.imageUploadError", "Kunde inte ladda upp bilden"));
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   const taskTitle = useCallback(
     (id: string | null) => (id ? tasks.find((tk) => tk.id === id)?.title ?? null : null),
@@ -159,6 +202,8 @@ export function RoomItemsSection({ roomId, projectId, onPlaceOnPlan }: RoomItems
       title: item.title,
       quantity: item.detail.quantity != null ? String(item.detail.quantity) : "",
       productLink: item.detail.product_link ?? "",
+      finish: item.detail.finish ?? "",
+      imageUrl: item.detail.image_url ?? "",
       taskId: item.task_id ?? "",
       taskTouched: true, // keep the existing assignment; don't re-suggest on edit
     });
@@ -202,6 +247,8 @@ export function RoomItemsSection({ roomId, projectId, onPlaceOnPlan }: RoomItems
     const detail: RoomItemDetail = {};
     if (qty != null && !Number.isNaN(qty) && qty > 0) detail.quantity = qty;
     if (editor.productLink.trim()) detail.product_link = editor.productLink.trim();
+    if (editor.finish.trim()) detail.finish = editor.finish.trim();
+    if (editor.imageUrl) detail.image_url = editor.imageUrl;
 
     setSaving(true);
     try {
@@ -315,6 +362,8 @@ export function RoomItemsSection({ roomId, projectId, onPlaceOnPlan }: RoomItems
                   !!onPlaceOnPlan &&
                   !!roomId &&
                   !isPlaced &&
+                  // Place-on-plan is wired for the electrical catalog only today.
+                  item.category === "electrical" &&
                   subtypesFor(item.category).some((o) => o.value === item.subtype);
                 return (
                   <li
@@ -333,11 +382,23 @@ export function RoomItemsSection({ roomId, projectId, onPlaceOnPlan }: RoomItems
                     >
                       <Check className="h-3 w-3" />
                     </button>
+                    {item.detail.image_url && (
+                      <img
+                        src={item.detail.image_url}
+                        alt=""
+                        className="h-6 w-6 shrink-0 rounded border object-cover"
+                      />
+                    )}
                     <span className={`truncate font-medium ${installed ? "text-muted-foreground line-through" : ""}`}>
                       {item.title}
                     </span>
                     {item.detail.quantity != null && (
                       <span className="rf-num shrink-0 text-xs text-muted-foreground">×{item.detail.quantity}</span>
+                    )}
+                    {item.detail.finish && (
+                      <span className="max-w-[8rem] shrink-0 truncate text-xs text-muted-foreground" title={item.detail.finish}>
+                        {item.detail.finish}
+                      </span>
                     )}
                     {item.detail.product_link && (
                       <a
@@ -501,6 +562,55 @@ export function RoomItemsSection({ roomId, projectId, onPlaceOnPlan }: RoomItems
                   placeholder="https://…"
                 />
               </div>
+            </div>
+            <div>
+              <Label htmlFor="room-item-finish">
+                {t("roomItems.finish", "Kulör/finish")}
+              </Label>
+              <Input
+                id="room-item-finish"
+                value={editor.finish}
+                onChange={(e) => setEditor((prev) => ({ ...prev, finish: e.target.value }))}
+                placeholder={t("roomItems.finishPlaceholder", 't.ex. "vit" eller "NCS S 3005-G80Y"')}
+              />
+            </div>
+            <div>
+              <Label>{t("roomItems.referenceImage", "Referensbild")}</Label>
+              {editor.imageUrl ? (
+                <div className="relative mt-1 w-fit">
+                  <img
+                    src={editor.imageUrl}
+                    alt=""
+                    className="h-24 w-24 rounded-md border object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setEditor((prev) => ({ ...prev, imageUrl: "" }))}
+                    className="absolute -right-2 -top-2 rounded-full bg-background p-0.5 text-muted-foreground shadow hover:text-destructive"
+                    title={t("common.remove", "Ta bort")}
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <label className="mt-1 flex h-24 w-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-md border border-dashed text-muted-foreground transition-colors hover:border-primary hover:text-primary">
+                  {uploadingImage ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <>
+                      <ImagePlus className="h-5 w-5" />
+                      <span className="text-[10px]">{t("roomItems.addImage", "Lägg till")}</span>
+                    </>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={uploadingImage}
+                    onChange={handleImageUpload}
+                  />
+                </label>
+              )}
             </div>
           </div>
           <DialogFooter>

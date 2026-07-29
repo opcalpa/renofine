@@ -5,10 +5,22 @@
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Check, ExternalLink, Loader2, MessageCircleQuestion, Send } from "lucide-react";
+import { Check, ChefHat, Droplets, ExternalLink, Loader2, MessageCircleQuestion, Send, WashingMachine, Wind, Zap, type LucideIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { WORK_CATEGORY_COLORS, WORK_CATEGORY_LABEL_KEYS, workCategoryColor } from "@/lib/workCategories";
+import { WORK_CATEGORY_COLORS, WORK_CATEGORY_LABEL_KEYS, normalizeWorkCategory, workCategoryColor } from "@/lib/workCategories";
+
+/** Trade icon per category (info-card pill), keyed on the canonical trade id. */
+const CATEGORY_ICON: Record<string, LucideIcon> = {
+  electrical: Zap,
+  plumbing: Droplets,
+  kitchen: ChefHat,
+  ventilation: Wind,
+  appliance: WashingMachine,
+};
+
+export const categoryIcon = (cat: string): LucideIcon | null =>
+  CATEGORY_ICON[normalizeWorkCategory(cat) ?? ""] ?? null;
 
 /** Common fields every placed room-item carries, regardless of view layer. */
 export interface RoomObjectInfo {
@@ -27,6 +39,10 @@ export interface RoomObjectInfo {
   notes: string | null;
   /** Colour/material instruction from the drawing ("vit", "NCS S 3005-G80Y"). */
   finish?: string | null;
+  /** Runtime translation of finish into the worker's language (WorkerView). */
+  translatedFinish?: string | null;
+  /** Reference photo of the object, shown in the info card. */
+  imageUrl?: string | null;
 }
 
 /** Floor-plan placed object — absolute world position (x,y). */
@@ -120,9 +136,13 @@ export function ObjectInfoCard({
       <div className="flex items-start justify-between gap-2">
         <div className="font-medium text-foreground">{objectTitle(object)}</div>
         <span
-          className="mt-0.5 inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-medium text-white"
+          className="mt-0.5 inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium text-white"
           style={{ backgroundColor: categoryColor(object.category) }}
         >
+          {(() => {
+            const Icon = categoryIcon(object.category);
+            return Icon ? <Icon className="h-3 w-3" /> : null;
+          })()}
           {t(CATEGORY_LABEL_KEYS[object.category] || "", object.category)}
         </span>
       </div>
@@ -148,10 +168,21 @@ export function ObjectInfoCard({
         )}
         {object.finish && (
           <div>
-            {t("roomItems.finish", "Kulör/finish")}: <span className="text-foreground">{object.finish}</span>
+            {t("roomItems.finish", "Kulör/finish")}:{" "}
+            <span className="text-foreground">{object.translatedFinish || object.finish}</span>
           </div>
         )}
         {object.notes && <div className="whitespace-pre-wrap">{object.notes}</div>}
+        {object.imageUrl && (
+          <a href={object.imageUrl} target="_blank" rel="noopener noreferrer" className="block">
+            <img
+              src={object.imageUrl}
+              alt=""
+              loading="lazy"
+              className="mt-1 max-h-32 w-full rounded-md border object-cover"
+            />
+          </a>
+        )}
         {object.productLink && (
           <a
             href={object.productLink}

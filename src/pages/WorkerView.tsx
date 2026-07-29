@@ -142,6 +142,12 @@ export default function WorkerView() {
         for (const n of viewData.wallNotes ?? []) {
           if (n.text?.trim()) items.push({ id: WN_PREFIX + n.id, content: n.text });
         }
+        // Object finish instructions ("vit", "ek"…). The translator preserves
+        // codes like "NCS S 3005-G80Y" and only translates the prose parts.
+        const FIN_PREFIX = "fin:";
+        for (const o of [...(viewData.floorPlanObjects ?? []), ...(viewData.wallObjects ?? [])]) {
+          if (o.finish?.trim()) items.push({ id: FIN_PREFIX + o.id, content: o.finish });
+        }
         if (items.length > 0) {
           supabase.functions
             .invoke("translate-comments", {
@@ -170,6 +176,14 @@ export default function WorkerView() {
                   wallNotes: prev.wallNotes?.map((n) => ({
                     ...n,
                     translatedText: trMap.get(WN_PREFIX + n.id) || n.translatedText || null,
+                  })),
+                  floorPlanObjects: prev.floorPlanObjects?.map((o) => ({
+                    ...o,
+                    translatedFinish: trMap.get(FIN_PREFIX + o.id) || o.translatedFinish || null,
+                  })),
+                  wallObjects: prev.wallObjects?.map((o) => ({
+                    ...o,
+                    translatedFinish: trMap.get(FIN_PREFIX + o.id) || o.translatedFinish || null,
                   })),
                 };
               });

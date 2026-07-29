@@ -6830,6 +6830,11 @@
     "onDrawing": "Placed on the drawing",
     "assignTask": "Assign to work",
     "noTask": "No specific work",
-    "assignedTo": "Assigned to work: {{title}}"
+    "assignedTo": "Assigned to work: {{title}}",
+    "finishPlaceholder": "e.g. \"white\" or \"NCS S 3005-G80Y\"",
+    "referenceImage": "Reference image",
+    "addImage": "Add",
+    "imageTooLarge": "Image too large (max 10 MB)",
+    "imageUploadError": "Could not upload the image"
   }
 }

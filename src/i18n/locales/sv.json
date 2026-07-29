@@ -6830,6 +6830,11 @@
     "onDrawing": "Placerad på ritningen",
     "assignTask": "Koppla till arbete",
     "noTask": "Inget särskilt arbete",
-    "assignedTo": "Kopplat till arbete: {{title}}"
+    "assignedTo": "Kopplat till arbete: {{title}}",
+    "finishPlaceholder": "t.ex. \"vit\" eller \"NCS S 3005-G80Y\"",
+    "referenceImage": "Referensbild",
+    "addImage": "Lägg till",
+    "imageTooLarge": "Bilden är för stor (max 10 MB)",
+    "imageUploadError": "Kunde inte ladda upp bilden"
   }
 }

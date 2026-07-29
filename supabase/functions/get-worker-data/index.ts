@@ -264,6 +264,7 @@ serve(async (req) => {
           quantity: typeof detail.quantity === "number" ? detail.quantity : null,
           notes: typeof detail.notes === "string" ? detail.notes : null,
           finish: typeof detail.finish === "string" ? detail.finish : null,
+          imageUrl: typeof detail.image_url === "string" ? detail.image_url : null,
         };
         const pos = shapePos[it.floor_map_shape_id];
         const wr = shapeWall[it.floor_map_shape_id];
