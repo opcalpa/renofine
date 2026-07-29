@@ -1541,13 +1541,14 @@ LEVERERAT 2026-07-28 (`cfe3387`): ObjectsLayer ger work-item-objekt en svag arbe
 
 ---
 id: worker-freetext-translation
-status: todo
+status: doing
 priority: P2
 tags: [worker, i18n, instruktioner, objekt-instruktions-audit]
 created: 2026-07-28
 ---
 ## Översätt fri text i arbetsinstruktionerna (wallNotes, ytor, finish, bildtexter)
 Audit-fynd: get-worker-data översätter bara strukturerade titel+notering-fält (task/room/room_item-translations). Visas RÅTT på svenska för polsk/ukrainsk arbetare: (a) `wallNotes.text` (väggförankrade lappar) — WallElevationMiniView.tsx:206; (b) `wallSurfaces` material/behandling/färgkod — WallElevationMiniView.tsx:144; (c) objektens `detail.finish` (t.ex. "vit", "NCS…") — roomObjectShared.tsx:153; (d) instruktionsbildernas `description` — WorkerTaskCard.tsx:363. Exakt de konkreta instruktionerna som betyder mest är oöversatta → urholkar arbetar-språk-löftet. Fix: utöka översättnings-blocket i get-worker-data (edge) eller runtime translate-comments för dessa fält. NCS-koder/färgkoder ska INTE översättas (identifierare) — bara den fria beskrivande texten.
+DELVIS LEVERERAT 2026-07-28 (`eec311d`): **wallNotes** översätts nu i samma runtime-pass som meddelanden (translate-comments, workerLang ∉ {sv,en}), WallElevationMiniView visar översättningen + original i tooltip. Ingen edge-deploy. KVAR: objekt-finish (NCS-koder → identifierare-medveten), väggytornas material/behandling (enum-artat, ev. via i18n i st.f. AI), instruktionsbilders bildtexter.
 
 ---
 id: room-details-item-editing-parity
