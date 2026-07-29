@@ -59,6 +59,8 @@ export interface WallNote {
   wallId: string;
   roomId: string;
   text: string;
+  /** Runtime translation into the worker's language (WorkerView), if any. */
+  translatedText?: string | null;
   distanceFromWallStart: number;
   elevationBottom: number;
   width: number;

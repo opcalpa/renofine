@@ -135,6 +135,13 @@ export default function WorkerView() {
         if (viewData.welcomeMessage) {
           items.push({ id: WELCOME_ID, content: viewData.welcomeMessage });
         }
+        // Wall-anchored instruction notes are free prose (e.g. "Spotlights 3 st")
+        // and were previously shown untranslated. Translate them in the same
+        // pass; prefix ids so they never collide with message ids.
+        const WN_PREFIX = "wn:";
+        for (const n of viewData.wallNotes ?? []) {
+          if (n.text?.trim()) items.push({ id: WN_PREFIX + n.id, content: n.text });
+        }
         if (items.length > 0) {
           supabase.functions
             .invoke("translate-comments", {
@@ -159,6 +166,10 @@ export default function WorkerView() {
                       ...msg,
                       translatedContent: trMap.get(msg.id) || msg.translatedContent || null,
                     })),
+                  })),
+                  wallNotes: prev.wallNotes?.map((n) => ({
+                    ...n,
+                    translatedText: trMap.get(WN_PREFIX + n.id) || n.translatedText || null,
                   })),
                 };
               });

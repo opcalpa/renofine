@@ -183,6 +183,10 @@ export function WallElevationMiniView({
             {wall.notes.map((n) => {
               const topY = wallHeightMM - (n.elevationBottom + n.height);
               const fontSize = Math.min(n.height * 0.42, 130);
+              // Show the worker-language translation when available; keep the
+              // original in the tooltip.
+              const shown = n.translatedText || n.text;
+              const tooltip = n.translatedText ? `${shown}\n(${n.text})` : n.text;
               return (
                 <g key={n.id}>
                   <rect
@@ -203,8 +207,8 @@ export function WallElevationMiniView({
                     fontSize={fontSize}
                     fill="#713f12"
                   >
-                    {n.text.length > 28 ? `${n.text.slice(0, 27)}…` : n.text}
-                    <title>{n.text}</title>
+                    {shown.length > 28 ? `${shown.slice(0, 27)}…` : shown}
+                    <title>{tooltip}</title>
                   </text>
                 </g>
               );
