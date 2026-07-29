@@ -1519,13 +1519,14 @@ LEVERERAT 2026-07-28 (`559183b`): trade-axeln (el/VVS/kök/vent/vitvara) samlad 
 
 ---
 id: room-item-task-scoping
-status: todo
+status: done
 priority: P1
 tags: [floorplanner, worker, tasks, data-model, objekt-instruktions-audit]
 created: 2026-07-28
 ---
 ## Aktivera task_id på room_items — scopa objekt till rätt jobb/arbetare
 Audit-fynd: `room_items.task_id` FK + index finns (migration 20260604110000) men skrivs ALDRIG från klienten. Alla arbets-ytor når objekten via rummet (`.in("room_id", …)`) — `RoomItemsSummary.tsx:45`, `get-worker-data/index.ts:222`. Konsekvens: har köket "Dra el" (elektriker) + "Måla kök" (målare) ser BÅDA arbetskorten och BÅDA arbetarvyerna alla köksobjekt — elektrikern ser målningsgrejer, målaren ser alla uttag. Kategoriseringen finns på objektet men scopingen till rätt jobb saknas. Fix: skriv task_id vid länkning (canvas-placering i länkat rum + rumsdetaljers add/edit), låt arbetskortet/arbetarvyn filtrera på task_id när det finns (fall tillbaka på room_id för äldre data). Största samspels-vinsten; gör de fyra silorna till ETT system i stället för råkade rum-överlapp. Beroende: helst efter [[unify-category-vocabulary]] men kan göras separat.
+LEVERERAT 2026-07-28 (`ccc1832`), Carls modell = auto-förslag + override: labor-axel-brygga i registret + roomItemTaskLink-util (länkar bara vid EXAKT en matchande rums-task, annars rums-bred). Auto-länk vid canvas-placering + rumsdetaljers add-dialog; manuell 'Koppla till arbete'-selector + task-badge. Filter på ägarens arbetskort (RoomItemsSummary) + arbetarens list-vy (WorkerTaskCard: egna+rums-breda, döljer andra taskers); rums-vyn medvetet rums-bred. Bakåtkompatibelt. **⚠️ KRÄVER EDGE-DEPLOY: `supabase functions deploy get-worker-data`** (bär task_id→taskId; utan deploy visas allt som förr = graceful). Ingen migration (task_id-kolumnen fanns).
 
 ---
 id: canvas-category-colors
