@@ -189,6 +189,7 @@ serve(async (req) => {
       id: string;
       drawingObjectId: string;
       roomId: string | null;
+      taskId: string | null;
       x: number;
       y: number;
       category: string;
@@ -204,6 +205,7 @@ serve(async (req) => {
       id: string;
       drawingObjectId: string;
       roomId: string | null;
+      taskId: string | null;
       wallId: string;
       category: string;
       subtype: string | null;
@@ -220,7 +222,7 @@ serve(async (req) => {
     if (roomIds.length > 0) {
       const { data: items } = await sb
         .from("room_items")
-        .select("id, room_id, category, subtype, title, install_status, detail, floor_map_shape_id")
+        .select("id, room_id, task_id, category, subtype, title, install_status, detail, floor_map_shape_id")
         .eq("project_id", tokenRecord.project_id)
         .in("room_id", roomIds)
         .not("floor_map_shape_id", "is", null);
@@ -253,6 +255,7 @@ serve(async (req) => {
           id: it.id,
           drawingObjectId: it.floor_map_shape_id as string,
           roomId: it.room_id,
+          taskId: (it.task_id as string | null) ?? null,
           category: it.category,
           subtype: it.subtype,
           title: it.title,

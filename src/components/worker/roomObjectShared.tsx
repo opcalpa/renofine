@@ -16,6 +16,8 @@ export interface RoomObjectInfo {
   /** floor_map_shapes.id — the drawing object a worker question is tagged to. */
   drawingObjectId?: string | null;
   roomId: string | null;
+  /** Assigned task id, or null for a room-wide object (shown to every task). */
+  taskId?: string | null;
   category: string;
   subtype: string | null;
   title: string;

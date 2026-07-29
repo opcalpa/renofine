@@ -6827,6 +6827,9 @@
     "questionFailed": "Could not send question",
     "catKitchen": "Kitchen",
     "taskSummaryTitle": "Room objects",
-    "onDrawing": "Placed on the drawing"
+    "onDrawing": "Placed on the drawing",
+    "assignTask": "Assign to work",
+    "noTask": "No specific work",
+    "assignedTo": "Assigned to work: {{title}}"
   }
 }

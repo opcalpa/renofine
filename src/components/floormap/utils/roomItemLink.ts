@@ -2,6 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { FloorMapShape } from '../types';
 import { saveShapesForPlan } from './plans';
 import { normalizeWorkCategory } from '@/lib/workCategories';
+import { resolveTaskForRoomItem } from './roomItemTaskLink';
 
 /**
  * E3 — link a freshly placed canvas object to its room_items row.
@@ -90,6 +91,10 @@ export async function createRoomItemForPlacedShape(
   // so the mirrored row's category matches the shared work-category registry.
   const canonicalCategory = normalizeWorkCategory(category) ?? category;
 
+  // Auto-suggest the room task this object belongs to (electrician's outlets →
+  // the room's electrical task). Unmatched/ambiguous stays room-wide (null).
+  const taskId = await resolveTaskForRoomItem(roomId, canonicalCategory).catch(() => null);
+
   const { error } = await supabase.from('room_items').insert({
     project_id: projectId,
     room_id: roomId,
@@ -98,6 +103,7 @@ export async function createRoomItemForPlacedShape(
     title: shape.name || subtype || canonicalCategory,
     representation_kind: 'point',
     floor_map_shape_id: shape.id,
+    task_id: taskId,
   });
 
   if (error) throw error;

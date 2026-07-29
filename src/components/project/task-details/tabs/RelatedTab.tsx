@@ -155,7 +155,7 @@ export function RelatedTab({ task, projectId, dependencies, setDependencies, all
 
       {/* Objects logged/placed in the task's rooms — mirror of the floor plan
           and room-details lists (same room_items records) */}
-      {taskRoomIds.length > 0 && <RoomItemsSummary roomIds={taskRoomIds} />}
+      {taskRoomIds.length > 0 && <RoomItemsSummary roomIds={taskRoomIds} taskId={task.id} />}
 
       {/* Room details (aggregated from all linked rooms) */}
       {taskRoomIds.length > 0 && (

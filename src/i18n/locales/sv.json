@@ -6827,6 +6827,9 @@
     "questionFailed": "Kunde inte skicka frågan",
     "catKitchen": "Kök",
     "taskSummaryTitle": "Rummets objekt",
-    "onDrawing": "Placerad på ritningen"
+    "onDrawing": "Placerad på ritningen",
+    "assignTask": "Koppla till arbete",
+    "noTask": "Inget särskilt arbete",
+    "assignedTo": "Kopplat till arbete: {{title}}"
   }
 }

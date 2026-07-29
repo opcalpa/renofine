@@ -18,9 +18,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Pencil, Trash2, Check, ExternalLink, Loader2, MapPin } from "lucide-react";
+import { Plus, Pencil, Trash2, Check, ExternalLink, Loader2, MapPin, Briefcase } from "lucide-react";
 import { toast } from "sonner";
 import { ELECTRICAL_ITEM_SUBTYPE_OPTIONS, ROOM_ITEM_CATEGORIES } from "../constants";
+import { matchTaskForCategory, type TaskLite } from "../../utils/roomItemTaskLink";
+
+// Sentinel for the "no task" option (Radix Select forbids an empty-string value).
+const NO_TASK = "__none__";
 
 interface RoomItemDetail {
   product_link?: string;
@@ -37,6 +41,7 @@ interface RoomItem {
   install_status: string;
   representation_kind: string;
   floor_map_shape_id: string | null;
+  task_id: string | null;
 }
 
 // Subtype catalogs per category. Only electrical has one today (it maps to the
@@ -60,6 +65,10 @@ interface EditorState {
   title: string;
   quantity: string;
   productLink: string;
+  /** Assigned task id, or "" for room-wide. */
+  taskId: string;
+  /** True once the user picks a task by hand (stops category-driven re-suggest). */
+  taskTouched: boolean;
 }
 
 const emptyEditor: EditorState = {
@@ -69,15 +78,23 @@ const emptyEditor: EditorState = {
   title: "",
   quantity: "",
   productLink: "",
+  taskId: "",
+  taskTouched: false,
 };
 
 export function RoomItemsSection({ roomId, projectId, onPlaceOnPlan }: RoomItemsSectionProps) {
   const { t } = useTranslation();
   const [items, setItems] = useState<RoomItem[]>([]);
+  const [tasks, setTasks] = useState<TaskLite[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editor, setEditor] = useState<EditorState>(emptyEditor);
+
+  const taskTitle = useCallback(
+    (id: string | null) => (id ? tasks.find((tk) => tk.id === id)?.title ?? null : null),
+    [tasks]
+  );
 
   const editorSubtypes = subtypesFor(editor.category);
   const labelForSubtype = useCallback(
@@ -95,24 +112,32 @@ export function RoomItemsSection({ roomId, projectId, onPlaceOnPlan }: RoomItems
       return;
     }
     setLoading(true);
-    const { data, error } = await supabase
-      .from("room_items")
-      .select("id, category, subtype, title, detail, install_status, representation_kind, floor_map_shape_id")
-      .eq("room_id", roomId)
-      .order("sort_order", { ascending: true, nullsFirst: false })
-      .order("created_at", { ascending: true });
+    const [itemsRes, tasksRes] = await Promise.all([
+      supabase
+        .from("room_items")
+        .select("id, category, subtype, title, detail, install_status, representation_kind, floor_map_shape_id, task_id")
+        .eq("room_id", roomId)
+        .order("sort_order", { ascending: true, nullsFirst: false })
+        .order("created_at", { ascending: true }),
+      // Room tasks power the auto-suggest + manual "assign to work" selector.
+      supabase
+        .from("tasks")
+        .select("id, title, cost_center, room_id, room_ids")
+        .or(`room_id.eq.${roomId},room_ids.cs.{${roomId}}`),
+    ]);
 
-    if (error) {
-      console.error("Failed to load room items:", error);
+    if (itemsRes.error) {
+      console.error("Failed to load room items:", itemsRes.error);
       toast.error(t("roomItems.loadError", "Kunde inte ladda objekt"));
     } else {
       setItems(
-        (data ?? []).map((row) => ({
+        (itemsRes.data ?? []).map((row) => ({
           ...row,
           detail: (row.detail ?? {}) as RoomItemDetail,
         }))
       );
     }
+    if (!tasksRes.error && tasksRes.data) setTasks(tasksRes.data as TaskLite[]);
     setLoading(false);
   }, [roomId, t]);
 
@@ -121,7 +146,8 @@ export function RoomItemsSection({ roomId, projectId, onPlaceOnPlan }: RoomItems
   }, [fetchItems]);
 
   const openCreate = () => {
-    setEditor(emptyEditor);
+    const category = ROOM_ITEM_CATEGORIES[0].value;
+    setEditor({ ...emptyEditor, category, taskId: matchTaskForCategory(category, tasks) ?? "" });
     setDialogOpen(true);
   };
 
@@ -133,6 +159,8 @@ export function RoomItemsSection({ roomId, projectId, onPlaceOnPlan }: RoomItems
       title: item.title,
       quantity: item.detail.quantity != null ? String(item.detail.quantity) : "",
       productLink: item.detail.product_link ?? "",
+      taskId: item.task_id ?? "",
+      taskTouched: true, // keep the existing assignment; don't re-suggest on edit
     });
     setDialogOpen(true);
   };
@@ -146,6 +174,8 @@ export function RoomItemsSection({ roomId, projectId, onPlaceOnPlan }: RoomItems
       category: value,
       subtype: "",
       title: prev.title === oldLabel ? "" : prev.title,
+      // Re-suggest the linked task from the new category until the user picks one.
+      taskId: prev.taskTouched ? prev.taskId : matchTaskForCategory(value, tasks) ?? "",
     }));
   };
 
@@ -178,7 +208,13 @@ export function RoomItemsSection({ roomId, projectId, onPlaceOnPlan }: RoomItems
       if (editor.id) {
         const { error } = await supabase
           .from("room_items")
-          .update({ category: editor.category, subtype: editor.subtype || null, title, detail })
+          .update({
+            category: editor.category,
+            subtype: editor.subtype || null,
+            title,
+            detail,
+            task_id: editor.taskId || null,
+          })
           .eq("id", editor.id);
         if (error) throw error;
         toast.success(t("roomItems.updated", "Objekt uppdaterat"));
@@ -191,6 +227,7 @@ export function RoomItemsSection({ roomId, projectId, onPlaceOnPlan }: RoomItems
           title,
           detail,
           representation_kind: "none",
+          task_id: editor.taskId || null,
         });
         if (error) throw error;
         toast.success(t("roomItems.created", "Objekt loggat"));
@@ -322,6 +359,15 @@ export function RoomItemsSection({ roomId, projectId, onPlaceOnPlan }: RoomItems
                         {t("roomItems.onPlan", "På ritning")}
                       </span>
                     )}
+                    {taskTitle(item.task_id) && (
+                      <span
+                        className="inline-flex max-w-[9rem] shrink-0 items-center gap-1 truncate rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary"
+                        title={t("roomItems.assignedTo", "Kopplat till arbete: {{title}}", { title: taskTitle(item.task_id) })}
+                      >
+                        <Briefcase className="h-3 w-3 shrink-0" />
+                        <span className="truncate">{taskTitle(item.task_id)}</span>
+                      </span>
+                    )}
                     <div className="ml-auto flex shrink-0 items-center gap-0.5">
                       {canPlace && (
                         <Button
@@ -389,6 +435,35 @@ export function RoomItemsSection({ roomId, projectId, onPlaceOnPlan }: RoomItems
                     {editorSubtypes.map((opt) => (
                       <SelectItem key={opt.value} value={opt.value}>
                         {t(opt.labelKey)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            {tasks.length > 0 && (
+              <div>
+                <Label>{t("roomItems.assignTask", "Koppla till arbete")}</Label>
+                <Select
+                  value={editor.taskId || NO_TASK}
+                  onValueChange={(v) =>
+                    setEditor((prev) => ({
+                      ...prev,
+                      taskId: v === NO_TASK ? "" : v,
+                      taskTouched: true,
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NO_TASK}>
+                      {t("roomItems.noTask", "Inget särskilt arbete")}
+                    </SelectItem>
+                    {tasks.map((tk) => (
+                      <SelectItem key={tk.id} value={tk.id}>
+                        {tk.title}
                       </SelectItem>
                     ))}
                   </SelectContent>

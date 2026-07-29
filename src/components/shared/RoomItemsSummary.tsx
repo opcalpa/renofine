@@ -20,13 +20,19 @@ interface SummaryItem {
   install_status: string;
   detail: Record<string, unknown> | null;
   floor_map_shape_id: string | null;
+  task_id: string | null;
 }
 
 interface RoomItemsSummaryProps {
   roomIds: string[];
+  /**
+   * When set, scope to this task: show items assigned to it plus room-wide
+   * items (task_id null); hide items assigned to OTHER tasks in the room.
+   */
+  taskId?: string;
 }
 
-export function RoomItemsSummary({ roomIds }: RoomItemsSummaryProps) {
+export function RoomItemsSummary({ roomIds, taskId }: RoomItemsSummaryProps) {
   const { t } = useTranslation();
   const [items, setItems] = useState<SummaryItem[]>([]);
   const [roomNames, setRoomNames] = useState<Record<string, string>>({});
@@ -41,14 +47,19 @@ export function RoomItemsSummary({ roomIds }: RoomItemsSummaryProps) {
       const [itemsRes, roomsRes] = await Promise.all([
         supabase
           .from("room_items")
-          .select("id, room_id, category, subtype, title, install_status, detail, floor_map_shape_id")
+          .select("id, room_id, category, subtype, title, install_status, detail, floor_map_shape_id, task_id")
           .in("room_id", roomIds)
           .order("category")
           .order("sort_order", { ascending: true, nullsFirst: false }),
         supabase.from("rooms").select("id, name").in("id", roomIds),
       ]);
       if (cancelled) return;
-      if (!itemsRes.error && itemsRes.data) setItems(itemsRes.data as SummaryItem[]);
+      if (!itemsRes.error && itemsRes.data) {
+        // Scope to this task: its own items + room-wide (unassigned) items;
+        // items belonging to another task in the same room are hidden.
+        const rows = itemsRes.data as SummaryItem[];
+        setItems(taskId ? rows.filter((r) => !r.task_id || r.task_id === taskId) : rows);
+      }
       if (!roomsRes.error && roomsRes.data) {
         setRoomNames(Object.fromEntries(roomsRes.data.map((r) => [r.id, r.name])));
       }
@@ -56,7 +67,7 @@ export function RoomItemsSummary({ roomIds }: RoomItemsSummaryProps) {
     return () => {
       cancelled = true;
     };
-  }, [roomIds.join(",")]);
+  }, [roomIds.join(","), taskId]);
 
   if (items.length === 0) return null;
 

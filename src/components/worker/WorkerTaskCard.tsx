@@ -163,6 +163,12 @@ export function WorkerTaskCard({
   const allItems = task.checklists.flatMap((cl) => cl.items);
   const completedCount = allItems.filter((i) => i.completed).length;
 
+  // Scope placed objects to THIS task: its own objects + room-wide (unassigned)
+  // ones. Objects assigned to another task in the same room are hidden, so a
+  // shared room shows each worker only their trade's items.
+  const scopedFloorObjects = (floorPlanObjects || []).filter((o) => !o.taskId || o.taskId === task.id);
+  const scopedWallObjects = (wallObjects || []).filter((o) => !o.taskId || o.taskId === task.id);
+
   // Room info
   const room = task.room;
   const areaSqm = room?.dimensions?.area_sqm;
@@ -274,7 +280,7 @@ export function WorkerTaskCard({
 
       {/* Floor plan + wall instruction views */}
       {((floorPlan && floorPlan.length > 0) ||
-        (wallObjects || []).some((o) => o.roomId === task.roomId) ||
+        scopedWallObjects.some((o) => o.roomId === task.roomId) ||
         (wallNotes || []).some((n) => n.roomId === task.roomId) ||
         (wallSurfaces || []).some((s) => s.roomId === task.roomId)) &&
         task.room && (
@@ -284,8 +290,8 @@ export function WorkerTaskCard({
                 shapes={floorPlan || []}
                 highlightRoomId={task.roomId}
                 backgroundImage={floorPlanImage}
-                floorObjects={floorPlanObjects}
-                wallObjects={wallObjects}
+                floorObjects={scopedFloorObjects}
+                wallObjects={scopedWallObjects}
                 wallSurfaces={wallSurfaces}
                 wallNotes={wallNotes}
                 ceilingHeightMm={ceilingH}

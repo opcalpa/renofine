@@ -26,11 +26,19 @@ export interface WorkCategoryDef {
   color: string;
   /** Object-library category ids that normalise onto this trade. */
   objectAliases?: string[];
+  /**
+   * The estimation labour work-type this trade bridges to (materialRecipes.ts),
+   * used to auto-suggest which room task a placed object belongs to. Only trades
+   * that have their own labour type bridge (electrical, plumbing); kitchen/
+   * ventilation/appliance objects are laid out under carpentry/other work and
+   * are left for manual assignment.
+   */
+  workType?: string;
 }
 
 export const WORK_CATEGORIES: WorkCategoryDef[] = [
-  { id: 'electrical', labelKey: 'roomItems.catElectrical', fallback: 'El-objekt', color: '#f59e0b', objectAliases: ['lighting'] },
-  { id: 'plumbing', labelKey: 'roomItems.catPlumbing', fallback: 'VVS', color: '#3b82f6' },
+  { id: 'electrical', labelKey: 'roomItems.catElectrical', fallback: 'El-objekt', color: '#f59e0b', objectAliases: ['lighting'], workType: 'electrical' },
+  { id: 'plumbing', labelKey: 'roomItems.catPlumbing', fallback: 'VVS', color: '#3b82f6', workType: 'plumbing' },
   { id: 'kitchen', labelKey: 'roomItems.catKitchen', fallback: 'Köksobjekt', color: '#10b981' },
   { id: 'ventilation', labelKey: 'roomItems.catVentilation', fallback: 'Ventilation', color: '#06b6d4', objectAliases: ['hvac'] },
   { id: 'appliance', labelKey: 'roomItems.catAppliance', fallback: 'Vitvaror', color: '#a855f7', objectAliases: ['appliances'] },
@@ -67,6 +75,16 @@ export function workCategoryColor(raw: string | null | undefined): string {
 
 export function workCategoryDef(id: string): WorkCategoryDef | undefined {
   return BY_ID.get(id);
+}
+
+/**
+ * The estimation labour work-type a category bridges to (electrical→electrical,
+ * plumbing→plumbing), or null when the trade has no direct labour type. Used to
+ * auto-suggest which room task a placed object belongs to.
+ */
+export function workCategoryToWorkType(raw: string | null | undefined): string | null {
+  const id = normalizeWorkCategory(raw);
+  return (id ? BY_ID.get(id)?.workType : undefined) ?? null;
 }
 
 // --- Derived views for existing consumers (shapes kept identical) -----------
