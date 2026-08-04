@@ -35,6 +35,10 @@ export const useAuthSession = (): AuthSession => {
         // Identify user in analytics when they sign in
         if (event === 'SIGNED_IN' && currentSession?.user) {
           analytics.identify(currentSession.user.id, {
+            // Full email so the person roster is answerable directly in PostHog
+            // (cohorts, person funnels, who dropped off). Email inputs are masked
+            // in session recordings, so it lives in analytics but not raw replays.
+            email: currentSession.user.email,
             email_domain: currentSession.user.email?.split('@')[1],
             auth_provider: currentSession.user.app_metadata?.provider,
           });

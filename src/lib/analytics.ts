@@ -153,10 +153,11 @@ function init(): void {
     session_recording: {
       // Mask all text inputs for privacy
       maskAllInputs: true,
-      // Don't record passwords, credit cards, etc.
+      // Don't record passwords, credit cards, etc. Email is masked in replays so
+      // it stays in analytics (person roster) but not in raw session recordings.
       maskInputOptions: {
         password: true,
-        email: false,
+        email: true,
         text: false,
       },
     },
