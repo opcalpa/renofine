@@ -1572,3 +1572,32 @@ created: 2026-07-28
 ## Arbetarvyns objektmarkörer: ikon per kategori + bild per objekt
 Audit-fynd: markörerna i RoomMiniMap/WallElevationMiniView är oetiketterade (bara färg + tapp för ObjectInfoCard, ingen ikon); identitet vilar helt på färg. Och ObjectInfoCard saknar bild per objekt. Fix: ikon per kategori på markören (samma ikonspråk som objektbiblioteket) + rendera valfri objekt-bild i ObjectInfoCard (kräver bild-fältet från [[room-details-item-editing-parity]]). Lågprio läsbarhets-lyft; färgkodningen fungerar redan bra.
 LEVERERAT 2026-07-28 (`bdb99cc`): kategori-ikon i ObjectInfoCard-pillen (per trade) + referensbild per objekt renderas i kortet (via #6c). AVGRÄNSNING: ikon på själva SVG-markören i mini-kartan/väggvyn utelämnad (fiddligt i rå SVG, lågt värde) — ikonen sitter där detaljen läses (info-kortet).
+
+---
+id: imperial-units-full-support
+status: todo
+priority: P2
+tags: [imperial, measurement, i18n, us-market, audit, keerthi-feedback]
+created: 2026-08-04
+---
+## Imperial-enheter genom HELA appen (audit + fasad plan)
+Audit 2026-08-04 (Keerthi Naidu, US-realtor, bad om detta i mars; Carl trodde det var live men bara väggvyn är korrekt). **Kör i prio-ordning nedan.**
+
+**KORTSVAR:** imperial stöds INTE genom appen. Enda helt korrekta ytan = **väggvyn/elevation** (`RoomElevationView.tsx:705` ms.fmtLength). Flera ytor är HALVKOPPLADE → aktiv bugg (imperial-etikett på oomvandlat m²-tal).
+
+**ROTORSAK:** två parallella enhetssystem — `utils/units.ts` (imperial-korrekt) vs `utils/formatting.ts` (bara mm/cm/m) + v2:s `editor/core/units.ts` hårdkodar mm (`formatWorldAsMm`). Och `useMeasurement`-contexten saknar `convertArea(m²)` — bara `fmtArea(mm²)` finns. Rum lagrar area i m² (area_sqm) → listor byter bara ETIKETT, inte tal.
+
+**TÄCKNINGSKARTA:**
+- ✅ Väggvyn (ft/in korrekt). ✅ SmartEstimateCard konverterar area (läcker m² i per-rums-tabell rad 317/323).
+- ⚠️ AKTIV BUGG (imperial-etikett på råa m²): RoomsList.tsx:238, rooms-table/RoomsTableView.tsx:109, rooms-list-v2/RoomCardV2.tsx:219, v2/RoomHeroV2.tsx:288 (+ volym m³ 300), overview/PlanningRoomList.tsx:152.
+- ❌ Metrisk-hårdkodad: v2-canvas (WallsLayer.tsx:98, DimensionChainLayer.tsx:80, LegacyShapesLayer.tsx:98 area, MeasureTool.ts:40, OverlayLayer.tsx:93 skriv-in-mått), v1-canvas (formatting.ts:20-30 saknar imperial → WallShape.tsx:264/RoomShape.tsx:528 visar råa mm när imperial valt), rumsmått-INMATNING (IdentitySection.tsx:125-149 unit="m" *1000), CalculationsSection.tsx, GuestTaskEstimateSheet, GuestPlanningSection, PlanningTaskList, EconomyTab, arbetarvyn (TaskRoomDetails.tsx:124/129, RoomInstructionCard.tsx:144), offerter (QuoteItemRow.tsx:11 ["st","m2","m","h","kg"]), intake-wizards, ShareRfqDialog-export.
+
+**Mätsystem-källa:** per-USER (profiles.measurement_system, toggle Profile.tsx:796). useMeasurement() ger system/isImperial/fmtLength(mm)/fmtArea(mm²)/areaLabel. useMeasurementSystem.ts har även units/convertLength/convertArea men contexten exponerar dem EJ (och fallback saknar units → kraschar utanför provider).
+
+**FASAD PLAN (prio-ordning):**
+1. **[P2, ~1 commit, GÖR FÖRST] Fixa aktiva area-buggen:** lägg `convertAreaSqm(m²)`/`fmtAreaSqm(m²)` på MeasurementContext (multiplicera 10.7639 vid imperial) → uppdatera alla ⚠️-ställen ovan att konvertera talet, inte bara etiketten. Fixar det enda som är direkt FEL idag. Fixa även SmartEstimateCard per-rums-läckan.
+2. **[P3] Ena enhetssystemen + koppla canvasen:** döda metric-only `formatting.ts` (route via units.ts), gör v2:s `formatWorldAsMm` unit-aware (läs system) → v2 + v1 canvas vägglängder/areor/måttband/skriv-in-mått i aktiv enhet. Ena de två `Unit`-typerna.
+3. **[P3] Rumsmått-INMATNING** (IdentitySection) tar imperial (ft/in → mm).
+4. **[P3] Svep resten:** planering/estimering (Calculations, Guest-flöden, wizards), arbetarvyn, offert/material/budget-enhetsdropdown (ft²/ft/yd), RFQ-export, AI-import.
+
+**Strategisk not:** noll aktiva US-användare (Keerthi testade 1 dag i mars, aldrig tillbaka). Fas 1 = värd nu (tar bort pinsam bugg). Fas 2–4 = när US är validerat fokus, ej reflexmässigt. Alternativ tills dess: gate imperial-toggeln bakom "beta" så den inte ljuger.
