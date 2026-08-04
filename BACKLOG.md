@@ -1281,11 +1281,12 @@ explicit, separat märkt "Radera mina lokala projekt"-bekräftelse.
 
 ---
 id: define-activation-event
-status: todo
+status: done
 priority: P2
 tags: [agent-proposed, sil-förslag, aktivering, analytics, growth]
 created: 2026-07-17
 ---
+LEVERERAT 2026-08-04 (`00c4564`): `activation_reached` fyras en gång per användare vid första värde-handlingen (arbete skapat / Renaida applicerad / kvitto tolkat / arbetare inbjuden), som EN intercept i analytics.capture() — guardad per user-id i localStorage. Motiverat av avhopps-analysen: alla signups slutför onboarding men få tar första handlingen. Gör signup→aktivering mätbart. Nästa: bygg en PostHog-tratt signup_completed → activation_reached.
 ## 🤖 Definiera + instrumentera ETT explicit aktiverings-event NU (före FB-distribution)
 
 **Agent-förslag (SIL) — triageras av Carl.** Renofine spårar rika event
