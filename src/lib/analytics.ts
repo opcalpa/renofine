@@ -18,6 +18,10 @@ interface GtagWindow extends Window {
 const POSTHOG_KEY = import.meta.env.VITE_POSTHOG_KEY;
 const IS_PRODUCTION = import.meta.env.PROD;
 
+// Current user id (set on identify), so activation fires once PER USER, not per
+// device/session. Cleared on logout.
+let currentUserId: string | null = null;
+
 // Event names as constants for type safety and consistency
 export const AnalyticsEvents = {
   // Onboarding & Activation
@@ -90,9 +94,25 @@ export const AnalyticsEvents = {
   // Auth
   SIGNUP_COMPLETED: "signup_completed",
 
+  // Activation — fired ONCE per user the first time they cross into real value
+  // (see VALUE_EVENTS). Turns "signed up" into a measurable "actually used it".
+  ACTIVATION_REACHED: "activation_reached",
+
   // Errors (supplement to Sentry)
   ERROR_BOUNDARY_TRIGGERED: "error_boundary_triggered",
 } as const;
+
+/**
+ * The first of these a user fires marks activation (empty account → real value).
+ * Chosen from the drop-off analysis: signups complete onboarding but rarely take
+ * a first meaningful action. One of these = they crossed that gap.
+ */
+const VALUE_EVENTS: ReadonlySet<string> = new Set<string>([
+  "task_created",
+  "renaida_applied",
+  "receipt_analyzed",
+  "team_member_invited",
+]);
 
 export type AnalyticsEvent =
   (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents];
@@ -167,9 +187,28 @@ function init(): void {
  * @param traits - Optional user properties (role, plan, etc.)
  */
 function identify(userId: string, traits?: Record<string, unknown>): void {
+  currentUserId = userId;
   if (!POSTHOG_KEY) return;
 
   posthog.identify(userId, traits);
+}
+
+/**
+ * Fire `activation_reached` the first time a user does a value action. Guarded
+ * per user in localStorage so it fires exactly once (and never re-fires for a
+ * returning user). Safe no-op if storage is unavailable.
+ */
+function maybeTrackActivation(triggerEvent: string): void {
+  if (!VALUE_EVENTS.has(triggerEvent)) return;
+  const key = `renofine.activation.${currentUserId ?? "anon"}`;
+  try {
+    if (localStorage.getItem(key)) return;
+    localStorage.setItem(key, new Date().toISOString());
+  } catch {
+    // Private mode / storage blocked — skip the guard rather than throw.
+    return;
+  }
+  capture(AnalyticsEvents.ACTIVATION_REACHED, { trigger: triggerEvent });
 }
 
 /**
@@ -190,6 +229,10 @@ function capture(
   if (typeof window !== "undefined" && (window as GtagWindow).gtag) {
     (window as GtagWindow).gtag("event", event, properties);
   }
+
+  // Derive the one-time activation milestone from value actions (no call sites
+  // to touch — every existing value event flows through here).
+  maybeTrackActivation(event);
 }
 
 /**
@@ -197,6 +240,7 @@ function capture(
  * Clears user identification and starts a new anonymous session
  */
 function reset(): void {
+  currentUserId = null;
   if (!POSTHOG_KEY) return;
 
   posthog.reset();
