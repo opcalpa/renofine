@@ -285,7 +285,7 @@ export function RoomHeroV2({
         style={{ borderColor: "var(--rf-hairline)" }}
       >
         {[
-          { k: t("rooms.area", "Yta"), v: area ? `${area.toFixed(1)} ${ms.areaLabel}` : "—" },
+          { k: t("rooms.area", "Yta"), v: area ? ms.fmtAreaSqm(area) : "—" },
           {
             k: t("rooms.perimeter", "Omkrets"),
             v: perimeter ? ms.fmtLength(perimeter) : "—",
@@ -297,7 +297,7 @@ export function RoomHeroV2({
           },
           {
             k: t("rooms.volume", "Volym"),
-            v: volume ? `${volume.toFixed(1)} m³` : "—",
+            v: volume ? ms.fmtVolumeM3(volume) : "—",
           },
         ].map((s) => (
           <div key={s.k}>

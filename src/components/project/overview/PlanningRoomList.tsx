@@ -149,17 +149,17 @@ function PaintFormulaPopover({ settings, onSettingsChange, room, children }: Pai
             <div className="bg-muted/50 rounded-md p-2 text-xs tabular-nums space-y-0.5">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t("rooms.wallArea")}:</span>
-                <span>{wallArea?.toFixed(1)} {ms.areaLabel}</span>
+                <span>{wallArea != null ? ms.fmtAreaSqm(wallArea) : "—"}</span>
               </div>
               {nonPaintable > 0 && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">{t("estimation.nonPaintable", "Non-paintable")}:</span>
-                  <span>-{nonPaintable.toFixed(1)} {ms.areaLabel}</span>
+                  <span>-{ms.fmtAreaSqm(nonPaintable)}</span>
                 </div>
               )}
               <div className="flex justify-between border-t pt-0.5 mt-0.5">
                 <span className="text-muted-foreground">{t("estimation.paintableArea", "Paintable")}:</span>
-                <span>{paintable.toFixed(1)} {ms.areaLabel}</span>
+                <span>{ms.fmtAreaSqm(paintable)}</span>
               </div>
               <div className="flex justify-between text-muted-foreground">
                 <span>{t("estimation.calculation", "Calculation")}:</span>
@@ -530,11 +530,11 @@ export function PlanningRoomList({ projectId, locked = false, onRoomChange }: Pl
         {rooms.length > 0 && (
           <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
             <span>
-              {t("planningRooms.totalArea", "Total area")}: <strong>{totalArea > 0 ? `${totalArea.toFixed(1)} ${ms.areaLabel}` : "–"}</strong>
+              {t("planningRooms.totalArea", "Total area")}: <strong>{totalArea > 0 ? ms.fmtAreaSqm(totalArea) : "–"}</strong>
             </span>
             {show.wallArea && totalWallArea > 0 && (
               <span>
-                {t("rooms.wallArea")}: <strong>{totalWallArea.toFixed(1)} {ms.areaLabel}</strong>
+                {t("rooms.wallArea")}: <strong>{ms.fmtAreaSqm(totalWallArea)}</strong>
               </span>
             )}
             <span className="text-muted-foreground/60">

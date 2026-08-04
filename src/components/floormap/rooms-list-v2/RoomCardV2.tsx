@@ -216,7 +216,7 @@ export function RoomCardV2({
                 className="rf-num"
                 style={{ fontSize: 12, color: "var(--rf-fg-muted)" }}
               >
-                {area ? `${area.toFixed(1)} ${ms.areaLabel}` : "—"}
+                {area ? ms.fmtAreaSqm(area) : "—"}
               </span>
               <span style={{ color: "var(--rf-hairline)" }}>·</span>
               <span

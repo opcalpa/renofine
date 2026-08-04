@@ -10,6 +10,9 @@ import {
   getAreaUnitLabel,
   convertFromMM,
   convertAreaFromMmSq,
+  convertAreaFromSqm,
+  formatAreaFromSqm,
+  formatVolumeFromM3,
 } from "@/components/floormap/utils/units";
 
 /**
@@ -73,6 +76,10 @@ export function useMeasurementSystem() {
     // Formatting helpers bound to current system
     fmtLength: (mm: number) => formatLength(mm, system),
     fmtArea: (mmSq: number) => formatArea(mmSq, system),
+    // Area/volume already expressed in m²/m³ (e.g. room.dimensions.area_sqm).
+    fmtAreaSqm: (sqm: number, decimals?: number) => formatAreaFromSqm(sqm, system, decimals),
+    convertAreaSqm: (sqm: number) => convertAreaFromSqm(sqm, system),
+    fmtVolumeM3: (m3: number, decimals?: number) => formatVolumeFromM3(m3, system, decimals),
     fmtCoverage: (sqmPerLiter: number) => formatCoverage(sqmPerLiter, system),
     areaLabel: getAreaUnitLabel(system),
     units: getSystemUnits(system),

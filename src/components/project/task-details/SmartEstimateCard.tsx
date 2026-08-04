@@ -314,13 +314,13 @@ export function SmartEstimateCard({ task, rooms, estimationSettings, onApply, on
                   {roomBreakdown.map((r, i) => (
                     <tr key={i} className="border-b last:border-0">
                       <td className="px-2 py-1">{r.name}</td>
-                      <td className="text-right px-2 py-1 tabular-nums">{r.area.toFixed(1)} m²</td>
+                      <td className="text-right px-2 py-1 tabular-nums">{ms.fmtAreaSqm(r.area)}</td>
                       <td className="text-right px-2 py-1 tabular-nums">{r.hours}h</td>
                     </tr>
                   ))}
                   <tr className="font-medium bg-muted/20">
                     <td className="px-2 py-1">{t("common.total", "Total")}</td>
-                    <td className="text-right px-2 py-1 tabular-nums">{result.totalAreaSqm} m²</td>
+                    <td className="text-right px-2 py-1 tabular-nums">{ms.fmtAreaSqm(result.totalAreaSqm)}</td>
                     <td className="text-right px-2 py-1 tabular-nums">{hours}h</td>
                   </tr>
                 </tbody>
@@ -333,7 +333,7 @@ export function SmartEstimateCard({ task, rooms, estimationSettings, onApply, on
             {/* --- HOURS --- */}
             <span className="text-muted-foreground">{t("taskCost.estimatedHours", "Hours")}:</span>
             <span className="text-right">
-              {ms.isImperial ? (result.totalAreaSqm * 10.7639).toFixed(1) : result.totalAreaSqm} {ms.areaLabel} ÷ {renderEditable("productivityRate", productivityRate, ` ${ms.areaLabel}/h`)} = {renderEditable("hours", hours, "h")}
+              {ms.fmtAreaSqm(result.totalAreaSqm)} ÷ {renderEditable("productivityRate", productivityRate, ` ${ms.areaLabel}/h`)} = {renderEditable("hours", hours, "h")}
               {hourlyRate > 0 && (
                 <span className="text-muted-foreground ml-2">
                   ({t("materialRecipes.hourlyRate", "hourly rate")}: {renderEditable("hourlyRate", hourlyRate, " SEK/h")})
@@ -349,11 +349,11 @@ export function SmartEstimateCard({ task, rooms, estimationSettings, onApply, on
                 <span className="text-right border-t pt-1 mt-1">
                   {hasPaintRecipe ? (
                     <>
-                      {ms.isImperial ? (mat.workAreaSqm * 10.7639).toFixed(1) : mat.workAreaSqm.toFixed(1)} {ms.areaLabel} ÷ {renderEditable("coverage", coverage, ms.isImperial ? " sq ft/gal" : " m²/L")} × {renderEditable("coats", coats, ` ${t("materialRecipes.coats", "coats")}`)} = {renderEditable("quantity", quantity, mat.unit)}
+                      {ms.fmtAreaSqm(mat.workAreaSqm)} ÷ {renderEditable("coverage", coverage, ms.isImperial ? " sq ft/gal" : " m²/L")} × {renderEditable("coats", coats, ` ${t("materialRecipes.coats", "coats")}`)} = {renderEditable("quantity", quantity, mat.unit)}
                     </>
                   ) : hasWasteRecipe ? (
                     <>
-                      {mat.workAreaSqm.toFixed(1)} m² × {renderEditable("wasteFactor", wasteFactor, "")} = {renderEditable("quantity", quantity, ` ${mat.unit}`)}
+                      {ms.fmtAreaSqm(mat.workAreaSqm)} × {renderEditable("wasteFactor", wasteFactor, "")} = {renderEditable("quantity", quantity, ` ${mat.unit}`)}
                     </>
                   ) : (
                     <>{renderEditable("quantity", quantity, ` ${mat.unit}`)}</>
@@ -379,7 +379,7 @@ export function SmartEstimateCard({ task, rooms, estimationSettings, onApply, on
               <>
                 <span className="text-muted-foreground">{t("materialRecipes.ceilingQty", "Ceiling qty")}:</span>
                 <span className="text-right">
-                  {ms.isImperial ? (ceilingExtra.workAreaSqm * 10.7639).toFixed(1) : ceilingExtra.workAreaSqm.toFixed(1)} {ms.areaLabel} ÷ {renderEditable("coverage", coverage, ms.isImperial ? " sq ft/gal" : " m²/L")} × {renderEditable("coats", coats, ` ${t("materialRecipes.coats", "coats")}`)} = {renderEditable("ceilingQty", ceilingQty, ceilingExtra.unit)}
+                  {ms.fmtAreaSqm(ceilingExtra.workAreaSqm)} ÷ {renderEditable("coverage", coverage, ms.isImperial ? " sq ft/gal" : " m²/L")} × {renderEditable("coats", coats, ` ${t("materialRecipes.coats", "coats")}`)} = {renderEditable("ceilingQty", ceilingQty, ceilingExtra.unit)}
                 </span>
                 <span className="text-muted-foreground">{t(ceilingExtra.nameKey, ceilingExtra.nameFallback)}:</span>
                 <span className="text-right">

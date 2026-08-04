@@ -8,6 +8,12 @@ interface MeasurementContextValue {
   updateSystem: (s: MeasurementSystem) => Promise<void>;
   fmtLength: (mm: number) => string;
   fmtArea: (mmSq: number) => string;
+  /** Format an area already in m² (converts to sq ft when imperial). */
+  fmtAreaSqm: (sqm: number, decimals?: number) => string;
+  /** Convert an area already in m² to the display unit value. */
+  convertAreaSqm: (sqm: number) => number;
+  /** Format a volume already in m³ (converts to ft³ when imperial). */
+  fmtVolumeM3: (m3: number, decimals?: number) => string;
   fmtCoverage: (sqmPerLiter: number) => string;
   areaLabel: string;
 }
@@ -38,6 +44,9 @@ export function useMeasurement(): MeasurementContextValue {
       return `${(mm / 1000).toFixed(2)} m`;
     },
     fmtArea: (mmSq) => `${(mmSq * 1e-6).toFixed(1)} m²`,
+    fmtAreaSqm: (sqm, decimals = 1) => `${sqm.toFixed(decimals)} m²`,
+    convertAreaSqm: (sqm) => sqm,
+    fmtVolumeM3: (m3, decimals = 1) => `${m3.toFixed(decimals)} m³`,
     fmtCoverage: (v) => `${v.toFixed(1)} m²/L`,
     areaLabel: "m²",
   };

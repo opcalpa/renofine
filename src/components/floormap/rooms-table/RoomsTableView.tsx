@@ -106,7 +106,7 @@ export function RoomsTableView({
       switch (field) {
         case "area":
           return room.dimensions?.area_sqm
-            ? `${room.dimensions.area_sqm.toFixed(2)} ${ms.areaLabel}`
+            ? ms.fmtAreaSqm(room.dimensions.area_sqm, 2)
             : "\u2014";
         case "width":
           return room.dimensions?.width_mm
@@ -148,7 +148,7 @@ export function RoomsTableView({
         }
         case "wallArea": {
           const wa = computeWallArea(room);
-          return wa !== null ? `${wa.toFixed(1)} ${ms.areaLabel}` : "\u2014";
+          return wa !== null ? ms.fmtAreaSqm(wa) : "\u2014";
         }
         case "paintEstimate": {
           const pe = computePaintEstimate(room);

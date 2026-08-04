@@ -105,6 +105,7 @@ export const getSystemDefaultUnit = (system: MeasurementSystem): Unit => {
 
 const SQ_MM_TO_SQ_M = 1e-6;
 const SQ_MM_TO_SQ_FT = 1.07639e-5;
+const SQ_M_TO_SQ_FT = 10.7639;
 
 /**
  * Format area (input in mm²) for display
@@ -126,10 +127,54 @@ export const convertAreaFromMmSq = (areaMmSq: number, system: MeasurementSystem)
 };
 
 /**
+ * Convert an area already expressed in m² (e.g. room.dimensions.area_sqm)
+ * to the display unit value (m² stays m², imperial → sq ft).
+ */
+export const convertAreaFromSqm = (areaSqm: number, system: MeasurementSystem): number => {
+  return system === 'imperial' ? areaSqm * SQ_M_TO_SQ_FT : areaSqm;
+};
+
+/**
+ * Format an area given in m² for display in the active system.
+ * Fixes the "imperial label on a raw m² number" class of bug — always
+ * convert the value, never just swap the unit label.
+ */
+export const formatAreaFromSqm = (
+  areaSqm: number,
+  system: MeasurementSystem,
+  decimals: number = 1,
+): string => {
+  const value = convertAreaFromSqm(areaSqm, system);
+  return `${value.toFixed(decimals)} ${getAreaUnitLabel(system)}`;
+};
+
+/**
  * Get area unit label
  */
 export const getAreaUnitLabel = (system: MeasurementSystem): string => {
   return system === 'imperial' ? 'sq ft' : 'm²';
+};
+
+// ── Volume conversion ──
+
+const CU_M_TO_CU_FT = 35.3147;
+
+/** Get volume unit label */
+export const getVolumeUnitLabel = (system: MeasurementSystem): string => {
+  return system === 'imperial' ? 'ft³' : 'm³';
+};
+
+/**
+ * Format a volume given in m³ for display in the active system.
+ * (m³ stays m³, imperial → ft³.)
+ */
+export const formatVolumeFromM3 = (
+  volumeM3: number,
+  system: MeasurementSystem,
+  decimals: number = 1,
+): string => {
+  const value = system === 'imperial' ? volumeM3 * CU_M_TO_CU_FT : volumeM3;
+  return `${value.toFixed(decimals)} ${getVolumeUnitLabel(system)}`;
 };
 
 // ── Smart length formatting (auto-picks best unit) ──

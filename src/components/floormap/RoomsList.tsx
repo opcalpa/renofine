@@ -235,7 +235,7 @@ export const RoomsList = ({ projectId, rooms: externalRooms, onRoomClick, onAddR
         return room.dimensions?.area_sqm ? (
           <span className="text-sm">
             <span className="text-muted-foreground">{t('rooms.area')}:</span>{' '}
-            <span className="font-medium text-blue-600">{room.dimensions.area_sqm.toFixed(2)} {ms.areaLabel}</span>
+            <span className="font-medium text-blue-600">{ms.fmtAreaSqm(room.dimensions.area_sqm, 2)}</span>
           </span>
         ) : null;
       case 'width':
