@@ -2601,7 +2601,9 @@
       "wallInterior": "Interior wall",
       "wallLight": "Light partition",
       "wallThickness": "Wall thickness (mm)",
-      "wallHeight": "Wall height (mm)"
+      "wallHeight": "Wall height (mm)",
+      "imageWidth": "Image's real width (mm) — scales it to the right size",
+      "imageOpacity": "Opacity — so you see your drawing on top"
     },
     "view2d": "2D",
     "viewSettings": "View",

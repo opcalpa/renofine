@@ -403,6 +403,37 @@ export const commands = {
     if (patches.length) commit('Ändra vägghöjd', patches);
   },
 
+  /**
+   * Set the opacity of a background/trace image (0.05–1). Used while tracing so
+   * the drawing stays visible over the underlay.
+   */
+  'image.setOpacity'(params: { id: string; opacity: number }): void {
+    const shape = getShapes().find((s) => s.id === params.id);
+    if (!shape || shape.type !== 'image') return;
+    const opacity = Math.max(0.05, Math.min(1, params.opacity));
+    if (shape.imageOpacity === opacity) return;
+    commit('Ändra bildopacitet', [makeUpdatePatch(shape, { imageOpacity: opacity })]);
+  },
+
+  /**
+   * Scale a background/trace image so its width matches a real-world measure
+   * (mm), keeping aspect ratio — the calibrate step of tracing. Requires the
+   * image to have a materialized width (all new uploads do).
+   */
+  'image.setWidth'(params: { id: string; widthMM: number }): void {
+    const shape = getShapes().find((s) => s.id === params.id);
+    if (!shape || shape.type !== 'image') return;
+    const c = shape.coordinates as { x: number; y: number; width: number; height: number };
+    if (!c.width || c.width < 1) return; // not materialized — can't scale reliably
+    const targetWidth = mmToWorld(Math.max(100, params.widthMM));
+    const factor = targetWidth / c.width;
+    commit('Skala bild', [
+      makeUpdatePatch(shape, {
+        coordinates: { ...c, width: targetWidth, height: c.height * factor },
+      }),
+    ]);
+  },
+
   'wall.setLength'(params: WallSetLengthParams): void {
     const shape = getShapes().find((s) => s.id === params.id);
     if (!shape || !isWall(shape)) return;

@@ -1169,6 +1169,58 @@ test.describe('Floor planner v2', () => {
     await expect(page.getByText('Ny ritmotor')).toBeVisible();
   });
 
+  test('trace image: scale to real width + opacity from the selection toolbar', async ({ page }) => {
+    await openDemoPlanner(page);
+    await page.keyboard.press('v');
+
+    // Add a materialized background image (400×300 world units) and select it
+    const id = await page.evaluate(() => {
+      const dbg = window.__rfEditorDebug! as unknown as {
+        execute: (n: string, p: unknown) => { id: string };
+        select: (ids: string[]) => void;
+      };
+      const shape = dbg.execute('shape.add', {
+        shape: {
+          type: 'image',
+          coordinates: { x: 100, y: 100, width: 400, height: 300 },
+          imageUrl: 'data:image/png;base64,iVBORw0KGgo=',
+          imageOpacity: 0.5,
+        },
+      });
+      dbg.select([shape.id]);
+      return shape.id;
+    });
+
+    // Toolbar shows image controls
+    await expect(page.getByTestId('selection-toolbar')).toBeVisible();
+    await expect(page.getByTestId('image-opacity')).toBeVisible();
+
+    // Scale so the image spans 8 m → width 800 world (mm→world = ÷10), height keeps ratio
+    const widthInput = page.getByTestId('image-width');
+    await widthInput.fill('8000');
+    await widthInput.press('Enter');
+
+    const scaled = await page.evaluate((imgId) => {
+      const s = window.__rfEditorDebug!.getShapes().find((sh) => sh.id === imgId) as
+        | { coordinates: { width: number; height: number } }
+        | undefined;
+      return s?.coordinates;
+    }, id);
+    expect(scaled!.width).toBeCloseTo(800, 1); // 8000 mm ÷ 10
+    expect(scaled!.height).toBeCloseTo(600, 1); // 300 × (800/400) — aspect kept
+
+    // Opacity command clamps into [0.05, 1] and applies
+    const op = await page.evaluate((imgId) => {
+      const dbg = window.__rfEditorDebug! as unknown as {
+        execute: (n: string, p: unknown) => void;
+        getShapes: () => Array<{ id: string; imageOpacity?: number }>;
+      };
+      dbg.execute('image.setOpacity', { id: imgId, opacity: 0.2 });
+      return dbg.getShapes().find((s) => s.id === imgId)?.imageOpacity;
+    }, id);
+    expect(op).toBeCloseTo(0.2, 5);
+  });
+
   test('wall properties: thickness preset + height edit from the selection toolbar', async ({ page }) => {
     await openDemoPlanner(page);
     const canvas = page.getByTestId('editor-v2-canvas');

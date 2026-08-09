@@ -2029,7 +2029,9 @@
       "wallInterior": "Innervägg",
       "wallLight": "Lättvägg",
       "wallThickness": "Väggtjocklek (mm)",
-      "wallHeight": "Vägghöjd (mm)"
+      "wallHeight": "Vägghöjd (mm)",
+      "imageWidth": "Bildens verkliga bredd (mm) — skalar bilden till rätt mått",
+      "imageOpacity": "Genomskinlighet — så du ser din ritning ovanpå"
     },
     "view2d": "2D",
     "viewSettings": "Visning",

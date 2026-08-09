@@ -9,6 +9,25 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { FloorMapShape } from '../types';
 
+/**
+ * Decode the image's natural pixel size, capped to 800 on the long edge (the
+ * same cap the renderer applied lazily). Materializing it here means every
+ * uploaded image has real world-unit dimensions from the start, so it can be
+ * scaled to real measurements for tracing. Returns 0/0 if decoding fails —
+ * the renderer's fallback still handles that case.
+ */
+async function decodeCappedSize(file: File): Promise<{ width: number; height: number }> {
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, 800 / Math.max(bitmap.width, bitmap.height));
+    const size = { width: Math.round(bitmap.width * scale), height: Math.round(bitmap.height * scale) };
+    bitmap.close?.();
+    return size;
+  } catch {
+    return { width: 0, height: 0 };
+  }
+}
+
 export async function uploadPlanImage(
   projectId: string,
   file: File,
@@ -32,11 +51,12 @@ export async function uploadPlanImage(
     const {
       data: { publicUrl },
     } = supabase.storage.from('project-files').getPublicUrl(filePath);
+    const { width, height } = await decodeCappedSize(file);
     return {
       id: uuidv4(),
       type: 'image',
       planId,
-      coordinates: { x: viewCenter.x, y: viewCenter.y, width: 0, height: 0 },
+      coordinates: { x: viewCenter.x, y: viewCenter.y, width, height },
       imageUrl: publicUrl,
       imageOpacity: 0.5,
       locked: false,

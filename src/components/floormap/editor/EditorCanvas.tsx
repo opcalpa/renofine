@@ -301,6 +301,7 @@ export const EditorCanvas = ({ isReadOnly, roomDataVersion }: EditorCanvasProps)
       getView: () => useFloorMapStore.getState().viewState,
       getTool: () => useFloorMapStore.getState().activeTool,
       execute,
+      select: (ids: string[]) => useFloorMapStore.getState().setSelectedShapeIds(ids),
       placeRoom: (req: { roomId: string; name: string; color?: string | null; areaSqm?: number | null }) =>
         useFloorMapStore.getState().setPendingPlaceRoom(req),
       isReadOnly,

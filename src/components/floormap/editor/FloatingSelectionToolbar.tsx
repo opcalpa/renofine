@@ -19,10 +19,12 @@ import {
   ArrowLeftRight,
   Columns3,
   Copy,
+  Eye,
   FlipHorizontal2,
   FlipVertical2,
   Group,
   PanelTop,
+  Ruler,
   RotateCw,
   Trash2,
   Ungroup,
@@ -39,6 +41,8 @@ import {
 import { useFloorMapStore } from '../store';
 import { useEditorUiStore } from './state/uiStore';
 import { execute } from './core/commands';
+import { beginGesture, endGesture } from './core/executor';
+import { worldToMm } from './core/units';
 import { unionBounds } from './geometry/bounds';
 import type { AlignMode } from './core/selectionOps';
 import { isGroupable } from './core/selectionOps';
@@ -302,6 +306,85 @@ const GroupNameInput = ({ leader }: { leader: FloorMapShape }) => {
   );
 };
 
+/**
+ * Opacity + real-width (scale) editor for a selected trace/background image.
+ * Opacity drags live-preview but land as one undo step (gesture). Width scales
+ * the image proportionally so it matches a real measure — the calibrate step
+ * of tracing. Width is hidden for legacy images without a materialized size.
+ */
+const ImagePropsInput = ({ shape }: { shape: FloorMapShape }) => {
+  const { t } = useTranslation();
+  const c = shape.coordinates as { width: number };
+  const materialized = !!c.width && c.width >= 1;
+  const opacityPct = Math.round((shape.imageOpacity ?? 0.5) * 100);
+  const [widthMM, setWidthMM] = useState(materialized ? String(Math.round(worldToMm(c.width))) : '');
+
+  useEffect(() => {
+    setWidthMM(materialized ? String(Math.round(worldToMm(c.width))) : '');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shape.id, c.width, materialized]);
+
+  const commitWidth = () => {
+    const mm = parseInt(widthMM, 10);
+    if (Number.isFinite(mm) && mm >= 100) {
+      execute('image.setWidth', { id: shape.id, widthMM: mm });
+    } else {
+      setWidthMM(materialized ? String(Math.round(worldToMm(c.width))) : '');
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2 pl-1.5 pr-1 text-xs text-gray-500">
+      {materialized && (
+        <label
+          className="flex items-center gap-1"
+          title={t('floormap.selection.imageWidth', 'Bildens verkliga bredd (mm) — skalar bilden till rätt mått')}
+        >
+          <Ruler className="h-3.5 w-3.5 text-gray-400" />
+          <input
+            type="number"
+            className="h-7 w-20 rounded-md border px-1.5 text-right text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-primary"
+            value={widthMM}
+            min={100}
+            step={10}
+            data-testid="image-width"
+            onChange={(e) => setWidthMM(e.target.value)}
+            onKeyDown={(e) => {
+              e.stopPropagation();
+              if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+              if (e.key === 'Escape') {
+                setWidthMM(materialized ? String(Math.round(worldToMm(c.width))) : '');
+                (e.target as HTMLInputElement).blur();
+              }
+            }}
+            onBlur={commitWidth}
+          />
+          mm
+        </label>
+      )}
+      <label
+        className="flex items-center gap-1"
+        title={t('floormap.selection.imageOpacity', 'Genomskinlighet — så du ser din ritning ovanpå')}
+      >
+        <Eye className="h-3.5 w-3.5 text-gray-400" />
+        <input
+          type="range"
+          min={5}
+          max={100}
+          step={5}
+          value={opacityPct}
+          data-testid="image-opacity"
+          className="w-20 accent-primary"
+          onPointerDown={() => beginGesture('Ändra bildopacitet')}
+          onChange={(e) => execute('image.setOpacity', { id: shape.id, opacity: parseInt(e.target.value, 10) / 100 })}
+          onPointerUp={() => endGesture()}
+          onPointerCancel={() => endGesture()}
+        />
+      </label>
+    </div>
+  );
+};
+
 /** Thickness (mm) presets for a wall — exterior/interior/light-partition. */
 const WALL_THICKNESS_PRESETS = [
   { labelKey: 'floormap.selection.wallExterior', fallback: 'Yttervägg', mm: 300 },
@@ -463,6 +546,7 @@ export const FloatingSelectionToolbar = () => {
   const singleOpening = selected.length === 1 && selected[0].type === 'opening';
   const singleWall = selected.length === 1 && selected[0].type === 'wall';
   const wallsOnly = selected.length >= 1 && selected.every((s) => s.type === 'wall');
+  const singleImage = selected.length === 1 && selected[0].type === 'image';
   const wallRoom = singleWall
     ? findRoomForWall(selected[0], shapes, useFloorMapStore.getState().currentPlanId)
     : null;
@@ -498,6 +582,7 @@ export const FloatingSelectionToolbar = () => {
       }}
     >
       {wallsOnly && <WallPropsInput walls={selected} />}
+      {singleImage && <ImagePropsInput shape={selected[0]} />}
       {singleCustom && <CustomObjectInputs shape={selected[0]} />}
       {singleObject && <ObjectFinishInput shape={selected[0]} />}
       {groupLeader && <GroupNameInput leader={groupLeader} />}
