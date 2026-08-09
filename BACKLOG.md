@@ -1617,12 +1617,12 @@ Paritets-audit 2026-08-09 (v1 vs v2, 3 blocker-tiers). Beslut: **desktop-first f
 - **B1 väggtjocklek/höjd** (`42e4383`): wall.setThickness/setHeight-kommandon + WallPropsInput i FloatingSelectionToolbar (tjocklek+höjd-input + Väggtyp-preset Ytter 300/Inner 120/Lätt 70, bulk på alla markerade väggar). Direkt svar på Attefall-frågan.
 - **Desktop-first flip** (`621ebb5`): isEditorV2Enabled() → v2 default på desktop (>=768px), v1 på mobil, ?editor=v1 = sticky opt-out. Badge-escapehatch + regressionstest.
 - **B3 kalkerbild skala+opacitet** (`591a65b`): uploadPlanImage materialiserar naturlig storlek; image.setOpacity/setWidth-kommandon; ImagePropsInput (bredd-mm-kalibrering + opacitets-reglage).
+- **B4/B5/B7 closeout** (`75302da`): selection.setStyle (fyll/kontur/opacitet, opacitet renderas nu på fria shapes) + ShapeStyleInput; selection.reorder (fram/bak) + kontextmeny; text.setStyle (storlek/fet/kursiv, fontStyle renderas) + TextStyleInput.
+- **B2 resize-handtag** (`01c54a9`): ResizeTransformer (Konva Transformer) för rektangel/triangel/cirkel/bild — dra hörn → skala bakas till världsmått, ett undo-steg; ger kalkerbilden drag-skala. ToolController ignorerar transformer-gester (annars avmarkerade SelectTool mitt i draget).
 
-**KVAR (usage-driven closeout, fallande vikt):**
-- **B2 resize-handtag** (Konva Transformer genom executor/patch-modellen) för rektangel/cirkel/text/bild/objekt. Störst kvarvarande interaktion; ger även drag-skala åt kalkerbild (B3 har bara mm-input nu). Äldre bilder m. width=0 saknar skala-input tills materialiserade.
-- **B4/B5** fyll/kontur-färg + opacitet, z-ordning (framåt/bakåt).
-- **B7** text-styling (fet/kursiv/storlek/färg).
-- **B9 mobil-UI** för v2 (tills dess kör mobil kvar på v1 — medvetet).
+**KVAR (usage-driven closeout, låg prio):**
+- **B9 mobil-UI** för v2 (tills dess kör mobil kvar på v1 — medvetet, "desktop först").
 - **P4-rest**: ritskala-preset (1:20–1:500) + canvas-storlek saknas i v2:s ViewSettings.
+- Not: resize-handtag täcker EJ text-box (typsnitts-kontroller i st.f.) eller biblioteksobjekt (vägg-magnet+rotate); äldre bilder m. width=0 saknar mm-skala-input tills materialiserade.
 
 **MEDVETET EJ portat (v1-cruft mot Renofines modell):** B6 (noteringar/material/foto per canvas-shape — bor i Rumsdetaljer/rums-objekt), B8 (sticky note/bezier/connector/eraser — whiteboard, ej måttsatt plan; frihand ev. för DIY), B10 (skapa-väggar-från-rum — rum deriveras ur väggar i v2). B10 = ej regression.
