@@ -8,7 +8,9 @@
     "delete": "Delete",
     "recentObjects": "Recent objects",
     "tools": "Tools",
-    "paste": "Paste"
+    "paste": "Paste",
+    "bringToFront": "Bring to front",
+    "sendToBack": "Send to back"
   },
   "templates": {
     "tabLabel": "Templates",
@@ -2603,7 +2605,13 @@
       "wallThickness": "Wall thickness (mm)",
       "wallHeight": "Wall height (mm)",
       "imageWidth": "Image's real width (mm) — scales it to the right size",
-      "imageOpacity": "Opacity — so you see your drawing on top"
+      "imageOpacity": "Opacity — so you see your drawing on top",
+      "fillColor": "Fill colour",
+      "strokeColor": "Outline colour",
+      "opacity": "Opacity",
+      "fontSize": "Text size",
+      "bold": "Bold",
+      "italic": "Italic"
     },
     "view2d": "2D",
     "viewSettings": "View",

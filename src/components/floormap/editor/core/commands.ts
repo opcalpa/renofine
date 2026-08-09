@@ -404,6 +404,24 @@ export const commands = {
   },
 
   /**
+   * Set font size and/or bold/italic on a text shape. Any subset may be given;
+   * bold/italic merge into the existing textStyle.
+   */
+  'text.setStyle'(params: { id: string; fontSize?: number; isBold?: boolean; isItalic?: boolean }): void {
+    const shape = getShapes().find((s) => s.id === params.id);
+    if (!shape || (shape.type !== 'text' && shape.type !== 'sticky_note')) return;
+    const updates: Partial<FloorMapShape> = {};
+    if (params.fontSize !== undefined) updates.fontSize = Math.max(8, Math.min(200, Math.round(params.fontSize)));
+    if (params.isBold !== undefined || params.isItalic !== undefined) {
+      updates.textStyle = {
+        isBold: params.isBold ?? shape.textStyle?.isBold ?? false,
+        isItalic: params.isItalic ?? shape.textStyle?.isItalic ?? false,
+      };
+    }
+    if (Object.keys(updates).length > 0) commit('Ändra text', [makeUpdatePatch(shape, updates)]);
+  },
+
+  /**
    * Set the opacity of a background/trace image (0.05–1). Used while tracing so
    * the drawing stays visible over the underlay.
    */

@@ -1169,6 +1169,75 @@ test.describe('Floor planner v2', () => {
     await expect(page.getByText('Ny ritmotor')).toBeVisible();
   });
 
+  test('closeout controls: shape fill colour, z-order, and text bold/size', async ({ page }) => {
+    await openDemoPlanner(page);
+    const canvas = page.getByTestId('editor-v2-canvas');
+    const box = (await canvas.boundingBox())!;
+
+    // Draw a rectangle → select → set fill via the toolbar colour input
+    await page.getByTestId('tool-shapes').click();
+    await page.getByTestId('tool-shape-rectangle').click();
+    await page.mouse.move(box.x + 300, box.y + 300);
+    await page.mouse.down();
+    await page.mouse.move(box.x + 430, box.y + 410);
+    await page.mouse.up();
+    await page.keyboard.press('v');
+    await page.keyboard.press('ControlOrMeta+a');
+    await expect(page.getByTestId('selection-toolbar')).toBeVisible();
+    await page.getByTestId('shape-fill').fill('#ff0000');
+
+    const rect = await page.evaluate(() => {
+      const r = window.__rfEditorDebug!.getShapes().find((s) => s.type === 'rectangle') as
+        | { id: string; color?: string }
+        | undefined;
+      return { id: r?.id ?? '', color: r?.color };
+    });
+    expect(rect.color).toBe('#ff0000');
+
+    // Bring to front → highest zIndex among non-room shapes
+    const z = await page.evaluate((id) => {
+      const dbg = window.__rfEditorDebug! as unknown as {
+        execute: (n: string, p: unknown) => void;
+        getShapes: () => Array<{ id: string; type: string; zIndex?: number }>;
+      };
+      dbg.execute('selection.reorder', { ids: [id], mode: 'front' });
+      const shapes = dbg.getShapes();
+      const mine = shapes.find((s) => s.id === id)!.zIndex ?? 0;
+      const maxOther = Math.max(
+        -Infinity,
+        ...shapes.filter((s) => s.id !== id && s.type !== 'room').map((s) => s.zIndex ?? 0)
+      );
+      return { mine, maxOther };
+    }, rect.id);
+    expect(z.mine).toBeGreaterThan(z.maxOther);
+
+    // Add a text shape, select it, toggle bold + set size via the toolbar
+    const textId = await page.evaluate(() => {
+      const dbg = window.__rfEditorDebug! as unknown as {
+        execute: (n: string, p: unknown) => { id: string };
+        select: (ids: string[]) => void;
+      };
+      const s = dbg.execute('shape.add', {
+        shape: { type: 'text', text: 'Hej', coordinates: { x: 200, y: 200 }, fontSize: 16 },
+      });
+      dbg.select([s.id]);
+      return s.id;
+    });
+    await page.getByTestId('text-bold').click();
+    const sizeInput = page.getByTestId('text-size');
+    await sizeInput.fill('28');
+    await sizeInput.press('Enter');
+
+    const text = await page.evaluate((id) => {
+      const s = window.__rfEditorDebug!.getShapes().find((sh) => sh.id === id) as
+        | { fontSize?: number; textStyle?: { isBold?: boolean } }
+        | undefined;
+      return { bold: s?.textStyle?.isBold, size: s?.fontSize };
+    }, textId);
+    expect(text.bold).toBe(true);
+    expect(text.size).toBe(28);
+  });
+
   test('trace image: scale to real width + opacity from the selection toolbar', async ({ page }) => {
     await openDemoPlanner(page);
     await page.keyboard.press('v');

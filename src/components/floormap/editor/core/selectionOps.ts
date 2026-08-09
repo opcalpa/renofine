@@ -19,6 +19,20 @@ import { useFloorMapStore } from '../../store';
 /** Structural shapes are never folded into a free-form group. */
 const NON_GROUPABLE = new Set<FloorMapShape['type']>(['wall', 'room', 'opening', 'image']);
 
+/** Free shapes whose fill/stroke/opacity the user can restyle from the toolbar. */
+export const STYLABLE_TYPES = new Set<FloorMapShape['type']>([
+  'rectangle',
+  'triangle',
+  'circle',
+  'line',
+  'polygon',
+  'freehand',
+  'text',
+  'sticky_note',
+  'bezier',
+  'connector',
+]);
+
 /** A free shape / object that may be folded into an "eget objekt" group. */
 export function isGroupable(shape: FloorMapShape): boolean {
   return !shape.locked && !NON_GROUPABLE.has(shape.type);
@@ -301,5 +315,52 @@ export const selectionOps = {
       if (Object.keys(updates).length > 0) patches.push(makeUpdatePatch(entry.shape, updates));
     });
     commit('Fördela', patches);
+  },
+
+  /**
+   * Bring the selection to the front or send it to the back by rewriting
+   * zIndex (both layers sort on it). Rooms are the floor base and stay put;
+   * the selection keeps its own relative order.
+   */
+  /**
+   * Set fill colour / stroke colour / opacity on the selected free shapes
+   * (rectangles, circles, lines, text, freehand — never structural walls/rooms
+   * or images/objects). Any subset of the three may be given.
+   */
+  'selection.setStyle'(params: {
+    ids: string[];
+    color?: string;
+    strokeColor?: string;
+    opacity?: number;
+  }): void {
+    const idSet = new Set(params.ids);
+    const patches: Patch[] = [];
+    for (const s of getShapes()) {
+      if (!idSet.has(s.id) || s.locked || !STYLABLE_TYPES.has(s.type)) continue;
+      const updates: Partial<FloorMapShape> = {};
+      if (params.color !== undefined) updates.color = params.color;
+      if (params.strokeColor !== undefined) updates.strokeColor = params.strokeColor;
+      if (params.opacity !== undefined) updates.opacity = Math.max(0.05, Math.min(1, params.opacity));
+      if (Object.keys(updates).length > 0) patches.push(makeUpdatePatch(s, updates));
+    }
+    if (patches.length) commit('Ändra stil', patches);
+  },
+
+  'selection.reorder'(params: { ids: string[]; mode: 'front' | 'back' }): void {
+    const idSet = new Set(params.ids);
+    const shapes = getShapes();
+    const sel = shapes.filter((s) => idSet.has(s.id) && !s.locked && s.type !== 'room');
+    if (sel.length === 0) return;
+    const others = shapes.filter((s) => !idSet.has(s.id) && s.type !== 'room');
+    const zs = others.map((s) => s.zIndex ?? 0);
+    const maxZ = zs.length ? Math.max(...zs) : 0;
+    const minZ = zs.length ? Math.min(...zs) : 0;
+    const ordered = [...sel].sort((a, b) => (a.zIndex ?? 0) - (b.zIndex ?? 0));
+    const patches: Patch[] = ordered.map((s, i) =>
+      makeUpdatePatch(s, {
+        zIndex: params.mode === 'front' ? maxZ + 1 + i : minZ - ordered.length + i,
+      })
+    );
+    commit(params.mode === 'front' ? 'Flytta främst' : 'Flytta bakåt', patches);
   },
 };

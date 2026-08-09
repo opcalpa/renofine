@@ -17,16 +17,21 @@ import {
   AlignStartVertical,
   AlignVerticalSpaceBetween,
   ArrowLeftRight,
+  Bold,
   Columns3,
   Copy,
   Eye,
   FlipHorizontal2,
   FlipVertical2,
   Group,
+  Italic,
+  PaintBucket,
   PanelTop,
   Ruler,
   RotateCw,
+  Square,
   Trash2,
+  Type,
   Ungroup,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -45,7 +50,7 @@ import { beginGesture, endGesture } from './core/executor';
 import { worldToMm } from './core/units';
 import { unionBounds } from './geometry/bounds';
 import type { AlignMode } from './core/selectionOps';
-import { isGroupable } from './core/selectionOps';
+import { isGroupable, STYLABLE_TYPES } from './core/selectionOps';
 import { pointInPolygon, updateRoomItemFinishForShape } from '../utils/roomItemLink';
 import { getObjectDef, objectDimensionsMM } from './objects/objectModel';
 
@@ -306,6 +311,133 @@ const GroupNameInput = ({ leader }: { leader: FloorMapShape }) => {
   );
 };
 
+/** Font size + bold/italic editor for a single selected text shape. */
+const TextStyleInput = ({ shape }: { shape: FloorMapShape }) => {
+  const { t } = useTranslation();
+  const isBold = !!shape.textStyle?.isBold;
+  const isItalic = !!shape.textStyle?.isItalic;
+  const [size, setSize] = useState(String(shape.fontSize ?? 16));
+
+  useEffect(() => {
+    setSize(String(shape.fontSize ?? 16));
+  }, [shape.id, shape.fontSize]);
+
+  const commitSize = () => {
+    const n = parseInt(size, 10);
+    if (Number.isFinite(n) && n >= 8) execute('text.setStyle', { id: shape.id, fontSize: n });
+    else setSize(String(shape.fontSize ?? 16));
+  };
+
+  const toggleBtn = (active: boolean) =>
+    `flex h-7 w-7 items-center justify-center rounded-md transition-colors ${
+      active ? 'bg-primary/10 text-primary' : 'text-gray-600 hover:bg-gray-100'
+    }`;
+
+  return (
+    <div className="flex items-center gap-1 pl-1.5 pr-1 text-xs text-gray-500">
+      <Type className="h-3.5 w-3.5 text-gray-400" />
+      <input
+        type="number"
+        className="h-7 w-12 rounded-md border px-1.5 text-right text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-primary"
+        value={size}
+        min={8}
+        step={1}
+        data-testid="text-size"
+        title={t('floormap.selection.fontSize', 'Textstorlek')}
+        onChange={(e) => setSize(e.target.value)}
+        onKeyDown={(e) => {
+          e.stopPropagation();
+          if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+          if (e.key === 'Escape') {
+            setSize(String(shape.fontSize ?? 16));
+            (e.target as HTMLInputElement).blur();
+          }
+        }}
+        onBlur={commitSize}
+      />
+      <button
+        className={toggleBtn(isBold)}
+        data-testid="text-bold"
+        title={t('floormap.selection.bold', 'Fet')}
+        onClick={() => execute('text.setStyle', { id: shape.id, isBold: !isBold })}
+      >
+        <Bold className="h-4 w-4" />
+      </button>
+      <button
+        className={toggleBtn(isItalic)}
+        data-testid="text-italic"
+        title={t('floormap.selection.italic', 'Kursiv')}
+        onClick={() => execute('text.setStyle', { id: shape.id, isItalic: !isItalic })}
+      >
+        <Italic className="h-4 w-4" />
+      </button>
+    </div>
+  );
+};
+
+/** A hex like #rrggbb the native colour input accepts, or a fallback. */
+const hexOr = (c: string | undefined, fallback: string) =>
+  /^#[0-9a-fA-F]{6}$/.test(c ?? '') ? (c as string) : fallback;
+
+/** Free shapes without a fill face — stroke/opacity only, no fill swatch. */
+const STROKE_ONLY = new Set<FloorMapShape['type']>(['line', 'freehand', 'connector']);
+
+/**
+ * Fill/stroke colour + opacity editor for the selected free shape(s)
+ * (rectangles, circles, lines, text, freehand). Colours commit once (native
+ * picker); opacity drags live-preview as one undo step.
+ */
+const ShapeStyleInput = ({ shapes }: { shapes: FloorMapShape[] }) => {
+  const { t } = useTranslation();
+  const ids = shapes.map((s) => s.id);
+  const first = shapes[0];
+  const hasFill = shapes.some((s) => !STROKE_ONLY.has(s.type));
+  const opacityPct = Math.round((first.opacity ?? 1) * 100);
+
+  return (
+    <div className="flex items-center gap-1.5 pl-1.5 pr-1 text-xs text-gray-500">
+      {hasFill && (
+        <label className="flex items-center gap-1" title={t('floormap.selection.fillColor', 'Fyllnadsfärg')}>
+          <PaintBucket className="h-3.5 w-3.5 text-gray-400" />
+          <input
+            type="color"
+            className="h-6 w-6 cursor-pointer rounded border p-0"
+            value={hexOr(first.color, '#3b82f6')}
+            data-testid="shape-fill"
+            onChange={(e) => execute('selection.setStyle', { ids, color: e.target.value })}
+          />
+        </label>
+      )}
+      <label className="flex items-center gap-1" title={t('floormap.selection.strokeColor', 'Konturfärg')}>
+        <Square className="h-3.5 w-3.5 text-gray-400" />
+        <input
+          type="color"
+          className="h-6 w-6 cursor-pointer rounded border p-0"
+          value={hexOr(first.strokeColor, '#374151')}
+          data-testid="shape-stroke"
+          onChange={(e) => execute('selection.setStyle', { ids, strokeColor: e.target.value })}
+        />
+      </label>
+      <label className="flex items-center gap-1" title={t('floormap.selection.opacity', 'Genomskinlighet')}>
+        <Eye className="h-3.5 w-3.5 text-gray-400" />
+        <input
+          type="range"
+          min={10}
+          max={100}
+          step={5}
+          value={opacityPct}
+          data-testid="shape-opacity"
+          className="w-16 accent-primary"
+          onPointerDown={() => beginGesture('Ändra genomskinlighet')}
+          onChange={(e) => execute('selection.setStyle', { ids, opacity: parseInt(e.target.value, 10) / 100 })}
+          onPointerUp={() => endGesture()}
+          onPointerCancel={() => endGesture()}
+        />
+      </label>
+    </div>
+  );
+};
+
 /**
  * Opacity + real-width (scale) editor for a selected trace/background image.
  * Opacity drags live-preview but land as one undo step (gesture). Width scales
@@ -547,6 +679,11 @@ export const FloatingSelectionToolbar = () => {
   const singleWall = selected.length === 1 && selected[0].type === 'wall';
   const wallsOnly = selected.length >= 1 && selected.every((s) => s.type === 'wall');
   const singleImage = selected.length === 1 && selected[0].type === 'image';
+  // Restyleable free shapes only (never library/custom objects — they have
+  // their own inputs above and aren't plain fill/stroke shapes).
+  const stylableOnly =
+    selected.length >= 1 && selected.every((s) => STYLABLE_TYPES.has(s.type) && !getObjectDef(s));
+  const singleText = selected.length === 1 && selected[0].type === 'text';
   const wallRoom = singleWall
     ? findRoomForWall(selected[0], shapes, useFloorMapStore.getState().currentPlanId)
     : null;
@@ -583,6 +720,8 @@ export const FloatingSelectionToolbar = () => {
     >
       {wallsOnly && <WallPropsInput walls={selected} />}
       {singleImage && <ImagePropsInput shape={selected[0]} />}
+      {stylableOnly && <ShapeStyleInput shapes={selected} />}
+      {singleText && <TextStyleInput shape={selected[0]} />}
       {singleCustom && <CustomObjectInputs shape={selected[0]} />}
       {singleObject && <ObjectFinishInput shape={selected[0]} />}
       {groupLeader && <GroupNameInput leader={groupLeader} />}

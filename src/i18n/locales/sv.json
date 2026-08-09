@@ -8,7 +8,9 @@
     "delete": "Radera",
     "recentObjects": "Senaste objekt",
     "tools": "Verktyg",
-    "paste": "Klistra in"
+    "paste": "Klistra in",
+    "bringToFront": "Flytta främst",
+    "sendToBack": "Flytta bakerst"
   },
   "templates": {
     "tabLabel": "Mallar",
@@ -2031,7 +2033,13 @@
       "wallThickness": "Väggtjocklek (mm)",
       "wallHeight": "Vägghöjd (mm)",
       "imageWidth": "Bildens verkliga bredd (mm) — skalar bilden till rätt mått",
-      "imageOpacity": "Genomskinlighet — så du ser din ritning ovanpå"
+      "imageOpacity": "Genomskinlighet — så du ser din ritning ovanpå",
+      "fillColor": "Fyllnadsfärg",
+      "strokeColor": "Konturfärg",
+      "opacity": "Genomskinlighet",
+      "fontSize": "Textstorlek",
+      "bold": "Fet",
+      "italic": "Kursiv"
     },
     "view2d": "2D",
     "viewSettings": "Visning",

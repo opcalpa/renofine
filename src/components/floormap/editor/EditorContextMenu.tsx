@@ -14,6 +14,7 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  BringToFront,
   ClipboardPaste,
   Copy,
   CopyPlus,
@@ -23,6 +24,7 @@ import {
   Pencil,
   RotateCw,
   Ruler,
+  SendToBack,
   Square,
   Trash2,
   Type,
@@ -65,6 +67,7 @@ export const EditorContextMenu: React.FC<EditorContextMenuProps> = ({ x, y, onCl
     ? findRoomForWall(selected[0], shapes, useFloorMapStore.getState().currentPlanId)
     : null;
   const canTransform = selected.some((s) => s.type !== 'opening' && s.type !== 'image');
+  const canReorder = selected.some((s) => s.type !== 'room');
   const singleObject = selected.length === 1 && !!getObjectDef(selected[0]);
 
   const recentDefs = useMemo(
@@ -166,6 +169,26 @@ export const EditorContextMenu: React.FC<EditorContextMenuProps> = ({ x, y, onCl
               <PanelTop className="h-4 w-4" />
               {t('floormap.selection.wallView', 'Väggvy')}
             </button>
+          )}
+          {canReorder && (
+            <>
+              <button
+                className={ITEM_CLASS}
+                data-testid="context-bring-front"
+                onClick={run(() => execute('selection.reorder', { ids, mode: 'front' }))}
+              >
+                <BringToFront className="h-4 w-4" />
+                {t('contextMenu.bringToFront', 'Flytta främst')}
+              </button>
+              <button
+                className={ITEM_CLASS}
+                data-testid="context-send-back"
+                onClick={run(() => execute('selection.reorder', { ids, mode: 'back' }))}
+              >
+                <SendToBack className="h-4 w-4" />
+                {t('contextMenu.sendToBack', 'Flytta bakerst')}
+              </button>
+            </>
           )}
           <button
             className={`${ITEM_CLASS} text-red-600 hover:bg-red-50`}

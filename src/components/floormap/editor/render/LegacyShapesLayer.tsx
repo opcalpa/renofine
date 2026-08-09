@@ -179,6 +179,7 @@ function renderShape(
           stroke={shape.type === 'window_line' ? '#0ea5e9' : stroke}
           strokeWidth={shape.type === 'line' ? strokeWidth : strokeWidth * 2}
           hitStrokeWidth={12 / zoom}
+          opacity={shape.opacity ?? 1}
           perfectDrawEnabled={false}
         />
       );
@@ -199,6 +200,7 @@ function renderShape(
           fill={shape.color || 'transparent'}
           stroke={stroke}
           strokeWidth={strokeWidth}
+          opacity={shape.opacity ?? 1}
           perfectDrawEnabled={false}
         />
       );
@@ -216,6 +218,7 @@ function renderShape(
           fill={shape.color || 'transparent'}
           stroke={stroke}
           strokeWidth={strokeWidth}
+          opacity={shape.opacity ?? 1}
           perfectDrawEnabled={false}
         />
       );
@@ -234,6 +237,7 @@ function renderShape(
           strokeWidth={strokeWidth}
           hitStrokeWidth={12 / zoom}
           fill={shape.type === 'polygon' ? shape.color || 'transparent' : undefined}
+          opacity={shape.opacity ?? 1}
           perfectDrawEnabled={false}
         />
       );
@@ -243,7 +247,7 @@ function renderShape(
       const c = shape.coordinates as TextCoordinates;
       if (c?.x === undefined) return null;
       return (
-        <Group key={shape.id} name={shape.id} x={c.x} y={c.y}>
+        <Group key={shape.id} name={shape.id} x={c.x} y={c.y} opacity={shape.opacity ?? 1}>
           {shape.type === 'sticky_note' && (
             <Rect
               width={c.width ?? 160}
@@ -261,6 +265,11 @@ function renderShape(
             width={c.width ? c.width - (shape.type === 'sticky_note' ? 16 : 0) : undefined}
             text={shape.text ?? ''}
             fontSize={shape.fontSize ?? 16}
+            fontStyle={
+              [shape.textStyle?.isBold ? 'bold' : '', shape.textStyle?.isItalic ? 'italic' : '']
+                .filter(Boolean)
+                .join(' ') || 'normal'
+            }
             fill={shape.type === 'sticky_note' ? '#422006' : shape.color || '#111827'}
             rotation={shape.textRotation ?? 0}
             perfectDrawEnabled={false}
