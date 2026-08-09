@@ -1602,3 +1602,27 @@ Audit 2026-08-04 (Keerthi Naidu, US-realtor, bad om detta i mars; Carl trodde de
 4. **[P3] Svep resten:** planering/estimering (Calculations, Guest-flöden, wizards), arbetarvyn, offert/material/budget-enhetsdropdown (ft²/ft/yd), RFQ-export, AI-import.
 
 **Strategisk not:** noll aktiva US-användare (Keerthi testade 1 dag i mars, aldrig tillbaka). Fas 1 = värd nu (tar bort pinsam bugg). Fas 2–4 = när US är validerat fokus, ej reflexmässigt. Alternativ tills dess: gate imperial-toggeln bakom "beta" så den inte ljuger.
+
+---
+id: floorplanner-v2-default-parity
+status: doing
+priority: P2
+tags: [floorplanner, editor-v2, parity, default-flip, audit]
+created: 2026-08-09
+---
+## Floorplanner v2 → default (desktop-first flip + paritets-closeout)
+Paritets-audit 2026-08-09 (v1 vs v2, 3 blocker-tiers). Beslut: **desktop-first flip** — skeppa v2 nu, täpp kvarvarande gap drivet av verklig användning i st.f. spekulativt (aktivering, ej floorplanner, är flaskhalsen).
+
+**✅ LEVERERAT denna session:**
+- **B1 väggtjocklek/höjd** (`42e4383`): wall.setThickness/setHeight-kommandon + WallPropsInput i FloatingSelectionToolbar (tjocklek+höjd-input + Väggtyp-preset Ytter 300/Inner 120/Lätt 70, bulk på alla markerade väggar). Direkt svar på Attefall-frågan.
+- **Desktop-first flip** (`621ebb5`): isEditorV2Enabled() → v2 default på desktop (>=768px), v1 på mobil, ?editor=v1 = sticky opt-out. Badge-escapehatch + regressionstest.
+- **B3 kalkerbild skala+opacitet** (`591a65b`): uploadPlanImage materialiserar naturlig storlek; image.setOpacity/setWidth-kommandon; ImagePropsInput (bredd-mm-kalibrering + opacitets-reglage).
+
+**KVAR (usage-driven closeout, fallande vikt):**
+- **B2 resize-handtag** (Konva Transformer genom executor/patch-modellen) för rektangel/cirkel/text/bild/objekt. Störst kvarvarande interaktion; ger även drag-skala åt kalkerbild (B3 har bara mm-input nu). Äldre bilder m. width=0 saknar skala-input tills materialiserade.
+- **B4/B5** fyll/kontur-färg + opacitet, z-ordning (framåt/bakåt).
+- **B7** text-styling (fet/kursiv/storlek/färg).
+- **B9 mobil-UI** för v2 (tills dess kör mobil kvar på v1 — medvetet).
+- **P4-rest**: ritskala-preset (1:20–1:500) + canvas-storlek saknas i v2:s ViewSettings.
+
+**MEDVETET EJ portat (v1-cruft mot Renofines modell):** B6 (noteringar/material/foto per canvas-shape — bor i Rumsdetaljer/rums-objekt), B8 (sticky note/bezier/connector/eraser — whiteboard, ej måttsatt plan; frihand ev. för DIY), B10 (skapa-väggar-från-rum — rum deriveras ur väggar i v2). B10 = ej regression.
