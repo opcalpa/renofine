@@ -376,6 +376,33 @@ export const commands = {
     commit('Ändra', [makeUpdatePatch(shape, params.updates)]);
   },
 
+  /**
+   * Set wall thickness (mm) on one or more walls — one undo step.
+   * Exterior walls are ~300–400 mm, interior ~70–120 mm. Non-walls in the
+   * id list are ignored. Clamped to a sane 20–1000 mm range.
+   */
+  'wall.setThickness'(params: { ids: string[]; thicknessMM: number }): void {
+    const ids = new Set(params.ids);
+    const thicknessMM = Math.round(Math.max(20, Math.min(params.thicknessMM, 1000)));
+    const patches: Patch[] = getShapes()
+      .filter((s) => ids.has(s.id) && isWall(s) && s.thicknessMM !== thicknessMM)
+      .map((s) => makeUpdatePatch(s, { thicknessMM }));
+    if (patches.length) commit('Ändra väggtjocklek', patches);
+  },
+
+  /**
+   * Set wall height (mm) on one or more walls — one undo step. Drives the
+   * elevation/wall view. Clamped to a sane 500–6000 mm range.
+   */
+  'wall.setHeight'(params: { ids: string[]; heightMM: number }): void {
+    const ids = new Set(params.ids);
+    const heightMM = Math.round(Math.max(500, Math.min(params.heightMM, 6000)));
+    const patches: Patch[] = getShapes()
+      .filter((s) => ids.has(s.id) && isWall(s) && s.heightMM !== heightMM)
+      .map((s) => makeUpdatePatch(s, { heightMM }));
+    if (patches.length) commit('Ändra vägghöjd', patches);
+  },
+
   'wall.setLength'(params: WallSetLengthParams): void {
     const shape = getShapes().find((s) => s.id === params.id);
     if (!shape || !isWall(shape)) return;

@@ -2022,7 +2022,14 @@
       "groupTitle": "Gör markeringen till ett eget objekt",
       "ungroup": "Dela upp objektet",
       "groupName": "Namnge objektet",
-      "groupNameTitle": "Namn på det egna objektet"
+      "groupNameTitle": "Namn på det egna objektet",
+      "wallType": "Väggtyp",
+      "wallPreset": "Väggtyp (tjockleks-förinställning)",
+      "wallExterior": "Yttervägg",
+      "wallInterior": "Innervägg",
+      "wallLight": "Lättvägg",
+      "wallThickness": "Väggtjocklek (mm)",
+      "wallHeight": "Vägghöjd (mm)"
     },
     "view2d": "2D",
     "viewSettings": "Visning",

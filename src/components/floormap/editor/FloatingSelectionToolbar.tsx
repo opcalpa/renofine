@@ -17,6 +17,7 @@ import {
   AlignStartVertical,
   AlignVerticalSpaceBetween,
   ArrowLeftRight,
+  Columns3,
   Copy,
   FlipHorizontal2,
   FlipVertical2,
@@ -301,6 +302,135 @@ const GroupNameInput = ({ leader }: { leader: FloorMapShape }) => {
   );
 };
 
+/** Thickness (mm) presets for a wall — exterior/interior/light-partition. */
+const WALL_THICKNESS_PRESETS = [
+  { labelKey: 'floormap.selection.wallExterior', fallback: 'Yttervägg', mm: 300 },
+  { labelKey: 'floormap.selection.wallInterior', fallback: 'Innervägg', mm: 120 },
+  { labelKey: 'floormap.selection.wallLight', fallback: 'Lättvägg', mm: 70 },
+] as const;
+
+/**
+ * Thickness + height (mm) editor for the selected wall(s). Applies to every
+ * selected wall as one undo step, so you can e.g. select all exterior walls
+ * and set them to 300 mm at once. Shows blank when the walls disagree.
+ */
+const WallPropsInput = ({ walls }: { walls: FloorMapShape[] }) => {
+  const { t } = useTranslation();
+  const ids = walls.map((w) => w.id);
+
+  const commonThickness = walls.every((w) => (w.thicknessMM ?? 150) === (walls[0].thicknessMM ?? 150))
+    ? (walls[0].thicknessMM ?? 150)
+    : null;
+  const commonHeight = walls.every((w) => (w.heightMM ?? 2400) === (walls[0].heightMM ?? 2400))
+    ? (walls[0].heightMM ?? 2400)
+    : null;
+
+  const [thickness, setThickness] = useState(commonThickness != null ? String(commonThickness) : '');
+  const [height, setHeight] = useState(commonHeight != null ? String(commonHeight) : '');
+
+  useEffect(() => {
+    setThickness(commonThickness != null ? String(commonThickness) : '');
+    setHeight(commonHeight != null ? String(commonHeight) : '');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ids.join(','), commonThickness, commonHeight]);
+
+  const commitThickness = (raw: string) => {
+    const mm = parseInt(raw, 10);
+    if (Number.isFinite(mm) && mm >= 20 && mm !== commonThickness) {
+      execute('wall.setThickness', { ids, thicknessMM: mm });
+    } else {
+      setThickness(commonThickness != null ? String(commonThickness) : '');
+    }
+  };
+
+  const commitHeight = (raw: string) => {
+    const mm = parseInt(raw, 10);
+    if (Number.isFinite(mm) && mm >= 500 && mm !== commonHeight) {
+      execute('wall.setHeight', { ids, heightMM: mm });
+    } else {
+      setHeight(commonHeight != null ? String(commonHeight) : '');
+    }
+  };
+
+  const keys = (commit: (v: string) => void) => ({
+    onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => {
+      e.stopPropagation();
+      if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+      if (e.key === 'Escape') {
+        setThickness(commonThickness != null ? String(commonThickness) : '');
+        setHeight(commonHeight != null ? String(commonHeight) : '');
+        (e.target as HTMLInputElement).blur();
+      }
+    },
+    onBlur: (e: React.FocusEvent<HTMLInputElement>) => commit(e.target.value),
+  });
+
+  return (
+    <div className="flex items-center gap-1 pl-1.5 pr-1 text-xs text-gray-500">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            className={BUTTON_CLASS}
+            data-testid="wall-preset"
+            title={t('floormap.selection.wallPreset', 'Väggtyp (tjockleks-förinställning)')}
+          >
+            <Columns3 className="h-4 w-4" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-44">
+          <DropdownMenuLabel>{t('floormap.selection.wallType', 'Väggtyp')}</DropdownMenuLabel>
+          {WALL_THICKNESS_PRESETS.map((p) => (
+            <DropdownMenuItem
+              key={p.mm}
+              onClick={() => {
+                execute('wall.setThickness', { ids, thicknessMM: p.mm });
+                setThickness(String(p.mm));
+              }}
+            >
+              {t(p.labelKey, p.fallback)}
+              <span className="ml-auto text-muted-foreground">{p.mm} mm</span>
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <label
+        className="flex items-center gap-1"
+        title={t('floormap.selection.wallThickness', 'Väggtjocklek (mm)')}
+      >
+        <input
+          type="number"
+          className="h-7 w-14 rounded-md border px-1.5 text-right text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-primary"
+          value={thickness}
+          min={20}
+          step={10}
+          placeholder="—"
+          data-testid="wall-thickness"
+          onChange={(e) => setThickness(e.target.value)}
+          {...keys(commitThickness)}
+        />
+      </label>
+      <span className="text-gray-300">·</span>
+      <label
+        className="flex items-center gap-1"
+        title={t('floormap.selection.wallHeight', 'Vägghöjd (mm)')}
+      >
+        <input
+          type="number"
+          className="h-7 w-16 rounded-md border px-1.5 text-right text-xs text-gray-900 focus:outline-none focus:ring-1 focus:ring-primary"
+          value={height}
+          min={500}
+          step={50}
+          placeholder="—"
+          data-testid="wall-height"
+          onChange={(e) => setHeight(e.target.value)}
+          {...keys(commitHeight)}
+        />
+        <span className="text-gray-400">↑</span>
+      </label>
+    </div>
+  );
+};
+
 export const FloatingSelectionToolbar = () => {
   const { t } = useTranslation();
   const shapes = useFloorMapStore((s) => s.shapes);
@@ -332,6 +462,7 @@ export const FloatingSelectionToolbar = () => {
   const ids = selected.map((s) => s.id);
   const singleOpening = selected.length === 1 && selected[0].type === 'opening';
   const singleWall = selected.length === 1 && selected[0].type === 'wall';
+  const wallsOnly = selected.length >= 1 && selected.every((s) => s.type === 'wall');
   const wallRoom = singleWall
     ? findRoomForWall(selected[0], shapes, useFloorMapStore.getState().currentPlanId)
     : null;
@@ -366,6 +497,7 @@ export const FloatingSelectionToolbar = () => {
         transform: 'translateX(-50%)',
       }}
     >
+      {wallsOnly && <WallPropsInput walls={selected} />}
       {singleCustom && <CustomObjectInputs shape={selected[0]} />}
       {singleObject && <ObjectFinishInput shape={selected[0]} />}
       {groupLeader && <GroupNameInput leader={groupLeader} />}

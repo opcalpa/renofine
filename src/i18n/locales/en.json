@@ -2594,7 +2594,14 @@
       "groupTitle": "Turn the selection into one object",
       "ungroup": "Ungroup",
       "groupName": "Name the object",
-      "groupNameTitle": "Name of the custom object"
+      "groupNameTitle": "Name of the custom object",
+      "wallType": "Wall type",
+      "wallPreset": "Wall type (thickness preset)",
+      "wallExterior": "Exterior wall",
+      "wallInterior": "Interior wall",
+      "wallLight": "Light partition",
+      "wallThickness": "Wall thickness (mm)",
+      "wallHeight": "Wall height (mm)"
     },
     "view2d": "2D",
     "viewSettings": "View",

@@ -1157,4 +1157,49 @@ test.describe('Floor planner v2', () => {
     await page.keyboard.press('Escape');
     await expect(menu).toHaveCount(0);
   });
+
+  test('wall properties: thickness preset + height edit from the selection toolbar', async ({ page }) => {
+    await openDemoPlanner(page);
+    const canvas = page.getByTestId('editor-v2-canvas');
+    const box = (await canvas.boundingBox())!;
+
+    // One horizontal wall
+    await page.keyboard.press('w');
+    await page.mouse.move(box.x + 300, box.y + 350);
+    await page.mouse.down();
+    await page.mouse.up();
+    await page.mouse.move(box.x + 700, box.y + 350);
+    await page.mouse.down();
+    await page.mouse.up();
+    await page.keyboard.press('Enter');
+
+    // Select it → wall property inputs appear in the floating toolbar
+    await page.keyboard.press('v');
+    await page.mouse.click(box.x + 500, box.y + 350);
+    await expect(page.getByTestId('selection-toolbar')).toBeVisible();
+
+    const thickness = page.getByTestId('wall-thickness');
+    const height = page.getByTestId('wall-height');
+    // New walls default to 150 mm / 2400 mm
+    await expect(thickness).toHaveValue('150');
+    await expect(height).toHaveValue('2400');
+
+    // "Yttervägg" preset sets 300 mm
+    await page.getByTestId('wall-preset').click();
+    await page.getByRole('menuitem', { name: /Yttervägg/ }).click();
+    await expect(thickness).toHaveValue('300');
+
+    // Custom height commit
+    await height.fill('2500');
+    await height.press('Enter');
+
+    const wall = await page.evaluate(() => {
+      const w = window.__rfEditorDebug!.getShapes().filter((s) => s.type === 'wall').pop() as
+        | { thicknessMM?: number; heightMM?: number }
+        | undefined;
+      return { t: w?.thicknessMM, h: w?.heightMM };
+    });
+    expect(wall.t).toBe(300);
+    expect(wall.h).toBe(2500);
+  });
 });
