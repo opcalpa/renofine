@@ -2341,7 +2341,8 @@
       "describe": {
         "homeowner": "Tu veux décrire ton projet avec tes mots ? Je remplis ce que je peux et ne demande que le reste. Ou passe et je te guide étape par étape.",
         "contractor": "Décris le chantier avec tes mots et j'esquisse pièces et tâches — ou passe pour être guidé."
-      }
+      },
+      "addons": "Bien. On inclut souvent aussi ceci — veux-tu en ajouter ? (Facultatif.)"
     },
     "complete": "Parfait — j'ai tout ce qu'il faut. Ton projet est prêt à être créé. Tu pourras tout ajuster ensuite.",
     "type": {
@@ -2390,7 +2391,8 @@
       "dontKnow": "Je ne sais pas encore",
       "skip": "Passer",
       "noBudget": "Pas encore de budget",
-      "guideMe": "Guide-moi plutôt"
+      "guideMe": "Guide-moi plutôt",
+      "none": "Non merci"
     },
     "ui": {
       "title": "Créer avec Renaida",
@@ -2415,6 +2417,19 @@
     },
     "parsing": "Renaida lit ta description…",
     "seeded": "Super ! J'ai ajouté {{rooms}} pièce(s) et {{tasks}} tâche(s) d'après ta description. Complétons juste ce qui manque.",
-    "couldntParse": "Je n'ai pas bien saisi — faisons-le avec quelques questions."
+    "couldntParse": "Je n'ai pas bien saisi — faisons-le avec quelques questions.",
+    "addon": {
+      "underfloorHeat": "Plancher chauffant",
+      "towelRail": "Sèche-serviettes",
+      "showerNiche": "Niche de douche",
+      "spotlights": "Spots encastrés",
+      "vanity": "Meuble vasque",
+      "island": "Îlot de cuisine",
+      "dishwasher": "Lave-vaisselle",
+      "rangeHood": "Hotte",
+      "trimPaint": "Moulures",
+      "wallpaper": "Pose de papier peint",
+      "skirting": "Plinthes"
+    }
   }
 }

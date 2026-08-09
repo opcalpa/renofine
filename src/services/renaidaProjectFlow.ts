@@ -142,6 +142,42 @@ const SCOPE_BY_TYPE: Record<ProjectTypeId, ScopeChip[]> = {
   ),
 };
 
+/**
+ * Commonly-forgotten add-ons suggested per project type after scope — the
+ * "smart conditional suggestions based on your choices" step. Each maps to the
+ * extra work it implies. (LLM-generated dynamic add-ons are a later slice; this
+ * curated set is the backbone/fallback and ships without an edge deploy.)
+ */
+interface AddonChip {
+  id: string;
+  labelKey: string;
+  workTypes: WorkType[];
+}
+
+const ADDONS_BY_TYPE: Partial<Record<ProjectTypeId, AddonChip[]>> = {
+  bathroom: [
+    { id: 'underfloor', labelKey: 'renaidaFlow.addon.underfloorHeat', workTypes: ['el', 'golv'] },
+    { id: 'towel', labelKey: 'renaidaFlow.addon.towelRail', workTypes: ['vvs'] },
+    { id: 'niche', labelKey: 'renaidaFlow.addon.showerNiche', workTypes: ['kakel'] },
+    { id: 'spots', labelKey: 'renaidaFlow.addon.spotlights', workTypes: ['el'] },
+    { id: 'vanity', labelKey: 'renaidaFlow.addon.vanity', workTypes: ['snickeri'] },
+  ],
+  kitchen: [
+    { id: 'island', labelKey: 'renaidaFlow.addon.island', workTypes: ['snickeri'] },
+    { id: 'dishwasher', labelKey: 'renaidaFlow.addon.dishwasher', workTypes: ['vvs'] },
+    { id: 'hood', labelKey: 'renaidaFlow.addon.rangeHood', workTypes: ['vvs', 'el'] },
+    { id: 'spots', labelKey: 'renaidaFlow.addon.spotlights', workTypes: ['el'] },
+  ],
+  paint: [
+    { id: 'trim', labelKey: 'renaidaFlow.addon.trimPaint', workTypes: ['snickeri'] },
+    { id: 'wallpaper', labelKey: 'renaidaFlow.addon.wallpaper', workTypes: ['malning'] },
+  ],
+  floor: [
+    { id: 'skirting', labelKey: 'renaidaFlow.addon.skirting', workTypes: ['snickeri'] },
+    { id: 'underfloor', labelKey: 'renaidaFlow.addon.underfloorHeat', workTypes: ['el', 'golv'] },
+  ],
+};
+
 const SCOPE_MESSAGE_KEY: Record<ProjectTypeId, string> = {
   bathroom: 'renaidaFlow.q.scope.bathroom',
   kitchen: 'renaidaFlow.q.scope.kitchen',
@@ -185,6 +221,20 @@ export function nextStep(
       id: 'scope',
       messageKey: SCOPE_MESSAGE_KEY[draft.projectType],
       input: { kind: 'chips', options: SCOPE_BY_TYPE[draft.projectType], multi: true },
+    };
+  }
+  // Smart add-ons: only once scope produced tasks and the type has suggestions.
+  const addons = draft.projectType ? ADDONS_BY_TYPE[draft.projectType] : undefined;
+  if (draft.projectType && draft.tasks.length > 0 && addons && !answered(draft, 'addons')) {
+    return {
+      id: 'addons',
+      messageKey: 'renaidaFlow.q.addons',
+      input: {
+        kind: 'chips',
+        options: addons.map((a) => ({ id: a.id, labelKey: a.labelKey })),
+        multi: true,
+        skipKey: 'renaidaFlow.skip.none',
+      },
     };
   }
   if (!answered(draft, 'size')) {
@@ -249,6 +299,23 @@ export function applyAnswer(
         roomName,
         costCenter: workTypeToCostCenter(wt),
       }));
+      break;
+    }
+    case 'addons': {
+      if (answer.kind !== 'chips' || !next.projectType) break;
+      const addons = ADDONS_BY_TYPE[next.projectType] ?? [];
+      const roomName = next.rooms[0]?.name ?? null;
+      const existing = new Set(next.tasks.map((t) => `${t.workType}:${t.roomName ?? ''}`));
+      for (const id of answer.ids) {
+        addons
+          .find((a) => a.id === id)
+          ?.workTypes.forEach((wt) => {
+            const key = `${wt}:${roomName ?? ''}`;
+            if (existing.has(key)) return;
+            existing.add(key);
+            next.tasks.push({ workType: wt, roomName, costCenter: workTypeToCostCenter(wt) });
+          });
+      }
       break;
     }
     case 'size': {

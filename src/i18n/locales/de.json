@@ -2341,7 +2341,8 @@
       "describe": {
         "homeowner": "Möchtest du dein Projekt in eigenen Worten beschreiben? Ich fülle aus, was ich kann, und frage nur nach dem Rest. Oder überspringe und ich führe dich Schritt für Schritt.",
         "contractor": "Beschreibe den Auftrag in eigenen Worten und ich entwerfe Räume und Aufgaben — oder überspringe."
-      }
+      },
+      "addons": "Schön. Viele nehmen oft auch das mit — möchtest du etwas hinzufügen? (Optional.)"
     },
     "complete": "Perfekt — ich habe alles, was ich brauche. Dein Projekt ist bereit. Du kannst danach alles anpassen.",
     "type": {
@@ -2390,7 +2391,8 @@
       "dontKnow": "Weiß noch nicht",
       "skip": "Überspringen",
       "noBudget": "Noch kein Budget",
-      "guideMe": "Führe mich stattdessen"
+      "guideMe": "Führe mich stattdessen",
+      "none": "Nein danke"
     },
     "ui": {
       "title": "Mit Renaida erstellen",
@@ -2415,6 +2417,19 @@
     },
     "parsing": "Renaida liest deine Beschreibung…",
     "seeded": "Super! Ich habe {{rooms}} Raum/Räume und {{tasks}} Aufgabe(n) aus deiner Beschreibung hinzugefügt. Jetzt ergänzen wir nur noch das Fehlende.",
-    "couldntParse": "Das habe ich nicht ganz erfasst — machen wir es mit ein paar Fragen."
+    "couldntParse": "Das habe ich nicht ganz erfasst — machen wir es mit ein paar Fragen.",
+    "addon": {
+      "underfloorHeat": "Fußbodenheizung",
+      "towelRail": "Handtuchheizkörper",
+      "showerNiche": "Duschnische",
+      "spotlights": "Einbauspots",
+      "vanity": "Waschtischunterschrank",
+      "island": "Kücheninsel",
+      "dishwasher": "Geschirrspüler",
+      "rangeHood": "Dunstabzug",
+      "trimPaint": "Zierleisten",
+      "wallpaper": "Tapezieren",
+      "skirting": "Sockelleisten"
+    }
   }
 }

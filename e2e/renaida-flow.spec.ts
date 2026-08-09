@@ -33,6 +33,11 @@ test('bathroom total renovation → room, tasks with cost centers, budget, name'
   expect(d.tasks.every((t) => t.roomName === 'Badrum')).toBe(true);
 
   s = nextStep(d)!;
+  expect(s.id).toBe('addons');
+  d = applyAnswer(s, { kind: 'chips', ids: ['vanity'], labels: ['Kommod'] }, d); // → snickeri
+  expect(d.tasks.some((t) => t.workType === 'snickeri')).toBe(true);
+
+  s = nextStep(d)!;
   expect(s.id).toBe('size');
   d = applyAnswer(s, { kind: 'number', value: 6 }, d);
   expect(d.rooms[0].areaSqm).toBe(6);
@@ -72,6 +77,7 @@ test('optional steps can be skipped and the draft still completes', () => {
   d = applyAnswer(nextStep(d)!, { kind: 'skip' }, d); // describe
   d = applyAnswer(nextStep(d)!, { kind: 'chips', ids: ['paint'], labels: ['Måla om'] }, d);
   d = applyAnswer(nextStep(d)!, { kind: 'chips', ids: ['walls'], labels: ['Väggar'] }, d);
+  d = applyAnswer(nextStep(d)!, { kind: 'skip' }, d); // addons
   d = applyAnswer(nextStep(d)!, { kind: 'skip' }, d); // size
   d = applyAnswer(nextStep(d)!, { kind: 'skip' }, d); // address
   d = applyAnswer(nextStep(d)!, { kind: 'skip' }, d); // budget
@@ -106,6 +112,26 @@ test('LLM jumpstart: parsed description seeds rooms + tasks and skips covered st
   const input = toScaffoldInput(d, (wt) => wt);
   expect(input.rooms[0].dimensions).toEqual({ area_sqm: 6 });
   expect(input.tasks.length).toBe(3);
+});
+
+test('add-on suggestions are conditional on type and add extra tasks (deduped)', () => {
+  let d = emptyDraft();
+  d = applyAnswer(nextStep(d)!, { kind: 'skip' }, d); // describe
+  d = applyAnswer(nextStep(d)!, { kind: 'chips', ids: ['bathroom'], labels: ['Badrum'] }, d);
+  d = applyAnswer(nextStep(d)!, { kind: 'chips', ids: ['paint'], labels: ['Måla om'] }, d); // scope → malning only
+  const before = d.tasks.length;
+
+  const s = nextStep(d)!;
+  expect(s.id).toBe('addons');
+  // underfloor → el + golv, vanity → snickeri = 3 new tasks
+  d = applyAnswer(s, { kind: 'chips', ids: ['underfloor', 'vanity'], labels: ['Golvvärme', 'Kommod'] }, d);
+  expect(d.tasks.length).toBe(before + 3);
+  expect(d.tasks.some((t) => t.workType === 'snickeri')).toBe(true);
+  expect(d.tasks.some((t) => t.workType === 'el')).toBe(true);
+
+  // Applying the same add-on again is deduped (no duplicate tasks).
+  const d2 = applyAnswer(s, { kind: 'chips', ids: ['underfloor'], labels: ['Golvvärme'] }, d);
+  expect(d2.tasks.length).toBe(d.tasks.length);
 });
 
 test('LLM jumpstart returns null when nothing usable was parsed', () => {
