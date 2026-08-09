@@ -5,6 +5,8 @@ import {
   applyAnswer,
   toScaffoldInput,
   seedDraftFromParse,
+  deterministicAddons,
+  applyAddonWorkTypes,
 } from '../src/services/renaidaProjectFlow';
 import type { AIParsedResult } from '../src/components/project/overview/planning-wizard/types';
 
@@ -132,6 +134,24 @@ test('add-on suggestions are conditional on type and add extra tasks (deduped)',
   // Applying the same add-on again is deduped (no duplicate tasks).
   const d2 = applyAnswer(s, { kind: 'chips', ids: ['underfloor'], labels: ['Golvvärme'] }, d);
   expect(d2.tasks.length).toBe(d.tasks.length);
+});
+
+test('applyAddonWorkTypes (LLM/curated apply path) adds deduped tasks + marks answered', () => {
+  let d = emptyDraft();
+  d = applyAnswer(nextStep(d)!, { kind: 'skip' }, d); // describe
+  d = applyAnswer(nextStep(d)!, { kind: 'chips', ids: ['bathroom'], labels: ['Badrum'] }, d);
+  d = applyAnswer(nextStep(d)!, { kind: 'chips', ids: ['paint'], labels: ['Måla om'] }, d); // malning
+  const before = d.tasks.length;
+
+  // Simulate an LLM suggestion resolving to snickeri + a duplicate malning.
+  const d2 = applyAddonWorkTypes(d, [['snickeri'], ['malning']]);
+  expect(d2.answered).toContain('addons');
+  expect(d2.tasks.length).toBe(before + 1); // snickeri added, malning deduped
+  expect(d2.tasks.some((t) => t.workType === 'snickeri')).toBe(true);
+
+  // Curated fallback list is exposed and non-empty for a bathroom.
+  expect(deterministicAddons('bathroom').length).toBeGreaterThan(0);
+  expect(deterministicAddons('other').length).toBe(0);
 });
 
 test('LLM jumpstart returns null when nothing usable was parsed', () => {

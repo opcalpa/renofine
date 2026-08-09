@@ -342,6 +342,34 @@ export function applyAnswer(
 export const isComplete = (draft: ProjectDraft, userType?: UserType | null): boolean =>
   nextStep(draft, userType) === null;
 
+/** Curated add-on options for a type (the fallback when the LLM has none). */
+export function deterministicAddons(
+  type: ProjectTypeId
+): Array<{ id: string; labelKey: string; workTypes: WorkType[] }> {
+  return ADDONS_BY_TYPE[type] ?? [];
+}
+
+/**
+ * Apply chosen add-ons (resolved to work types) to the draft — used by the UI
+ * for both LLM-suggested and curated add-ons. Marks 'addons' answered and adds
+ * deduped tasks against the first room.
+ */
+export function applyAddonWorkTypes(draft: ProjectDraft, workTypesList: WorkType[][]): ProjectDraft {
+  const next: ProjectDraft = { ...draft, tasks: [...draft.tasks], answered: [...draft.answered] };
+  if (!next.answered.includes('addons')) next.answered.push('addons');
+  const roomName = next.rooms[0]?.name ?? null;
+  const existing = new Set(next.tasks.map((t) => `${t.workType}:${t.roomName ?? ''}`));
+  for (const wts of workTypesList) {
+    for (const wt of wts) {
+      const key = `${wt}:${roomName ?? ''}`;
+      if (existing.has(key)) continue;
+      existing.add(key);
+      next.tasks.push({ workType: wt, roomName, costCenter: workTypeToCostCenter(wt) });
+    }
+  }
+  return next;
+}
+
 /** Map the accumulated draft onto the shared scaffoldProject engine's input. */
 export function toScaffoldInput(draft: ProjectDraft, labelFor: WorkTypeLabeller): ScaffoldProjectInput {
   return {

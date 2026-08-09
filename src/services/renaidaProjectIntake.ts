@@ -9,6 +9,8 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import type { AIParsedResult } from '@/components/project/overview/planning-wizard/types';
+import type { WorkType } from './workTypeUtils';
+import { getWorkTypes } from './workTypeUtils';
 
 /** Call the deployed parser. Returns null on any failure (UI falls back to Q&A). */
 export async function parseProjectDescription(
@@ -23,5 +25,39 @@ export async function parseProjectDescription(
     return data as AIParsedResult;
   } catch {
     return null;
+  }
+}
+
+export interface AddonSuggestion {
+  label: string;
+  workType: WorkType;
+}
+
+/**
+ * LLM-generated add-on suggestions for the guided flow. Returns [] on any
+ * failure so the caller falls back to the curated deterministic list.
+ */
+export async function fetchAddonSuggestions(params: {
+  projectType: string;
+  rooms: string[];
+  existingWorkTypes: string[];
+  language: string;
+  userType: string;
+}): Promise<AddonSuggestion[]> {
+  const known = new Set<WorkType>(getWorkTypes().map((w) => w.value));
+  try {
+    const { data, error } = await supabase.functions.invoke('renaida-suggest', { body: params });
+    if (error || !data || !Array.isArray(data.suggestions)) return [];
+    return (data.suggestions as Array<{ label?: unknown; workType?: unknown }>)
+      .filter(
+        (s): s is AddonSuggestion =>
+          typeof s.label === 'string' &&
+          !!s.label.trim() &&
+          typeof s.workType === 'string' &&
+          known.has(s.workType as WorkType)
+      )
+      .slice(0, 6);
+  } catch {
+    return [];
   }
 }

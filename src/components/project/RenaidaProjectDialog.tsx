@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { scaffoldProject } from '@/services/scaffoldProject';
-import { parseProjectDescription } from '@/services/renaidaProjectIntake';
+import { parseProjectDescription, fetchAddonSuggestions } from '@/services/renaidaProjectIntake';
 import type { WorkType } from '@/services/workTypeUtils';
 import {
   emptyDraft,
@@ -28,6 +28,8 @@ import {
   toScaffoldInput,
   taskTitle,
   seedDraftFromParse,
+  deterministicAddons,
+  applyAddonWorkTypes,
   PROJECT_TYPES,
   type ProjectDraft,
   type ProjectTypeId,
@@ -57,6 +59,10 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
   const [fieldValue, setFieldValue] = useState('');
   const [creating, setCreating] = useState(false);
   const [parsing, setParsing] = useState(false);
+  const [addonOptions, setAddonOptions] = useState<
+    Array<{ id: string; label: string; workTypes: WorkType[] }> | null
+  >(null);
+  const [addonsLoading, setAddonsLoading] = useState(false);
   const convRef = useRef<HTMLDivElement>(null);
 
   /** Localized work-type label — the seam that keeps task titles translated. */
@@ -77,8 +83,42 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
       setFieldValue('');
       setCreating(false);
       setParsing(false);
+      setAddonOptions(null);
+      setAddonsLoading(false);
     }
   }, [open]);
+
+  // When we reach the add-ons step, fetch LLM suggestions once; fall back to
+  // the curated list if the function returns nothing.
+  useEffect(() => {
+    if (step?.id !== 'addons' || addonOptions !== null || addonsLoading || !draft.projectType) return;
+    let cancelled = false;
+    setAddonsLoading(true);
+    fetchAddonSuggestions({
+      projectType: draft.projectType,
+      rooms: draft.rooms.map((r) => r.name),
+      existingWorkTypes: [...new Set(draft.tasks.map((t) => t.workType))],
+      language: i18n.language,
+      userType,
+    })
+      .then((llm) => {
+        if (cancelled) return;
+        if (llm.length > 0) {
+          setAddonOptions(llm.map((s, i) => ({ id: `llm-${i}`, label: s.label, workTypes: [s.workType] })));
+        } else {
+          const type = draft.projectType!;
+          setAddonOptions(
+            deterministicAddons(type).map((a) => ({ id: a.id, label: t(a.labelKey), workTypes: a.workTypes }))
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setAddonsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [step?.id, addonOptions, addonsLoading, draft.projectType, draft.rooms, draft.tasks, i18n.language, userType, t]);
 
   const messageOf = (s: Step) => t(s.messageKey, { ...(s.messageVars ?? {}) });
 
@@ -142,6 +182,14 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
     const chosen = s.input.options.filter((o) => multiSel.includes(o.id));
     const labels = chosen.map((o) => t(o.labelKey));
     submit(s, { kind: 'chips', ids: chosen.map((o) => o.id), labels }, labels.join(', '));
+  };
+
+  const onAddonsContinue = (s: Step) => {
+    const chosen = (addonOptions ?? []).filter((o) => multiSel.includes(o.id));
+    if (chosen.length === 0) return;
+    setTurns((tn) => [...tn, { message: messageOf(s), answerLabel: chosen.map((o) => o.label).join(', ') }]);
+    setDraft((d) => applyAddonWorkTypes(d, chosen.map((o) => o.workTypes)));
+    setMultiSel([]);
   };
 
   const onFieldSubmit = (s: Step) => {
@@ -256,6 +304,47 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
                             : t('renaidaFlow.skip.skip')}
                         </Button>
                       </div>
+                    </div>
+                  ) : step.id === 'addons' ? (
+                    <div className="space-y-2.5 pl-8">
+                      {addonsLoading || addonOptions === null ? (
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          {t('renaidaFlow.suggesting')}
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex flex-wrap gap-2">
+                            {addonOptions.map((o) => {
+                              const on = multiSel.includes(o.id);
+                              return (
+                                <button
+                                  key={o.id}
+                                  onClick={() =>
+                                    setMultiSel(on ? multiSel.filter((x) => x !== o.id) : [...multiSel, o.id])
+                                  }
+                                  className={`rounded-full border px-3.5 py-1.5 text-sm transition-colors ${
+                                    on
+                                      ? 'border-primary bg-primary/10 text-primary'
+                                      : 'bg-background hover:border-primary hover:bg-primary/5'
+                                  }`}
+                                >
+                                  {on && <Check className="mr-1 inline h-3 w-3" />}
+                                  {o.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button size="sm" onClick={() => onAddonsContinue(step)} disabled={multiSel.length === 0}>
+                              {t('renaidaFlow.ui.continue')} <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => onSkip(step)}>
+                              {t('renaidaFlow.skip.none')}
+                            </Button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   ) : (
                     <StepInputView
