@@ -24,10 +24,22 @@ import { undo, redo } from '../core/executor';
 import { execute } from '../core/commands';
 import { copySelection, cutSelection, pasteClipboard } from '../core/clipboard';
 
+/** True if the Konva node (or an ancestor) is a resize Transformer / its anchor. */
+function isTransformerNode(node: Konva.Node | null | undefined): boolean {
+  let n: Konva.Node | null | undefined = node;
+  while (n) {
+    if (n.getClassName?.() === 'Transformer') return true;
+    n = n.getParent?.();
+  }
+  return false;
+}
+
 export class ToolController {
   private tools: Map<string, BaseTool> = new Map();
   private active: BaseTool;
   private spacePan: { previous: BaseTool } | null = null;
+  /** While a resize-handle drag is in flight, the tool layer stays out of it. */
+  private transformerGesture = false;
 
   constructor() {
     for (const tool of [
@@ -96,6 +108,12 @@ export class ToolController {
   }
 
   onPointerDown(e: KonvaEventObject<MouseEvent | PointerEvent>, stage: Konva.Stage): void {
+    // A resize handle owns its whole drag — the tool layer must not select,
+    // move or clear anything while Konva's Transformer is resizing.
+    if (isTransformerNode(e.target)) {
+      this.transformerGesture = true;
+      return;
+    }
     const event = this.toEvent(e, stage);
     if (!event) return;
     // Clicking a dimension label opens an autofocused inline editor. Cancel
@@ -106,11 +124,16 @@ export class ToolController {
   }
 
   onPointerMove(e: KonvaEventObject<MouseEvent | PointerEvent>, stage: Konva.Stage): void {
+    if (this.transformerGesture) return;
     const event = this.toEvent(e, stage);
     if (event) this.active.onPointerMove(event);
   }
 
   onPointerUp(e: KonvaEventObject<MouseEvent | PointerEvent>, stage: Konva.Stage): void {
+    if (this.transformerGesture) {
+      this.transformerGesture = false;
+      return;
+    }
     const event = this.toEvent(e, stage);
     if (event) this.active.onPointerUp(event);
   }

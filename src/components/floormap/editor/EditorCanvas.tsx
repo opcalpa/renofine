@@ -35,6 +35,7 @@ import { LegacyShapesLayer } from './render/LegacyShapesLayer';
 import { ObjectsLayer } from './render/ObjectsLayer';
 import { OpeningsLayer } from './render/OpeningsLayer';
 import { OverlayLayer } from './render/OverlayLayer';
+import { ResizeTransformer } from './render/ResizeTransformer';
 import { ToolController } from './tools/ToolController';
 import { resetHistory, canUndo, canRedo, undo, redo } from './core/executor';
 import { execute } from './core/commands';
@@ -468,6 +469,7 @@ export const EditorCanvas = ({ isReadOnly, roomDataVersion }: EditorCanvasProps)
             selectedIds={selectedShapeIds}
             zoom={viewState.zoom}
           />
+          {!isReadOnly && <ResizeTransformer zoom={viewState.zoom} />}
         </Layer>
         <Layer listening={false}>
           <DimensionChainLayer

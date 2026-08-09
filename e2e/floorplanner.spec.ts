@@ -1169,6 +1169,64 @@ test.describe('Floor planner v2', () => {
     await expect(page.getByText('Ny ritmotor')).toBeVisible();
   });
 
+  test('resize handles: dragging a corner grows the rectangle (B2)', async ({ page }) => {
+    await openDemoPlanner(page);
+    const canvas = page.getByTestId('editor-v2-canvas');
+    const box = (await canvas.boundingBox())!;
+
+    // Draw a rectangle from (300,300) to (430,410)
+    await page.getByTestId('tool-shapes').click();
+    await page.getByTestId('tool-shape-rectangle').click();
+    await page.mouse.move(box.x + 300, box.y + 300);
+    await page.mouse.down();
+    await page.mouse.move(box.x + 430, box.y + 410);
+    await page.mouse.up();
+
+    // Select it deterministically → the resize transformer attaches
+    await page.keyboard.press('v');
+    const id = await page.evaluate(() => {
+      const dbg = window.__rfEditorDebug! as unknown as {
+        getShapes: () => Array<{ id: string; type: string; coordinates: { width: number } }>;
+        select: (ids: string[]) => void;
+      };
+      const r = dbg.getShapes().find((s) => s.type === 'rectangle')!;
+      dbg.select([r.id]);
+      return r.id;
+    });
+    await page.waitForTimeout(150);
+
+    // Compute the actual bottom-right corner on screen from the shape's world
+    // coords + the view transform (grid snap may have moved it off the cursor).
+    const bottomRight = await page.evaluate((rid) => {
+      const dbg = window.__rfEditorDebug! as unknown as {
+        getShapes: () => Array<{ id: string; coordinates: { left: number; top: number; width: number; height: number } }>;
+        getView: () => { zoom: number; panX: number; panY: number };
+      };
+      const c = dbg.getShapes().find((s) => s.id === rid)!.coordinates;
+      const v = dbg.getView();
+      return {
+        x: (c.left + c.width) * v.zoom + v.panX,
+        y: (c.top + c.height) * v.zoom + v.panY,
+        width: c.width,
+      };
+    }, id);
+    const widthBefore = bottomRight.width;
+
+    // Drag the bottom-right handle outward (real mouse — Konva transformer)
+    await page.mouse.move(box.x + bottomRight.x, box.y + bottomRight.y);
+    await page.mouse.down();
+    await page.mouse.move(box.x + bottomRight.x + 80, box.y + bottomRight.y + 80, { steps: 6 });
+    await page.mouse.up();
+
+    const widthAfter = await page.evaluate((rid) => {
+      const r = window.__rfEditorDebug!.getShapes().find((s) => s.id === rid) as
+        | { coordinates: { width: number } }
+        | undefined;
+      return r!.coordinates.width;
+    }, id);
+    expect(widthAfter).toBeGreaterThan(widthBefore);
+  });
+
   test('closeout controls: shape fill colour, z-order, and text bold/size', async ({ page }) => {
     await openDemoPlanner(page);
     const canvas = page.getByTestId('editor-v2-canvas');
