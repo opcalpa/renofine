@@ -6873,6 +6873,10 @@
       "budget": {
         "homeowner": "Har du en ungefärlig budget i tankarna? Den blir en riktlinje du kan justera när som helst.",
         "contractor": "Ungefärlig budget (exkl. moms)? Den blir en riktlinje du kan justera när som helst."
+      },
+      "describe": {
+        "homeowner": "Vill du berätta om ditt projekt med egna ord? Jag fyller i vad jag kan och frågar bara om resten. Eller hoppa över så guidar jag dig steg för steg.",
+        "contractor": "Beskriv jobbet med egna ord så skissar jag rum och arbeten — eller hoppa över så guidar jag dig."
       }
     },
     "complete": "Perfekt — då har jag allt jag behöver. Ditt projekt är redo att skapas. Du kan justera allt efteråt.",
@@ -6915,12 +6919,14 @@
     "ph": {
       "size": "t.ex. 6",
       "address": "t.ex. Storgatan 5, Stockholm",
-      "budget": "t.ex. 150000"
+      "budget": "t.ex. 150000",
+      "describe": "t.ex. Renovera badrummet, ca 6 m², nytt kakel, ny toalett och dusch, och måla om…"
     },
     "skip": {
       "dontKnow": "Vet inte än",
       "skip": "Hoppa över",
-      "noBudget": "Ingen budget än"
+      "noBudget": "Ingen budget än",
+      "guideMe": "Guida mig i stället"
     },
     "ui": {
       "title": "Skapa med Renaida",
@@ -6942,6 +6948,9 @@
       "noProfile": "Kunde inte hitta din profil",
       "created": "Projektet är skapat! 🎉",
       "failed": "Kunde inte skapa projektet"
-    }
+    },
+    "parsing": "Renaida läser din beskrivning…",
+    "seeded": "Toppen! Jag la till {{rooms}} rum och {{tasks}} arbeten från din beskrivning. Nu fyller vi bara i det som saknas.",
+    "couldntParse": "Jag fick inte riktigt grepp om det — vi tar det med några frågor i stället."
   }
 }

@@ -4,7 +4,9 @@ import {
   nextStep,
   applyAnswer,
   toScaffoldInput,
+  seedDraftFromParse,
 } from '../src/services/renaidaProjectFlow';
+import type { AIParsedResult } from '../src/components/project/overview/planning-wizard/types';
 
 /**
  * Unit-style checks for the deterministic Renaida project-creation flow.
@@ -16,6 +18,10 @@ test('bathroom total renovation → room, tasks with cost centers, budget, name'
   let d = emptyDraft();
 
   let s = nextStep(d)!;
+  expect(s.id).toBe('describe');
+  d = applyAnswer(s, { kind: 'skip' }, d); // deterministic path — skip the free-text jumpstart
+
+  s = nextStep(d)!;
   expect(s.id).toBe('type');
   d = applyAnswer(s, { kind: 'chips', ids: ['bathroom'], labels: ['Badrum'] }, d);
   expect(d.rooms[0].name).toBe('Badrum');
@@ -54,6 +60,7 @@ test('bathroom total renovation → room, tasks with cost centers, budget, name'
 
 test('scope drives conditional task set (surfaces only → one tiling task)', () => {
   let d = emptyDraft();
+  d = applyAnswer(nextStep(d)!, { kind: 'skip' }, d); // describe
   d = applyAnswer(nextStep(d)!, { kind: 'chips', ids: ['bathroom'], labels: ['Badrum'] }, d);
   d = applyAnswer(nextStep(d)!, { kind: 'chips', ids: ['surfaces'], labels: ['Kakel & klinker'] }, d);
   expect(d.tasks.length).toBe(1);
@@ -62,6 +69,7 @@ test('scope drives conditional task set (surfaces only → one tiling task)', ()
 
 test('optional steps can be skipped and the draft still completes', () => {
   let d = emptyDraft();
+  d = applyAnswer(nextStep(d)!, { kind: 'skip' }, d); // describe
   d = applyAnswer(nextStep(d)!, { kind: 'chips', ids: ['paint'], labels: ['Måla om'] }, d);
   d = applyAnswer(nextStep(d)!, { kind: 'chips', ids: ['walls'], labels: ['Väggar'] }, d);
   d = applyAnswer(nextStep(d)!, { kind: 'skip' }, d); // size
@@ -73,4 +81,34 @@ test('optional steps can be skipped and the draft still completes', () => {
   expect(input.rooms[0].dimensions).toBeNull();
   expect(input.project?.totalBudget).toBeNull();
   expect(input.tasks.length).toBeGreaterThanOrEqual(1);
+});
+
+test('LLM jumpstart: parsed description seeds rooms + tasks and skips covered steps', () => {
+  const parsed: AIParsedResult = {
+    totalAreaSqm: 6,
+    rooms: [{ nameKey: 'bathroom', name: 'Badrum', suggestedWorkTypes: ['kakel', 'vvs'] }],
+    otherSpaces: [],
+    globalWorkTypes: ['malning'],
+  } as AIParsedResult;
+
+  const seeded = seedDraftFromParse(parsed, emptyDraft(), { defaultName: 'Renoveringsprojekt' });
+  expect(seeded).not.toBeNull();
+  const d = seeded!;
+  expect(d.rooms.length).toBe(1);
+  expect(d.rooms[0].areaSqm).toBe(6); // single room adopts the whole-property area
+  expect(d.tasks.length).toBe(3); // global painting + per-room tiling & plumbing
+  expect(d.tasks.some((t) => t.workType === 'malning' && t.roomName === null)).toBe(true);
+  expect(d.tasks.some((t) => t.workType === 'kakel' && t.roomName === 'Badrum')).toBe(true);
+  // The steps the LLM covered are marked answered → only the gaps remain.
+  expect(d.answered).toEqual(expect.arrayContaining(['describe', 'scope', 'size']));
+  expect(nextStep(d, 'homeowner', d.rooms[0].name)!.id).toBe('address');
+
+  const input = toScaffoldInput(d, (wt) => wt);
+  expect(input.rooms[0].dimensions).toEqual({ area_sqm: 6 });
+  expect(input.tasks.length).toBe(3);
+});
+
+test('LLM jumpstart returns null when nothing usable was parsed', () => {
+  const parsed = { totalAreaSqm: null, rooms: [], otherSpaces: [], globalWorkTypes: [] } as AIParsedResult;
+  expect(seedDraftFromParse(parsed, emptyDraft(), { defaultName: 'x' })).toBeNull();
 });

@@ -6873,6 +6873,10 @@
       "budget": {
         "homeowner": "Do you have a rough budget in mind? It becomes a guideline you can adjust anytime.",
         "contractor": "Rough budget (excl. VAT)? It becomes a guideline you can adjust anytime."
+      },
+      "describe": {
+        "homeowner": "Want to tell me about your project in your own words? I'll fill in what I can and only ask about the rest. Or skip and I'll guide you step by step.",
+        "contractor": "Describe the job in your own words and I'll draft the rooms and tasks — or skip to be guided."
       }
     },
     "complete": "Perfect — I have everything I need. Your project is ready to create. You can adjust anything afterwards.",
@@ -6915,12 +6919,14 @@
     "ph": {
       "size": "e.g. 6",
       "address": "e.g. Main St 5, City",
-      "budget": "e.g. 150000"
+      "budget": "e.g. 150000",
+      "describe": "e.g. Renovate the bathroom, ~6 m², new tiles, toilet and shower, and repaint…"
     },
     "skip": {
       "dontKnow": "Don't know yet",
       "skip": "Skip",
-      "noBudget": "No budget yet"
+      "noBudget": "No budget yet",
+      "guideMe": "Guide me instead"
     },
     "ui": {
       "title": "Create with Renaida",
@@ -6942,6 +6948,9 @@
       "noProfile": "Couldn't find your profile",
       "created": "Project created! 🎉",
       "failed": "Couldn't create the project"
-    }
+    },
+    "parsing": "Renaida is reading your description…",
+    "seeded": "Great! I added {{rooms}} room(s) and {{tasks}} task(s) from your description. Now let's just fill in what's missing.",
+    "couldntParse": "I couldn't quite catch that — let's do it with a few questions instead."
   }
 }

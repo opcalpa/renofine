@@ -2337,6 +2337,10 @@
       "budget": {
         "homeowner": "Hast du ein ungefähres Budget im Kopf? Es wird eine Richtlinie, die du jederzeit anpassen kannst.",
         "contractor": "Ungefähres Budget (exkl. MwSt.)? Es wird eine Richtlinie, jederzeit anpassbar."
+      },
+      "describe": {
+        "homeowner": "Möchtest du dein Projekt in eigenen Worten beschreiben? Ich fülle aus, was ich kann, und frage nur nach dem Rest. Oder überspringe und ich führe dich Schritt für Schritt.",
+        "contractor": "Beschreibe den Auftrag in eigenen Worten und ich entwerfe Räume und Aufgaben — oder überspringe."
       }
     },
     "complete": "Perfekt — ich habe alles, was ich brauche. Dein Projekt ist bereit. Du kannst danach alles anpassen.",
@@ -2379,12 +2383,14 @@
     "ph": {
       "size": "z.B. 6",
       "address": "z.B. Hauptstr. 5, Stadt",
-      "budget": "z.B. 150000"
+      "budget": "z.B. 150000",
+      "describe": "z.B. Bad renovieren, ca. 6 m², neue Fliesen, WC und Dusche, und streichen…"
     },
     "skip": {
       "dontKnow": "Weiß noch nicht",
       "skip": "Überspringen",
-      "noBudget": "Noch kein Budget"
+      "noBudget": "Noch kein Budget",
+      "guideMe": "Führe mich stattdessen"
     },
     "ui": {
       "title": "Mit Renaida erstellen",
@@ -2406,6 +2412,9 @@
       "noProfile": "Profil nicht gefunden",
       "created": "Projekt erstellt! 🎉",
       "failed": "Projekt konnte nicht erstellt werden"
-    }
+    },
+    "parsing": "Renaida liest deine Beschreibung…",
+    "seeded": "Super! Ich habe {{rooms}} Raum/Räume und {{tasks}} Aufgabe(n) aus deiner Beschreibung hinzugefügt. Jetzt ergänzen wir nur noch das Fehlende.",
+    "couldntParse": "Das habe ich nicht ganz erfasst — machen wir es mit ein paar Fragen."
   }
 }

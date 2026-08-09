@@ -16,8 +16,10 @@ import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { scaffoldProject } from '@/services/scaffoldProject';
+import { parseProjectDescription } from '@/services/renaidaProjectIntake';
 import type { WorkType } from '@/services/workTypeUtils';
 import {
   emptyDraft,
@@ -25,6 +27,7 @@ import {
   applyAnswer,
   toScaffoldInput,
   taskTitle,
+  seedDraftFromParse,
   PROJECT_TYPES,
   type ProjectDraft,
   type ProjectTypeId,
@@ -46,13 +49,14 @@ interface Turn {
 }
 
 export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner' }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [draft, setDraft] = useState<ProjectDraft>(emptyDraft());
   const [turns, setTurns] = useState<Turn[]>([]);
   const [multiSel, setMultiSel] = useState<string[]>([]);
   const [fieldValue, setFieldValue] = useState('');
   const [creating, setCreating] = useState(false);
+  const [parsing, setParsing] = useState(false);
   const convRef = useRef<HTMLDivElement>(null);
 
   /** Localized work-type label — the seam that keeps task titles translated. */
@@ -72,14 +76,49 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
       setMultiSel([]);
       setFieldValue('');
       setCreating(false);
+      setParsing(false);
     }
   }, [open]);
+
+  const messageOf = (s: Step) => t(s.messageKey, { ...(s.messageVars ?? {}) });
+
+  /** Free-text jumpstart: LLM parses the description → seeds the draft. */
+  const onDescribeSubmit = async (s: Step) => {
+    const text = fieldValue.trim();
+    if (!text || parsing) return;
+    setParsing(true);
+    const parsed = await parseProjectDescription(text, i18n.language);
+    setParsing(false);
+    setFieldValue('');
+    setTurns((tn) => [...tn, { message: messageOf(s), answerLabel: text }]);
+
+    if (parsed) {
+      const seeded = seedDraftFromParse(parsed, applyAnswer(s, { kind: 'skip' }, draft), {
+        defaultName: t('renaidaFlow.name.other'),
+      });
+      if (seeded) {
+        setDraft(seeded);
+        setTurns((tn) => [
+          ...tn,
+          {
+            message: t('renaidaFlow.seeded', {
+              rooms: seeded.rooms.length,
+              tasks: seeded.tasks.length,
+            }),
+            answerLabel: '',
+          },
+        ]);
+        return;
+      }
+    }
+    // Nothing usable → fall back to the guided questions.
+    setDraft((d) => applyAnswer(s, { kind: 'skip' }, d));
+    setTurns((tn) => [...tn, { message: t('renaidaFlow.couldntParse'), answerLabel: '' }]);
+  };
 
   useEffect(() => {
     convRef.current?.scrollTo({ top: convRef.current.scrollHeight, behavior: 'smooth' });
   }, [turns.length, step?.id]);
-
-  const messageOf = (s: Step) => t(s.messageKey, { ...(s.messageVars ?? {}) });
 
   const submit = (s: Step, answer: Answer, answerLabel: string) => {
     // The 'type' step seeds a localized room + project name into the draft.
@@ -175,29 +214,62 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
             <div ref={convRef} className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
               {turns.map((turn, i) => (
                 <div key={i} className="space-y-2">
-                  <RenaidaBubble>{turn.message}</RenaidaBubble>
-                  <div className="flex justify-end">
-                    <span className="max-w-[85%] rounded-2xl rounded-tr-sm bg-primary px-3 py-2 text-sm text-primary-foreground">
-                      {turn.answerLabel}
-                    </span>
-                  </div>
+                  {turn.message && <RenaidaBubble>{turn.message}</RenaidaBubble>}
+                  {turn.answerLabel && (
+                    <div className="flex justify-end">
+                      <span className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-tr-sm bg-primary px-3 py-2 text-sm text-primary-foreground">
+                        {turn.answerLabel}
+                      </span>
+                    </div>
+                  )}
                 </div>
               ))}
 
               {step && (
                 <div className="space-y-3 animate-in fade-in slide-in-from-bottom-1">
                   <RenaidaBubble>{messageOf(step)}</RenaidaBubble>
-                  <StepInputView
-                    step={step}
-                    multiSel={multiSel}
-                    setMultiSel={setMultiSel}
-                    fieldValue={fieldValue}
-                    setFieldValue={setFieldValue}
-                    onChipSingle={onChipSingle}
-                    onMultiContinue={onMultiContinue}
-                    onFieldSubmit={onFieldSubmit}
-                    onSkip={onSkip}
-                  />
+                  {step.id === 'describe' ? (
+                    <div className="space-y-2 pl-8">
+                      <Textarea
+                        autoFocus
+                        rows={3}
+                        placeholder={
+                          step.input.kind === 'text' && step.input.placeholderKey
+                            ? t(step.input.placeholderKey)
+                            : undefined
+                        }
+                        value={fieldValue}
+                        disabled={parsing}
+                        onChange={(e) => setFieldValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) onDescribeSubmit(step);
+                        }}
+                      />
+                      <div className="flex items-center gap-2">
+                        <Button size="sm" onClick={() => onDescribeSubmit(step)} disabled={!fieldValue.trim() || parsing}>
+                          {parsing ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : null}
+                          {parsing ? t('renaidaFlow.parsing') : t('renaidaFlow.ui.continue')}
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => onSkip(step)} disabled={parsing}>
+                          {step.input.kind === 'text' && step.input.skipKey
+                            ? t(step.input.skipKey)
+                            : t('renaidaFlow.skip.skip')}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <StepInputView
+                      step={step}
+                      multiSel={multiSel}
+                      setMultiSel={setMultiSel}
+                      fieldValue={fieldValue}
+                      setFieldValue={setFieldValue}
+                      onChipSingle={onChipSingle}
+                      onMultiContinue={onMultiContinue}
+                      onFieldSubmit={onFieldSubmit}
+                      onSkip={onSkip}
+                    />
+                  )}
                 </div>
               )}
 

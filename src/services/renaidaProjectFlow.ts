@@ -14,8 +14,9 @@
  */
 
 import type { WorkType } from './workTypeUtils';
-import { workTypeToCostCenter } from './workTypeUtils';
+import { workTypeToCostCenter, getWorkTypes } from './workTypeUtils';
 import type { ScaffoldProjectInput } from './scaffoldProject';
+import type { AIParsedResult } from '@/components/project/overview/planning-wizard/types';
 
 export type ProjectTypeId = 'bathroom' | 'kitchen' | 'paint' | 'floor' | 'other';
 export type UserType = 'homeowner' | 'contractor';
@@ -163,6 +164,15 @@ export function nextStep(
   userType?: UserType | null,
   roomLabel?: string
 ): Step | null {
+  // Optional free-text jumpstart: describe the project in your own words and
+  // the LLM seeds the draft (handled specially by the UI); skip to be guided.
+  if (!answered(draft, 'describe') && !draft.projectType) {
+    return {
+      id: 'describe',
+      messageKey: userType === 'contractor' ? 'renaidaFlow.q.describe.contractor' : 'renaidaFlow.q.describe.homeowner',
+      input: { kind: 'text', placeholderKey: 'renaidaFlow.ph.describe', skipKey: 'renaidaFlow.skip.guideMe' },
+    };
+  }
   if (!draft.projectType) {
     return {
       id: 'type',
@@ -291,3 +301,50 @@ export function toScaffoldInput(draft: ProjectDraft, labelFor: WorkTypeLabeller)
 
 /** Exposed for the LLM jumpstart to build tasks from parsed work types. */
 export { SCOPE_BY_TYPE, PROJECT_TYPES };
+
+/**
+ * Seed the draft from an LLM-parsed description (the free-text jumpstart).
+ * Pure mapping — the network call lives in renaidaProjectIntake.ts. Returns
+ * null when nothing usable was found so the caller falls back to the guided
+ * questions. Marks the steps the LLM already covered as answered.
+ */
+export function seedDraftFromParse(
+  parsed: AIParsedResult,
+  base: ProjectDraft,
+  opts: { defaultName: string }
+): ProjectDraft | null {
+  const known = new Set<WorkType>(getWorkTypes().map((w) => w.value));
+
+  const rooms: DraftRoom[] = [
+    ...parsed.rooms.map((r) => ({ name: r.name })),
+    ...(parsed.otherSpaces ?? []).map((r) => ({ name: r.name })),
+  ];
+  // A single-room project can adopt the whole-property area as its own.
+  if (rooms.length === 1 && parsed.totalAreaSqm) rooms[0].areaSqm = parsed.totalAreaSqm;
+
+  const tasks: DraftTask[] = [];
+  const seen = new Set<string>();
+  const addTask = (wt: WorkType, roomName: string | null) => {
+    if (!known.has(wt)) return;
+    const key = `${wt}:${roomName ?? ''}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    tasks.push({ workType: wt, roomName, costCenter: workTypeToCostCenter(wt) });
+  };
+  parsed.globalWorkTypes.forEach((wt) => addTask(wt, null));
+  parsed.rooms.forEach((r) => r.suggestedWorkTypes.forEach((wt) => addTask(wt, r.name)));
+
+  if (rooms.length === 0 && tasks.length === 0) return null;
+
+  const answered = new Set([...base.answered, 'describe', 'scope']);
+  if (rooms.length === 1 && rooms[0].areaSqm) answered.add('size');
+
+  return {
+    ...base,
+    projectType: 'other',
+    projectName: base.projectName ?? opts.defaultName,
+    rooms: rooms.length ? rooms : base.rooms,
+    tasks,
+    answered: [...answered],
+  };
+}
