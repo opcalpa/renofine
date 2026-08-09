@@ -30,11 +30,14 @@ declare global {
   }
 }
 
-async function openDemoPlanner(page: Page) {
-  await page.addInitScript(() => {
-    localStorage.setItem('renofine.editorV2', '1');
+async function openDemoPlanner(page: Page, opts: { flag?: 'v2' | 'v1' | 'none' } = {}) {
+  const flag = opts.flag ?? 'v2';
+  await page.addInitScript((f) => {
+    if (f === 'v2') localStorage.setItem('renofine.editorV2', '1');
+    if (f === 'v1') localStorage.setItem('renofine.editorV2', '0');
+    // f === 'none' leaves it unset → exercises the desktop-first default
     localStorage.setItem('i18nextLng', 'sv');
-  });
+  }, flag);
   await page.goto('/');
   await page.getByText('Se demoprojekt').first().click();
   await page.waitForURL(/\/projects\//);
@@ -1156,6 +1159,14 @@ test.describe('Floor planner v2', () => {
     await expect(menu.getByText('Rotera 90°')).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(menu).toHaveCount(0);
+  });
+
+  test('desktop default renders v2 with no editor flag set (desktop-first flip)', async ({ page }) => {
+    // No editor flag in localStorage → the Desktop Chrome viewport must get v2.
+    // (openDemoPlanner's tail asserts the v2 canvas + dev handle are present.)
+    await openDemoPlanner(page, { flag: 'none' });
+    await expect(page.getByTestId('editor-v2-canvas')).toBeVisible();
+    await expect(page.getByText('Ny ritmotor')).toBeVisible();
   });
 
   test('wall properties: thickness preset + height edit from the selection toolbar', async ({ page }) => {

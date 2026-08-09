@@ -1,12 +1,27 @@
 /**
  * v2 editor feature flag.
  *
- * Opt-in during the rebuild: enable with ?editor=v2 (persisted) or
- * localStorage.setItem('renofine.editorV2', '1'); disable with ?editor=v1.
- * Default flips to v2 when phase 1 reaches rendering parity.
+ * Desktop-first default (2026-08): with no explicit choice, v2 is the default
+ * editor on desktop and v1 stays on mobile (v2 has no mobile toolbar yet).
+ * Explicit overrides, both persisted and sticky:
+ *   ?editor=v2  → force v2   (or localStorage 'renofine.editorV2' = '1')
+ *   ?editor=v1  → force v1   (localStorage 'renofine.editorV2' = '0')
  */
 
 const STORAGE_KEY = 'renofine.editorV2';
+const MOBILE_BREAKPOINT = 768; // matches useIsMobile
+
+/** v2 has no mobile UI yet, so mobile viewports fall back to v1 by default. */
+function isMobileViewport(): boolean {
+  try {
+    return (
+      window.matchMedia?.(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`).matches ??
+      window.innerWidth < MOBILE_BREAKPOINT
+    );
+  } catch {
+    return false;
+  }
+}
 
 export function isEditorV2Enabled(): boolean {
   if (typeof window === 'undefined') return false;
@@ -17,10 +32,15 @@ export function isEditorV2Enabled(): boolean {
       return true;
     }
     if (param === 'v1') {
-      localStorage.removeItem(STORAGE_KEY);
+      // Sticky opt-out so the choice survives later visits without the param.
+      localStorage.setItem(STORAGE_KEY, '0');
       return false;
     }
-    return localStorage.getItem(STORAGE_KEY) === '1';
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored === '1') return true;
+    if (stored === '0') return false;
+    // No explicit choice → desktop-first default.
+    return !isMobileViewport();
   } catch {
     return false;
   }

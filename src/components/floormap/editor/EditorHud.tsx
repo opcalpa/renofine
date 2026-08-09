@@ -56,7 +56,9 @@ export const EditorHud = () => {
 
   const switchToV1 = () => {
     try {
-      localStorage.removeItem(STORAGE_KEY);
+      // Sticky opt-out: '0' persists the choice past this session (v2 is now
+      // the desktop default, so removing the key would just flip back to v2).
+      localStorage.setItem(STORAGE_KEY, '0');
     } catch {
       // ignore
     }
