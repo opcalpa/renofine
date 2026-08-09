@@ -62,6 +62,7 @@ const DashboardRedesign = lazyWithRetry(
   () => localStorage.removeItem("rf_dashboard_v2"),
 );
 import { CreateProjectDialog } from "@/components/project/CreateProjectDialog";
+import { RenaidaProjectDialog } from "@/components/project/RenaidaProjectDialog";
 import { useProjectsData } from "@/hooks/useProjectsData";
 const ContractorStart = lazyWithRetry(() => import("@/pages/contractor/ContractorStart"));
 const OwnerStart = lazyWithRetry(() => import("@/pages/owner/OwnerStart"));
@@ -123,6 +124,7 @@ const Projects = () => {
   }, [authLoading, isGuest, profile?.id, showWelcomeModal]);
   const [showGuidedSetup, setShowGuidedSetup] = useState(false);
   const [showAIImport, setShowAIImport] = useState(false);
+  const [renaidaOpen, setRenaidaOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteCounts, setDeleteCounts] = useState<{
@@ -632,6 +634,19 @@ const Projects = () => {
                   }
                 />
               )}
+              {!isGuest && (
+                <Button
+                  variant="outline"
+                  className="border-primary/40 text-primary hover:bg-primary/5"
+                  onClick={() => setRenaidaOpen(true)}
+                  title={t('projects.createWithRenaida', 'Skapa med Renaida (beta)')}
+                >
+                  <Sparkles className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">
+                    {t('projects.createWithRenaida', 'Skapa med Renaida')}
+                  </span>
+                </Button>
+              )}
               <Button onClick={() => setShowGuidedSetup(true)}>
                 <Plus className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">
@@ -639,6 +654,7 @@ const Projects = () => {
                 </span>
                 <span className="sm:hidden">{t('common.create', 'Skapa')}</span>
               </Button>
+              <RenaidaProjectDialog open={renaidaOpen} onOpenChange={setRenaidaOpen} />
               <CreateProjectDialog
                 open={dialogOpen}
                 onOpenChange={setDialogOpen}
