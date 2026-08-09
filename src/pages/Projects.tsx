@@ -654,7 +654,11 @@ const Projects = () => {
                 </span>
                 <span className="sm:hidden">{t('common.create', 'Skapa')}</span>
               </Button>
-              <RenaidaProjectDialog open={renaidaOpen} onOpenChange={setRenaidaOpen} />
+              <RenaidaProjectDialog
+                open={renaidaOpen}
+                onOpenChange={setRenaidaOpen}
+                userType={isContractor ? 'contractor' : 'homeowner'}
+              />
               <CreateProjectDialog
                 open={dialogOpen}
                 onOpenChange={setDialogOpen}

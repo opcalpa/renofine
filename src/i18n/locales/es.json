@@ -2318,5 +2318,94 @@
     "startBlankHint": "Omite la planificación por ahora — puedes describir la reforma por voz dentro del proyecto y Renaida la configurará.",
     "createBlankProject": "Crear proyecto vacío",
     "startBlankLabel": "Proyecto vacío"
+  },
+  "renaidaFlow": {
+    "q": {
+      "type": {
+        "homeowner": "¡Hola! Soy Renaida — te ayudo a crear tu proyecto paso a paso. ¿Por dónde quieres empezar?",
+        "contractor": "Configuremos el proyecto juntos. ¿Qué tipo de trabajo es?"
+      },
+      "scope": {
+        "bathroom": "¿Qué incluye el baño? Elige lo que corresponda — yo añado las tareas.",
+        "kitchen": "¿Qué incluye la cocina?",
+        "paint": "¿Qué se va a pintar?",
+        "floor": "¿Qué tipo de suelo?",
+        "other": "¿Qué trabajos se incluyen? Elige todos los que apliquen."
+      },
+      "size": "¿Qué tamaño tiene {{room}}? Una superficie aproximada basta — ayuda a estimar materiales y tiempo.",
+      "address": "¿Dónde está el proyecto? (La dirección es opcional — pero ayuda a distinguir varios proyectos.)",
+      "budget": {
+        "homeowner": "¿Tienes un presupuesto aproximado en mente? Será una guía que puedes ajustar cuando quieras.",
+        "contractor": "¿Presupuesto aproximado (sin IVA)? Será una guía ajustable en cualquier momento."
+      }
+    },
+    "complete": "Perfecto — tengo todo lo que necesito. Tu proyecto está listo para crearse. Puedes ajustar todo después.",
+    "type": {
+      "bathroom": "Baño",
+      "kitchen": "Cocina",
+      "paint": "Repintar",
+      "floor": "Suelo nuevo",
+      "other": "Otro"
+    },
+    "scope": {
+      "total": "Reforma integral",
+      "tiles": "Azulejos",
+      "fixtures": "Sanitarios y grifería",
+      "paint": "Pintar",
+      "newFloor": "Suelo nuevo",
+      "electrical": "Electricidad (luz/enchufes)",
+      "cabinets": "Muebles y frentes",
+      "appliances": "Electrodomésticos y fontanería",
+      "splash": "Salpicadero/azulejos",
+      "walls": "Paredes",
+      "ceiling": "Techo",
+      "trim": "Molduras y carpintería",
+      "wood": "Madera/parqué",
+      "vinyl": "Vinilo/laminado",
+      "tileFloor": "Baldosa"
+    },
+    "room": {
+      "bathroom": "Baño",
+      "kitchen": "Cocina",
+      "generic": "Habitación"
+    },
+    "name": {
+      "bathroom": "Reforma de baño",
+      "kitchen": "Reforma de cocina",
+      "paint": "Repintar",
+      "floor": "Cambio de suelo",
+      "other": "Proyecto de reforma"
+    },
+    "ph": {
+      "size": "p.ej. 6",
+      "address": "p.ej. Calle Mayor 5, Ciudad",
+      "budget": "p.ej. 150000"
+    },
+    "skip": {
+      "dontKnow": "Aún no lo sé",
+      "skip": "Omitir",
+      "noBudget": "Sin presupuesto aún"
+    },
+    "ui": {
+      "title": "Crear con Renaida",
+      "tagline": "Beta — responde a unas preguntas y construimos el proyecto juntos",
+      "growing": "Tu proyecto toma forma",
+      "section": {
+        "project": "Proyecto",
+        "rooms": "Habitaciones",
+        "tasks": "Trabajos",
+        "budget": "Presupuesto"
+      },
+      "namePending": "Se nombrará pronto…",
+      "emptyPreview": "Responde a las preguntas de Renaida y aquí aparecerán habitaciones, trabajos y presupuesto.",
+      "create": "Crear el proyecto",
+      "continue": "Continuar"
+    },
+    "err": {
+      "notLoggedIn": "Debes iniciar sesión para crear el proyecto",
+      "noProfile": "No se encontró tu perfil",
+      "created": "¡Proyecto creado! 🎉",
+      "failed": "No se pudo crear el proyecto"
+    }
   }
 }

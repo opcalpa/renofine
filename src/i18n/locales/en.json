@@ -6854,5 +6854,94 @@
     "addImage": "Add",
     "imageTooLarge": "Image too large (max 10 MB)",
     "imageUploadError": "Could not upload the image"
+  },
+  "renaidaFlow": {
+    "q": {
+      "type": {
+        "homeowner": "Hi! I'm Renaida — I'll help you create your project step by step. What do you want to start with?",
+        "contractor": "Let's set up the project together. What kind of job is it?"
+      },
+      "scope": {
+        "bathroom": "What's included in the bathroom? Pick what applies — I'll add the tasks for you.",
+        "kitchen": "What's included in the kitchen?",
+        "paint": "What should be painted?",
+        "floor": "What type of flooring?",
+        "other": "Which tasks are included? Pick all that apply."
+      },
+      "size": "How big is the {{room}}? A rough area is enough — it helps estimate materials and time.",
+      "address": "Where is the project? (Address is optional — but makes it easier to keep several projects apart.)",
+      "budget": {
+        "homeowner": "Do you have a rough budget in mind? It becomes a guideline you can adjust anytime.",
+        "contractor": "Rough budget (excl. VAT)? It becomes a guideline you can adjust anytime."
+      }
+    },
+    "complete": "Perfect — I have everything I need. Your project is ready to create. You can adjust anything afterwards.",
+    "type": {
+      "bathroom": "Bathroom",
+      "kitchen": "Kitchen",
+      "paint": "Repaint",
+      "floor": "New floor",
+      "other": "Other"
+    },
+    "scope": {
+      "total": "Full renovation",
+      "tiles": "Tiles",
+      "fixtures": "Fixtures & taps",
+      "paint": "Repaint",
+      "newFloor": "New floor",
+      "electrical": "Electrical (lighting/outlets)",
+      "cabinets": "Cabinets & doors",
+      "appliances": "Appliances & plumbing",
+      "splash": "Splashback/tiles",
+      "walls": "Walls",
+      "ceiling": "Ceiling",
+      "trim": "Trim & joinery",
+      "wood": "Wood/parquet",
+      "vinyl": "Vinyl/laminate",
+      "tileFloor": "Tile"
+    },
+    "room": {
+      "bathroom": "Bathroom",
+      "kitchen": "Kitchen",
+      "generic": "Room"
+    },
+    "name": {
+      "bathroom": "Bathroom renovation",
+      "kitchen": "Kitchen renovation",
+      "paint": "Repaint",
+      "floor": "Flooring",
+      "other": "Renovation project"
+    },
+    "ph": {
+      "size": "e.g. 6",
+      "address": "e.g. Main St 5, City",
+      "budget": "e.g. 150000"
+    },
+    "skip": {
+      "dontKnow": "Don't know yet",
+      "skip": "Skip",
+      "noBudget": "No budget yet"
+    },
+    "ui": {
+      "title": "Create with Renaida",
+      "tagline": "Beta — answer a few questions and we'll build the project together",
+      "growing": "Your project takes shape",
+      "section": {
+        "project": "Project",
+        "rooms": "Rooms",
+        "tasks": "Tasks",
+        "budget": "Budget"
+      },
+      "namePending": "Named soon…",
+      "emptyPreview": "Answer Renaida's questions and rooms, tasks and budget will appear here.",
+      "create": "Create the project",
+      "continue": "Continue"
+    },
+    "err": {
+      "notLoggedIn": "You need to be logged in to create the project",
+      "noProfile": "Couldn't find your profile",
+      "created": "Project created! 🎉",
+      "failed": "Couldn't create the project"
+    }
   }
 }

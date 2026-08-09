@@ -2318,5 +2318,94 @@
     "startBlankHint": "Planung vorerst überspringen — du kannst die Renovierung im Projekt per Sprache beschreiben und Renaida richtet sie ein.",
     "createBlankProject": "Leeres Projekt erstellen",
     "startBlankLabel": "Leeres Projekt"
+  },
+  "renaidaFlow": {
+    "q": {
+      "type": {
+        "homeowner": "Hallo! Ich bin Renaida — ich helfe dir, dein Projekt Schritt für Schritt zu erstellen. Womit möchtest du beginnen?",
+        "contractor": "Lass uns das Projekt gemeinsam aufsetzen. Um welche Art von Auftrag geht es?"
+      },
+      "scope": {
+        "bathroom": "Was soll im Bad gemacht werden? Wähle, was zutrifft — ich füge die Aufgaben hinzu.",
+        "kitchen": "Was soll in der Küche gemacht werden?",
+        "paint": "Was soll gestrichen werden?",
+        "floor": "Welche Art von Boden?",
+        "other": "Welche Arbeiten sind enthalten? Wähle alles Zutreffende."
+      },
+      "size": "Wie groß ist das {{room}}? Eine grobe Fläche genügt — sie hilft, Material und Zeit zu schätzen.",
+      "address": "Wo befindet sich das Projekt? (Adresse ist optional — erleichtert aber die Unterscheidung mehrerer Projekte.)",
+      "budget": {
+        "homeowner": "Hast du ein ungefähres Budget im Kopf? Es wird eine Richtlinie, die du jederzeit anpassen kannst.",
+        "contractor": "Ungefähres Budget (exkl. MwSt.)? Es wird eine Richtlinie, jederzeit anpassbar."
+      }
+    },
+    "complete": "Perfekt — ich habe alles, was ich brauche. Dein Projekt ist bereit. Du kannst danach alles anpassen.",
+    "type": {
+      "bathroom": "Bad",
+      "kitchen": "Küche",
+      "paint": "Neu streichen",
+      "floor": "Neuer Boden",
+      "other": "Anderes"
+    },
+    "scope": {
+      "total": "Komplettsanierung",
+      "tiles": "Fliesen",
+      "fixtures": "Sanitär & Armaturen",
+      "paint": "Streichen",
+      "newFloor": "Neuer Boden",
+      "electrical": "Elektrik (Licht/Steckdosen)",
+      "cabinets": "Korpusse & Fronten",
+      "appliances": "Geräte & Sanitär",
+      "splash": "Spritzschutz/Fliesen",
+      "walls": "Wände",
+      "ceiling": "Decke",
+      "trim": "Zierleisten & Schreinerarbeit",
+      "wood": "Holz/Parkett",
+      "vinyl": "Vinyl/Laminat",
+      "tileFloor": "Fliesen"
+    },
+    "room": {
+      "bathroom": "Bad",
+      "kitchen": "Küche",
+      "generic": "Raum"
+    },
+    "name": {
+      "bathroom": "Badsanierung",
+      "kitchen": "Küchensanierung",
+      "paint": "Neu streichen",
+      "floor": "Bodenwechsel",
+      "other": "Renovierungsprojekt"
+    },
+    "ph": {
+      "size": "z.B. 6",
+      "address": "z.B. Hauptstr. 5, Stadt",
+      "budget": "z.B. 150000"
+    },
+    "skip": {
+      "dontKnow": "Weiß noch nicht",
+      "skip": "Überspringen",
+      "noBudget": "Noch kein Budget"
+    },
+    "ui": {
+      "title": "Mit Renaida erstellen",
+      "tagline": "Beta — beantworte ein paar Fragen und wir bauen das Projekt gemeinsam",
+      "growing": "Dein Projekt entsteht",
+      "section": {
+        "project": "Projekt",
+        "rooms": "Räume",
+        "tasks": "Aufgaben",
+        "budget": "Budget"
+      },
+      "namePending": "Wird bald benannt…",
+      "emptyPreview": "Beantworte Renaidas Fragen und Räume, Aufgaben und Budget erscheinen hier.",
+      "create": "Projekt erstellen",
+      "continue": "Weiter"
+    },
+    "err": {
+      "notLoggedIn": "Du musst angemeldet sein, um das Projekt zu erstellen",
+      "noProfile": "Profil nicht gefunden",
+      "created": "Projekt erstellt! 🎉",
+      "failed": "Projekt konnte nicht erstellt werden"
+    }
   }
 }

@@ -1,14 +1,15 @@
 /**
- * RenaidaProjectDialog — Phase 0 of the Renaida-led project creation.
+ * RenaidaProjectDialog — Renaida-led project creation (Phase 1).
  *
  * A leading, conditional conversation (left) where the project is born bit by
- * bit as a live preview (right) grows with each answer — instead of asking the
- * user to describe everything in one freetext box. Deterministic flow for now
- * (see renaidaProjectFlow.ts); the same draft feeds the shared scaffoldProject
- * engine on finish.
+ * bit as a live preview (right) grows with each answer. Fully localized: all
+ * copy comes from renaidaFlow.* i18n keys and task titles derive from the
+ * (language-neutral) work type via the intake.workType.* labels. Role-gated
+ * framing for homeowner vs contractor. Same draft feeds scaffoldProject.
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, ArrowRight, Home, Hammer, Wallet, MapPin, Loader2, Check } from 'lucide-react';
 import { toast } from 'sonner';
@@ -17,19 +18,26 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { scaffoldProject } from '@/services/scaffoldProject';
+import type { WorkType } from '@/services/workTypeUtils';
 import {
   emptyDraft,
   nextStep,
   applyAnswer,
   toScaffoldInput,
+  taskTitle,
+  PROJECT_TYPES,
   type ProjectDraft,
+  type ProjectTypeId,
   type Step,
   type Answer,
+  type UserType,
 } from '@/services/renaidaProjectFlow';
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Gates the framing (homeowner vs contractor). Defaults to homeowner. */
+  userType?: UserType;
 }
 
 interface Turn {
@@ -37,7 +45,8 @@ interface Turn {
   answerLabel: string;
 }
 
-export function RenaidaProjectDialog({ open, onOpenChange }: Props) {
+export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner' }: Props) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [draft, setDraft] = useState<ProjectDraft>(emptyDraft());
   const [turns, setTurns] = useState<Turn[]>([]);
@@ -46,10 +55,16 @@ export function RenaidaProjectDialog({ open, onOpenChange }: Props) {
   const [creating, setCreating] = useState(false);
   const convRef = useRef<HTMLDivElement>(null);
 
-  const step = useMemo(() => nextStep(draft), [draft]);
+  /** Localized work-type label — the seam that keeps task titles translated. */
+  const labelFor = useMemo(
+    () => (wt: WorkType) => t(`intake.workType.${wt}`, wt),
+    [t]
+  );
+
+  const roomLabel = draft.rooms[0]?.name;
+  const step = useMemo(() => nextStep(draft, userType, roomLabel), [draft, userType, roomLabel]);
   const complete = !step;
 
-  // Fresh start each time it opens.
   useEffect(() => {
     if (open) {
       setDraft(emptyDraft());
@@ -60,41 +75,50 @@ export function RenaidaProjectDialog({ open, onOpenChange }: Props) {
     }
   }, [open]);
 
-  // Keep the newest message in view.
   useEffect(() => {
     convRef.current?.scrollTo({ top: convRef.current.scrollHeight, behavior: 'smooth' });
   }, [turns.length, step?.id]);
 
-  const submit = (step: Step, answer: Answer, answerLabel: string) => {
-    setTurns((t) => [...t, { message: step.message, answerLabel }]);
-    setDraft((d) => applyAnswer(step, answer, d));
+  const messageOf = (s: Step) => t(s.messageKey, { ...(s.messageVars ?? {}) });
+
+  const submit = (s: Step, answer: Answer, answerLabel: string) => {
+    // The 'type' step seeds a localized room + project name into the draft.
+    let labels: { roomName?: string; projectName?: string } | undefined;
+    if (s.id === 'type' && answer.kind === 'chips') {
+      const id = answer.ids[0] as ProjectTypeId;
+      const meta = PROJECT_TYPES[id];
+      if (meta) labels = { roomName: t(meta.roomNameKey), projectName: t(meta.nameKey) };
+    }
+    setTurns((tn) => [...tn, { message: messageOf(s), answerLabel }]);
+    setDraft((d) => applyAnswer(s, answer, d, labels));
     setMultiSel([]);
     setFieldValue('');
   };
 
-  const onChipSingle = (step: Step, id: string, label: string) =>
-    submit(step, { kind: 'chips', ids: [id], labels: [label] }, label);
+  const onChipSingle = (s: Step, id: string, label: string) =>
+    submit(s, { kind: 'chips', ids: [id], labels: [label] }, label);
 
-  const onMultiContinue = (step: Step) => {
-    if (step.input.kind !== 'chips') return;
-    const labels = step.input.options.filter((o) => multiSel.includes(o.id)).map((o) => o.label);
-    submit(step, { kind: 'chips', ids: multiSel, labels }, labels.join(', '));
+  const onMultiContinue = (s: Step) => {
+    if (s.input.kind !== 'chips') return;
+    const chosen = s.input.options.filter((o) => multiSel.includes(o.id));
+    const labels = chosen.map((o) => t(o.labelKey));
+    submit(s, { kind: 'chips', ids: chosen.map((o) => o.id), labels }, labels.join(', '));
   };
 
-  const onFieldSubmit = (step: Step) => {
-    if (step.input.kind === 'number') {
+  const onFieldSubmit = (s: Step) => {
+    if (s.input.kind === 'number') {
       const n = parseInt(fieldValue.replace(/\s/g, ''), 10);
       if (!Number.isFinite(n)) return;
-      submit(step, { kind: 'number', value: n }, `${n.toLocaleString('sv-SE')} ${step.input.unit ?? ''}`.trim());
-    } else if (step.input.kind === 'text') {
+      submit(s, { kind: 'number', value: n }, `${n.toLocaleString('sv-SE')} ${s.input.unit ?? ''}`.trim());
+    } else if (s.input.kind === 'text') {
       if (!fieldValue.trim()) return;
-      submit(step, { kind: 'text', value: fieldValue.trim() }, fieldValue.trim());
+      submit(s, { kind: 'text', value: fieldValue.trim() }, fieldValue.trim());
     }
   };
 
-  const onSkip = (step: Step) => {
-    const label = ('skipLabel' in step.input && step.input.skipLabel) || 'Hoppa över';
-    submit(step, { kind: 'skip' }, label);
+  const onSkip = (s: Step) => {
+    const key = 'skipKey' in s.input ? s.input.skipKey : undefined;
+    submit(s, { kind: 'skip' }, key ? t(key) : t('renaidaFlow.skip.skip'));
   };
 
   const handleCreate = async () => {
@@ -104,7 +128,7 @@ export function RenaidaProjectDialog({ open, onOpenChange }: Props) {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) {
-        toast.error('Du behöver vara inloggad för att skapa projektet');
+        toast.error(t('renaidaFlow.err.notLoggedIn', 'Du behöver vara inloggad för att skapa projektet'));
         setCreating(false);
         return;
       }
@@ -114,23 +138,23 @@ export function RenaidaProjectDialog({ open, onOpenChange }: Props) {
         .eq('user_id', user.id)
         .single();
       if (!profile) {
-        toast.error('Kunde inte hitta din profil');
+        toast.error(t('renaidaFlow.err.noProfile', 'Kunde inte hitta din profil'));
         setCreating(false);
         return;
       }
-      const result = await scaffoldProject(toScaffoldInput(draft), profile.id);
-      toast.success('Projektet är skapat! 🎉');
+      const result = await scaffoldProject(toScaffoldInput(draft, labelFor), profile.id);
+      toast.success(t('renaidaFlow.err.created', 'Projektet är skapat! 🎉'));
       onOpenChange(false);
       navigate(`/projects/${result.projectId}`);
     } catch (err) {
       console.error('RenaidaProjectDialog: create failed', err);
-      toast.error('Kunde inte skapa projektet');
+      toast.error(t('renaidaFlow.err.failed', 'Kunde inte skapa projektet'));
       setCreating(false);
     }
   };
 
-  const taskCount = draft.tasks.length;
   const room = draft.rooms[0];
+  const taskCount = draft.tasks.length;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -143,10 +167,8 @@ export function RenaidaProjectDialog({ open, onOpenChange }: Props) {
                 <Sparkles className="h-4 w-4" />
               </span>
               <div>
-                <div className="text-sm font-semibold">Skapa med Renaida</div>
-                <div className="text-[11px] text-muted-foreground">
-                  Beta — svara på några frågor så bygger vi projektet ihop
-                </div>
+                <div className="text-sm font-semibold">{t('renaidaFlow.ui.title')}</div>
+                <div className="text-[11px] text-muted-foreground">{t('renaidaFlow.ui.tagline')}</div>
               </div>
             </div>
 
@@ -164,7 +186,7 @@ export function RenaidaProjectDialog({ open, onOpenChange }: Props) {
 
               {step && (
                 <div className="space-y-3 animate-in fade-in slide-in-from-bottom-1">
-                  <RenaidaBubble>{step.message}</RenaidaBubble>
+                  <RenaidaBubble>{messageOf(step)}</RenaidaBubble>
                   <StepInputView
                     step={step}
                     multiSel={multiSel}
@@ -181,17 +203,14 @@ export function RenaidaProjectDialog({ open, onOpenChange }: Props) {
 
               {complete && (
                 <div className="space-y-3 animate-in fade-in slide-in-from-bottom-1">
-                  <RenaidaBubble>
-                    Perfekt — då har jag allt jag behöver. Ditt projekt är redo att skapas. Du kan
-                    justera allt efteråt.
-                  </RenaidaBubble>
+                  <RenaidaBubble>{t('renaidaFlow.complete')}</RenaidaBubble>
                   <Button className="w-full" onClick={handleCreate} disabled={creating}>
                     {creating ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : (
                       <Check className="mr-2 h-4 w-4" />
                     )}
-                    Skapa projektet
+                    {t('renaidaFlow.ui.create')}
                   </Button>
                 </div>
               )}
@@ -201,13 +220,17 @@ export function RenaidaProjectDialog({ open, onOpenChange }: Props) {
           {/* ── Live preview ── */}
           <div className="hidden min-h-0 flex-col bg-muted/30 md:flex">
             <div className="border-b px-5 py-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Ditt projekt växer fram
+              {t('renaidaFlow.ui.growing')}
             </div>
             <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
               <div>
-                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Projekt</div>
+                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                  {t('renaidaFlow.ui.section.project')}
+                </div>
                 <div className="mt-0.5 text-base font-semibold">
-                  {draft.projectName || <span className="text-muted-foreground/60">Namnges snart…</span>}
+                  {draft.projectName || (
+                    <span className="text-muted-foreground/60">{t('renaidaFlow.ui.namePending')}</span>
+                  )}
                 </div>
                 {draft.address && (
                   <div className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
@@ -217,12 +240,10 @@ export function RenaidaProjectDialog({ open, onOpenChange }: Props) {
               </div>
 
               {room && (
-                <PreviewSection icon={<Home className="h-3.5 w-3.5" />} label="Rum">
+                <PreviewSection icon={<Home className="h-3.5 w-3.5" />} label={t('renaidaFlow.ui.section.rooms')}>
                   <div className="flex items-center justify-between rounded-md bg-background px-2.5 py-1.5 text-sm animate-in fade-in slide-in-from-bottom-1">
                     <span>{room.name}</span>
-                    {room.areaSqm ? (
-                      <span className="text-xs text-muted-foreground">{room.areaSqm} m²</span>
-                    ) : null}
+                    {room.areaSqm ? <span className="text-xs text-muted-foreground">{room.areaSqm} m²</span> : null}
                   </div>
                 </PreviewSection>
               )}
@@ -230,16 +251,16 @@ export function RenaidaProjectDialog({ open, onOpenChange }: Props) {
               {taskCount > 0 && (
                 <PreviewSection
                   icon={<Hammer className="h-3.5 w-3.5" />}
-                  label={`Arbeten (${taskCount})`}
+                  label={`${t('renaidaFlow.ui.section.tasks')} (${taskCount})`}
                 >
                   <div className="space-y-1.5">
-                    {draft.tasks.map((t, i) => (
+                    {draft.tasks.map((task, i) => (
                       <div
-                        key={t.title}
+                        key={task.workType + i}
                         className="rounded-md bg-background px-2.5 py-1.5 text-sm animate-in fade-in slide-in-from-bottom-1"
                         style={{ animationDelay: `${i * 40}ms` }}
                       >
-                        {t.title}
+                        {taskTitle(task, labelFor)}
                       </div>
                     ))}
                   </div>
@@ -247,7 +268,7 @@ export function RenaidaProjectDialog({ open, onOpenChange }: Props) {
               )}
 
               {draft.totalBudget ? (
-                <PreviewSection icon={<Wallet className="h-3.5 w-3.5" />} label="Budget">
+                <PreviewSection icon={<Wallet className="h-3.5 w-3.5" />} label={t('renaidaFlow.ui.section.budget')}>
                   <div className="rounded-md bg-background px-2.5 py-1.5 text-sm animate-in fade-in slide-in-from-bottom-1">
                     {draft.totalBudget.toLocaleString('sv-SE')} kr
                   </div>
@@ -256,7 +277,7 @@ export function RenaidaProjectDialog({ open, onOpenChange }: Props) {
 
               {!room && taskCount === 0 && (
                 <div className="pt-8 text-center text-sm text-muted-foreground/70">
-                  Svara på Renaidas frågor så dyker rum, arbeten och budget upp här.
+                  {t('renaidaFlow.ui.emptyPreview')}
                 </div>
               )}
             </div>
@@ -321,18 +342,20 @@ function StepInputView({
   onFieldSubmit: (step: Step) => void;
   onSkip: (step: Step) => void;
 }) {
+  const { t } = useTranslation();
+
   if (step.input.kind === 'chips') {
-    const { options, multi, skipLabel } = step.input;
+    const { options, multi, skipKey } = step.input;
     if (!multi) {
       return (
         <div className="flex flex-wrap gap-2 pl-8">
           {options.map((o) => (
             <button
               key={o.id}
-              onClick={() => onChipSingle(step, o.id, o.label)}
+              onClick={() => onChipSingle(step, o.id, t(o.labelKey))}
               className="rounded-full border bg-background px-3.5 py-1.5 text-sm transition-colors hover:border-primary hover:bg-primary/5"
             >
-              {o.label}
+              {t(o.labelKey)}
             </button>
           ))}
         </div>
@@ -354,18 +377,18 @@ function StepInputView({
                 }`}
               >
                 {on && <Check className="mr-1 inline h-3 w-3" />}
-                {o.label}
+                {t(o.labelKey)}
               </button>
             );
           })}
         </div>
         <div className="flex items-center gap-2">
           <Button size="sm" onClick={() => onMultiContinue(step)} disabled={multiSel.length === 0}>
-            Fortsätt <ArrowRight className="ml-1 h-3.5 w-3.5" />
+            {t('renaidaFlow.ui.continue')} <ArrowRight className="ml-1 h-3.5 w-3.5" />
           </Button>
-          {skipLabel && (
+          {skipKey && (
             <Button size="sm" variant="ghost" onClick={() => onSkip(step)}>
-              {skipLabel}
+              {t(skipKey)}
             </Button>
           )}
         </div>
@@ -373,8 +396,9 @@ function StepInputView({
     );
   }
 
-  // number / text
   const unit = step.input.kind === 'number' ? step.input.unit : undefined;
+  const placeholderKey = step.input.placeholderKey;
+  const skipKey = step.input.skipKey;
   return (
     <div className="flex items-center gap-2 pl-8">
       <div className="relative flex-1">
@@ -382,7 +406,7 @@ function StepInputView({
           autoFocus
           type={step.input.kind === 'number' ? 'number' : 'text'}
           inputMode={step.input.kind === 'number' ? 'numeric' : undefined}
-          placeholder={step.input.placeholder}
+          placeholder={placeholderKey ? t(placeholderKey) : undefined}
           value={fieldValue}
           onChange={(e) => setFieldValue(e.target.value)}
           onKeyDown={(e) => {
@@ -399,9 +423,9 @@ function StepInputView({
       <Button size="sm" onClick={() => onFieldSubmit(step)} disabled={!fieldValue.trim()}>
         <ArrowRight className="h-3.5 w-3.5" />
       </Button>
-      {step.input.skipLabel && (
+      {skipKey && (
         <Button size="sm" variant="ghost" onClick={() => onSkip(step)}>
-          {step.input.skipLabel}
+          {t(skipKey)}
         </Button>
       )}
     </div>

@@ -42,7 +42,7 @@ test('bathroom total renovation → room, tasks with cost centers, budget, name'
 
   expect(nextStep(d)).toBeNull();
 
-  const input = toScaffoldInput(d);
+  const input = toScaffoldInput(d, (wt) => wt);
   expect(input.project?.name).toContain('Storgatan 5');
   expect(input.project?.totalBudget).toBe(150000);
   expect(input.rooms[0].dimensions).toEqual({ area_sqm: 6 });
@@ -69,7 +69,7 @@ test('optional steps can be skipped and the draft still completes', () => {
   d = applyAnswer(nextStep(d)!, { kind: 'skip' }, d); // budget
   expect(nextStep(d)).toBeNull();
 
-  const input = toScaffoldInput(d);
+  const input = toScaffoldInput(d, (wt) => wt);
   expect(input.rooms[0].dimensions).toBeNull();
   expect(input.project?.totalBudget).toBeNull();
   expect(input.tasks.length).toBeGreaterThanOrEqual(1);

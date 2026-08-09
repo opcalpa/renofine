@@ -2318,5 +2318,94 @@
     "startBlankHint": "Passez la planification pour l'instant — décrivez la rénovation à la voix dans le projet et Renaida la mettra en place.",
     "createBlankProject": "Créer un projet vide",
     "startBlankLabel": "Projet vide"
+  },
+  "renaidaFlow": {
+    "q": {
+      "type": {
+        "homeowner": "Bonjour ! Je suis Renaida — je vais t'aider à créer ton projet étape par étape. Par quoi veux-tu commencer ?",
+        "contractor": "Configurons le projet ensemble. De quel type de chantier s'agit-il ?"
+      },
+      "scope": {
+        "bathroom": "Que comprend la salle de bain ? Choisis ce qui s'applique — j'ajoute les tâches.",
+        "kitchen": "Que comprend la cuisine ?",
+        "paint": "Que faut-il peindre ?",
+        "floor": "Quel type de sol ?",
+        "other": "Quelles tâches sont incluses ? Choisis tout ce qui s'applique."
+      },
+      "size": "Quelle est la taille de {{room}} ? Une surface approximative suffit — elle aide à estimer matériaux et temps.",
+      "address": "Où se situe le projet ? (L'adresse est facultative — mais aide à distinguer plusieurs projets.)",
+      "budget": {
+        "homeowner": "As-tu un budget approximatif en tête ? Il servira de repère, ajustable à tout moment.",
+        "contractor": "Budget approximatif (hors TVA) ? Il servira de repère, ajustable à tout moment."
+      }
+    },
+    "complete": "Parfait — j'ai tout ce qu'il faut. Ton projet est prêt à être créé. Tu pourras tout ajuster ensuite.",
+    "type": {
+      "bathroom": "Salle de bain",
+      "kitchen": "Cuisine",
+      "paint": "Repeindre",
+      "floor": "Nouveau sol",
+      "other": "Autre"
+    },
+    "scope": {
+      "total": "Rénovation complète",
+      "tiles": "Carrelage",
+      "fixtures": "Sanitaires & robinetterie",
+      "paint": "Peinture",
+      "newFloor": "Nouveau sol",
+      "electrical": "Électricité (éclairage/prises)",
+      "cabinets": "Caissons & façades",
+      "appliances": "Électroménager & plomberie",
+      "splash": "Crédence/carrelage",
+      "walls": "Murs",
+      "ceiling": "Plafond",
+      "trim": "Moulures & menuiserie",
+      "wood": "Bois/parquet",
+      "vinyl": "Vinyle/stratifié",
+      "tileFloor": "Carrelage"
+    },
+    "room": {
+      "bathroom": "Salle de bain",
+      "kitchen": "Cuisine",
+      "generic": "Pièce"
+    },
+    "name": {
+      "bathroom": "Rénovation de salle de bain",
+      "kitchen": "Rénovation de cuisine",
+      "paint": "Repeindre",
+      "floor": "Changement de sol",
+      "other": "Projet de rénovation"
+    },
+    "ph": {
+      "size": "p.ex. 6",
+      "address": "p.ex. Rue Principale 5, Ville",
+      "budget": "p.ex. 150000"
+    },
+    "skip": {
+      "dontKnow": "Je ne sais pas encore",
+      "skip": "Passer",
+      "noBudget": "Pas encore de budget"
+    },
+    "ui": {
+      "title": "Créer avec Renaida",
+      "tagline": "Bêta — réponds à quelques questions et nous construisons le projet ensemble",
+      "growing": "Ton projet prend forme",
+      "section": {
+        "project": "Projet",
+        "rooms": "Pièces",
+        "tasks": "Tâches",
+        "budget": "Budget"
+      },
+      "namePending": "Nommé bientôt…",
+      "emptyPreview": "Réponds aux questions de Renaida et pièces, tâches et budget apparaîtront ici.",
+      "create": "Créer le projet",
+      "continue": "Continuer"
+    },
+    "err": {
+      "notLoggedIn": "Tu dois être connecté pour créer le projet",
+      "noProfile": "Profil introuvable",
+      "created": "Projet créé ! 🎉",
+      "failed": "Impossible de créer le projet"
+    }
   }
 }

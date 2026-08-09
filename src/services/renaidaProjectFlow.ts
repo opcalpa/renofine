@@ -1,14 +1,16 @@
 /**
- * Renaida-led project creation — deterministic conversational flow (Phase 0).
+ * Renaida-led project creation — conditional flow (Phase 1).
  *
  * A leading, conditional question flow that builds a project draft bit by bit
- * instead of asking the user to describe everything in one freetext box. Each
- * answered question mutates the draft; the UI materializes the draft live.
+ * instead of one freetext box. The flow is language-neutral: steps carry i18n
+ * KEYS (not baked strings) and chips carry option ids + labelKeys, so the whole
+ * conversation localizes into any locale. Task titles are derived from the
+ * (language-neutral) work type via a caller-supplied label resolver.
  *
- * This is the seam where Phase 1 will swap the deterministic `nextStep()` for
- * an LLM that generates the next question + suggestions from the draft. The
- * draft → scaffoldProject mapping stays the same either way, so the whole flow
- * is just a human-friendly front-end over the scaffold engine's command surface.
+ * Role-gating: nextStep(draft, userType) varies the framing for homeowner vs
+ * contractor. The deterministic tree is also the fallback/backbone for the LLM
+ * jumpstart (see renaidaProjectIntake.ts) — the LLM seeds the draft from free
+ * text and this tree then asks only what is still missing.
  */
 
 import type { WorkType } from './workTypeUtils';
@@ -16,6 +18,7 @@ import { workTypeToCostCenter } from './workTypeUtils';
 import type { ScaffoldProjectInput } from './scaffoldProject';
 
 export type ProjectTypeId = 'bathroom' | 'kitchen' | 'paint' | 'floor' | 'other';
+export type UserType = 'homeowner' | 'contractor';
 
 export interface DraftRoom {
   name: string;
@@ -24,14 +27,15 @@ export interface DraftRoom {
 }
 
 export interface DraftTask {
-  title: string;
+  /** Language-neutral — the title is derived from this + roomName at render time. */
+  workType: WorkType;
   roomName: string | null;
   costCenter: string;
-  workType: WorkType;
 }
 
 export interface ProjectDraft {
   projectType?: ProjectTypeId;
+  /** User-entered/derived name; may be undefined until named. */
   projectName?: string;
   address?: string;
   rooms: DraftRoom[];
@@ -43,23 +47,33 @@ export interface ProjectDraft {
 
 export const emptyDraft = (): ProjectDraft => ({ rooms: [], tasks: [], answered: [] });
 
-// ── Steps ────────────────────────────────────────────────────────────────
+/** Resolves a work type to a localized label (caller passes an i18n-backed fn). */
+export type WorkTypeLabeller = (workType: WorkType) => string;
+
+/** Localized task title from language-neutral parts. */
+export function taskTitle(task: DraftTask, labelFor: WorkTypeLabeller): string {
+  const label = labelFor(task.workType);
+  return task.roomName ? `${label} – ${task.roomName}` : label;
+}
+
+// ── Steps (i18n keys, not strings) ─────────────────────────────────────────
 
 export interface Chip {
   id: string;
-  label: string;
-  hint?: string;
+  labelKey: string;
 }
 
 export type StepInput =
-  | { kind: 'chips'; options: Chip[]; multi?: boolean; skipLabel?: string }
-  | { kind: 'text'; placeholder?: string; skipLabel?: string }
-  | { kind: 'number'; placeholder?: string; unit?: string; skipLabel?: string };
+  | { kind: 'chips'; options: Chip[]; multi?: boolean; skipKey?: string }
+  | { kind: 'text'; placeholderKey?: string; skipKey?: string }
+  | { kind: 'number'; placeholderKey?: string; unit?: string; skipKey?: string };
 
 export interface Step {
   id: string;
-  /** Renaida's line (Swedish — the product's primary language). */
-  message: string;
+  /** i18n key for Renaida's line. */
+  messageKey: string;
+  /** Interpolation vars for the message (already localized where needed). */
+  messageVars?: Record<string, string>;
   input: StepInput;
 }
 
@@ -69,155 +83,161 @@ export type Answer =
   | { kind: 'number'; value: number }
   | { kind: 'skip' };
 
-// ── Swedish labels + domain mapping ────────────────────────────────────────
+// ── Domain mapping (language-neutral) ──────────────────────────────────────
 
-const WORK_TYPE_LABEL_SV: Record<WorkType, string> = {
-  rivning: 'Rivning',
-  el: 'El',
-  vvs: 'VVS',
-  kakel: 'Kakel & klinker',
-  snickeri: 'Snickeri',
-  malning: 'Målning',
-  golv: 'Golv',
-  kok: 'Kök',
-  badrum: 'Badrum',
-  fonster_dorrar: 'Fönster & dörrar',
-  fasad: 'Fasad',
-  tak: 'Tak',
-  tradgard: 'Trädgård',
-  annat: 'Annat',
+/** Project type → the room it seeds + its default name key. */
+const PROJECT_TYPES: Record<ProjectTypeId, { roomNameKey: string; nameKey: string }> = {
+  bathroom: { roomNameKey: 'renaidaFlow.room.bathroom', nameKey: 'renaidaFlow.name.bathroom' },
+  kitchen: { roomNameKey: 'renaidaFlow.room.kitchen', nameKey: 'renaidaFlow.name.kitchen' },
+  paint: { roomNameKey: 'renaidaFlow.room.generic', nameKey: 'renaidaFlow.name.paint' },
+  floor: { roomNameKey: 'renaidaFlow.room.generic', nameKey: 'renaidaFlow.name.floor' },
+  other: { roomNameKey: 'renaidaFlow.room.generic', nameKey: 'renaidaFlow.name.other' },
 };
 
-const PROJECT_TYPES: Array<{ id: ProjectTypeId; label: string; roomName: string; projectName: string }> = [
-  { id: 'bathroom', label: 'Badrum', roomName: 'Badrum', projectName: 'Badrumsrenovering' },
-  { id: 'kitchen', label: 'Kök', roomName: 'Kök', projectName: 'Köksrenovering' },
-  { id: 'paint', label: 'Måla om', roomName: 'Rum', projectName: 'Måla om' },
-  { id: 'floor', label: 'Nytt golv', roomName: 'Rum', projectName: 'Golvbyte' },
-  { id: 'other', label: 'Annat', roomName: 'Rum', projectName: 'Renoveringsprojekt' },
+const TYPE_CHIPS: Chip[] = [
+  { id: 'bathroom', labelKey: 'renaidaFlow.type.bathroom' },
+  { id: 'kitchen', labelKey: 'renaidaFlow.type.kitchen' },
+  { id: 'paint', labelKey: 'renaidaFlow.type.paint' },
+  { id: 'floor', labelKey: 'renaidaFlow.type.floor' },
+  { id: 'other', labelKey: 'renaidaFlow.type.other' },
 ];
 
 /** Scope chip → the work types (= tasks) it expands into, per project type. */
-const SCOPE_BY_TYPE: Record<ProjectTypeId, { message: string; chips: Array<{ id: string; label: string; workTypes: WorkType[] }> }> = {
-  bathroom: {
-    message: 'Vad ska göras i badrummet? Välj det som ingår — jag lägger till arbetena åt dig.',
-    chips: [
-      { id: 'total', label: 'Totalrenovering', workTypes: ['rivning', 'vvs', 'el', 'kakel', 'malning', 'golv'] },
-      { id: 'surfaces', label: 'Kakel & klinker', workTypes: ['kakel'] },
-      { id: 'fixtures', label: 'Porslin & blandare', workTypes: ['vvs'] },
-      { id: 'paint', label: 'Måla om', workTypes: ['malning'] },
-      { id: 'floor', label: 'Nytt golv', workTypes: ['golv'] },
-      { id: 'electrical', label: 'El (belysning/uttag)', workTypes: ['el'] },
-    ],
-  },
-  kitchen: {
-    message: 'Vad ska göras i köket?',
-    chips: [
-      { id: 'total', label: 'Totalrenovering', workTypes: ['rivning', 'snickeri', 'vvs', 'el', 'kakel', 'malning', 'golv'] },
-      { id: 'cabinets', label: 'Stommar & luckor', workTypes: ['snickeri'] },
-      { id: 'appliances', label: 'Vitvaror & VVS', workTypes: ['vvs'] },
-      { id: 'splash', label: 'Stänkskydd/kakel', workTypes: ['kakel'] },
-      { id: 'paint', label: 'Måla om', workTypes: ['malning'] },
-      { id: 'floor', label: 'Nytt golv', workTypes: ['golv'] },
-    ],
-  },
-  paint: {
-    message: 'Vad ska målas?',
-    chips: [
-      { id: 'walls', label: 'Väggar', workTypes: ['malning'] },
-      { id: 'ceiling', label: 'Tak', workTypes: ['malning'] },
-      { id: 'trim', label: 'Foder & snickerier', workTypes: ['malning', 'snickeri'] },
-    ],
-  },
-  floor: {
-    message: 'Vilken typ av golv?',
-    chips: [
-      { id: 'wood', label: 'Trä/parkett', workTypes: ['golv'] },
-      { id: 'vinyl', label: 'Vinyl/laminat', workTypes: ['golv'] },
-      { id: 'tile', label: 'Klinker', workTypes: ['golv', 'kakel'] },
-    ],
-  },
-  other: {
-    message: 'Vilka arbeten ingår? Välj alla som gäller.',
-    chips: (['rivning', 'snickeri', 'el', 'vvs', 'kakel', 'malning', 'golv', 'fonster_dorrar', 'tak', 'fasad'] as WorkType[]).map(
-      (wt) => ({ id: wt, label: WORK_TYPE_LABEL_SV[wt], workTypes: [wt] })
-    ),
-  },
+interface ScopeChip {
+  id: string;
+  labelKey: string;
+  workTypes: WorkType[];
+}
+
+const SCOPE_BY_TYPE: Record<ProjectTypeId, ScopeChip[]> = {
+  bathroom: [
+    { id: 'total', labelKey: 'renaidaFlow.scope.total', workTypes: ['rivning', 'vvs', 'el', 'kakel', 'malning', 'golv'] },
+    { id: 'surfaces', labelKey: 'renaidaFlow.scope.tiles', workTypes: ['kakel'] },
+    { id: 'fixtures', labelKey: 'renaidaFlow.scope.fixtures', workTypes: ['vvs'] },
+    { id: 'paint', labelKey: 'renaidaFlow.scope.paint', workTypes: ['malning'] },
+    { id: 'floor', labelKey: 'renaidaFlow.scope.newFloor', workTypes: ['golv'] },
+    { id: 'electrical', labelKey: 'renaidaFlow.scope.electrical', workTypes: ['el'] },
+  ],
+  kitchen: [
+    { id: 'total', labelKey: 'renaidaFlow.scope.total', workTypes: ['rivning', 'snickeri', 'vvs', 'el', 'kakel', 'malning', 'golv'] },
+    { id: 'cabinets', labelKey: 'renaidaFlow.scope.cabinets', workTypes: ['snickeri'] },
+    { id: 'appliances', labelKey: 'renaidaFlow.scope.appliances', workTypes: ['vvs'] },
+    { id: 'splash', labelKey: 'renaidaFlow.scope.splash', workTypes: ['kakel'] },
+    { id: 'paint', labelKey: 'renaidaFlow.scope.paint', workTypes: ['malning'] },
+    { id: 'floor', labelKey: 'renaidaFlow.scope.newFloor', workTypes: ['golv'] },
+  ],
+  paint: [
+    { id: 'walls', labelKey: 'renaidaFlow.scope.walls', workTypes: ['malning'] },
+    { id: 'ceiling', labelKey: 'renaidaFlow.scope.ceiling', workTypes: ['malning'] },
+    { id: 'trim', labelKey: 'renaidaFlow.scope.trim', workTypes: ['malning', 'snickeri'] },
+  ],
+  floor: [
+    { id: 'wood', labelKey: 'renaidaFlow.scope.wood', workTypes: ['golv'] },
+    { id: 'vinyl', labelKey: 'renaidaFlow.scope.vinyl', workTypes: ['golv'] },
+    { id: 'tile', labelKey: 'renaidaFlow.scope.tileFloor', workTypes: ['golv', 'kakel'] },
+  ],
+  other: (['rivning', 'snickeri', 'el', 'vvs', 'kakel', 'malning', 'golv', 'fonster_dorrar', 'tak', 'fasad'] as WorkType[]).map(
+    (wt) => ({ id: wt, labelKey: `intake.workType.${wt}`, workTypes: [wt] })
+  ),
+};
+
+const SCOPE_MESSAGE_KEY: Record<ProjectTypeId, string> = {
+  bathroom: 'renaidaFlow.q.scope.bathroom',
+  kitchen: 'renaidaFlow.q.scope.kitchen',
+  paint: 'renaidaFlow.q.scope.paint',
+  floor: 'renaidaFlow.q.scope.floor',
+  other: 'renaidaFlow.q.scope.other',
 };
 
 // ── Conditional flow ───────────────────────────────────────────────────────
 
 const answered = (draft: ProjectDraft, id: string) => draft.answered.includes(id);
 
-/** The next question, or null when the draft has enough to create the project. */
-export function nextStep(draft: ProjectDraft): Step | null {
+/**
+ * The next question, or null when the draft has enough to create the project.
+ * `roomLabel` localizes the seeded room name for interpolation; `userType`
+ * gates the framing.
+ */
+export function nextStep(
+  draft: ProjectDraft,
+  userType?: UserType | null,
+  roomLabel?: string
+): Step | null {
   if (!draft.projectType) {
     return {
       id: 'type',
-      message: 'Hej! Jag är Renaida — jag hjälper dig skapa projektet steg för steg. Vad vill du börja med?',
-      input: { kind: 'chips', options: PROJECT_TYPES.map((p) => ({ id: p.id, label: p.label })) },
+      messageKey: userType === 'contractor' ? 'renaidaFlow.q.type.contractor' : 'renaidaFlow.q.type.homeowner',
+      input: { kind: 'chips', options: TYPE_CHIPS },
     };
   }
   if (!answered(draft, 'scope')) {
-    const scope = SCOPE_BY_TYPE[draft.projectType];
     return {
       id: 'scope',
-      message: scope.message,
-      input: { kind: 'chips', options: scope.chips.map((c) => ({ id: c.id, label: c.label })), multi: true },
+      messageKey: SCOPE_MESSAGE_KEY[draft.projectType],
+      input: { kind: 'chips', options: SCOPE_BY_TYPE[draft.projectType], multi: true },
     };
   }
   if (!answered(draft, 'size')) {
-    const room = draft.rooms[0]?.name ?? 'rummet';
     return {
       id: 'size',
-      message: `Hur stort är ${room.toLowerCase()}? Ungefärlig yta räcker — den hjälper till att uppskatta material och tid.`,
-      input: { kind: 'number', placeholder: 't.ex. 6', unit: 'm²', skipLabel: 'Vet inte än' },
+      messageKey: 'renaidaFlow.q.size',
+      messageVars: { room: roomLabel ?? draft.rooms[0]?.name ?? '' },
+      input: { kind: 'number', placeholderKey: 'renaidaFlow.ph.size', unit: 'm²', skipKey: 'renaidaFlow.skip.dontKnow' },
     };
   }
   if (!answered(draft, 'address')) {
     return {
       id: 'address',
-      message: 'Var ligger projektet? (Adress är valfritt — men gör det lättare att hålla isär flera projekt.)',
-      input: { kind: 'text', placeholder: 't.ex. Storgatan 5, Stockholm', skipLabel: 'Hoppa över' },
+      messageKey: 'renaidaFlow.q.address',
+      input: { kind: 'text', placeholderKey: 'renaidaFlow.ph.address', skipKey: 'renaidaFlow.skip.skip' },
     };
   }
   if (!answered(draft, 'budget')) {
     return {
       id: 'budget',
-      message: 'Har du en ungefärlig budget i tankarna? Den blir en riktlinje du kan justera när som helst.',
-      input: { kind: 'number', placeholder: 't.ex. 150000', unit: 'kr', skipLabel: 'Ingen budget än' },
+      messageKey: userType === 'contractor' ? 'renaidaFlow.q.budget.contractor' : 'renaidaFlow.q.budget.homeowner',
+      input: { kind: 'number', placeholderKey: 'renaidaFlow.ph.budget', unit: 'kr', skipKey: 'renaidaFlow.skip.noBudget' },
     };
   }
   return null;
 }
 
-/** Apply an answer to the draft, returning a new draft. */
-export function applyAnswer(step: Step, answer: Answer, draft: ProjectDraft): ProjectDraft {
+/**
+ * Apply an answer to the draft, returning a new draft. `roomLabel`/`nameLabel`
+ * supply localized strings the draft should store (seeded room name, default
+ * project name) — callers resolve them via i18n.
+ */
+export function applyAnswer(
+  step: Step,
+  answer: Answer,
+  draft: ProjectDraft,
+  labels?: { roomName?: string; projectName?: string }
+): ProjectDraft {
   const next: ProjectDraft = { ...draft, rooms: [...draft.rooms], tasks: [...draft.tasks], answered: [...draft.answered] };
   if (!next.answered.includes(step.id)) next.answered.push(step.id);
 
   switch (step.id) {
     case 'type': {
       if (answer.kind !== 'chips' || !answer.ids[0]) break;
-      const type = PROJECT_TYPES.find((p) => p.id === answer.ids[0]);
-      if (!type) break;
-      next.projectType = type.id;
-      next.projectName = type.projectName;
-      next.rooms = [{ name: type.roomName }];
+      const id = answer.ids[0] as ProjectTypeId;
+      if (!PROJECT_TYPES[id]) break;
+      next.projectType = id;
+      next.projectName = labels?.projectName ?? answer.labels[0];
+      next.rooms = [{ name: labels?.roomName ?? answer.labels[0] }];
       break;
     }
     case 'scope': {
       if (answer.kind !== 'chips' || !next.projectType) break;
-      const scope = SCOPE_BY_TYPE[next.projectType];
+      const chips = SCOPE_BY_TYPE[next.projectType];
       const roomName = next.rooms[0]?.name ?? null;
       const workTypes = new Set<WorkType>();
       for (const id of answer.ids) {
-        scope.chips.find((c) => c.id === id)?.workTypes.forEach((wt) => workTypes.add(wt));
+        chips.find((c) => c.id === id)?.workTypes.forEach((wt) => workTypes.add(wt));
       }
       next.tasks = [...workTypes].map((wt) => ({
-        title: roomName ? `${WORK_TYPE_LABEL_SV[wt]} – ${roomName}` : WORK_TYPE_LABEL_SV[wt],
+        workType: wt,
         roomName,
         costCenter: workTypeToCostCenter(wt),
-        workType: wt,
       }));
       break;
     }
@@ -230,9 +250,7 @@ export function applyAnswer(step: Step, answer: Answer, draft: ProjectDraft): Pr
     case 'address': {
       if (answer.kind === 'text' && answer.value.trim()) {
         next.address = answer.value.trim();
-        // Refine the project name with the address for easier disambiguation.
-        const base = PROJECT_TYPES.find((p) => p.id === next.projectType)?.projectName ?? 'Projekt';
-        next.projectName = `${base} – ${answer.value.trim()}`;
+        next.projectName = `${next.projectName ?? ''} – ${answer.value.trim()}`.replace(/^ – /, '');
       }
       break;
     }
@@ -244,10 +262,11 @@ export function applyAnswer(step: Step, answer: Answer, draft: ProjectDraft): Pr
   return next;
 }
 
-export const isComplete = (draft: ProjectDraft): boolean => nextStep(draft) === null;
+export const isComplete = (draft: ProjectDraft, userType?: UserType | null): boolean =>
+  nextStep(draft, userType) === null;
 
 /** Map the accumulated draft onto the shared scaffoldProject engine's input. */
-export function toScaffoldInput(draft: ProjectDraft): ScaffoldProjectInput {
+export function toScaffoldInput(draft: ProjectDraft, labelFor: WorkTypeLabeller): ScaffoldProjectInput {
   return {
     project: {
       name: draft.projectName?.trim() || 'Nytt projekt',
@@ -262,10 +281,13 @@ export function toScaffoldInput(draft: ProjectDraft): ScaffoldProjectInput {
       dimensions: r.areaSqm ? { area_sqm: r.areaSqm } : null,
     })),
     tasks: draft.tasks.map((t) => ({
-      title: t.title,
+      title: taskTitle(t, labelFor),
       roomName: t.roomName,
       costCenter: t.costCenter,
     })),
     markOnboardingComplete: true,
   };
 }
+
+/** Exposed for the LLM jumpstart to build tasks from parsed work types. */
+export { SCOPE_BY_TYPE, PROJECT_TYPES };

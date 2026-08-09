@@ -6854,5 +6854,94 @@
     "addImage": "Lägg till",
     "imageTooLarge": "Bilden är för stor (max 10 MB)",
     "imageUploadError": "Kunde inte ladda upp bilden"
+  },
+  "renaidaFlow": {
+    "q": {
+      "type": {
+        "homeowner": "Hej! Jag är Renaida — jag hjälper dig skapa projektet steg för steg. Vad vill du börja med?",
+        "contractor": "Vi sätter upp projektet ihop. Vilken typ av jobb gäller det?"
+      },
+      "scope": {
+        "bathroom": "Vad ska göras i badrummet? Välj det som ingår — jag lägger till arbetena åt dig.",
+        "kitchen": "Vad ska göras i köket?",
+        "paint": "Vad ska målas?",
+        "floor": "Vilken typ av golv?",
+        "other": "Vilka arbeten ingår? Välj alla som gäller."
+      },
+      "size": "Hur stort är {{room}}? Ungefärlig yta räcker — den hjälper till att uppskatta material och tid.",
+      "address": "Var ligger projektet? (Adress är valfritt — men gör det lättare att hålla isär flera projekt.)",
+      "budget": {
+        "homeowner": "Har du en ungefärlig budget i tankarna? Den blir en riktlinje du kan justera när som helst.",
+        "contractor": "Ungefärlig budget (exkl. moms)? Den blir en riktlinje du kan justera när som helst."
+      }
+    },
+    "complete": "Perfekt — då har jag allt jag behöver. Ditt projekt är redo att skapas. Du kan justera allt efteråt.",
+    "type": {
+      "bathroom": "Badrum",
+      "kitchen": "Kök",
+      "paint": "Måla om",
+      "floor": "Nytt golv",
+      "other": "Annat"
+    },
+    "scope": {
+      "total": "Totalrenovering",
+      "tiles": "Kakel & klinker",
+      "fixtures": "Porslin & blandare",
+      "paint": "Måla om",
+      "newFloor": "Nytt golv",
+      "electrical": "El (belysning/uttag)",
+      "cabinets": "Stommar & luckor",
+      "appliances": "Vitvaror & VVS",
+      "splash": "Stänkskydd/kakel",
+      "walls": "Väggar",
+      "ceiling": "Tak",
+      "trim": "Foder & snickerier",
+      "wood": "Trä/parkett",
+      "vinyl": "Vinyl/laminat",
+      "tileFloor": "Klinker"
+    },
+    "room": {
+      "bathroom": "Badrum",
+      "kitchen": "Kök",
+      "generic": "Rum"
+    },
+    "name": {
+      "bathroom": "Badrumsrenovering",
+      "kitchen": "Köksrenovering",
+      "paint": "Måla om",
+      "floor": "Golvbyte",
+      "other": "Renoveringsprojekt"
+    },
+    "ph": {
+      "size": "t.ex. 6",
+      "address": "t.ex. Storgatan 5, Stockholm",
+      "budget": "t.ex. 150000"
+    },
+    "skip": {
+      "dontKnow": "Vet inte än",
+      "skip": "Hoppa över",
+      "noBudget": "Ingen budget än"
+    },
+    "ui": {
+      "title": "Skapa med Renaida",
+      "tagline": "Beta — svara på några frågor så bygger vi projektet ihop",
+      "growing": "Ditt projekt växer fram",
+      "section": {
+        "project": "Projekt",
+        "rooms": "Rum",
+        "tasks": "Arbeten",
+        "budget": "Budget"
+      },
+      "namePending": "Namnges snart…",
+      "emptyPreview": "Svara på Renaidas frågor så dyker rum, arbeten och budget upp här.",
+      "create": "Skapa projektet",
+      "continue": "Fortsätt"
+    },
+    "err": {
+      "notLoggedIn": "Du behöver vara inloggad för att skapa projektet",
+      "noProfile": "Kunde inte hitta din profil",
+      "created": "Projektet är skapat! 🎉",
+      "failed": "Kunde inte skapa projektet"
+    }
   }
 }
