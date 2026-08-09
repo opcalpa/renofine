@@ -1626,3 +1626,23 @@ Paritets-audit 2026-08-09 (v1 vs v2, 3 blocker-tiers). Beslut: **desktop-first f
 - Not: resize-handtag täcker EJ text-box (typsnitts-kontroller i st.f.) eller biblioteksobjekt (vägg-magnet+rotate); äldre bilder m. width=0 saknar mm-skala-input tills materialiserade.
 
 **MEDVETET EJ portat (v1-cruft mot Renofines modell):** B6 (noteringar/material/foto per canvas-shape — bor i Rumsdetaljer/rums-objekt), B8 (sticky note/bezier/connector/eraser — whiteboard, ej måttsatt plan; frihand ev. för DIY), B10 (skapa-väggar-från-rum — rum deriveras ur väggar i v2). B10 = ej regression.
+
+---
+id: renaida-project-creation-dialog
+status: doing
+priority: P1
+tags: [renaida, activation, onboarding, project-creation, agent-readable]
+created: 2026-08-09
+---
+## Renaida-ledd projektfödelse (interaktiv skapa-projekt-dialog)
+Attackerar aktiverings-flaskhalsen (traction-check: alla slutför onboarding, bara ~2/11 skapar arbete → bounce vid tomt projekt). I st.f. fritext/tomt projekt: ledande Renaida-dialog där projektet föds bit för bit, samtal + live-växande preview. Renaida = smartare ANVÄNDARE av appen (capture→föreslå→bekräfta över scaffoldProject-kommandoytan), ej ny app.
+
+**✅ FAS 0 LEVERERAD 2026-08-09 (`b18e31a`):** deterministiskt villkorligt beslutsträd (renaidaProjectFlow.ts) + helfönster-dialog (RenaidaProjectDialog.tsx) + "Skapa med Renaida (beta)"-knapp på Projects. Badrum/kök/måla/golv/annat-vertikaler; scope-chips → arbeten m. rätt kostnadsställe; toScaffoldInput → scaffoldProject. Flödet enhetstestat. **KVAR: Carls inloggade test av UI + scaffold-finish** (guest-RLS stoppar skrivningar).
+
+**KVAR:**
+- **Fas 1:** byt deterministisk nextStep() mot LLM-genererad nästa-fråga + förslag (villkorlig intelligens), roll-gating (byggare vs hemägare). Hybrid: behåll trädet för vanliga vägar, LLM för det öppna. Mät via callModel.
+- **Fas 2:** multimodalt — röst ("bygg-Siri", Taulant-validerad) + foto (rum/kvitto → extrahera).
+- **Fas 3:** mät aktiverings-lyft i PostHog (Renaida-skapat projekt → activation_reached/retention vs fritext-flödet). Vinner den → default sätt att skapa projekt.
+- Guest-stöd (nu ej-gäst-gated), i18n (nu svenska inline), fler vertikaler + djupare frågor.
+
+**Avstämning:** [[project_ai_onboarding_flow]] (offert-PDF→projekt) + [[project_intake_redesign_plan]] (kund-intake fritext→AI) = angränsande vägar mot SAMMA mål (befolkat projekt via scaffoldProject). Detta är ett nytt LÄGE, ej tredje parallell tråd — alla ska konvergera på scaffoldProject-motorn.
