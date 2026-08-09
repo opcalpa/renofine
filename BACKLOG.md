@@ -1639,8 +1639,12 @@ Attackerar aktiverings-flaskhalsen (traction-check: alla slutför onboarding, ba
 
 **✅ FAS 0 LEVERERAD 2026-08-09 (`b18e31a`):** deterministiskt villkorligt beslutsträd (renaidaProjectFlow.ts) + helfönster-dialog (RenaidaProjectDialog.tsx) + "Skapa med Renaida (beta)"-knapp på Projects. Badrum/kök/måla/golv/annat-vertikaler; scope-chips → arbeten m. rätt kostnadsställe; toScaffoldInput → scaffoldProject. Flödet enhetstestat. **KVAR: Carls inloggade test av UI + scaffold-finish** (guest-RLS stoppar skrivningar).
 
+**✅ FAS 1 LEVERERAD 2026-08-09 (`4c1a9bb`+`b2ab93e`):**
+- **1a översättning + roll-gating:** trädet språk-neutralt (i18n-nycklar + strukturerad data), titlar via intake.workType.*, hela dialogen en/sv/de/fr/es (57+ nycklar × 5). nextStep(draft, userType) varierar framing hemägare/byggare.
+- **1b LLM fritext-jumpstart:** valfritt describe-steg → parse-renovation-description (deployad) tolkar → seedDraftFromParse (ren, unit-testad) seedar rum/arbeten → trädet frågar bara resten. Graciös fallback. Flödestest 5/5. **KVAR: Carls inloggade test av LLM-anropet.**
+
 **KVAR:**
-- **Fas 1:** byt deterministisk nextStep() mot LLM-genererad nästa-fråga + förslag (villkorlig intelligens), roll-gating (byggare vs hemägare). Hybrid: behåll trädet för vanliga vägar, LLM för det öppna. Mät via callModel.
+- **Fas 1c (ev.):** djupare LLM-genererade FÖLJDfrågor (inte bara jumpstart) för villkorlig intelligens mitt i flödet. Mät via callModel.
 - **Fas 2:** multimodalt — röst ("bygg-Siri", Taulant-validerad) + foto (rum/kvitto → extrahera).
 - **Fas 3:** mät aktiverings-lyft i PostHog (Renaida-skapat projekt → activation_reached/retention vs fritext-flödet). Vinner den → default sätt att skapa projekt.
 - Guest-stöd (nu ej-gäst-gated), i18n (nu svenska inline), fler vertikaler + djupare frågor.
