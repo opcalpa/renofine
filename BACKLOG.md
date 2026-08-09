@@ -1643,8 +1643,10 @@ Attackerar aktiverings-flaskhalsen (traction-check: alla slutför onboarding, ba
 - **1a översättning + roll-gating:** trädet språk-neutralt (i18n-nycklar + strukturerad data), titlar via intake.workType.*, hela dialogen en/sv/de/fr/es (57+ nycklar × 5). nextStep(draft, userType) varierar framing hemägare/byggare.
 - **1b LLM fritext-jumpstart:** valfritt describe-steg → parse-renovation-description (deployad) tolkar → seedDraftFromParse (ren, unit-testad) seedar rum/arbeten → trädet frågar bara resten. Graciös fallback. Flödestest 5/5. **KVAR: Carls inloggade test av LLM-anropet.**
 
+- **1c DELVIS (`31406aa`):** smarta villkorliga TILLVALS-förslag per projekttyp efter scope (golvvärme/handdukstork/nisch/spotlights/kommod m.fl. → extra arbeten, deduped). Deterministiskt + i18n × 5, ingen deploy.
+
 **KVAR:**
-- **Fas 1c DELVIS (`REPLACE`):** smarta villkorliga TILLVALS-förslag per projekttyp efter scope (golvvärme/handdukstork/nisch/spotlights/kommod m.fl. → extra arbeten, deduped). Deterministiskt + i18n × 5, ingen deploy. KVAR: LLM-*genererad* dynamisk tillvalslista + LLM-följdfrågor mitt i flödet (kräver ny edge-funktion + deploy).
+- **Fas 1c-rest:** LLM-*genererad* dynamisk tillvalslista + LLM-följdfrågor mitt i flödet (kräver ny edge-funktion `renaida-suggest` + deploy).
 - **Fas 2:** multimodalt — röst ("bygg-Siri", Taulant-validerad) + foto (rum/kvitto → extrahera).
 - **Fas 3:** mät aktiverings-lyft i PostHog (Renaida-skapat projekt → activation_reached/retention vs fritext-flödet). Vinner den → default sätt att skapa projekt.
 - Guest-stöd (nu ej-gäst-gated), i18n (nu svenska inline), fler vertikaler + djupare frågor.
