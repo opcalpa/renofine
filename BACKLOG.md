@@ -1714,9 +1714,11 @@ created: 2026-08-10
 updated: 2026-08-10
 ---
 ## Fas B: Härkomst + per-rad-granskning (KEYSTONE)
-**✅ INCREMENT 1 LEVERERAD 2026-08-10 (`fd7322e`, lokal):** Provenance-modell (kind + fileName) på DraftRoom/DraftTask + reversibel excluded. Stämpling i applyAnswer/addons/seedDraftFromParse. Käll-ikon per rad + ta-bort/ta-med-igen i panelen. toScaffoldInput + guest hoppar excluded. 3 flow-tester (13/13).
+**✅ INCREMENT 1 LEVERERAD 2026-08-10 (`fd7322e`, pushad):** Provenance-modell (kind + fileName) på DraftRoom/DraftTask + reversibel excluded. Stämpling i applyAnswer/addons/seedDraftFromParse. Käll-ikon per rad + ta-bort/ta-med-igen i panelen. toScaffoldInput + guest hoppar excluded. 3 flow-tester (13/13).
 
-**KVAR (increment 2, innan Fas C):** (a) **mobil granskningsyta** — panelen är desktop-only (`md:flex`), Taulant ser inga käll-chips/toggle → behövs ett granska-läge före "Skapa" som funkar full-width mobilt. (b) inline fält-edit (byt arbetstyp/area per rad). (c) konflikt-som-gap-fråga (uppstår först med Fas C multi-källa).
+**✅ INCREMENT 2 LEVERERAD 2026-08-10 (`f41ebb1`, lokal):** mobil granskningsyta — vid complete visas md:hidden granska-block (full-width mobilt) med rum+arbeten (källchips + reversibel ta-bort) + budget före Skapa. TaskReviewList utbruten → desktop-panel + mobil renderar identiskt. Taulant kan nu verifiera+justera på mobil.
+
+**KVAR (increment 3, kan vänta):** (a) inline fält-edit (byt arbetstyp/area per rad — nu bara ta-bort). (b) konflikt-som-gap-fråga (uppstår först med Fas C multi-källa). Increment 1+2 räcker som keystone för Fas C.
 Utöka `ProjectDraft` med `Provenance` per rum/arbete/budget-signal. Högerpanelen (live-preview) får: käll-chip per rad ("📄 offert-badrum.pdf" / "📷 bild 2" / "💬 du sa"), klick → vad som lästes ut, per-rad acceptera/ändra/släng, konflikt-markering ("2 källor säger olika area — vilken?").
 
 **Varför keystone:** blandad-input-magi dör på felläsningar som INTE syns. Utan verifierbar härkomst är mapp-ingest en demo, inte ett verktyg. ALLT efter detta (C/C+/D) står på denna. Bygg FÖRE mapp-ingest.
