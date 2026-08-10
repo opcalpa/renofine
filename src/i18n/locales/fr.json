@@ -2328,6 +2328,8 @@
       "scope": {
         "bathroom": "Que comprend la salle de bain ? Choisis ce qui s'applique — j'ajoute les tâches.",
         "kitchen": "Que comprend la cuisine ?",
+        "laundry": "Que comprend la buanderie ? Choisis ce qui s'applique.",
+        "basement": "Que veux-tu faire du sous-sol ?",
         "paint": "Que faut-il peindre ?",
         "floor": "Quel type de sol ?",
         "other": "Quelles tâches sont incluses ? Choisis tout ce qui s'applique."
@@ -2348,6 +2350,8 @@
     "type": {
       "bathroom": "Salle de bain",
       "kitchen": "Cuisine",
+      "laundry": "Buanderie",
+      "basement": "Sous-sol",
       "paint": "Repeindre",
       "floor": "Nouveau sol",
       "other": "Autre"
@@ -2367,16 +2371,22 @@
       "trim": "Moulures & menuiserie",
       "wood": "Bois/parquet",
       "vinyl": "Vinyle/stratifié",
-      "tileFloor": "Carrelage"
+      "tileFloor": "Carrelage",
+      "convert": "Aménager en espace habitable",
+      "moisture": "Humidité/drainage"
     },
     "room": {
       "bathroom": "Salle de bain",
       "kitchen": "Cuisine",
+      "laundry": "Buanderie",
+      "basement": "Sous-sol",
       "generic": "Pièce"
     },
     "name": {
       "bathroom": "Rénovation de salle de bain",
       "kitchen": "Rénovation de cuisine",
+      "laundry": "Rénovation de buanderie",
+      "basement": "Rénovation de sous-sol",
       "paint": "Repeindre",
       "floor": "Changement de sol",
       "other": "Projet de rénovation"
@@ -2433,7 +2443,12 @@
       "rangeHood": "Hotte",
       "trimPaint": "Moulures",
       "wallpaper": "Pose de papier peint",
-      "skirting": "Plinthes"
+      "skirting": "Plinthes",
+      "moveDrain": "Déplacer le siphon de sol",
+      "movePlumbing": "Déplacer l'eau/l'évacuation",
+      "dryingCabinet": "Armoire séchante",
+      "utilitySink": "Bac de lavage",
+      "addBathroom": "Ajouter une salle d'eau/WC"
     },
     "suggesting": "Renaida réfléchit à des suggestions…"
   }

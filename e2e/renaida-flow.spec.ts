@@ -158,3 +158,58 @@ test('LLM jumpstart returns null when nothing usable was parsed', () => {
   const parsed = { totalAreaSqm: null, rooms: [], otherSpaces: [], globalWorkTypes: [] } as AIParsedResult;
   expect(seedDraftFromParse(parsed, emptyDraft(), { defaultName: 'x' })).toBeNull();
 });
+
+test('new vertical: laundry total → wet-room tasks + curated add-ons, completes', () => {
+  let d = emptyDraft();
+  d = applyAnswer(nextStep(d)!, { kind: 'skip' }, d); // describe
+  d = applyAnswer(nextStep(d)!, { kind: 'chips', ids: ['laundry'], labels: ['Tvättstuga'] }, d);
+  expect(d.rooms[0].name).toBe('Tvättstuga');
+
+  d = applyAnswer(nextStep(d)!, { kind: 'chips', ids: ['total'], labels: ['Totalrenovering'] }, d);
+  expect(d.tasks.some((t) => t.costCenter === 'plumbing')).toBe(true);
+  expect(d.tasks.some((t) => t.costCenter === 'tiling')).toBe(true);
+
+  // Laundry has its own curated add-ons (drying cabinet, utility sink).
+  const addonIds = deterministicAddons('laundry').map((a) => a.id);
+  expect(addonIds).toContain('dryingCabinet');
+  expect(addonIds).toContain('utilitySink');
+
+  const s = nextStep(d)!;
+  expect(s.id).toBe('addons');
+  d = applyAnswer(s, { kind: 'skip' }, d);
+  d = applyAnswer(nextStep(d)!, { kind: 'skip' }, d); // size
+  d = applyAnswer(nextStep(d)!, { kind: 'skip' }, d); // address
+  d = applyAnswer(nextStep(d)!, { kind: 'skip' }, d); // budget
+  expect(nextStep(d)).toBeNull();
+});
+
+test('new vertical: basement convert → living-space trades', () => {
+  let d = emptyDraft();
+  d = applyAnswer(nextStep(d)!, { kind: 'skip' }, d); // describe
+  d = applyAnswer(nextStep(d)!, { kind: 'chips', ids: ['basement'], labels: ['Källare'] }, d);
+  expect(d.rooms[0].name).toBe('Källare');
+
+  d = applyAnswer(nextStep(d)!, { kind: 'chips', ids: ['convert'], labels: ['Inreda till boyta'] }, d);
+  // Converting a basement pulls in demolition, joinery, electrical, paint and flooring.
+  const centers = new Set(d.tasks.map((t) => t.costCenter));
+  expect(centers.has('demolition')).toBe(true);
+  expect(centers.has('carpentry')).toBe(true);
+  expect(centers.has('electrical')).toBe(true);
+  expect(d.tasks.length).toBe(5);
+});
+
+test('expert add-on: relocating the floor drain adds demolition + plumbing', () => {
+  let d = emptyDraft();
+  d = applyAnswer(nextStep(d)!, { kind: 'skip' }, d); // describe
+  d = applyAnswer(nextStep(d)!, { kind: 'chips', ids: ['bathroom'], labels: ['Badrum'] }, d);
+  // Surfaces-only scope → just tiling, so the add-on's effect is unambiguous.
+  d = applyAnswer(nextStep(d)!, { kind: 'chips', ids: ['surfaces'], labels: ['Kakel'] }, d);
+  expect(d.tasks.map((t) => t.workType)).toEqual(['kakel']);
+
+  const s = nextStep(d)!;
+  expect(s.id).toBe('addons');
+  expect(deterministicAddons('bathroom').map((a) => a.id)).toContain('moveDrain');
+  d = applyAnswer(s, { kind: 'chips', ids: ['moveDrain'], labels: ['Flytta golvbrunn'] }, d);
+  expect(d.tasks.some((t) => t.workType === 'rivning')).toBe(true);
+  expect(d.tasks.some((t) => t.workType === 'vvs')).toBe(true);
+});

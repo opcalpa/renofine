@@ -2328,6 +2328,8 @@
       "scope": {
         "bathroom": "¿Qué incluye el baño? Elige lo que corresponda — yo añado las tareas.",
         "kitchen": "¿Qué incluye la cocina?",
+        "laundry": "¿Qué incluye el lavadero? Elige lo que corresponda.",
+        "basement": "¿Qué quieres hacer con el sótano?",
         "paint": "¿Qué se va a pintar?",
         "floor": "¿Qué tipo de suelo?",
         "other": "¿Qué trabajos se incluyen? Elige todos los que apliquen."
@@ -2348,6 +2350,8 @@
     "type": {
       "bathroom": "Baño",
       "kitchen": "Cocina",
+      "laundry": "Lavadero",
+      "basement": "Sótano",
       "paint": "Repintar",
       "floor": "Suelo nuevo",
       "other": "Otro"
@@ -2367,16 +2371,22 @@
       "trim": "Molduras y carpintería",
       "wood": "Madera/parqué",
       "vinyl": "Vinilo/laminado",
-      "tileFloor": "Baldosa"
+      "tileFloor": "Baldosa",
+      "convert": "Acondicionar como espacio habitable",
+      "moisture": "Humedad/drenaje"
     },
     "room": {
       "bathroom": "Baño",
       "kitchen": "Cocina",
+      "laundry": "Lavadero",
+      "basement": "Sótano",
       "generic": "Habitación"
     },
     "name": {
       "bathroom": "Reforma de baño",
       "kitchen": "Reforma de cocina",
+      "laundry": "Reforma de lavadero",
+      "basement": "Reforma de sótano",
       "paint": "Repintar",
       "floor": "Cambio de suelo",
       "other": "Proyecto de reforma"
@@ -2433,7 +2443,12 @@
       "rangeHood": "Campana extractora",
       "trimPaint": "Molduras",
       "wallpaper": "Empapelado",
-      "skirting": "Rodapiés"
+      "skirting": "Rodapiés",
+      "moveDrain": "Reubicar el sumidero",
+      "movePlumbing": "Mover agua/desagüe",
+      "dryingCabinet": "Armario secador",
+      "utilitySink": "Fregadero auxiliar",
+      "addBathroom": "Añadir un aseo/WC"
     },
     "suggesting": "Renaida está pensando sugerencias…"
   }

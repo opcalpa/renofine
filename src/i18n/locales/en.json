@@ -6864,6 +6864,8 @@
       "scope": {
         "bathroom": "What's included in the bathroom? Pick what applies — I'll add the tasks for you.",
         "kitchen": "What's included in the kitchen?",
+        "laundry": "What's included in the laundry room? Pick what applies.",
+        "basement": "What are you doing with the basement?",
         "paint": "What should be painted?",
         "floor": "What type of flooring?",
         "other": "Which tasks are included? Pick all that apply."
@@ -6884,6 +6886,8 @@
     "type": {
       "bathroom": "Bathroom",
       "kitchen": "Kitchen",
+      "laundry": "Laundry room",
+      "basement": "Basement",
       "paint": "Repaint",
       "floor": "New floor",
       "other": "Other"
@@ -6903,16 +6907,22 @@
       "trim": "Trim & joinery",
       "wood": "Wood/parquet",
       "vinyl": "Vinyl/laminate",
-      "tileFloor": "Tile"
+      "tileFloor": "Tile",
+      "convert": "Convert to living space",
+      "moisture": "Moisture/drainage work"
     },
     "room": {
       "bathroom": "Bathroom",
       "kitchen": "Kitchen",
+      "laundry": "Laundry room",
+      "basement": "Basement",
       "generic": "Room"
     },
     "name": {
       "bathroom": "Bathroom renovation",
       "kitchen": "Kitchen renovation",
+      "laundry": "Laundry room renovation",
+      "basement": "Basement renovation",
       "paint": "Repaint",
       "floor": "Flooring",
       "other": "Renovation project"
@@ -6969,7 +6979,12 @@
       "rangeHood": "Range hood",
       "trimPaint": "Trim & mouldings",
       "wallpaper": "Wallpapering",
-      "skirting": "Skirting boards"
+      "skirting": "Skirting boards",
+      "moveDrain": "Relocate floor drain",
+      "movePlumbing": "Move water/drain lines",
+      "dryingCabinet": "Drying cabinet",
+      "utilitySink": "Utility sink",
+      "addBathroom": "Add a bathroom/WC"
     },
     "suggesting": "Renaida is thinking of suggestions…"
   }

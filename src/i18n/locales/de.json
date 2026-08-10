@@ -2328,6 +2328,8 @@
       "scope": {
         "bathroom": "Was soll im Bad gemacht werden? Wähle, was zutrifft — ich füge die Aufgaben hinzu.",
         "kitchen": "Was soll in der Küche gemacht werden?",
+        "laundry": "Was soll im Hauswirtschaftsraum gemacht werden? Wähle, was zutrifft.",
+        "basement": "Was möchtest du mit dem Keller machen?",
         "paint": "Was soll gestrichen werden?",
         "floor": "Welche Art von Boden?",
         "other": "Welche Arbeiten sind enthalten? Wähle alles Zutreffende."
@@ -2348,6 +2350,8 @@
     "type": {
       "bathroom": "Bad",
       "kitchen": "Küche",
+      "laundry": "Hauswirtschaftsraum",
+      "basement": "Keller",
       "paint": "Neu streichen",
       "floor": "Neuer Boden",
       "other": "Anderes"
@@ -2367,16 +2371,22 @@
       "trim": "Zierleisten & Schreinerarbeit",
       "wood": "Holz/Parkett",
       "vinyl": "Vinyl/Laminat",
-      "tileFloor": "Fliesen"
+      "tileFloor": "Fliesen",
+      "convert": "Zu Wohnraum ausbauen",
+      "moisture": "Feuchtigkeit/Drainage"
     },
     "room": {
       "bathroom": "Bad",
       "kitchen": "Küche",
+      "laundry": "Hauswirtschaftsraum",
+      "basement": "Keller",
       "generic": "Raum"
     },
     "name": {
       "bathroom": "Badsanierung",
       "kitchen": "Küchensanierung",
+      "laundry": "Hauswirtschaftsraum-Sanierung",
+      "basement": "Kellersanierung",
       "paint": "Neu streichen",
       "floor": "Bodenwechsel",
       "other": "Renovierungsprojekt"
@@ -2433,7 +2443,12 @@
       "rangeHood": "Dunstabzug",
       "trimPaint": "Zierleisten",
       "wallpaper": "Tapezieren",
-      "skirting": "Sockelleisten"
+      "skirting": "Sockelleisten",
+      "moveDrain": "Bodenablauf verlegen",
+      "movePlumbing": "Wasser-/Abflussleitungen verlegen",
+      "dryingCabinet": "Trockenschrank",
+      "utilitySink": "Ausgussbecken",
+      "addBathroom": "Bad/WC hinzufügen"
     },
     "suggesting": "Renaida überlegt Vorschläge…"
   }

@@ -18,7 +18,7 @@ import { workTypeToCostCenter, getWorkTypes } from './workTypeUtils';
 import type { ScaffoldProjectInput } from './scaffoldProject';
 import type { AIParsedResult } from '@/components/project/overview/planning-wizard/types';
 
-export type ProjectTypeId = 'bathroom' | 'kitchen' | 'paint' | 'floor' | 'other';
+export type ProjectTypeId = 'bathroom' | 'kitchen' | 'laundry' | 'basement' | 'paint' | 'floor' | 'other';
 export type UserType = 'homeowner' | 'contractor';
 
 export interface DraftRoom {
@@ -90,6 +90,8 @@ export type Answer =
 const PROJECT_TYPES: Record<ProjectTypeId, { roomNameKey: string; nameKey: string }> = {
   bathroom: { roomNameKey: 'renaidaFlow.room.bathroom', nameKey: 'renaidaFlow.name.bathroom' },
   kitchen: { roomNameKey: 'renaidaFlow.room.kitchen', nameKey: 'renaidaFlow.name.kitchen' },
+  laundry: { roomNameKey: 'renaidaFlow.room.laundry', nameKey: 'renaidaFlow.name.laundry' },
+  basement: { roomNameKey: 'renaidaFlow.room.basement', nameKey: 'renaidaFlow.name.basement' },
   paint: { roomNameKey: 'renaidaFlow.room.generic', nameKey: 'renaidaFlow.name.paint' },
   floor: { roomNameKey: 'renaidaFlow.room.generic', nameKey: 'renaidaFlow.name.floor' },
   other: { roomNameKey: 'renaidaFlow.room.generic', nameKey: 'renaidaFlow.name.other' },
@@ -98,6 +100,8 @@ const PROJECT_TYPES: Record<ProjectTypeId, { roomNameKey: string; nameKey: strin
 const TYPE_CHIPS: Chip[] = [
   { id: 'bathroom', labelKey: 'renaidaFlow.type.bathroom' },
   { id: 'kitchen', labelKey: 'renaidaFlow.type.kitchen' },
+  { id: 'laundry', labelKey: 'renaidaFlow.type.laundry' },
+  { id: 'basement', labelKey: 'renaidaFlow.type.basement' },
   { id: 'paint', labelKey: 'renaidaFlow.type.paint' },
   { id: 'floor', labelKey: 'renaidaFlow.type.floor' },
   { id: 'other', labelKey: 'renaidaFlow.type.other' },
@@ -132,6 +136,21 @@ const SCOPE_BY_TYPE: Record<ProjectTypeId, ScopeChip[]> = {
     { id: 'ceiling', labelKey: 'renaidaFlow.scope.ceiling', workTypes: ['malning'] },
     { id: 'trim', labelKey: 'renaidaFlow.scope.trim', workTypes: ['malning', 'snickeri'] },
   ],
+  laundry: [
+    { id: 'total', labelKey: 'renaidaFlow.scope.total', workTypes: ['rivning', 'vvs', 'el', 'kakel', 'malning', 'golv'] },
+    { id: 'fixtures', labelKey: 'renaidaFlow.scope.fixtures', workTypes: ['vvs'] },
+    { id: 'surfaces', labelKey: 'renaidaFlow.scope.tiles', workTypes: ['kakel'] },
+    { id: 'floor', labelKey: 'renaidaFlow.scope.newFloor', workTypes: ['golv'] },
+    { id: 'cabinets', labelKey: 'renaidaFlow.scope.cabinets', workTypes: ['snickeri'] },
+    { id: 'electrical', labelKey: 'renaidaFlow.scope.electrical', workTypes: ['el'] },
+  ],
+  basement: [
+    { id: 'convert', labelKey: 'renaidaFlow.scope.convert', workTypes: ['rivning', 'snickeri', 'el', 'malning', 'golv'] },
+    { id: 'moisture', labelKey: 'renaidaFlow.scope.moisture', workTypes: ['vvs', 'rivning'] },
+    { id: 'surfaces', labelKey: 'renaidaFlow.scope.paint', workTypes: ['malning'] },
+    { id: 'floor', labelKey: 'renaidaFlow.scope.newFloor', workTypes: ['golv'] },
+    { id: 'electrical', labelKey: 'renaidaFlow.scope.electrical', workTypes: ['el'] },
+  ],
   floor: [
     { id: 'wood', labelKey: 'renaidaFlow.scope.wood', workTypes: ['golv'] },
     { id: 'vinyl', labelKey: 'renaidaFlow.scope.vinyl', workTypes: ['golv'] },
@@ -159,6 +178,7 @@ const ADDONS_BY_TYPE: Partial<Record<ProjectTypeId, AddonChip[]>> = {
     { id: 'underfloor', labelKey: 'renaidaFlow.addon.underfloorHeat', workTypes: ['el', 'golv'] },
     { id: 'towel', labelKey: 'renaidaFlow.addon.towelRail', workTypes: ['vvs'] },
     { id: 'niche', labelKey: 'renaidaFlow.addon.showerNiche', workTypes: ['kakel'] },
+    { id: 'moveDrain', labelKey: 'renaidaFlow.addon.moveDrain', workTypes: ['rivning', 'vvs'] },
     { id: 'spots', labelKey: 'renaidaFlow.addon.spotlights', workTypes: ['el'] },
     { id: 'vanity', labelKey: 'renaidaFlow.addon.vanity', workTypes: ['snickeri'] },
   ],
@@ -166,6 +186,16 @@ const ADDONS_BY_TYPE: Partial<Record<ProjectTypeId, AddonChip[]>> = {
     { id: 'island', labelKey: 'renaidaFlow.addon.island', workTypes: ['snickeri'] },
     { id: 'dishwasher', labelKey: 'renaidaFlow.addon.dishwasher', workTypes: ['vvs'] },
     { id: 'hood', labelKey: 'renaidaFlow.addon.rangeHood', workTypes: ['vvs', 'el'] },
+    { id: 'movePlumbing', labelKey: 'renaidaFlow.addon.movePlumbing', workTypes: ['vvs', 'rivning'] },
+    { id: 'spots', labelKey: 'renaidaFlow.addon.spotlights', workTypes: ['el'] },
+  ],
+  laundry: [
+    { id: 'dryingCabinet', labelKey: 'renaidaFlow.addon.dryingCabinet', workTypes: ['el', 'snickeri'] },
+    { id: 'utilitySink', labelKey: 'renaidaFlow.addon.utilitySink', workTypes: ['vvs'] },
+    { id: 'underfloor', labelKey: 'renaidaFlow.addon.underfloorHeat', workTypes: ['el', 'golv'] },
+  ],
+  basement: [
+    { id: 'addBathroom', labelKey: 'renaidaFlow.addon.addBathroom', workTypes: ['vvs', 'kakel', 'el'] },
     { id: 'spots', labelKey: 'renaidaFlow.addon.spotlights', workTypes: ['el'] },
   ],
   paint: [
@@ -181,6 +211,8 @@ const ADDONS_BY_TYPE: Partial<Record<ProjectTypeId, AddonChip[]>> = {
 const SCOPE_MESSAGE_KEY: Record<ProjectTypeId, string> = {
   bathroom: 'renaidaFlow.q.scope.bathroom',
   kitchen: 'renaidaFlow.q.scope.kitchen',
+  laundry: 'renaidaFlow.q.scope.laundry',
+  basement: 'renaidaFlow.q.scope.basement',
   paint: 'renaidaFlow.q.scope.paint',
   floor: 'renaidaFlow.q.scope.floor',
   other: 'renaidaFlow.q.scope.other',

@@ -6864,6 +6864,8 @@
       "scope": {
         "bathroom": "Vad ska göras i badrummet? Välj det som ingår — jag lägger till arbetena åt dig.",
         "kitchen": "Vad ska göras i köket?",
+        "laundry": "Vad ska göras i tvättstugan? Välj det som ingår.",
+        "basement": "Vad ska du göra med källaren?",
         "paint": "Vad ska målas?",
         "floor": "Vilken typ av golv?",
         "other": "Vilka arbeten ingår? Välj alla som gäller."
@@ -6884,6 +6886,8 @@
     "type": {
       "bathroom": "Badrum",
       "kitchen": "Kök",
+      "laundry": "Tvättstuga",
+      "basement": "Källare",
       "paint": "Måla om",
       "floor": "Nytt golv",
       "other": "Annat"
@@ -6903,16 +6907,22 @@
       "trim": "Foder & snickerier",
       "wood": "Trä/parkett",
       "vinyl": "Vinyl/laminat",
-      "tileFloor": "Klinker"
+      "tileFloor": "Klinker",
+      "convert": "Inreda till boyta",
+      "moisture": "Fukt/dränering"
     },
     "room": {
       "bathroom": "Badrum",
       "kitchen": "Kök",
+      "laundry": "Tvättstuga",
+      "basement": "Källare",
       "generic": "Rum"
     },
     "name": {
       "bathroom": "Badrumsrenovering",
       "kitchen": "Köksrenovering",
+      "laundry": "Tvättstugerenovering",
+      "basement": "Källarrenovering",
       "paint": "Måla om",
       "floor": "Golvbyte",
       "other": "Renoveringsprojekt"
@@ -6969,7 +6979,12 @@
       "rangeHood": "Köksfläkt",
       "trimPaint": "Foder & lister",
       "wallpaper": "Tapetsering",
-      "skirting": "Golvsocklar"
+      "skirting": "Golvsocklar",
+      "moveDrain": "Flytta golvbrunn",
+      "movePlumbing": "Flytta vatten/avlopp",
+      "dryingCabinet": "Torkskåp",
+      "utilitySink": "Utslagsvask",
+      "addBathroom": "Lägg till toalett/WC"
     },
     "suggesting": "Renaida tänker ut förslag…"
   }
