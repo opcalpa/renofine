@@ -21,10 +21,27 @@ import type { AIParsedResult } from '@/components/project/overview/planning-wiza
 export type ProjectTypeId = 'bathroom' | 'kitchen' | 'laundry' | 'basement' | 'paint' | 'floor' | 'other';
 export type UserType = 'homeowner' | 'contractor';
 
+/** Where a draft line came from — powers the source chip + per-row review. */
+export type ProvenanceKind =
+  | 'answer'
+  | 'describe'
+  | 'photo'
+  | 'document'
+  | 'floorplan'
+  | 'suggestion';
+
+export interface Provenance {
+  kind: ProvenanceKind;
+  /** Originating file, when the line came from an upload/photo. */
+  fileName?: string;
+  confidence?: number;
+}
+
 export interface DraftRoom {
   name: string;
   areaSqm?: number | null;
   ceilingHeightMm?: number | null;
+  source?: Provenance;
 }
 
 export interface DraftTask {
@@ -32,6 +49,9 @@ export interface DraftTask {
   workType: WorkType;
   roomName: string | null;
   costCenter: string;
+  source?: Provenance;
+  /** Reversibly excluded during review — kept in the draft, skipped at creation. */
+  excluded?: boolean;
 }
 
 export interface ProjectDraft {
@@ -315,7 +335,7 @@ export function applyAnswer(
       if (!PROJECT_TYPES[id]) break;
       next.projectType = id;
       next.projectName = labels?.projectName ?? answer.labels[0];
-      next.rooms = [{ name: labels?.roomName ?? answer.labels[0] }];
+      next.rooms = [{ name: labels?.roomName ?? answer.labels[0], source: { kind: 'answer' } }];
       break;
     }
     case 'scope': {
@@ -330,6 +350,7 @@ export function applyAnswer(
         workType: wt,
         roomName,
         costCenter: workTypeToCostCenter(wt),
+        source: { kind: 'answer' as const },
       }));
       break;
     }
@@ -345,7 +366,7 @@ export function applyAnswer(
             const key = `${wt}:${roomName ?? ''}`;
             if (existing.has(key)) return;
             existing.add(key);
-            next.tasks.push({ workType: wt, roomName, costCenter: workTypeToCostCenter(wt) });
+            next.tasks.push({ workType: wt, roomName, costCenter: workTypeToCostCenter(wt), source: { kind: 'suggestion' } });
           });
       }
       break;
@@ -396,7 +417,7 @@ export function applyAddonWorkTypes(draft: ProjectDraft, workTypesList: WorkType
       const key = `${wt}:${roomName ?? ''}`;
       if (existing.has(key)) continue;
       existing.add(key);
-      next.tasks.push({ workType: wt, roomName, costCenter: workTypeToCostCenter(wt) });
+      next.tasks.push({ workType: wt, roomName, costCenter: workTypeToCostCenter(wt), source: { kind: 'suggestion' } });
     }
   }
   return next;
@@ -417,11 +438,13 @@ export function toScaffoldInput(draft: ProjectDraft, labelFor: WorkTypeLabeller)
       ceilingHeightMm: r.ceilingHeightMm ?? null,
       dimensions: r.areaSqm ? { area_sqm: r.areaSqm } : null,
     })),
-    tasks: draft.tasks.map((t) => ({
-      title: taskTitle(t, labelFor),
-      roomName: t.roomName,
-      costCenter: t.costCenter,
-    })),
+    tasks: draft.tasks
+      .filter((t) => !t.excluded)
+      .map((t) => ({
+        title: taskTitle(t, labelFor),
+        roomName: t.roomName,
+        costCenter: t.costCenter,
+      })),
     markOnboardingComplete: true,
   };
 }
@@ -438,13 +461,14 @@ export { SCOPE_BY_TYPE, PROJECT_TYPES };
 export function seedDraftFromParse(
   parsed: AIParsedResult,
   base: ProjectDraft,
-  opts: { defaultName: string }
+  opts: { defaultName: string; sourceKind?: ProvenanceKind }
 ): ProjectDraft | null {
   const known = new Set<WorkType>(getWorkTypes().map((w) => w.value));
+  const source: Provenance = { kind: opts.sourceKind ?? 'describe' };
 
   const rooms: DraftRoom[] = [
-    ...parsed.rooms.map((r) => ({ name: r.name })),
-    ...(parsed.otherSpaces ?? []).map((r) => ({ name: r.name })),
+    ...parsed.rooms.map((r) => ({ name: r.name, source })),
+    ...(parsed.otherSpaces ?? []).map((r) => ({ name: r.name, source })),
   ];
   // A single-room project can adopt the whole-property area as its own.
   if (rooms.length === 1 && parsed.totalAreaSqm) rooms[0].areaSqm = parsed.totalAreaSqm;
@@ -456,7 +480,7 @@ export function seedDraftFromParse(
     const key = `${wt}:${roomName ?? ''}`;
     if (seen.has(key)) return;
     seen.add(key);
-    tasks.push({ workType: wt, roomName, costCenter: workTypeToCostCenter(wt) });
+    tasks.push({ workType: wt, roomName, costCenter: workTypeToCostCenter(wt), source });
   };
   parsed.globalWorkTypes.forEach((wt) => addTask(wt, null));
   parsed.rooms.forEach((r) => r.suggestedWorkTypes.forEach((wt) => addTask(wt, r.name)));

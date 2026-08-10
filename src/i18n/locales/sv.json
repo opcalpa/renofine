@@ -6969,6 +6969,16 @@
     "photosAdded": "{{count}} foton tolkade",
     "photoUnreadable": "Kunde inte läsa fotot — prova igen, skriv eller prata.",
     "photoFailed": "Kunde inte tolka fotot",
+    "exclude": "Ta bort",
+    "include": "Ta med igen",
+    "source": {
+      "answer": "Ditt svar",
+      "describe": "Din beskrivning",
+      "photo": "Från foto",
+      "document": "Från dokument",
+      "floorplan": "Från ritning",
+      "suggestion": "Renaidas förslag"
+    },
     "addon": {
       "underfloorHeat": "Golvvärme",
       "towelRail": "Handdukstork",

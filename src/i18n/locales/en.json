@@ -6969,6 +6969,16 @@
     "photosAdded": "{{count}} photos read",
     "photoUnreadable": "I couldn't read the photo — try again, type, or speak.",
     "photoFailed": "Couldn't process the photo",
+    "exclude": "Remove",
+    "include": "Add back",
+    "source": {
+      "answer": "Your answer",
+      "describe": "Your description",
+      "photo": "From a photo",
+      "document": "From a document",
+      "floorplan": "From a drawing",
+      "suggestion": "Renaida's suggestion"
+    },
     "addon": {
       "underfloorHeat": "Underfloor heating",
       "towelRail": "Heated towel rail",

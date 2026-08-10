@@ -198,6 +198,43 @@ test('new vertical: basement convert → living-space trades', () => {
   expect(d.tasks.length).toBe(5);
 });
 
+test('provenance: each line is stamped with its source (answer / suggestion)', () => {
+  let d = emptyDraft();
+  d = applyAnswer(nextStep(d)!, { kind: 'skip' }, d); // describe
+  d = applyAnswer(nextStep(d)!, { kind: 'chips', ids: ['bathroom'], labels: ['Badrum'] }, d);
+  expect(d.rooms[0].source?.kind).toBe('answer');
+  d = applyAnswer(nextStep(d)!, { kind: 'chips', ids: ['total'], labels: ['Totalrenovering'] }, d);
+  expect(d.tasks.every((t) => t.source?.kind === 'answer')).toBe(true);
+
+  const before = d.tasks.length;
+  d = applyAnswer(nextStep(d)!, { kind: 'chips', ids: ['vanity'], labels: ['Kommod'] }, d); // add-on → snickeri
+  expect(d.tasks.slice(before).every((t) => t.source?.kind === 'suggestion')).toBe(true);
+});
+
+test('provenance: photo/describe seed stamps the modality as source', () => {
+  const parsed: AIParsedResult = {
+    totalAreaSqm: 6,
+    rooms: [{ nameKey: 'bathroom', name: 'Badrum', suggestedWorkTypes: ['kakel'] }],
+    otherSpaces: [],
+    globalWorkTypes: ['malning'],
+  } as AIParsedResult;
+  const seeded = seedDraftFromParse(parsed, emptyDraft(), { defaultName: 'x', sourceKind: 'photo' })!;
+  expect(seeded.rooms[0].source?.kind).toBe('photo');
+  expect(seeded.tasks.every((t) => t.source?.kind === 'photo')).toBe(true);
+});
+
+test('review: excluded tasks stay in the draft but are skipped at creation', () => {
+  let d = emptyDraft();
+  d = applyAnswer(nextStep(d)!, { kind: 'skip' }, d); // describe
+  d = applyAnswer(nextStep(d)!, { kind: 'chips', ids: ['paint'], labels: ['Måla om'] }, d);
+  d = applyAnswer(nextStep(d)!, { kind: 'chips', ids: ['walls'], labels: ['Väggar'] }, d);
+  expect(d.tasks.length).toBe(1);
+
+  d = { ...d, tasks: d.tasks.map((t, i) => (i === 0 ? { ...t, excluded: true } : t)) };
+  expect(d.tasks.length).toBe(1); // still present for restore
+  expect(toScaffoldInput(d, (wt) => wt).tasks.length).toBe(0); // but not created
+});
+
 test('expert add-on: relocating the floor drain adds demolition + plumbing', () => {
   let d = emptyDraft();
   d = applyAnswer(nextStep(d)!, { kind: 'skip' }, d); // describe

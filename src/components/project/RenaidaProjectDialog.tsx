@@ -11,7 +11,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, ArrowRight, Home, Hammer, Wallet, MapPin, Loader2, Check, Camera } from 'lucide-react';
+import {
+  Sparkles, ArrowRight, Home, Hammer, Wallet, MapPin, Loader2, Check, Camera,
+  MessageSquare, FileText, PenTool, X, RotateCcw,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -39,6 +42,7 @@ import {
   type Step,
   type Answer,
   type UserType,
+  type Provenance,
 } from '@/services/renaidaProjectFlow';
 
 interface Props {
@@ -236,6 +240,7 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
     if (parsed) {
       const seeded = seedDraftFromParse(parsed, applyAnswer(s, { kind: 'skip' }, draft), {
         defaultName: t('renaidaFlow.name.other'),
+        sourceKind: via === 'photo' ? 'photo' : 'describe',
       });
       if (seeded) {
         setDraft(seeded);
@@ -389,10 +394,12 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
             area_sqm: r.areaSqm ?? undefined,
             ceiling_height_mm: r.ceilingHeightMm ?? undefined,
           })),
-          tasks: draft.tasks.map((task) => ({
-            workTypeLabel: taskTitle(task, labelFor),
-            roomName: task.roomName,
-          })),
+          tasks: draft.tasks
+            .filter((task) => !task.excluded)
+            .map((task) => ({
+              workTypeLabel: taskTitle(task, labelFor),
+              roomName: task.roomName,
+            })),
         });
         if (!result) {
           toast.error(t('guest.projectLimit', 'Gästläge är begränsat till några projekt.'));
@@ -448,7 +455,15 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
   };
 
   const room = draft.rooms[0];
-  const taskCount = draft.tasks.length;
+  const taskCount = draft.tasks.filter((tk) => !tk.excluded).length;
+
+  /** Reversibly include/exclude a task during review (source-chip panel). */
+  const toggleTaskExcluded = (index: number) => {
+    setDraft((d) => ({
+      ...d,
+      tasks: d.tasks.map((tk, i) => (i === index ? { ...tk, excluded: !tk.excluded } : tk)),
+    }));
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -631,14 +646,17 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
 
               {room && (
                 <PreviewSection icon={<Home className="h-3.5 w-3.5" />} label={t('renaidaFlow.ui.section.rooms')}>
-                  <div className="flex items-center justify-between rounded-md bg-background px-2.5 py-1.5 text-sm animate-in fade-in slide-in-from-bottom-1">
-                    <span>{room.name}</span>
-                    {room.areaSqm ? <span className="text-xs text-muted-foreground">{room.areaSqm} m²</span> : null}
+                  <div className="flex items-center justify-between gap-2 rounded-md bg-background px-2.5 py-1.5 text-sm animate-in fade-in slide-in-from-bottom-1">
+                    <span className="flex min-w-0 items-center gap-1.5">
+                      <SourceChip source={room.source} />
+                      <span className="truncate">{room.name}</span>
+                    </span>
+                    {room.areaSqm ? <span className="flex-shrink-0 text-xs text-muted-foreground">{room.areaSqm} m²</span> : null}
                   </div>
                 </PreviewSection>
               )}
 
-              {taskCount > 0 && (
+              {draft.tasks.length > 0 && (
                 <PreviewSection
                   icon={<Hammer className="h-3.5 w-3.5" />}
                   label={`${t('renaidaFlow.ui.section.tasks')} (${taskCount})`}
@@ -647,10 +665,24 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
                     {draft.tasks.map((task, i) => (
                       <div
                         key={task.workType + i}
-                        className="rounded-md bg-background px-2.5 py-1.5 text-sm animate-in fade-in slide-in-from-bottom-1"
+                        className={`group flex items-center justify-between gap-2 rounded-md bg-background px-2.5 py-1.5 text-sm animate-in fade-in slide-in-from-bottom-1 ${
+                          task.excluded ? 'opacity-50' : ''
+                        }`}
                         style={{ animationDelay: `${i * 40}ms` }}
                       >
-                        {taskTitle(task, labelFor)}
+                        <span className={`flex min-w-0 items-center gap-1.5 ${task.excluded ? 'line-through' : ''}`}>
+                          <SourceChip source={task.source} />
+                          <span className="truncate">{taskTitle(task, labelFor)}</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => toggleTaskExcluded(i)}
+                          className="flex-shrink-0 text-muted-foreground/50 transition-opacity hover:text-foreground md:opacity-0 md:group-hover:opacity-100"
+                          title={task.excluded ? t('renaidaFlow.include', 'Ta med igen') : t('renaidaFlow.exclude', 'Ta bort')}
+                          aria-label={task.excluded ? t('renaidaFlow.include', 'Ta med igen') : t('renaidaFlow.exclude', 'Ta bort')}
+                        >
+                          {task.excluded ? <RotateCcw className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -708,6 +740,30 @@ function PreviewSection({
       </div>
       {children}
     </div>
+  );
+}
+
+/** Tiny provenance icon — shows where a draft line came from (hover for detail). */
+function SourceChip({ source }: { source?: Provenance }) {
+  const { t } = useTranslation();
+  if (!source) return null;
+  const map = {
+    answer: { Icon: MessageSquare, key: 'renaidaFlow.source.answer', fb: 'Ditt svar' },
+    describe: { Icon: MessageSquare, key: 'renaidaFlow.source.describe', fb: 'Din beskrivning' },
+    photo: { Icon: Camera, key: 'renaidaFlow.source.photo', fb: 'Från foto' },
+    document: { Icon: FileText, key: 'renaidaFlow.source.document', fb: 'Från dokument' },
+    floorplan: { Icon: PenTool, key: 'renaidaFlow.source.floorplan', fb: 'Från ritning' },
+    suggestion: { Icon: Sparkles, key: 'renaidaFlow.source.suggestion', fb: 'Renaidas förslag' },
+  } as const;
+  const m = map[source.kind];
+  if (!m) return null;
+  const base = t(m.key, m.fb);
+  const label = source.fileName ? `${base}: ${source.fileName}` : base;
+  const { Icon } = m;
+  return (
+    <span title={label} aria-label={label} className="flex-shrink-0 text-muted-foreground/50">
+      <Icon className="h-3 w-3" />
+    </span>
   );
 }
 
