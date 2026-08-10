@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight, Loader2, CheckCircle, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { analytics, AnalyticsEvents, ProjectCreationMethod } from "@/lib/analytics";
 import { createProjectFromGuidedSetup, workTypeToCostCenter } from "@/services/intakeService";
 import type { WorkType } from "@/services/intakeService";
 import { createGuestProjectFromGuidedSetup } from "@/services/guestStorageService";
@@ -222,6 +223,19 @@ export function GuidedSetupWizard({
       if (!result) {
         toast.error(t("guest.projectLimit", "Guest mode is limited to 3 projects."));
         return;
+      }
+
+      // Baseline for the Renaida funnel comparison: tag the free-text flow so
+      // PostHog can break `activation_reached` down by creation_method. Guests
+      // are ephemeral (not real activation) — skip them.
+      if (!isGuest) {
+        analytics.capture(AnalyticsEvents.PROJECT_CREATED, {
+          creation_method: ProjectCreationMethod.GUIDED_WIZARD,
+          used_ai: analyzed,
+          blank_mode: blankMode,
+          room_count: rooms.length,
+          task_count: tasks.length,
+        });
       }
 
       setSubmitted(true);

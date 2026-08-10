@@ -81,6 +81,16 @@ export const AnalyticsEvents = {
   RENAIDA_AUTONOMY_CHANGED: "renaida_autonomy_changed",
   RENAIDA_SUGGESTED: "renaida_suggested",
 
+  // Renaida-led project creation (Phase 3 funnel). Measures the conversational
+  // dialog's drop-off and lets us compare it against the guided free-text flow
+  // all the way to `activation_reached` (both flows tag `project_created` with
+  // `creation_method`).
+  RENAIDA_PROJECT_STARTED: "renaida_project_started",
+  RENAIDA_PROJECT_DESCRIBE_USED: "renaida_project_describe_used",
+  RENAIDA_PROJECT_ADDONS_SHOWN: "renaida_project_addons_shown",
+  RENAIDA_PROJECT_COMPLETED: "renaida_project_completed",
+  RENAIDA_PROJECT_ABANDONED: "renaida_project_abandoned",
+
   // Quotes
   QUOTE_CREATED: "quote_created",
   QUOTE_SENT: "quote_sent",
@@ -116,6 +126,21 @@ const VALUE_EVENTS: ReadonlySet<string> = new Set<string>([
 
 export type AnalyticsEvent =
   (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents];
+
+/**
+ * How a project was created — set as `creation_method` on `project_created` so
+ * PostHog can break the activation funnel down by entry flow (e.g. does the
+ * Renaida dialog convert to `activation_reached` better than the guided wizard?).
+ */
+export const ProjectCreationMethod = {
+  RENAIDA_DIALOG: "renaida_dialog",
+  GUIDED_WIZARD: "guided_wizard",
+  MANUAL: "manual",
+  QUICK_PLAN: "quick_plan",
+} as const;
+
+export type ProjectCreationMethod =
+  (typeof ProjectCreationMethod)[keyof typeof ProjectCreationMethod];
 
 interface AnalyticsService {
   init: () => void;

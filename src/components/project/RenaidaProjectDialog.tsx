@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
+import { analytics, AnalyticsEvents, ProjectCreationMethod } from '@/lib/analytics';
 import { scaffoldProject } from '@/services/scaffoldProject';
 import { parseProjectDescription, fetchAddonSuggestions } from '@/services/renaidaProjectIntake';
 import type { WorkType } from '@/services/workTypeUtils';
@@ -65,6 +66,18 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
   const [addonsLoading, setAddonsLoading] = useState(false);
   const convRef = useRef<HTMLDivElement>(null);
 
+  // ── Phase-3 funnel instrumentation ──
+  // Refs (not state) so firing analytics never triggers re-renders. `snapshot`
+  // mirrors the latest draft each render so the close/abandon effect can read
+  // fresh values without stale-closure bugs.
+  const describeUsedRef = useRef(false);
+  const addonsSelectedRef = useRef(0);
+  const createdRef = useRef(false);
+  const prevOpenRef = useRef(false);
+  const completedFiredRef = useRef(false);
+  const addonsShownFiredRef = useRef(false);
+  const snapshotRef = useRef({ stepId: 'type' as string, rooms: 0, tasks: 0 });
+
   /** Localized work-type label — the seam that keeps task titles translated. */
   const labelFor = useMemo(
     () => (wt: WorkType) => t(`intake.workType.${wt}`, wt),
@@ -85,8 +98,58 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
       setParsing(false);
       setAddonOptions(null);
       setAddonsLoading(false);
+      describeUsedRef.current = false;
+      addonsSelectedRef.current = 0;
+      createdRef.current = false;
+      completedFiredRef.current = false;
+      addonsShownFiredRef.current = false;
+      snapshotRef.current = { stepId: 'type', rooms: 0, tasks: 0 };
     }
   }, [open]);
+
+  // Keep a fresh snapshot for the abandon event (runs every render, no deps).
+  useEffect(() => {
+    snapshotRef.current = {
+      stepId: step?.id ?? 'complete',
+      rooms: draft.rooms.length,
+      tasks: draft.tasks.length,
+    };
+  });
+
+  // Funnel: dialog opened → started; closed without creating → abandoned.
+  useEffect(() => {
+    if (open && !prevOpenRef.current) {
+      analytics.capture(AnalyticsEvents.RENAIDA_PROJECT_STARTED, { user_type: userType });
+    } else if (!open && prevOpenRef.current) {
+      if (!createdRef.current) {
+        const s = snapshotRef.current;
+        analytics.capture(AnalyticsEvents.RENAIDA_PROJECT_ABANDONED, {
+          user_type: userType,
+          last_step: s.stepId,
+          room_count: s.rooms,
+          task_count: s.tasks,
+          describe_used: describeUsedRef.current,
+        });
+      }
+    }
+    prevOpenRef.current = open;
+  }, [open, userType]);
+
+  // Funnel: reached the end of the conversation (ready to create).
+  useEffect(() => {
+    if (!open || !complete || completedFiredRef.current) return;
+    if (draft.rooms.length === 0 && draft.tasks.length === 0) return;
+    completedFiredRef.current = true;
+    analytics.capture(AnalyticsEvents.RENAIDA_PROJECT_COMPLETED, {
+      user_type: userType,
+      room_count: draft.rooms.length,
+      task_count: draft.tasks.length,
+      has_budget: Boolean(draft.totalBudget),
+      has_address: Boolean(draft.address),
+      describe_used: describeUsedRef.current,
+      addons_selected: addonsSelectedRef.current,
+    });
+  }, [open, complete, draft, userType]);
 
   // When we reach the add-ons step, fetch LLM suggestions once; fall back to
   // the curated list if the function returns nothing.
@@ -103,6 +166,7 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
     })
       .then((llm) => {
         if (cancelled) return;
+        const source = llm.length > 0 ? 'llm' : 'deterministic';
         if (llm.length > 0) {
           setAddonOptions(llm.map((s, i) => ({ id: `llm-${i}`, label: s.label, workTypes: [s.workType] })));
         } else {
@@ -110,6 +174,14 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
           setAddonOptions(
             deterministicAddons(type).map((a) => ({ id: a.id, label: t(a.labelKey), workTypes: a.workTypes }))
           );
+        }
+        if (!addonsShownFiredRef.current) {
+          addonsShownFiredRef.current = true;
+          analytics.capture(AnalyticsEvents.RENAIDA_PROJECT_ADDONS_SHOWN, {
+            user_type: userType,
+            source,
+            project_type: draft.projectType,
+          });
         }
       })
       .finally(() => {
@@ -129,6 +201,11 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
     setParsing(true);
     const parsed = await parseProjectDescription(text, i18n.language);
     setParsing(false);
+    describeUsedRef.current = true;
+    analytics.capture(AnalyticsEvents.RENAIDA_PROJECT_DESCRIBE_USED, {
+      user_type: userType,
+      parsed: Boolean(parsed),
+    });
     setFieldValue('');
     setTurns((tn) => [...tn, { message: messageOf(s), answerLabel: text }]);
 
@@ -189,6 +266,7 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
     if (chosen.length === 0) return;
     setTurns((tn) => [...tn, { message: messageOf(s), answerLabel: chosen.map((o) => o.label).join(', ') }]);
     setDraft((d) => applyAddonWorkTypes(d, chosen.map((o) => o.workTypes)));
+    addonsSelectedRef.current = chosen.length;
     setMultiSel([]);
   };
 
@@ -230,6 +308,17 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
         return;
       }
       const result = await scaffoldProject(toScaffoldInput(draft, labelFor), profile.id);
+      createdRef.current = true;
+      analytics.capture(AnalyticsEvents.PROJECT_CREATED, {
+        creation_method: ProjectCreationMethod.RENAIDA_DIALOG,
+        user_type: userType,
+        room_count: draft.rooms.length,
+        task_count: draft.tasks.length,
+        has_budget: Boolean(draft.totalBudget),
+        has_address: Boolean(draft.address),
+        describe_used: describeUsedRef.current,
+        addons_selected: addonsSelectedRef.current,
+      });
       toast.success(t('renaidaFlow.err.created', 'Projektet är skapat! 🎉'));
       onOpenChange(false);
       navigate(`/projects/${result.projectId}`);

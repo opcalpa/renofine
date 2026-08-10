@@ -9,7 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { analytics, AnalyticsEvents } from "@/lib/analytics";
+import { analytics, AnalyticsEvents, ProjectCreationMethod } from "@/lib/analytics";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -151,6 +151,7 @@ export function CreateProjectDialog({
       }
 
       analytics.capture(AnalyticsEvents.PROJECT_CREATED, {
+        creation_method: ProjectCreationMethod.MANUAL,
         has_description: Boolean(description), has_address: Boolean(address),
         has_budget: Boolean(budget), has_start_date: Boolean(startDate),
         project_type: projectType || "none",
@@ -193,6 +194,9 @@ export function CreateProjectDialog({
           name: t("projects.defaultProjectName", "My renovation"), owner_id: profile.id, status: "planning",
         }).select("id").single();
         if (error) throw error;
+        analytics.capture(AnalyticsEvents.PROJECT_CREATED, {
+          creation_method: ProjectCreationMethod.QUICK_PLAN,
+        });
         handleOpenChange(false);
         navigate(`/projects/${data.id}?tab=planning`);
       } catch (err) {
