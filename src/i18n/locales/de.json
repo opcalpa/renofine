@@ -2430,6 +2430,7 @@
     "couldntParse": "Das habe ich nicht ganz erfasst — machen wir es mit ein paar Fragen.",
     "photo": "Foto",
     "photoAdded": "Foto erfasst",
+    "photosAdded": "{{count}} Fotos erfasst",
     "photoUnreadable": "Ich konnte das Foto nicht lesen — versuch es erneut, tippe oder sprich.",
     "photoFailed": "Foto konnte nicht verarbeitet werden",
     "addon": {

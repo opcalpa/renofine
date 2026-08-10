@@ -2430,6 +2430,7 @@
     "couldntParse": "Je n'ai pas bien saisi — faisons-le avec quelques questions.",
     "photo": "Photo",
     "photoAdded": "Photo analysée",
+    "photosAdded": "{{count}} photos analysées",
     "photoUnreadable": "Je n'ai pas pu lire la photo — réessaie, écris ou parle.",
     "photoFailed": "Impossible de traiter la photo",
     "addon": {

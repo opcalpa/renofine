@@ -6966,6 +6966,7 @@
     "couldntParse": "Jag fick inte riktigt grepp om det — vi tar det med några frågor i stället.",
     "photo": "Foto",
     "photoAdded": "Foto tolkat",
+    "photosAdded": "{{count}} foton tolkade",
     "photoUnreadable": "Kunde inte läsa fotot — prova igen, skriv eller prata.",
     "photoFailed": "Kunde inte tolka fotot",
     "addon": {

@@ -6966,6 +6966,7 @@
     "couldntParse": "I couldn't quite catch that — let's do it with a few questions instead.",
     "photo": "Photo",
     "photoAdded": "Photo read",
+    "photosAdded": "{{count}} photos read",
     "photoUnreadable": "I couldn't read the photo — try again, type, or speak.",
     "photoFailed": "Couldn't process the photo",
     "addon": {

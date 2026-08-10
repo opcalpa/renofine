@@ -266,10 +266,8 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
     setParsing(false);
   };
 
-  /** Photo jumpstart: OCR the image → same text pipeline. */
-  const onPhotoSelect = async (s: Step, file: File | undefined) => {
-    if (!file || parsing) return;
-    setParsing(true);
+  /** OCR one image → its extracted text ('' on any failure). */
+  const extractPhotoText = async (file: File): Promise<string> => {
     try {
       const compressed = await compressImage(file, { maxDimension: 1600 });
       const base64 = await fileToBase64(compressed);
@@ -280,14 +278,37 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
           fileName: file.name,
         },
       });
-      const text = ((data as { text?: string } | null)?.text ?? '').trim();
-      if (error || !text) {
+      if (error) return '';
+      return ((data as { text?: string } | null)?.text ?? '').trim();
+    } catch {
+      return '';
+    }
+  };
+
+  /**
+   * Photo jumpstart: OCR one or several images in parallel, feed the combined
+   * text through the same parser. Lets a beginner snap a few phone photos
+   * (a room, a scribbled sketch, a paper quote) and get a drafted project.
+   */
+  const onPhotosSelect = async (s: Step, files: FileList | null) => {
+    const list = files ? Array.from(files) : [];
+    if (list.length === 0 || parsing) return;
+    setParsing(true);
+    try {
+      const texts = await Promise.all(list.map(extractPhotoText));
+      const readCount = texts.filter(Boolean).length;
+      const combined = texts.filter(Boolean).join('\n\n');
+      if (!combined) {
         toast.error(
           t('renaidaFlow.photoUnreadable', 'Kunde inte läsa fotot — prova igen, skriv eller prata.')
         );
         return;
       }
-      await seedFromDescription(s, text, 'photo', `📷 ${t('renaidaFlow.photoAdded', 'Foto tolkat')}`);
+      const label =
+        readCount > 1
+          ? `📷 ${t('renaidaFlow.photosAdded', '{{count}} foton tolkade', { count: readCount })}`
+          : `📷 ${t('renaidaFlow.photoAdded', 'Foto tolkat')}`;
+      await seedFromDescription(s, combined, 'photo', label);
     } catch (err) {
       console.error('RenaidaProjectDialog: photo extract failed', err);
       toast.error(t('renaidaFlow.photoFailed', 'Kunde inte tolka fotot'));
@@ -489,10 +510,10 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
                           ref={photoInputRef}
                           type="file"
                           accept="image/*"
-                          capture="environment"
+                          multiple
                           className="hidden"
                           onChange={(e) => {
-                            void onPhotoSelect(step, e.target.files?.[0]);
+                            void onPhotosSelect(step, e.target.files);
                             e.target.value = '';
                           }}
                         />
