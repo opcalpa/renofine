@@ -16,7 +16,7 @@ import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { DictationTextarea } from '@/components/shared/DictationTextarea';
 import { supabase } from '@/integrations/supabase/client';
 import { analytics, AnalyticsEvents, ProjectCreationMethod } from '@/lib/analytics';
 import { scaffoldProject } from '@/services/scaffoldProject';
@@ -367,9 +367,9 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
                   <RenaidaBubble>{messageOf(step)}</RenaidaBubble>
                   {step.id === 'describe' ? (
                     <div className="space-y-2 pl-8">
-                      <Textarea
+                      <DictationTextarea
                         autoFocus
-                        rows={3}
+                        minHeightClass="min-h-[92px]"
                         placeholder={
                           step.input.kind === 'text' && step.input.placeholderKey
                             ? t(step.input.placeholderKey)
@@ -377,7 +377,7 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
                         }
                         value={fieldValue}
                         disabled={parsing}
-                        onChange={(e) => setFieldValue(e.target.value)}
+                        onChange={setFieldValue}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) onDescribeSubmit(step);
                         }}

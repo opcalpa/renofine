@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, type KeyboardEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Mic, Square, Loader2 } from "lucide-react";
 import { useVoiceRecorder, isRecorderSupported } from "@/hooks/useVoiceRecorder";
@@ -13,6 +13,8 @@ interface DictationTextareaProps {
   /** Start recording as soon as the field mounts — for entry points whose
    * button already promised voice (e.g. the mic hero card on OwnerStart). */
   autoStartVoice?: boolean;
+  autoFocus?: boolean;
+  onKeyDown?: (e: KeyboardEvent<HTMLTextAreaElement>) => void;
 }
 
 const SPEECH_LANGS: Record<string, string> = {
@@ -36,6 +38,8 @@ export function DictationTextarea({
   disabled,
   minHeightClass = "min-h-[180px]",
   autoStartVoice = false,
+  autoFocus = false,
+  onKeyDown,
 }: DictationTextareaProps) {
   const { t, i18n } = useTranslation();
   const [listening, setListening] = useState(false);
@@ -134,6 +138,9 @@ export function DictationTextarea({
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onKeyDown={onKeyDown}
+        // eslint-disable-next-line jsx-a11y/no-autofocus
+        autoFocus={autoFocus}
         disabled={disabled}
       />
       {showMic && (
