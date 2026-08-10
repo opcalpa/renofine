@@ -1691,12 +1691,14 @@ Fas-kort: [[renaida-birth-multi-photo]] (A), [[renaida-birth-provenance-review]]
 
 ---
 id: renaida-birth-multi-photo
-status: todo
+status: done
 priority: P1
 tags: [renaida, activation, onboarding, multimodal, mobil]
 created: 2026-08-10
+updated: 2026-08-10
 ---
 ## Fas A: Multi-foto i describe-steget (mobil-först)
+**✅ LEVERERAD 2026-08-10 (`8039933`, pushad):** onPhotosSelect (FileList) → OCR:as parallellt (Promise.all/extract-document-text) → kombinerad text genom parseProjectDescription → seedar. input multiple, tog bort capture (iOS-sheet ger både kamera + multi-select). photosAdded-nyckel × 5.
 Idag tar foto-steget (Fas 2b) EN bild. Låt användaren plocka 3–5 mobilbilder (rum, handskriven skiss, offert-papper) → extrahera parallellt → seeda ihop till utkastet via samma `seedFromDescription`-kärna. Nybörjaren med bara mobilkameran kommer igång snabbt, guidat.
 
 **Ansats:** ~0,5–1 dag, ingen ny infra. `<input multiple>` + Promise.all över extract-document-text/parseProjectDescription, dedup via befintligt seen-set-mönster. Käll-etikett per bild i turn-loggen.
@@ -1705,12 +1707,16 @@ Idag tar foto-steget (Fas 2b) EN bild. Låt användaren plocka 3–5 mobilbilder
 
 ---
 id: renaida-birth-provenance-review
-status: todo
+status: doing
 priority: P1
 tags: [renaida, trust, review, keystone, agent-readable]
 created: 2026-08-10
+updated: 2026-08-10
 ---
 ## Fas B: Härkomst + per-rad-granskning (KEYSTONE)
+**✅ INCREMENT 1 LEVERERAD 2026-08-10 (`fd7322e`, lokal):** Provenance-modell (kind + fileName) på DraftRoom/DraftTask + reversibel excluded. Stämpling i applyAnswer/addons/seedDraftFromParse. Käll-ikon per rad + ta-bort/ta-med-igen i panelen. toScaffoldInput + guest hoppar excluded. 3 flow-tester (13/13).
+
+**KVAR (increment 2, innan Fas C):** (a) **mobil granskningsyta** — panelen är desktop-only (`md:flex`), Taulant ser inga käll-chips/toggle → behövs ett granska-läge före "Skapa" som funkar full-width mobilt. (b) inline fält-edit (byt arbetstyp/area per rad). (c) konflikt-som-gap-fråga (uppstår först med Fas C multi-källa).
 Utöka `ProjectDraft` med `Provenance` per rum/arbete/budget-signal. Högerpanelen (live-preview) får: käll-chip per rad ("📄 offert-badrum.pdf" / "📷 bild 2" / "💬 du sa"), klick → vad som lästes ut, per-rad acceptera/ändra/släng, konflikt-markering ("2 källor säger olika area — vilken?").
 
 **Varför keystone:** blandad-input-magi dör på felläsningar som INTE syns. Utan verifierbar härkomst är mapp-ingest en demo, inte ett verktyg. ALLT efter detta (C/C+/D) står på denna. Bygg FÖRE mapp-ingest.
