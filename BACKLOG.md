@@ -60,6 +60,8 @@ created: 2026-07-15
 ---
 ## 📁 Mapp-in → färdigt projekt (migrerings-snabbstart)
 
+**= Fas C i epicen [[renaida-projektfodelse-multimodal]].** Bygg EFTER Fas B (härkomst/granskning) — merge-lagret skriver in i samma utkast med provenance, aldrig tyst. Ingången bor i describe-steget ("släpp hela projektmappen här").
+
 Släpp en projektmapp → deterministisk motor klassar filerna (kvitto/faktura →
 `import_purchase`, offert/scope → `process-document-v2` → rum+tasks, beskrivning
 → `parse-renovation-description`-matris, foton → rum-taggade) → EN proposal-batch
@@ -1647,9 +1649,94 @@ Attackerar aktiverings-flaskhalsen (traction-check: alla slutför onboarding, ba
 
 **FAS 1 KOMPLETT.** KVAR: Carls inloggade test av dialogen (jumpstart + LLM-tillval + språk + roll).
 
-**KVAR (senare faser):**
-- **Fas 2:** multimodalt — röst ("bygg-Siri", Taulant-validerad) + foto (rum/kvitto → extrahera).
-- **Fas 3:** mät aktiverings-lyft i PostHog (Renaida-skapat projekt → activation_reached/retention vs fritext-flödet). Vinner den → default sätt att skapa projekt.
-- Guest-stöd (nu ej-gäst-gated), i18n (nu svenska inline), fler vertikaler + djupare frågor.
+**✅ FAS 3 LEVERERAD 2026-08-10 (`99ab086`, pushad):** aktiverings-instrumentering — 5 `renaida_project_*`-events (started/describe_used/addons_shown/completed/abandoned) + delad `creation_method`-prop på `project_created` (renaida_dialog/guided_wizard/manual/quick_plan; guided wizard fyrade ALDRIG project_created förut → baseline saknades). 2 PostHog-trattar byggda ([dashboard 886161](https://eu.posthog.com/project/140317/dashboard/886161)): "Aktivering per skapa-metod" + "Renaida-dialog drop-off". Tomma tills trafik flödar. **KVAR: Carl kör dialogen inloggat → verifiera events i PostHog Activity.**
+
+**✅ FAS 2 LEVERERAD 2026-08-10 (pushad):**
+- **2a röst (`2fa9c4f`):** DictationTextarea (Whisper via transcribe-audio) i describe-steget → samma parseProjectDescription. "Bygg-Siri" för projektskapande.
+- **2b foto (`bd915c8`):** kamera/fil → compressImage → extract-document-text (OCR) → SAMMA parser. Alla modaliteter (skriv/prata/fota) → en text → ett utkast. seedFromDescription utbruten som delad kärna.
+- **2c gäst-stöd (`eca8bd4`):** dialogen öppen för gäster (createGuestProjectFromGuidedSetup, samma route som guided wizard); röst dold för gäster (transcribe-audio kräver auth), text/foto/tillval funkar (verify_jwt=false / anon-JWT). Gäster fyrar ej project_created (tratten ren).
+- **2d vertikaler + expert-tillval (`e8eade5`):** 2 nya typer (Tvättstuga, Källare) + kostnadsdrivar-tillval (flytta golvbrunn → rivning+vvs, flytta vatten → vvs+rivning). Ren logik inom befintliga WorkTypes. 3 nya flow-tester (10/10).
+
+**KVAR (alla faser 0–3 levererade, live-otestade):** Carls enhets-/gäst-test stänger allt (skriv/prata/fota inloggad + gäst → skapa → verifiera PostHog).
+
+**➡️ VISIONEN FORTSÄTTER i epic [[renaida-projektfodelse-multimodal]]** (Carl 2026-08-10): "allt blir ett utkast" — mapp-ingest (blandade filer→projekt), capture-regi (Renaida ber om foto → grovskiss i space planner), härkomst-medveten granskning. Se det kortet + Fas A–D.
 
 **Avstämning:** [[project_ai_onboarding_flow]] (offert-PDF→projekt) + [[project_intake_redesign_plan]] (kund-intake fritext→AI) = angränsande vägar mot SAMMA mål (befolkat projekt via scaffoldProject). Detta är ett nytt LÄGE, ej tredje parallell tråd — alla ska konvergera på scaffoldProject-motorn.
+
+---
+id: renaida-projektfodelse-multimodal
+status: todo
+priority: P1
+tags: [renaida, activation, onboarding, project-creation, agent-readable, epic]
+created: 2026-08-10
+---
+## 🎯 EPIC: "Allt blir ett utkast" — multimodal projektfödelse
+**Carls vision 2026-08-10.** Två personas, EN mekanik: oavsett vad användaren har — en full projektmapp (offerter/ritningar/kvitton/foton) ELLER ingenting (bara mobilkameran) — möter de aldrig ett tomt formulär. Allt de ger rinner in i SAMMA levande utkast, Renaida frågar bara om luckorna, varje rad går att verifiera och justera innan projektet föds.
+
+**Detta är fortsättningen på [[renaida-project-creation-dialog]] (Fas 0–3 klara), ej ny arkitektur.** Text/röst/foto konvergerar redan till `seedDraftFromParse` → samma utkast. Mapp-analys = samma mekanik skalad 1→N filer.
+
+**Det enda strukturellt NYA:** ett härkomst-lager (`Provenance` på DraftRoom/DraftTask/budget: `{kind, fileName, confidence, conflictsWith}`) + per-rad-granskning. Det är nyckeln till HELA visionen: verifierbarhet (käll-chip per rad), konflikt-hantering (offert säger 12 m², ritning 14 → Renaida frågar, gissar ej), och "inte too much" (gap-frågor täcker bara det källorna missade).
+
+**Pipeline (mapp ELLER foton — samma väg):** Intake → Klassificera (heuristik först, mini-LLM tvetydiga) → Extrahera (parallellt per typ) → **Merge (nytt)** → Gap-frågor (`nextStep`-mönstret) → Granska (per-rad + käll-chips) → Föd (`scaffoldProject`) → Efter-actions (kvitto→PO via D1, offert→QuoteReviewDialog D2, ritning→space planner).
+
+**~80% infra finns:** classify-document, process-document-v2, process-floorplan, extract-document-text, BatchSmartUploadDialog.readDroppedItems (rekursivt mappträd), ConfirmDiff/AIProjectImportModal-mönstret, scaffoldProject. Nytt = merge+provenance-lagret + capture-regi.
+
+**Designval:** kvitton skapar EJ material i födelsen — köas som efter-action ("3 kvitton redo att bokföras — lägg in?") pga PO-invarianten + D1 redan beprövat. Strömma in rader i utkastet allteftersom (WOW > 60s-spinner). Ingången bor i describe-steget ("…eller släpp hela projektmappen här"), ej ny dialog.
+
+**Risker/beslut (Carls):** (1) merge-kvaliteten ÄR produkten → Fas B (granskning) obligatorisk FÖRE C. (2) mapp = många anrop → [[agent-cost-guardrails]] (parkerat) bör återupptas före bred release — detta är "bredare utrullning"-triggern. (3) mapp-ingest inloggat-först (tung LLM för anonyma?). (4) sekvensering: mapp = desktop/migrations-wedge, men flaskhalsen är mobil/på-bygget (Taulant) → A+B (mobil, billigt, aktiverings-nära) FÖRE C.
+
+**Mätning:** nya `creation_method`-varianter (folder_ingest, capture_directed) → samma PostHog-trattar (Fas 3) svarar om det aktiverar bättre. Eval: golden-mappar (`Test docs/` + syntetiska) → precision extraktion→utkast, gate:ad.
+
+Fas-kort: [[renaida-birth-multi-photo]] (A), [[renaida-birth-provenance-review]] (B, keystone), [[folder-ingest-quickstart]] (C), [[renaida-birth-missing-critic]] (C+), [[renaida-birth-capture-direction]] (D). Se [[project_agentic_strategy]] + [[feedback_agent_readable_architecture]].
+
+---
+id: renaida-birth-multi-photo
+status: todo
+priority: P1
+tags: [renaida, activation, onboarding, multimodal, mobil]
+created: 2026-08-10
+---
+## Fas A: Multi-foto i describe-steget (mobil-först)
+Idag tar foto-steget (Fas 2b) EN bild. Låt användaren plocka 3–5 mobilbilder (rum, handskriven skiss, offert-papper) → extrahera parallellt → seeda ihop till utkastet via samma `seedFromDescription`-kärna. Nybörjaren med bara mobilkameran kommer igång snabbt, guidat.
+
+**Ansats:** ~0,5–1 dag, ingen ny infra. `<input multiple>` + Promise.all över extract-document-text/parseProjectDescription, dedup via befintligt seen-set-mönster. Käll-etikett per bild i turn-loggen.
+
+**Serverar:** nybörjar-personan, mobil-först → Taulant-linjen. Bygg FÖRST (billigt, aktiverings-nära). Beroende: drar nytta av men kräver ej Fas B.
+
+---
+id: renaida-birth-provenance-review
+status: todo
+priority: P1
+tags: [renaida, trust, review, keystone, agent-readable]
+created: 2026-08-10
+---
+## Fas B: Härkomst + per-rad-granskning (KEYSTONE)
+Utöka `ProjectDraft` med `Provenance` per rum/arbete/budget-signal. Högerpanelen (live-preview) får: käll-chip per rad ("📄 offert-badrum.pdf" / "📷 bild 2" / "💬 du sa"), klick → vad som lästes ut, per-rad acceptera/ändra/släng, konflikt-markering ("2 källor säger olika area — vilken?").
+
+**Varför keystone:** blandad-input-magi dör på felläsningar som INTE syns. Utan verifierbar härkomst är mapp-ingest en demo, inte ett verktyg. ALLT efter detta (C/C+/D) står på denna. Bygg FÖRE mapp-ingest.
+
+**Ansats:** ~1–2 dagar, ren frontend/modell (utkastet finns, ConfirmDiff-mönstret i AIProjectImportModal återanvänds). Unit-testbart som flow:en.
+
+---
+id: renaida-birth-missing-critic
+status: todo
+priority: P2
+tags: [renaida, expert, moat, agent-readable]
+created: 2026-08-10
+---
+## Fas C+: "Saknas-något"-kritikern (expert-känslan)
+ETT LLM-anrop över det färdig-mergade utkastet: "offerten saknar rivning trots totalrenovering — lägg till?", "badrum utan tätskikt — säkert?". Renaida flaggar det du GLÖMDE, inte bara antecknar det du sa. Bygger vidare på expert-tillvalen (2d: flytta golvbrunn m.m.) — moaten = bygg-domän-systemet.
+
+**Ansats:** ~0,5 dag. Kör efter merge, förslag som accepterbara rader (samma granskning som Fas B). Billig WOW. Beroende: Fas B (granskningsytan).
+
+---
+id: renaida-birth-capture-direction
+status: todo
+priority: P2
+tags: [renaida, onboarding, floorplanner, multimodal, capture]
+created: 2026-08-10
+---
+## Fas D: Capture-regi + grovskiss (Renaida ber om foto → space planner)
+Renaida går från att TA EMOT foton till att REGISSERA dem. (1) Capture-request som stegtyp: "Fota badrummet från dörren" → mobilkameran öppnas → vision föreslår skick/objekt/arbeten. (2) Grovskiss: foto/pappersskiss → `process-floorplan` (finns: väggar/dörrar/rum) → **v2-editorns patch-executor** (byggd som "Renaidas framtida API") → utkastet får en skiss-flik. (3) Vägvisar-actions efter födelsen (open_feature): "vill du att jag visar var du bjuder in hantverkaren?".
+
+**Ansats:** ~2–3 dagar (skissen = riskdelen). Knyter ihop Floorplanner v2 Del 2 (Renaida ritar/tolkar planritningar) med projektfödelsen — två spår blir ett. Beroende: Fas B. Kan gå parallellt med C.
