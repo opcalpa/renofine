@@ -1748,3 +1748,17 @@ created: 2026-08-10
 Renaida går från att TA EMOT foton till att REGISSERA dem. (1) Capture-request som stegtyp: "Fota badrummet från dörren" → mobilkameran öppnas → vision föreslår skick/objekt/arbeten. (2) Grovskiss: foto/pappersskiss → `process-floorplan` (finns: väggar/dörrar/rum) → **v2-editorns patch-executor** (byggd som "Renaidas framtida API") → utkastet får en skiss-flik. (3) Vägvisar-actions efter födelsen (open_feature): "vill du att jag visar var du bjuder in hantverkaren?".
 
 **Ansats:** ~2–3 dagar (skissen = riskdelen). Knyter ihop Floorplanner v2 Del 2 (Renaida ritar/tolkar planritningar) med projektfödelsen — två spår blir ett. Beroende: Fas B. Kan gå parallellt med C.
+
+---
+id: dialog-width-trap-migration
+status: todo
+priority: P3
+tags: [ui, cleanup, tech-debt, dialog]
+created: 2026-08-10
+---
+## Migrera ~35 dialoger av max-w-fällan → size-prop
+**Rotorsak FIXAD & förebyggd (`7bbcef9`):** DialogContent har nu en `size`-prop (sm..7xl) som avger korrekt `md:`-prefixad max-width. CLAUDE.md dokumenterar fällan. Nya dialoger kan inte längre gå i den.
+
+**KVAR (denna cleanup):** auditen hittade **~35 befintliga dialoger** som skriver oprefixad `max-w-*` i className → de klipps tyst till `lg` (512px) på desktop oavsett vad de skrev (t.ex. `max-w-4xl` renderas som lg). Några har `!important`-hack (`!max-w-5xl` i AIDocumentImportModal, `!max-w-6xl` i BatchSmartTolkDialog) = bevis på att fällan bitit upprepat.
+
+**Ansats (INTE blank-migrering):** varje dialog behöver en titt — dess innehåll är tunat för lg sedan lansering, så att bredda till skriven bredd kan se glest/fel ut ELLER vara exakt vad författaren ville. Migrera `className="max-w-Xl"` → `size="Xl"` + screenshot-verifiera per dialog (loopen finns: standalone playwright mot dev-servern). Börja med `!important`-hacken (ren cleanup, samma rendering) + de tydligt bredd-behövande (offert/import/budget-dialoger stuck på lg). Offender-lista: PinterestPicker, NewPurchaseOrderDialog, BudgetDashboard, QuoteReviewDialog, MaterialFileAttachment, AllocateFromOrderDialog, TasksTab, FloorMapManager, RoomDetailDialog, m.fl. (kör auditen igen för full lista).
