@@ -11,13 +11,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, ArrowRight, Home, Hammer, Wallet, MapPin, Loader2, Check } from 'lucide-react';
+import { Sparkles, ArrowRight, Home, Hammer, Wallet, MapPin, Loader2, Check, Camera } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DictationTextarea } from '@/components/shared/DictationTextarea';
 import { supabase } from '@/integrations/supabase/client';
+import { compressImage } from '@/lib/compressImage';
 import { analytics, AnalyticsEvents, ProjectCreationMethod } from '@/lib/analytics';
 import { scaffoldProject } from '@/services/scaffoldProject';
 import { parseProjectDescription, fetchAddonSuggestions } from '@/services/renaidaProjectIntake';
@@ -46,6 +47,19 @@ interface Props {
   userType?: UserType;
 }
 
+/** Read a file as base64 (data-URI prefix stripped) for edge-function upload. */
+function fileToBase64(file: File | Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      resolve(result.slice(result.indexOf(',') + 1));
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
 interface Turn {
   message: string;
   answerLabel: string;
@@ -65,6 +79,7 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
   >(null);
   const [addonsLoading, setAddonsLoading] = useState(false);
   const convRef = useRef<HTMLDivElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   // ── Phase-3 funnel instrumentation ──
   // Refs (not state) so firing analytics never triggers re-renders. `snapshot`
@@ -194,20 +209,26 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
 
   const messageOf = (s: Step) => t(s.messageKey, { ...(s.messageVars ?? {}) });
 
-  /** Free-text jumpstart: LLM parses the description → seeds the draft. */
-  const onDescribeSubmit = async (s: Step) => {
-    const text = fieldValue.trim();
-    if (!text || parsing) return;
-    setParsing(true);
+  /**
+   * Jumpstart core: any modality (typed, dictated, or photographed) converges
+   * to text → the same LLM parse → the same draft seeder. `answerLabel` is what
+   * shows in the transcript as the user's turn.
+   */
+  const seedFromDescription = async (
+    s: Step,
+    text: string,
+    via: 'text' | 'photo',
+    answerLabel: string
+  ) => {
     const parsed = await parseProjectDescription(text, i18n.language);
-    setParsing(false);
     describeUsedRef.current = true;
     analytics.capture(AnalyticsEvents.RENAIDA_PROJECT_DESCRIBE_USED, {
       user_type: userType,
       parsed: Boolean(parsed),
+      via,
     });
     setFieldValue('');
-    setTurns((tn) => [...tn, { message: messageOf(s), answerLabel: text }]);
+    setTurns((tn) => [...tn, { message: messageOf(s), answerLabel }]);
 
     if (parsed) {
       const seeded = seedDraftFromParse(parsed, applyAnswer(s, { kind: 'skip' }, draft), {
@@ -231,6 +252,45 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
     // Nothing usable → fall back to the guided questions.
     setDraft((d) => applyAnswer(s, { kind: 'skip' }, d));
     setTurns((tn) => [...tn, { message: t('renaidaFlow.couldntParse'), answerLabel: '' }]);
+  };
+
+  /** Free-text jumpstart (typed or dictated — voice fills the same field). */
+  const onDescribeSubmit = async (s: Step) => {
+    const text = fieldValue.trim();
+    if (!text || parsing) return;
+    setParsing(true);
+    await seedFromDescription(s, text, 'text', text);
+    setParsing(false);
+  };
+
+  /** Photo jumpstart: OCR the image → same text pipeline. */
+  const onPhotoSelect = async (s: Step, file: File | undefined) => {
+    if (!file || parsing) return;
+    setParsing(true);
+    try {
+      const compressed = await compressImage(file, { maxDimension: 1600 });
+      const base64 = await fileToBase64(compressed);
+      const { data, error } = await supabase.functions.invoke('extract-document-text', {
+        body: {
+          fileBase64: base64,
+          mimeType: (compressed as Blob).type || file.type || 'image/jpeg',
+          fileName: file.name,
+        },
+      });
+      const text = ((data as { text?: string } | null)?.text ?? '').trim();
+      if (error || !text) {
+        toast.error(
+          t('renaidaFlow.photoUnreadable', 'Kunde inte läsa fotot — prova igen, skriv eller prata.')
+        );
+        return;
+      }
+      await seedFromDescription(s, text, 'photo', `📷 ${t('renaidaFlow.photoAdded', 'Foto tolkat')}`);
+    } catch (err) {
+      console.error('RenaidaProjectDialog: photo extract failed', err);
+      toast.error(t('renaidaFlow.photoFailed', 'Kunde inte tolka fotot'));
+    } finally {
+      setParsing(false);
+    }
   };
 
   useEffect(() => {
@@ -386,6 +446,27 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
                         <Button size="sm" onClick={() => onDescribeSubmit(step)} disabled={!fieldValue.trim() || parsing}>
                           {parsing ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : null}
                           {parsing ? t('renaidaFlow.parsing') : t('renaidaFlow.ui.continue')}
+                        </Button>
+                        <input
+                          ref={photoInputRef}
+                          type="file"
+                          accept="image/*"
+                          capture="environment"
+                          className="hidden"
+                          onChange={(e) => {
+                            void onPhotoSelect(step, e.target.files?.[0]);
+                            e.target.value = '';
+                          }}
+                        />
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => photoInputRef.current?.click()}
+                          disabled={parsing}
+                          title={t('renaidaFlow.photo', 'Fota anteckning/underlag')}
+                        >
+                          <Camera className="h-3.5 w-3.5 sm:mr-1" />
+                          <span className="hidden sm:inline">{t('renaidaFlow.photo', 'Foto')}</span>
                         </Button>
                         <Button size="sm" variant="ghost" onClick={() => onSkip(step)} disabled={parsing}>
                           {step.input.kind === 'text' && step.input.skipKey

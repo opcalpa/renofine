@@ -6954,6 +6954,10 @@
     "parsing": "Renaida läser din beskrivning…",
     "seeded": "Toppen! Jag la till {{rooms}} rum och {{tasks}} arbeten från din beskrivning. Nu fyller vi bara i det som saknas.",
     "couldntParse": "Jag fick inte riktigt grepp om det — vi tar det med några frågor i stället.",
+    "photo": "Foto",
+    "photoAdded": "Foto tolkat",
+    "photoUnreadable": "Kunde inte läsa fotot — prova igen, skriv eller prata.",
+    "photoFailed": "Kunde inte tolka fotot",
     "addon": {
       "underfloorHeat": "Golvvärme",
       "towelRail": "Handdukstork",

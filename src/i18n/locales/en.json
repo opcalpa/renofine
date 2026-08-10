@@ -6954,6 +6954,10 @@
     "parsing": "Renaida is reading your description…",
     "seeded": "Great! I added {{rooms}} room(s) and {{tasks}} task(s) from your description. Now let's just fill in what's missing.",
     "couldntParse": "I couldn't quite catch that — let's do it with a few questions instead.",
+    "photo": "Photo",
+    "photoAdded": "Photo read",
+    "photoUnreadable": "I couldn't read the photo — try again, type, or speak.",
+    "photoFailed": "Couldn't process the photo",
     "addon": {
       "underfloorHeat": "Underfloor heating",
       "towelRail": "Heated towel rail",

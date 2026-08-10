@@ -2418,6 +2418,10 @@
     "parsing": "Renaida lit ta description…",
     "seeded": "Super ! J'ai ajouté {{rooms}} pièce(s) et {{tasks}} tâche(s) d'après ta description. Complétons juste ce qui manque.",
     "couldntParse": "Je n'ai pas bien saisi — faisons-le avec quelques questions.",
+    "photo": "Photo",
+    "photoAdded": "Photo analysée",
+    "photoUnreadable": "Je n'ai pas pu lire la photo — réessaie, écris ou parle.",
+    "photoFailed": "Impossible de traiter la photo",
     "addon": {
       "underfloorHeat": "Plancher chauffant",
       "towelRail": "Sèche-serviettes",
