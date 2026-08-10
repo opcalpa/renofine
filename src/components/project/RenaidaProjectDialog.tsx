@@ -43,6 +43,8 @@ import {
   type Answer,
   type UserType,
   type Provenance,
+  type DraftTask,
+  type WorkTypeLabeller,
 } from '@/services/renaidaProjectFlow';
 
 interface Props {
@@ -609,6 +611,43 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
               {complete && (
                 <div className="space-y-3 animate-in fade-in slide-in-from-bottom-1">
                   <RenaidaBubble>{t('renaidaFlow.complete')}</RenaidaBubble>
+
+                  {/* Mobile review — the side preview panel is desktop-only, so
+                      surface the draft here (with source chips + remove) so phone
+                      users can verify and adjust before the project is created. */}
+                  <div className="space-y-3 rounded-lg border bg-muted/30 p-3 md:hidden">
+                    <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                      {t('renaidaFlow.ui.review', 'Granska innan du skapar')}
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold">{draft.projectName}</div>
+                      {draft.address && (
+                        <div className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+                          <MapPin className="h-3 w-3" /> {draft.address}
+                        </div>
+                      )}
+                    </div>
+                    {room && (
+                      <div className="flex items-center justify-between gap-2 rounded-md bg-background px-2.5 py-1.5 text-sm">
+                        <span className="flex min-w-0 items-center gap-1.5">
+                          <SourceChip source={room.source} />
+                          <span className="truncate">{room.name}</span>
+                        </span>
+                        {room.areaSqm ? (
+                          <span className="flex-shrink-0 text-xs text-muted-foreground">{room.areaSqm} m²</span>
+                        ) : null}
+                      </div>
+                    )}
+                    {draft.tasks.length > 0 && (
+                      <TaskReviewList tasks={draft.tasks} labelFor={labelFor} onToggle={toggleTaskExcluded} />
+                    )}
+                    {draft.totalBudget ? (
+                      <div className="rounded-md bg-background px-2.5 py-1.5 text-sm">
+                        {draft.totalBudget.toLocaleString('sv-SE')} kr
+                      </div>
+                    ) : null}
+                  </div>
+
                   <Button className="w-full" onClick={handleCreate} disabled={creating}>
                     {creating ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -661,31 +700,7 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
                   icon={<Hammer className="h-3.5 w-3.5" />}
                   label={`${t('renaidaFlow.ui.section.tasks')} (${taskCount})`}
                 >
-                  <div className="space-y-1.5">
-                    {draft.tasks.map((task, i) => (
-                      <div
-                        key={task.workType + i}
-                        className={`group flex items-center justify-between gap-2 rounded-md bg-background px-2.5 py-1.5 text-sm animate-in fade-in slide-in-from-bottom-1 ${
-                          task.excluded ? 'opacity-50' : ''
-                        }`}
-                        style={{ animationDelay: `${i * 40}ms` }}
-                      >
-                        <span className={`flex min-w-0 items-center gap-1.5 ${task.excluded ? 'line-through' : ''}`}>
-                          <SourceChip source={task.source} />
-                          <span className="truncate">{taskTitle(task, labelFor)}</span>
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => toggleTaskExcluded(i)}
-                          className="flex-shrink-0 text-muted-foreground/50 transition-opacity hover:text-foreground md:opacity-0 md:group-hover:opacity-100"
-                          title={task.excluded ? t('renaidaFlow.include', 'Ta med igen') : t('renaidaFlow.exclude', 'Ta bort')}
-                          aria-label={task.excluded ? t('renaidaFlow.include', 'Ta med igen') : t('renaidaFlow.exclude', 'Ta bort')}
-                        >
-                          {task.excluded ? <RotateCcw className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
-                        </button>
-                      </div>
-                    ))}
-                  </div>
+                  <TaskReviewList tasks={draft.tasks} labelFor={labelFor} onToggle={toggleTaskExcluded} />
                 </PreviewSection>
               )}
 
@@ -764,6 +779,47 @@ function SourceChip({ source }: { source?: Provenance }) {
     <span title={label} aria-label={label} className="flex-shrink-0 text-muted-foreground/50">
       <Icon className="h-3 w-3" />
     </span>
+  );
+}
+
+/** Task rows with source chip + reversible include/exclude — shared by the
+ *  desktop side-panel and the mobile review (so both stay identical). */
+function TaskReviewList({
+  tasks,
+  labelFor,
+  onToggle,
+}: {
+  tasks: DraftTask[];
+  labelFor: WorkTypeLabeller;
+  onToggle: (index: number) => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="space-y-1.5">
+      {tasks.map((task, i) => (
+        <div
+          key={task.workType + i}
+          className={`group flex items-center justify-between gap-2 rounded-md bg-background px-2.5 py-1.5 text-sm animate-in fade-in slide-in-from-bottom-1 ${
+            task.excluded ? 'opacity-50' : ''
+          }`}
+          style={{ animationDelay: `${i * 40}ms` }}
+        >
+          <span className={`flex min-w-0 items-center gap-1.5 ${task.excluded ? 'line-through' : ''}`}>
+            <SourceChip source={task.source} />
+            <span className="truncate">{taskTitle(task, labelFor)}</span>
+          </span>
+          <button
+            type="button"
+            onClick={() => onToggle(i)}
+            className="flex-shrink-0 text-muted-foreground/50 transition-opacity hover:text-foreground md:opacity-0 md:group-hover:opacity-100"
+            title={task.excluded ? t('renaidaFlow.include', 'Ta med igen') : t('renaidaFlow.exclude', 'Ta bort')}
+            aria-label={task.excluded ? t('renaidaFlow.include', 'Ta med igen') : t('renaidaFlow.exclude', 'Ta bort')}
+          >
+            {task.excluded ? <RotateCcw className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
+          </button>
+        </div>
+      ))}
+    </div>
   );
 }
 
