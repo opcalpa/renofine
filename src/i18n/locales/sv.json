@@ -6972,6 +6972,17 @@
     "photoFailed": "Kunde inte tolka fotot",
     "exclude": "Ta bort",
     "include": "Ta med igen",
+    "folder": {
+      "button": "Mapp",
+      "hint": "Har du redan underlag? Släpp hela projektmappen här (offerter, foton, anteckningar).",
+      "ingesting": "Läser mappen…",
+      "dropped": "{{count}} filer släppta",
+      "summary": "Jag läste {{files}} filer → {{rooms}} rum och {{tasks}} arbeten.",
+      "receipts": "{{count}} kvitton/fakturor — ladda upp dem som inköp inne i projektet.",
+      "floorplans": "{{count}} ritning(ar) — öppna dem i planritaren efter att projektet skapats.",
+      "nothing": "Hittade inget att lägga in — skriv, prata eller fota istället.",
+      "failed": "Kunde inte läsa mappen"
+    },
     "source": {
       "answer": "Ditt svar",
       "describe": "Din beskrivning",

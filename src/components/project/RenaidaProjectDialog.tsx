@@ -13,7 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import {
   Sparkles, ArrowRight, Home, Hammer, Wallet, MapPin, Loader2, Check, Camera,
-  MessageSquare, FileText, PenTool, X, RotateCcw,
+  MessageSquare, FileText, PenTool, X, RotateCcw, FolderUp,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -26,6 +26,8 @@ import { compressImage } from '@/lib/compressImage';
 import { analytics, AnalyticsEvents, ProjectCreationMethod } from '@/lib/analytics';
 import { scaffoldProject } from '@/services/scaffoldProject';
 import { parseProjectDescription, fetchAddonSuggestions } from '@/services/renaidaProjectIntake';
+import { ingestProjectFolder } from '@/services/ingestProjectFolder';
+import { readDroppedItems } from '@/lib/dropTree';
 import type { WorkType } from '@/services/workTypeUtils';
 import {
   emptyDraft,
@@ -83,12 +85,15 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
   const [fieldValue, setFieldValue] = useState('');
   const [creating, setCreating] = useState(false);
   const [parsing, setParsing] = useState(false);
+  const [ingesting, setIngesting] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
   const [addonOptions, setAddonOptions] = useState<
     Array<{ id: string; label: string; workTypes: WorkType[] }> | null
   >(null);
   const [addonsLoading, setAddonsLoading] = useState(false);
   const convRef = useRef<HTMLDivElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
 
   // ── Phase-3 funnel instrumentation ──
   // Refs (not state) so firing analytics never triggers re-renders. `snapshot`
@@ -120,6 +125,8 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
       setFieldValue('');
       setCreating(false);
       setParsing(false);
+      setIngesting(false);
+      setDragActive(false);
       setAddonOptions(null);
       setAddonsLoading(false);
       describeUsedRef.current = false;
@@ -324,6 +331,87 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
     }
   };
 
+  /**
+   * Folder ingest (Fas C): drop a whole project folder → the engine routes each
+   * file (photos, quotes, specs, receipts) → everything that carries scope folds
+   * into the SAME draft with per-file provenance; receipts/plans are just
+   * counted and pointed at their proper flow. Desktop wedge — mobile keeps the
+   * photo button. Guests use it too (the extract/parse endpoints pass anon-JWT).
+   */
+  const runFolderIngest = async (s: Step, files: File[]) => {
+    if (files.length === 0 || ingesting || parsing) return;
+    setIngesting(true);
+    try {
+      const base = applyAnswer(s, { kind: 'skip' }, draft); // marks 'describe' answered
+      const outcome = await ingestProjectFolder(files, base, i18n.language);
+      describeUsedRef.current = true;
+      analytics.capture(AnalyticsEvents.RENAIDA_PROJECT_DESCRIBE_USED, {
+        user_type: userType,
+        parsed: outcome.roomsAdded > 0 || outcome.tasksAdded > 0,
+        via: 'folder',
+      });
+
+      const label = `📁 ${t('renaidaFlow.folder.dropped', '{{count}} filer släppta', {
+        count: outcome.filesSeen,
+      })}`;
+      setTurns((tn) => [...tn, { message: messageOf(s), answerLabel: label }]);
+
+      const gotSomething =
+        outcome.roomsAdded > 0 ||
+        outcome.tasksAdded > 0 ||
+        outcome.receiptCount > 0 ||
+        outcome.floorplanCount > 0;
+      if (!gotSomething) {
+        setDraft(base);
+        setTurns((tn) => [
+          ...tn,
+          { message: t('renaidaFlow.folder.nothing', 'Hittade inget att lägga in — skriv, prata eller fota istället.'), answerLabel: '' },
+        ]);
+        return;
+      }
+
+      let next = outcome.draft;
+      if (!next.projectName) next = { ...next, projectName: t('renaidaFlow.name.other') };
+      setDraft(next);
+
+      const lines: string[] = [
+        t('renaidaFlow.folder.summary', 'Jag läste {{files}} filer → {{rooms}} rum och {{tasks}} arbeten.', {
+          files: outcome.filesSeen,
+          rooms: next.rooms.length,
+          tasks: next.tasks.filter((tk) => !tk.excluded).length,
+        }),
+      ];
+      if (outcome.receiptCount > 0) {
+        lines.push(
+          t('renaidaFlow.folder.receipts', '{{count}} kvitton/fakturor — ladda upp dem som inköp inne i projektet.', {
+            count: outcome.receiptCount,
+          })
+        );
+      }
+      if (outcome.floorplanCount > 0) {
+        lines.push(
+          t('renaidaFlow.folder.floorplans', '{{count}} ritning(ar) — öppna dem i planritaren efter att projektet skapats.', {
+            count: outcome.floorplanCount,
+          })
+        );
+      }
+      setTurns((tn) => [...tn, { message: lines.join(' '), answerLabel: '' }]);
+    } catch (err) {
+      console.error('RenaidaProjectDialog: folder ingest failed', err);
+      toast.error(t('renaidaFlow.folder.failed', 'Kunde inte läsa mappen'));
+    } finally {
+      setIngesting(false);
+    }
+  };
+
+  const onFolderDrop = async (s: Step, e: React.DragEvent) => {
+    e.preventDefault();
+    setDragActive(false);
+    if (ingesting || parsing) return;
+    const dropped = await readDroppedItems(e.dataTransfer);
+    await runFolderIngest(s, dropped.map((d) => d.file));
+  };
+
   // Keep the latest bubble + the action buttons in view. Deferred to the next
   // frame so the just-rendered turn (and the final "create" block) is laid out
   // before we measure scrollHeight.
@@ -509,7 +597,17 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
                 <div className="space-y-3 animate-in fade-in slide-in-from-bottom-1">
                   <RenaidaBubble>{messageOf(step)}</RenaidaBubble>
                   {step.id === 'describe' ? (
-                    <div className="space-y-2 pl-8">
+                    <div
+                      className={`space-y-2 rounded-lg pl-8 transition-colors ${
+                        dragActive ? 'bg-primary/5 ring-2 ring-dashed ring-primary/50' : ''
+                      }`}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        if (!ingesting && !parsing) setDragActive(true);
+                      }}
+                      onDragLeave={() => setDragActive(false)}
+                      onDrop={(e) => void onFolderDrop(step, e)}
+                    >
                       <DictationTextarea
                         autoFocus
                         hideVoice={isGuest}
@@ -520,14 +618,18 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
                             : undefined
                         }
                         value={fieldValue}
-                        disabled={parsing}
+                        disabled={parsing || ingesting}
                         onChange={setFieldValue}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) onDescribeSubmit(step);
                         }}
                       />
-                      <div className="flex items-center gap-2">
-                        <Button size="sm" onClick={() => onDescribeSubmit(step)} disabled={!fieldValue.trim() || parsing}>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => onDescribeSubmit(step)}
+                          disabled={!fieldValue.trim() || parsing || ingesting}
+                        >
                           {parsing ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : null}
                           {parsing ? t('renaidaFlow.parsing') : t('renaidaFlow.ui.continue')}
                         </Button>
@@ -546,18 +648,62 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
                           size="sm"
                           variant="outline"
                           onClick={() => photoInputRef.current?.click()}
-                          disabled={parsing}
+                          disabled={parsing || ingesting}
                           title={t('renaidaFlow.photo', 'Fota anteckning/underlag')}
                         >
                           <Camera className="h-3.5 w-3.5 sm:mr-1" />
                           <span className="hidden sm:inline">{t('renaidaFlow.photo', 'Foto')}</span>
                         </Button>
-                        <Button size="sm" variant="ghost" onClick={() => onSkip(step)} disabled={parsing}>
+                        {/* Folder ingest — desktop wedge; hidden on phones (no folder DnD). */}
+                        <input
+                          ref={(el) => {
+                            folderInputRef.current = el;
+                            if (el) {
+                              el.setAttribute('webkitdirectory', '');
+                              el.setAttribute('directory', '');
+                            }
+                          }}
+                          type="file"
+                          multiple
+                          className="hidden"
+                          onChange={(e) => {
+                            void runFolderIngest(step, Array.from(e.target.files ?? []));
+                            e.target.value = '';
+                          }}
+                        />
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="hidden sm:inline-flex"
+                          onClick={() => folderInputRef.current?.click()}
+                          disabled={parsing || ingesting}
+                          title={t('renaidaFlow.folder.button', 'Släpp en projektmapp')}
+                        >
+                          {ingesting ? (
+                            <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <FolderUp className="h-3.5 w-3.5 sm:mr-1" />
+                          )}
+                          <span className="hidden sm:inline">
+                            {ingesting
+                              ? t('renaidaFlow.folder.ingesting', 'Läser mappen…')
+                              : t('renaidaFlow.folder.button', 'Mapp')}
+                          </span>
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => onSkip(step)}
+                          disabled={parsing || ingesting}
+                        >
                           {step.input.kind === 'text' && step.input.skipKey
                             ? t(step.input.skipKey)
                             : t('renaidaFlow.skip.skip')}
                         </Button>
                       </div>
+                      <p className="hidden text-[11px] text-muted-foreground/70 sm:block">
+                        {t('renaidaFlow.folder.hint', 'Har du redan underlag? Släpp hela projektmappen här (offerter, foton, anteckningar).')}
+                      </p>
                     </div>
                   ) : step.id === 'addons' ? (
                     <div className="space-y-2.5 pl-8">

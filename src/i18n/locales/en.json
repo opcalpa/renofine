@@ -6972,6 +6972,17 @@
     "photoFailed": "Couldn't process the photo",
     "exclude": "Remove",
     "include": "Add back",
+    "folder": {
+      "button": "Folder",
+      "hint": "Already have paperwork? Drop the whole project folder here (quotes, photos, notes).",
+      "ingesting": "Reading the folder…",
+      "dropped": "{{count}} files dropped",
+      "summary": "I read {{files}} files → {{rooms}} rooms and {{tasks}} tasks.",
+      "receipts": "{{count}} receipts/invoices — upload them as purchases inside the project.",
+      "floorplans": "{{count}} drawing(s) — open them in the planner after the project is created.",
+      "nothing": "I couldn't find anything to add — type, speak, or take a photo instead.",
+      "failed": "Couldn't read the folder"
+    },
     "source": {
       "answer": "Your answer",
       "describe": "Your description",

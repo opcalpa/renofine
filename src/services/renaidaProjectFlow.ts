@@ -499,3 +499,66 @@ export function seedDraftFromParse(
     answered: [...answered],
   };
 }
+
+/**
+ * Merge an LLM-parsed result INTO an existing draft (folder ingest, Fas C).
+ * Unlike seedDraftFromParse (which replaces), this ADDS to whatever the draft
+ * already holds — deduping rooms by name and tasks by workType:roomName — and
+ * stamps each newly-added line with its file provenance. Folding one file's
+ * parse after another this way is how a whole dropped folder becomes one draft
+ * without any source clobbering another. Pure, so it is unit-testable.
+ */
+export function mergeParseIntoDraft(
+  parsed: AIParsedResult,
+  draft: ProjectDraft,
+  opts: { sourceKind: ProvenanceKind; fileName?: string }
+): ProjectDraft {
+  const known = new Set<WorkType>(getWorkTypes().map((w) => w.value));
+  const source: Provenance = { kind: opts.sourceKind, fileName: opts.fileName };
+
+  const next: ProjectDraft = {
+    ...draft,
+    rooms: [...draft.rooms],
+    tasks: [...draft.tasks],
+    answered: [...draft.answered],
+  };
+
+  const roomKey = (name: string) => name.trim().toLowerCase();
+  // Map lowercased name → the canonical display name already in the draft, so a
+  // differently-cased room in a later file ("kök" vs "Kök") folds into the same
+  // room AND its tasks reference the name that actually exists in the room list.
+  const canonical = new Map<string, string>();
+  next.rooms.forEach((r) => canonical.set(roomKey(r.name), r.name));
+  const addRoom = (name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed || canonical.has(roomKey(trimmed))) return;
+    canonical.set(roomKey(trimmed), trimmed);
+    next.rooms.push({ name: trimmed, source });
+  };
+  parsed.rooms.forEach((r) => addRoom(r.name));
+  (parsed.otherSpaces ?? []).forEach((r) => addRoom(r.name));
+  const canonRoom = (name: string | null): string | null =>
+    name == null ? null : canonical.get(roomKey(name)) ?? name.trim();
+
+  const taskSeen = new Set(next.tasks.map((t) => `${t.workType}:${t.roomName ?? ''}`));
+  const addTask = (wt: WorkType, roomName: string | null) => {
+    if (!known.has(wt)) return;
+    const key = `${wt}:${roomName ?? ''}`;
+    if (taskSeen.has(key)) return;
+    taskSeen.add(key);
+    next.tasks.push({ workType: wt, roomName, costCenter: workTypeToCostCenter(wt), source });
+  };
+  parsed.globalWorkTypes.forEach((wt) => addTask(wt, null));
+  parsed.rooms.forEach((r) => r.suggestedWorkTypes.forEach((wt) => addTask(wt, canonRoom(r.name))));
+
+  // The first usable ingest fixes the project shape so the flow skips the
+  // type/scope questions and only asks for what a folder can't give (size,
+  // address, budget). Never override a type the user already chose.
+  if (!next.projectType && (next.rooms.length > 0 || next.tasks.length > 0)) {
+    next.projectType = 'other';
+  }
+  for (const id of ['describe', 'scope']) {
+    if (!next.answered.includes(id)) next.answered.push(id);
+  }
+  return next;
+}
