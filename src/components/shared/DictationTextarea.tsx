@@ -15,6 +15,9 @@ interface DictationTextareaProps {
   autoStartVoice?: boolean;
   autoFocus?: boolean;
   onKeyDown?: (e: KeyboardEvent<HTMLTextAreaElement>) => void;
+  /** Hide the mic entirely — e.g. for guests, whose calls can't authenticate
+   * against the server transcription function. Text (and photo) still work. */
+  hideVoice?: boolean;
 }
 
 const SPEECH_LANGS: Record<string, string> = {
@@ -40,6 +43,7 @@ export function DictationTextarea({
   autoStartVoice = false,
   autoFocus = false,
   onKeyDown,
+  hideVoice = false,
 }: DictationTextareaProps) {
   const { t, i18n } = useTranslation();
   const [listening, setListening] = useState(false);
@@ -122,13 +126,13 @@ export function DictationTextarea({
   // Auto-start once on mount when the entry point promised voice.
   const autoStartedRef = useRef(false);
   useEffect(() => {
-    if (!autoStartVoice || autoStartedRef.current || disabled) return;
+    if (!autoStartVoice || autoStartedRef.current || disabled || hideVoice) return;
     autoStartedRef.current = true;
     if (isRecorderSupported()) void recorder.start();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoStartVoice, disabled]);
+  }, [autoStartVoice, disabled, hideVoice]);
 
-  const showMic = isRecorderSupported() || hasSpeech;
+  const showMic = !hideVoice && (isRecorderSupported() || hasSpeech);
   const active = listening || recorder.state === "recording";
 
   return (

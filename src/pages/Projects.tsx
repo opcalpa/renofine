@@ -634,19 +634,17 @@ const Projects = () => {
                   }
                 />
               )}
-              {!isGuest && (
-                <Button
-                  variant="outline"
-                  className="border-primary/40 text-primary hover:bg-primary/5"
-                  onClick={() => setRenaidaOpen(true)}
-                  title={t('projects.createWithRenaida', 'Skapa med Renaida (beta)')}
-                >
-                  <Sparkles className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">
-                    {t('projects.createWithRenaida', 'Skapa med Renaida')}
-                  </span>
-                </Button>
-              )}
+              <Button
+                variant="outline"
+                className="border-primary/40 text-primary hover:bg-primary/5"
+                onClick={() => setRenaidaOpen(true)}
+                title={t('projects.createWithRenaida', 'Skapa med Renaida (beta)')}
+              >
+                <Sparkles className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">
+                  {t('projects.createWithRenaida', 'Skapa med Renaida')}
+                </span>
+              </Button>
               <Button onClick={() => setShowGuidedSetup(true)}>
                 <Plus className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">
@@ -657,7 +655,12 @@ const Projects = () => {
               <RenaidaProjectDialog
                 open={renaidaOpen}
                 onOpenChange={setRenaidaOpen}
-                userType={isContractor ? 'contractor' : 'homeowner'}
+                userType={
+                  (isGuest ? guestRole : profile?.onboarding_user_type) === 'contractor'
+                    ? 'contractor'
+                    : 'homeowner'
+                }
+                isGuest={isGuest}
               />
               <CreateProjectDialog
                 open={dialogOpen}

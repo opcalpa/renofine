@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DictationTextarea } from '@/components/shared/DictationTextarea';
 import { supabase } from '@/integrations/supabase/client';
+import { createGuestProjectFromGuidedSetup, canCreateGuestProject } from '@/services/guestStorageService';
 import { compressImage } from '@/lib/compressImage';
 import { analytics, AnalyticsEvents, ProjectCreationMethod } from '@/lib/analytics';
 import { scaffoldProject } from '@/services/scaffoldProject';
@@ -45,6 +46,8 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   /** Gates the framing (homeowner vs contractor). Defaults to homeowner. */
   userType?: UserType;
+  /** Guests create local (localStorage) projects and can't use server voice. */
+  isGuest?: boolean;
 }
 
 /** Read a file as base64 (data-URI prefix stripped) for edge-function upload. */
@@ -65,7 +68,7 @@ interface Turn {
   answerLabel: string;
 }
 
-export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner' }: Props) {
+export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner', isGuest = false }: Props) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [draft, setDraft] = useState<ProjectDraft>(emptyDraft());
@@ -349,6 +352,40 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
   const handleCreate = async () => {
     setCreating(true);
     try {
+      // Guests get a local (localStorage) project — same conversational birth,
+      // migrated to their account on signup. No server scaffold / profile.
+      if (isGuest) {
+        if (!canCreateGuestProject()) {
+          toast.error(t('guest.projectLimit', 'Gästläge är begränsat till några projekt.'));
+          setCreating(false);
+          return;
+        }
+        const result = createGuestProjectFromGuidedSetup({
+          projectName: draft.projectName?.trim() || t('renaidaFlow.name.other'),
+          address: draft.address,
+          rooms: draft.rooms.map((r) => ({
+            name: r.name,
+            area_sqm: r.areaSqm ?? undefined,
+            ceiling_height_mm: r.ceilingHeightMm ?? undefined,
+          })),
+          tasks: draft.tasks.map((task) => ({
+            workTypeLabel: taskTitle(task, labelFor),
+            roomName: task.roomName,
+          })),
+        });
+        if (!result) {
+          toast.error(t('guest.projectLimit', 'Gästläge är begränsat till några projekt.'));
+          setCreating(false);
+          return;
+        }
+        createdRef.current = true;
+        // Guests can't activate — keep them out of the activation funnel (no project_created).
+        toast.success(t('renaidaFlow.err.created', 'Projektet är skapat! 🎉'));
+        onOpenChange(false);
+        navigate(`/projects/${result.projectId}`);
+        return;
+      }
+
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -429,6 +466,7 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
                     <div className="space-y-2 pl-8">
                       <DictationTextarea
                         autoFocus
+                        hideVoice={isGuest}
                         minHeightClass="min-h-[92px]"
                         placeholder={
                           step.input.kind === 'text' && step.input.placeholderKey
