@@ -27,10 +27,37 @@ const DialogOverlay = React.forwardRef<
 ));
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
+/**
+ * Desktop width of a dialog. ALWAYS set width via this prop, never via a
+ * `max-w-*` class in `className`.
+ *
+ * Why: the mobile layout is a full-width bottom sheet, so the desktop cap is a
+ * *responsive* `md:max-w-lg` in the base. A plain `max-w-2xl` in `className` is
+ * unprefixed, so at `md+` the base's `md:max-w-lg` wins and silently clips your
+ * dialog back to `lg` (the recurring "why is my popup too narrow / cut off"
+ * bug). The `size` prop emits a correctly `md:`-prefixed class that overrides
+ * the base — and keeps mobile full-width. (Same trap exists for padding: use a
+ * `md:`-prefixed class if you need to change `p-6`.)
+ */
+export type DialogSize = "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "5xl" | "6xl" | "7xl";
+
+const DIALOG_SIZE: Record<DialogSize, string> = {
+  sm: "md:max-w-sm",
+  md: "md:max-w-md",
+  lg: "md:max-w-lg",
+  xl: "md:max-w-xl",
+  "2xl": "md:max-w-2xl",
+  "3xl": "md:max-w-3xl",
+  "4xl": "md:max-w-4xl",
+  "5xl": "md:max-w-5xl",
+  "6xl": "md:max-w-6xl",
+  "7xl": "md:max-w-7xl",
+};
+
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & { size?: DialogSize }
+>(({ className, children, size, ...props }, ref) => (
   <DialogPortal>
     <DialogOverlay />
     <DialogPrimitive.Content
@@ -38,6 +65,9 @@ const DialogContent = React.forwardRef<
       aria-describedby={undefined}
       className={cn(
         "fixed inset-x-0 bottom-0 z-50 grid w-full max-h-[92vh] overflow-y-auto rounded-t-2xl border border-border/60 bg-card p-4 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom md:inset-auto md:left-[50%] md:top-[50%] md:translate-x-[-50%] md:translate-y-[-50%] md:max-w-lg md:max-h-[85vh] md:rounded-[14px] md:p-6 md:data-[state=closed]:zoom-out-95 md:data-[state=open]:zoom-in-95 md:data-[state=closed]:slide-out-to-left-1/2 md:data-[state=closed]:slide-out-to-top-[48%] md:data-[state=open]:slide-in-from-left-1/2 md:data-[state=open]:slide-in-from-top-[48%]",
+        // `size` wins over the base md:max-w-lg (twMerge dedupes same modifier);
+        // placed before className so a caller can still override if truly needed.
+        size && DIALOG_SIZE[size],
         className,
       )}
       {...props}

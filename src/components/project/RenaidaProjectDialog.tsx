@@ -469,7 +469,7 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="gap-0 overflow-hidden p-0 sm:h-[640px] md:max-w-5xl md:p-0 md:h-[680px]">
+      <DialogContent size="5xl" className="gap-0 overflow-hidden p-0 sm:h-[640px] md:p-0 md:h-[680px]">
         <div className="grid h-full grid-cols-1 md:grid-cols-[1fr_minmax(280px,340px)]">
           {/* ── Conversation ── */}
           <div className="flex min-h-0 flex-col border-r">
