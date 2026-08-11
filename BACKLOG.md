@@ -1772,6 +1772,10 @@ created: 2026-08-11
 
 **Scope:** (1) audit av contractor-vägen genom dialogen+mapp-ingest (vilka frågor är fel/saknas för proffs: kundens namn/adress? moms ex? offert-utkast?), (2) byggar-specifika conditional-frågor + tillval, (3) post-birth-vägvisning per roll ("skapa offert" för byggare / "bjud in hantverkare" för hemägare), (4) dual-view-gate-regeln ([[feedback_dual_view_gate]]) verifierad över alla nya ytor.
 
+**AUDIT KLAR 2026-08-11 (kod-verifierad):** (a) roll-differentiering = BARA inramning (3 i18n-nycklar + renaida-suggest-promptens userType-gren; samma träd/chips/tillval/avslut); (b) rollen hämtas rätt (onboarding_user_type, Projects.tsx:658); (c) projects SAKNAR kundfält — kunden bor i quotes.client_id → byggaren får aldrig kund-frågan; (d) Renaidas budget→total_budget (har EJ CreateProjectDialogs dubbelskrivningsbugg, men customer_price/owner_cost-oklarheten kvarstår appen-brett — se user-type-builder-budget-fel-falt); (e) mapp-ingest roll-blind (byggarens egen offert-PDF → tasks, borde kunna bli hans offert-objekt via D2-handoffen); (f) /quotes/new?projectId&prepopulate=true&taskIds=… fanns färdig + contractor-gated i routern + scaffoldProject returnerar taskIds.
+
+**✅ K1 LEVERERAD 2026-08-11:** post-birth offert-erbjudande — byggare skapar via Renaida → "Vill du att jag förbereder en offert till din kund av arbetena?" → /quotes/new förifylld med alla nyskapade tasks. `renaida_quote_offer`-event (shown/accepted/declined). KVAR (Carls prio): **K2** kund-steg i contractor-trädet (namn → projektnamn + offertens kundfält), **K3** byggar-tillval (kuraterade listan är hemägar-vinklad — proffs vill ha etablering/rivning/bortforsling/ÄTA-buffert), **K4** roll-medveten mapp-ingest (egen offert → offert-import), **K5** faktura/ÄTA-vägvisning i drift ([[renaida-role-gated-actions]]).
+
 ---
 id: dialog-width-trap-migration
 status: todo

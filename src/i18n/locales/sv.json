@@ -6888,6 +6888,11 @@
       "newRoomPh": "Rummets namn",
       "projectWide": "Lämna projektövergripande"
     },
+    "quoteOffer": {
+      "message": "Projektet är skapat! 🎉 Vill du att jag förbereder en offert till din kund av arbetena?",
+      "accept": "Förbered offert",
+      "decline": "Öppna projektet"
+    },
     "complete": "Perfekt — då har jag allt jag behöver. Ditt projekt är redo att skapas. Du kan justera allt efteråt.",
     "type": {
       "bathroom": "Badrum",

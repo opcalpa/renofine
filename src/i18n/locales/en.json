@@ -6888,6 +6888,11 @@
       "newRoomPh": "Room name",
       "projectWide": "Keep project-wide"
     },
+    "quoteOffer": {
+      "message": "Your project is created! 🎉 Want me to prepare a customer quote from the tasks?",
+      "accept": "Prepare quote",
+      "decline": "Open the project"
+    },
     "complete": "Perfect — I have everything I need. Your project is ready to create. You can adjust anything afterwards.",
     "type": {
       "bathroom": "Bathroom",

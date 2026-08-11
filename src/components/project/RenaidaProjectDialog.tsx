@@ -97,6 +97,8 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
   const pendingPurchasesRef = useRef<ImportPurchaseAction[]>([]);
   // Analyzed floor-plan images → sketches in the planner at creation (Fas D).
   const pendingSketchesRef = useRef<PendingSketch[]>([]);
+  // Contractor post-birth: offer to prefill a customer quote from the new tasks.
+  const [postCreate, setPostCreate] = useState<{ projectId: string; taskIds: string[] } | null>(null);
   const [addonOptions, setAddonOptions] = useState<
     Array<{ id: string; label: string; workTypes: WorkType[] }> | null
   >(null);
@@ -140,6 +142,7 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
       setGapAddingRoom(false);
       pendingPurchasesRef.current = [];
       pendingSketchesRef.current = [];
+      setPostCreate(null);
       setAddonOptions(null);
       setAddonsLoading(false);
       describeUsedRef.current = false;
@@ -462,7 +465,7 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
       el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
     });
     return () => cancelAnimationFrame(raf);
-  }, [turns.length, step?.id, complete]);
+  }, [turns.length, step?.id, complete, postCreate]);
 
   const submit = (s: Step, answer: Answer, answerLabel: string) => {
     // The 'type' step seeds a localized room + project name into the draft.
@@ -653,6 +656,20 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
         sketches_imported: pendingSketchesRef.current.length,
       });
       toast.success(t('renaidaFlow.err.created', 'Projektet är skapat! 🎉'));
+
+      // Proactive contractor help (K1): the project was born with tasks — offer
+      // to prefill a customer quote from them (same prepopulate deep-link as
+      // CreateQuoteDialog; /quotes/new is contractor-gated in the router).
+      if (userType === 'contractor' && result.taskIds.length > 0) {
+        analytics.capture(AnalyticsEvents.RENAIDA_QUOTE_OFFER, {
+          action: 'shown',
+          task_count: result.taskIds.length,
+        });
+        setPostCreate({ projectId: result.projectId, taskIds: result.taskIds });
+        setCreating(false);
+        return;
+      }
+
       onOpenChange(false);
       navigate(`/projects/${result.projectId}`);
     } catch (err) {
@@ -660,6 +677,20 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
       toast.error(t('renaidaFlow.err.failed', 'Kunde inte skapa projektet'));
       setCreating(false);
     }
+  };
+
+  const onQuoteOffer = (accepted: boolean) => {
+    if (!postCreate) return;
+    analytics.capture(AnalyticsEvents.RENAIDA_QUOTE_OFFER, {
+      action: accepted ? 'accepted' : 'declined',
+      task_count: postCreate.taskIds.length,
+    });
+    onOpenChange(false);
+    navigate(
+      accepted
+        ? `/quotes/new?projectId=${postCreate.projectId}&prepopulate=true&taskIds=${postCreate.taskIds.join(',')}`
+        : `/projects/${postCreate.projectId}`
+    );
   };
 
   const room = draft.rooms[0];
@@ -913,7 +944,27 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
                 </div>
               )}
 
-              {complete && (
+              {postCreate && (
+                <div className="space-y-3 animate-in fade-in slide-in-from-bottom-1">
+                  <RenaidaBubble>
+                    {t(
+                      'renaidaFlow.quoteOffer.message',
+                      'Projektet är skapat! 🎉 Vill du att jag förbereder en offert till din kund av arbetena?'
+                    )}
+                  </RenaidaBubble>
+                  <div className="flex flex-col gap-2 pl-8 sm:flex-row">
+                    <Button onClick={() => onQuoteOffer(true)}>
+                      <FileText className="mr-2 h-4 w-4" />
+                      {t('renaidaFlow.quoteOffer.accept', 'Förbered offert')}
+                    </Button>
+                    <Button variant="outline" onClick={() => onQuoteOffer(false)}>
+                      {t('renaidaFlow.quoteOffer.decline', 'Öppna projektet')}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {complete && !postCreate && (
                 <div className="space-y-3 animate-in fade-in slide-in-from-bottom-1">
                   <RenaidaBubble>{t('renaidaFlow.complete')}</RenaidaBubble>
 
