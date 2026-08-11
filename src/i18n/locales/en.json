@@ -6985,6 +6985,8 @@
       "dropped": "{{count}} files dropped",
       "summary": "I read {{files}} files → {{rooms}} rooms and {{tasks}} tasks.",
       "receipts": "{{count}} receipts/invoices — upload them as purchases inside the project.",
+      "receiptsImport": "{{count}} receipts/invoices — I'll create them as purchases when you create the project.",
+      "purchasesCreated": "{{count}} purchase(s) created from your receipts.",
       "floorplans": "{{count}} drawing(s) — open them in the planner after the project is created.",
       "unreadable": "I couldn't read {{count}} file(s).",
       "nothing": "I couldn't find anything to add — type, speak, or take a photo instead.",

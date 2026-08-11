@@ -10,8 +10,7 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import { createRequestPurchase } from "@/lib/createRequestPurchase";
-import { generateDocumentFilename } from "@/services/receiptAnalysisService";
-import { takeAttachment } from "./documentCapture";
+import { importPurchaseOrder } from "./importPurchaseOrder";
 import type { ActionableProposal, AgentProposal, UndoOp } from "./types";
 import { isActionable } from "./types";
 
@@ -219,136 +218,13 @@ async function applyOne(
     }
 
     case "import_purchase": {
-      // Mirrors QuickReceiptCaptureModal's ai_receipt/ai_invoice branches:
-      // 1 PO (status=delivered) + N material rows, so every scanned document
-      // lives in Inköp as a first-class order (Carl's decision 2026-07-09).
-      const isInvoice = action.documentType === "invoice";
-      const dateStr = action.documentDate ?? new Date().toISOString().slice(0, 10);
-      const file = takeAttachment(action.attachmentKey);
-      // Unique suffix: the same receipt scanned twice yields the same
-      // vendor+date+amount name — without it the second upload overwrites the
-      // first order's file, and undoing one import would delete the other's
-      // attachment (path-keyed cleanup).
-      const isPdf = !!file && ((file.type || "").includes("pdf") || file.name.toLowerCase().endsWith(".pdf"));
-      const filename = generateDocumentFilename(
-        action.documentType, action.vendorName, dateStr, action.total, action.invoiceNumber,
-      ).replace(/\.jpg$/, `_${crypto.randomUUID().slice(0, 8)}.${isPdf ? "pdf" : "jpg"}`);
-      const storagePath = file
-        ? `projects/${projectId}/${isInvoice ? "Fakturor" : "Kvitton"}/${filename}`
-        : null;
-
-      // ROT semantics (Carl 2026-07-12): ROT lowers what the user actually pays,
-      // so the order total = NET (gross − ROT deduction). We store the deduction
-      // separately so the budget can surface all utilized ROT in its own column;
-      // gross is derivable as total + rot_amount. Material line rows stay at their
-      // truthful gross line values (the receipt/invoice prints gross lines).
-      const grossTotal = action.total;
-      const rotAmount = action.rotAmount ?? 0;
-      const netTotal = Math.max(0, grossTotal - rotAmount);
-
-      const { data: po, error: poError } = await supabase
-        .from("purchase_orders")
-        .insert({
-          project_id: projectId,
-          vendor_name: action.vendorName,
-          total: netTotal,
-          rot_amount: rotAmount || null,
-          status: "delivered",
-          source: isInvoice ? "ai_invoice" : "ai_receipt",
-          delivered_at: dateStr,
-          ordered_at: dateStr,
-          invoice_number: isInvoice ? action.invoiceNumber ?? null : null,
-          ocr_number: isInvoice ? action.ocrNumber ?? null : null,
-          invoice_due_date: isInvoice ? action.dueDate ?? null : null,
-          receipt_file_path: storagePath,
-          created_by_user_id: profileId,
-        })
-        .select("id")
-        .single();
-      if (poError || !po) throw new Error(poError?.message ?? "Kunde inte skapa inköpsorder");
-
-      // Invoice lines await payment (billed/0); receipt lines are already paid.
-      const matRows = (action.lineItems.length
-        ? action.lineItems.map((li) => ({
-            name: li.description,
-            quantity: li.quantity || 1,
-            price_per_unit: li.unitPrice,
-            price_total: li.total,
-            paid_amount: isInvoice ? 0 : li.total ?? 0,
-          }))
-        : [{
-            name: `${isInvoice ? "Faktura" : "Kvitto"} - ${action.vendorName}`,
-            quantity: 1,
-            price_per_unit: action.total,
-            price_total: action.total,
-            paid_amount: isInvoice ? 0 : action.total,
-          }]
-      ).map((row) => ({
-        ...row,
-        project_id: projectId,
-        purchase_order_id: po.id,
-        vendor_name: action.vendorName,
-        unit: "st",
-        status: isInvoice ? "billed" : "paid",
-        // D3: room attribution from the user's capture-time words — same shape
-        // as the manual "allocate order to room" action (room lives on the lines).
-        room_id: action.roomId ?? null,
-        created_by_user_id: profileId,
-      }));
-
-      const { data: createdMats, error: matError } = await supabase
-        .from("materials").insert(matRows).select("id");
-      if (matError) {
-        // Don't leave a half-imported order behind — the PO invariant says
-        // an order without its lines is a lie in the purchase list.
-        await supabase.from("purchase_orders").delete().eq("id", po.id);
-        throw new Error(matError.message);
-      }
-      const materialIds = (createdMats ?? []).map((m) => m.id);
-
-      // Upload the document image + link it, same shape as the manual scan flow.
-      if (file && storagePath) {
-        const { error: uploadError } = await supabase.storage
-          .from("project-files")
-          .upload(storagePath, file, { upsert: true });
-        if (!uploadError && materialIds[0]) {
-          void supabase.from("task_file_links").insert({
-            project_id: projectId,
-            file_path: storagePath,
-            file_name: filename,
-            file_type: action.documentType,
-            file_size: file.size,
-            mime_type: file.type,
-            linked_by_user_id: profileId,
-            material_id: materialIds[0],
-          }).then(() => {}, () => {});
-          // Photo gallery is images-only — a PDF invoice still gets its
-          // task_file_links row above, which is what the Files surfaces read.
-          if (!isPdf) {
-            const { data: { publicUrl } } = supabase.storage
-              .from("project-files").getPublicUrl(storagePath);
-            void supabase.from("photos").insert({
-              linked_to_type: "material",
-              linked_to_id: materialIds[0],
-              url: publicUrl,
-              caption: filename,
-              uploaded_by_user_id: profileId,
-            }).then(() => {}, () => {});
-          }
-        }
-      }
-
-      logActivity(projectId, profileId, "renaida_purchase_import", "purchase_order", po.id, action.vendorName, {
-        documentType: action.documentType,
-        total: action.total,
-        lines: action.lineItems.length,
-      });
-      return {
-        kind: "delete_import_purchase",
-        purchaseOrderId: po.id,
-        materialIds,
-        filePath: file ? storagePath : null,
-      };
+      // Single source: the same write powers Renaida-led project birth (folder
+      // ingest, Fas C inc 3). See importPurchaseOrder for the PO-invariant/ROT
+      // semantics that used to live inline here.
+      const { purchaseOrderId, materialIds, filePath } = await importPurchaseOrder(
+        projectId, profileId, action,
+      );
+      return { kind: "delete_import_purchase", purchaseOrderId, materialIds, filePath };
     }
 
     case "log_time": {

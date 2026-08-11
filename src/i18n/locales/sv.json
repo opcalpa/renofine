@@ -6985,6 +6985,8 @@
       "dropped": "{{count}} filer släppta",
       "summary": "Jag läste {{files}} filer → {{rooms}} rum och {{tasks}} arbeten.",
       "receipts": "{{count}} kvitton/fakturor — ladda upp dem som inköp inne i projektet.",
+      "receiptsImport": "{{count}} kvitton/fakturor — jag skapar dem som inköp när du skapar projektet.",
+      "purchasesCreated": "{{count}} inköp skapade från dina kvitton.",
       "floorplans": "{{count}} ritning(ar) — öppna dem i planritaren efter att projektet skapats.",
       "unreadable": "{{count}} filer kunde jag inte läsa.",
       "nothing": "Hittade inget att lägga in — skriv, prata eller fota istället.",

@@ -27,6 +27,7 @@ import { analytics, AnalyticsEvents, ProjectCreationMethod } from '@/lib/analyti
 import { scaffoldProject } from '@/services/scaffoldProject';
 import { parseProjectDescription, fetchAddonSuggestions } from '@/services/renaidaProjectIntake';
 import { ingestProjectFolder } from '@/services/ingestProjectFolder';
+import { importPurchaseOrder, type ImportPurchaseAction } from '@/services/agent/importPurchaseOrder';
 import { readDroppedItems } from '@/lib/dropTree';
 import type { WorkType } from '@/services/workTypeUtils';
 import {
@@ -90,6 +91,8 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
   const [ingesting, setIngesting] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [gapAddingRoom, setGapAddingRoom] = useState(false);
+  // Fully-extracted receipts from a dropped folder → real POs at creation (inc 3).
+  const pendingPurchasesRef = useRef<ImportPurchaseAction[]>([]);
   const [addonOptions, setAddonOptions] = useState<
     Array<{ id: string; label: string; workTypes: WorkType[] }> | null
   >(null);
@@ -131,6 +134,7 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
       setIngesting(false);
       setDragActive(false);
       setGapAddingRoom(false);
+      pendingPurchasesRef.current = [];
       setAddonOptions(null);
       setAddonsLoading(false);
       describeUsedRef.current = false;
@@ -347,7 +351,10 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
     setIngesting(true);
     try {
       const base = applyAnswer(s, { kind: 'skip' }, draft); // marks 'describe' answered
-      const outcome = await ingestProjectFolder(files, base, i18n.language);
+      const outcome = await ingestProjectFolder(files, base, i18n.language, {
+        collectPurchases: !isGuest,
+      });
+      pendingPurchasesRef.current = outcome.pendingPurchases;
       describeUsedRef.current = true;
       analytics.capture(AnalyticsEvents.RENAIDA_PROJECT_DESCRIBE_USED, {
         user_type: userType,
@@ -387,9 +394,13 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
       ];
       if (outcome.receiptCount > 0) {
         lines.push(
-          t('renaidaFlow.folder.receipts', '{{count}} kvitton/fakturor — ladda upp dem som inköp inne i projektet.', {
-            count: outcome.receiptCount,
-          })
+          outcome.pendingPurchases.length > 0
+            ? t('renaidaFlow.folder.receiptsImport', '{{count}} kvitton/fakturor — skapas som inköp när du skapar projektet.', {
+                count: outcome.receiptCount,
+              })
+            : t('renaidaFlow.folder.receipts', '{{count}} kvitton/fakturor — ladda upp dem som inköp inne i projektet.', {
+                count: outcome.receiptCount,
+              })
         );
       }
       if (outcome.floorplanCount > 0) {
@@ -560,6 +571,30 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
       }
       const result = await scaffoldProject(toScaffoldInput(draft, labelFor), profile.id);
       createdRef.current = true;
+
+      // Inc 3: turn folder-dropped receipts into real purchase orders now that
+      // the project exists. Best-effort per purchase — a failed order must not
+      // sink the freshly-created project.
+      const purchases = pendingPurchasesRef.current;
+      if (purchases.length > 0) {
+        let created = 0;
+        for (const action of purchases) {
+          try {
+            await importPurchaseOrder(result.projectId, profile.id, action);
+            created++;
+          } catch (e) {
+            console.error('RenaidaProjectDialog: purchase import failed', e);
+          }
+        }
+        if (created > 0) {
+          toast.success(
+            t('renaidaFlow.folder.purchasesCreated', '{{count}} inköp skapade från dina kvitton.', {
+              count: created,
+            })
+          );
+        }
+      }
+
       analytics.capture(AnalyticsEvents.PROJECT_CREATED, {
         creation_method: ProjectCreationMethod.RENAIDA_DIALOG,
         user_type: userType,
@@ -569,6 +604,7 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
         has_address: Boolean(draft.address),
         describe_used: describeUsedRef.current,
         addons_selected: addonsSelectedRef.current,
+        purchases_imported: pendingPurchasesRef.current.length,
       });
       toast.success(t('renaidaFlow.err.created', 'Projektet är skapat! 🎉'));
       onOpenChange(false);

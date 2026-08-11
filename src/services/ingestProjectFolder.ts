@@ -21,6 +21,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { compressImage } from '@/lib/compressImage';
 import type { AIParsedResult } from '@/components/project/overview/planning-wizard/types';
 import { parseProjectDescription } from './renaidaProjectIntake';
+import { captureDocument } from './agent/documentCapture';
+import type { ImportPurchaseAction } from './agent/importPurchaseOrder';
 import { mergeParseIntoDraft, type ProjectDraft, type ProvenanceKind } from './renaidaProjectFlow';
 
 /** A renovation folder, not a photo-library dump — bound the LLM cost. */
@@ -97,17 +99,36 @@ const usable = (p: AIParsedResult | null): p is AIParsedResult =>
 type Contribution =
   | { kind: 'scope'; parsed: AIParsedResult; sourceKind: ProvenanceKind; fileName?: string }
   | { kind: 'receipt'; amount: number | null }
+  | { kind: 'purchase'; action: ImportPurchaseAction }
   | { kind: 'floorplan' }
   | { kind: 'ignored' }
   | { kind: 'unreadable' };
 
 /** A document (PDF/DOCX): extract → classify → route by type. */
-async function processDocument(file: File, language: string): Promise<Contribution> {
+async function processDocument(
+  file: File,
+  language: string,
+  collectPurchases: boolean
+): Promise<Contribution> {
   const text = await extractText(file);
   if (!text) return { kind: 'unreadable' };
   const cls = await classifyText(text, file.name);
   const type = cls?.type ?? 'other';
-  if (type === 'receipt' || type === 'invoice') return { kind: 'receipt', amount: cls?.invoice_amount ?? null };
+  if (type === 'receipt' || type === 'invoice') {
+    // Inc 3: a logged-in birth fully extracts the receipt → a real PO at
+    // creation. Guests can't own POs, so they just get the count (inc 1).
+    if (collectPurchases) {
+      try {
+        const captured = await captureDocument(file);
+        if (captured.kind === 'receipt' || captured.kind === 'invoice') {
+          return { kind: 'purchase', action: captured.action };
+        }
+      } catch {
+        /* fall through to a plain count */
+      }
+    }
+    return { kind: 'receipt', amount: cls?.invoice_amount ?? null };
+  }
   if (type === 'floor_plan') return { kind: 'floorplan' };
   if (type === 'product_image') return { kind: 'ignored' };
   const parsed = await parseProjectDescription(text, language);
@@ -162,7 +183,10 @@ export interface IngestOutcome {
   filesSeen: number;
   roomsAdded: number;
   tasksAdded: number;
+  /** All receipts/invoices seen (whether counted or fully extracted). */
   receiptCount: number;
+  /** Fully-extracted receipts/invoices to turn into POs at creation (inc 3). */
+  pendingPurchases: ImportPurchaseAction[];
   floorplanCount: number;
   ignoredCount: number;
   unreadableCount: number;
@@ -173,12 +197,16 @@ export interface IngestOutcome {
 /**
  * Ingest a dropped project folder into an existing draft. Network calls run in
  * parallel (bounded); the fold into the draft is deterministic and pure.
+ * `collectPurchases` fully extracts receipts into pending POs (logged-in birth);
+ * guests leave it off and receipts are only counted.
  */
 export async function ingestProjectFolder(
   allFiles: File[],
   startDraft: ProjectDraft,
-  language: string
+  language: string,
+  opts?: { collectPurchases?: boolean }
 ): Promise<IngestOutcome> {
+  const collectPurchases = opts?.collectPurchases ?? false;
   const files = allFiles.slice(0, MAX_FILES);
   const truncated = allFiles.length > files.length;
 
@@ -192,8 +220,8 @@ export async function ingestProjectFolder(
   // Phase 1 — extract/classify/parse (network-bound, independent, bounded).
   const thunks: Array<() => Promise<Contribution | null>> = [
     () => processPhotos(photos, language),
-    ...pdfs.map((f) => () => processDocument(f, language)),
-    ...docs.map((f) => () => processDocument(f, language)),
+    ...pdfs.map((f) => () => processDocument(f, language, collectPurchases)),
+    ...docs.map((f) => () => processDocument(f, language, collectPurchases)),
     ...texts.map((f) => () => processTextFile(f, language)),
   ];
   const settled = (await mapLimit(thunks, CONCURRENCY, (t) => t())).filter(
@@ -208,6 +236,7 @@ export async function ingestProjectFolder(
   let floorplanCount = 0;
   let ignoredCount = ignoredUpfront.length;
   let unreadableCount = 0;
+  const pendingPurchases: ImportPurchaseAction[] = [];
 
   for (const c of settled) {
     switch (c.kind) {
@@ -216,6 +245,10 @@ export async function ingestProjectFolder(
         break;
       case 'receipt':
         receiptCount++;
+        break;
+      case 'purchase':
+        receiptCount++;
+        pendingPurchases.push(c.action);
         break;
       case 'floorplan':
         floorplanCount++;
@@ -235,6 +268,7 @@ export async function ingestProjectFolder(
     roomsAdded: draft.rooms.length - roomsBefore,
     tasksAdded: draft.tasks.length - tasksBefore,
     receiptCount,
+    pendingPurchases,
     floorplanCount,
     ignoredCount,
     unreadableCount,
