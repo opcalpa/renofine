@@ -1760,10 +1760,11 @@ Renaida går från att TA EMOT foton till att REGISSERA dem. (1) Capture-request
 
 ---
 id: renaida-birth-contractor-adaptation
-status: todo
+status: done
 priority: P1
 tags: [renaida, roles, contractor, quote, activation, dual-view]
 created: 2026-08-11
+done: 2026-08-11
 ---
 ## 👷 Renaida-födelsen per profiltyp — proaktiv byggar-hjälp (offert→faktura-spåret)
 **Carls direktiv 2026-08-11.** Undersök hur ALLA nya Renaida-flöden (projektfödelse-dialogen, mapp-ingest, gap-frågor, tillval) fungerar för de olika profiltyperna — särskilt en professionell byggares start. Idag är roll-anpassningen tunn: `userType` gate:ar bara FRAMING (q.describe/type/budget.contractor-nycklar) — samma frågeträd, samma tillval, ingen byggar-specifik proaktivitet.
@@ -1782,7 +1783,11 @@ created: 2026-08-11
 
 **✅ K3 LEVERERAD 2026-08-11:** byggar-overhead — nytt villkorligt `overhead`-steg efter tillvalen (contractor-only, samma träd): Etablering/Rivning & bortforsling/Ställning/Byggstädning/ÄTA-buffert. Krävde `customTitle` på DraftTask (overhead = 'annat'/other-cost-poster med EGNA namn, ej rums-trades) — taskTitle använder den, gap-fill IGNORERAR customTitle-tasks (projektövergripande by design), dedup på titel. Overhead flödar till offerten via taskIds (K1). LLM-suggest-prompten fick roll-differentierade exempel (proff-overhead vs hemägar-komfort). Hemägare ser aldrig steget (test). **⚠️ EDGE-DEPLOY KVAR: `supabase functions deploy renaida-suggest`** (prompt-ändringen; deterministiska overhead-steget funkar utan deploy).
 
-**KVAR (Carls prio):** **K4** roll-medveten mapp-ingest (byggarens egen offert-PDF → offert-import istället för tasks, D2-handoffen), **K5** faktura/ÄTA-vägvisning i drift ([[renaida-role-gated-actions]] + open_feature).
+**✅ K4 LEVERERAD 2026-08-11 (`049b2bd`):** roll-medveten mapp-ingest — byggarens egen offert-PDF (`type==='quote'` + contractor) → `extractQuoteLines` (process-document-v2 quote-läge, en task/prissatt rad) → priced DraftTasks (nytt `budgetSek` + `customTitle`, workType 'annat') istället för omestimerade. Priset rider genom `toScaffoldInput`→`tasks.budget`→K1:s offert-förifyllning (CreateQuoteV2 budget-fallback) → byggarens FAKTISKA priser i den säljbara offerten. Ett flöde, K1 oförändrat, ingen ny yta. Prislösa offerter + hemägare → vanlig scope-parse (inget tappas). Quote-line-tasks projektövergripande → gap-fill ignorerar dem (som K3 overhead). Ny pure `mergeQuoteLinesIntoDraft` (dedup titel). 25/25 renaida-tester.
+
+**✅ K5 LEVERERAD 2026-08-11 (`8def34e`):** ÄTA-vägvisning i drift-Renaida — nytt `open_feature`-mål `new_ata` → `/quotes/new?projectId=…&is_ata=true` (ÄTA = offert m. is_ata). Routern känner igen ÄTA/tilläggsarbete-utöver-offert som contractor-only. `new_invoice` fanns redan (faktura). Bonus-fix: FEATURE_PATHS bygger m. projectId → new_quote/invoice/ata öppnar förlänkad till projektet (tidigare tappades projectId). Eval-gate: router 100% (nytt golden `prepare-ata-open-feature`, inga regressioner). **⚠️ EDGE-DEPLOY KVAR: `supabase functions deploy agent-route`** (prompt; klient-navigeringen funkar utan deploy men routern föreslår ej new_ata förrän deployad).
+
+**Hela kortet KLART** (K1–K5). Kvarvarande roll-arbete = arbetar-Renaida (eget kort renaida-worker-assistant).
 
 ---
 id: dialog-width-trap-migration
