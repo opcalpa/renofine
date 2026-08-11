@@ -7,6 +7,8 @@ import {
   seedDraftFromParse,
   deterministicAddons,
   applyAddonWorkTypes,
+  taskTitle,
+  unattributedTaskCount,
 } from '../src/services/renaidaProjectFlow';
 import type { AIParsedResult } from '../src/components/project/overview/planning-wizard/types';
 
@@ -147,6 +149,44 @@ test('contractor sees the customer step; homeowner never does (single tree)', ()
     c = applyAnswer(s2, { kind: 'skip' }, c);
     s2 = nextStep(c, 'contractor');
   }
+});
+
+test('contractor overhead step adds titled other-cost tasks; gap ignores them', () => {
+  let c = emptyDraft();
+  c = applyAnswer(nextStep(c, 'contractor')!, { kind: 'skip' }, c); // describe
+  c = applyAnswer(nextStep(c, 'contractor')!, { kind: 'chips', ids: ['bathroom'], labels: ['Badrum'] }, c); // type
+  c = applyAnswer(nextStep(c, 'contractor')!, { kind: 'chips', ids: ['surfaces'], labels: ['Kakel'] }, c); // scope → kakel
+  c = applyAnswer(nextStep(c, 'contractor')!, { kind: 'text', value: 'Anna' }, c); // customer
+
+  // Bathroom has add-ons → that step comes first; skip it to reach overhead.
+  let s = nextStep(c, 'contractor')!;
+  if (s.id === 'addons') {
+    c = applyAnswer(s, { kind: 'skip' }, c);
+    s = nextStep(c, 'contractor')!;
+  }
+  expect(s.id).toBe('overhead');
+
+  const before = c.tasks.length;
+  c = applyAnswer(
+    s,
+    { kind: 'chips', ids: ['establishment', 'scaffolding'], labels: ['Etablering', 'Ställning'] },
+    c
+  );
+  expect(c.tasks.length).toBe(before + 2);
+  const overhead = c.tasks.filter((t) => t.customTitle);
+  expect(overhead.map((t) => t.customTitle).sort()).toEqual(['Etablering', 'Ställning'].sort());
+  // Overhead is 'annat'/other cost, project-wide, titled by itself.
+  expect(overhead.every((t) => t.workType === 'annat' && t.roomName === null)).toBe(true);
+  expect(taskTitle(overhead[0], (w) => w)).toBe(overhead[0].customTitle);
+
+  // Overhead must NOT be seen as an unattributed task by the gap step.
+  expect(unattributedTaskCount(c)).toBe(0);
+  const after = nextStep(c, 'contractor');
+  if (after) expect(after.id).not.toBe('gapRoom');
+
+  // Re-applying the same overhead is deduped.
+  const c2 = applyAnswer(s, { kind: 'chips', ids: ['establishment'], labels: ['Etablering'] }, c);
+  expect(c2.tasks.filter((t) => t.customTitle === 'Etablering').length).toBe(1);
 });
 
 test('add-on suggestions are conditional on type and add extra tasks (deduped)', () => {

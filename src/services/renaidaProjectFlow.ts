@@ -52,6 +52,13 @@ export interface DraftTask {
   source?: Provenance;
   /** Reversibly excluded during review — kept in the draft, skipped at creation. */
   excluded?: boolean;
+  /**
+   * Explicit title that overrides the workType-derived one. Used for contractor
+   * overhead line items (establishment, scaffolding, cleaning…) that are real
+   * quote lines but not room trades — they share workType 'annat' yet must stay
+   * distinct, so they carry their own name.
+   */
+  customTitle?: string;
 }
 
 export interface ProjectDraft {
@@ -75,9 +82,19 @@ export type WorkTypeLabeller = (workType: WorkType) => string;
 
 /** Localized task title from language-neutral parts. */
 export function taskTitle(task: DraftTask, labelFor: WorkTypeLabeller): string {
+  if (task.customTitle) return task.customTitle;
   const label = labelFor(task.workType);
   return task.roomName ? `${label} – ${task.roomName}` : label;
 }
+
+/** Cross-cutting overhead a builder often quotes separately (any project type). */
+const CONTRACTOR_OVERHEAD: Chip[] = [
+  { id: 'establishment', labelKey: 'renaidaFlow.overhead.establishment' },
+  { id: 'demolitionRemoval', labelKey: 'renaidaFlow.overhead.demolitionRemoval' },
+  { id: 'scaffolding', labelKey: 'renaidaFlow.overhead.scaffolding' },
+  { id: 'cleaning', labelKey: 'renaidaFlow.overhead.cleaning' },
+  { id: 'ataBuffer', labelKey: 'renaidaFlow.overhead.ataBuffer' },
+];
 
 // ── Steps (i18n keys, not strings) ─────────────────────────────────────────
 
@@ -301,6 +318,17 @@ export function nextStep(
       },
     };
   }
+  // Contractor overhead (K3): pro line items builders quote separately —
+  // establishment, demolition/removal, scaffolding, cleaning, change-order
+  // buffer. Same tree, contractor-only, once there's work to quote. Homeowners
+  // never see it. These are 'annat'/other-cost tasks with their own titles.
+  if (userType === 'contractor' && draft.tasks.length > 0 && !answered(draft, 'overhead')) {
+    return {
+      id: 'overhead',
+      messageKey: 'renaidaFlow.q.overhead',
+      input: { kind: 'chips', options: CONTRACTOR_OVERHEAD, multi: true, skipKey: 'renaidaFlow.skip.none' },
+    };
+  }
   // Gap fill (Fas C inc 2): a folder/photo/description can produce work types
   // with no room (parsed globalWorkTypes) — "6 photos I couldn't place". Ask
   // which room they belong to, but ONLY when there's genuine ambiguity (2+
@@ -407,6 +435,26 @@ export function applyAnswer(
       if (answer.kind === 'text' && answer.value.trim()) next.customerName = answer.value.trim();
       break;
     }
+    case 'overhead': {
+      if (answer.kind !== 'chips') break;
+      // The localized labels ARE the titles (overhead items have no room/trade).
+      const existing = new Set(
+        next.tasks.filter((t) => t.customTitle).map((t) => t.customTitle!.toLowerCase())
+      );
+      answer.ids.forEach((_id, i) => {
+        const title = (answer.labels[i] ?? '').trim();
+        if (!title || existing.has(title.toLowerCase())) return;
+        existing.add(title.toLowerCase());
+        next.tasks.push({
+          workType: 'annat',
+          roomName: null,
+          costCenter: workTypeToCostCenter('annat'),
+          customTitle: title,
+          source: { kind: 'suggestion' },
+        });
+      });
+      break;
+    }
     case 'address': {
       if (answer.kind === 'text' && answer.value.trim()) {
         next.address = answer.value.trim();
@@ -453,9 +501,10 @@ export function applyAddonWorkTypes(draft: ProjectDraft, workTypesList: WorkType
   return next;
 }
 
-/** Tasks with no room (project-wide) that a gap-fill step could attribute. */
+/** Tasks with no room (project-wide) that a gap-fill step could attribute.
+ *  Overhead line items (customTitle) are project-wide by design — never asked. */
 export const unattributedTaskCount = (draft: ProjectDraft): number =>
-  draft.tasks.filter((t) => t.roomName == null && !t.excluded).length;
+  draft.tasks.filter((t) => t.roomName == null && !t.excluded && !t.customTitle).length;
 
 /**
  * Resolve the gap-fill step (Fas C inc 2): attribute every unattributed task
@@ -490,7 +539,8 @@ export function assignUnattributedTasks(
     next.tasks.filter((t) => t.roomName != null).map((t) => `${t.workType}:${t.roomName}`)
   );
   next.tasks = next.tasks.reduce<DraftTask[]>((acc, t) => {
-    if (t.roomName != null) {
+    // Keep attributed tasks and overhead (project-wide by design) untouched.
+    if (t.roomName != null || t.customTitle) {
       acc.push(t);
       return acc;
     }

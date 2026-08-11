@@ -124,8 +124,8 @@ serve(async (req) => {
 
     const roleLine =
       userType === "contractor"
-        ? "The user is a building professional creating a project for a client."
-        : "The user is a homeowner planning their own renovation.";
+        ? "The user is a building professional creating a project for a client. Prefer add-ons a PRO quotes but clients forget: site setup/establishment, demolition & waste removal, scaffolding, construction cleaning, protective covering — plus tasteful trade extras. Map overhead items to the 'annat' work type."
+        : "The user is a homeowner planning their own renovation. Prefer tasteful comfort/finish extras (underfloor heating, heated towel rail, shower niche, spotlights).";
 
     const systemPrompt = `You are Renaida, a helpful renovation planning assistant.
 Given a renovation project, suggest 3–5 commonly-forgotten ADD-ONS the user might also want — the kind of thing pros remind clients about. ${roleLine}

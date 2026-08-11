@@ -6882,7 +6882,15 @@
       },
       "addons": "Fint. Många brukar också ta med det här — vill du lägga till något? (Valfritt.)",
       "gapRoom": "Jag hittade {{count}} arbeten jag inte kunde placera i ett rum — vilket rum hör de till?",
-      "customer": "Vem är jobbet för? Jag använder kunden för att förbereda en offert sen."
+      "customer": "Vem är jobbet för? Jag använder kunden för att förbereda en offert sen.",
+      "overhead": "Sånt proffs ofta tar med separat — vill du lägga till något? (Valfritt.)"
+    },
+    "overhead": {
+      "establishment": "Etablering",
+      "demolitionRemoval": "Rivning & bortforsling",
+      "scaffolding": "Ställning",
+      "cleaning": "Byggstädning",
+      "ataBuffer": "ÄTA-buffert"
     },
     "gap": {
       "newRoom": "+ Nytt rum",

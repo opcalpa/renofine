@@ -1780,7 +1780,9 @@ created: 2026-08-11
 
 **✅ K2 LEVERERAD 2026-08-11:** kund-dimension — ETT villkorligt kund-steg i samma träd (userType==='contractor', efter scope, hoppbart), `customerName` på ProjectDraft, syns i förhandsvisningen (User-ikon, desktop+mobil). På offert-erbjudandets accept: `findOrCreateClientByName(profileId, namn)` (ny i intakeService, ilike-match/skapa i clients-tabellen) → clientId in i /quotes/new → offerten FÖRADRESSERAD. Hemägare/gäster ser aldrig steget (test + render-smoke). 23/23 renaida-tester.
 
-**KVAR (Carls prio):** **K3** byggar-tillval (kuraterade addons-listan är hemägar-vinklad — proffs vill ha etablering/rivning/bortforsling/ställning/ÄTA-buffert; LLM-vägen får redan userType, deterministiska fallbacken är gapet), **K4** roll-medveten mapp-ingest (byggarens egen offert-PDF → offert-import istället för tasks, D2-handoffen), **K5** faktura/ÄTA-vägvisning i drift ([[renaida-role-gated-actions]] + open_feature).
+**✅ K3 LEVERERAD 2026-08-11:** byggar-overhead — nytt villkorligt `overhead`-steg efter tillvalen (contractor-only, samma träd): Etablering/Rivning & bortforsling/Ställning/Byggstädning/ÄTA-buffert. Krävde `customTitle` på DraftTask (overhead = 'annat'/other-cost-poster med EGNA namn, ej rums-trades) — taskTitle använder den, gap-fill IGNORERAR customTitle-tasks (projektövergripande by design), dedup på titel. Overhead flödar till offerten via taskIds (K1). LLM-suggest-prompten fick roll-differentierade exempel (proff-overhead vs hemägar-komfort). Hemägare ser aldrig steget (test). **⚠️ EDGE-DEPLOY KVAR: `supabase functions deploy renaida-suggest`** (prompt-ändringen; deterministiska overhead-steget funkar utan deploy).
+
+**KVAR (Carls prio):** **K4** roll-medveten mapp-ingest (byggarens egen offert-PDF → offert-import istället för tasks, D2-handoffen), **K5** faktura/ÄTA-vägvisning i drift ([[renaida-role-gated-actions]] + open_feature).
 
 ---
 id: dialog-width-trap-migration
