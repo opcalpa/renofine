@@ -53,12 +53,20 @@ projekt. Alla ska ge rum+arbeten+material som förr.
 
 ---
 id: folder-ingest-quickstart
-status: todo
+status: done
 priority: P2
 tags: [onboarding, agent, renaida, migrering, aktivering, distribution]
 created: 2026-07-15
+updated: 2026-08-11
 ---
 ## 📁 Mapp-in → färdigt projekt (migrerings-snabbstart)
+
+**✅ LEVERERAD 2026-08-11 i tre inkrement (lokala commits, ej pushade):**
+- **inc 1 (`2318247`) mapp-ingest-kärnan:** `ingestProjectFolder`-motorn (router: foton→OCR ihop→EN parse; PDF/DOCX→extract→classify→route; text/md→parse; parallell nätverksfas cap 5, max 40 filer, fail-open per fil) + ren `mergeParseIntoDraft` (dedup rum/arbeten, KANONISERAR rumsnamn — testet fångade äkta rum↔task-länk-bugg) + drop-zon & Mapp-knapp (webkitdirectory, desktop-only) i describe-steget + `readDroppedItems` utbruten till delad `src/lib/dropTree.ts`. Per-dokument-härkomst, foton buntade (Carls vägval).
+- **inc 2 (`848b3f8`) gap-fill:** villkorligt `gapRoom`-steg ("N arbeten jag inte kunde placera — vilket rum?") BARA vid äkta tvetydighet (2+ rum), frågas exakt en gång; `assignUnattributedTasks` (skapar rum vid behov, dedupar kollisioner); oläsbara filer surfacas ("N filer kunde jag inte läsa").
+- **inc 3a (`4b3876a`) kvitto→PO:** PO-skrivningen ORDAGRANT utbruten ur applyProposals till delad `importPurchaseOrder` (single-source, kan ej drifta) → mapp-släppta kvitto-/faktura-PDF:er blir riktiga inköpsordrar vid projektskapande (inloggade; gäster får räkning). `purchases_imported` i project_created.
+
+21/21 renaida-tester + gäst-e2e + typecheck + build gröna. **KVAR: Carls enhets-verifiering** (mapp-släpp mot live-endpoints + autentiserad PO-väg). Fotade kvitton blir EJ PO:er (går via foto-bucketen — medveten kostnadsavgränsning). Ritning→grovskiss = Fas D.
 
 **= Fas C i epicen [[renaida-projektfodelse-multimodal]].** Bygg EFTER Fas B (härkomst/granskning) — merge-lagret skriver in i samma utkast med provenance, aldrig tyst. Ingången bor i describe-steget ("släpp hela projektmappen här").
 
@@ -1739,15 +1747,30 @@ ETT LLM-anrop över det färdig-mergade utkastet: "offerten saknar rivning trots
 
 ---
 id: renaida-birth-capture-direction
-status: todo
+status: doing
 priority: P2
 tags: [renaida, onboarding, floorplanner, multimodal, capture]
 created: 2026-08-10
+updated: 2026-08-11
 ---
 ## Fas D: Capture-regi + grovskiss (Renaida ber om foto → space planner)
 Renaida går från att TA EMOT foton till att REGISSERA dem. (1) Capture-request som stegtyp: "Fota badrummet från dörren" → mobilkameran öppnas → vision föreslår skick/objekt/arbeten. (2) Grovskiss: foto/pappersskiss → `process-floorplan` (finns: väggar/dörrar/rum) → **v2-editorns patch-executor** (byggd som "Renaidas framtida API") → utkastet får en skiss-flik. (3) Vägvisar-actions efter födelsen (open_feature): "vill du att jag visar var du bjuder in hantverkaren?".
 
 **Ansats:** ~2–3 dagar (skissen = riskdelen). Knyter ihop Floorplanner v2 Del 2 (Renaida ritar/tolkar planritningar) med projektfödelsen — två spår blir ett. Beroende: Fas B. Kan gå parallellt med C.
+
+---
+id: renaida-birth-contractor-adaptation
+status: todo
+priority: P1
+tags: [renaida, roles, contractor, quote, activation, dual-view]
+created: 2026-08-11
+---
+## 👷 Renaida-födelsen per profiltyp — proaktiv byggar-hjälp (offert→faktura-spåret)
+**Carls direktiv 2026-08-11.** Undersök hur ALLA nya Renaida-flöden (projektfödelse-dialogen, mapp-ingest, gap-frågor, tillval) fungerar för de olika profiltyperna — särskilt en professionell byggares start. Idag är roll-anpassningen tunn: `userType` gate:ar bara FRAMING (q.describe/type/budget.contractor-nycklar) — samma frågeträd, samma tillval, ingen byggar-specifik proaktivitet.
+
+**Målbild:** Renaida ska vara proaktivt hjälpsam för byggaren — han skapar projekt åt en KUND och vill ofta vidare till offert direkt: "vill du att jag förbereder en offert på det här?" (generate-quote-items finns, D2-handoffen finns) → senare fakturor, ÄTA, kundinbjudan. Kopplar ihop [[renaida-role-gated-actions]] (action-katalog per roll) + vägvisar-principen (open_feature) + 2 bouncade byggfirmor i traction-datan (svenssonsbyggvvs, byggomala — aktivering vid första handling är flaskhalsen ÄVEN för proffs).
+
+**Scope:** (1) audit av contractor-vägen genom dialogen+mapp-ingest (vilka frågor är fel/saknas för proffs: kundens namn/adress? moms ex? offert-utkast?), (2) byggar-specifika conditional-frågor + tillval, (3) post-birth-vägvisning per roll ("skapa offert" för byggare / "bjud in hantverkare" för hemägare), (4) dual-view-gate-regeln ([[feedback_dual_view_gate]]) verifierad över alla nya ytor.
 
 ---
 id: dialog-width-trap-migration
