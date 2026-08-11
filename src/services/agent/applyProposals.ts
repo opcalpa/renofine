@@ -381,8 +381,14 @@ export async function applyProposals(
   }
 
   // open_feature proposals only NAVIGATE — they write nothing and have no undo,
-  // so handle them outside the DB apply loop. (Carl 2026-07-12)
-  const FEATURE_PATHS: Record<string, string> = { new_quote: "/quotes/new", new_invoice: "/invoices/new" };
+  // so handle them outside the DB apply loop. (Carl 2026-07-12) Carry projectId
+  // so the opened builder is pre-linked to this project; ÄTA is a quote with the
+  // is_ata flag (K5). (Homeowners never get open_feature — router-gated.)
+  const FEATURE_PATHS: Record<string, string> = {
+    new_quote: `/quotes/new?projectId=${projectId}`,
+    new_invoice: `/invoices/new?projectId=${projectId}`,
+    new_ata: `/quotes/new?projectId=${projectId}&is_ata=true`,
+  };
   for (const proposal of actionable) {
     if (proposal.action.type === "open_feature") {
       result.applied.push(proposal);

@@ -445,6 +445,17 @@
           "feature": "new_quote"
         }
       ]
+    },
+    {
+      "id": "prepare-ata-open-feature",
+      "userType": "contractor",
+      "input": "Kunden vill ha extra arbete utöver offerten, gör en ÄTA på det",
+      "expect": [
+        {
+          "type": "open_feature",
+          "feature": "new_ata"
+        }
+      ]
     }
   ]
 }

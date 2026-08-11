@@ -171,7 +171,7 @@ function buildSystemPrompt(language: string, rooms: RoomCtx[], tasks: TaskCtx[],
   // Absent userType → neutral (keeps the eval, which sends no role, unchanged).
   const roleSection = userType
     ? (userType === "contractor"
-        ? `\nUSER ROLE: contractor (a professional). You MAY propose open_feature to prepare a quote or invoice — Renaida cannot fill a full quote inline, so she opens the right builder (prefilled where possible) for the user to review and send. Never auto-send.\n`
+        ? `\nUSER ROLE: contractor (a professional). You MAY propose open_feature to prepare a quote, invoice or ÄTA (change/additional work beyond the original quote) — Renaida cannot fill a full quote inline, so she opens the right builder (prefilled where possible) for the user to review and send. Never auto-send.\n`
         : `\nUSER ROLE: homeowner. Do NOT propose creating quotes or invoices — those are contractor actions. A quote/invoice the homeowner RECEIVED is a cost recorded via the document flow, not open_feature. Plan against the homeowner's own budget.\n`)
     : "";
   const roomList = rooms.length
@@ -237,7 +237,7 @@ Allowed action objects:
 - { "type": "remove_checklist_item", "taskId": "<existing task id>", "itemText": "<the checklist item to REMOVE, taken from that task's checklist=[...]>" }
 - { "type": "assign_task", "taskId": "<existing task id>", "assigneeProfileId": "<existing member id from PROJECT MEMBERS>" }
 - { "type": "add_note", "target": "task"|"room"|"project", "targetId": "<existing id>", "text": string }
-- { "type": "open_feature", "feature": "new_quote"|"new_invoice", "label": "<short label in ${langName} naming what opens, e.g. Ny offert / Ny faktura>" } — a POINTER, not a data change: opens the right screen (prefilled where possible) for something Renaida should not fill inline. Contractor-only; used for quote/invoice CREATION.
+- { "type": "open_feature", "feature": "new_quote"|"new_invoice"|"new_ata", "label": "<short label in ${langName} naming what opens, e.g. Ny offert / Ny faktura / Ny ÄTA>" } — a POINTER, not a data change: opens the right screen (prefilled where possible) for something Renaida should not fill inline. Contractor-only; used for quote/invoice/ÄTA CREATION.
 - { "type": "unknown", "rawText": "<the part you couldn't route>", "reason": "<short why, in ${langName}>" }
 
 Rules:
@@ -261,7 +261,7 @@ Rules:
     Example: PROJECT MEMBERS has name="Ahmed Hassan" and the note is "säg åt Ahmed att fixa eluttagen" → assign_task { taskId: <the electrical task's id>, assigneeProfileId: <Ahmed's member id> } — NOT add_note. Always check PROJECT MEMBERS for the named person BEFORE falling back to add_note.
     Counter-example: "säg åt målaren att taket ska ha två strykningar" — "målaren" is a TRADE WORD, not a member's name → add_note on the painting task, NOT assign_task. NEVER guess which member a trade word refers to; only an explicitly said member name triggers assign_task.
 - WORK INSTRUCTIONS: phrasings like "säg åt/till <yrkesperson> att …", "påminn <någon> att …", "viktigt: …", "<yrkesperson> behöver veta att …", "notera att …" are instructions to be SAVED → add_note. BUT FIRST: if the person named after "säg åt/påminn/…" matches a PROJECT MEMBER name → this is an ASSIGNMENT → emit assign_task (see above), NOT add_note. add_note is only for trade words (målaren, snickaren, elektrikern) and people who are NOT in PROJECT MEMBERS. Target the task whose work matches the trade/activity mentioned (målaren → painting task); if the instruction names a ROOM as its subject ("instruktionerna för badrummet") → target that room; if neither is clear → target "project" with the project id. NEVER return an empty proposals array for a clear instruction — a saved note is always better than losing it.
-- FEATURE GUIDANCE (open_feature): creating a quote or invoice is not filled in inline — "förbered/gör en offert", "skapa en faktura till kunden" → open_feature { feature: "new_quote" (offert) | "new_invoice" (faktura), label }. This is a CONTRACTOR action: if USER ROLE is homeowner, do NOT propose it. A quote/invoice the user RECEIVED (a document to upload) is NOT open_feature — that is the document flow. open_feature never writes data; it only opens a screen.
+- FEATURE GUIDANCE (open_feature): creating a quote, invoice or ÄTA is not filled in inline — "förbered/gör en offert" → new_quote (offert); "skapa en faktura till kunden" → new_invoice (faktura); an ÄTA (ändrings- och tilläggsarbete — extra/ändrat arbete UTÖVER den ursprungliga offerten: "gör en ÄTA", "lägg till ett tilläggsarbete", "kunden vill ha extra arbete utöver offerten", "ändringsarbete") → new_ata. Emit open_feature { feature, label }. This is a CONTRACTOR action: if USER ROLE is homeowner, do NOT propose it. A quote/invoice the user RECEIVED (a document to upload) is NOT open_feature — that is the document flow. open_feature never writes data; it only opens a screen.
 - Reserve "unknown" for input you genuinely cannot map: a place or thing that does not exist in the project, or truly unclear intent. NOT for choosing between existing tasks — that is the AMBIGUOUS case above (low-confidence proposal + candidateTaskIds).
 - CRITICAL for update_task/set_progress/log_time/assign_task: you MUST set matchConfidence, and BEFORE picking a task you MUST COUNT how many existing tasks match the described WORK ITSELF (the trade/activity — NOT the room; being in the same room is NOT a match):
     • 0 tasks match the work → emit "unknown", or "create_task" if it is clearly new work. NEVER mutate a loosely-related task.
@@ -564,7 +564,7 @@ function normalizeProposals(
         break;
       }
       case "open_feature": {
-        const FEATURES = new Set(["new_quote", "new_invoice"]);
+        const FEATURES = new Set(["new_quote", "new_invoice", "new_ata"]);
         const feature = typeof action.feature === "string" ? action.feature : "";
         if (!FEATURES.has(feature)) {
           toUnknown("Okänd funktion att öppna");

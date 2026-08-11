@@ -46,10 +46,10 @@ export type ProposalAction =
   | { type: "add_note"; target: "task" | "room" | "project"; targetId: string; text: string }
   /**
    * Feature guidance ("vägvisare", Carl 2026-07-12): opens the right screen for
-   * something Renaida shouldn't fill inline — contractor quote/invoice creation.
-   * Applying it NAVIGATES; it writes no data and has no undo.
+   * something Renaida shouldn't fill inline — contractor quote/invoice/ÄTA
+   * creation. Applying it NAVIGATES; it writes no data and has no undo.
    */
-  | { type: "open_feature"; feature: "new_quote" | "new_invoice"; label: string }
+  | { type: "open_feature"; feature: "new_quote" | "new_invoice" | "new_ata"; label: string }
   /**
    * AI-scanned receipt/invoice → one purchase order + its material line items
    * (the PO invariant: every scanned document lives in Inköp as a first-class
