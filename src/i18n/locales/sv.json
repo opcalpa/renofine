@@ -6881,7 +6881,8 @@
         "contractor": "Beskriv jobbet med egna ord så skissar jag rum och arbeten — eller hoppa över så guidar jag dig."
       },
       "addons": "Fint. Många brukar också ta med det här — vill du lägga till något? (Valfritt.)",
-      "gapRoom": "Jag hittade {{count}} arbeten jag inte kunde placera i ett rum — vilket rum hör de till?"
+      "gapRoom": "Jag hittade {{count}} arbeten jag inte kunde placera i ett rum — vilket rum hör de till?",
+      "customer": "Vem är jobbet för? Jag använder kunden för att förbereda en offert sen."
     },
     "gap": {
       "newRoom": "+ Nytt rum",
@@ -6890,6 +6891,7 @@
     },
     "quoteOffer": {
       "message": "Projektet är skapat! 🎉 Vill du att jag förbereder en offert till din kund av arbetena?",
+      "messageNamed": "Projektet är skapat! 🎉 Vill du att jag förbereder en offert till {{customer}} av arbetena?",
       "accept": "Förbered offert",
       "decline": "Öppna projektet"
     },
@@ -6942,14 +6944,16 @@
       "size": "t.ex. 6",
       "address": "t.ex. Storgatan 5, Stockholm",
       "budget": "t.ex. 150000",
-      "describe": "t.ex. Renovera badrummet, ca 6 m², nytt kakel, ny toalett och dusch, och måla om…"
+      "describe": "t.ex. Renovera badrummet, ca 6 m², nytt kakel, ny toalett och dusch, och måla om…",
+      "customer": "t.ex. Anna Svensson"
     },
     "skip": {
       "dontKnow": "Vet inte än",
       "skip": "Hoppa över",
       "noBudget": "Ingen budget än",
       "guideMe": "Guida mig i stället",
-      "none": "Nej tack"
+      "none": "Nej tack",
+      "noCustomer": "Ingen kund än"
     },
     "ui": {
       "title": "Skapa med Renaida",

@@ -116,6 +116,39 @@ test('LLM jumpstart: parsed description seeds rooms + tasks and skips covered st
   expect(input.tasks.length).toBe(3);
 });
 
+test('contractor sees the customer step; homeowner never does (single tree)', () => {
+  // Homeowner: type → scope → (addons) → … no customer step ever.
+  let h = emptyDraft();
+  h = applyAnswer(nextStep(h, 'homeowner')!, { kind: 'skip' }, h); // describe
+  h = applyAnswer(nextStep(h, 'homeowner')!, { kind: 'chips', ids: ['paint'], labels: ['Måla om'] }, h); // type=paint (no addons? paint has addons)
+  // Walk to completion, asserting 'customer' never appears for a homeowner.
+  let guard = 0;
+  let s = nextStep(h, 'homeowner');
+  while (s && guard++ < 20) {
+    expect(s.id).not.toBe('customer');
+    h = applyAnswer(s, { kind: 'skip' }, h);
+    s = nextStep(h, 'homeowner');
+  }
+
+  // Contractor: after scope, the customer step appears; the answer is stored.
+  let c = emptyDraft();
+  c = applyAnswer(nextStep(c, 'contractor')!, { kind: 'skip' }, c); // describe
+  c = applyAnswer(nextStep(c, 'contractor')!, { kind: 'chips', ids: ['bathroom'], labels: ['Badrum'] }, c); // type
+  c = applyAnswer(nextStep(c, 'contractor')!, { kind: 'chips', ids: ['tiles'], labels: ['Kakel'] }, c); // scope
+  const cs = nextStep(c, 'contractor')!;
+  expect(cs.id).toBe('customer');
+  c = applyAnswer(cs, { kind: 'text', value: 'Anna Svensson' }, c);
+  expect(c.customerName).toBe('Anna Svensson');
+  // Asked once — the step does not reappear.
+  let g2 = 0;
+  let s2 = nextStep(c, 'contractor');
+  while (s2 && g2++ < 20) {
+    expect(s2.id).not.toBe('customer');
+    c = applyAnswer(s2, { kind: 'skip' }, c);
+    s2 = nextStep(c, 'contractor');
+  }
+});
+
 test('add-on suggestions are conditional on type and add extra tasks (deduped)', () => {
   let d = emptyDraft();
   d = applyAnswer(nextStep(d)!, { kind: 'skip' }, d); // describe

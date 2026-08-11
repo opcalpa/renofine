@@ -1774,7 +1774,13 @@ created: 2026-08-11
 
 **AUDIT KLAR 2026-08-11 (kod-verifierad):** (a) roll-differentiering = BARA inramning (3 i18n-nycklar + renaida-suggest-promptens userType-gren; samma träd/chips/tillval/avslut); (b) rollen hämtas rätt (onboarding_user_type, Projects.tsx:658); (c) projects SAKNAR kundfält — kunden bor i quotes.client_id → byggaren får aldrig kund-frågan; (d) Renaidas budget→total_budget (har EJ CreateProjectDialogs dubbelskrivningsbugg, men customer_price/owner_cost-oklarheten kvarstår appen-brett — se user-type-builder-budget-fel-falt); (e) mapp-ingest roll-blind (byggarens egen offert-PDF → tasks, borde kunna bli hans offert-objekt via D2-handoffen); (f) /quotes/new?projectId&prepopulate=true&taskIds=… fanns färdig + contractor-gated i routern + scaffoldProject returnerar taskIds.
 
-**✅ K1 LEVERERAD 2026-08-11:** post-birth offert-erbjudande — byggare skapar via Renaida → "Vill du att jag förbereder en offert till din kund av arbetena?" → /quotes/new förifylld med alla nyskapade tasks. `renaida_quote_offer`-event (shown/accepted/declined). KVAR (Carls prio): **K2** kund-steg i contractor-trädet (namn → projektnamn + offertens kundfält), **K3** byggar-tillval (kuraterade listan är hemägar-vinklad — proffs vill ha etablering/rivning/bortforsling/ÄTA-buffert), **K4** roll-medveten mapp-ingest (egen offert → offert-import), **K5** faktura/ÄTA-vägvisning i drift ([[renaida-role-gated-actions]]).
+**Princip (Carl 2026-08-11):** ETT flöde, roll-villkorade avvikelser BARA där essentiellt — inte parallella träd. Mycket är lika mellan hemägar-PL och proffsbyggare; väv in skillnaderna i samma `nextStep(draft, userType)`.
+
+**✅ K1 LEVERERAD 2026-08-11:** post-birth offert-erbjudande — byggare skapar via Renaida → "Vill du att jag förbereder en offert till {{kund}} av arbetena?" → /quotes/new förifylld med alla nyskapade tasks. `renaida_quote_offer`-event (shown/accepted/declined + has_customer).
+
+**✅ K2 LEVERERAD 2026-08-11:** kund-dimension — ETT villkorligt kund-steg i samma träd (userType==='contractor', efter scope, hoppbart), `customerName` på ProjectDraft, syns i förhandsvisningen (User-ikon, desktop+mobil). På offert-erbjudandets accept: `findOrCreateClientByName(profileId, namn)` (ny i intakeService, ilike-match/skapa i clients-tabellen) → clientId in i /quotes/new → offerten FÖRADRESSERAD. Hemägare/gäster ser aldrig steget (test + render-smoke). 23/23 renaida-tester.
+
+**KVAR (Carls prio):** **K3** byggar-tillval (kuraterade addons-listan är hemägar-vinklad — proffs vill ha etablering/rivning/bortforsling/ställning/ÄTA-buffert; LLM-vägen får redan userType, deterministiska fallbacken är gapet), **K4** roll-medveten mapp-ingest (byggarens egen offert-PDF → offert-import istället för tasks, D2-handoffen), **K5** faktura/ÄTA-vägvisning i drift ([[renaida-role-gated-actions]] + open_feature).
 
 ---
 id: dialog-width-trap-migration

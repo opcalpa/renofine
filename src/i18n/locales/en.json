@@ -6881,7 +6881,8 @@
         "contractor": "Describe the job in your own words and I'll draft the rooms and tasks — or skip to be guided."
       },
       "addons": "Nice. People often also include these — want to add any? (Optional.)",
-      "gapRoom": "I found {{count}} task(s) I couldn't place in a room — which room do they belong to?"
+      "gapRoom": "I found {{count}} task(s) I couldn't place in a room — which room do they belong to?",
+      "customer": "Who's this job for? I'll use the customer to prepare a quote later."
     },
     "gap": {
       "newRoom": "+ New room",
@@ -6890,6 +6891,7 @@
     },
     "quoteOffer": {
       "message": "Your project is created! 🎉 Want me to prepare a customer quote from the tasks?",
+      "messageNamed": "Your project is created! 🎉 Want me to prepare a quote for {{customer}} from the tasks?",
       "accept": "Prepare quote",
       "decline": "Open the project"
     },
@@ -6942,14 +6944,16 @@
       "size": "e.g. 6",
       "address": "e.g. Main St 5, City",
       "budget": "e.g. 150000",
-      "describe": "e.g. Renovate the bathroom, ~6 m², new tiles, toilet and shower, and repaint…"
+      "describe": "e.g. Renovate the bathroom, ~6 m², new tiles, toilet and shower, and repaint…",
+      "customer": "e.g. Anna Svensson"
     },
     "skip": {
       "dontKnow": "Don't know yet",
       "skip": "Skip",
       "noBudget": "No budget yet",
       "guideMe": "Guide me instead",
-      "none": "No thanks"
+      "none": "No thanks",
+      "noCustomer": "No customer yet"
     },
     "ui": {
       "title": "Create with Renaida",

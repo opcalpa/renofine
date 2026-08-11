@@ -58,6 +58,8 @@ export interface ProjectDraft {
   projectType?: ProjectTypeId;
   /** User-entered/derived name; may be undefined until named. */
   projectName?: string;
+  /** Contractor-only: the client this job is for (feeds the post-birth quote). */
+  customerName?: string;
   address?: string;
   rooms: DraftRoom[];
   tasks: DraftTask[];
@@ -275,6 +277,16 @@ export function nextStep(
       input: { kind: 'chips', options: SCOPE_BY_TYPE[draft.projectType], multi: true },
     };
   }
+  // Contractor-only (the ONE essential role divergence woven into the shared
+  // tree, not a parallel flow): a builder works FOR a client. Capturing the
+  // customer here feeds the post-birth quote offer. Homeowners never see it.
+  if (userType === 'contractor' && !answered(draft, 'customer')) {
+    return {
+      id: 'customer',
+      messageKey: 'renaidaFlow.q.customer',
+      input: { kind: 'text', placeholderKey: 'renaidaFlow.ph.customer', skipKey: 'renaidaFlow.skip.noCustomer' },
+    };
+  }
   // Smart add-ons: only once scope produced tasks and the type has suggestions.
   const addons = draft.projectType ? ADDONS_BY_TYPE[draft.projectType] : undefined;
   if (draft.projectType && draft.tasks.length > 0 && addons && !answered(draft, 'addons')) {
@@ -389,6 +401,10 @@ export function applyAnswer(
       if (answer.kind === 'number' && next.rooms[0]) {
         next.rooms = [{ ...next.rooms[0], areaSqm: answer.value }];
       }
+      break;
+    }
+    case 'customer': {
+      if (answer.kind === 'text' && answer.value.trim()) next.customerName = answer.value.trim();
       break;
     }
     case 'address': {

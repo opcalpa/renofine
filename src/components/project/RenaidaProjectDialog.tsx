@@ -13,7 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import {
   Sparkles, ArrowRight, Home, Hammer, Wallet, MapPin, Loader2, Check, Camera,
-  MessageSquare, FileText, PenTool, X, RotateCcw, FolderUp,
+  MessageSquare, FileText, PenTool, X, RotateCcw, FolderUp, User,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -29,6 +29,7 @@ import { parseProjectDescription, fetchAddonSuggestions } from '@/services/renai
 import { ingestProjectFolder, type PendingSketch } from '@/services/ingestProjectFolder';
 import { importPurchaseOrder, type ImportPurchaseAction } from '@/services/agent/importPurchaseOrder';
 import { floorPlanResultToShapes } from '@/services/aiVisionService';
+import { findOrCreateClientByName } from '@/services/intakeService';
 import { createPlanInDB, saveShapesForPlan } from '@/components/floormap/utils/plans';
 import { readDroppedItems } from '@/lib/dropTree';
 import type { WorkType } from '@/services/workTypeUtils';
@@ -98,7 +99,13 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
   // Analyzed floor-plan images → sketches in the planner at creation (Fas D).
   const pendingSketchesRef = useRef<PendingSketch[]>([]);
   // Contractor post-birth: offer to prefill a customer quote from the new tasks.
-  const [postCreate, setPostCreate] = useState<{ projectId: string; taskIds: string[] } | null>(null);
+  const [postCreate, setPostCreate] = useState<{
+    projectId: string;
+    taskIds: string[];
+    profileId: string;
+    customerName?: string;
+  } | null>(null);
+  const [quoteBusy, setQuoteBusy] = useState(false);
   const [addonOptions, setAddonOptions] = useState<
     Array<{ id: string; label: string; workTypes: WorkType[] }> | null
   >(null);
@@ -143,6 +150,7 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
       pendingPurchasesRef.current = [];
       pendingSketchesRef.current = [];
       setPostCreate(null);
+      setQuoteBusy(false);
       setAddonOptions(null);
       setAddonsLoading(false);
       describeUsedRef.current = false;
@@ -665,7 +673,12 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
           action: 'shown',
           task_count: result.taskIds.length,
         });
-        setPostCreate({ projectId: result.projectId, taskIds: result.taskIds });
+        setPostCreate({
+          projectId: result.projectId,
+          taskIds: result.taskIds,
+          profileId: profile.id,
+          customerName: draft.customerName,
+        });
         setCreating(false);
         return;
       }
@@ -679,17 +692,33 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
     }
   };
 
-  const onQuoteOffer = (accepted: boolean) => {
-    if (!postCreate) return;
+  const onQuoteOffer = async (accepted: boolean) => {
+    if (!postCreate || quoteBusy) return;
     analytics.capture(AnalyticsEvents.RENAIDA_QUOTE_OFFER, {
       action: accepted ? 'accepted' : 'declined',
       task_count: postCreate.taskIds.length,
+      has_customer: Boolean(postCreate.customerName),
     });
+    if (!accepted) {
+      onOpenChange(false);
+      navigate(`/projects/${postCreate.projectId}`);
+      return;
+    }
+    // Pre-address the quote to the customer the builder already named: find or
+    // create the client, pass its id (CreateQuoteV2 reads ?clientId=). Best-effort.
+    setQuoteBusy(true);
+    let clientParam = '';
+    if (postCreate.customerName) {
+      try {
+        const clientId = await findOrCreateClientByName(postCreate.profileId, postCreate.customerName);
+        if (clientId) clientParam = `&clientId=${clientId}`;
+      } catch (e) {
+        console.error('RenaidaProjectDialog: client prefill failed', e);
+      }
+    }
     onOpenChange(false);
     navigate(
-      accepted
-        ? `/quotes/new?projectId=${postCreate.projectId}&prepopulate=true&taskIds=${postCreate.taskIds.join(',')}`
-        : `/projects/${postCreate.projectId}`
+      `/quotes/new?projectId=${postCreate.projectId}&prepopulate=true&taskIds=${postCreate.taskIds.join(',')}${clientParam}`
     );
   };
 
@@ -947,17 +976,18 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
               {postCreate && (
                 <div className="space-y-3 animate-in fade-in slide-in-from-bottom-1">
                   <RenaidaBubble>
-                    {t(
-                      'renaidaFlow.quoteOffer.message',
-                      'Projektet är skapat! 🎉 Vill du att jag förbereder en offert till din kund av arbetena?'
-                    )}
+                    {postCreate.customerName
+                      ? t('renaidaFlow.quoteOffer.messageNamed', 'Projektet är skapat! 🎉 Vill du att jag förbereder en offert till {{customer}} av arbetena?', {
+                          customer: postCreate.customerName,
+                        })
+                      : t('renaidaFlow.quoteOffer.message', 'Projektet är skapat! 🎉 Vill du att jag förbereder en offert till din kund av arbetena?')}
                   </RenaidaBubble>
                   <div className="flex flex-col gap-2 pl-8 sm:flex-row">
-                    <Button onClick={() => onQuoteOffer(true)}>
-                      <FileText className="mr-2 h-4 w-4" />
+                    <Button onClick={() => onQuoteOffer(true)} disabled={quoteBusy}>
+                      {quoteBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}
                       {t('renaidaFlow.quoteOffer.accept', 'Förbered offert')}
                     </Button>
-                    <Button variant="outline" onClick={() => onQuoteOffer(false)}>
+                    <Button variant="outline" onClick={() => onQuoteOffer(false)} disabled={quoteBusy}>
                       {t('renaidaFlow.quoteOffer.decline', 'Öppna projektet')}
                     </Button>
                   </div>
@@ -977,6 +1007,11 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
                     </div>
                     <div>
                       <div className="text-sm font-semibold">{draft.projectName}</div>
+                      {draft.customerName && (
+                        <div className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+                          <User className="h-3 w-3" /> {draft.customerName}
+                        </div>
+                      )}
                       {draft.address && (
                         <div className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
                           <MapPin className="h-3 w-3" /> {draft.address}
@@ -1032,6 +1067,11 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
                     <span className="text-muted-foreground/60">{t('renaidaFlow.ui.namePending')}</span>
                   )}
                 </div>
+                {draft.customerName && (
+                  <div className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+                    <User className="h-3 w-3" /> {draft.customerName}
+                  </div>
+                )}
                 {draft.address && (
                   <div className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
                     <MapPin className="h-3 w-3" /> {draft.address}

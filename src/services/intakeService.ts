@@ -442,6 +442,38 @@ export async function createTasksFromIntake(
 /**
  * Create or find client from intake request
  */
+/**
+ * Find (by name, case-insensitive) or create a lightweight client for this
+ * contractor. Used by Renaida's post-birth quote offer: the builder typed the
+ * customer once during project creation, so the quote arrives pre-addressed.
+ * Returns null on failure (the caller falls back to a quote without a client).
+ */
+export async function findOrCreateClientByName(
+  ownerProfileId: string,
+  name: string
+): Promise<string | null> {
+  const trimmed = name.trim();
+  if (!trimmed) return null;
+  const { data: existing } = await supabase
+    .from("clients")
+    .select("id")
+    .eq("owner_id", ownerProfileId)
+    .ilike("name", trimmed)
+    .limit(1)
+    .maybeSingle();
+  if (existing) return existing.id;
+  const { data, error } = await supabase
+    .from("clients")
+    .insert({ owner_id: ownerProfileId, name: trimmed })
+    .select("id")
+    .single();
+  if (error || !data) {
+    console.error("findOrCreateClientByName: failed to create client:", error);
+    return null;
+  }
+  return data.id;
+}
+
 export async function createClientFromIntake(
   ownerProfileId: string,
   input: {
