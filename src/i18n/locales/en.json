@@ -6988,6 +6988,9 @@
       "receiptsImport": "{{count}} receipts/invoices — I'll create them as purchases when you create the project.",
       "purchasesCreated": "{{count}} purchase(s) created from your receipts.",
       "floorplans": "{{count}} drawing(s) — open them in the planner after the project is created.",
+      "sketches": "{{count}} drawing(s) — I'll draw a rough sketch in the planner when you create the project.",
+      "sketchesCreated": "{{count}} rough sketch(es) drawn in the planner.",
+      "sketchPlanName": "Rough sketch – {{file}}",
       "unreadable": "I couldn't read {{count}} file(s).",
       "nothing": "I couldn't find anything to add — type, speak, or take a photo instead.",
       "failed": "Couldn't read the folder"

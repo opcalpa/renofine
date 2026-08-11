@@ -23,12 +23,20 @@ import type { AIParsedResult } from '@/components/project/overview/planning-wiza
 import { parseProjectDescription } from './renaidaProjectIntake';
 import { captureDocument } from './agent/documentCapture';
 import type { ImportPurchaseAction } from './agent/importPurchaseOrder';
+import { classifyDocument } from './smartUploadService';
+import { analyzeFloorPlan, type AIConversionResult } from './aiVisionService';
 import { mergeParseIntoDraft, type ProjectDraft, type ProvenanceKind } from './renaidaProjectFlow';
 
 /** A renovation folder, not a photo-library dump — bound the LLM cost. */
 const MAX_FILES = 40;
 /** How many files extract/classify/parse in parallel (rate-limit friendly). */
 const CONCURRENCY = 5;
+/**
+ * Rough-sketch scale assumption (Fas D): with no calibration line at drop time
+ * we assume the plan's longest image side spans ~10 m. Honest for a GROVSKISS —
+ * the editor's calibration tools refine it afterwards.
+ */
+const DEFAULT_SKETCH_SPAN_MM = 10000;
 
 const isImage = (f: File) =>
   (f.type || '').startsWith('image/') || /\.(jpe?g|png|heic|heif|webp|gif|bmp|tiff?)$/i.test(f.name);
@@ -95,14 +103,65 @@ async function classifyText(text: string, fileName: string): Promise<ClassifyRes
 const usable = (p: AIParsedResult | null): p is AIParsedResult =>
   !!p && (p.rooms.length > 0 || p.globalWorkTypes.length > 0);
 
+/** A floor-plan image analyzed at drop time; shapes materialize at birth. */
+export interface PendingSketch {
+  fileName: string;
+  result: AIConversionResult;
+}
+
 /** A single file's contribution, before the deterministic fold. */
 type Contribution =
   | { kind: 'scope'; parsed: AIParsedResult; sourceKind: ProvenanceKind; fileName?: string }
   | { kind: 'receipt'; amount: number | null }
   | { kind: 'purchase'; action: ImportPurchaseAction }
+  | { kind: 'sketch'; sketch: PendingSketch; parsed: AIParsedResult | null }
   | { kind: 'floorplan' }
   | { kind: 'ignored' }
   | { kind: 'unreadable' };
+
+/**
+ * Fas D: a floor-plan IMAGE → process-floorplan (walls/doors/rooms in mm with
+ * an assumed rough scale). Room names fold into the draft right away; the
+ * geometry becomes a sketch in the planner at project birth.
+ */
+async function processFloorPlanImage(file: File): Promise<Contribution> {
+  try {
+    let width: number | undefined;
+    let height: number | undefined;
+    try {
+      const bmp = await createImageBitmap(file);
+      width = bmp.width;
+      height = bmp.height;
+      bmp.close();
+    } catch {
+      /* dims stay undefined — the edge fn copes */
+    }
+    const ratio = width && height ? DEFAULT_SKETCH_SPAN_MM / Math.max(width, height) : 10;
+    const result = await analyzeFloorPlan(file, ratio, width, height);
+    const roomNames = (result.rooms ?? [])
+      .map((r) => (r.name ?? '').trim())
+      .filter((n) => n && !/^room$/i.test(n));
+    const hasGeometry =
+      (result.walls?.length ?? 0) > 0 || (result.rooms?.length ?? 0) > 0;
+    if (!hasGeometry) return { kind: 'unreadable' };
+    // Synthetic parse: the sketch's room names become draft rooms (floorplan
+    // provenance). No work types — the gap/scope steps cover those.
+    const parsed: AIParsedResult | null = roomNames.length
+      ? {
+          propertyType: null,
+          floors: null,
+          totalAreaSqm: null,
+          rooms: roomNames.map((name) => ({ nameKey: name, name, suggestedWorkTypes: [] })),
+          otherSpaces: [],
+          globalWorkTypes: [],
+          summary: '',
+        }
+      : null;
+    return { kind: 'sketch', sketch: { fileName: file.name, result }, parsed };
+  } catch {
+    return { kind: 'unreadable' };
+  }
+}
 
 /** A document (PDF/DOCX): extract → classify → route by type. */
 async function processDocument(
@@ -187,6 +246,9 @@ export interface IngestOutcome {
   receiptCount: number;
   /** Fully-extracted receipts/invoices to turn into POs at creation (inc 3). */
   pendingPurchases: ImportPurchaseAction[];
+  /** Analyzed floor-plan images → sketches in the planner at creation (Fas D). */
+  pendingSketches: PendingSketch[];
+  /** Floor plans seen but NOT analyzable (e.g. PDF drawings) — counted only. */
   floorplanCount: number;
   ignoredCount: number;
   unreadableCount: number;
@@ -217,9 +279,27 @@ export async function ingestProjectFolder(
   const texts = rest.filter((f) => !isPdf(f) && !isDoc(f) && isTextLike(f));
   const ignoredUpfront = rest.filter((f) => !isPdf(f) && !isDoc(f) && !isTextLike(f));
 
+  // Phase 0 (Fas D) — cheap low-res classification of images so floor-plan
+  // photos route to process-floorplan instead of being OCR-mangled as text.
+  // Costs one mini-vision call per photo; fail-open to the OCR bucket.
+  let planImages: File[] = [];
+  let ocrImages: File[] = photos;
+  if (photos.length > 0) {
+    const kinds = await mapLimit(photos, CONCURRENCY, async (f) => {
+      try {
+        return (await classifyDocument(f)).type;
+      } catch {
+        return 'other';
+      }
+    });
+    planImages = photos.filter((_, i) => kinds[i] === 'floor_plan');
+    ocrImages = photos.filter((_, i) => kinds[i] !== 'floor_plan');
+  }
+
   // Phase 1 — extract/classify/parse (network-bound, independent, bounded).
   const thunks: Array<() => Promise<Contribution | null>> = [
-    () => processPhotos(photos, language),
+    () => processPhotos(ocrImages, language),
+    ...planImages.map((f) => () => processFloorPlanImage(f)),
     ...pdfs.map((f) => () => processDocument(f, language, collectPurchases)),
     ...docs.map((f) => () => processDocument(f, language, collectPurchases)),
     ...texts.map((f) => () => processTextFile(f, language)),
@@ -237,6 +317,7 @@ export async function ingestProjectFolder(
   let ignoredCount = ignoredUpfront.length;
   let unreadableCount = 0;
   const pendingPurchases: ImportPurchaseAction[] = [];
+  const pendingSketches: PendingSketch[] = [];
 
   for (const c of settled) {
     switch (c.kind) {
@@ -249,6 +330,15 @@ export async function ingestProjectFolder(
       case 'purchase':
         receiptCount++;
         pendingPurchases.push(c.action);
+        break;
+      case 'sketch':
+        pendingSketches.push(c.sketch);
+        if (c.parsed) {
+          draft = mergeParseIntoDraft(c.parsed, draft, {
+            sourceKind: 'floorplan',
+            fileName: c.sketch.fileName,
+          });
+        }
         break;
       case 'floorplan':
         floorplanCount++;
@@ -269,6 +359,7 @@ export async function ingestProjectFolder(
     tasksAdded: draft.tasks.length - tasksBefore,
     receiptCount,
     pendingPurchases,
+    pendingSketches,
     floorplanCount,
     ignoredCount,
     unreadableCount,

@@ -186,8 +186,32 @@ export async function convertImageToBlueprint(
   imageWidth?: number,
   imageHeight?: number
 ): Promise<FloorMapShape[]> {
+  const aiResult = await analyzeFloorPlan(imageFile, pixelToMmRatio, imageWidth, imageHeight);
+  return floorPlanResultToShapes(aiResult, planId);
+}
+
+/**
+ * Analyze only (no shape conversion) — coordinates come back in mm. Split out
+ * so Renaida's folder ingest (Fas D) can analyze at drop time (room names fold
+ * into the draft) and materialize shapes later at project birth without a
+ * second vision call.
+ */
+export async function analyzeFloorPlan(
+  imageFile: File,
+  pixelToMmRatio: number,
+  imageWidth?: number,
+  imageHeight?: number
+): Promise<AIConversionResult> {
   const base64Image = await imageToBase64(imageFile);
   const aiResult = await callVisionAPI(base64Image, pixelToMmRatio, imageWidth, imageHeight);
   aiResult.walls = postProcessWalls(aiResult.walls || []);
-  return convertToFloorMapShapes(aiResult, pixelToMmRatio, planId);
+  return aiResult;
+}
+
+/** Turn an analyzed (mm-space) result into placeable floor-map shapes. */
+export function floorPlanResultToShapes(
+  aiResult: AIConversionResult,
+  planId: string
+): FloorMapShape[] {
+  return convertToFloorMapShapes(aiResult, 1, planId);
 }

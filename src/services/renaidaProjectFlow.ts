@@ -621,8 +621,10 @@ export function mergeParseIntoDraft(
   if (!next.projectType && (next.rooms.length > 0 || next.tasks.length > 0)) {
     next.projectType = 'other';
   }
-  for (const id of ['describe', 'scope']) {
-    if (!next.answered.includes(id)) next.answered.push(id);
-  }
+  if (!next.answered.includes('describe')) next.answered.push('describe');
+  // Only skip the scope question when the ingest actually yielded tasks — a
+  // rooms-only source (e.g. a floor-plan sketch) still needs "what's being
+  // done?" answered, otherwise the project is born without any work.
+  if (next.tasks.length > 0 && !next.answered.includes('scope')) next.answered.push('scope');
   return next;
 }

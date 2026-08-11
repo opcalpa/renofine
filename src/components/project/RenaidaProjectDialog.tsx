@@ -26,8 +26,10 @@ import { compressImage } from '@/lib/compressImage';
 import { analytics, AnalyticsEvents, ProjectCreationMethod } from '@/lib/analytics';
 import { scaffoldProject } from '@/services/scaffoldProject';
 import { parseProjectDescription, fetchAddonSuggestions } from '@/services/renaidaProjectIntake';
-import { ingestProjectFolder } from '@/services/ingestProjectFolder';
+import { ingestProjectFolder, type PendingSketch } from '@/services/ingestProjectFolder';
 import { importPurchaseOrder, type ImportPurchaseAction } from '@/services/agent/importPurchaseOrder';
+import { floorPlanResultToShapes } from '@/services/aiVisionService';
+import { createPlanInDB, saveShapesForPlan } from '@/components/floormap/utils/plans';
 import { readDroppedItems } from '@/lib/dropTree';
 import type { WorkType } from '@/services/workTypeUtils';
 import {
@@ -93,6 +95,8 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
   const [gapAddingRoom, setGapAddingRoom] = useState(false);
   // Fully-extracted receipts from a dropped folder → real POs at creation (inc 3).
   const pendingPurchasesRef = useRef<ImportPurchaseAction[]>([]);
+  // Analyzed floor-plan images → sketches in the planner at creation (Fas D).
+  const pendingSketchesRef = useRef<PendingSketch[]>([]);
   const [addonOptions, setAddonOptions] = useState<
     Array<{ id: string; label: string; workTypes: WorkType[] }> | null
   >(null);
@@ -135,6 +139,7 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
       setDragActive(false);
       setGapAddingRoom(false);
       pendingPurchasesRef.current = [];
+      pendingSketchesRef.current = [];
       setAddonOptions(null);
       setAddonsLoading(false);
       describeUsedRef.current = false;
@@ -355,6 +360,7 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
         collectPurchases: !isGuest,
       });
       pendingPurchasesRef.current = outcome.pendingPurchases;
+      pendingSketchesRef.current = isGuest ? [] : outcome.pendingSketches;
       describeUsedRef.current = true;
       analytics.capture(AnalyticsEvents.RENAIDA_PROJECT_DESCRIBE_USED, {
         user_type: userType,
@@ -371,6 +377,7 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
         outcome.roomsAdded > 0 ||
         outcome.tasksAdded > 0 ||
         outcome.receiptCount > 0 ||
+        outcome.pendingSketches.length > 0 ||
         outcome.floorplanCount > 0;
       if (!gotSomething) {
         setDraft(base);
@@ -403,10 +410,21 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
               })
         );
       }
-      if (outcome.floorplanCount > 0) {
+      // Sketches materialize at birth for logged-in users; guests (no DB) get
+      // their analyzed plans folded into the plain counted line instead.
+      const sketchCount = isGuest ? 0 : outcome.pendingSketches.length;
+      const countedPlans = outcome.floorplanCount + (isGuest ? outcome.pendingSketches.length : 0);
+      if (sketchCount > 0) {
+        lines.push(
+          t('renaidaFlow.folder.sketches', '{{count}} ritning(ar) — jag ritar en grovskiss i planritaren när projektet skapas.', {
+            count: sketchCount,
+          })
+        );
+      }
+      if (countedPlans > 0) {
         lines.push(
           t('renaidaFlow.folder.floorplans', '{{count}} ritning(ar) — öppna dem i planritaren efter att projektet skapats.', {
-            count: outcome.floorplanCount,
+            count: countedPlans,
           })
         );
       }
@@ -595,6 +613,33 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
         }
       }
 
+      // Fas D: materialize analyzed floor plans as rough sketches in the
+      // planner. Best-effort — a failed sketch must not sink the project.
+      const sketches = pendingSketchesRef.current;
+      if (sketches.length > 0) {
+        let drawn = 0;
+        for (const sketch of sketches) {
+          try {
+            const plan = await createPlanInDB(
+              result.projectId,
+              t('renaidaFlow.folder.sketchPlanName', 'Grovskiss – {{file}}', { file: sketch.fileName })
+            );
+            if (!plan) continue;
+            const shapes = floorPlanResultToShapes(sketch.result, plan.id);
+            if (shapes.length > 0 && (await saveShapesForPlan(plan.id, shapes))) drawn++;
+          } catch (e) {
+            console.error('RenaidaProjectDialog: sketch materialization failed', e);
+          }
+        }
+        if (drawn > 0) {
+          toast.success(
+            t('renaidaFlow.folder.sketchesCreated', '{{count}} grovskiss(er) ritade i planritaren.', {
+              count: drawn,
+            })
+          );
+        }
+      }
+
       analytics.capture(AnalyticsEvents.PROJECT_CREATED, {
         creation_method: ProjectCreationMethod.RENAIDA_DIALOG,
         user_type: userType,
@@ -605,6 +650,7 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
         describe_used: describeUsedRef.current,
         addons_selected: addonsSelectedRef.current,
         purchases_imported: pendingPurchasesRef.current.length,
+        sketches_imported: pendingSketchesRef.current.length,
       });
       toast.success(t('renaidaFlow.err.created', 'Projektet är skapat! 🎉'));
       onOpenChange(false);

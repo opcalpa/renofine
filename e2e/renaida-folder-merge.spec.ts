@@ -164,6 +164,24 @@ test('gap fill: skip keeps tasks project-wide but still advances', () => {
   expect(nextStep(d)!.id).not.toBe('gapRoom'); // asked once, won't loop
 });
 
+test('sketch fold (Fas D): rooms-only source keeps the scope question alive', () => {
+  let d: ProjectDraft = emptyDraft();
+  // A floor-plan sketch yields room names but NO work types.
+  d = mergeParseIntoDraft(parsed([{ name: 'Badrum', work: [] }, { name: 'Hall', work: [] }]), d, {
+    sourceKind: 'floorplan',
+    fileName: 'skiss.jpg',
+  });
+  expect(d.rooms.map((r) => r.name)).toEqual(['Badrum', 'Hall']);
+  expect(d.rooms[0].source?.kind).toBe('floorplan');
+  expect(d.rooms[0].source?.fileName).toBe('skiss.jpg');
+  expect(d.tasks).toHaveLength(0);
+  // Rooms came, but no tasks → "what's being done?" must still be asked,
+  // otherwise the project is born without any work.
+  expect(d.answered).toContain('describe');
+  expect(d.answered).not.toContain('scope');
+  expect(nextStep(d)!.id).toBe('scope');
+});
+
 test('empty parse leaves the draft shape untouched but marks answered', () => {
   let d: ProjectDraft = emptyDraft();
   d = mergeParseIntoDraft(parsed([], []), d, { sourceKind: 'document', fileName: 'blank.pdf' });

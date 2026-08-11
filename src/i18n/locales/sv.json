@@ -6988,6 +6988,9 @@
       "receiptsImport": "{{count}} kvitton/fakturor — jag skapar dem som inköp när du skapar projektet.",
       "purchasesCreated": "{{count}} inköp skapade från dina kvitton.",
       "floorplans": "{{count}} ritning(ar) — öppna dem i planritaren efter att projektet skapats.",
+      "sketches": "{{count}} ritning(ar) — jag ritar en grovskiss i planritaren när projektet skapas.",
+      "sketchesCreated": "{{count}} grovskiss(er) ritade i planritaren.",
+      "sketchPlanName": "Grovskiss – {{file}}",
       "unreadable": "{{count}} filer kunde jag inte läsa.",
       "nothing": "Hittade inget att lägga in — skriv, prata eller fota istället.",
       "failed": "Kunde inte läsa mappen"
