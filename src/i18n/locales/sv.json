@@ -6880,7 +6880,13 @@
         "homeowner": "Vill du berätta om ditt projekt med egna ord? Jag fyller i vad jag kan och frågar bara om resten. Eller hoppa över så guidar jag dig steg för steg.",
         "contractor": "Beskriv jobbet med egna ord så skissar jag rum och arbeten — eller hoppa över så guidar jag dig."
       },
-      "addons": "Fint. Många brukar också ta med det här — vill du lägga till något? (Valfritt.)"
+      "addons": "Fint. Många brukar också ta med det här — vill du lägga till något? (Valfritt.)",
+      "gapRoom": "Jag hittade {{count}} arbeten jag inte kunde placera i ett rum — vilket rum hör de till?"
+    },
+    "gap": {
+      "newRoom": "+ Nytt rum",
+      "newRoomPh": "Rummets namn",
+      "projectWide": "Lämna projektövergripande"
     },
     "complete": "Perfekt — då har jag allt jag behöver. Ditt projekt är redo att skapas. Du kan justera allt efteråt.",
     "type": {
@@ -6980,6 +6986,7 @@
       "summary": "Jag läste {{files}} filer → {{rooms}} rum och {{tasks}} arbeten.",
       "receipts": "{{count}} kvitton/fakturor — ladda upp dem som inköp inne i projektet.",
       "floorplans": "{{count}} ritning(ar) — öppna dem i planritaren efter att projektet skapats.",
+      "unreadable": "{{count}} filer kunde jag inte läsa.",
       "nothing": "Hittade inget att lägga in — skriv, prata eller fota istället.",
       "failed": "Kunde inte läsa mappen"
     },

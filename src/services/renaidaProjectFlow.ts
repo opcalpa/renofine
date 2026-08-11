@@ -289,6 +289,20 @@ export function nextStep(
       },
     };
   }
+  // Gap fill (Fas C inc 2): a folder/photo/description can produce work types
+  // with no room (parsed globalWorkTypes) — "6 photos I couldn't place". Ask
+  // which room they belong to, but ONLY when there's genuine ambiguity (2+
+  // rooms) — with a single room the answer is obvious and a question is just
+  // friction, and it keeps the single-room describe flow unchanged. Bespoke UI
+  // reads draft.rooms. Asked once (marked answered on any resolution incl. skip).
+  if (unattributedTaskCount(draft) > 0 && draft.rooms.length >= 2 && !answered(draft, 'gapRoom')) {
+    return {
+      id: 'gapRoom',
+      messageKey: 'renaidaFlow.q.gapRoom',
+      messageVars: { count: String(unattributedTaskCount(draft)) },
+      input: { kind: 'chips', options: [], skipKey: 'renaidaFlow.gap.projectWide' },
+    };
+  }
   if (!answered(draft, 'size')) {
     return {
       id: 'size',
@@ -420,6 +434,56 @@ export function applyAddonWorkTypes(draft: ProjectDraft, workTypesList: WorkType
       next.tasks.push({ workType: wt, roomName, costCenter: workTypeToCostCenter(wt), source: { kind: 'suggestion' } });
     }
   }
+  return next;
+}
+
+/** Tasks with no room (project-wide) that a gap-fill step could attribute. */
+export const unattributedTaskCount = (draft: ProjectDraft): number =>
+  draft.tasks.filter((t) => t.roomName == null && !t.excluded).length;
+
+/**
+ * Resolve the gap-fill step (Fas C inc 2): attribute every unattributed task
+ * to `roomName` (or leave them project-wide when null). Creates the room if it
+ * is new, canonicalizes against existing rooms, and dedupes so an orphan that
+ * would collide with an already-attributed task is dropped rather than doubled.
+ * Marks 'gapRoom' answered so the step is asked exactly once.
+ */
+export function assignUnattributedTasks(
+  draft: ProjectDraft,
+  roomName: string | null
+): ProjectDraft {
+  const next: ProjectDraft = {
+    ...draft,
+    rooms: [...draft.rooms],
+    tasks: [...draft.tasks],
+    answered: [...draft.answered],
+  };
+  if (!next.answered.includes('gapRoom')) next.answered.push('gapRoom');
+
+  const target = roomName?.trim();
+  if (!target) return next; // "keep project-wide" — tasks stay unattributed.
+
+  const key = (name: string) => name.toLowerCase();
+  let canon = next.rooms.find((r) => key(r.name) === key(target))?.name;
+  if (!canon) {
+    canon = target;
+    next.rooms.push({ name: target, source: { kind: 'answer' } });
+  }
+
+  const attributed = new Set(
+    next.tasks.filter((t) => t.roomName != null).map((t) => `${t.workType}:${t.roomName}`)
+  );
+  next.tasks = next.tasks.reduce<DraftTask[]>((acc, t) => {
+    if (t.roomName != null) {
+      acc.push(t);
+      return acc;
+    }
+    const k = `${t.workType}:${canon}`;
+    if (attributed.has(k)) return acc; // orphan merges into the existing task
+    attributed.add(k);
+    acc.push({ ...t, roomName: canon });
+    return acc;
+  }, []);
   return next;
 }
 

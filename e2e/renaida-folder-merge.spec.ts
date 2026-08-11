@@ -2,6 +2,8 @@ import { test, expect } from '@playwright/test';
 import {
   emptyDraft,
   mergeParseIntoDraft,
+  unattributedTaskCount,
+  assignUnattributedTasks,
   nextStep,
   toScaffoldInput,
   type ProjectDraft,
@@ -78,6 +80,88 @@ test('merge preserves a room the user already chose (no clobber)', () => {
   expect(d.rooms.some((r) => r.name === 'Tvättstuga')).toBe(true);
   expect(d.rooms.find((r) => r.name === 'Tvättstuga')?.source?.kind).toBe('photo');
   expect(type.id).toBe('describe');
+});
+
+test('gap fill: global work types + 2+ rooms → flow asks which room', () => {
+  let d: ProjectDraft = emptyDraft();
+  // A scope doc yields two rooms + two project-wide tasks (no room) → ambiguous.
+  d = mergeParseIntoDraft(
+    parsed(
+      [
+        { name: 'Badrum', work: ['kakel'] },
+        { name: 'Kök', work: ['snickeri'] },
+      ],
+      ['rivning', 'malning']
+    ),
+    d,
+    { sourceKind: 'photo' }
+  );
+  expect(unattributedTaskCount(d)).toBe(2); // rivning + malning have no room
+
+  // The flow surfaces the gap step before finishing.
+  const s = nextStep(d)!;
+  expect(s.id).toBe('gapRoom');
+  expect(s.messageVars?.count).toBe('2');
+
+  // Attribute them to Badrum.
+  d = assignUnattributedTasks(d, 'Badrum');
+  expect(unattributedTaskCount(d)).toBe(0);
+  expect(d.tasks.filter((t) => t.roomName === 'Badrum').map((t) => t.workType).sort()).toEqual(
+    ['kakel', 'malning', 'rivning'].sort()
+  );
+  // Gap answered → flow moves on (not the gap step again).
+  expect(nextStep(d)!.id).not.toBe('gapRoom');
+});
+
+test('gap fill: a single room is unambiguous → no gap step, stays project-wide', () => {
+  let d: ProjectDraft = emptyDraft();
+  d = mergeParseIntoDraft(parsed([{ name: 'Badrum', work: ['kakel'] }], ['malning']), d, {
+    sourceKind: 'photo',
+  });
+  expect(unattributedTaskCount(d)).toBe(1);
+  // Only one room → no ambiguity → flow proceeds to size, not gapRoom.
+  expect(nextStep(d)!.id).toBe('size');
+});
+
+test('gap fill: assigning to a new room creates it; dedupe drops a collision', () => {
+  let d: ProjectDraft = emptyDraft();
+  // 'kakel' exists in Badrum AND as a project-wide task → collision on assign.
+  d = mergeParseIntoDraft(parsed([{ name: 'Badrum', work: ['kakel'] }], ['kakel', 'el']), d, {
+    sourceKind: 'document',
+    fileName: 'scope.txt',
+  });
+  expect(unattributedTaskCount(d)).toBe(2); // kakel(global) + el(global)
+
+  d = assignUnattributedTasks(d, 'Tvättstuga');
+  // New room created.
+  expect(d.rooms.some((r) => r.name === 'Tvättstuga')).toBe(true);
+  // Both globals attributed to Tvättstuga; no collision here (Badrum≠Tvättstuga).
+  expect(d.tasks.filter((t) => t.roomName === 'Tvättstuga').map((t) => t.workType).sort()).toEqual(
+    ['el', 'kakel'].sort()
+  );
+});
+
+test('gap fill: assigning to a room that already has the task dedupes the orphan', () => {
+  let d: ProjectDraft = emptyDraft();
+  d = mergeParseIntoDraft(parsed([{ name: 'Kök', work: ['el'] }], ['el', 'vvs']), d, {
+    sourceKind: 'photo',
+  });
+  // Assign the two globals (el, vvs) to Kök — 'el:Kök' already exists → drop it.
+  d = assignUnattributedTasks(d, 'kök'); // case-insensitive → canonical 'Kök'
+  const koksTasks = d.tasks.filter((t) => t.roomName === 'Kök').map((t) => t.workType).sort();
+  expect(koksTasks).toEqual(['el', 'vvs'].sort()); // exactly one 'el', not two
+});
+
+test('gap fill: skip keeps tasks project-wide but still advances', () => {
+  let d: ProjectDraft = emptyDraft();
+  d = mergeParseIntoDraft(parsed([{ name: 'Hall', work: ['golv'] }], ['malning']), d, {
+    sourceKind: 'document',
+    fileName: 'a.pdf',
+  });
+  d = assignUnattributedTasks(d, null); // "keep project-wide"
+  expect(unattributedTaskCount(d)).toBe(1); // still unattributed
+  expect(d.answered).toContain('gapRoom');
+  expect(nextStep(d)!.id).not.toBe('gapRoom'); // asked once, won't loop
 });
 
 test('empty parse leaves the draft shape untouched but marks answered', () => {

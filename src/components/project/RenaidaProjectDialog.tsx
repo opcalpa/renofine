@@ -38,6 +38,8 @@ import {
   seedDraftFromParse,
   deterministicAddons,
   applyAddonWorkTypes,
+  unattributedTaskCount,
+  assignUnattributedTasks,
   PROJECT_TYPES,
   type ProjectDraft,
   type ProjectTypeId,
@@ -87,6 +89,7 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
   const [parsing, setParsing] = useState(false);
   const [ingesting, setIngesting] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [gapAddingRoom, setGapAddingRoom] = useState(false);
   const [addonOptions, setAddonOptions] = useState<
     Array<{ id: string; label: string; workTypes: WorkType[] }> | null
   >(null);
@@ -127,6 +130,7 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
       setParsing(false);
       setIngesting(false);
       setDragActive(false);
+      setGapAddingRoom(false);
       setAddonOptions(null);
       setAddonsLoading(false);
       describeUsedRef.current = false;
@@ -395,6 +399,13 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
           })
         );
       }
+      if (outcome.unreadableCount > 0) {
+        lines.push(
+          t('renaidaFlow.folder.unreadable', '{{count}} filer kunde jag inte läsa.', {
+            count: outcome.unreadableCount,
+          })
+        );
+      }
       setTurns((tn) => [...tn, { message: lines.join(' '), answerLabel: '' }]);
     } catch (err) {
       console.error('RenaidaProjectDialog: folder ingest failed', err);
@@ -456,6 +467,23 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
     addonsSelectedRef.current = chosen.length;
     setMultiSel([]);
   };
+
+  // Gap fill (Fas C inc 2): attribute the "which room?" answer for tasks the
+  // ingest couldn't place. Skipping keeps them project-wide.
+  const resolveGap = (s: Step, roomName: string | null, answerLabel: string) => {
+    setTurns((tn) => [...tn, { message: messageOf(s), answerLabel }]);
+    setDraft((d) => assignUnattributedTasks(d, roomName));
+    setGapAddingRoom(false);
+    setMultiSel([]);
+    setFieldValue('');
+  };
+  const onGapRoom = (s: Step, roomName: string) => resolveGap(s, roomName, roomName);
+  const onGapNewRoom = (s: Step) => {
+    const name = fieldValue.trim();
+    if (name) resolveGap(s, name, name);
+  };
+  const onGapSkip = (s: Step) =>
+    resolveGap(s, null, t('renaidaFlow.gap.projectWide', 'Lämna projektövergripande'));
 
   const onFieldSubmit = (s: Step) => {
     if (s.input.kind === 'number') {
@@ -745,6 +773,47 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
                           </div>
                         </>
                       )}
+                    </div>
+                  ) : step.id === 'gapRoom' ? (
+                    <div className="space-y-2.5 pl-8">
+                      <div className="flex flex-wrap gap-2">
+                        {draft.rooms.map((r) => (
+                          <button
+                            key={r.name}
+                            onClick={() => onGapRoom(step, r.name)}
+                            className="rounded-full border bg-background px-3.5 py-1.5 text-sm transition-colors hover:border-primary hover:bg-primary/5"
+                          >
+                            {r.name}
+                          </button>
+                        ))}
+                        {!gapAddingRoom && (
+                          <button
+                            onClick={() => setGapAddingRoom(true)}
+                            className="rounded-full border border-dashed px-3.5 py-1.5 text-sm text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+                          >
+                            {t('renaidaFlow.gap.newRoom', '+ Nytt rum')}
+                          </button>
+                        )}
+                      </div>
+                      {gapAddingRoom && (
+                        <div className="flex items-center gap-2">
+                          <Input
+                            autoFocus
+                            placeholder={t('renaidaFlow.gap.newRoomPh', 'Rummets namn')}
+                            value={fieldValue}
+                            onChange={(e) => setFieldValue(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') onGapNewRoom(step);
+                            }}
+                          />
+                          <Button size="sm" onClick={() => onGapNewRoom(step)} disabled={!fieldValue.trim()}>
+                            <ArrowRight className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      )}
+                      <Button size="sm" variant="ghost" onClick={() => onGapSkip(step)}>
+                        {t('renaidaFlow.gap.projectWide', 'Lämna projektövergripande')}
+                      </Button>
                     </div>
                   ) : (
                     <StepInputView

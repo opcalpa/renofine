@@ -6880,7 +6880,13 @@
         "homeowner": "Want to tell me about your project in your own words? I'll fill in what I can and only ask about the rest. Or skip and I'll guide you step by step.",
         "contractor": "Describe the job in your own words and I'll draft the rooms and tasks — or skip to be guided."
       },
-      "addons": "Nice. People often also include these — want to add any? (Optional.)"
+      "addons": "Nice. People often also include these — want to add any? (Optional.)",
+      "gapRoom": "I found {{count}} task(s) I couldn't place in a room — which room do they belong to?"
+    },
+    "gap": {
+      "newRoom": "+ New room",
+      "newRoomPh": "Room name",
+      "projectWide": "Keep project-wide"
     },
     "complete": "Perfect — I have everything I need. Your project is ready to create. You can adjust anything afterwards.",
     "type": {
@@ -6980,6 +6986,7 @@
       "summary": "I read {{files}} files → {{rooms}} rooms and {{tasks}} tasks.",
       "receipts": "{{count}} receipts/invoices — upload them as purchases inside the project.",
       "floorplans": "{{count}} drawing(s) — open them in the planner after the project is created.",
+      "unreadable": "I couldn't read {{count}} file(s).",
       "nothing": "I couldn't find anything to add — type, speak, or take a photo instead.",
       "failed": "Couldn't read the folder"
     },
