@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import {
   emptyDraft,
   mergeParseIntoDraft,
+  mergeQuoteLinesIntoDraft,
   unattributedTaskCount,
   assignUnattributedTasks,
   nextStep,
@@ -180,6 +181,43 @@ test('sketch fold (Fas D): rooms-only source keeps the scope question alive', ()
   expect(d.answered).toContain('describe');
   expect(d.answered).not.toContain('scope');
   expect(nextStep(d)!.id).toBe('scope');
+});
+
+test('K4: contractor quote lines fold into priced tasks; prices survive to scaffold', () => {
+  let d: ProjectDraft = emptyDraft();
+  d = mergeQuoteLinesIntoDraft(
+    [
+      { title: 'Rivning badrum', priceSek: 8000 },
+      { title: 'Kakelsättning', priceSek: 25000 },
+      { title: 'rivning badrum', priceSek: 9999 }, // dup title (case-insensitive) → dropped
+    ],
+    d,
+    { fileName: 'min-offert.pdf' }
+  );
+
+  // Two priced tasks kept (dup collapsed), each carrying its own title + price.
+  expect(d.tasks).toHaveLength(2);
+  const byTitle = new Map(d.tasks.map((t) => [t.customTitle, t.budgetSek]));
+  expect(byTitle.get('Rivning badrum')).toBe(8000);
+  expect(byTitle.get('Kakelsättning')).toBe(25000);
+  // Quote lines are project-wide cost lines (workType 'annat', no room).
+  expect(d.tasks.every((t) => t.workType === 'annat' && t.roomName === null)).toBe(true);
+  expect(d.tasks[0].source?.fileName).toBe('min-offert.pdf');
+
+  // Project-wide by design → the room gap-fill never asks about them.
+  expect(unattributedTaskCount(d)).toBe(0);
+
+  // Shape fixed → flow skips type/scope and goes straight to the rest.
+  expect(d.projectType).toBe('other');
+  expect(d.answered).toContain('scope');
+  expect(nextStep(d, 'contractor')!.id).not.toBe('scope');
+
+  // The price rides into the scaffold as task.budget → K1 prefills the real
+  // number into the sellable quote (CreateQuoteV2's budget fallback).
+  const input = toScaffoldInput(d, (wt) => wt);
+  const scaffoldByTitle = new Map(input.tasks.map((t) => [t.title, t.budget]));
+  expect(scaffoldByTitle.get('Rivning badrum')).toBe(8000);
+  expect(scaffoldByTitle.get('Kakelsättning')).toBe(25000);
 });
 
 test('empty parse leaves the draft shape untouched but marks answered', () => {

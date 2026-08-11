@@ -59,6 +59,12 @@ export interface DraftTask {
    * distinct, so they carry their own name.
    */
   customTitle?: string;
+  /**
+   * Preserved line price (K4): a contractor's own quote-PDF dropped in the birth
+   * folder becomes priced tasks so the post-birth quote offer (K1) prefills their
+   * ACTUAL prices — CreateQuoteV2 uses task.budget as the line's unit price.
+   */
+  budgetSek?: number | null;
 }
 
 export interface ProjectDraft {
@@ -574,6 +580,7 @@ export function toScaffoldInput(draft: ProjectDraft, labelFor: WorkTypeLabeller)
         title: taskTitle(t, labelFor),
         roomName: t.roomName,
         costCenter: t.costCenter,
+        budget: t.budgetSek ?? null,
       })),
     markOnboardingComplete: true,
   };
@@ -691,6 +698,56 @@ export function mergeParseIntoDraft(
   // Only skip the scope question when the ingest actually yielded tasks — a
   // rooms-only source (e.g. a floor-plan sketch) still needs "what's being
   // done?" answered, otherwise the project is born without any work.
+  if (next.tasks.length > 0 && !next.answered.includes('scope')) next.answered.push('scope');
+  return next;
+}
+
+/** One priced line from a contractor's own quote-PDF (K4). */
+export interface QuoteLine {
+  /** The line's work description — becomes the task's own title. */
+  title: string;
+  /** Preserved price in SEK (rides through to the sellable quote via K1). */
+  priceSek: number;
+}
+
+/**
+ * Fold a contractor's own quote line items into the draft as priced tasks (K4).
+ * Each line becomes a named cost task (workType 'annat', like K3 overhead) that
+ * carries its ORIGINAL price — so the post-birth quote offer (K1) prefills the
+ * contractor's actual pricing instead of a re-estimate. Deduped on title so a
+ * quote dropped alongside its own restated copy doesn't double up. The lines are
+ * project-wide (no room), so the room gap-fill leaves them alone by design.
+ */
+export function mergeQuoteLinesIntoDraft(
+  lines: QuoteLine[],
+  draft: ProjectDraft,
+  opts: { fileName?: string }
+): ProjectDraft {
+  const source: Provenance = { kind: 'document', fileName: opts.fileName };
+  const next: ProjectDraft = {
+    ...draft,
+    rooms: [...draft.rooms],
+    tasks: [...draft.tasks],
+    answered: [...draft.answered],
+  };
+  const seen = new Set(
+    next.tasks.filter((t) => t.customTitle).map((t) => t.customTitle!.trim().toLowerCase())
+  );
+  for (const line of lines) {
+    const title = line.title.trim();
+    if (!title || seen.has(title.toLowerCase())) continue;
+    seen.add(title.toLowerCase());
+    next.tasks.push({
+      workType: 'annat',
+      roomName: null,
+      costCenter: workTypeToCostCenter('annat'),
+      customTitle: title,
+      budgetSek: line.priceSek > 0 ? line.priceSek : null,
+      source,
+    });
+  }
+  if (!next.projectType && next.tasks.length > 0) next.projectType = 'other';
+  if (!next.answered.includes('describe')) next.answered.push('describe');
   if (next.tasks.length > 0 && !next.answered.includes('scope')) next.answered.push('scope');
   return next;
 }

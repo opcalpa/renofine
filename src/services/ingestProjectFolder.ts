@@ -21,11 +21,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { compressImage } from '@/lib/compressImage';
 import type { AIParsedResult } from '@/components/project/overview/planning-wizard/types';
 import { parseProjectDescription } from './renaidaProjectIntake';
-import { captureDocument } from './agent/documentCapture';
+import { captureDocument, extractQuoteLines } from './agent/documentCapture';
 import type { ImportPurchaseAction } from './agent/importPurchaseOrder';
 import { classifyDocument } from './smartUploadService';
 import { analyzeFloorPlan, type AIConversionResult } from './aiVisionService';
-import { mergeParseIntoDraft, type ProjectDraft, type ProvenanceKind } from './renaidaProjectFlow';
+import {
+  mergeParseIntoDraft,
+  mergeQuoteLinesIntoDraft,
+  type ProjectDraft,
+  type ProvenanceKind,
+  type QuoteLine,
+} from './renaidaProjectFlow';
 
 /** A renovation folder, not a photo-library dump — bound the LLM cost. */
 const MAX_FILES = 40;
@@ -112,6 +118,7 @@ export interface PendingSketch {
 /** A single file's contribution, before the deterministic fold. */
 type Contribution =
   | { kind: 'scope'; parsed: AIParsedResult; sourceKind: ProvenanceKind; fileName?: string }
+  | { kind: 'quoteLines'; lines: QuoteLine[]; fileName?: string }
   | { kind: 'receipt'; amount: number | null }
   | { kind: 'purchase'; action: ImportPurchaseAction }
   | { kind: 'sketch'; sketch: PendingSketch; parsed: AIParsedResult | null }
@@ -167,7 +174,8 @@ async function processFloorPlanImage(file: File): Promise<Contribution> {
 async function processDocument(
   file: File,
   language: string,
-  collectPurchases: boolean
+  collectPurchases: boolean,
+  isContractor: boolean
 ): Promise<Contribution> {
   const text = await extractText(file);
   if (!text) return { kind: 'unreadable' };
@@ -190,6 +198,13 @@ async function processDocument(
   }
   if (type === 'floor_plan') return { kind: 'floorplan' };
   if (type === 'product_image') return { kind: 'ignored' };
+  // K4: a contractor's OWN quote → priced line items so the post-birth quote
+  // offer (K1) prefills their ACTUAL prices instead of a re-estimate. Homeowners
+  // and price-less quotes fall through to the plain scope parse below.
+  if (type === 'quote' && isContractor) {
+    const lines = await extractQuoteLines(file);
+    if (lines.length > 0) return { kind: 'quoteLines', lines, fileName: file.name };
+  }
   const parsed = await parseProjectDescription(text, language);
   return usable(parsed)
     ? { kind: 'scope', parsed, sourceKind: 'document', fileName: file.name }
@@ -266,9 +281,10 @@ export async function ingestProjectFolder(
   allFiles: File[],
   startDraft: ProjectDraft,
   language: string,
-  opts?: { collectPurchases?: boolean }
+  opts?: { collectPurchases?: boolean; isContractor?: boolean }
 ): Promise<IngestOutcome> {
   const collectPurchases = opts?.collectPurchases ?? false;
+  const isContractor = opts?.isContractor ?? false;
   const files = allFiles.slice(0, MAX_FILES);
   const truncated = allFiles.length > files.length;
 
@@ -300,8 +316,8 @@ export async function ingestProjectFolder(
   const thunks: Array<() => Promise<Contribution | null>> = [
     () => processPhotos(ocrImages, language),
     ...planImages.map((f) => () => processFloorPlanImage(f)),
-    ...pdfs.map((f) => () => processDocument(f, language, collectPurchases)),
-    ...docs.map((f) => () => processDocument(f, language, collectPurchases)),
+    ...pdfs.map((f) => () => processDocument(f, language, collectPurchases, isContractor)),
+    ...docs.map((f) => () => processDocument(f, language, collectPurchases, isContractor)),
     ...texts.map((f) => () => processTextFile(f, language)),
   ];
   const settled = (await mapLimit(thunks, CONCURRENCY, (t) => t())).filter(
@@ -323,6 +339,9 @@ export async function ingestProjectFolder(
     switch (c.kind) {
       case 'scope':
         draft = mergeParseIntoDraft(c.parsed, draft, { sourceKind: c.sourceKind, fileName: c.fileName });
+        break;
+      case 'quoteLines':
+        draft = mergeQuoteLinesIntoDraft(c.lines, draft, { fileName: c.fileName });
         break;
       case 'receipt':
         receiptCount++;

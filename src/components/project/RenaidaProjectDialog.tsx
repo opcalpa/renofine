@@ -369,6 +369,7 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
       const base = applyAnswer(s, { kind: 'skip' }, draft); // marks 'describe' answered
       const outcome = await ingestProjectFolder(files, base, i18n.language, {
         collectPurchases: !isGuest,
+        isContractor: userType === 'contractor',
       });
       pendingPurchasesRef.current = outcome.pendingPurchases;
       pendingSketchesRef.current = isGuest ? [] : outcome.pendingSketches;

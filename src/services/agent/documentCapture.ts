@@ -8,6 +8,7 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import type { ProposalAction } from "./types";
+import type { QuoteLine } from "../renaidaProjectFlow";
 
 interface UnifiedReceiptSlice {
   vendor_name: string | null;
@@ -26,6 +27,42 @@ interface UnifiedReceiptSlice {
 interface UnifiedExtractionResult {
   document_type?: "receipt" | "invoice" | "quote" | "scope" | "other";
   receiptData?: UnifiedReceiptSlice | null;
+  tasks?: { title?: string; estimatedCost?: number | null }[];
+}
+
+/**
+ * K4: extract a contractor's OWN quote-PDF into priced line items. Uses
+ * process-document-v2's quote path (extract_quote → one task per priced row) so
+ * the birth folder-ingest can turn the offer into priced draft tasks whose
+ * prices ride through to the sellable quote (K1). Only lines with a positive
+ * price are returned; returns [] on failure or a price-less quote so the caller
+ * can fall back to the plain scope parse.
+ */
+export async function extractQuoteLines(file: File): Promise<QuoteLine[]> {
+  try {
+    const base64 = await fileToBase64(file);
+    const { data, error } = await supabase.functions.invoke<UnifiedExtractionResult>(
+      "process-document-v2",
+      {
+        body: {
+          fileBase64: base64,
+          mimeType: file.type || "application/pdf",
+          fileName: file.name,
+          mode_hint: "quote",
+        },
+      },
+    );
+    if (error) return [];
+    const lines: QuoteLine[] = [];
+    for (const t of data?.tasks ?? []) {
+      const title = (t.title ?? "").trim();
+      const priceSek = typeof t.estimatedCost === "number" ? t.estimatedCost : 0;
+      if (title && priceSek > 0) lines.push({ title, priceSek });
+    }
+    return lines;
+  } catch {
+    return [];
+  }
 }
 
 export type DocumentCaptureResult =
