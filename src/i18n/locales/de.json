@@ -2457,6 +2457,13 @@
       "suggest": "Kalkulation vorschlagen",
       "self": "Ich rechne selbst",
       "material": "Material"
+    },
+    "quoteOffer": {
+      "accept": "Direkt zum Angebot",
+      "review": "Kalkulation prüfen & anpassen"
     }
+  },
+  "pipeline": {
+    "quickQuote": "Schnellangebot"
   }
 }

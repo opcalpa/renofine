@@ -2457,6 +2457,13 @@
       "suggest": "Proposer un calcul",
       "self": "Je calcule moi-même",
       "material": "matériaux"
+    },
+    "quoteOffer": {
+      "accept": "Directement au devis",
+      "review": "Vérifier et ajuster le calcul"
     }
+  },
+  "pipeline": {
+    "quickQuote": "Devis rapide"
   }
 }

@@ -488,6 +488,7 @@ const Projects = () => {
             <LeadsPipelineSection
               onRefetch={refetch}
               userType={profile?.onboarding_user_type as string | null}
+              onQuickQuote={() => setRenaidaOpen(true)}
             />
           </section>
         )}

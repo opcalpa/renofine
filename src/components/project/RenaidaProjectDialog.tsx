@@ -13,7 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import {
   Sparkles, ArrowRight, Home, Hammer, Wallet, MapPin, Loader2, Check, Camera,
-  MessageSquare, FileText, PenTool, X, RotateCcw, FolderUp, User,
+  MessageSquare, FileText, PenTool, X, RotateCcw, FolderUp, User, Calculator,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -728,16 +728,24 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
     }
   };
 
-  const onQuoteOffer = async (accepted: boolean) => {
+  const onQuoteOffer = async (choice: 'quote' | 'review' | 'decline') => {
     if (!postCreate || quoteBusy) return;
     analytics.capture(AnalyticsEvents.RENAIDA_QUOTE_OFFER, {
-      action: accepted ? 'accepted' : 'declined',
+      action: choice === 'quote' ? 'accepted' : choice === 'review' ? 'review_calc' : 'declined',
       task_count: postCreate.taskIds.length,
       has_customer: Boolean(postCreate.customerName),
     });
-    if (!accepted) {
+    if (choice === 'decline') {
       onOpenChange(false);
       navigate(`/projects/${postCreate.projectId}`);
+      return;
+    }
+    // R1: "granska kalkylen" — the builder's summary+edit surface IS the
+    // planning table (hours × rate, markups, materials). Renaida filled it;
+    // he reviews/adjusts there and generates the quote from its footer.
+    if (choice === 'review') {
+      onOpenChange(false);
+      navigate(`/projects/${postCreate.projectId}?tab=planning`);
       return;
     }
     // Pre-address the quote to the customer the builder already named: find or
@@ -1018,12 +1026,16 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
                         })
                       : t('renaidaFlow.quoteOffer.message', 'Projektet är skapat! 🎉 Vill du att jag förbereder en offert till din kund av arbetena?')}
                   </RenaidaBubble>
-                  <div className="flex flex-col gap-2 pl-8 sm:flex-row">
-                    <Button onClick={() => onQuoteOffer(true)} disabled={quoteBusy}>
+                  <div className="flex flex-col gap-2 pl-8 sm:flex-row sm:flex-wrap">
+                    <Button onClick={() => onQuoteOffer('quote')} disabled={quoteBusy}>
                       {quoteBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}
-                      {t('renaidaFlow.quoteOffer.accept', 'Förbered offert')}
+                      {t('renaidaFlow.quoteOffer.accept', 'Direkt till offert')}
                     </Button>
-                    <Button variant="outline" onClick={() => onQuoteOffer(false)} disabled={quoteBusy}>
+                    <Button variant="outline" onClick={() => onQuoteOffer('review')} disabled={quoteBusy}>
+                      <Calculator className="mr-2 h-4 w-4" />
+                      {t('renaidaFlow.quoteOffer.review', 'Granska & justera kalkylen')}
+                    </Button>
+                    <Button variant="ghost" onClick={() => onQuoteOffer('decline')} disabled={quoteBusy}>
                       {t('renaidaFlow.quoteOffer.decline', 'Öppna projektet')}
                     </Button>
                   </div>

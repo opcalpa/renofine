@@ -5084,36 +5084,7 @@
     "viewQuote": "View quote",
     "noCustomerName": "Unknown customer",
     "noAddress": "No address",
-    "quickQuote": {
-      "button": "Quick Quote",
-      "buttonShort": "Quote",
-      "title": "Quick Quote",
-      "description": "Create a quote directly without setting up a full project first. Perfect when you have customer info ready.",
-      "customerName": "Customer name",
-      "customerNamePlaceholder": "John Smith",
-      "customerNameRequired": "Customer name is required",
-      "address": "Address",
-      "addressPlaceholder": "123 Main Street",
-      "notes": "Notes",
-      "notesPlaceholder": "Customer wants to renovate bathroom and kitchen. Site visit scheduled Monday...",
-      "notesHint": "Briefly describe what the customer wants. You'll add detailed line items in the quote.",
-      "createQuote": "Create quote",
-      "created": "Lead created – fill in the quote",
-      "newLead": "New lead",
-      "useAI": "Generate quote lines with AI",
-      "useAIHint": "AI analyzes the description and creates suggested quote lines",
-      "useAIMinChars": "Write at least 20 characters in the description to enable AI",
-      "generatingItems": "Generating quote lines...",
-      "itemsGenerated": "{{count}} quote lines generated",
-      "uploadDocument": "Upload document",
-      "uploadHint": "PDF, image, or text file with customer requirements",
-      "extractingText": "Reading document...",
-      "textExtracted": "Text extracted from document",
-      "extractionFailed": "Could not read the document",
-      "noTextFound": "No text found in document",
-      "unsupportedFileType": "File type not supported",
-      "fileTooLarge": "File is too large (max 10MB)"
-    }
+    "quickQuote": "Quick quote"
   },
   "planningTasks": {
     "title": "Scope of work",
@@ -6901,8 +6872,9 @@
     "quoteOffer": {
       "message": "Your project is created! 🎉 Want me to prepare a customer quote from the tasks?",
       "messageNamed": "Your project is created! 🎉 Want me to prepare a quote for {{customer}} from the tasks?",
-      "accept": "Prepare quote",
-      "decline": "Open the project"
+      "accept": "Straight to the quote",
+      "decline": "Open the project",
+      "review": "Review & adjust the calculation"
     },
     "complete": "Perfect — I have everything I need. Your project is ready to create. You can adjust anything afterwards.",
     "type": {

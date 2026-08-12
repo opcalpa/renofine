@@ -5084,36 +5084,7 @@
     "viewQuote": "Visa offert",
     "noCustomerName": "Okänd kund",
     "noAddress": "Ingen adress",
-    "quickQuote": {
-      "button": "Snabboffert",
-      "buttonShort": "Offert",
-      "title": "Snabboffert",
-      "description": "Skapa en offert direkt utan att först sätta upp ett komplett projekt. Perfekt när du har kundinfo redo.",
-      "customerName": "Kundnamn",
-      "customerNamePlaceholder": "Anna Andersson",
-      "customerNameRequired": "Kundnamn krävs",
-      "address": "Adress",
-      "addressPlaceholder": "Storgatan 1, Stockholm",
-      "notes": "Anteckningar",
-      "notesPlaceholder": "Kund vill renovera badrum och kök. Platsbesök bokat måndag...",
-      "notesHint": "Beskriv kort vad kunden önskar. Du lägger till detaljerade rader i offerten.",
-      "createQuote": "Skapa offert",
-      "created": "Lead skapad – fyll i offerten",
-      "newLead": "Ny lead",
-      "useAI": "Generera offertrader med AI",
-      "useAIHint": "AI analyserar beskrivningen och skapar förslag på offertrader",
-      "useAIMinChars": "Skriv minst 20 tecken i beskrivningen för att aktivera AI",
-      "generatingItems": "Genererar offertrader...",
-      "itemsGenerated": "{{count}} offertrader genererade",
-      "uploadDocument": "Ladda upp dokument",
-      "uploadHint": "PDF, bild eller textfil med kundens önskemål",
-      "extractingText": "Läser dokument...",
-      "textExtracted": "Text extraherad från dokument",
-      "extractionFailed": "Kunde inte läsa dokumentet",
-      "noTextFound": "Ingen text hittades i dokumentet",
-      "unsupportedFileType": "Filtypen stöds inte",
-      "fileTooLarge": "Filen är för stor (max 10MB)"
-    }
+    "quickQuote": "Snabboffert"
   },
   "planningTasks": {
     "title": "Arbetsomfattning",
@@ -6901,8 +6872,9 @@
     "quoteOffer": {
       "message": "Projektet är skapat! 🎉 Vill du att jag förbereder en offert till din kund av arbetena?",
       "messageNamed": "Projektet är skapat! 🎉 Vill du att jag förbereder en offert till {{customer}} av arbetena?",
-      "accept": "Förbered offert",
-      "decline": "Öppna projektet"
+      "accept": "Direkt till offert",
+      "decline": "Öppna projektet",
+      "review": "Granska & justera kalkylen"
     },
     "complete": "Perfekt — då har jag allt jag behöver. Ditt projekt är redo att skapas. Du kan justera allt efteråt.",
     "type": {

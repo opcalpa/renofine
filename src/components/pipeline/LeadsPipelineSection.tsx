@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Mail, FileEdit, Send, CheckCircle, ChevronRight } from "lucide-react";
+import { Mail, FileEdit, Send, CheckCircle, ChevronRight, Zap } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
 import { useLeadsPipelineData } from "@/hooks/useLeadsPipelineData";
 import { AllIntakeRequestsDialog } from "./AllIntakeRequestsDialog";
@@ -12,9 +13,11 @@ import type { ProjectBucket } from "./types";
 interface LeadsPipelineSectionProps {
   onRefetch?: () => void;
   userType?: string | null;
+  /** R1: opens the Renaida birth dialog framed as a quick quote. */
+  onQuickQuote?: () => void;
 }
 
-export function LeadsPipelineSection({ onRefetch, userType }: LeadsPipelineSectionProps) {
+export function LeadsPipelineSection({ onRefetch, userType, onQuickQuote }: LeadsPipelineSectionProps) {
   // Hide pipeline for homeowners - they receive quotes, not create them
   if (userType === "homeowner") {
     return null;
@@ -45,9 +48,19 @@ export function LeadsPipelineSection({ onRefetch, userType }: LeadsPipelineSecti
   const hasSent = projectQuotes.sent.count > 0;
   const hasAccepted = projectQuotes.accepted.count > 0;
 
-  // Hide pipeline entirely if no data
+  // No pipeline data yet — exactly the new builder's situation, so the quick-
+  // quote entry must still exist (activation!). Header + button only, no card.
   if (!hasIntakes && !hasDrafts && !hasSent && !hasAccepted) {
-    return null;
+    if (!onQuickQuote) return null;
+    return (
+      <div className="mb-6 flex items-center justify-between">
+        <h2 className="text-2xl font-display font-normal tracking-tight">{t("pipeline.myQuotes", "Mina offerter")}</h2>
+        <Button size="sm" onClick={onQuickQuote}>
+          <Zap className="mr-1.5 h-4 w-4" />
+          {t("pipeline.quickQuote", "Snabboffert")}
+        </Button>
+      </div>
+    );
   }
 
   const dialogQuotes = activeBucketDialog ? (projectBuckets.get(activeBucketDialog) || []) : [];
@@ -61,7 +74,15 @@ export function LeadsPipelineSection({ onRefetch, userType }: LeadsPipelineSecti
 
   return (
     <div className="mb-6">
-      <h2 className="text-2xl font-display font-normal tracking-tight mb-4">{t("pipeline.myQuotes", "Mina offerter")}</h2>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-2xl font-display font-normal tracking-tight">{t("pipeline.myQuotes", "Mina offerter")}</h2>
+        {onQuickQuote && (
+          <Button size="sm" onClick={onQuickQuote}>
+            <Zap className="mr-1.5 h-4 w-4" />
+            {t("pipeline.quickQuote", "Snabboffert")}
+          </Button>
+        )}
+      </div>
       <Card>
         <CardContent className="pt-4 pb-4 px-4">
           <div className="flex items-stretch divide-x">

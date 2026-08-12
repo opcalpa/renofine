@@ -2457,6 +2457,13 @@
       "suggest": "Proponer un cálculo",
       "self": "Hago el cálculo yo mismo",
       "material": "material"
+    },
+    "quoteOffer": {
+      "accept": "Directo al presupuesto",
+      "review": "Revisar y ajustar el cálculo"
     }
+  },
+  "pipeline": {
+    "quickQuote": "Presupuesto rápido"
   }
 }
