@@ -37,6 +37,16 @@ export default function IntakeRequests() {
     try {
       const data = await getMyIntakeRequests();
       setRequests(data);
+      // Deep-link (?open=<id>): the pipeline's intake dialog points here to
+      // open a specific request's detail (its old /intake-requests/:id link 404:ed).
+      const openId = new URLSearchParams(window.location.search).get("open");
+      if (openId) {
+        const match = data.find((r) => r.id === openId);
+        if (match) {
+          setSelectedRequest(match);
+          setDetailOpen(true);
+        }
+      }
     } catch (error) {
       console.error("Failed to load intake requests:", error);
     } finally {

@@ -31,7 +31,9 @@ export function LeadsPipelineSection({ onRefetch, userType, onQuickQuote }: Lead
   const [activeBucketDialog, setActiveBucketDialog] = useState<ProjectBucket | null>(null);
 
   const handleCreateProjectFromIntake = (intakeId: string) => {
-    window.location.href = `/intake-requests/${intakeId}?action=create-project`;
+    // The old /intake-requests/:id route never existed (404). The list page
+    // opens the request's detail via ?open= — conversion lives in that dialog.
+    window.location.href = `/intake-requests?open=${intakeId}`;
   };
 
   if (data.loading) {
