@@ -79,13 +79,9 @@ export function AllIntakeRequestsDialog({
   const getLocale = () => (i18n.language === "sv" ? sv : enUS);
 
   const handleIntakeClick = (intake: IntakeRequestSummary) => {
-    // Navigate to intake detail view
-    if (intake.project_id) {
-      navigate(`/projects/${intake.project_id}/intake/${intake.id}`);
-    } else {
-      // Navigate to standalone intake view
-      navigate(`/intake-requests/${intake.id}`);
-    }
+    // Both /intake-requests/:id and /projects/:id/intake/:id are dead routes
+    // (404). The list page opens any request's detail via ?open=<id>.
+    navigate(`/intake-requests?open=${intake.id}`);
     onOpenChange(false);
   };
 

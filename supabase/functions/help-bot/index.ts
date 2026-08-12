@@ -54,17 +54,30 @@ interface ProjectCtx {
   rates?: { hourly: number | null; markup: number | null; materialMarkup: number | null } | null;
 }
 
+/** The caller's user id, decoded from the JWT `sub` claim (no network hop). */
+function callerUserId(authHeader: string): string | null {
+  try {
+    const token = authHeader.replace(/^Bearer\s+/i, "");
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    return typeof payload.sub === "string" ? payload.sub : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Fetch a compact project snapshot (RLS-scoped). Best-effort: null on any failure. */
 async function fetchProjectContext(projectId: string, authHeader: string, userType?: string): Promise<ProjectCtx | null> {
   try {
     const headers = callerRestHeaders(authHeader);
-    const wantRates = userType === "contractor";
+    // E3: resolve the caller's profile by user id from the JWT — profiles can be
+    // broadly readable (pro directory), so an unfiltered select is not "my row".
+    const uid = userType === "contractor" ? callerUserId(authHeader) : null;
     const [projRes, roomsRes, tasksRes, profRes] = await Promise.all([
       fetch(`${supabaseRestUrl("projects")}?id=eq.${projectId}&select=name&limit=1`, { headers }),
       fetch(`${supabaseRestUrl("rooms")}?project_id=eq.${projectId}&select=name&order=name.asc&limit=50`, { headers }),
       fetch(`${supabaseRestUrl("tasks")}?project_id=eq.${projectId}&select=title,status,progress,budget&order=created_at.desc&limit=100`, { headers }),
-      wantRates
-        ? fetch(`${Deno.env.get("SUPABASE_URL")}/auth/v1/user`, { headers })
+      uid
+        ? fetch(`${supabaseRestUrl("profiles")}?user_id=eq.${uid}&select=default_hourly_rate,default_markup_percent,default_material_markup_percent&limit=1`, { headers })
         : Promise.resolve(null),
     ]);
     const proj = projRes.ok ? await projRes.json() : [];
@@ -73,22 +86,15 @@ async function fetchProjectContext(projectId: string, authHeader: string, userTy
     const tasks = tasksRes.ok ? await tasksRes.json() : [];
     let rates: ProjectCtx["rates"] = null;
     if (profRes?.ok) {
-      // Resolve the CALLER's own profile explicitly (profiles can be broadly
-      // readable for the pro directory — an unfiltered select is not "my row").
-      const authUser = await profRes.json();
-      if (authUser?.id) {
-        const myProfRes = await fetch(
-          `${supabaseRestUrl("profiles")}?user_id=eq.${authUser.id}&select=default_hourly_rate,default_markup_percent,default_material_markup_percent&limit=1`,
-          { headers },
-        );
-        const p = myProfRes.ok ? (await myProfRes.json())?.[0] : null;
-        if (p) {
-          rates = {
-            hourly: p.default_hourly_rate ?? null,
-            markup: p.default_markup_percent ?? null,
-            materialMarkup: p.default_material_markup_percent ?? null,
-          };
-        }
+      const p = (await profRes.json())?.[0];
+      // Emit rates even when all null → "not set", so the bot states it plainly
+      // instead of claiming it can't see them. null (below) means fetch failed.
+      if (p) {
+        rates = {
+          hourly: p.default_hourly_rate ?? null,
+          markup: p.default_markup_percent ?? null,
+          materialMarkup: p.default_material_markup_percent ?? null,
+        };
       }
     }
     return {
@@ -111,8 +117,11 @@ function buildProjectSection(ctx: ProjectCtx): string {
   }).join("\n");
   const budgetTotal = ctx.tasks.reduce((sum, t) => sum + (typeof t.budget === "number" ? t.budget : 0), 0);
   const r = ctx.rates;
-  const ratesLine = r && (r.hourly != null || r.markup != null || r.materialMarkup != null)
-    ? `Their saved default rates (profile = source of truth; answer from these when asked about "mitt timpris"/"mitt påslag", and mention they can change them here in the chat or on the Profile page): hourly rate ${r.hourly != null ? `${r.hourly} kr/h` : "not set"}, labor markup ${r.markup != null ? `${r.markup} %` : "not set"}, material markup ${r.materialMarkup != null ? `${r.materialMarkup} %` : "not set"}.`
+  // Emit the line whenever we resolved the profile (r !== null), even if every
+  // value is unset — then the bot says "you haven't set an hourly rate yet"
+  // rather than "I can't see it". Omit only when rates weren't fetched at all.
+  const ratesLine = r
+    ? `Their saved default rates (profile = source of truth; answer from THESE when asked about "mitt timpris"/"mitt påslag" — never say you cannot see them; if a value is not set, say so plainly and offer to set it. They can change these right here in the chat or on the Profile page): hourly rate ${r.hourly != null ? `${r.hourly} kr/h` : "not set yet"}, labor markup ${r.markup != null ? `${r.markup} %` : "not set yet"}, material markup ${r.materialMarkup != null ? `${r.materialMarkup} %` : "not set yet"}.`
     : "";
   return `
 THE USER'S CURRENT PROJECT — "${ctx.name}" (use this to give SPECIFIC, situational advice; reference their actual rooms/tasks by name; sequence advice around what is already done vs not):
