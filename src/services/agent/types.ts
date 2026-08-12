@@ -51,6 +51,12 @@ export type ProposalAction =
    */
   | { type: "open_feature"; feature: "new_quote" | "new_invoice" | "new_ata"; label: string }
   /**
+   * E3: update the builder's default rates — profiles IS the source of truth
+   * for satser (default_hourly_rate + markups), so "mitt timpris är 640" lands
+   * there, confirmed via ConfirmDiff like everything else. Contractor-only.
+   */
+  | { type: "set_default_rate"; field: "hourly_rate" | "markup_percent" | "material_markup_percent"; value: number }
+  /**
    * AI-scanned receipt/invoice → one purchase order + its material line items
    * (the PO invariant: every scanned document lives in Inköp as a first-class
    * order). Built CLIENT-SIDE from process-document-v2 output — the router
@@ -117,7 +123,9 @@ export type UndoOp =
   | { kind: "checklist_restore"; taskId: string; before: { checklists: unknown; progress: number | null } }
   | { kind: "task_assignee"; taskId: string; before: { assigned_to_stakeholder_id: string | null } }
   /** Imported document purchase: N material rows + the PO + uploaded file/links. */
-  | { kind: "delete_import_purchase"; purchaseOrderId: string; materialIds: string[]; filePath?: string | null };
+  | { kind: "delete_import_purchase"; purchaseOrderId: string; materialIds: string[]; filePath?: string | null }
+  /** E3: a default-rate change on the profile — undo restores the old value. */
+  | { kind: "profile_rate"; profileId: string; field: "default_hourly_rate" | "default_markup_percent" | "default_material_markup_percent"; before: number | null };
 
 /** Below this task-match confidence, a task proposal is shown unchecked (needs confirm/re-pick). */
 export const TASK_MATCH_MIN_CONFIDENCE = 0.7;

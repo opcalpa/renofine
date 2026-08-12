@@ -1452,7 +1452,12 @@
     "personalDetailsDescription": "Information som används vid skatteavdrag",
     "myProperties": "Mina fastigheter",
     "myPropertiesDescription": "Fastighetsuppgifter för dina renoveringsprojekt",
-    "noProjects": "Inga projekt ännu"
+    "noProjects": "Inga projekt ännu",
+    "defaultMarkupPercent": "Standardpåslag arbete (%)",
+    "defaultMarkupPercentHint": "Påslag på UE-/arbetskostnad när inget anges per arbete.",
+    "defaultMaterialMarkupPercent": "Standardpåslag material (%)",
+    "defaultMaterialMarkupPercentHint": "Påslag på materialkostnad när inget anges per rad.",
+    "defaultMarkupPlaceholder": "t.ex. 10"
   },
   "languages": {
     "en": "Engelska",
@@ -4027,7 +4032,10 @@
       "detailToPayAfterRot": "Att betala efter ROT: {{net}} kr",
       "detailOpens": "Öppnar: {{label}}",
       "detailRoom": "Rum",
-      "restorableUndo": "Senaste ändringen jag gjorde här: ”{{label}}” — den går fortfarande att ångra."
+      "restorableUndo": "Senaste ändringen jag gjorde här: ”{{label}}” — den går fortfarande att ångra.",
+      "rateHourly": "Standardtimpris: {{value}} kr/h",
+      "rateMarkup": "Standardpåslag arbete: {{value}} %",
+      "rateMaterialMarkup": "Standardpåslag material: {{value}} %"
     },
     "autonomy": {
       "suggest": "Föreslå först",
@@ -5181,7 +5189,10 @@
     "linkedToMultiple": "Filen kopplas till {{count}} poster",
     "profitFormula": "Vinst från arbete (timmar × timpris × marginal) + påslag på material och underentreprenörer",
     "laborMargin": "Arbetsmarginal",
-    "calcSuggested": "Renaidas förslag. Redigera cellen för att göra siffran till din egen."
+    "calcSuggested": "Renaidas förslag. Redigera cellen för att göra siffran till din egen.",
+    "saveRateAsDefault": "Spara {{rate}} kr/h som ditt standardtimpris? Det förifyller framtida kalkyler.",
+    "saveRateAction": "Spara som standard",
+    "rateSaved": "Standardtimpris uppdaterat: {{rate}} kr/h"
   },
   "planningSmartImport": {
     "title": "Smart import",

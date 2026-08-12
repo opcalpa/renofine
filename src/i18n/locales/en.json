@@ -1478,7 +1478,12 @@
     "personalDetailsDescription": "Information used for tax deductions",
     "myProperties": "My Properties",
     "myPropertiesDescription": "Property details for your renovation projects",
-    "noProjects": "No projects yet"
+    "noProjects": "No projects yet",
+    "defaultMarkupPercent": "Default markup labor (%)",
+    "defaultMarkupPercentHint": "Markup on subcontractor/labor cost when none is set per task.",
+    "defaultMaterialMarkupPercent": "Default markup materials (%)",
+    "defaultMaterialMarkupPercentHint": "Markup on material cost when none is set per line.",
+    "defaultMarkupPlaceholder": "e.g. 10"
   },
   "languages": {
     "en": "English",
@@ -4028,7 +4033,10 @@
       "detailToPayAfterRot": "To pay after ROT: {{net}} kr",
       "detailOpens": "Opens: {{label}}",
       "detailRoom": "Room",
-      "restorableUndo": "The last change I made here: “{{label}}” — it can still be undone."
+      "restorableUndo": "The last change I made here: “{{label}}” — it can still be undone.",
+      "rateHourly": "Default hourly rate: {{value}} kr/h",
+      "rateMarkup": "Default labor markup: {{value}} %",
+      "rateMaterialMarkup": "Default material markup: {{value}} %"
     },
     "autonomy": {
       "suggest": "Suggest first",
@@ -5181,7 +5189,10 @@
     "linkedToMultiple": "File will be linked to {{count}} items",
     "profitFormula": "Profit from labor (hours × rate × margin) + markup on materials and subcontractors",
     "laborMargin": "Labor margin",
-    "calcSuggested": "Renaida's suggestion. Edit the cell to make the number your own."
+    "calcSuggested": "Renaida's suggestion. Edit the cell to make the number your own.",
+    "saveRateAsDefault": "Save {{rate}} kr/h as your default hourly rate? It prefills future calculations.",
+    "saveRateAction": "Save as default",
+    "rateSaved": "Default hourly rate updated: {{rate}} kr/h"
   },
   "planningSmartImport": {
     "title": "Smart Import",

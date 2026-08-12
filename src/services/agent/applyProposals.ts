@@ -360,6 +360,35 @@ async function applyOne(
       logActivity(projectId, profileId, "renaida_comment", "comment", data.id, action.text.slice(0, 60), { target: action.target, targetId: action.targetId });
       return { kind: "delete_comment", commentId: data.id };
     }
+
+    case "set_default_rate": {
+      // E3: profiles is the canonical store for the builder's satser — Renaida
+      // updates it there (never a private copy). Undo restores the old value.
+      const FIELD_MAP = {
+        hourly_rate: "default_hourly_rate",
+        markup_percent: "default_markup_percent",
+        material_markup_percent: "default_material_markup_percent",
+      } as const;
+      const column = FIELD_MAP[action.field];
+      if (!column) throw new Error("Okänt satsfält");
+
+      const { data: prev, error: prevErr } = await supabase
+        .from("profiles")
+        .select(column)
+        .eq("id", profileId)
+        .single();
+      if (prevErr) throw new Error(prevErr.message);
+      const before = ((prev as Record<string, unknown>)?.[column] as number | null) ?? null;
+
+      const { error } = await supabase
+        .from("profiles")
+        .update({ [column]: action.value })
+        .eq("id", profileId);
+      if (error) throw new Error(error.message);
+
+      logActivity(projectId, profileId, "renaida_set_rate", "profile", profileId, `${action.field}=${action.value}`, { field: action.field, value: action.value, before });
+      return { kind: "profile_rate", profileId, field: column, before };
+    }
   }
 }
 
@@ -561,6 +590,11 @@ export async function undoProposals(undo: UndoOp[], projectId?: string, undoStac
           await supabase.from("tasks").update({
             assigned_to_stakeholder_id: op.before.assigned_to_stakeholder_id,
           }).eq("id", op.taskId);
+          break;
+        case "profile_rate":
+          await supabase.from("profiles").update({
+            [op.field]: op.before,
+          }).eq("id", op.profileId);
           break;
       }
       reverted++;

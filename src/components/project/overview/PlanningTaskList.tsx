@@ -43,6 +43,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatCurrency } from "@/lib/currency";
 import { useToast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 import { TaskEditDialog } from "../TaskEditDialog";
 import { PlanningSmartImportDialog } from "./PlanningSmartImportDialog";
 import {
@@ -808,6 +809,52 @@ export function PlanningTaskList({
     }
   };
 
+  // E3 learn-from-edit: profiles.default_hourly_rate is the source of truth for
+  // the builder's rate — when an inline edit reveals a different one, offer to
+  // save it as the standard (generalizes the TaskEditDialog write-back).
+  const rateOfferShownRef = useRef(false);
+  const maybeOfferRateAsDefault = useCallback(
+    async (rate: number) => {
+      if (rateOfferShownRef.current) return;
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("id, default_hourly_rate, onboarding_user_type")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (!profile || profile.onboarding_user_type !== "contractor") return;
+        if (profile.default_hourly_rate === rate) return;
+        rateOfferShownRef.current = true;
+        toast({
+          description: t("planningTasks.saveRateAsDefault", "Spara {{rate}} kr/h som ditt standardtimpris? Det förifyller framtida kalkyler.", { rate }),
+          action: (
+            <ToastAction
+              altText={t("planningTasks.saveRateAction", "Spara som standard")}
+              onClick={() => {
+                void supabase
+                  .from("profiles")
+                  .update({ default_hourly_rate: rate })
+                  .eq("id", profile.id)
+                  .then(({ error }) => {
+                    if (!error) {
+                      toast({ description: t("planningTasks.rateSaved", "Standardtimpris uppdaterat: {{rate}} kr/h", { rate }) });
+                    }
+                  });
+              }}
+            >
+              {t("planningTasks.saveRateAction", "Spara som standard")}
+            </ToastAction>
+          ),
+        });
+      } catch {
+        /* best-effort — never disturb the edit itself */
+      }
+    },
+    [t, toast]
+  );
+
   const handleInlineSave = useCallback(
     async (taskId: string, field: string, rawValue: string) => {
       const numValue = rawValue === "" ? null : parseFloat(rawValue);
@@ -868,10 +915,16 @@ export function PlanningTaskList({
         });
       } else {
         fetchData();
+        // E3 learn-from-edit: an hourly rate typed here that differs from the
+        // profile default is probably THE rate — offer (never force) to save it
+        // as the standard. Once per session to avoid nagging.
+        if (field === "hourly_rate" && numValue && numValue > 0) {
+          void maybeOfferRateAsDefault(numValue);
+        }
       }
       setEditingCell(null);
     },
-    [fetchData, t, toast, tasks]
+    [fetchData, t, toast, tasks, maybeOfferRateAsDefault]
   );
 
   const handleInlineTextSave = useCallback(

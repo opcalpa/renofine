@@ -49,25 +49,53 @@ interface ProjectCtx {
   name: string;
   rooms: string[];
   tasks: { title: string; status: string | null; progress: number | null; budget: number | null }[];
+  /** E3: the contractor's own default rates (profiles = source of truth) so
+   *  "vad räknar jag med för timpris?" gets a real answer, not a generic one. */
+  rates?: { hourly: number | null; markup: number | null; materialMarkup: number | null } | null;
 }
 
 /** Fetch a compact project snapshot (RLS-scoped). Best-effort: null on any failure. */
-async function fetchProjectContext(projectId: string, authHeader: string): Promise<ProjectCtx | null> {
+async function fetchProjectContext(projectId: string, authHeader: string, userType?: string): Promise<ProjectCtx | null> {
   try {
     const headers = callerRestHeaders(authHeader);
-    const [projRes, roomsRes, tasksRes] = await Promise.all([
+    const wantRates = userType === "contractor";
+    const [projRes, roomsRes, tasksRes, profRes] = await Promise.all([
       fetch(`${supabaseRestUrl("projects")}?id=eq.${projectId}&select=name&limit=1`, { headers }),
       fetch(`${supabaseRestUrl("rooms")}?project_id=eq.${projectId}&select=name&order=name.asc&limit=50`, { headers }),
       fetch(`${supabaseRestUrl("tasks")}?project_id=eq.${projectId}&select=title,status,progress,budget&order=created_at.desc&limit=100`, { headers }),
+      wantRates
+        ? fetch(`${Deno.env.get("SUPABASE_URL")}/auth/v1/user`, { headers })
+        : Promise.resolve(null),
     ]);
     const proj = projRes.ok ? await projRes.json() : [];
     if (!proj.length) return null;
     const rooms = roomsRes.ok ? await roomsRes.json() : [];
     const tasks = tasksRes.ok ? await tasksRes.json() : [];
+    let rates: ProjectCtx["rates"] = null;
+    if (profRes?.ok) {
+      // Resolve the CALLER's own profile explicitly (profiles can be broadly
+      // readable for the pro directory — an unfiltered select is not "my row").
+      const authUser = await profRes.json();
+      if (authUser?.id) {
+        const myProfRes = await fetch(
+          `${supabaseRestUrl("profiles")}?user_id=eq.${authUser.id}&select=default_hourly_rate,default_markup_percent,default_material_markup_percent&limit=1`,
+          { headers },
+        );
+        const p = myProfRes.ok ? (await myProfRes.json())?.[0] : null;
+        if (p) {
+          rates = {
+            hourly: p.default_hourly_rate ?? null,
+            markup: p.default_markup_percent ?? null,
+            materialMarkup: p.default_material_markup_percent ?? null,
+          };
+        }
+      }
+    }
     return {
       name: proj[0].name,
       rooms: rooms.map((r: { name: string }) => r.name),
       tasks,
+      rates,
     };
   } catch {
     return null;
@@ -82,12 +110,17 @@ function buildProjectSection(ctx: ProjectCtx): string {
     return `  - ${parts.filter(Boolean).join(" · ")}`;
   }).join("\n");
   const budgetTotal = ctx.tasks.reduce((sum, t) => sum + (typeof t.budget === "number" ? t.budget : 0), 0);
+  const r = ctx.rates;
+  const ratesLine = r && (r.hourly != null || r.markup != null || r.materialMarkup != null)
+    ? `Their saved default rates (profile = source of truth; answer from these when asked about "mitt timpris"/"mitt påslag", and mention they can change them here in the chat or on the Profile page): hourly rate ${r.hourly != null ? `${r.hourly} kr/h` : "not set"}, labor markup ${r.markup != null ? `${r.markup} %` : "not set"}, material markup ${r.materialMarkup != null ? `${r.materialMarkup} %` : "not set"}.`
+    : "";
   return `
 THE USER'S CURRENT PROJECT — "${ctx.name}" (use this to give SPECIFIC, situational advice; reference their actual rooms/tasks by name; sequence advice around what is already done vs not):
 Rooms: ${ctx.rooms.length ? ctx.rooms.join(", ") : "(none yet)"}
 Tasks (${ctx.tasks.length}):
 ${taskLines || "  (none yet)"}
 ${budgetTotal > 0 ? `Task budgets sum to ~${Math.round(budgetTotal)} (project currency).` : ""}
+${ratesLine}
 `;
 }
 
@@ -268,7 +301,7 @@ serve(async (req) => {
     // feel lives. Project-context answers are user-specific → NEVER cached.
     let projectSection: string | undefined;
     if (typeof projectId === "string" && projectId) {
-      const ctx = await fetchProjectContext(projectId, authHeader);
+      const ctx = await fetchProjectContext(projectId, authHeader, typeof userType === "string" ? userType : undefined);
       if (ctx) projectSection = buildProjectSection(ctx);
     }
     const model = projectSection ? "gpt-4o" : "gpt-4o-mini";

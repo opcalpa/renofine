@@ -226,6 +226,8 @@ const Profile = ({ asDrawer = false }: { asDrawer?: boolean }) => {
   const [personnummer, setPersonnummer] = useState("");
   const [defaultPaymentTermsDays, setDefaultPaymentTermsDays] = useState("30");
   const [defaultHourlyRate, setDefaultHourlyRate] = useState("");
+  const [defaultMarkupPercent, setDefaultMarkupPercent] = useState("");
+  const [defaultMaterialMarkupPercent, setDefaultMaterialMarkupPercent] = useState("");
   const [defaultLaborCostPercent, setDefaultLaborCostPercent] = useState("50");
   const [paintCoverage, setPaintCoverage] = useState("10");
   const [paintCoats, setPaintCoats] = useState("2");
@@ -298,6 +300,8 @@ const Profile = ({ asDrawer = false }: { asDrawer?: boolean }) => {
       setPersonnummer(data.personnummer || "");
       setDefaultPaymentTermsDays(String(data.default_payment_terms_days ?? 30));
       setDefaultHourlyRate(data.default_hourly_rate != null ? String(data.default_hourly_rate) : "");
+      setDefaultMarkupPercent(data.default_markup_percent != null ? String(data.default_markup_percent) : "");
+      setDefaultMaterialMarkupPercent(data.default_material_markup_percent != null ? String(data.default_material_markup_percent) : "");
       setDefaultLaborCostPercent(data.default_labor_cost_percent != null ? String(data.default_labor_cost_percent) : "50");
       const es = data.estimation_settings as Record<string, unknown> | null;
       setPaintCoverage(typeof es?.paint_coverage_sqm_per_liter === "number" ? String(es.paint_coverage_sqm_per_liter) : "10");
@@ -399,6 +403,8 @@ const Profile = ({ asDrawer = false }: { asDrawer?: boolean }) => {
           bank_account_number: bankAccountNumber.trim() || null,
           default_payment_terms_days: parseInt(defaultPaymentTermsDays) || 30,
           default_hourly_rate: defaultHourlyRate ? parseFloat(defaultHourlyRate) : null,
+          default_markup_percent: defaultMarkupPercent ? parseFloat(defaultMarkupPercent) : null,
+          default_material_markup_percent: defaultMaterialMarkupPercent ? parseFloat(defaultMaterialMarkupPercent) : null,
           default_labor_cost_percent: parseFloat(defaultLaborCostPercent) || 50,
           estimation_settings: {
             paint_coverage_sqm_per_liter: parseFloat(paintCoverage) || 10,
@@ -1031,6 +1037,36 @@ const Profile = ({ asDrawer = false }: { asDrawer?: boolean }) => {
                     />
                     <p className="text-xs text-muted-foreground">
                       {t('profile.defaultHourlyRateHint')} <span className="text-muted-foreground/70">{t('estimation.exMomsShort', '(ex moms)')}</span>
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="defaultMarkupPercent">{t('profile.defaultMarkupPercent', 'Standardpåslag arbete (%)')}</Label>
+                    <Input
+                      id="defaultMarkupPercent"
+                      type="number"
+                      step="1"
+                      min="0"
+                      value={defaultMarkupPercent}
+                      onChange={(e) => setDefaultMarkupPercent(e.target.value)}
+                      placeholder={t('profile.defaultMarkupPlaceholder', 't.ex. 10')}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {t('profile.defaultMarkupPercentHint', 'Påslag på UE-/arbetskostnad när inget anges per arbete.')}
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="defaultMaterialMarkupPercent">{t('profile.defaultMaterialMarkupPercent', 'Standardpåslag material (%)')}</Label>
+                    <Input
+                      id="defaultMaterialMarkupPercent"
+                      type="number"
+                      step="1"
+                      min="0"
+                      value={defaultMaterialMarkupPercent}
+                      onChange={(e) => setDefaultMaterialMarkupPercent(e.target.value)}
+                      placeholder={t('profile.defaultMarkupPlaceholder', 't.ex. 10')}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {t('profile.defaultMaterialMarkupPercentHint', 'Påslag på materialkostnad när inget anges per rad.')}
                     </p>
                   </div>
                   <div className="space-y-2">

@@ -134,6 +134,16 @@ export function actionDetails(
     case "open_feature":
       details.push(t("helpBot.agent.detailOpens", "Öppnar: {{label}}", { label: action.label }));
       break;
+    case "set_default_rate": {
+      const rateLabel =
+        action.field === "hourly_rate"
+          ? t("helpBot.agent.rateHourly", "Standardtimpris: {{value}} kr/h", { value: action.value })
+          : action.field === "markup_percent"
+            ? t("helpBot.agent.rateMarkup", "Standardpåslag arbete: {{value}} %", { value: action.value })
+            : t("helpBot.agent.rateMaterialMarkup", "Standardpåslag material: {{value}} %", { value: action.value });
+      details.push(rateLabel);
+      break;
+    }
   }
   return details;
 }

@@ -456,6 +456,30 @@
           "feature": "new_ata"
         }
       ]
+    },
+    {
+      "id": "set-default-hourly-rate",
+      "userType": "contractor",
+      "input": "Mitt timpris är 640 kr i timmen förresten",
+      "expect": [
+        {
+          "type": "set_default_rate",
+          "field": "hourly_rate",
+          "value": 640
+        }
+      ]
+    },
+    {
+      "id": "set-material-markup-not-task-budget",
+      "userType": "contractor",
+      "input": "Jag brukar lägga 12% påslag på material",
+      "expect": [
+        {
+          "type": "set_default_rate",
+          "field": "material_markup_percent",
+          "value": 12
+        }
+      ]
     }
   ]
 }
