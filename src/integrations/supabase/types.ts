@@ -1883,6 +1883,8 @@ export type Database = {
           created_at: string
           default_hourly_rate: number | null
           default_labor_cost_percent: number | null
+          default_markup_percent: number | null
+          default_material_markup_percent: number | null
           default_payment_terms_days: number | null
           email: string | null
           estimation_settings: Json | null
@@ -1934,6 +1936,8 @@ export type Database = {
           created_at?: string
           default_hourly_rate?: number | null
           default_labor_cost_percent?: number | null
+          default_markup_percent?: number | null
+          default_material_markup_percent?: number | null
           default_payment_terms_days?: number | null
           email?: string | null
           estimation_settings?: Json | null
@@ -1985,6 +1989,8 @@ export type Database = {
           created_at?: string
           default_hourly_rate?: number | null
           default_labor_cost_percent?: number | null
+          default_markup_percent?: number | null
+          default_material_markup_percent?: number | null
           default_payment_terms_days?: number | null
           email?: string | null
           estimation_settings?: Json | null
@@ -3540,6 +3546,7 @@ export type Database = {
           created_by_user_id: string
           description: string | null
           due_date: string | null
+          estimate_meta: Json | null
           estimated_hours: number | null
           finish_date: string | null
           floor_plan_position: Json | null
@@ -3592,6 +3599,7 @@ export type Database = {
           created_by_user_id: string
           description?: string | null
           due_date?: string | null
+          estimate_meta?: Json | null
           estimated_hours?: number | null
           finish_date?: string | null
           floor_plan_position?: Json | null
@@ -3644,6 +3652,7 @@ export type Database = {
           created_by_user_id?: string
           description?: string | null
           due_date?: string | null
+          estimate_meta?: Json | null
           estimated_hours?: number | null
           finish_date?: string | null
           floor_plan_position?: Json | null

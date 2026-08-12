@@ -5180,7 +5180,8 @@
     "linkFileTo": "Link file to",
     "linkedToMultiple": "File will be linked to {{count}} items",
     "profitFormula": "Profit from labor (hours × rate × margin) + markup on materials and subcontractors",
-    "laborMargin": "Labor margin"
+    "laborMargin": "Labor margin",
+    "calcSuggested": "Renaida's suggestion. Edit the cell to make the number your own."
   },
   "planningSmartImport": {
     "title": "Smart Import",

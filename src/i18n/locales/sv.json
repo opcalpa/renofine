@@ -5180,7 +5180,8 @@
     "linkFileTo": "Koppla fil till",
     "linkedToMultiple": "Filen kopplas till {{count}} poster",
     "profitFormula": "Vinst från arbete (timmar × timpris × marginal) + påslag på material och underentreprenörer",
-    "laborMargin": "Arbetsmarginal"
+    "laborMargin": "Arbetsmarginal",
+    "calcSuggested": "Renaidas förslag. Redigera cellen för att göra siffran till din egen."
   },
   "planningSmartImport": {
     "title": "Smart import",

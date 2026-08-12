@@ -58,10 +58,18 @@ import {
   type RecipeRoom,
 } from "@/lib/materialRecipes";
 
+/** E2: provenance of a suggested calc cell (Renaida/estimation engine). */
+interface EstimateMeta {
+  source?: string;
+  formula?: string;
+  overridden?: boolean;
+}
+
 interface PlanningTask {
   id: string;
   title: string;
   description: string | null;
+  estimate_meta: EstimateMeta | null;
   budget: number | null;
   room_id: string | null;
   room_ids: string[] | null;
@@ -810,7 +818,13 @@ export function PlanningTaskList({
 
       // Find the task to compute budget when in detail-calc mode
       const task = tasks.find((t) => t.id === taskId);
-      const updates: Record<string, number | null> = { [field]: numValue };
+      const updates: Record<string, unknown> = { [field]: numValue };
+
+      // E2: editing a suggested cell makes the number the builder's own — the
+      // formula chip retires (suggestion, never a lock).
+      if (task?.estimate_meta && !task.estimate_meta.overridden) {
+        updates.estimate_meta = { ...task.estimate_meta, overridden: true };
+      }
 
       if (task) {
         // Determine effective values after this edit
@@ -2173,9 +2187,25 @@ export function PlanningTaskList({
                           : formatCurrency(value, currency)
                         : null;
 
+                      // E2: a suggested (not yet overridden) calc cell carries its
+                      // formula — a subtle sparkle with the math on hover. Editing
+                      // the cell retires it (see handleInlineSave).
+                      const calcChip =
+                        field === "estimated_hours" &&
+                        value != null &&
+                        task.estimate_meta?.formula &&
+                        !task.estimate_meta.overridden ? (
+                          <span
+                            title={`${task.estimate_meta.formula} — ${t("planningTasks.calcSuggested", "Renaidas förslag. Redigera cellen för att göra siffran till din egen.")}`}
+                            className="ml-0.5 inline-flex cursor-help align-middle text-primary/60"
+                          >
+                            <Sparkles className="h-3 w-3" />
+                          </span>
+                        ) : null;
+
                       if (effectiveLock || isLocked) {
                         return display ? (
-                          <span className={`text-sm ${field === "budget" ? "font-medium" : "text-muted-foreground"}`}>{display}</span>
+                          <span className={`text-sm ${field === "budget" ? "font-medium" : "text-muted-foreground"}`}>{display}{calcChip}</span>
                         ) : (
                           <span className="text-xs text-muted-foreground">–</span>
                         );
@@ -2191,6 +2221,7 @@ export function PlanningTaskList({
                           }}
                         >
                           {display || "–"}
+                          {calcChip}
                         </button>
                       );
                     };

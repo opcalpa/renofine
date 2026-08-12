@@ -58,6 +58,12 @@ export interface ScaffoldTaskInput {
   budget?: number | null;
   rotEligible?: boolean;
   rotAmount?: number | null;
+  /**
+   * E2 provenance for suggested calc cells: where the numbers came from and the
+   * human-readable formula. The planning table shows it as a chip/tooltip and
+   * flips `overridden` when the builder edits — suggestion, never a lock.
+   */
+  estimateMeta?: { source: string; formula: string; overridden?: boolean } | null;
   /** Task-linked planned materials. */
   materials?: ScaffoldMaterialInput[];
 }
@@ -217,6 +223,7 @@ export async function scaffoldProject(
         budget: task.budget ?? null,
         rot_eligible: task.rotEligible ?? false,
         rot_amount: task.rotAmount ?? null,
+        estimate_meta: task.estimateMeta ?? null,
       })
       .select("id")
       .single();

@@ -629,11 +629,14 @@ export function toScaffoldInput(draft: ProjectDraft, labelFor: WorkTypeLabeller)
         costCenter: t.costCenter,
         budget: t.budgetSek ?? null,
         // E1: the suggested calc lands as prefilled editable cells in the
-        // planning table; the formula rides along as the task description.
+        // planning table; E2: the formula travels as structured provenance
+        // (estimate_meta) — the table shows it and marks edits as overridden.
         estimatedHours: t.estimatedHours ?? null,
         hourlyRate: t.hourlyRateSek ?? null,
         materialEstimate: t.materialEstimateSek ?? null,
-        description: t.calcNote ?? null,
+        estimateMeta: t.calcNote
+          ? { source: 'renaida_calc', formula: t.calcNote, overridden: false }
+          : null,
       })),
     markOnboardingComplete: true,
   };

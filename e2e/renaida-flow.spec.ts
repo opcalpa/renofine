@@ -395,13 +395,17 @@ test('E1 calc: estimateDraftCalc fills hours/rate/material with formula; K4 pric
   expect(k4.estimatedHours).toBeUndefined();
   expect(k4.budgetSek).toBe(8000);
 
-  // The calc lands in the scaffold: hours/rate/material + formula as description.
+  // The calc lands in the scaffold: hours/rate/material + formula as provenance.
   const input = toScaffoldInput(enriched, (wt) => wt);
   const st = input.tasks.find((t) => t.title.startsWith('malning'))!;
   expect(st.estimatedHours).toBe(paint.estimatedHours);
   expect(st.hourlyRate).toBe(600);
   expect(st.materialEstimate).toBe(paint.materialEstimateSek);
-  expect(st.description).toBe(paint.calcNote);
+  expect(st.estimateMeta).toEqual({
+    source: 'renaida_calc',
+    formula: paint.calcNote,
+    overridden: false,
+  });
 });
 
 test('E1 calc: no area or unrecognized work → step never appears', () => {
