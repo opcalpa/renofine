@@ -1802,3 +1802,105 @@ created: 2026-08-10
 **KVAR (denna cleanup):** auditen hittade **~35 befintliga dialoger** som skriver oprefixad `max-w-*` i className → de klipps tyst till `lg` (512px) på desktop oavsett vad de skrev (t.ex. `max-w-4xl` renderas som lg). Några har `!important`-hack (`!max-w-5xl` i AIDocumentImportModal, `!max-w-6xl` i BatchSmartTolkDialog) = bevis på att fällan bitit upprepat.
 
 **Ansats (INTE blank-migrering):** varje dialog behöver en titt — dess innehåll är tunat för lg sedan lansering, så att bredda till skriven bredd kan se glest/fel ut ELLER vara exakt vad författaren ville. Migrera `className="max-w-Xl"` → `size="Xl"` + screenshot-verifiera per dialog (loopen finns: standalone playwright mot dev-servern). Börja med `!important`-hacken (ren cleanup, samma rendering) + de tydligt bredd-behövande (offert/import/budget-dialoger stuck på lg). Offender-lista: PinterestPicker, NewPurchaseOrderDialog, BudgetDashboard, QuoteReviewDialog, MaterialFileAttachment, AllocateFromOrderDialog, TasksTab, FloorMapManager, RoomDetailDialog, m.fl. (kör auditen igen för full lista).
+
+---
+id: renaida-snabboffert-framing
+status: todo
+priority: P1
+tags: [renaida, contractor, quote, activation, epic:renaida-quote-flow]
+created: 2026-08-12
+---
+## ⚡ R1: Snabboffert-inramning av Renaida-födelsen + planeringstabell-mellanlandning
+**Kartläggning 2026-08-12 (2 kod-audits):** offert kräver ALLTID projekt (`quotes.project_id NOT NULL`) → "snabb offert" = tyst skuggprojekt (status planning) + offert; accept AKTIVERAR projektet (ViewQuoteV2.handleAccept + DB-trigger `handle_quote_status_project_sync`). Gamla QuickQuoteDialog är DÖD KOD (exporteras, renderas aldrig) — Renaida-födelsen K1–K5 ersätter den och är mer komplett.
+
+**Bygg:** (1) "⚡ Snabboffert"-entry i pipeline-sektionen (LeadsPipelineSection, byggare) → öppnar RenaidaProjectDialog i offert-first-läge (kund-steget tidigt). (2) K1-erbjudandet får TVÅ knappar: "Granska & justera kalkylen" → projektets Planering-flik (byggarens kalkylyta: timmar×timpris, påslag, vinst — sammanställningen han vill se, Carls krav 2026-08-12) eller "Direkt till offert" → dagens /quotes/new-väg. (3) Radera QuickQuoteDialog (död kod; CreateQuoteV2 behåller fromQuickQuote-param tills vidare).
+
+**Princip (Carl):** Renaida fyller i — planeringstabellen äger sanningen. Ingen kalkyl-UI i dialogen.
+
+---
+id: renaida-accept-kvittens
+status: todo
+priority: P2
+tags: [renaida, contractor, quote, activation, epic:renaida-quote-flow]
+created: 2026-08-12
+---
+## 🎉 R2: Renaida kvitterar offert-accept till byggaren + vägvisning
+Accept-ögonblicket är stumt mot byggaren (kunden får konfetti; byggaren inget). Kedjan som redan körs vid accept: quote→accepted, projekt→active, `createTasksFromQuote` (quoteService.ts:472 — offertrader tillbaka på tasks, budget/ROT/UE), total_budget sätts, kund auto-inbjuds (intake-vägen).
+
+**Bygg:** Renaida-notis/panel-kvittens till byggaren: "{{kund}}s offert accepterades — projektet är aktivt. Vill du att jag visar var du planerar starten / bjuder in teamet?" → open_feature-vägvisning. Detta är byggarens FÖRSTA WOW (aktiverings-flaskhalsen gäller även proffs — svenssonsbyggvvs/byggomala bouncade). Trigger: realtime på quotes.status ELLER kolla vid nästa panel-öppning (enklast först).
+
+---
+id: renaida-builder-calc-e1
+status: todo
+priority: P1
+tags: [renaida, contractor, estimation, planning, epic:renaida-quote-flow]
+created: 2026-08-12
+---
+## 🧮 E1: Kalkylfält i Renaida-draften + estimeringsmotorn vid scaffold (nivåval, aldrig tvång)
+**Source of truth FINNS REDAN (verifierad 2026-08-12):** `profiles.default_hourly_rate` + `default_labor_cost_percent` + `estimation_settings` (JSON: produktivitet per fack i m²/h — paint/floor/tile/demolition/spackling/sanding/carpentry/electrical/plumbing; färgtäckning+strykningar; materialpriser kr/liter, kr/m²). Redigeras i Profile.tsx (~rad 300-330), parsas av `parseEstimationSettings` (materialRecipes.ts:158), konsumeras redan av PlanningTaskList/PlanningRoomList/TaskEditDialog/planningWizardService. ÅTERANVÄND — bygg ingen Renaida-kopia.
+
+**Bygg:** (1) `DraftTask` utökas: estimatedHours/hourlyRate/materialEstimate/markup (budgetSek från K4 var första steget) + `toScaffoldInput` mappar (scaffold skriver kolumnerna redan). (2) Vid contractor-födelse: kör estimeringsmotorn (profilens satser + rummets area — Renaidas size-fråga + Fas D-grovskissens areor matar den) → förifyllda kalkylceller. (3) NIVÅVAL aldrig tvång ([[feedback_smart_materials_optional]] generaliserad): nivå 0 = bara struktur (tomma celler), nivå 1 = klumpsummor (K4-läget), nivå 2 = full kalkyl. Val i dialogen, lärt default per användare. (4) Byggare tänker arbetstid/kostnad+påslag & material+påslag — Renaida ska förstå och förklara i de termerna (Carl 2026-08-12).
+
+**Lucka funnen:** profilen SAKNAR default-påslag (markup_percent finns bara per task/material) — lägg `default_markup_percent`/`default_material_markup_percent` på profilen + Profile-UI (del av detta kort eller E3).
+
+---
+id: planning-cell-provenance-e2
+status: todo
+priority: P2
+tags: [contractor, estimation, planning, ui, epic:renaida-quote-flow]
+created: 2026-08-12
+---
+## 🔍 E2: Cell-provenance + formel-förklaring i planeringstabellen
+Varje Renaida-/motor-estimerad cell bär sin formel: "Målning Sovrum: 32 m² väggyta × 0,4 h/m² = 13 h à 550 kr" — tooltip/chip i PlanningTaskList, samma data gör att Renaida kan svara "hur räknade du?". Redigering skriver över → cell stämplas 'egen' (Fas B-provenance-mönstret på cellnivå). Förklarbarhet = förtroende; en byggare som ser formeln bedömer den på en sekund. Self-explaining decisions[]-principen ([[feedback_agent_readable_architecture]]). MaterialFormulaPopover finns redan för material-formler — förebild/återanvänd.
+
+---
+id: renaida-rate-learning-e3
+status: todo
+priority: P2
+tags: [renaida, contractor, estimation, memory, epic:renaida-quote-flow]
+created: 2026-08-12
+---
+## 📈 E3: Renaida läser/förklarar/uppdaterar byggarens satser (profilen = kanoniska hjärnan)
+INTE ett nytt minne — `profiles.default_hourly_rate` + `estimation_settings` ÄR source of truth (se E1). Inlärnings-embryo finns: TaskEditDialog.tsx:611 skriver tillbaka default_hourly_rate vid task-redigering.
+
+**Bygg:** (1) Renaida kan SVARA om satserna ("vad räknar jag med för timpris?") och UPPDATERA dem via kapsel/förslag ("mitt timpris är 640" → update profiles, med bekräftelse — aldrig auto). (2) Generalisera learn-from-edit: när byggaren konsekvent ändrar en produktivitetssats/påslag i tabellen → föreslå spara till profilen ("du brukar sätta 15% påslag — spara som standard?"). (3) renaida_user_memory håller bara mjuka preferenser (nivåval, vanliga overhead-poster) — ALDRIG duplicera profilens satser (En hjärna-principen).
+
+---
+id: bugg-intake-create-project-404
+status: todo
+priority: P2
+tags: [bugg, intake, pipeline]
+created: 2026-08-12
+---
+## 🐛 Pipeline "skapa projekt från förfrågan" → 404
+`LeadsPipelineSection.handleCreateProjectFromIntake` (rad ~30, wired via AllIntakeRequestsDialog onCreateProject) navigerar till `/intake-requests/${id}?action=create-project` — routen FINNS INTE (App.tsx:138 har bara /intake-requests utan :id; IntakeRequests.tsx läser inga searchParams) → NotFound. Fix: navigera till /intake-requests och auto-öppna detaljen (state/param), eller lägg routen. Verifiera intake→konvertera-flödet efteråt.
+
+---
+id: verify-accept-planned-status
+status: todo
+priority: P2
+tags: [bugg, quote, tasks, verify]
+created: 2026-08-12
+---
+## 🔎 Verifiera: flippar offert-accept `planned`-tasks till `to_do`?
+Manuell aktivering (PlanningTaskList.handleActivateProject:245 / HomeownerPlanningView.handleActivate:468) flippar planned→to_do. Offert-accept-vägen (`createTasksFromQuote`, quoteService.ts:472-713) uppdaterar budgetar + arkiverar icke-offererade planeringstasks — men sätter den status to_do på de kvarvarande? RISK: accepterat projekt = active men arbeten fast i 'planned' → osynliga i kanban. Läs funktionen, skriv e2e på accept-vägen, fixa om luckan är äkta.
+
+---
+id: activate-project-single-source
+status: todo
+priority: P3
+tags: [tech-debt, cleanup, activation, agent-readable]
+created: 2026-08-12
+---
+## 🧹 R3: EN activateProject-service (aktivering är idag triplikerad)
+Projekt→active sätts i TRE kodvägar: ViewQuoteV2.tsx:303 (klient), DB-triggern handle_quote_status_project_sync, vilande ViewQuote.tsx:259 — plus TVÅ ~130-raders nästan identiska manuella aktiveringar (PlanningTaskList:245, HomeownerPlanningView:468). Bryt ut till EN service (importPurchaseOrder-mönstret: ordagrann extraktion, delad modul) som båda UI-vägarna + accept-vägen anropar. Möjliggör senare `activate_project`-action för Renaida ("aktivera projektet" via röst). total_budget sätts också dubbelt (quoteService.ts:201 + historiskt triggern) — ensa.
+
+---
+id: retire-planning-wizard
+status: todo
+priority: P3
+tags: [tech-debt, cleanup, renaida, wizard]
+created: 2026-08-12
+---
+## 🧹 R4: Pensionera PlanningWizard till förmån för Renaida-dialogen
+PlanningWizard (hemägar-only, tomt-projekt-läget i HomeownerPlanningView:700) löser samma problem som Renaida-födelsen med samma AI-parse (parse-renovation-description) men: hårdkodad "sv" (PlanningWizard.tsx:75), går FÖRBI scaffoldProject (egna inserts i planningWizardService:109+), 3 döda steg-komponenter (RoomsStep/RoomSpecificStep/GlobalWorkTypesStep importeras aldrig). Låt tomt-projekt-läget öppna RenaidaProjectDialog i "fyll befintligt projekt"-läge (kräver existingProjectId-stöd i dialogen — scaffold har det redan) → en motor, en kodväg, språkneutralt. OBS: wizarden skriver unikt room_ids[]-multiroom + checklists — bevara eller medvetet släpp.
