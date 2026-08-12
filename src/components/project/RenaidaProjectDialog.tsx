@@ -32,6 +32,7 @@ import { floorPlanResultToShapes } from '@/services/aiVisionService';
 import { findOrCreateClientByName } from '@/services/intakeService';
 import { createPlanInDB, saveShapesForPlan } from '@/components/floormap/utils/plans';
 import { readDroppedItems } from '@/lib/dropTree';
+import { parseEstimationSettings } from '@/lib/materialRecipes';
 import type { WorkType } from '@/services/workTypeUtils';
 import {
   emptyDraft,
@@ -44,6 +45,8 @@ import {
   applyAddonWorkTypes,
   unattributedTaskCount,
   assignUnattributedTasks,
+  estimateDraftCalc,
+  type CalcProfileDefaults,
   PROJECT_TYPES,
   type ProjectDraft,
   type ProjectTypeId,
@@ -490,8 +493,40 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
     setFieldValue('');
   };
 
-  const onChipSingle = (s: Step, id: string, label: string) =>
+  const onChipSingle = (s: Step, id: string, label: string) => {
     submit(s, { kind: 'chips', ids: [id], labels: [label] }, label);
+    // E1: on "suggest calc", enrich the draft from the builder's PROFILE rates
+    // (source of truth: default_hourly_rate + estimation_settings) — async, so
+    // it runs after the sync answer; fail-open to engine defaults.
+    if (s.id === 'calc' && id === 'suggest') void runCalcSuggestion();
+  };
+
+  const runCalcSuggestion = async () => {
+    let defaults: CalcProfileDefaults = { defaultHourlyRate: null, settings: {} };
+    try {
+      if (!isGuest) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: p } = await supabase
+            .from('profiles')
+            .select('default_hourly_rate, estimation_settings')
+            .eq('user_id', user.id)
+            .maybeSingle();
+          if (p) {
+            defaults = {
+              defaultHourlyRate: p.default_hourly_rate ?? null,
+              settings: parseEstimationSettings(
+                p.estimation_settings as Record<string, unknown> | null
+              ),
+            };
+          }
+        }
+      }
+    } catch (e) {
+      console.error('RenaidaProjectDialog: profile rates fetch failed', e);
+    }
+    setDraft((d) => estimateDraftCalc(d, defaults));
+  };
 
   const onMultiContinue = (s: Step) => {
     if (s.input.kind !== 'chips') return;
@@ -1201,9 +1236,23 @@ function TaskReviewList({
           }`}
           style={{ animationDelay: `${i * 40}ms` }}
         >
-          <span className={`flex min-w-0 items-center gap-1.5 ${task.excluded ? 'line-through' : ''}`}>
-            <SourceChip source={task.source} />
-            <span className="truncate">{taskTitle(task, labelFor)}</span>
+          <span className={`flex min-w-0 flex-col ${task.excluded ? 'line-through' : ''}`}>
+            <span className="flex min-w-0 items-center gap-1.5">
+              <SourceChip source={task.source} />
+              <span className="truncate">{taskTitle(task, labelFor)}</span>
+            </span>
+            {/* E1: suggested calc — hours × the builder's own rate (+ material).
+                Shown with the formula so he can judge it at a glance; the
+                planning table is where he edits. */}
+            {!task.excluded && task.estimatedHours != null && (
+              <span className="truncate text-[11px] text-muted-foreground" title={task.calcNote ?? undefined}>
+                ≈ {task.estimatedHours} h
+                {task.hourlyRateSek != null &&
+                  ` · ${Math.round(task.estimatedHours * task.hourlyRateSek).toLocaleString('sv-SE')} kr`}
+                {task.materialEstimateSek != null &&
+                  ` + ${task.materialEstimateSek.toLocaleString('sv-SE')} kr ${t('renaidaFlow.calc.material', 'material')}`}
+              </span>
+            )}
           </span>
           <button
             type="button"

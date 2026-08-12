@@ -9,6 +9,8 @@ import {
   applyAddonWorkTypes,
   taskTitle,
   unattributedTaskCount,
+  estimateDraftCalc,
+  calcEligibleTaskCount,
 } from '../src/services/renaidaProjectFlow';
 import type { AIParsedResult } from '../src/components/project/overview/planning-wizard/types';
 
@@ -322,4 +324,102 @@ test('expert add-on: relocating the floor drain adds demolition + plumbing', () 
   d = applyAnswer(s, { kind: 'chips', ids: ['moveDrain'], labels: ['Flytta golvbrunn'] }, d);
   expect(d.tasks.some((t) => t.workType === 'rivning')).toBe(true);
   expect(d.tasks.some((t) => t.workType === 'vvs')).toBe(true);
+});
+
+test('E1 calc: contractor opt-in after size; homeowner never sees it', () => {
+  // Contractor: bathroom + paint scope + a real room area → calc step appears.
+  let c = emptyDraft();
+  c = applyAnswer(nextStep(c, 'contractor')!, { kind: 'skip' }, c); // describe
+  c = applyAnswer(nextStep(c, 'contractor')!, { kind: 'chips', ids: ['bathroom'], labels: ['Badrum'] }, c); // type
+  c = applyAnswer(nextStep(c, 'contractor')!, { kind: 'chips', ids: ['paint'], labels: ['Målning'] }, c); // scope
+  c = applyAnswer(nextStep(c, 'contractor')!, { kind: 'skip' }, c); // customer
+  c = applyAnswer(nextStep(c, 'contractor')!, { kind: 'skip' }, c); // addons
+  c = applyAnswer(nextStep(c, 'contractor')!, { kind: 'skip' }, c); // overhead
+  const size = nextStep(c, 'contractor')!;
+  expect(size.id).toBe('size');
+  c = applyAnswer(size, { kind: 'number', value: 12 }, c);
+
+  expect(calcEligibleTaskCount(c)).toBeGreaterThan(0);
+  const calc = nextStep(c, 'contractor')!;
+  expect(calc.id).toBe('calc');
+  c = applyAnswer(calc, { kind: 'chips', ids: ['suggest'], labels: ['Föreslå kalkyl'] }, c);
+  expect(c.calcLevel).toBe('suggest');
+  // Asked once, never again.
+  expect(nextStep(c, 'contractor')!.id).not.toBe('calc');
+
+  // Homeowner: same walk (paint + size answered) → calc never appears.
+  let h = emptyDraft();
+  h = applyAnswer(nextStep(h, 'homeowner')!, { kind: 'skip' }, h); // describe
+  h = applyAnswer(nextStep(h, 'homeowner')!, { kind: 'chips', ids: ['bathroom'], labels: ['Badrum'] }, h); // type
+  h = applyAnswer(nextStep(h, 'homeowner')!, { kind: 'chips', ids: ['paint'], labels: ['Målning'] }, h); // scope
+  let guard = 0;
+  let s = nextStep(h, 'homeowner');
+  while (s && guard++ < 20) {
+    expect(s.id).not.toBe('calc');
+    h = applyAnswer(s, s.id === 'size' ? { kind: 'number', value: 12 } : { kind: 'skip' }, h);
+    s = nextStep(h, 'homeowner');
+  }
+});
+
+test('E1 calc: estimateDraftCalc fills hours/rate/material with formula; K4 prices untouched', () => {
+  let c = emptyDraft();
+  c = applyAnswer(nextStep(c, 'contractor')!, { kind: 'skip' }, c); // describe
+  c = applyAnswer(nextStep(c, 'contractor')!, { kind: 'chips', ids: ['bathroom'], labels: ['Badrum'] }, c); // type
+  c = applyAnswer(nextStep(c, 'contractor')!, { kind: 'chips', ids: ['paint'], labels: ['Målning'] }, c); // scope
+  c = applyAnswer(nextStep(c, 'contractor')!, { kind: 'skip' }, c); // customer
+  c = applyAnswer(nextStep(c, 'contractor')!, { kind: 'skip' }, c); // addons
+  c = applyAnswer(nextStep(c, 'contractor')!, { kind: 'skip' }, c); // overhead
+  c = applyAnswer(nextStep(c, 'contractor')!, { kind: 'number', value: 12 }, c); // size → 12 m²
+  // A K4-priced quote line rides along — must never be re-estimated.
+  c = {
+    ...c,
+    tasks: [...c.tasks, {
+      workType: 'annat' as const,
+      roomName: 'Badrum',
+      costCenter: 'other',
+      customTitle: 'Rivning enligt offert',
+      budgetSek: 8000,
+    }],
+  };
+
+  const enriched = estimateDraftCalc(c, { defaultHourlyRate: 600, settings: {} });
+  const paint = enriched.tasks.find((t) => t.workType === 'malning')!;
+  // 12 m² square room → perimeter ~13.86 m × 2.4 m ceiling ≈ 33.3 m² wall.
+  expect(paint.estimatedHours).toBeGreaterThan(0);
+  expect(paint.hourlyRateSek).toBe(600);
+  expect(paint.materialEstimateSek).toBeGreaterThan(0); // paint recipe
+  expect(paint.calcNote).toContain('m² vägg');
+
+  // K4 line untouched — the builder's real price is never re-estimated.
+  const k4 = enriched.tasks.find((t) => t.customTitle === 'Rivning enligt offert')!;
+  expect(k4.estimatedHours).toBeUndefined();
+  expect(k4.budgetSek).toBe(8000);
+
+  // The calc lands in the scaffold: hours/rate/material + formula as description.
+  const input = toScaffoldInput(enriched, (wt) => wt);
+  const st = input.tasks.find((t) => t.title.startsWith('malning'))!;
+  expect(st.estimatedHours).toBe(paint.estimatedHours);
+  expect(st.hourlyRate).toBe(600);
+  expect(st.materialEstimate).toBe(paint.materialEstimateSek);
+  expect(st.description).toBe(paint.calcNote);
+});
+
+test('E1 calc: no area or unrecognized work → step never appears', () => {
+  // Area skipped → nothing to estimate → no calc step.
+  let c = emptyDraft();
+  c = applyAnswer(nextStep(c, 'contractor')!, { kind: 'skip' }, c); // describe
+  c = applyAnswer(nextStep(c, 'contractor')!, { kind: 'chips', ids: ['bathroom'], labels: ['Badrum'] }, c); // type
+  c = applyAnswer(nextStep(c, 'contractor')!, { kind: 'chips', ids: ['paint'], labels: ['Målning'] }, c); // scope
+  c = applyAnswer(nextStep(c, 'contractor')!, { kind: 'skip' }, c); // customer
+  c = applyAnswer(nextStep(c, 'contractor')!, { kind: 'skip' }, c); // addons
+  c = applyAnswer(nextStep(c, 'contractor')!, { kind: 'skip' }, c); // overhead
+  c = applyAnswer(nextStep(c, 'contractor')!, { kind: 'skip' }, c); // size SKIPPED
+  expect(calcEligibleTaskCount(c)).toBe(0);
+  let guard = 0;
+  let s = nextStep(c, 'contractor');
+  while (s && guard++ < 10) {
+    expect(s.id).not.toBe('calc');
+    c = applyAnswer(s, { kind: 'skip' }, c);
+    s = nextStep(c, 'contractor');
+  }
 });

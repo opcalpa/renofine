@@ -2344,7 +2344,8 @@
         "homeowner": "Tu veux décrire ton projet avec tes mots ? Je remplis ce que je peux et ne demande que le reste. Ou passe et je te guide étape par étape.",
         "contractor": "Décris le chantier avec tes mots et j'esquisse pièces et tâches — ou passe pour être guidé."
       },
-      "addons": "Bien. On inclut souvent aussi ceci — veux-tu en ajouter ? (Facultatif.)"
+      "addons": "Bien. On inclut souvent aussi ceci — veux-tu en ajouter ? (Facultatif.)",
+      "calc": "Veux-tu que je propose un calcul — heures de travail et coût selon tes taux et la taille de la pièce ? Tout reste modifiable dans le tableau de planification."
     },
     "complete": "Parfait — j'ai tout ce qu'il faut. Ton projet est prêt à être créé. Tu pourras tout ajuster ensuite.",
     "type": {
@@ -2451,6 +2452,11 @@
       "utilitySink": "Bac de lavage",
       "addBathroom": "Ajouter une salle d'eau/WC"
     },
-    "suggesting": "Renaida réfléchit à des suggestions…"
+    "suggesting": "Renaida réfléchit à des suggestions…",
+    "calc": {
+      "suggest": "Proposer un calcul",
+      "self": "Je calcule moi-même",
+      "material": "matériaux"
+    }
   }
 }

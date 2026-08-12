@@ -2344,7 +2344,8 @@
         "homeowner": "¿Quieres contarme tu proyecto con tus palabras? Relleno lo que pueda y solo pregunto por el resto. O sáltalo y te guío paso a paso.",
         "contractor": "Describe el trabajo con tus palabras y esbozaré habitaciones y tareas — o sáltalo para que te guíe."
       },
-      "addons": "Bien. La gente suele incluir también esto — ¿quieres añadir algo? (Opcional.)"
+      "addons": "Bien. La gente suele incluir también esto — ¿quieres añadir algo? (Opcional.)",
+      "calc": "¿Quieres que proponga un cálculo — horas de trabajo y coste según tus tarifas y el tamaño de la habitación? Todo sigue siendo editable en la tabla de planificación."
     },
     "complete": "Perfecto — tengo todo lo que necesito. Tu proyecto está listo para crearse. Puedes ajustar todo después.",
     "type": {
@@ -2451,6 +2452,11 @@
       "utilitySink": "Fregadero auxiliar",
       "addBathroom": "Añadir un aseo/WC"
     },
-    "suggesting": "Renaida está pensando sugerencias…"
+    "suggesting": "Renaida está pensando sugerencias…",
+    "calc": {
+      "suggest": "Proponer un cálculo",
+      "self": "Hago el cálculo yo mismo",
+      "material": "material"
+    }
   }
 }

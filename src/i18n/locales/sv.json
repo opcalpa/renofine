@@ -6883,7 +6883,8 @@
       "addons": "Fint. Många brukar också ta med det här — vill du lägga till något? (Valfritt.)",
       "gapRoom": "Jag hittade {{count}} arbeten jag inte kunde placera i ett rum — vilket rum hör de till?",
       "customer": "Vem är jobbet för? Jag använder kunden för att förbereda en offert sen.",
-      "overhead": "Sånt proffs ofta tar med separat — vill du lägga till något? (Valfritt.)"
+      "overhead": "Sånt proffs ofta tar med separat — vill du lägga till något? (Valfritt.)",
+      "calc": "Vill du att jag föreslår en kalkyl — arbetstimmar och kostnad utifrån dina satser och rummets storlek? Allt går att ändra i planeringstabellen."
     },
     "overhead": {
       "establishment": "Etablering",
@@ -7038,6 +7039,11 @@
       "utilitySink": "Utslagsvask",
       "addBathroom": "Lägg till toalett/WC"
     },
-    "suggesting": "Renaida tänker ut förslag…"
+    "suggesting": "Renaida tänker ut förslag…",
+    "calc": {
+      "suggest": "Föreslå kalkyl",
+      "self": "Jag räknar själv",
+      "material": "material"
+    }
   }
 }

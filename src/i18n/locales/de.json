@@ -2344,7 +2344,8 @@
         "homeowner": "Möchtest du dein Projekt in eigenen Worten beschreiben? Ich fülle aus, was ich kann, und frage nur nach dem Rest. Oder überspringe und ich führe dich Schritt für Schritt.",
         "contractor": "Beschreibe den Auftrag in eigenen Worten und ich entwerfe Räume und Aufgaben — oder überspringe."
       },
-      "addons": "Schön. Viele nehmen oft auch das mit — möchtest du etwas hinzufügen? (Optional.)"
+      "addons": "Schön. Viele nehmen oft auch das mit — möchtest du etwas hinzufügen? (Optional.)",
+      "calc": "Soll ich eine Kalkulation vorschlagen — Arbeitsstunden und Kosten aus deinen Sätzen und der Raumgröße? Alles bleibt in der Planungstabelle editierbar."
     },
     "complete": "Perfekt — ich habe alles, was ich brauche. Dein Projekt ist bereit. Du kannst danach alles anpassen.",
     "type": {
@@ -2451,6 +2452,11 @@
       "utilitySink": "Ausgussbecken",
       "addBathroom": "Bad/WC hinzufügen"
     },
-    "suggesting": "Renaida überlegt Vorschläge…"
+    "suggesting": "Renaida überlegt Vorschläge…",
+    "calc": {
+      "suggest": "Kalkulation vorschlagen",
+      "self": "Ich rechne selbst",
+      "material": "Material"
+    }
   }
 }

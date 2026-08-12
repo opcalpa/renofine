@@ -17,6 +17,12 @@ import type { WorkType } from './workTypeUtils';
 import { workTypeToCostCenter, getWorkTypes } from './workTypeUtils';
 import type { ScaffoldProjectInput } from './scaffoldProject';
 import type { AIParsedResult } from '@/components/project/overview/planning-wizard/types';
+import {
+  estimateTaskMultiRoom,
+  detectWorkType,
+  type RecipeEstimationSettings,
+  type RecipeRoom,
+} from '@/lib/materialRecipes';
 
 export type ProjectTypeId = 'bathroom' | 'kitchen' | 'laundry' | 'basement' | 'paint' | 'floor' | 'other';
 export type UserType = 'homeowner' | 'contractor';
@@ -65,6 +71,17 @@ export interface DraftTask {
    * ACTUAL prices — CreateQuoteV2 uses task.budget as the line's unit price.
    */
   budgetSek?: number | null;
+  /**
+   * E1 contractor calc suggestion (never forced — the calc step opts in): labor
+   * hours from the estimation engine (profile productivity rates × room area),
+   * the builder's own default hourly rate, and a material cost from the recipe.
+   * All land as prefilled EDITABLE cells in the planning table via scaffold.
+   */
+  estimatedHours?: number | null;
+  hourlyRateSek?: number | null;
+  materialEstimateSek?: number | null;
+  /** Human-readable formula ("32 m² vägg × 10 m²/h") — explainability seed (E2). */
+  calcNote?: string | null;
 }
 
 export interface ProjectDraft {
@@ -77,6 +94,12 @@ export interface ProjectDraft {
   rooms: DraftRoom[];
   tasks: DraftTask[];
   totalBudget?: number | null;
+  /**
+   * E1 contractor calc level: 'suggest' = Renaida prefills hours/rates/material
+   * from the estimation engine; 'self' = builder does the math himself (empty
+   * cells). Never forced — chosen in the calc step.
+   */
+  calcLevel?: 'suggest' | 'self';
   /** Step ids already answered (incl. skipped) — drives the conditional flow. */
   answered: string[];
 }
@@ -357,6 +380,24 @@ export function nextStep(
       input: { kind: 'number', placeholderKey: 'renaidaFlow.ph.size', unit: 'm²', skipKey: 'renaidaFlow.skip.dontKnow' },
     };
   }
+  // E1 contractor calc opt-in: builders think in labor hours × rate + material —
+  // offer to prefill that calc from THEIR profile rates and the room area. Only
+  // asked when the estimate can actually compute something (a room with a known
+  // area backing at least one task), and never for homeowners. Suggestions are
+  // prefilled EDITABLE cells, never forced ("smart = bonus, inte tvång").
+  if (userType === 'contractor' && calcEligibleTaskCount(draft) > 0 && !answered(draft, 'calc')) {
+    return {
+      id: 'calc',
+      messageKey: 'renaidaFlow.q.calc',
+      input: {
+        kind: 'chips',
+        options: [
+          { id: 'suggest', labelKey: 'renaidaFlow.calc.suggest' },
+          { id: 'self', labelKey: 'renaidaFlow.calc.self' },
+        ],
+      },
+    };
+  }
   if (!answered(draft, 'address')) {
     return {
       id: 'address',
@@ -459,6 +500,12 @@ export function applyAnswer(
           source: { kind: 'suggestion' },
         });
       });
+      break;
+    }
+    case 'calc': {
+      if (answer.kind === 'chips' && answer.ids[0]) {
+        next.calcLevel = answer.ids[0] === 'suggest' ? 'suggest' : 'self';
+      }
       break;
     }
     case 'address': {
@@ -581,6 +628,12 @@ export function toScaffoldInput(draft: ProjectDraft, labelFor: WorkTypeLabeller)
         roomName: t.roomName,
         costCenter: t.costCenter,
         budget: t.budgetSek ?? null,
+        // E1: the suggested calc lands as prefilled editable cells in the
+        // planning table; the formula rides along as the task description.
+        estimatedHours: t.estimatedHours ?? null,
+        hourlyRate: t.hourlyRateSek ?? null,
+        materialEstimate: t.materialEstimateSek ?? null,
+        description: t.calcNote ?? null,
       })),
     markOnboardingComplete: true,
   };
@@ -750,4 +803,104 @@ export function mergeQuoteLinesIntoDraft(
   if (!next.answered.includes('describe')) next.answered.push('describe');
   if (next.tasks.length > 0 && !next.answered.includes('scope')) next.answered.push('scope');
   return next;
+}
+
+// ---------------------------------------------------------------------------
+// E1: contractor calc suggestion — Renaida fills, the planning table owns truth
+// ---------------------------------------------------------------------------
+
+/**
+ * Builder-profile defaults feeding the calc suggestion. The SOURCE OF TRUTH is
+ * profiles.default_hourly_rate + profiles.estimation_settings (edited on the
+ * Profile page, parsed by parseEstimationSettings) — Renaida never keeps her
+ * own copy of the builder's rates.
+ */
+export interface CalcProfileDefaults {
+  defaultHourlyRate: number | null;
+  settings: Partial<RecipeEstimationSettings>;
+}
+
+/**
+ * A draft room the estimation engine can work with. Wall-area work (paint/tile)
+ * needs a perimeter we don't have at birth — assume a square room (perimeter =
+ * 4·√area). Honest for a rough estimate; Fas D floor-plan geometry refines it.
+ */
+function draftRoomToRecipeRoom(room: DraftRoom): RecipeRoom | null {
+  const area = room.areaSqm ?? null;
+  if (!area || area <= 0) return null;
+  const sideMm = Math.sqrt(area) * 1000;
+  return {
+    dimensions: { area_sqm: area, perimeter_mm: 4 * sideMm },
+    ceiling_height_mm: room.ceilingHeightMm ?? null,
+  };
+}
+
+/** Tasks the calc suggestion could actually estimate (drives the calc step). */
+export function calcEligibleTaskCount(draft: ProjectDraft): number {
+  const rooms = new Map<string, RecipeRoom>();
+  for (const r of draft.rooms) {
+    const rec = draftRoomToRecipeRoom(r);
+    if (rec) rooms.set(r.name.trim().toLowerCase(), rec);
+  }
+  if (rooms.size === 0) return 0;
+  return draft.tasks.filter(
+    (t) =>
+      !t.excluded &&
+      t.budgetSek == null && // K4 real prices are never re-estimated
+      t.roomName != null &&
+      rooms.has(t.roomName.trim().toLowerCase()) &&
+      // Only count work the engine actually recognizes (paint/floor/tile/…)
+      detectWorkType({ cost_center: t.costCenter, title: t.customTitle ?? '' }) != null
+  ).length;
+}
+
+/**
+ * Prefill the builder calc on the draft: labor hours from the estimation engine
+ * (productivity rates × room area), the builder's own hourly rate, material cost
+ * from the recipe, and a human-readable formula (calcNote) for explainability.
+ * Pure — the caller fetches profile defaults and decides when to apply (only on
+ * calcLevel 'suggest'). Tasks it can't estimate are left untouched; K4-priced
+ * and excluded tasks are never touched.
+ */
+export function estimateDraftCalc(
+  draft: ProjectDraft,
+  profile: CalcProfileDefaults
+): ProjectDraft {
+  const rooms = new Map<string, RecipeRoom>();
+  for (const r of draft.rooms) {
+    const rec = draftRoomToRecipeRoom(r);
+    if (rec) rooms.set(r.name.trim().toLowerCase(), rec);
+  }
+  if (rooms.size === 0) return draft;
+
+  const tasks = draft.tasks.map((t) => {
+    if (t.excluded || t.budgetSek != null || t.roomName == null) return t;
+    const room = rooms.get(t.roomName.trim().toLowerCase());
+    if (!room) return t;
+    const est = estimateTaskMultiRoom(
+      { cost_center: t.costCenter, title: t.customTitle ?? '' },
+      [room],
+      profile.settings
+    );
+    if (!est || est.estimatedHours <= 0) return t;
+
+    const materialTotal =
+      (est.material?.totalCost ?? 0) +
+      est.extraMaterials.reduce((s, m) => s + (m.totalCost ?? 0), 0);
+    const areaLabel = est.areaType === 'wall' ? 'm² vägg' : 'm² golv';
+    const noteParts = [
+      `${est.totalAreaSqm} ${areaLabel} ÷ ${est.productivityRate} m²/h ≈ ${est.estimatedHours} h`,
+    ];
+    if (est.material?.formula) noteParts.push(est.material.formula);
+
+    return {
+      ...t,
+      estimatedHours: est.estimatedHours,
+      hourlyRateSek: profile.defaultHourlyRate,
+      materialEstimateSek: materialTotal > 0 ? Math.round(materialTotal) : null,
+      calcNote: noteParts.join(' · '),
+    };
+  });
+
+  return { ...draft, tasks };
 }

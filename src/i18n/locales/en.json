@@ -6883,7 +6883,8 @@
       "addons": "Nice. People often also include these — want to add any? (Optional.)",
       "gapRoom": "I found {{count}} task(s) I couldn't place in a room — which room do they belong to?",
       "customer": "Who's this job for? I'll use the customer to prepare a quote later.",
-      "overhead": "Pro items builders often quote separately — include any? (Optional.)"
+      "overhead": "Pro items builders often quote separately — include any? (Optional.)",
+      "calc": "Want me to suggest a calculation — labor hours and cost from your rates and the room size? Everything stays editable in the planning table."
     },
     "overhead": {
       "establishment": "Site setup",
@@ -7038,6 +7039,11 @@
       "utilitySink": "Utility sink",
       "addBathroom": "Add a bathroom/WC"
     },
-    "suggesting": "Renaida is thinking of suggestions…"
+    "suggesting": "Renaida is thinking of suggestions…",
+    "calc": {
+      "suggest": "Suggest a calculation",
+      "self": "I'll do the math myself",
+      "material": "material"
+    }
   }
 }
