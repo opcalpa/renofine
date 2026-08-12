@@ -4045,6 +4045,11 @@
     "suggest": {
       "lead": "Jag la märke till några saker vi kan slutföra:",
       "checklistDone": "Alla punkter klara i \"{{title}}\" — markera som klar?"
+    },
+    "acceptNews": {
+      "customer": "din kund",
+      "quote": "🎉 {{who}} accepterade offerten {{title}} {{amount}} — projektet är nu aktivt! Nästa steg brukar vara att planera starten under Planering eller bjuda in teamet under Team. Säg till om du vill ha hjälp.",
+      "ata": "🎉 {{who}} accepterade ÄTA:n {{title}} {{amount}} — tilläggsarbetet är nu en del av projektet. Arbetena ligger i Uppgifter, och du fakturerar som vanligt när det är dags."
     }
   },
   "feedback": {

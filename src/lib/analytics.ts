@@ -91,6 +91,7 @@ export const AnalyticsEvents = {
   RENAIDA_PROJECT_COMPLETED: "renaida_project_completed",
   RENAIDA_PROJECT_ABANDONED: "renaida_project_abandoned",
   RENAIDA_QUOTE_OFFER: "renaida_quote_offer",
+  RENAIDA_ACCEPT_NEWS: "renaida_accept_news",
 
   // Quotes
   QUOTE_CREATED: "quote_created",

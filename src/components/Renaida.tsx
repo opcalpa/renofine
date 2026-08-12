@@ -15,7 +15,12 @@ import { captureDocument } from "@/services/agent/documentCapture";
 import { applyProposals, undoProposals, fetchLatestUndoable } from "@/services/agent/applyProposals";
 import { type AgentProposal, type UndoOp, TASK_MATCH_MIN_CONFIDENCE, isActionable } from "@/services/agent/types";
 import { recordCorrection, getAutonomyMode, setAutonomyMode } from "@/services/agent/renaidaMemory";
-import { fetchProactiveSuggestions, type RenaidaSuggestion } from "@/services/agent/renaidaSuggestions";
+import {
+  fetchProactiveSuggestions,
+  fetchAcceptedQuoteNews,
+  markAcceptedQuoteAcked,
+  type RenaidaSuggestion,
+} from "@/services/agent/renaidaSuggestions";
 import { resolveFallbackProject } from "@/services/agent/defaultProject";
 import { analytics, AnalyticsEvents } from "@/lib/analytics";
 import { QuoteReviewDialog } from "@/components/project/QuoteReviewDialog";
@@ -370,6 +375,39 @@ export function Renaida() {
     });
     return () => { alive = false; };
   }, [open, t]);
+
+  // R2: quote-accept news — the accept moment happens on the CUSTOMER's screen;
+  // the builder's side must not stay silent. Once per open, contractor-only,
+  // celebrated once per quote (localStorage ack). Message + wayfinding only —
+  // no data change, so no ConfirmDiff.
+  const acceptNewsShownRef = useRef(false);
+  useEffect(() => {
+    if (!open) { acceptNewsShownRef.current = false; return; }
+    if (acceptNewsShownRef.current || userType !== "contractor") return;
+    if (getPageContext() !== "project") return;
+    const projectId = useRenaidaStore.getState().projectId;
+    if (!projectId) return;
+    acceptNewsShownRef.current = true;
+    let alive = true;
+    fetchAcceptedQuoteNews(projectId).then((news) => {
+      if (!alive || !news) return;
+      markAcceptedQuoteAcked(news.quoteId);
+      analytics.capture(AnalyticsEvents.RENAIDA_ACCEPT_NEWS, {
+        is_ata: news.isAta,
+        has_client: Boolean(news.clientName),
+      });
+      flashRenaida("happy", 2500);
+      const amount = news.totalAmount != null
+        ? `${Math.round(news.totalAmount).toLocaleString("sv-SE")} kr`
+        : "";
+      const who = news.clientName ?? t("helpBot.acceptNews.customer", "din kund");
+      const content = news.isAta
+        ? t("helpBot.acceptNews.ata", "🎉 {{who}} accepterade ÄTA:n {{title}} {{amount}} — tilläggsarbetet är nu en del av projektet. Arbetena ligger i Uppgifter, och du fakturerar som vanligt när det är dags.", { who, title: news.title, amount })
+        : t("helpBot.acceptNews.quote", "🎉 {{who}} accepterade offerten {{title}} {{amount}} — projektet är nu aktivt! Nästa steg brukar vara att planera starten under Planering eller bjuda in teamet under Team. Säg till om du vill ha hjälp.", { who, title: news.title, amount });
+      setMessages((prev) => [...prev, { role: "assistant", content }]);
+    });
+    return () => { alive = false; };
+  }, [open, userType, t, flashRenaida]);
 
   const handleToggleAutonomy = useCallback(() => {
     const next: RenaidaAutonomy = useRenaidaStore.getState().autonomy === "autopilot" ? "suggest" : "autopilot";

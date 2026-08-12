@@ -4046,6 +4046,11 @@
     "suggest": {
       "lead": "I noticed a few things we could wrap up:",
       "checklistDone": "All items done in \"{{title}}\" — mark it complete?"
+    },
+    "acceptNews": {
+      "customer": "your customer",
+      "quote": "🎉 {{who}} accepted the quote {{title}} {{amount}} — the project is now active! The usual next step is planning the start under Planning or inviting your team under Team. Just say if you want help.",
+      "ata": "🎉 {{who}} accepted the change order {{title}} {{amount}} — the additional work is now part of the project. The tasks are under Tasks, and you invoice as usual when it's time."
     }
   },
   "feedback": {
