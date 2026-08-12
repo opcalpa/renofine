@@ -1854,22 +1854,28 @@ created: 2026-08-12
 
 ---
 id: planning-cell-provenance-e2
-status: todo
+status: done
+done: 2026-08-12
 priority: P2
 tags: [contractor, estimation, planning, ui, epic:renaida-quote-flow]
 created: 2026-08-12
 ---
 ## 🔍 E2: Cell-provenance + formel-förklaring i planeringstabellen
+**✅ LEVERERAD 2026-08-12 (`9da0a8e`):** ny kolumn tasks.estimate_meta (JSONB source/formula/overridden, migration 20260812150000 APPLICERAD) — E1:s formel flödar strukturerat (inte via description). Timcellen i PlanningTaskList: sparkle-chip m. formel-tooltip när siffran är Renaidas förslag; redigering av timmar/timpris/pris sätter overridden=true → chippen pensioneras. "Hur räknade du?"-svar i panelen täcks av E3:s rates-kontext + formeln i tooltippen.
+
 Varje Renaida-/motor-estimerad cell bär sin formel: "Målning Sovrum: 32 m² väggyta × 0,4 h/m² = 13 h à 550 kr" — tooltip/chip i PlanningTaskList, samma data gör att Renaida kan svara "hur räknade du?". Redigering skriver över → cell stämplas 'egen' (Fas B-provenance-mönstret på cellnivå). Förklarbarhet = förtroende; en byggare som ser formeln bedömer den på en sekund. Self-explaining decisions[]-principen ([[feedback_agent_readable_architecture]]). MaterialFormulaPopover finns redan för material-formler — förebild/återanvänd.
 
 ---
 id: renaida-rate-learning-e3
-status: todo
+status: done
+done: 2026-08-12
 priority: P2
 tags: [renaida, contractor, estimation, memory, epic:renaida-quote-flow]
 created: 2026-08-12
 ---
 ## 📈 E3: Renaida läser/förklarar/uppdaterar byggarens satser (profilen = kanoniska hjärnan)
+**✅ LEVERERAD 2026-08-12 (`c1f66ca`):** (1) set_default_rate-action (contractor-only, bounds-checkad) → profiles-update m. Ångra (UndoOp profile_rate); eval 100% (2 nya golden; "timpris 640" ≠ task-budget explicit i prompten); agent-route DEPLOYAD. (2) help-bot-kontexten får callerns sparade satser (via GoTrue-id, ej ofiltrerad select) → svarar ur riktiga värden; DEPLOYAD. (3) Learn-from-edit: avvikande inline-timpris → "Spara som standard?"-toast (1/session). (4) Profile-UI för default_markup_percent/default_material_markup_percent (E2-migrationens kolumner). KVAR (medvetet): markup-defaults KONSUMERAS ej ännu av kalkyl/offert-fallbacks — eget litet kort när behovet syns; renaida_user_memory-mjukpreferenser (nivåval) senare.
+
 INTE ett nytt minne — `profiles.default_hourly_rate` + `estimation_settings` ÄR source of truth (se E1). Inlärnings-embryo finns: TaskEditDialog.tsx:611 skriver tillbaka default_hourly_rate vid task-redigering.
 
 **Bygg:** (1) Renaida kan SVARA om satserna ("vad räknar jag med för timpris?") och UPPDATERA dem via kapsel/förslag ("mitt timpris är 640" → update profiles, med bekräftelse — aldrig auto). (2) Generalisera learn-from-edit: när byggaren konsekvent ändrar en produktivitetssats/påslag i tabellen → föreslå spara till profilen ("du brukar sätta 15% påslag — spara som standard?"). (3) renaida_user_memory håller bara mjuka preferenser (nivåval, vanliga overhead-poster) — ALDRIG duplicera profilens satser (En hjärna-principen).
