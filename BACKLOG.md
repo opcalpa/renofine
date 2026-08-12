@@ -1805,7 +1805,8 @@ created: 2026-08-10
 
 ---
 id: renaida-snabboffert-framing
-status: todo
+status: done
+done: 2026-08-12
 priority: P1
 tags: [renaida, contractor, quote, activation, epic:renaida-quote-flow]
 created: 2026-08-12
@@ -1817,9 +1818,12 @@ created: 2026-08-12
 
 **Princip (Carl):** Renaida fyller i — planeringstabellen äger sanningen. Ingen kalkyl-UI i dialogen.
 
+**✅ LEVERERAD 2026-08-12 (`4a9da0d`):** ⚡-knapp i Mina offerter (visas ÄVEN utan pipeline-data = nya byggarens läge), trekunapps-erbjudande (Direkt till offert / Granska & justera kalkylen → ?tab=planning / Öppna projektet, event-action review_calc), QuickQuoteDialog raderad.
+
 ---
 id: renaida-accept-kvittens
-status: todo
+status: done
+done: 2026-08-12
 priority: P2
 tags: [renaida, contractor, quote, activation, epic:renaida-quote-flow]
 created: 2026-08-12
@@ -1829,9 +1833,12 @@ Accept-ögonblicket är stumt mot byggaren (kunden får konfetti; byggaren inget
 
 **Bygg:** Renaida-notis/panel-kvittens till byggaren: "{{kund}}s offert accepterades — projektet är aktivt. Vill du att jag visar var du planerar starten / bjuder in teamet?" → open_feature-vägvisning. Detta är byggarens FÖRSTA WOW (aktiverings-flaskhalsen gäller även proffs — svenssonsbyggvvs/byggomala bouncade). Trigger: realtime på quotes.status ELLER kolla vid nästa panel-öppning (enklast först).
 
+**✅ LEVERERAD 2026-08-12 (`65baacc`, MVP panel-öppnings-vägen):** fetchAcceptedQuoteNews-detektor (accepterad+skapad-av-mig+<14d+localStorage-ack per quote) + kundnamn; panel-meddelande m. vägvisning i ord + ÄTA-variant + flashRenaida happy + renaida_accept_news-event. KVAR ev. senare: realtime-trigger + klickbara vägvisar-knappar.
+
 ---
 id: renaida-builder-calc-e1
-status: todo
+status: done
+done: 2026-08-12
 priority: P1
 tags: [renaida, contractor, estimation, planning, epic:renaida-quote-flow]
 created: 2026-08-12
@@ -1841,7 +1848,9 @@ created: 2026-08-12
 
 **Bygg:** (1) `DraftTask` utökas: estimatedHours/hourlyRate/materialEstimate/markup (budgetSek från K4 var första steget) + `toScaffoldInput` mappar (scaffold skriver kolumnerna redan). (2) Vid contractor-födelse: kör estimeringsmotorn (profilens satser + rummets area — Renaidas size-fråga + Fas D-grovskissens areor matar den) → förifyllda kalkylceller. (3) NIVÅVAL aldrig tvång ([[feedback_smart_materials_optional]] generaliserad): nivå 0 = bara struktur (tomma celler), nivå 1 = klumpsummor (K4-läget), nivå 2 = full kalkyl. Val i dialogen, lärt default per användare. (4) Byggare tänker arbetstid/kostnad+påslag & material+påslag — Renaida ska förstå och förklara i de termerna (Carl 2026-08-12).
 
-**Lucka funnen:** profilen SAKNAR default-påslag (markup_percent finns bara per task/material) — lägg `default_markup_percent`/`default_material_markup_percent` på profilen + Profile-UI (del av detta kort eller E3).
+**Lucka funnen:** profilen SAKNAR default-påslag (markup_percent finns bara per task/material) — lägg `default_markup_percent`/`default_material_markup_percent` på profilen + Profile-UI (FLYTTAD till E3, kräver migration).
+
+**✅ LEVERERAD 2026-08-12 (`7b8112d`):** calc-steg (contractor-only, efter size, bara när motorn kan estimera: rum-med-area + igenkänd arbetstyp via detectWorkType) → estimateDraftCalc (ren) kör estimateTaskMultiRoom m. profilens satser → estimatedHours/hourlyRateSek/materialEstimateSek + calcNote-formel; kvadrat-rum-antagande för väggyta (perimeter 4·√area). Scaffold-mappning: hours/rate/material + formel som task-description. Granskningslistan visar "≈ h · kr + material". K4-priser re-estimeras aldrig. Nivå 0/1/2 = self/K4-klumpsummor/suggest. 29/29 tester.
 
 ---
 id: planning-cell-provenance-e2
