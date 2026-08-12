@@ -1867,23 +1867,23 @@ INTE ett nytt minne — `profiles.default_hourly_rate` + `estimation_settings` �
 
 ---
 id: bugg-intake-create-project-404
-status: todo
+status: done
 priority: P2
 tags: [bugg, intake, pipeline]
 created: 2026-08-12
 ---
 ## 🐛 Pipeline "skapa projekt från förfrågan" → 404
-`LeadsPipelineSection.handleCreateProjectFromIntake` (rad ~30, wired via AllIntakeRequestsDialog onCreateProject) navigerar till `/intake-requests/${id}?action=create-project` — routen FINNS INTE (App.tsx:138 har bara /intake-requests utan :id; IntakeRequests.tsx läser inga searchParams) → NotFound. Fix: navigera till /intake-requests och auto-öppna detaljen (state/param), eller lägg routen. Verifiera intake→konvertera-flödet efteråt.
+**✅ FIXAD 2026-08-12 (`0df0227`):** navigerar nu till `/intake-requests?open=<id>`; listsidan auto-öppnar den förfrågans detalj efter laddning (konverteringen bor där). Gamla /intake-requests/:id-routen fanns aldrig.
 
 ---
 id: verify-accept-planned-status
-status: todo
+status: done
 priority: P2
 tags: [bugg, quote, tasks, verify]
 created: 2026-08-12
 ---
 ## 🔎 Verifiera: flippar offert-accept `planned`-tasks till `to_do`?
-Manuell aktivering (PlanningTaskList.handleActivateProject:245 / HomeownerPlanningView.handleActivate:468) flippar planned→to_do. Offert-accept-vägen (`createTasksFromQuote`, quoteService.ts:472-713) uppdaterar budgetar + arkiverar icke-offererade planeringstasks — men sätter den status to_do på de kvarvarande? RISK: accepterat projekt = active men arbeten fast i 'planned' → osynliga i kanban. Läs funktionen, skriv e2e på accept-vägen, fixa om luckan är äkta.
+**✅ VERIFIERAD 2026-08-12 — INGEN BUGG:** `createTasksFromQuote` sätter `status: "to_do"` på källkopplade tasks (quoteService.ts:537), titel-matchade orphans (:636) och nyskapade (:661); planeringstasks UTANFÖR offerten arkiveras (:690-700). CreateQuoteV2:s förifyllning sätter `sourceTaskId: task.id` på alla rader → accept-vägen träffar rätt tasks. Kedjan är hel.
 
 ---
 id: activate-project-single-source
