@@ -1735,7 +1735,8 @@ Utöka `ProjectDraft` med `Provenance` per rum/arbete/budget-signal. Högerpanel
 
 ---
 id: renaida-birth-missing-critic
-status: doing
+status: done
+done: 2026-08-13
 priority: P2
 tags: [renaida, expert, moat, agent-readable]
 created: 2026-08-10
@@ -1743,7 +1744,7 @@ created: 2026-08-10
 ## Fas C+: "Saknas-något"-kritikern (expert-känslan)
 ETT LLM-anrop över det färdig-mergade utkastet: "offerten saknar rivning trots totalrenovering — lägg till?", "badrum utan tätskikt — säkert?". Renaida flaggar det du GLÖMDE, inte bara antecknar det du sa. Bygger vidare på expert-tillvalen (2d: flytta golvbrunn m.m.) — moaten = bygg-domän-systemet.
 
-**Ansats:** ~0,5 dag. Kör efter merge, förslag som accepterbara rader (samma granskning som Fas B). Billig WOW. Beroende: Fas B (granskningsytan).
+**✅ LEVERERAT 2026-08-13 (`494a684`):** nytt SISTA steg 'critic' i födelseflödet — edge-fn `renaida-critic` (DEPLOYAD, **gpt-4o** = medveten model-tiering: mini-modeller både re-flaggade täckt arbete (synonymer) OCH missade äkta luckor) granskar mergade utkastet → flaggor m. rum + varför-rad som accepterbara chips → customTitle-tasks m. ny provenance `critic` (Fas B-granskningsbara). Tyst självhopp + "ser komplett ut ✓" när planen är ren; fail-open överallt (gäst-säker). Live-smoke ×3 scenarier stabil. Event `renaida_project_critic_shown` + `critic_accepted` på completed. **🐛 BONUSFYND FIXAT: addons-effektens självcancellering** (cancelled+loading-i-deps → svar slängdes, spinner hängde för evigt UTAN hoppa-över — aktiv blockerare vid all nätverkslatens) — ref-guard i båda effekterna + deterministiskt latens-regressionstest. 38/38 tester.
 
 ---
 id: renaida-birth-capture-direction
