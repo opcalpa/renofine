@@ -2486,5 +2486,11 @@
     "previewShowingWorker": "Zeigt genau, was {{name}} sieht ({{lang}}).",
     "previewSeeWorkerLang": "Auf {{lang}} ansehen",
     "previewSeeSwedish": "Auf Schwedisch anzeigen"
+  },
+  "inviteWizard": {
+    "preview": {
+      "workerNote": "Der Handwerker erhält eine eigene Anleitungsansicht — Räume, Aufgaben, Zeichnungen und Checklisten in seiner Sprache. Nie Budget, Preise oder Margen.",
+      "workerSeeExact": "Sende die Einladung, öffne dann Freigabe → „Ansehen als“, um genau zu sehen, was der Handwerker sieht — und wechsle zu Schwedisch, um die Übersetzung zu prüfen."
+    }
   }
 }

@@ -2486,5 +2486,11 @@
     "previewShowingWorker": "Affiche exactement ce que voit {{name}} ({{lang}}).",
     "previewSeeWorkerLang": "Voir en {{lang}}",
     "previewSeeSwedish": "Afficher en suédois"
+  },
+  "inviteWizard": {
+    "preview": {
+      "workerNote": "L'ouvrier a sa propre vue d'instructions — pièces, tâches, plans et check-lists dans sa langue. Jamais le budget, les prix ni les marges.",
+      "workerSeeExact": "Envoie l'invitation, puis ouvre Partage → « Voir en tant que » pour voir exactement ce que l'ouvrier voit — et passe au suédois pour vérifier la traduction."
+    }
   }
 }
