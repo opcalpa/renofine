@@ -17,6 +17,14 @@ import {
   uploadWorkerPhoto,
   type WorkerPhotoCategory,
 } from "@/components/worker/uploadWorkerPhoto";
+import {
+  fetchWorkerRuntimeTranslations,
+  needsRuntimeTranslation,
+  WELCOME_ID,
+  WN_PREFIX,
+  FIN_PREFIX,
+  II_PREFIX,
+} from "@/lib/workerContentTranslation";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -117,61 +125,19 @@ export default function WorkerView() {
       const viewData = result as WorkerViewData;
       setData(viewData);
 
-      // Auto-translate non-worker messages + welcome message when the worker's
-      // language differs from sv/en. Originals stay intact; translations are
-      // stored in a separate field (or state for welcome) so workers can
-      // toggle "Show original" per-message later.
+      // Auto-translate runtime free text (messages, welcome, wall notes, object
+      // finish, instruction-image descriptions) when the worker's language
+      // differs from sv/en. Originals stay intact; translations live in
+      // separate fields so workers can toggle "Show original" per-message. The
+      // exact same pass runs in the owner's preview (WorkerInstructionsView) via
+      // this shared helper, so the preview matches what the worker sees.
       const lang = effectiveLang;
-      if (lang && lang !== "sv" && lang !== "en") {
-        const allMessages = viewData.tasks.flatMap((t) =>
-          t.messages.filter(
-            (m) => !m.isWorker && m.content && !m.content.startsWith("🎤"),
-          ),
-        );
-        const items: Array<{ id: string; content: string }> = allMessages.map(
-          (m) => ({ id: m.id, content: m.content }),
-        );
-        const WELCOME_ID = "__welcome__";
-        if (viewData.welcomeMessage) {
-          items.push({ id: WELCOME_ID, content: viewData.welcomeMessage });
-        }
-        // Wall-anchored instruction notes are free prose (e.g. "Spotlights 3 st")
-        // and were previously shown untranslated. Translate them in the same
-        // pass; prefix ids so they never collide with message ids.
-        const WN_PREFIX = "wn:";
-        for (const n of viewData.wallNotes ?? []) {
-          if (n.text?.trim()) items.push({ id: WN_PREFIX + n.id, content: n.text });
-        }
-        // Object finish instructions ("vit", "ek"…). The translator preserves
-        // codes like "NCS S 3005-G80Y" and only translates the prose parts.
-        const FIN_PREFIX = "fin:";
-        for (const o of [...(viewData.floorPlanObjects ?? []), ...(viewData.wallObjects ?? [])]) {
-          if (o.finish?.trim()) items.push({ id: FIN_PREFIX + o.id, content: o.finish });
-        }
-        // Instruction-image descriptions — the owner's most deliberate "do
-        // exactly this" prose. Previously shown untranslated (a Ukrainian
-        // painter got them in Swedish). Same runtime pass, ii: prefix.
-        const II_PREFIX = "ii:";
-        for (const task of viewData.tasks) {
-          for (const img of task.instructionImages ?? []) {
-            if (img.description?.trim()) items.push({ id: II_PREFIX + img.id, content: img.description });
-          }
-        }
-        if (items.length > 0) {
-          supabase.functions
-            .invoke("translate-comments", {
-              body: { comments: items, targetLanguage: lang },
-            })
-            .then(({ data: trData }) => {
-              if (!trData?.translations) return;
-              const trMap = new Map<string, string>(
-                trData.translations.map(
-                  (t: { id: string; translatedContent: string }) => [t.id, t.translatedContent],
-                ),
-              );
-              const welcomeT = trMap.get(WELCOME_ID);
-              if (welcomeT) setWelcomeTranslated(welcomeT);
-              setData((prev) => {
+      if (needsRuntimeTranslation(lang)) {
+        void fetchWorkerRuntimeTranslations(viewData, lang).then((trMap) => {
+          if (trMap.size === 0) return;
+          const welcomeT = trMap.get(WELCOME_ID);
+          if (welcomeT) setWelcomeTranslated(welcomeT);
+          setData((prev) => {
                 if (!prev) return prev;
                 return {
                   ...prev,
@@ -202,7 +168,6 @@ export default function WorkerView() {
               });
             })
             .catch((err) => console.error("Translation failed:", err));
-        }
       }
     } catch (err) {
       console.error("Failed to load worker data:", err);

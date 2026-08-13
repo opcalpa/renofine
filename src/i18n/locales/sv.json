@@ -5422,7 +5422,11 @@
     "customerView": "Kundvy",
     "instructionsFor": "Instruktioner för {{name}}",
     "noAssignedTasks": "Inga uppgifter tilldelade denna person",
-    "pendingInvites": "Väntande inbjudningar"
+    "pendingInvites": "Väntande inbjudningar",
+    "previewShowingSource": "Visar din svenska källtext.",
+    "previewShowingWorker": "Visar exakt vad {{name}} ser ({{lang}}).",
+    "previewSeeWorkerLang": "Se på {{lang}}",
+    "previewSeeSwedish": "Visa på svenska"
   },
   "team": {
     "table": {

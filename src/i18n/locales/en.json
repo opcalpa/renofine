@@ -5422,7 +5422,11 @@
     "customerView": "Client view",
     "instructionsFor": "Instructions for {{name}}",
     "noAssignedTasks": "No tasks assigned to this person",
-    "pendingInvites": "Pending invitations"
+    "pendingInvites": "Pending invitations",
+    "previewShowingSource": "Showing your Swedish source text.",
+    "previewShowingWorker": "Showing exactly what {{name}} sees ({{lang}}).",
+    "previewSeeWorkerLang": "See in {{lang}}",
+    "previewSeeSwedish": "Show in Swedish"
   },
   "team": {
     "table": {

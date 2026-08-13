@@ -40,10 +40,14 @@ serve(async (req) => {
   }
 
   try {
-    const { token } = await req.json();
+    const { token, preview, previewLang } = await req.json();
     if (!token || typeof token !== "string") {
       return jsonResponse({ error: "Token is required" }, 400, req);
     }
+    // Owner preview ("Se exakt vad {namn} ser"): may render in a chosen
+    // language (back-translation toggle) and must NOT touch last_accessed_at,
+    // which is the worker's real read-receipt signal.
+    const isPreview = preview === true;
 
     const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
@@ -63,10 +67,13 @@ serve(async (req) => {
       return jsonResponse({ error: "expired" }, 410, req);
     }
 
-    // 2. Update last_accessed_at (best-effort, don't block response)
-    await sb.from("worker_access_tokens")
-      .update({ last_accessed_at: new Date().toISOString() })
-      .eq("id", tokenRecord.id);
+    // 2. Update last_accessed_at (best-effort, don't block response) — but
+    // never for an owner preview, so the read-receipt reflects the worker only.
+    if (!isPreview) {
+      await sb.from("worker_access_tokens")
+        .update({ last_accessed_at: new Date().toISOString() })
+        .eq("id", tokenRecord.id);
+    }
 
     // 3. Fetch project name
     const { data: project } = await sb
@@ -301,8 +308,12 @@ serve(async (req) => {
       ({ wallSurfaces, wallNotes } = extractWallInstructions(extraShapes || [], wallRoom));
     }
 
-    // 5e. Fetch translations for worker's language
-    const workerLang = tokenRecord.worker_language;
+    // 5e. Fetch translations for the worker's language — or, in an owner
+    // preview, the chosen language (so the toggle can show the Swedish source
+    // "sv" = originals, or the worker's language = exactly what they see).
+    const workerLang = isPreview && typeof previewLang === "string" && previewLang
+      ? previewLang
+      : tokenRecord.worker_language;
     let translationsMap: Record<string, { title: string; description: string | null; checklists: unknown }> = {};
     let roomTranslationsMap: Record<string, { name: string; description: string | null }> = {};
     if (workerLang && workerLang !== "en" && workerLang !== "sv") {
@@ -561,7 +572,10 @@ serve(async (req) => {
     return jsonResponse({
       projectName: project?.name || "",
       workerName: tokenRecord.worker_name,
-      language: tokenRecord.worker_language,
+      // Effective language (worker's, or the preview override) so the client
+      // knows whether to run the runtime translation pass.
+      language: workerLang,
+      workerLanguage: tokenRecord.worker_language,
       welcomeMessage: tokenRecord.welcome_message || null,
       canUploadPhotos: tokenRecord.can_upload_photos,
       canToggleChecklist: tokenRecord.can_toggle_checklist,

@@ -2480,5 +2480,11 @@
   },
   "pipeline": {
     "quickQuote": "Devis rapide"
+  },
+  "sharing": {
+    "previewShowingSource": "Affiche ton texte source en suédois.",
+    "previewShowingWorker": "Affiche exactement ce que voit {{name}} ({{lang}}).",
+    "previewSeeWorkerLang": "Voir en {{lang}}",
+    "previewSeeSwedish": "Afficher en suédois"
   }
 }
