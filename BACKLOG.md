@@ -1947,3 +1947,55 @@ Ursprunglig R4-vision: tomt hemägar-projekt öppnar RenaidaProjectDialog i "fyl
 - **Renaida → befintligt** (`3c24175`): toScaffoldInput({existingProjectId}) + RenaidaProjectDialog existingProjectId/onPopulated-props (hoppar project_created/quote-offer/navigation, fyrar renaida_project_completed{populate_existing}). Entry: hemägarens tomma-projekt-läge blev en VÄLJARE (wizard | Renaida), inte tvingad wizard.
 - **Wizard → nytt** (`7a01956`): createProjectForWizard skapar skal, PlanningWizard.projectId nu valfri (saknas → skapa först). Entry: hemägar-only "Planera med guiden"-knapp på Projects → helskärms-overlay.
 Ingen regression: wizarden oförändrad i sitt befintliga läge (room_ids[]/checklistor kvar); Renaida är ett ALTERNATIV, inte en ersättare. 30/30 tester.
+
+---
+id: renaida-mobile-first-surface
+status: todo
+priority: P2
+tags: [renaida, mobil, ux, epic, activation]
+created: 2026-08-13
+---
+## 📱 EPIC: Renaida-first mobil-yta — mobilen är capture, desktop är kontroll
+**Carls vision 2026-08-13:** Renofine Mobile kompletterar Desktop genom att Renaida tar större plats i mobil-UX:et — snabba anteckningar, justeringar, kvittouppladdningar. Designregel att styra alla mobilbeslut mot: **mobil = Renaida-first capture-yta (på bygget, i butiken, händerna fulla) · desktop = domän-UI-first kontrollyta (tabeller, ritningar, offerter).** Moonshoten "Renaida-only UI" ([[project_agentic_strategy]]) landar FÖRST på mobilen — det är där formulär-friktionen är som störst och Renaida-vägen som överlägsnast.
+
+Skivor (nästan allt bakom finns — router/envelope/D1/röst — detta är entré/yt-arbete):
+- **(a) Förstklassig plats i mobilnav** — inte bara FAB: egen Renaida-hemyta med quick-chips (fota kvitto / logga tid / snabbanteckning / statusuppdatering) som skickar intentHint till routern.
+- **(b) PWA share-target + kamera-genväg** — dela foto från kamerarullen rakt in i Renaida → D1-flödet. Mål: < 2 tryck från hemskärm till inspelning/kamera.
+- **(c) ConfirmDiff/förslagskort polerat för tumme** — mobil-granskning av förslag med en hand.
+- **(d) Hemskärmsinstallation/ikon-rutin** — PWA-prompt vid rätt ögonblick (efter första lyckade capture).
+
+Start: kör `iphone-rosttest` (P1, blockerar redan Taulant-mejlet) = baslinje för vad som redan funkar på riktig mobil. Mät: mobil-andel av Renaida-captures + activation per device i PostHog.
+
+---
+id: renaida-feedback-intake
+status: todo
+priority: P3
+tags: [renaida, feedback, agent, flywheel]
+created: 2026-08-13
+---
+## 💬 Renaida som feedback-intake — önskemål/buggar blir strukturerade kort (Klaro-trappan nivå 1)
+Inspirerat av Klaro.ai (Adams tjänst — användare requestar features/bugfixar i produkten). **Nivå 1 = byggbar nu, liten:** ny envelope-action `report_feedback` — "det borde finnas X" / "det här funkar konstigt" mitt i Renaida-samtalet → strukturerat kort (typ feature/bugg, yta, beskrivning, användarkontext/roll) → `user_feedback`-tabell (se [[feedback-pipeline]]) + triage in i BACKLOG.md. **Kvittens-loopen finns redan byggd (R2-mönstret):** när önskemålet skeppas berättar Renaida det för användaren nästa gång — loop-stängning ingen stor produkt klarar. Dubblerar som aktiverings-/engagemangssignal vid nuvarande skala. Nivå 2–3 (AI-draftade fixar, auto-release) = [[klaro-self-serve-releases]] (parked).
+
+---
+id: klaro-self-serve-releases
+status: parked
+priority: P4
+tags: [vision, agent, sil, parked]
+created: 2026-08-13
+---
+## 🚀 VISION (parkerad): användar-requests → AI-byggda releaser (Klaro-trappan nivå 2–3)
+**Nivå 2:** request (via [[renaida-feedback-intake]]) → auto-triage/dedup → agent bygger fix i worktree → typecheck/tests/evals + Cowork-varv → **Carl approvar release.** Poäng: infran finns redan på vår sida (SIL, eval-gates, Cowork-loopen, BACKLOG→pappen) — det nya är bara user-facing intake + auto-triage. **Nivå 3 (Klaro-parity, release utan Carl):** ENDAST klassade säkra ändringsklasser (copy/i18n, design-tokens, små UI-fixar) bakom eval-gate + e2e + feature-flag + auto-rollback; ALDRIG schema/RLS/auth/pengar. Ärlig bedömning: med Renofines datakänslighet är nivå 1–2 värdet; nivå 3 är demo-effekt tills skalan kräver den. "Godkänn, inte operera"-principen gäller även meta-nivån.
+
+---
+id: community-traffic-play
+status: parked
+priority: P4
+tags: [gtm, seo, community, parked]
+created: 2026-08-13
+---
+## 🌐 PARKERAD: community/trafik-play — projektdagböcker + publikt Q&A istället för tomt forum
+Carls idé 2026-08-13: bygg/renoveringsforum (à la byggahus.se / FB-grupperna) i menyerna, publikt + inloggat, för organisk trafik över tid. Utmaning Carl själv ser: forum kräver liquidity; byggahus har 25 års försprång. **Fejk-populering AVRÅDS** (varumärket = förtroende kring hem+pengar; upptäckt = total trovärdighetsförlust; jfr no-fake-benchmarks-principen). Bättre vägar mot SAMMA mål (trafik):
+1. **Publika projektdagböcker** — byggahus mest lästa innehåll är projekttrådar, och Renofine-användare HAR redan strukturerad projektdata → "Publicera min renovering" (opt-in, kurerad: foton/tidslinje/budgetintervall/rum) = SEO-sidor + social proof + delbart. Differentierat: ett forum kan inte generera detta ur strukturerad data. Kommentarer på projektsidor = community-fröet — växer organiskt utan tomt-forum-problemet.
+2. **Fråga-Renaida-arkiv** — riktiga (anonymiserade, opt-in) frågor + RAG-grundade svar (se [[eval-help-bot-rag-grounding]]) kurerade → indexerbara long-tail-sidor ("kostnad flytta golvbrunn"). Ärligt AI-märkt innehåll, inte fejk-användare.
+3. **Låna trafik före egen destination:** [[fb-grupper-outreach]] (P1, finns) — var experten i befintliga rum.
+Trigger att avparkera: aktiveringen löst (trafik in i en läckande tratt — 11 signups → 1 aktiv — är slöseri).
