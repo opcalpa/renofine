@@ -94,7 +94,7 @@ export interface WorkerTask {
   checklists: Checklist[];
   photos: Photo[];
   beforePhotos?: Photo[];
-  instructionImages?: Array<{ url: string; description: string }>;
+  instructionImages?: Array<{ id: string; url: string; description: string; translatedDescription?: string | null }>;
   messages: WorkerMessage[];
   roomId: string | null;
   room: WorkerRoom | null;
@@ -366,9 +366,9 @@ export function WorkerTaskCard({
                     loading="lazy"
                   />
                 </a>
-                {img.description && (
+                {(img.translatedDescription || img.description) && (
                   <p className="px-3 py-2 text-sm whitespace-pre-wrap text-foreground/90 border-t bg-muted/30">
-                    {img.description}
+                    {img.translatedDescription || img.description}
                   </p>
                 )}
               </li>

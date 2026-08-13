@@ -179,7 +179,7 @@ export function groupWorkerTasksByRoom(
     progress: number;
     checklists: Array<{ id: string; title: string; items: Array<{ id: string; title: string; completed: boolean }> }>;
     photos: Array<{ id: string; url: string; caption: string | null; source?: string }>;
-    instructionImages?: Array<{ url: string; description: string }>;
+    instructionImages?: Array<{ id: string; url: string; description: string; translatedDescription?: string | null }>;
     roomId: string | null;
     room: {
       name: string;

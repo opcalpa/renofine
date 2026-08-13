@@ -60,7 +60,7 @@ export interface RoomTask {
   progress: number;
   checklists: Checklist[];
   photos: Photo[];
-  instructionImages: Array<{ url: string; description: string }>;
+  instructionImages: Array<{ id: string; url: string; description: string; translatedDescription?: string | null }>;
   messages: TaskMessage[];
   requiresCompletionPhoto?: boolean;
 }

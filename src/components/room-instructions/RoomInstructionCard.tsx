@@ -433,9 +433,9 @@ function TaskSection({
                       loading="lazy"
                     />
                   </a>
-                  {img.description && (
+                  {(img.translatedDescription || img.description) && (
                     <p className="px-2.5 py-2 text-xs whitespace-pre-wrap text-foreground/90 border-t bg-muted/30">
-                      {img.description}
+                      {img.translatedDescription || img.description}
                     </p>
                   )}
                 </div>

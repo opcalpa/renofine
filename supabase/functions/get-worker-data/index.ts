@@ -429,7 +429,7 @@ serve(async (req) => {
     // 6c2. Fetch instruction images for this worker token, grouped by task
     const { data: instructionImagesRaw } = await sb
       .from("worker_invite_instruction_images")
-      .select("task_id, photo_id, uploaded_url, description, sort_order")
+      .select("id, task_id, photo_id, uploaded_url, description, sort_order")
       .eq("worker_token_id", tokenRecord.id)
       .order("sort_order", { ascending: true });
 
@@ -452,7 +452,7 @@ serve(async (req) => {
       }
     }
 
-    const instructionImagesByTask: Record<string, Array<{ url: string; description: string }>> = {};
+    const instructionImagesByTask: Record<string, Array<{ id: string; url: string; description: string }>> = {};
     for (const row of instructionImagesRaw || []) {
       const url = row.photo_id
         ? referencedPhotosById[row.photo_id]?.url
@@ -460,6 +460,7 @@ serve(async (req) => {
       if (!url) continue;
       if (!instructionImagesByTask[row.task_id]) instructionImagesByTask[row.task_id] = [];
       instructionImagesByTask[row.task_id].push({
+        id: row.id,
         url,
         description: row.description,
       });

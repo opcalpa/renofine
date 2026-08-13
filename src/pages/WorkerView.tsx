@@ -148,6 +148,15 @@ export default function WorkerView() {
         for (const o of [...(viewData.floorPlanObjects ?? []), ...(viewData.wallObjects ?? [])]) {
           if (o.finish?.trim()) items.push({ id: FIN_PREFIX + o.id, content: o.finish });
         }
+        // Instruction-image descriptions — the owner's most deliberate "do
+        // exactly this" prose. Previously shown untranslated (a Ukrainian
+        // painter got them in Swedish). Same runtime pass, ii: prefix.
+        const II_PREFIX = "ii:";
+        for (const task of viewData.tasks) {
+          for (const img of task.instructionImages ?? []) {
+            if (img.description?.trim()) items.push({ id: II_PREFIX + img.id, content: img.description });
+          }
+        }
         if (items.length > 0) {
           supabase.functions
             .invoke("translate-comments", {
@@ -171,6 +180,10 @@ export default function WorkerView() {
                     messages: task.messages.map((msg) => ({
                       ...msg,
                       translatedContent: trMap.get(msg.id) || msg.translatedContent || null,
+                    })),
+                    instructionImages: task.instructionImages?.map((img) => ({
+                      ...img,
+                      translatedDescription: trMap.get(II_PREFIX + img.id) || img.translatedDescription || null,
                     })),
                   })),
                   wallNotes: prev.wallNotes?.map((n) => ({
