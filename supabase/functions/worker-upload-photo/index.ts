@@ -212,6 +212,10 @@ serve(async (req) => {
       await sb.from("comments").insert({
         entity_type: "task",
         entity_id: taskId,
+        // project_id must be set for the owner's notification query (and the
+        // project-scoped comment feed) to see this hand-off — the other worker
+        // comment inserts already set it; this one used to omit it.
+        project_id: tokenRecord.project_id,
         content: "📸 Worker submitted a completion photo for review.",
         author_display_name: workerLabel,
         created_by_user_id: tokenRecord.created_by_user_id,

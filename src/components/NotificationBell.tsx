@@ -101,6 +101,9 @@ export function NotificationBell() {
     const entityParam = item.entityId ? `&entityId=${item.entityId}` : "";
     if (item.entityType === "task") {
       navigate(`${base}?tab=tasks${entityParam}`);
+    } else if (item.entityType === "drawing_object") {
+      // Worker question tied to a floor-plan object → open the space planner.
+      navigate(`${base}?tab=spaceplanner${entityParam}`);
     } else if (item.entityType === "material") {
       navigate(`${base}?tab=purchases${entityParam}`);
     } else if (item.entityType === "project" && (item.type === "comment" || item.type === "mention")) {

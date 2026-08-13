@@ -97,13 +97,14 @@ export function useNotifications() {
     // We select the flat shape only and enrich client-side in enrichComments().
     const commentSelect = `
       id, content, created_at, created_by_user_id, task_id, material_id, project_id,
-      entity_id, entity_type
+      entity_id, entity_type, author_display_name, drawing_object_id
     `;
 
     type CommentRow = {
       id: string; content: string; created_at: string; created_by_user_id: string;
       task_id: string | null; material_id: string | null; project_id: string | null;
       entity_id: string | null; entity_type: string | null;
+      author_display_name: string | null; drawing_object_id: string | null;
       creator: { name: string } | null;
       task: { title: string; project_id: string } | null;
       material: { name: string; project_id: string } | null;
@@ -353,6 +354,102 @@ export function useNotifications() {
         }
       } catch { /* silently skip if query fails */ }
     }
+
+    // 2c. Worker (token-link) comments & questions.
+    // Worker edge functions insert comments with created_by_user_id = the
+    // OWNER (for FK integrity) and tag attribution via author_display_name
+    // "{name} (worker)". Sections 2/2b filter `.neq(created_by, userId)`, so
+    // those questions were silently dropped — the owner never got notified a
+    // worker asked something. Fetch them explicitly by the worker marker.
+    // (author_display_name is also used for demo/Renaida authors — the
+    // "(worker)" suffix, already the app-wide marker in get-worker-data/
+    // WorkerView, is what isolates real worker messages.)
+    //
+    // Two matching axes, because worker comments are attached differently:
+    //  - task messages & completion photos → entity_type='task', entity_id=<task>
+    //    (older completion-photo rows had NO project_id, so we match by the
+    //    owner's task ids, not project_id).
+    //  - drawing-object questions → drawing_object_id set, project_id set.
+    const pushWorkerComment = (c: CommentRow, resolveTitle: (taskId: string) => string | undefined) => {
+      const key = `comment-${c.id}`;
+      if (seenIds.has(key) || seenIds.has(`mention-${c.id}`)) return;
+      seenIds.add(key);
+      const isDrawingQuestion = !!c.drawing_object_id;
+      const taskId = c.entity_type === "task" ? c.entity_id : c.task_id;
+      const pId = c.project_id || "";
+      // Voice-only messages arrive as "🎤 <url>" — show a label, not a URL.
+      const preview = c.content.trim().startsWith("🎤") ? "🎤" : truncate(c.content);
+      items.push({
+        id: key,
+        type: "comment",
+        title: c.author_display_name || c.creator?.name || "Worker",
+        preview,
+        projectId: pId,
+        projectName: projectMap.get(pId) || "",
+        createdAt: c.created_at,
+        isUnread:
+          c.created_at > lastReadAt &&
+          !readIds.has(`mention-${c.id}`) &&
+          !readIds.has(key),
+        entityType: isDrawingQuestion ? "drawing_object" : "task",
+        entityId: (isDrawingQuestion ? c.drawing_object_id : taskId) || undefined,
+        entityName: taskId ? resolveTitle(taskId) : undefined,
+      });
+    };
+
+    // Axis A: task-scoped worker comments (messages + completion photos),
+    // matched via the owner's task ids so project_id-less rows still surface.
+    if (userTaskIds.length > 0) {
+      try {
+        const { data: rawWorkerTaskComments } = await supabase
+          .from("comments")
+          .select(commentSelect)
+          .eq("entity_type", "task")
+          .in("entity_id", userTaskIds)
+          .like("author_display_name", "%(worker)%")
+          .gte("created_at", sevenDaysAgo)
+          .order("created_at", { ascending: false })
+          .limit(30);
+        const rows = (rawWorkerTaskComments as unknown as CommentRow[]) ?? [];
+        // Resolve title + project_id for each referenced task in one query
+        // (completion-photo rows may lack project_id, so backfill from the task).
+        const wtIds = [...new Set(rows.map((r) => r.entity_id).filter(Boolean) as string[])];
+        const wtTitle = new Map<string, string>();
+        const wtProject = new Map<string, string>();
+        if (wtIds.length > 0) {
+          const { data: wt } = await supabase
+            .from("tasks")
+            .select("id, title, project_id")
+            .in("id", wtIds.slice(0, MAX_IN_IDS));
+          wt?.forEach((t) => {
+            wtTitle.set(t.id, t.title);
+            wtProject.set(t.id, t.project_id);
+          });
+        }
+        for (const c of rows) {
+          if (!c.project_id && c.entity_id) c.project_id = wtProject.get(c.entity_id) ?? null;
+          // Only surface comments that belong to one of the owner's projects.
+          if (!c.project_id || !projectMap.has(c.project_id)) continue;
+          pushWorkerComment(c, (id) => wtTitle.get(id));
+        }
+      } catch { /* silently skip if the worker-task-comment query fails */ }
+    }
+
+    // Axis B: drawing-object questions (project-scoped, no task id).
+    try {
+      const { data: rawWorkerDrawingComments } = await supabase
+        .from("comments")
+        .select(commentSelect)
+        .in("project_id", projectIds)
+        .not("drawing_object_id", "is", null)
+        .like("author_display_name", "%(worker)%")
+        .gte("created_at", sevenDaysAgo)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      for (const c of (rawWorkerDrawingComments as unknown as CommentRow[]) ?? []) {
+        pushWorkerComment(c, () => undefined);
+      }
+    } catch { /* silently skip if the worker-drawing-comment query fails */ }
 
     // 3. Tasks created by others in user's projects
     const { data: tasks } = await supabase
