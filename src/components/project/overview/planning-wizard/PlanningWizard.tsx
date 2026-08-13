@@ -23,7 +23,7 @@ interface PlanningWizardProps {
 }
 
 export function PlanningWizard({ projectId, onComplete, onSkip }: PlanningWizardProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { isGuest } = useGuestMode();
   const storageKey = `planning-wizard-${projectId}`;
 
@@ -72,7 +72,8 @@ export function PlanningWizard({ projectId, onComplete, onSkip }: PlanningWizard
     setAnalyzing(true);
     try {
       const { data, error } = await supabase.functions.invoke("parse-renovation-description", {
-        body: { description: formData.description, language: "sv" },
+        // Was hardcoded "sv" → non-Swedish homeowners got Swedish parsing (R4 bug).
+        body: { description: formData.description, language: i18n.language?.slice(0, 2) || "sv" },
       });
       // Edge function returns 429 with { error, message } when rate-limited.
       // supabase-js bubbles non-2xx as `error` (FunctionsHttpError) but still
