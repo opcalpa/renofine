@@ -2001,3 +2001,83 @@ Carls idé 2026-08-13: bygg/renoveringsforum (à la byggahus.se / FB-grupperna) 
 2. **Fråga-Renaida-arkiv** — riktiga (anonymiserade, opt-in) frågor + RAG-grundade svar (se [[eval-help-bot-rag-grounding]]) kurerade → indexerbara long-tail-sidor ("kostnad flytta golvbrunn"). Ärligt AI-märkt innehåll, inte fejk-användare.
 3. **Låna trafik före egen destination:** [[fb-grupper-outreach]] (P1, finns) — var experten i befintliga rum.
 Trigger att avparkera: aktiveringen löst (trafik in i en läckande tratt — 11 signups → 1 aktiv — är slöseri).
+
+---
+id: worker-trust-owner-confidence
+status: doing
+priority: P1
+tags: [worker, trust, delegation, i18n, epic]
+created: 2026-08-13
+---
+## 🤝 EPIC: Förtroende för förstagångsägaren som delegerar (t.ex. ukrainsk målare)
+**Carls fråga 2026-08-13:** en förstagångsägare som fördelar arbete till en utländsk hantverkare känner sig osäker — hur skapar vi trygghet + tydlighet att instruktionerna ser bra ut (rent UI, text+bild), att arbetaren kan fråga/rapportera, och att ÄGAREN litar på det arbetaren ser? Kartlagt via Explore-agent (arbetarvyn är redan rik: rums/list-vy, väggvyer, färgprover, checklistor, instruktionsbilder, före-foton, progress, fota-klart, textfrågor, röstmeddelanden, fråga-på-objekt; 3-spårs översättning).
+
+**✅ LEVERERAT 2026-08-13 (3 P1 + 1 bonus):**
+1. **[[worker-notif-owner-blind]]** (`4b00944`): arbetarens frågor/foton/status nådde ALDRIG ägarens notisklocka (created_by=ägaren → filtrerades av .neq). Fixat + worker-upload-photo sätter project_id (DEPLOYAD). Verifierat mot prod (ukrainsk arbetare).
+2. **[[worker-freetext-translation]]** rest (`93577b4`): instruktionsbild-beskrivningarna (ägarens tydligaste "gör exakt så här") översätts nu (ii:-prefix, get-worker-data DEPLOYAD). NCS-koder bevaras.
+3. **[[worker-preview-faithful]]** (`2d284dd`): "Visa som arbetare" tappade väggvyer/objekt/noteringar/ytskikt + körde ingen översättning → nu full fidelity + delad runtime-översättning + **back-translation-toggle** (se exakt vad {namn} ser ⇄ visa på svenska). get-worker-data preview-läge bumpar ej last_accessed_at. Verifierat mot ukrainsk prod-token.
+4. **Bonus** (`aec2a6c`): invite-preview visade EKONOMI för arbetar-personan (vilseledande) → korrekt förklaring + vägvisning.
+
+**KVAR (P2/P3, kartlagda gap):** se [[worker-read-receipt]], [[worker-status-aggregate]], `arbetar-lank-utan-utskick` (befintligt kort), [[worker-ask-in-rooms-view]], [[worker-explicit-status-report]], [[worker-freetext-translation]] (surface-strängar+bildtexter kvar).
+
+---
+id: worker-notif-owner-blind
+status: done
+done: 2026-08-13
+priority: P1
+tags: [worker, notifications, bug, trust]
+created: 2026-08-13
+---
+## 🐛 Arbetarens frågor når aldrig ägarens notisklocka
+LEVERERAT `4b00944`. Root cause: worker-edge-funktioner skriver kommentaren med created_by_user_id=ägaren (FK-integritet), useNotifications filtrerar .neq(created_by,userId) → arbetar-rader föll bort. Fix: dedikerad hämtning via (worker)-markören, två axlar (task-scopade via uppgifts-id inkl. project_id-lösa färdig-foton + drawing_object_id-frågor). worker-upload-photo sätter nu project_id (DEPLOYAD). NotificationBell: drawing_object → planritaren. Verifierat mot prod-data. Kvar/uppföljning: mejl-fallback vid arbetarfråga (ingen mejlnotis idag).
+
+---
+id: worker-preview-faithful
+status: done
+done: 2026-08-13
+priority: P1
+tags: [worker, preview, trust, i18n]
+created: 2026-08-13
+---
+## 👁️ "Se exakt vad {namn} ser" — trovärdig förhandsvisning + back-translation
+LEVERERAT `2d284dd` + `aec2a6c`. WorkerInstructionsView: fidelity-fix (4 vägg/objekt-propgrupper skickas nu), delad runtime-översättning (src/lib/workerContentTranslation.ts, ingen drift mot WorkerView), språk-toggle via get-worker-data preview+previewLang (sv=källtext), preview bumpar ej last_accessed_at. Invite-preview arbetar-persona: ekonomi→korrekt förklaring. **KVAR discoverability:** entry-point i Team-raden ("se vad hen ser") + post-utskick-nudge — se [[worker-status-aggregate]].
+
+---
+id: worker-read-receipt
+status: todo
+priority: P2
+tags: [worker, trust, quick-win]
+created: 2026-08-13
+---
+## 📬 "Öppnad / ej öppnad"-signal för arbetarlänken (nästan gratis)
+worker_access_tokens.last_accessed_at trackas redan vid varje arbetar-öppning (och skyddas nu från preview-bumpning) + selekteras redan in i Team-datat (TeamManagement) — men visas ALDRIG. Lägg "Öppnade instruktionerna för 2 tim sedan" / "Ej öppnad än" i Team-fliken/arbetar-raden. Exakt den trygghet en nervös förstagångsägare vill ha: bekräftelse att länken nått fram. Litet UI-jobb, datan finns.
+
+---
+id: worker-status-aggregate
+status: todo
+priority: P2
+tags: [worker, trust, ux]
+created: 2026-08-13
+---
+## 📋 Samlad per-arbetare-yta: frågor + status + foton + "se vad hen ser"
+Idag är arbetarens frågor spridda (task-kommentarsflöden + ritnings-objekt-badges), status bara via task-board (awaiting_review), och den äkta preview:en bor i Delning → Visa som. Samla per arbetare: vad {namn} frågat, vad hen rapporterat/fotat, öppnad-status ([[worker-read-receipt]]), + knapp "Se exakt vad hen ser" (öppnar WorkerInstructionsView, som redan är trovärdig). Ger ägaren ETT ställe att känna kontroll. Entry: Team-raden.
+
+---
+id: worker-ask-in-rooms-view
+status: todo
+priority: P3
+tags: [worker, ux, interaction]
+created: 2026-08-13
+---
+## Fråga-input saknas i rums-vyn (bara i listvyn)
+WorkerMessageInput (allmän text/röst-fråga) finns bara i list-vyn. Default-vyn (rooms/swipe) erbjuder bara fråga-på-objekt + foto/progress. En arbetare som stannar i rums-vyn hittar aldrig hur man ställer en allmän fråga. Lägg en fråge-affordans i rums-vyn (RoomInstructionCard) eller en global "Fråga {ägare}"-FAB i arbetarvyn.
+
+---
+id: worker-explicit-status-report
+status: todo
+priority: P3
+tags: [worker, status, trust]
+created: 2026-08-13
+---
+## "Markera klart med notering" — explicit statusrapport
+Arbetaren kan inte lämna en explicit textuell klar-rapport: färdigt härleds ur ett foto eller 100%-slider. Lägg "Markera klart + kommentar" så ägaren får en strukturerad status hen kan lita på i en blick (och en tydlig hand-off-signal utöver awaiting_review).
