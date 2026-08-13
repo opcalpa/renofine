@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { CheckSquare, Plus, Trash2 } from "lucide-react";
+import { CheckSquare, Plus, Trash2, ShieldCheck } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -102,6 +102,19 @@ export function WizardStep3Worker({
             count: selectedCount,
           })}
         </div>
+      </div>
+
+      {/* Trust wayfinding: the panel here is a preview; after sending, the owner
+          can open the FAITHFUL worker view (wall elevations, translation) via
+          Sharing → View as, with a Swedish toggle to verify the translation. */}
+      <div className="flex items-start gap-2.5 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2.5">
+        <ShieldCheck className="h-4 w-4 shrink-0 text-primary mt-0.5" />
+        <p className="text-xs text-foreground/80">
+          {t(
+            "inviteWizard.preview.workerSeeExact",
+            "Skicka inbjudan, öppna sedan Delning → “Visa som” för att se exakt vad arbetaren ser — och växla till svenska för att dubbelkolla översättningen.",
+          )}
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-4">

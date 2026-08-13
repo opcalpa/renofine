@@ -2489,7 +2489,6 @@
   },
   "inviteWizard": {
     "preview": {
-      "workerNote": "El trabajador tiene su propia vista de instrucciones — habitaciones, tareas, planos y listas en su idioma. Nunca el presupuesto, precios ni márgenes.",
       "workerSeeExact": "Envía la invitación y luego abre Compartir → “Ver como” para ver exactamente lo que ve el trabajador — y cambia a sueco para verificar la traducción."
     }
   }

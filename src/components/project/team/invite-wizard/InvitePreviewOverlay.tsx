@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Loader2, EyeOff, HardHat, ShieldCheck } from "lucide-react";
+import { Loader2, EyeOff } from "lucide-react";
 import {
   getProjectAsPersona,
   type ProjectOverviewData,
@@ -35,13 +35,8 @@ export function InvitePreviewOverlay({
   const [data, setData] = useState<ProjectOverviewData | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // A token-worker never sees economy — they get a separate instruction view.
-  // Showing them the budget summary here is misleading (and scary: "does my
-  // painter see my margins?"). Skip the data fetch and explain instead.
-  const isWorker = persona === "worker";
-
   useEffect(() => {
-    if (!open || isWorker) {
+    if (!open) {
       setData(null);
       setError(null);
       return;
@@ -86,29 +81,6 @@ export function InvitePreviewOverlay({
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto space-y-4 py-1">
-          {isWorker && (
-            <div className="space-y-4">
-              <div className="flex items-start gap-3 rounded-lg border bg-muted/20 p-3">
-                <HardHat className="h-5 w-5 shrink-0 text-muted-foreground mt-0.5" />
-                <p className="text-sm text-muted-foreground">
-                  {t(
-                    "inviteWizard.preview.workerNote",
-                    "Arbetaren ser en egen instruktionsvy — rum, uppgifter, ritningar och checklistor på sitt språk. Aldrig budget, priser eller marginaler.",
-                  )}
-                </p>
-              </div>
-              <div className="flex items-start gap-3 rounded-lg border border-primary/20 bg-primary/5 p-3">
-                <ShieldCheck className="h-5 w-5 shrink-0 text-primary mt-0.5" />
-                <p className="text-sm text-foreground/80">
-                  {t(
-                    "inviteWizard.preview.workerSeeExact",
-                    "Skicka inbjudan, öppna sedan Delning → “Visa som” för att se exakt vad arbetaren ser — och växla till svenska för att dubbelkolla översättningen.",
-                  )}
-                </p>
-              </div>
-            </div>
-          )}
-
           {loading && (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
