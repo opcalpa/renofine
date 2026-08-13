@@ -1735,7 +1735,7 @@ Utöka `ProjectDraft` med `Provenance` per rum/arbete/budget-signal. Högerpanel
 
 ---
 id: renaida-birth-missing-critic
-status: todo
+status: doing
 priority: P2
 tags: [renaida, expert, moat, agent-readable]
 created: 2026-08-10
@@ -1950,7 +1950,7 @@ Ingen regression: wizarden oförändrad i sitt befintliga läge (room_ids[]/chec
 
 ---
 id: renaida-mobile-first-surface
-status: todo
+status: doing
 priority: P2
 tags: [renaida, mobil, ux, epic, activation]
 created: 2026-08-13
