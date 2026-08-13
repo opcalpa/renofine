@@ -1902,20 +1902,42 @@ created: 2026-08-12
 
 ---
 id: activate-project-single-source
-status: todo
+status: done
+done: 2026-08-13
 priority: P3
 tags: [tech-debt, cleanup, activation, agent-readable]
 created: 2026-08-12
 ---
 ## 🧹 R3: EN activateProject-service (aktivering är idag triplikerad)
+**✅ LEVERERAD 2026-08-13 (`d6e5de9`):** manuella aktiveringen (~130 rader) ordagrant utbruten ur PlanningTaskList + HomeownerPlanningView → `src/services/activateProject.ts`; båda anropar servicen. Quote-accept-vägen (createTasksFromQuote + DB-trigger) är separat och konsoliderades medvetet EJ (annan logik). Möjliggör Renaida activate_project-action senare.
 Projekt→active sätts i TRE kodvägar: ViewQuoteV2.tsx:303 (klient), DB-triggern handle_quote_status_project_sync, vilande ViewQuote.tsx:259 — plus TVÅ ~130-raders nästan identiska manuella aktiveringar (PlanningTaskList:245, HomeownerPlanningView:468). Bryt ut till EN service (importPurchaseOrder-mönstret: ordagrann extraktion, delad modul) som båda UI-vägarna + accept-vägen anropar. Möjliggör senare `activate_project`-action för Renaida ("aktivera projektet" via röst). total_budget sätts också dubbelt (quoteService.ts:201 + historiskt triggern) — ensa.
 
 ---
 id: retire-planning-wizard
-status: todo
+status: partial
+done: 2026-08-13 (säkra delen)
 priority: P3
 tags: [tech-debt, cleanup, renaida, wizard]
 created: 2026-08-12
 ---
 ## 🧹 R4: Pensionera PlanningWizard till förmån för Renaida-dialogen
+**⚠️ DELVIS 2026-08-13 (`9374dc2`) — full-swap PARKAD som beslut:** levererade de säkra delarna: (1) BUGG fixad — hårdkodad `language:"sv"` → `i18n.language` (icke-svenska hemägare fick svensk tolkning); (2) 3 döda step-komponenter (RoomsStep/RoomSpecificStep/GlobalWorkTypesStep) raderade. **KVAR = full-swappen, som är ett PRODUKTBESLUT (se nytt kort renaida-fill-existing-project) pga regressionsrisk.**
+
 PlanningWizard (hemägar-only, tomt-projekt-läget i HomeownerPlanningView:700) löser samma problem som Renaida-födelsen med samma AI-parse (parse-renovation-description) men: hårdkodad "sv" (PlanningWizard.tsx:75), går FÖRBI scaffoldProject (egna inserts i planningWizardService:109+), 3 döda steg-komponenter (RoomsStep/RoomSpecificStep/GlobalWorkTypesStep importeras aldrig). Låt tomt-projekt-läget öppna RenaidaProjectDialog i "fyll befintligt projekt"-läge (kräver existingProjectId-stöd i dialogen — scaffold har det redan) → en motor, en kodväg, språkneutralt. OBS: wizarden skriver unikt room_ids[]-multiroom + checklists — bevara eller medvetet släpp.
+
+---
+id: renaida-fill-existing-project
+status: todo
+priority: P3
+tags: [renaida, homeowner, onboarding, decision, tech-debt]
+created: 2026-08-13
+---
+## 🤔 BESLUT: ska Renaida-dialogen ersätta hemägarens PlanningWizard? (regressionsrisk)
+Ursprunglig R4-vision: tomt hemägar-projekt öppnar RenaidaProjectDialog i "fyll befintligt projekt"-läge istället för PlanningWizard → en motor (scaffoldProject stödjer existingProjectId), språkneutralt, konversationellt/multimodalt.
+
+**Varför det INTE gjordes blint (Carl bör väga):**
+1. **Feature-regression:** PlanningWizard skapar unikt `room_ids[]`-multiroom-tasks + auto-checklistor (en punkt/rum för globala arbetstyper via planningWizardService). Renaida/scaffold gör single-room + inga checklistor → mindre rik initial struktur (ej trasig — hemägaren kan multi-tilldela i tabellen, men förlust).
+2. **UX-skifte:** wizarden är ett HELSIDES inline-flöde tunat för tomma-projekt-läget; RenaidaProjectDialog är en modal via knapp. Auto-visa-helsida → klicka-knapp-öppna-modal ändrar hemägar-onboardingen.
+3. **Teknik:** kräver `existingProjectId`-prop på RenaidaProjectDialog + gren i handleCreate (hoppa projekt-skapande + navigation + quote-offer-logiken, som alla antar nytt projekt).
+
+**Alternativ:** (A) full swap (acceptera regressionen, störst konsolidering); (B) nå paritet först (lägg room_ids[]/checklist-generering i scaffold, sen swap); (C) behåll wizarden, lämna som är (bara bugg+död-kod-fixen i `9374dc2` räckte). Rekommendation: **C tills en hemägare faktiskt klagar** — wizarden fungerar, språkbuggen är fixad, och Renaida-fokus ligger på BYGGAR-aktivering (traction-flaskhalsen), inte hemägar-onboarding-omskrivning.
