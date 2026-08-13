@@ -87,10 +87,10 @@ async function main() {
     for (const c of cases) {
       const row = { model, caseId: c.id, score: null, judge: null, error: null };
       try {
-        // A case may carry userType to test role-gated behavior (e.g. open_feature
-        // for a contractor); otherwise the shared neutral prompt is used.
-        const caseSystem = c.userType
-          ? buildRouterSystem(ctx.language || "sv", ctx.rooms, ctx.tasks, [], ctx.members || [], c.userType)
+        // A case may carry userType (role-gated behavior) and/or intentHint
+        // (quick-action chips); otherwise the shared neutral prompt is used.
+        const caseSystem = c.userType || c.intentHint
+          ? buildRouterSystem(ctx.language || "sv", ctx.rooms, ctx.tasks, [], ctx.members || [], c.userType || null, c.intentHint || null)
           : system;
         const raw = await callModel(model, caseSystem, c.input, { temperature: GEN_TEMPERATURE, jsonObject: true, label: `router:${c.id}` });
         const parsed = safeParseJson(raw);

@@ -949,6 +949,12 @@
       "detailLineSumMismatch": "⚠️ Los importes de las líneas (≈{{sum}} kr) no suman el total — revisa las líneas",
       "detailRoom": "Habitación",
       "restorableUndo": "El último cambio que hice aquí: «{{label}}» — todavía se puede deshacer."
+    },
+    "quickAction": {
+      "receipt": "Fotografiar un recibo",
+      "time": "Registrar horas",
+      "note": "Nota rápida",
+      "status": "Actualización de estado"
     }
   },
   "hotspots": {

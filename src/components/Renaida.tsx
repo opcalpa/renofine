@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback, type ReactNode } from "react";
-import { Send, X, Lightbulb, BookOpen, Wrench, FileText, ArrowLeft, Mic, Sparkles, ChevronDown, MessageCircle, Square, Loader2, Paperclip } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Send, X, Lightbulb, BookOpen, Wrench, FileText, ArrowLeft, Mic, Sparkles, ChevronDown, MessageCircle, Square, Loader2, Paperclip, Camera, Clock, StickyNote, ListChecks } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useVoiceRecorder, isRecorderSupported } from "@/hooks/useVoiceRecorder";
 import { useVisualViewportHeight } from "@/hooks/useVisualViewportHeight";
@@ -13,7 +13,7 @@ import { RenaidaAvatar, type RenaidaState } from "@/components/renaida/RenaidaAv
 import { routeAgentInput } from "@/services/agent/routeClient";
 import { captureDocument } from "@/services/agent/documentCapture";
 import { applyProposals, undoProposals, fetchLatestUndoable } from "@/services/agent/applyProposals";
-import { type AgentProposal, type UndoOp, TASK_MATCH_MIN_CONFIDENCE, isActionable } from "@/services/agent/types";
+import { type AgentIntentHint, type AgentProposal, type UndoOp, TASK_MATCH_MIN_CONFIDENCE, isActionable } from "@/services/agent/types";
 import { recordCorrection, getAutonomyMode, setAutonomyMode } from "@/services/agent/renaidaMemory";
 import {
   fetchProactiveSuggestions,
@@ -237,7 +237,10 @@ export function Renaida() {
   const renaidaReminders = useRenaidaStore((s) => s.reminders);
   const renaidaProjectName = useRenaidaStore((s) => s.projectName);
   const autonomy = useRenaidaStore((s) => s.autonomy);
-  const [open, setOpen] = useState(false);
+  // Panel open-state lives in the store so external surfaces (mobile nav slot,
+  // share-target route) can open the panel too — not just the FAB below.
+  const open = useRenaidaStore((s) => s.panelOpen);
+  const setOpen = useCallback((v: boolean) => useRenaidaStore.getState().setPanelOpen(v), []);
   const [messages, rawSetMessages] = useState<Message[]>(() => messagesCache);
   // Every write mirrors into the module cache so a remount restores the thread.
   const setMessages = useCallback((updater: Message[] | ((prev: Message[]) => Message[])) => {
@@ -263,6 +266,7 @@ export function Renaida() {
   const [remindersExpanded, setRemindersExpanded] = useState(false);
   const isMobile = useIsMobile();
   const navigate = useNavigate();
+  const location = useLocation();
   // Keyboard-aware panel height (iOS overlays fixed elements without resizing).
   const vvBox = useVisualViewportHeight(open && isMobile);
 
@@ -293,6 +297,10 @@ export function Renaida() {
       window.scrollTo(0, scrollY);
     };
   }, [open, isMobile]);
+  // Closing the panel disarms any un-consumed quick-action chip.
+  useEffect(() => {
+    if (!open) pendingIntentRef.current = null;
+  }, [open]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -301,6 +309,9 @@ export function Renaida() {
   const flashTimerRef = useRef<number | undefined>(undefined);
   // Fallback project already announced in this panel session (capture outside a project)
   const announcedFallbackRef = useRef<string | null>(null);
+  // Armed quick-action chip — rides the NEXT capture as the router's intentHint,
+  // consumed (cleared) on use so a stale chip never biases a later utterance.
+  const pendingIntentRef = useRef<AgentIntentHint | null>(null);
   const sleepTimerRef = useRef<number | undefined>(undefined);
 
   // --- Renaida mood machine: idle → hello/think/talk/happy, sleep when idle ---
@@ -828,8 +839,11 @@ export function Renaida() {
 
     setCapturing(true);
     wakeRenaida();
+    // Consume the armed quick-action chip (if any) — one capture, one hint.
+    const intentHint = pendingIntentRef.current;
+    pendingIntentRef.current = null;
     try {
-      const res = await routeAgentInput({ kind, content: text.trim() }, projectId, i18n.language?.slice(0, 2) || "sv", userType);
+      const res = await routeAgentInput({ kind, content: text.trim() }, projectId, i18n.language?.slice(0, 2) || "sv", userType, intentHint);
       // Pre-Genomför refusals (loop-varv 14, B3/B4): shown BEFORE the card so a
       // partially-refused multi-field update never promises the refused part.
       if (res.refusals?.length) {
@@ -953,6 +967,13 @@ export function Renaida() {
     if (input.trim()) captureUpdate(input, "text", { fallbackToChat: true });
     else startVoiceCapture();
   }, [input, captureUpdate, startVoiceCapture]);
+
+  // Quick-action chips ("EN agent, MÅNGA dörrar"): arm the intent, then start
+  // the same voice capture — the chip scopes the router, not a separate flow.
+  const quickCapture = useCallback((intent: AgentIntentHint) => {
+    pendingIntentRef.current = intent;
+    startVoiceCapture();
+  }, [startVoiceCapture]);
 
   // --- Document capture (D1): photograph/upload a receipt or invoice → the same
   // propose→confirm→undo loop as voice. Renaida conducts the existing
@@ -1324,7 +1345,9 @@ export function Renaida() {
 
   return (
     <>
-      {!open && (
+      {/* FAB — hidden on mobile /start, where the bottom nav's Renaida slot is
+          the entry (one clear door per surface, no double affordance). */}
+      {!open && !(isMobile && location.pathname === "/start") && (
         <button
           onClick={() => setOpen(true)}
           className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-4 md:bottom-6 md:right-6 z-50 h-14 w-14 rounded-full shadow-lg bg-white border-2 border-primary/20 hover:border-primary/40 transition-colors flex items-center justify-center"
@@ -1519,6 +1542,40 @@ export function Renaida() {
                     <span className="block text-xs text-primary-foreground/70">{t("helpBot.agent.voiceHeroHint", "Säg eller skriv — jag fixar det i projektet")}</span>
                   </span>
                 </button>
+
+                {/* Capture chips — context-scoped doors into the SAME
+                    capture→föreslå→bekräfta loop (mobile-first: the four
+                    quickest field actions, one tap from the entry). */}
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="inline-flex items-center gap-2 rounded-lg border bg-background px-3 py-2.5 md:py-2 text-xs font-medium transition-colors hover:border-primary hover:bg-primary/5"
+                  >
+                    <Camera className="h-4 w-4 shrink-0 text-primary" />
+                    {t("helpBot.quickAction.receipt", "Fota kvitto")}
+                  </button>
+                  <button
+                    onClick={() => quickCapture("time")}
+                    className="inline-flex items-center gap-2 rounded-lg border bg-background px-3 py-2.5 md:py-2 text-xs font-medium transition-colors hover:border-primary hover:bg-primary/5"
+                  >
+                    <Clock className="h-4 w-4 shrink-0 text-primary" />
+                    {t("helpBot.quickAction.time", "Logga tid")}
+                  </button>
+                  <button
+                    onClick={() => quickCapture("note")}
+                    className="inline-flex items-center gap-2 rounded-lg border bg-background px-3 py-2.5 md:py-2 text-xs font-medium transition-colors hover:border-primary hover:bg-primary/5"
+                  >
+                    <StickyNote className="h-4 w-4 shrink-0 text-primary" />
+                    {t("helpBot.quickAction.note", "Snabbanteckning")}
+                  </button>
+                  <button
+                    onClick={() => quickCapture("status")}
+                    className="inline-flex items-center gap-2 rounded-lg border bg-background px-3 py-2.5 md:py-2 text-xs font-medium transition-colors hover:border-primary hover:bg-primary/5"
+                  >
+                    <ListChecks className="h-4 w-4 shrink-0 text-primary" />
+                    {t("helpBot.quickAction.status", "Statusuppdatering")}
+                  </button>
+                </div>
 
                 {/* Help topics + a single feedback entry */}
                 <div className="flex flex-wrap gap-2">

@@ -949,6 +949,12 @@
       "detailLineSumMismatch": "⚠️ Les montants des lignes (≈{{sum}} kr) ne correspondent pas au total — vérifiez les lignes",
       "detailRoom": "Pièce",
       "restorableUndo": "Le dernier changement que j'ai fait ici : « {{label}} » — il peut encore être annulé."
+    },
+    "quickAction": {
+      "receipt": "Photographier un reçu",
+      "time": "Saisir des heures",
+      "note": "Note rapide",
+      "status": "Point d'avancement"
     }
   },
   "hotspots": {

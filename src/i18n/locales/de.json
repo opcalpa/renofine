@@ -949,6 +949,12 @@
       "detailLineSumMismatch": "⚠️ Die Zeilenbeträge (≈{{sum}} kr) ergeben nicht die Summe — prüfe die Zeilen",
       "detailRoom": "Raum",
       "restorableUndo": "Die letzte Änderung, die ich hier gemacht habe: „{{label}}“ — sie lässt sich noch rückgängig machen."
+    },
+    "quickAction": {
+      "receipt": "Beleg fotografieren",
+      "time": "Stunden erfassen",
+      "note": "Schnellnotiz",
+      "status": "Status-Update"
     }
   },
   "hotspots": {

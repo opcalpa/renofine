@@ -312,7 +312,11 @@ export const AppHeader = ({ userName, userEmail, avatarUrl, onSignOut, children,
           className="flex items-center cursor-pointer shrink-0"
           onClick={() => navigate(user && !isGuest ? "/start" : "/")}
         >
-          <img src="/brand/svg/lockup/lockup-horizontal-green.svg" alt="Renofine" className="h-7 w-auto" />
+          {/* Full lockup overflows a 390px viewport together with the right
+              cluster (header ran ~27px past the edge → horizontal scroll on
+              mobile) — below sm the mark alone carries the brand. */}
+          <img src="/brand/svg/mark/mark-green.svg" alt="Renofine" className="h-7 w-auto sm:hidden" />
+          <img src="/brand/svg/lockup/lockup-horizontal-green.svg" alt="Renofine" className="hidden h-7 w-auto sm:block" />
         </div>
 
         {isProjectMode ? (

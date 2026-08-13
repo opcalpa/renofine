@@ -480,6 +480,41 @@
           "value": 12
         }
       ]
+    },
+    {
+      "id": "hint-time-disambiguates",
+      "intentHint": "time",
+      "input": "Två timmar på målningen",
+      "expect": [
+        {
+          "type": "log_time",
+          "taskId": "t-paint",
+          "hours": 2
+        }
+      ]
+    },
+    {
+      "id": "hint-overridden-by-utterance",
+      "intentHint": "time",
+      "input": "Beställ tio meter golvsockel till vardagsrummet",
+      "expect": [
+        {
+          "type": "create_purchase"
+        }
+      ]
+    },
+    {
+      "id": "hint-status-terse",
+      "intentHint": "status",
+      "input": "Kakelsättningen halvvägs",
+      "expect": [
+        {
+          "type": "set_progress",
+          "taskId": "t-tile",
+          "progressMin": 40,
+          "progressMax": 60
+        }
+      ]
     }
   ]
 }

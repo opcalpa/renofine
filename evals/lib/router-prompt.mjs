@@ -43,8 +43,20 @@ function weekdayLabel(d, language) {
   }
 }
 
-export function buildRouterSystem(language, rooms, tasks, memories = [], members = [], userType = null) {
+export function buildRouterSystem(language, rooms, tasks, memories = [], members = [], userType = null, intentHint = null) {
   const langName = LANGUAGE_NAMES[language] || "English";
+  // Quick-action chips ("EN agent, MÅNGA dörrar"): a tapped chip scopes the
+  // capture — bias the router toward that action family, never override a
+  // clearly different utterance. Absent hint → unchanged prompt (eval parity).
+  const INTENT_HINT_LINES = {
+    purchase: `log a purchase/order of materials — bias toward create_purchase`,
+    time: `log worked hours — bias toward log_time`,
+    note: `jot a quick note — bias toward add_note`,
+    status: `update task status/progress — bias toward set_progress or update_task`,
+  };
+  const hintSection = intentHint && INTENT_HINT_LINES[intentHint]
+    ? `\nQUICK ACTION HINT: before speaking, the user tapped the "${intentHint}" quick action (${INTENT_HINT_LINES[intentHint]}). Prefer that action family when the utterance is ambiguous — but if the utterance clearly asks for something else, follow the utterance, not the hint.\n`
+    : "";
   // Mirror of prod role gating. Absent userType → neutral (eval sends no role).
   const roleSection = userType
     ? (userType === "contractor"
@@ -87,7 +99,7 @@ ${taskList}
 
 PROJECT MEMBERS (the only people a task can be ASSIGNED to):
 ${memberList}
-${buildMemorySection(memories)}${roleSection}
+${buildMemorySection(memories)}${roleSection}${hintSection}
 Output STRICT JSON of this exact shape (no prose, no markdown):
 {
   "proposals": [

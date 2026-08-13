@@ -27,6 +27,10 @@ interface RenaidaStoreState {
   projectName: string | null;
   projectCountry: string | null;
   autonomy: RenaidaAutonomy;
+  /** Panel open-state lives here so ANY surface (FAB, mobile nav slot, a future
+   *  share-target route) can open Renaida — not just her own floating button. */
+  panelOpen: boolean;
+  setPanelOpen: (open: boolean) => void;
   /** Project identity — owned by ProjectDetail (lives for the whole project visit,
    *  across tab switches). Voice capture/apply/proactive all key off projectId. */
   setProject: (projectId: string, projectName?: string | null, projectCountry?: string | null) => void;
@@ -43,6 +47,8 @@ export const useRenaidaStore = create<RenaidaStoreState>((set) => ({
   projectName: null,
   projectCountry: null,
   autonomy: cachedAutonomy(),
+  panelOpen: false,
+  setPanelOpen: (open) => set({ panelOpen: open }),
   setProject: (projectId, projectName, projectCountry) =>
     set({ projectId, projectName: projectName ?? null, projectCountry: projectCountry ?? null }),
   clearProject: () =>

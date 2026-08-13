@@ -165,8 +165,20 @@ function weekdayLabel(d: Date, language: string): string {
   }
 }
 
-function buildSystemPrompt(language: string, rooms: RoomCtx[], tasks: TaskCtx[], memories: MemoryCtx[], members: MemberCtx[], userType?: string | null): string {
+function buildSystemPrompt(language: string, rooms: RoomCtx[], tasks: TaskCtx[], memories: MemoryCtx[], members: MemberCtx[], userType?: string | null, intentHint?: string | null): string {
   const langName = LANGUAGE_NAMES[language] || "English";
+  // Quick-action chips ("EN agent, MÅNGA dörrar"): a tapped chip scopes the
+  // capture — bias the router toward that action family, never override a
+  // clearly different utterance. Absent hint → unchanged prompt (eval parity).
+  const INTENT_HINT_LINES: Record<string, string> = {
+    purchase: `log a purchase/order of materials — bias toward create_purchase`,
+    time: `log worked hours — bias toward log_time`,
+    note: `jot a quick note — bias toward add_note`,
+    status: `update task status/progress — bias toward set_progress or update_task`,
+  };
+  const hintSection = intentHint && INTENT_HINT_LINES[intentHint]
+    ? `\nQUICK ACTION HINT: before speaking, the user tapped the "${intentHint}" quick action (${INTENT_HINT_LINES[intentHint]}). Prefer that action family when the utterance is ambiguous — but if the utterance clearly asks for something else, follow the utterance, not the hint.\n`
+    : "";
   // Role gating (Carl 2026-07-12): the same utterance lands differently per role.
   // Absent userType → neutral (keeps the eval, which sends no role, unchanged).
   const roleSection = userType
@@ -210,7 +222,7 @@ ${taskList}
 
 PROJECT MEMBERS (the only people a task can be ASSIGNED to):
 ${memberList}
-${buildMemorySection(memories)}${roleSection}
+${buildMemorySection(memories)}${roleSection}${hintSection}
 
 Output STRICT JSON of this exact shape (no prose, no markdown):
 {
@@ -626,7 +638,9 @@ serve(async (req) => {
   }
 
   try {
-    const { input, projectId, language: rawLanguage = "en", userType = null } = await req.json();
+    const { input, projectId, language: rawLanguage = "en", userType = null, intentHint: rawIntentHint = null } = await req.json();
+    // Whitelist the hint — anything unexpected degrades to "no hint".
+    const intentHint = ["purchase", "time", "note", "status"].includes(rawIntentHint) ? rawIntentHint : null;
     // Browser-detected codes arrive as region variants ("sv-SE") — normalize so
     // the LANGUAGE_NAMES lookup doesn't silently fall back to English.
     const language = String(rawLanguage).slice(0, 2);
@@ -660,7 +674,7 @@ serve(async (req) => {
         max_tokens: 1200,
         response_format: { type: "json_object" },
         messages: [
-          { role: "system", content: buildSystemPrompt(language, rooms, tasks, memories, members, userType) },
+          { role: "system", content: buildSystemPrompt(language, rooms, tasks, memories, members, userType, intentHint) },
           { role: "user", content: input.content },
         ],
       }),

@@ -135,10 +135,18 @@ export interface AgentRouteInput {
   content: string;
 }
 
+/**
+ * Context-scoped capture ("EN agent, MÅNGA dörrar"): which quick-action chip
+ * the user tapped before speaking/typing. The router BIASES toward the hinted
+ * action family but always follows a clearly different utterance.
+ */
+export type AgentIntentHint = "purchase" | "time" | "note" | "status";
+
 export interface AgentRouteRequest {
   input: AgentRouteInput;
   projectId: string;
   language: string;
+  intentHint?: AgentIntentHint | null;
 }
 
 export interface AgentRouteResponse {

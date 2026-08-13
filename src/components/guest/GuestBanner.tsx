@@ -47,7 +47,9 @@ export function GuestBanner({ className }: GuestBannerProps) {
         className
       )}
     >
-      <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
+      {/* min-w-0: without it this flex item refuses to shrink and the truncate
+          never kicks in → the whole row overflows the mobile viewport. */}
+      <div className="flex min-w-0 items-center gap-2 text-amber-800 dark:text-amber-200">
         <HardDrive className="h-4 w-4 shrink-0" />
         <span className="truncate">{t('guest.banner', 'Your project is saved locally. Sign in to save permanently.')}</span>
       </div>

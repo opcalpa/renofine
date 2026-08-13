@@ -3,16 +3,17 @@
  * Sends captured input + project context, returns proposals (nothing applied).
  */
 import { supabase } from "@/integrations/supabase/client";
-import type { AgentRouteInput, AgentRouteResponse } from "./types";
+import type { AgentIntentHint, AgentRouteInput, AgentRouteResponse } from "./types";
 
 export async function routeAgentInput(
   input: AgentRouteInput,
   projectId: string,
   language: string,
   userType?: string | null,
+  intentHint?: AgentIntentHint | null,
 ): Promise<AgentRouteResponse> {
   const { data, error } = await supabase.functions.invoke("agent-route", {
-    body: { input, projectId, language, userType: userType ?? null },
+    body: { input, projectId, language, userType: userType ?? null, intentHint: intentHint ?? null },
   });
 
   if (error) throw new Error(error.message);
