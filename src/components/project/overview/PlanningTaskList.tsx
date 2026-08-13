@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useTaxDeductionVisible } from "@/hooks/useTaxDeduction";
 import { supabase } from "@/integrations/supabase/client";
 import { TASK_CATEGORY_LABELS, TaskCategory } from "@/services/aiDocumentService.types";
+import { activateProject } from "@/services/activateProject";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -254,132 +255,7 @@ export function PlanningTaskList({
   const handleActivateProject = useCallback(async () => {
     setActivating(true);
     try {
-      const { error } = await supabase
-        .from("projects")
-        .update({ status: "active" })
-        .eq("id", projectId);
-      if (error) throw error;
-
-      // Transition planned tasks to to_do so they appear in kanban
-      const { data: plannedTasks } = await supabase
-        .from("tasks")
-        .select("id, title, material_estimate, material_items")
-        .eq("project_id", projectId)
-        .eq("status", "planned");
-
-      // Get auth user for created_by
-      const { data: authData } = await supabase.auth.getUser();
-      const { data: profileRow } = authData?.user
-        ? await supabase.from("profiles").select("id").eq("user_id", authData.user.id).single()
-        : { data: null };
-      const creatorId = profileRow?.id ?? null;
-
-      if (plannedTasks && plannedTasks.length > 0) {
-        await supabase
-          .from("tasks")
-          .update({ status: "to_do" })
-          .in("id", plannedTasks.map((t) => t.id));
-
-        // Create planned material rows for tasks with material_estimate but no existing planned materials
-        const { data: existingMats } = await supabase
-          .from("materials")
-          .select("task_id, description")
-          .eq("project_id", projectId)
-          .eq("status", "planned")
-          .not("task_id", "is", null);
-        const tasksWithPlannedMat = new Set(
-          (existingMats || []).filter((m) => m.description !== "__subcontractor__").map((m) => m.task_id)
-        );
-
-        const materialsToInsert: Record<string, unknown>[] = [];
-        for (const task of plannedTasks) {
-          if (tasksWithPlannedMat.has(task.id)) continue;
-          const items = task.material_items as { amount: number; quantity?: number; unit?: string; unit_price?: number }[] | null;
-          if (items && items.length > 0) {
-            for (const item of items) {
-              if (!item.amount || item.amount <= 0) continue;
-              materialsToInsert.push({
-                id: crypto.randomUUID(),
-                name: `${task.title} — material`,
-                quantity: item.quantity ?? 1,
-                unit: item.unit ?? "st",
-                price_per_unit: item.unit_price ?? item.amount,
-                price_total: item.amount,
-                task_id: task.id,
-                project_id: projectId,
-                status: "planned",
-                exclude_from_budget: false,
-                created_by_user_id: creatorId,
-              });
-            }
-          } else if (task.material_estimate && task.material_estimate > 0) {
-            materialsToInsert.push({
-              id: crypto.randomUUID(),
-              name: `${task.title} — material`,
-              quantity: 1,
-              unit: "st",
-              price_per_unit: task.material_estimate,
-              price_total: task.material_estimate,
-              task_id: task.id,
-              project_id: projectId,
-              status: "planned",
-              exclude_from_budget: false,
-              created_by_user_id: creatorId,
-            });
-          }
-        }
-        if (materialsToInsert.length > 0) {
-          await supabase.from("materials").insert(materialsToInsert);
-        }
-      }
-
-      // Convert UE (subcontractor) material rows into proper task cards
-      const { data: ueMaterials } = await supabase
-        .from("materials")
-        .select("id, name, task_id, price_total, markup_percent, room_id")
-        .eq("project_id", projectId)
-        .eq("status", "planned")
-        .eq("description", "__subcontractor__");
-
-      if (ueMaterials && ueMaterials.length > 0) {
-        // Task-linked UE: merge cost into task's subcontractor_cost
-        const taskLinked = ueMaterials.filter((m) => m.task_id);
-        const costByTask = new Map<string, number>();
-        for (const m of taskLinked) {
-          const amount = (m.price_total || 0) * (1 + (m.markup_percent || 0) / 100);
-          costByTask.set(m.task_id!, (costByTask.get(m.task_id!) || 0) + amount);
-        }
-        for (const [taskId, cost] of costByTask) {
-          await supabase
-            .from("tasks")
-            .update({ subcontractor_cost: cost, task_cost_type: "subcontractor" })
-            .eq("id", taskId);
-        }
-
-        // Standalone UE (no task_id): create new task cards
-        const standalone = ueMaterials.filter((m) => !m.task_id);
-        if (standalone.length > 0) {
-          const newTasks = standalone.map((m) => ({
-            id: crypto.randomUUID(),
-            project_id: projectId,
-            title: m.name,
-            status: "to_do",
-            priority: "medium",
-            task_cost_type: "subcontractor",
-            subcontractor_cost: (m.price_total || 0) * (1 + (m.markup_percent || 0) / 100),
-            room_id: m.room_id ?? null,
-            created_by_user_id: creatorId,
-          }));
-          await supabase.from("tasks").insert(newTasks);
-        }
-
-        // Delete all UE sentinel rows — their data is now on tasks
-        await supabase
-          .from("materials")
-          .delete()
-          .in("id", ueMaterials.map((m) => m.id));
-      }
-
+      await activateProject(projectId); // R3: single-source activation
       toast({ description: t("homeownerPlanning.projectActivated", "Project activated!") });
       onActivateProject?.();
     } catch {
