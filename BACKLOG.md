@@ -1927,7 +1927,8 @@ PlanningWizard (hemägar-only, tomt-projekt-läget i HomeownerPlanningView:700) 
 
 ---
 id: renaida-fill-existing-project
-status: todo
+status: done
+done: 2026-08-13
 priority: P3
 tags: [renaida, homeowner, onboarding, decision, tech-debt]
 created: 2026-08-13
@@ -1940,4 +1941,9 @@ Ursprunglig R4-vision: tomt hemägar-projekt öppnar RenaidaProjectDialog i "fyl
 2. **UX-skifte:** wizarden är ett HELSIDES inline-flöde tunat för tomma-projekt-läget; RenaidaProjectDialog är en modal via knapp. Auto-visa-helsida → klicka-knapp-öppna-modal ändrar hemägar-onboardingen.
 3. **Teknik:** kräver `existingProjectId`-prop på RenaidaProjectDialog + gren i handleCreate (hoppa projekt-skapande + navigation + quote-offer-logiken, som alla antar nytt projekt).
 
-**Alternativ:** (A) full swap (acceptera regressionen, störst konsolidering); (B) nå paritet först (lägg room_ids[]/checklist-generering i scaffold, sen swap); (C) behåll wizarden, lämna som är (bara bugg+död-kod-fixen i `9374dc2` räckte). Rekommendation: **C tills en hemägare faktiskt klagar** — wizarden fungerar, språkbuggen är fixad, och Renaida-fokus ligger på BYGGAR-aktivering (traction-flaskhalsen), inte hemägar-onboarding-omskrivning.
+**Alternativ:** (A) full swap; (B) paritet först; (C) behåll wizarden.
+
+**✅ BESLUT (Carl 2026-08-13): CO-EXISTENS — inget rivs, båda verktygen görs symmetriska (kan NYTT och/eller BEFINTLIGT).** Levererat (`3c24175` + `7a01956`):
+- **Renaida → befintligt** (`3c24175`): toScaffoldInput({existingProjectId}) + RenaidaProjectDialog existingProjectId/onPopulated-props (hoppar project_created/quote-offer/navigation, fyrar renaida_project_completed{populate_existing}). Entry: hemägarens tomma-projekt-läge blev en VÄLJARE (wizard | Renaida), inte tvingad wizard.
+- **Wizard → nytt** (`7a01956`): createProjectForWizard skapar skal, PlanningWizard.projectId nu valfri (saknas → skapa först). Entry: hemägar-only "Planera med guiden"-knapp på Projects → helskärms-overlay.
+Ingen regression: wizarden oförändrad i sitt befintliga läge (room_ids[]/checklistor kvar); Renaida är ett ALTERNATIV, inte en ersättare. 30/30 tester.
