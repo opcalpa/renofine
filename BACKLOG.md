@@ -1953,6 +1953,7 @@ Ingen regression: wizarden oförändrad i sitt befintliga läge (room_ids[]/chec
 id: renaida-mobile-first-surface
 status: doing
 priority: P2
+progress: 2026-08-13 — skiva (a)+(b) LEVERERADE (`3324520`+`0923e98`, agent-route deployad). (a) Renaida i mobilnavens upphöjda mittslot (panelens open-state → renaidaStore), FAB döljs på mobil-/start, 4 capture-chips i entrén (Fota kvitto/Logga tid/Snabbanteckning/Status) m. intentHint end-to-end (envelope→edge-fn→eval-spegel+3 golden-fall, 38/39, enda missen = förexisterande taulant-flake). (b) Installerbar PWA: manifest+no-cache-SW, share_target → /capture → pendingShareFiles → D1-flödet, 2 hemskärmsgenvägar; share = Android/desktop, iOS får installerbar app. +3 buggar fixade på vägen: horisontell overflow /start (GuestBanner min-w-0 + mark-only-logga <sm). KVAR: (c) ConfirmDiff tumme-polish, (d) PWA-installprompt vid rätt ögonblick, mät mobil-andel captures i PostHog.
 tags: [renaida, mobil, ux, epic, activation]
 created: 2026-08-13
 ---
