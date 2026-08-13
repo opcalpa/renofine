@@ -775,7 +775,8 @@
     "adminToggle": "Show all projects (admin)",
     "adminOn": "Admin",
     "adminOff": "Admin",
-    "createWithRenaida": "Create with Renaida"
+    "createWithRenaida": "Create with Renaida",
+    "planWithWizard": "Plan with the guide"
   },
   "onboarding": {
     "welcome": "Welcome to Renofine!",

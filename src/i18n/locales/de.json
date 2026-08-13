@@ -1371,7 +1371,8 @@
       "other": "Sonstiges",
       "plumbing": "Sanitär (Rohre/Wasser)",
       "roof": "Dach"
-    }
+    },
+    "planWithWizard": "Mit dem Assistenten planen"
   },
   "propertyPanel": {
     "appearance": "Darstellung",

@@ -1371,7 +1371,8 @@
       "other": "Otro",
       "plumbing": "Fontanería (tuberías/agua)",
       "roof": "Tejado"
-    }
+    },
+    "planWithWizard": "Planificar con la guía"
   },
   "propertyPanel": {
     "appearance": "Apariencia",

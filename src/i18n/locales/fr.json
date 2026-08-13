@@ -1371,7 +1371,8 @@
       "other": "Autre",
       "plumbing": "Plomberie (tuyaux/eau)",
       "roof": "Toit"
-    }
+    },
+    "planWithWizard": "Planifier avec le guide"
   },
   "propertyPanel": {
     "appearance": "Apparence",

@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import {
   populateProjectFromPlanningWizard,
   populateGuestProjectFromPlanningWizard,
+  createProjectForWizard,
 } from "@/services/planningWizardService";
 import { useGuestMode } from "@/hooks/useGuestMode";
 import { DescribeStep } from "./DescribeStep";
@@ -17,15 +18,17 @@ import { INITIAL_FORM_DATA, TOTAL_STEPS } from "./types";
 import type { PlanningWizardData, PlanningWizardRoom, AIParsedResult } from "./types";
 
 interface PlanningWizardProps {
-  projectId: string;
-  onComplete: () => void;
+  /** Co-existence: omit to CREATE a new project the wizard then populates. */
+  projectId?: string | null;
+  /** Receives the project id — the newly-created one in create mode. */
+  onComplete: (projectId?: string) => void;
   onSkip: () => void;
 }
 
 export function PlanningWizard({ projectId, onComplete, onSkip }: PlanningWizardProps) {
   const { t, i18n } = useTranslation();
   const { isGuest } = useGuestMode();
-  const storageKey = `planning-wizard-${projectId}`;
+  const storageKey = `planning-wizard-${projectId ?? "new"}`;
 
   // Restore draft from localStorage (survives unmount/remount)
   const [step, setStep] = useState(() => {
@@ -153,10 +156,12 @@ export function PlanningWizard({ projectId, onComplete, onSkip }: PlanningWizard
     try {
       let roomCount: number;
       let taskCount: number;
+      let targetProjectId = projectId ?? undefined;
 
       if (isGuest) {
+        // Guests populate an existing local project only (no create-new path).
         const result = populateGuestProjectFromPlanningWizard(
-          projectId,
+          projectId ?? "",
           formData,
           (wt) => t(`intake.workType.${wt}`, wt)
         );
@@ -173,8 +178,13 @@ export function PlanningWizard({ projectId, onComplete, onSkip }: PlanningWizard
           .single();
         if (!profile) throw new Error("No profile");
 
+        // Co-existence: no projectId → create a project shell first, then populate it.
+        if (!targetProjectId) {
+          targetProjectId = await createProjectForWizard(formData, profile.id);
+        }
+
         const result = await populateProjectFromPlanningWizard(
-          projectId,
+          targetProjectId,
           formData,
           profile.id,
           (wt) => t(`intake.workType.${wt}`, wt)
@@ -190,7 +200,7 @@ export function PlanningWizard({ projectId, onComplete, onSkip }: PlanningWizard
         })
       );
       clearDraft();
-      onComplete();
+      onComplete(targetProjectId);
     } catch {
       toast.error(t("common.errorSaving", "Could not save"));
     }

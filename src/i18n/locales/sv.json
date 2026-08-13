@@ -775,7 +775,8 @@
     "adminToggle": "Visa alla projekt (admin)",
     "adminOn": "Admin",
     "adminOff": "Admin",
-    "createWithRenaida": "Skapa med Renaida"
+    "createWithRenaida": "Skapa med Renaida",
+    "planWithWizard": "Planera med guiden"
   },
   "onboarding": {
     "welcome": "Välkommen till Renofine!",

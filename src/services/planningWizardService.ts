@@ -40,6 +40,31 @@ import {
 } from "@/lib/materialRecipes";
 
 /**
+ * Co-existence: create a NEW project shell for the wizard to populate, so the
+ * wizard can start from scratch (not only fill an existing project). Mirrors
+ * scaffoldProject's project insert (owner_id, status 'planning'). Returns the
+ * new project id; the caller then runs populateProjectFromPlanningWizard on it.
+ */
+export async function createProjectForWizard(
+  data: PlanningWizardData,
+  creatorProfileId: string
+): Promise<string> {
+  const name = data.description?.trim().slice(0, 60) || "Nytt projekt";
+  const { data: project, error } = await supabase
+    .from("projects")
+    .insert({
+      name,
+      owner_id: creatorProfileId,
+      country: "SE",
+      status: "planning",
+    })
+    .select("id")
+    .single();
+  if (error || !project) throw new Error(error?.message || "Failed to create project");
+  return project.id;
+}
+
+/**
  * Populate an existing project with rooms and tasks from the planning wizard.
  * Follows the same pattern as createProjectFromGuidedSetup but operates on an
  * existing project (homeowner already created it).

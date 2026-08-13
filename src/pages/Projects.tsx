@@ -10,7 +10,7 @@ import { AppBottomNav } from "@/components/AppBottomNav";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Users, User, BookOpen, Trash2, Loader2, Sparkles, ChevronDown, LayoutGrid, List, Settings2, ShieldCheck, GanttChart, EyeOff, MoreHorizontal } from "lucide-react";
+import { Plus, Users, User, BookOpen, Trash2, Loader2, Sparkles, ChevronDown, LayoutGrid, List, Settings2, ShieldCheck, GanttChart, EyeOff, MoreHorizontal, Wand2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -63,6 +63,7 @@ const DashboardRedesign = lazyWithRetry(
 );
 import { CreateProjectDialog } from "@/components/project/CreateProjectDialog";
 import { RenaidaProjectDialog } from "@/components/project/RenaidaProjectDialog";
+import { PlanningWizard } from "@/components/project/overview/planning-wizard/PlanningWizard";
 import { useProjectsData } from "@/hooks/useProjectsData";
 const ContractorStart = lazyWithRetry(() => import("@/pages/contractor/ContractorStart"));
 const OwnerStart = lazyWithRetry(() => import("@/pages/owner/OwnerStart"));
@@ -123,6 +124,7 @@ const Projects = () => {
     }
   }, [authLoading, isGuest, profile?.id, showWelcomeModal]);
   const [showGuidedSetup, setShowGuidedSetup] = useState(false);
+  const [planWizardOpen, setPlanWizardOpen] = useState(false);
   const [showAIImport, setShowAIImport] = useState(false);
   const [renaidaOpen, setRenaidaOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
@@ -646,6 +648,19 @@ const Projects = () => {
                   {t('projects.createWithRenaida', 'Skapa med Renaida')}
                 </span>
               </Button>
+              {/* Co-existence: the step-by-step planner can also START a new
+                  project (not only fill an existing one). Homeowner-oriented. */}
+              {!isGuest && (isGuest ? guestRole : profile?.onboarding_user_type) !== 'contractor' && (
+                <Button
+                  variant="outline"
+                  className="border-primary/40 text-primary hover:bg-primary/5"
+                  onClick={() => setPlanWizardOpen(true)}
+                  title={t('projects.planWithWizard', 'Planera med guiden')}
+                >
+                  <Wand2 className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">{t('projects.planWithWizard', 'Planera med guiden')}</span>
+                </Button>
+              )}
               <Button onClick={() => setShowGuidedSetup(true)}>
                 <Plus className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">
@@ -1032,6 +1047,20 @@ const Projects = () => {
           )}
         </DialogContent>
       </Dialog>
+      {/* Co-existence: the planner wizard as a full-screen create-new flow. */}
+      {planWizardOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-background">
+          <div className="mx-auto max-w-3xl px-4 py-6">
+            <PlanningWizard
+              onComplete={(newId) => {
+                setPlanWizardOpen(false);
+                if (newId) navigate(`/projects/${newId}`);
+              }}
+              onSkip={() => setPlanWizardOpen(false)}
+            />
+          </div>
+        </div>
+      )}
       {/* AI Project Import Modal */}
       <AIProjectImportModal
         open={showAIImport}
