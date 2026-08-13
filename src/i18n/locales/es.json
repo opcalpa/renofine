@@ -2346,7 +2346,8 @@
         "contractor": "Describe el trabajo con tus palabras y esbozaré habitaciones y tareas — o sáltalo para que te guíe."
       },
       "addons": "Bien. La gente suele incluir también esto — ¿quieres añadir algo? (Opcional.)",
-      "calc": "¿Quieres que proponga un cálculo — horas de trabajo y coste según tus tarifas y el tamaño de la habitación? Todo sigue siendo editable en la tabla de planificación."
+      "calc": "¿Quieres que proponga un cálculo — horas de trabajo y coste según tus tarifas y el tamaño de la habitación? Todo sigue siendo editable en la tabla de planificación.",
+      "critic": "Una última comprobación — comparé tu plan con proyectos similares. Un profesional preguntaría por esto:"
     },
     "complete": "Perfecto — tengo todo lo que necesito. Tu proyecto está listo para crearse. Puedes ajustar todo después.",
     "type": {
@@ -2463,7 +2464,13 @@
       "accept": "Directo al presupuesto",
       "review": "Revisar y ajustar el cálculo"
     },
-    "populated": "¡Listo! Lo he añadido a tu proyecto. 🎉"
+    "populated": "¡Listo! Lo he añadido a tu proyecto. 🎉",
+    "critic": {
+      "checking": "Renaida revisa el plan de nuevo…",
+      "allGood": "Revisé el plan de nuevo — parece completo. ✓",
+      "add": "Añadir",
+      "looksGood": "Está bien así"
+    }
   },
   "pipeline": {
     "quickQuote": "Presupuesto rápido"

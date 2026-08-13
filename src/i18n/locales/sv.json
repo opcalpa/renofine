@@ -6880,7 +6880,8 @@
       "gapRoom": "Jag hittade {{count}} arbeten jag inte kunde placera i ett rum — vilket rum hör de till?",
       "customer": "Vem är jobbet för? Jag använder kunden för att förbereda en offert sen.",
       "overhead": "Sånt proffs ofta tar med separat — vill du lägga till något? (Valfritt.)",
-      "calc": "Vill du att jag föreslår en kalkyl — arbetstimmar och kostnad utifrån dina satser och rummets storlek? Allt går att ändra i planeringstabellen."
+      "calc": "Vill du att jag föreslår en kalkyl — arbetstimmar och kostnad utifrån dina satser och rummets storlek? Allt går att ändra i planeringstabellen.",
+      "critic": "En sista koll — jag jämförde din plan med liknande projekt. Ett proffs skulle fråga om det här:"
     },
     "overhead": {
       "establishment": "Etablering",
@@ -7016,7 +7017,8 @@
       "photo": "Från foto",
       "document": "Från dokument",
       "floorplan": "Från ritning",
-      "suggestion": "Renaidas förslag"
+      "suggestion": "Renaidas förslag",
+      "critic": "Renaidas koll"
     },
     "addon": {
       "underfloorHeat": "Golvvärme",
@@ -7042,6 +7044,12 @@
       "self": "Jag räknar själv",
       "material": "material"
     },
-    "populated": "Klart! Jag har lagt till det i ditt projekt. 🎉"
+    "populated": "Klart! Jag har lagt till det i ditt projekt. 🎉",
+    "critic": {
+      "checking": "Renaida dubbelkollar planen…",
+      "allGood": "Jag dubbelkollade planen mot liknande projekt — ser komplett ut. ✓",
+      "add": "Lägg till",
+      "looksGood": "Ser bra ut ändå"
+    }
   }
 }

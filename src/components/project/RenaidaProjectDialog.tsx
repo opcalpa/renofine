@@ -14,6 +14,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Sparkles, ArrowRight, Home, Hammer, Wallet, MapPin, Loader2, Check, Camera,
   MessageSquare, FileText, PenTool, X, RotateCcw, FolderUp, User, Calculator,
+  ShieldAlert,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -25,7 +26,12 @@ import { createGuestProjectFromGuidedSetup, canCreateGuestProject } from '@/serv
 import { compressImage } from '@/lib/compressImage';
 import { analytics, AnalyticsEvents, ProjectCreationMethod } from '@/lib/analytics';
 import { scaffoldProject } from '@/services/scaffoldProject';
-import { parseProjectDescription, fetchAddonSuggestions } from '@/services/renaidaProjectIntake';
+import {
+  parseProjectDescription,
+  fetchAddonSuggestions,
+  fetchCriticFlags,
+  type CriticFlagSuggestion,
+} from '@/services/renaidaProjectIntake';
 import { ingestProjectFolder, type PendingSketch } from '@/services/ingestProjectFolder';
 import { importPurchaseOrder, type ImportPurchaseAction } from '@/services/agent/importPurchaseOrder';
 import { floorPlanResultToShapes } from '@/services/aiVisionService';
@@ -43,6 +49,7 @@ import {
   seedDraftFromParse,
   deterministicAddons,
   applyAddonWorkTypes,
+  applyCriticFlags,
   unattributedTaskCount,
   assignUnattributedTasks,
   estimateDraftCalc,
@@ -121,6 +128,12 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
     Array<{ id: string; label: string; workTypes: WorkType[] }> | null
   >(null);
   const [addonsLoading, setAddonsLoading] = useState(false);
+  // Fas C+ critic: null = not fetched yet; [] never renders (the step is
+  // silently auto-skipped when the check comes back clean or fails).
+  const [criticOptions, setCriticOptions] = useState<
+    Array<CriticFlagSuggestion & { id: string }> | null
+  >(null);
+  const [criticLoading, setCriticLoading] = useState(false);
   const convRef = useRef<HTMLDivElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
@@ -131,10 +144,14 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
   // fresh values without stale-closure bugs.
   const describeUsedRef = useRef(false);
   const addonsSelectedRef = useRef(0);
+  const criticAcceptedRef = useRef(0);
   const createdRef = useRef(false);
   const prevOpenRef = useRef(false);
   const completedFiredRef = useRef(false);
   const addonsShownFiredRef = useRef(false);
+  const addonsFetchedRef = useRef(false);
+  const criticShownFiredRef = useRef(false);
+  const criticFetchedRef = useRef(false);
   const snapshotRef = useRef({ stepId: 'type' as string, rooms: 0, tasks: 0 });
 
   /** Localized work-type label — the seam that keeps task titles translated. */
@@ -164,11 +181,17 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
       setQuoteBusy(false);
       setAddonOptions(null);
       setAddonsLoading(false);
+      setCriticOptions(null);
+      setCriticLoading(false);
       describeUsedRef.current = false;
       addonsSelectedRef.current = 0;
+      criticAcceptedRef.current = 0;
       createdRef.current = false;
       completedFiredRef.current = false;
       addonsShownFiredRef.current = false;
+      addonsFetchedRef.current = false;
+      criticShownFiredRef.current = false;
+      criticFetchedRef.current = false;
       snapshotRef.current = { stepId: 'type', rooms: 0, tasks: 0 };
     }
   }, [open]);
@@ -214,14 +237,20 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
       has_address: Boolean(draft.address),
       describe_used: describeUsedRef.current,
       addons_selected: addonsSelectedRef.current,
+      critic_accepted: criticAcceptedRef.current,
     });
   }, [open, complete, draft, userType]);
 
   // When we reach the add-ons step, fetch LLM suggestions once; fall back to
-  // the curated list if the function returns nothing.
+  // the curated list if the function returns nothing. Fetch-once is guarded by
+  // a REF, not state: the old `cancelled`+loading-in-deps pattern self-cancelled
+  // the effect the moment setAddonsLoading(true) re-rendered — the response was
+  // then thrown away and the spinner hung forever (no skip button in that
+  // state), hard-blocking the flow whenever the network took more than an
+  // instant. Same fix as the critic effect below.
   useEffect(() => {
-    if (step?.id !== 'addons' || addonOptions !== null || addonsLoading || !draft.projectType) return;
-    let cancelled = false;
+    if (step?.id !== 'addons' || addonsFetchedRef.current || !draft.projectType) return;
+    addonsFetchedRef.current = true;
     setAddonsLoading(true);
     fetchAddonSuggestions({
       projectType: draft.projectType,
@@ -231,7 +260,6 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
       userType,
     })
       .then((llm) => {
-        if (cancelled) return;
         const source = llm.length > 0 ? 'llm' : 'deterministic';
         if (llm.length > 0) {
           setAddonOptions(llm.map((s, i) => ({ id: `llm-${i}`, label: s.label, workTypes: [s.workType] })));
@@ -251,12 +279,63 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
         }
       })
       .finally(() => {
-        if (!cancelled) setAddonsLoading(false);
+        setAddonsLoading(false);
       });
-    return () => {
-      cancelled = true;
-    };
-  }, [step?.id, addonOptions, addonsLoading, draft.projectType, draft.rooms, draft.tasks, i18n.language, userType, t]);
+  }, [step?.id, draft.projectType, draft.rooms, draft.tasks, i18n.language, userType, t]);
+
+  // Fas C+ critic: when the flow reaches the final 'critic' step, run ONE
+  // expert pass over the merged draft. A clean (or failed — fail-open) check
+  // silently answers the step with a small reassurance line; the question only
+  // ever renders when there are concrete flags to show. Fetch-once is guarded
+  // by a REF, not state — a state guard in the deps array would self-cancel
+  // the effect the moment the loading flag flips.
+  useEffect(() => {
+    if (step?.id !== 'critic' || criticFetchedRef.current || !draft.projectType) return;
+    criticFetchedRef.current = true;
+    const s = step;
+    setCriticLoading(true);
+    fetchCriticFlags({
+      projectType: draft.projectType,
+      rooms: draft.rooms.map((r) => ({ name: r.name, areaSqm: r.areaSqm ?? null })),
+      tasks: draft.tasks
+        .filter((tk) => !tk.excluded)
+        .map((tk) => ({ workType: tk.workType, roomName: tk.roomName, title: tk.customTitle ?? null })),
+      language: i18n.language,
+      userType,
+    })
+      .then((rawFlags) => {
+        // Deterministic hedge on top of the prompt: never show a flag whose
+        // label already exists as a task title (the LLM occasionally re-flags
+        // semantically-covered work).
+        const existingTitles = new Set(
+          draft.tasks.filter((tk) => tk.customTitle).map((tk) => tk.customTitle!.toLowerCase())
+        );
+        const flags = rawFlags.filter((f) => !existingTitles.has(f.label.toLowerCase()));
+        if (flags.length === 0) {
+          setTurns((tn) => [
+            ...tn,
+            {
+              message: t('renaidaFlow.critic.allGood', 'Jag dubbelkollade planen mot liknande projekt — ser komplett ut. ✓'),
+              answerLabel: '',
+            },
+          ]);
+          setDraft((d) => applyAnswer(s, { kind: 'skip' }, d));
+          return;
+        }
+        setCriticOptions(flags.map((f, i) => ({ ...f, id: `critic-${i}` })));
+        if (!criticShownFiredRef.current) {
+          criticShownFiredRef.current = true;
+          analytics.capture(AnalyticsEvents.RENAIDA_PROJECT_CRITIC_SHOWN, {
+            user_type: userType,
+            project_type: draft.projectType,
+            flag_count: flags.length,
+          });
+        }
+      })
+      .finally(() => {
+        setCriticLoading(false);
+      });
+  }, [step, draft, i18n.language, userType, t]);
 
   const messageOf = (s: Step) => t(s.messageKey, { ...(s.messageVars ?? {}) });
 
@@ -549,6 +628,15 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
     setTurns((tn) => [...tn, { message: messageOf(s), answerLabel: chosen.map((o) => o.label).join(', ') }]);
     setDraft((d) => applyAddonWorkTypes(d, chosen.map((o) => o.workTypes)));
     addonsSelectedRef.current = chosen.length;
+    setMultiSel([]);
+  };
+
+  const onCriticContinue = (s: Step) => {
+    const chosen = (criticOptions ?? []).filter((o) => multiSel.includes(o.id));
+    if (chosen.length === 0) return;
+    setTurns((tn) => [...tn, { message: messageOf(s), answerLabel: chosen.map((o) => o.label).join(', ') }]);
+    setDraft((d) => applyCriticFlags(d, chosen));
+    criticAcceptedRef.current = chosen.length;
     setMultiSel([]);
   };
 
@@ -984,6 +1072,59 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
                         </>
                       )}
                     </div>
+                  ) : step.id === 'critic' ? (
+                    <div className="space-y-2.5 pl-8">
+                      {criticLoading || criticOptions === null ? (
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          {t('renaidaFlow.critic.checking', 'Renaida dubbelkollar planen…')}
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex flex-col gap-2">
+                            {criticOptions.map((o) => {
+                              const on = multiSel.includes(o.id);
+                              return (
+                                <button
+                                  key={o.id}
+                                  onClick={() =>
+                                    setMultiSel(on ? multiSel.filter((x) => x !== o.id) : [...multiSel, o.id])
+                                  }
+                                  className={`rounded-lg border px-3.5 py-2 text-left text-sm transition-colors ${
+                                    on
+                                      ? 'border-primary bg-primary/10'
+                                      : 'bg-background hover:border-primary hover:bg-primary/5'
+                                  }`}
+                                >
+                                  <span className={`flex items-center gap-1.5 font-medium ${on ? 'text-primary' : ''}`}>
+                                    {on ? (
+                                      <Check className="h-3 w-3 flex-shrink-0" />
+                                    ) : (
+                                      <ShieldAlert className="h-3 w-3 flex-shrink-0 text-amber-500" />
+                                    )}
+                                    {o.label}
+                                    {o.roomName && (
+                                      <span className="font-normal text-muted-foreground">· {o.roomName}</span>
+                                    )}
+                                  </span>
+                                  {o.reason && (
+                                    <span className="mt-0.5 block text-xs text-muted-foreground">{o.reason}</span>
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button size="sm" onClick={() => onCriticContinue(step)} disabled={multiSel.length === 0}>
+                              {t('renaidaFlow.critic.add', 'Lägg till')} <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => onSkip(step)}>
+                              {t('renaidaFlow.critic.looksGood', 'Ser bra ut ändå')}
+                            </Button>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   ) : step.id === 'gapRoom' ? (
                     <div className="space-y-2.5 pl-8">
                       <div className="flex flex-wrap gap-2">
@@ -1237,6 +1378,7 @@ function SourceChip({ source }: { source?: Provenance }) {
     document: { Icon: FileText, key: 'renaidaFlow.source.document', fb: 'Från dokument' },
     floorplan: { Icon: PenTool, key: 'renaidaFlow.source.floorplan', fb: 'Från ritning' },
     suggestion: { Icon: Sparkles, key: 'renaidaFlow.source.suggestion', fb: 'Renaidas förslag' },
+    critic: { Icon: ShieldAlert, key: 'renaidaFlow.source.critic', fb: 'Renaidas koll' },
   } as const;
   const m = map[source.kind];
   if (!m) return null;

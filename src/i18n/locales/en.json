@@ -6880,7 +6880,8 @@
       "gapRoom": "I found {{count}} task(s) I couldn't place in a room — which room do they belong to?",
       "customer": "Who's this job for? I'll use the customer to prepare a quote later.",
       "overhead": "Pro items builders often quote separately — include any? (Optional.)",
-      "calc": "Want me to suggest a calculation — labor hours and cost from your rates and the room size? Everything stays editable in the planning table."
+      "calc": "Want me to suggest a calculation — labor hours and cost from your rates and the room size? Everything stays editable in the planning table.",
+      "critic": "One last check — I compared your plan against similar projects. A pro would ask about this:"
     },
     "overhead": {
       "establishment": "Site setup",
@@ -7016,7 +7017,8 @@
       "photo": "From a photo",
       "document": "From a document",
       "floorplan": "From a drawing",
-      "suggestion": "Renaida's suggestion"
+      "suggestion": "Renaida's suggestion",
+      "critic": "Renaida's check"
     },
     "addon": {
       "underfloorHeat": "Underfloor heating",
@@ -7042,6 +7044,12 @@
       "self": "I'll do the math myself",
       "material": "material"
     },
-    "populated": "Done! I've added it to your project. 🎉"
+    "populated": "Done! I've added it to your project. 🎉",
+    "critic": {
+      "checking": "Renaida double-checks the plan…",
+      "allGood": "I double-checked the plan against similar projects — looks complete. ✓",
+      "add": "Add",
+      "looksGood": "Looks good as is"
+    }
   }
 }

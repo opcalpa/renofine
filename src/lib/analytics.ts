@@ -88,6 +88,7 @@ export const AnalyticsEvents = {
   RENAIDA_PROJECT_STARTED: "renaida_project_started",
   RENAIDA_PROJECT_DESCRIBE_USED: "renaida_project_describe_used",
   RENAIDA_PROJECT_ADDONS_SHOWN: "renaida_project_addons_shown",
+  RENAIDA_PROJECT_CRITIC_SHOWN: "renaida_project_critic_shown",
   RENAIDA_PROJECT_COMPLETED: "renaida_project_completed",
   RENAIDA_PROJECT_ABANDONED: "renaida_project_abandoned",
   RENAIDA_QUOTE_OFFER: "renaida_quote_offer",

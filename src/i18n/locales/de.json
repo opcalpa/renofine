@@ -2346,7 +2346,8 @@
         "contractor": "Beschreibe den Auftrag in eigenen Worten und ich entwerfe Räume und Aufgaben — oder überspringe."
       },
       "addons": "Schön. Viele nehmen oft auch das mit — möchtest du etwas hinzufügen? (Optional.)",
-      "calc": "Soll ich eine Kalkulation vorschlagen — Arbeitsstunden und Kosten aus deinen Sätzen und der Raumgröße? Alles bleibt in der Planungstabelle editierbar."
+      "calc": "Soll ich eine Kalkulation vorschlagen — Arbeitsstunden und Kosten aus deinen Sätzen und der Raumgröße? Alles bleibt in der Planungstabelle editierbar.",
+      "critic": "Ein letzter Check — ich habe deinen Plan mit ähnlichen Projekten verglichen. Ein Profi würde hiernach fragen:"
     },
     "complete": "Perfekt — ich habe alles, was ich brauche. Dein Projekt ist bereit. Du kannst danach alles anpassen.",
     "type": {
@@ -2463,7 +2464,13 @@
       "accept": "Direkt zum Angebot",
       "review": "Kalkulation prüfen & anpassen"
     },
-    "populated": "Fertig! Ich habe es zu deinem Projekt hinzugefügt. 🎉"
+    "populated": "Fertig! Ich habe es zu deinem Projekt hinzugefügt. 🎉",
+    "critic": {
+      "checking": "Renaida prüft den Plan noch einmal…",
+      "allGood": "Ich habe den Plan gegengeprüft — sieht vollständig aus. ✓",
+      "add": "Hinzufügen",
+      "looksGood": "Passt so"
+    }
   },
   "pipeline": {
     "quickQuote": "Schnellangebot"

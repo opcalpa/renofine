@@ -34,7 +34,8 @@ export type ProvenanceKind =
   | 'photo'
   | 'document'
   | 'floorplan'
-  | 'suggestion';
+  | 'suggestion'
+  | 'critic';
 
 export interface Provenance {
   kind: ProvenanceKind;
@@ -412,6 +413,19 @@ export function nextStep(
       input: { kind: 'number', placeholderKey: 'renaidaFlow.ph.budget', unit: 'kr', skipKey: 'renaidaFlow.skip.noBudget' },
     };
   }
+  // Fas C+ "missing-something" critic — the LAST question before birth: one
+  // expert pass over the fully-merged draft that flags commonly-forgotten
+  // prerequisites ("totalrenovering utan rivning?", "badrum utan tätskikt?").
+  // Bespoke UI: the dialog fetches LLM flags and silently auto-answers this
+  // step when the check comes back clean or fails (fail-open) — the question
+  // only ever appears when there is something concrete to show.
+  if (draft.tasks.length > 0 && !answered(draft, 'critic')) {
+    return {
+      id: 'critic',
+      messageKey: 'renaidaFlow.q.critic',
+      input: { kind: 'chips', options: [], multi: true, skipKey: 'renaidaFlow.critic.looksGood' },
+    };
+  }
   return null;
 }
 
@@ -550,6 +564,50 @@ export function applyAddonWorkTypes(draft: ProjectDraft, workTypesList: WorkType
       existing.add(key);
       next.tasks.push({ workType: wt, roomName, costCenter: workTypeToCostCenter(wt), source: { kind: 'suggestion' } });
     }
+  }
+  return next;
+}
+
+/**
+ * A "did you forget this?" flag from the Fas C+ critic — the specific missing
+ * item is the point ("Tätskikt"), so the label rides along as the task title
+ * rather than collapsing into its work type.
+ */
+export interface CriticFlag {
+  label: string;
+  workType: WorkType;
+  /** Room the flag concerns, when the critic named one of the draft's rooms. */
+  roomName?: string | null;
+  /** Short "why this matters" line shown under the chip. */
+  reason?: string;
+}
+
+/**
+ * Apply accepted critic flags (Fas C+). Each becomes a task carrying the
+ * flag's own label as customTitle, deduped by title, room-scoped to the named
+ * room when it exists in the draft (else the first room). Marks 'critic'
+ * answered.
+ */
+export function applyCriticFlags(draft: ProjectDraft, flags: CriticFlag[]): ProjectDraft {
+  const next: ProjectDraft = { ...draft, tasks: [...draft.tasks], answered: [...draft.answered] };
+  if (!next.answered.includes('critic')) next.answered.push('critic');
+  const existingTitles = new Set(
+    next.tasks.filter((t) => t.customTitle).map((t) => t.customTitle!.toLowerCase())
+  );
+  for (const flag of flags) {
+    const title = flag.label.trim();
+    if (!title || existingTitles.has(title.toLowerCase())) continue;
+    existingTitles.add(title.toLowerCase());
+    const matchedRoom = flag.roomName
+      ? next.rooms.find((r) => r.name.toLowerCase() === flag.roomName!.trim().toLowerCase())
+      : undefined;
+    next.tasks.push({
+      workType: flag.workType,
+      roomName: matchedRoom?.name ?? next.rooms[0]?.name ?? null,
+      costCenter: workTypeToCostCenter(flag.workType),
+      customTitle: title,
+      source: { kind: 'critic' },
+    });
   }
   return next;
 }

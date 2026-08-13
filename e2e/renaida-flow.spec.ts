@@ -57,6 +57,11 @@ test('bathroom total renovation → room, tasks with cost centers, budget, name'
   expect(s.id).toBe('budget');
   d = applyAnswer(s, { kind: 'number', value: 150000 }, d);
 
+  // Fas C+: the final missing-something check (UI auto-skips it when clean).
+  s = nextStep(d)!;
+  expect(s.id).toBe('critic');
+  d = applyAnswer(s, { kind: 'skip' }, d);
+
   expect(nextStep(d)).toBeNull();
 
   const input = toScaffoldInput(d, (wt) => wt);
@@ -87,6 +92,7 @@ test('optional steps can be skipped and the draft still completes', () => {
   d = applyAnswer(nextStep(d)!, { kind: 'skip' }, d); // size
   d = applyAnswer(nextStep(d)!, { kind: 'skip' }, d); // address
   d = applyAnswer(nextStep(d)!, { kind: 'skip' }, d); // budget
+  d = applyAnswer(nextStep(d)!, { kind: 'skip' }, d); // critic
   expect(nextStep(d)).toBeNull();
 
   const input = toScaffoldInput(d, (wt) => wt);
@@ -255,6 +261,7 @@ test('new vertical: laundry total → wet-room tasks + curated add-ons, complete
   d = applyAnswer(nextStep(d)!, { kind: 'skip' }, d); // size
   d = applyAnswer(nextStep(d)!, { kind: 'skip' }, d); // address
   d = applyAnswer(nextStep(d)!, { kind: 'skip' }, d); // budget
+  d = applyAnswer(nextStep(d)!, { kind: 'skip' }, d); // critic
   expect(nextStep(d)).toBeNull();
 });
 

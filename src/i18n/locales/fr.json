@@ -2346,7 +2346,8 @@
         "contractor": "Décris le chantier avec tes mots et j'esquisse pièces et tâches — ou passe pour être guidé."
       },
       "addons": "Bien. On inclut souvent aussi ceci — veux-tu en ajouter ? (Facultatif.)",
-      "calc": "Veux-tu que je propose un calcul — heures de travail et coût selon tes taux et la taille de la pièce ? Tout reste modifiable dans le tableau de planification."
+      "calc": "Veux-tu que je propose un calcul — heures de travail et coût selon tes taux et la taille de la pièce ? Tout reste modifiable dans le tableau de planification.",
+      "critic": "Une dernière vérification — j'ai comparé ton plan à des projets similaires. Un pro poserait cette question :"
     },
     "complete": "Parfait — j'ai tout ce qu'il faut. Ton projet est prêt à être créé. Tu pourras tout ajuster ensuite.",
     "type": {
@@ -2463,7 +2464,13 @@
       "accept": "Directement au devis",
       "review": "Vérifier et ajuster le calcul"
     },
-    "populated": "Terminé ! Je l'ai ajouté à ton projet. 🎉"
+    "populated": "Terminé ! Je l'ai ajouté à ton projet. 🎉",
+    "critic": {
+      "checking": "Renaida revérifie le plan…",
+      "allGood": "J'ai revérifié le plan — il semble complet. ✓",
+      "add": "Ajouter",
+      "looksGood": "C'est bon ainsi"
+    }
   },
   "pipeline": {
     "quickQuote": "Devis rapide"
