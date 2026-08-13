@@ -2081,3 +2081,43 @@ created: 2026-08-13
 ---
 ## "Markera klart med notering" — explicit statusrapport
 Arbetaren kan inte lämna en explicit textuell klar-rapport: färdigt härleds ur ett foto eller 100%-slider. Lägg "Markera klart + kommentar" så ägaren får en strukturerad status hen kan lita på i en blick (och en tydlig hand-off-signal utöver awaiting_review).
+
+---
+id: comment-delete-missing
+status: todo
+priority: P2
+tags: [comments, worker, ux, moderation]
+created: 2026-08-13
+---
+## Kommentarer går inte att radera i UI:t (varken arbetare eller ägare)
+Cowork-fynd A1 (2026-08-13). En arbetares uppgiftsmeddelande — och kommentarer generellt — kan inte tas bort på någon yta: arbetarbubblan har inga kontroller, ägarens kommentarsflöde erbjuder bara emoji-reaktion, uppgiftsmodalen saknar tråd. Konsekvens: en felaktig/testfråga från en arbetare ligger kvar för alltid. Behöver en delete-affordans (minst för ägaren, ev. soft-delete) på kommentarer. (Cowork-testkommentaren städades via service-role denna gång.)
+
+---
+id: worker-comment-general-feed-attribution
+status: todo
+priority: P3
+tags: [worker, comments, attribution, bug]
+created: 2026-08-13
+---
+## Arbetar-meddelande fel-attribuerat i översiktens "General"-flöde
+Cowork-fynd A2 (2026-08-13). I ägarens Overview → Messages → "General" attribueras arbetarens meddelande till ÄGAREN (created_by), inte till "{namn} (worker)" via author_display_name — och visas som "General" i stället för kopplat till uppgiften. Notisen är korrekt. **Task_id-delen är FIXAD** (`9ad2a55` — meddelandet trådar nu under uppgiften). Kvar: det generella översiktsflödet bör rendera author_display_name för worker-poster (kolla vilken komponent som driver "General"-listan).
+
+---
+id: worker-msg-optimistic-double-render
+status: todo
+priority: P4
+tags: [worker, ux, cosmetic]
+created: 2026-08-13
+---
+## Arbetar-meddelande dubbelrenderas optimistiskt före reload
+Cowork-fynd A3 (2026-08-13). Ett skicka-klick visar meddelandet 2 ggr i arbetarens bubbeltråd ("ПОВІДОМЛЕННЯ (2)"); efter reload: 1 post, 1 notis, ingen dubbeldata. Ren optimistisk-render-dubblett i WorkerMessageInput/tråden. Kosmetiskt.
+
+---
+id: worker-preview-toggle-latency
+status: todo
+priority: P4
+tags: [worker, preview, ux, cosmetic]
+created: 2026-08-13
+---
+## Back-translation-toggle: sv→uk laddar om (~1-2s), uk→sv omedelbar
+Cowork-fynd B1 (2026-08-13). Toggeln i WorkerInstructionsView är asymmetrisk: att växla till arbetarens språk kör runtime-översättnings-passet (spinner), medan svenska (källtext) är omedelbar. Fungerar men inkonsekvent. Ev. cacha bägge språkens payload vid första hämtning så toggeln blir omedelbar åt båda håll. Lågprio.
