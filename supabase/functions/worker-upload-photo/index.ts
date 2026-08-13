@@ -212,10 +212,12 @@ serve(async (req) => {
       await sb.from("comments").insert({
         entity_type: "task",
         entity_id: taskId,
-        // project_id must be set for the owner's notification query (and the
-        // project-scoped comment feed) to see this hand-off — the other worker
-        // comment inserts already set it; this one used to omit it.
+        // project_id + task_id must both be set: project_id for the owner's
+        // notification query, task_id so the hand-off threads under the task in
+        // the owner's comment feed (CommentsSection queries by task_id). The
+        // other worker inserts set project_id; both were missing here.
         project_id: tokenRecord.project_id,
+        task_id: taskId,
         content: "📸 Worker submitted a completion photo for review.",
         author_display_name: workerLabel,
         created_by_user_id: tokenRecord.created_by_user_id,

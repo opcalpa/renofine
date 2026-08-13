@@ -124,6 +124,11 @@ serve(async (req) => {
         content: message || (voiceUrl ? `🎤 ${voiceUrl}` : ""),
         entity_type: "task",
         entity_id: taskId,
+        // Set task_id too: the OWNER's task comment thread (CommentsSection)
+        // queries by task_id, so without this the worker's question never
+        // threads under the task on the owner's side — it only surfaced via the
+        // notification. entity_type/entity_id stays for the worker's own view.
+        task_id: taskId,
         project_id: tokenRecord.project_id,
         created_by_user_id: tokenRecord.created_by_user_id,
         author_display_name: `${tokenRecord.worker_name} (worker)`,
