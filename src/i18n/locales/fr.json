@@ -2461,7 +2461,8 @@
     "quoteOffer": {
       "accept": "Directement au devis",
       "review": "Vérifier et ajuster le calcul"
-    }
+    },
+    "populated": "Terminé ! Je l'ai ajouté à ton projet. 🎉"
   },
   "pipeline": {
     "quickQuote": "Devis rapide"

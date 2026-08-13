@@ -5779,7 +5779,14 @@
     "lockedTitle": "Planning is locked",
     "lockedDescription": "The project has been activated and planning can no longer be edited. Additions and changes are made via Tasks or by creating a new quote.",
     "goToTasks": "Go to Tasks",
-    "newQuote": "New quote"
+    "newQuote": "New quote",
+    "chooseTitle": "How would you like to plan the project?",
+    "chooseSubtitle": "Pick whatever suits you — you can adjust everything afterwards.",
+    "chooseWizard": "Step-by-step guide",
+    "chooseWizardDesc": "Answer a few questions room by room and we'll build the plan for you.",
+    "chooseRenaida": "Chat with Renaida",
+    "chooseRenaidaDesc": "Describe the project freely, or drop in photos and documents — Renaida fills the plan.",
+    "chooseSkip": "I'll fill it in myself"
   },
   "externalQuotes": {
     "importQuote": "Import quote",
@@ -7033,6 +7040,7 @@
       "suggest": "Suggest a calculation",
       "self": "I'll do the math myself",
       "material": "material"
-    }
+    },
+    "populated": "Done! I've added it to your project. 🎉"
   }
 }

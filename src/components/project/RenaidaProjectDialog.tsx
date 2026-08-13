@@ -65,6 +65,14 @@ interface Props {
   userType?: UserType;
   /** Guests create local (localStorage) projects and can't use server voice. */
   isGuest?: boolean;
+  /**
+   * Co-existence: when set, Renaida POPULATES this already-existing project
+   * (rooms/tasks fold in via scaffold's existingProjectId path) instead of
+   * creating a new one — the same conversational flow, a different destination.
+   */
+  existingProjectId?: string;
+  /** Called after an existing project was populated (parent refreshes). */
+  onPopulated?: () => void;
 }
 
 /** Read a file as base64 (data-URI prefix stripped) for edge-function upload. */
@@ -85,7 +93,7 @@ interface Turn {
   answerLabel: string;
 }
 
-export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner', isGuest = false }: Props) {
+export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner', isGuest = false, existingProjectId, onPopulated }: Props) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [draft, setDraft] = useState<ProjectDraft>(emptyDraft());
@@ -634,7 +642,7 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
         setCreating(false);
         return;
       }
-      const result = await scaffoldProject(toScaffoldInput(draft, labelFor), profile.id);
+      const result = await scaffoldProject(toScaffoldInput(draft, labelFor, { existingProjectId }), profile.id);
       createdRef.current = true;
 
       // Inc 3: turn folder-dropped receipts into real purchase orders now that
@@ -685,6 +693,22 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
             })
           );
         }
+      }
+
+      // Populate-existing (co-existence): the project already existed, so this
+      // is NOT a creation (no project_created event, no quote-offer/navigation —
+      // the parent surface already shows the project). Refresh it and close.
+      if (existingProjectId) {
+        analytics.capture(AnalyticsEvents.RENAIDA_PROJECT_COMPLETED, {
+          user_type: userType,
+          mode: 'populate_existing',
+          room_count: draft.rooms.length,
+          task_count: draft.tasks.length,
+        });
+        toast.success(t('renaidaFlow.populated', 'Klart! Jag har lagt till det i ditt projekt. 🎉'));
+        onOpenChange(false);
+        onPopulated?.();
+        return;
       }
 
       analytics.capture(AnalyticsEvents.PROJECT_CREATED, {

@@ -5779,7 +5779,14 @@
     "lockedTitle": "Planeringen är låst",
     "lockedDescription": "Projektet har aktiverats och planeringen kan inte längre redigeras. Tillägg och ändringar görs via Arbeten eller genom en ny offert.",
     "goToTasks": "Gå till Arbeten",
-    "newQuote": "Ny offert"
+    "newQuote": "Ny offert",
+    "chooseTitle": "Hur vill du planera projektet?",
+    "chooseSubtitle": "Välj det som passar dig — du kan alltid justera allt efteråt.",
+    "chooseWizard": "Steg-för-steg-guide",
+    "chooseWizardDesc": "Svara på några frågor rum för rum så bygger vi planen åt dig.",
+    "chooseRenaida": "Chatta med Renaida",
+    "chooseRenaidaDesc": "Beskriv projektet fritt, eller släpp in foton och dokument — Renaida fyller planen.",
+    "chooseSkip": "Jag fyller i själv"
   },
   "externalQuotes": {
     "importQuote": "Importera offert",
@@ -7033,6 +7040,7 @@
       "suggest": "Föreslå kalkyl",
       "self": "Jag räknar själv",
       "material": "material"
-    }
+    },
+    "populated": "Klart! Jag har lagt till det i ditt projekt. 🎉"
   }
 }

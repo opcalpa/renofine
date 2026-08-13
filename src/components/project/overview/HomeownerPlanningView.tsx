@@ -24,6 +24,8 @@ import { ShareRfqDialog } from "./ShareRfqDialog";
 import { GuestLoginPrompt } from "@/components/guest/GuestLoginPrompt";
 import { StartProjectModal } from "./StartProjectModal";
 import { PlanningWizard } from "./planning-wizard/PlanningWizard";
+import { RenaidaProjectDialog } from "@/components/project/RenaidaProjectDialog";
+import { Sparkles as SparklesIcon, Wand2 } from "lucide-react";
 import { useGuestMode } from "@/hooks/useGuestMode";
 import { ImportQuotePopover, type ExternalQuote } from "./ImportQuotePopover";
 import { MaterialFormulaPopover } from "./MaterialFormulaPopover";
@@ -165,6 +167,9 @@ export function HomeownerPlanningView({
   const [loginPromptAction, setLoginPromptAction] = useState<"activate" | "share_rfq" | null>(null);
   const [showStartModal, setShowStartModal] = useState(false);
   const [wizardDismissed, setWizardDismissed] = useState(false);
+  // Empty-project planner choice (co-existence): pick the wizard or Renaida.
+  const [plannerChoice, setPlannerChoice] = useState<"none" | "wizard" | "renaida">("none");
+  const [renaidaPlanOpen, setRenaidaPlanOpen] = useState(false);
   // Latch: once we show the wizard, don't yank it away on background re-fetches
   const wizardShownRef = useRef(false);
 
@@ -574,12 +579,74 @@ export function HomeownerPlanningView({
   const showWizard = wizardShownRef.current && !wizardDismissed;
 
   if (showWizard) {
+    // Co-existence: an empty project can be planned with the step-by-step wizard
+    // OR by chatting with Renaida — both populate THIS project. Let the homeowner
+    // choose instead of forcing one.
+    if (plannerChoice === "wizard") {
+      return (
+        <PlanningWizard
+          projectId={projectId}
+          onComplete={() => { wizardShownRef.current = false; fetchTasks(); fetchRooms(); setWizardDismissed(true); }}
+          onSkip={() => { setPlannerChoice("none"); }}
+        />
+      );
+    }
     return (
-      <PlanningWizard
-        projectId={projectId}
-        onComplete={() => { wizardShownRef.current = false; fetchTasks(); fetchRooms(); setWizardDismissed(true); }}
-        onSkip={() => { wizardShownRef.current = false; setWizardDismissed(true); }}
-      />
+      <>
+        <div className="mx-auto max-w-2xl py-8 sm:py-12 text-center space-y-6">
+          <div>
+            <h2 className="text-xl font-medium tracking-tight">
+              {t("homeownerPlanning.chooseTitle", "Hur vill du planera projektet?")}
+            </h2>
+            <p className="mt-1.5 text-sm text-muted-foreground">
+              {t("homeownerPlanning.chooseSubtitle", "Välj det som passar dig — du kan alltid justera allt efteråt.")}
+            </p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 text-left">
+            <button
+              type="button"
+              onClick={() => setPlannerChoice("wizard")}
+              className="group rounded-xl border p-5 transition-colors hover:border-primary/50 hover:bg-primary/5"
+            >
+              <Wand2 className="h-6 w-6 text-primary" />
+              <div className="mt-3 font-medium">{t("homeownerPlanning.chooseWizard", "Steg-för-steg-guide")}</div>
+              <div className="mt-1 text-sm text-muted-foreground">
+                {t("homeownerPlanning.chooseWizardDesc", "Svara på några frågor rum för rum så bygger vi planen åt dig.")}
+              </div>
+            </button>
+            <button
+              type="button"
+              onClick={() => { setPlannerChoice("renaida"); setRenaidaPlanOpen(true); }}
+              className="group rounded-xl border p-5 transition-colors hover:border-primary/50 hover:bg-primary/5"
+            >
+              <SparklesIcon className="h-6 w-6 text-primary" />
+              <div className="mt-3 font-medium">{t("homeownerPlanning.chooseRenaida", "Chatta med Renaida")}</div>
+              <div className="mt-1 text-sm text-muted-foreground">
+                {t("homeownerPlanning.chooseRenaidaDesc", "Beskriv projektet fritt, eller släpp in foton och dokument — Renaida fyller planen.")}
+              </div>
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={() => { wizardShownRef.current = false; setWizardDismissed(true); }}
+            className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+          >
+            {t("homeownerPlanning.chooseSkip", "Jag fyller i själv")}
+          </button>
+        </div>
+        <RenaidaProjectDialog
+          open={renaidaPlanOpen}
+          onOpenChange={(o) => { setRenaidaPlanOpen(o); if (!o) setPlannerChoice("none"); }}
+          userType="homeowner"
+          existingProjectId={projectId}
+          onPopulated={() => {
+            wizardShownRef.current = false;
+            setWizardDismissed(true);
+            fetchTasks();
+            fetchRooms();
+          }}
+        />
+      </>
     );
   }
 

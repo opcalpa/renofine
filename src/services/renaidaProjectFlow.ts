@@ -607,15 +607,26 @@ export function assignUnattributedTasks(
 }
 
 /** Map the accumulated draft onto the shared scaffoldProject engine's input. */
-export function toScaffoldInput(draft: ProjectDraft, labelFor: WorkTypeLabeller): ScaffoldProjectInput {
+export function toScaffoldInput(
+  draft: ProjectDraft,
+  labelFor: WorkTypeLabeller,
+  opts?: { existingProjectId?: string }
+): ScaffoldProjectInput {
+  // Populate-existing mode (co-existence): fold the draft into a project that
+  // already exists (scaffold ignores `project` + leaves onboarding untouched).
+  const existingProjectId = opts?.existingProjectId;
   return {
-    project: {
-      name: draft.projectName?.trim() || 'Nytt projekt',
-      address: draft.address ?? null,
-      country: 'SE',
-      status: 'planning',
-      totalBudget: draft.totalBudget ?? null,
-    },
+    ...(existingProjectId
+      ? { existingProjectId }
+      : {
+          project: {
+            name: draft.projectName?.trim() || 'Nytt projekt',
+            address: draft.address ?? null,
+            country: 'SE',
+            status: 'planning',
+            totalBudget: draft.totalBudget ?? null,
+          },
+        }),
     rooms: draft.rooms.map((r) => ({
       name: r.name,
       ceilingHeightMm: r.ceilingHeightMm ?? null,

@@ -2461,7 +2461,8 @@
     "quoteOffer": {
       "accept": "Direkt zum Angebot",
       "review": "Kalkulation prüfen & anpassen"
-    }
+    },
+    "populated": "Fertig! Ich habe es zu deinem Projekt hinzugefügt. 🎉"
   },
   "pipeline": {
     "quickQuote": "Schnellangebot"

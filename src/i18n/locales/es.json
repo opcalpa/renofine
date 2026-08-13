@@ -2461,7 +2461,8 @@
     "quoteOffer": {
       "accept": "Directo al presupuesto",
       "review": "Revisar y ajustar el cálculo"
-    }
+    },
+    "populated": "¡Listo! Lo he añadido a tu proyecto. 🎉"
   },
   "pipeline": {
     "quickQuote": "Presupuesto rápido"

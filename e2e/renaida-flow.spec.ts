@@ -326,6 +326,26 @@ test('expert add-on: relocating the floor drain adds demolition + plumbing', () 
   expect(d.tasks.some((t) => t.workType === 'vvs')).toBe(true);
 });
 
+test('co-existence: toScaffoldInput populates an existing project (no project meta)', () => {
+  let d = emptyDraft();
+  d = applyAnswer(nextStep(d, 'homeowner')!, { kind: 'skip' }, d); // describe
+  d = applyAnswer(nextStep(d, 'homeowner')!, { kind: 'chips', ids: ['bathroom'], labels: ['Badrum'] }, d);
+  d = applyAnswer(nextStep(d, 'homeowner')!, { kind: 'chips', ids: ['surfaces'], labels: ['Kakel'] }, d);
+
+  // New-project mode (default): carries project meta, no existingProjectId.
+  const asNew = toScaffoldInput(d, (wt) => wt);
+  expect(asNew.project).toBeTruthy();
+  expect(asNew.existingProjectId).toBeUndefined();
+
+  // Populate-existing mode: existingProjectId set, project meta omitted, same rooms/tasks.
+  const asExisting = toScaffoldInput(d, (wt) => wt, { existingProjectId: 'proj-123' });
+  expect(asExisting.existingProjectId).toBe('proj-123');
+  expect(asExisting.project).toBeUndefined();
+  expect(asExisting.rooms).toEqual(asNew.rooms);
+  expect(asExisting.tasks).toEqual(asNew.tasks);
+  expect(asExisting.tasks.length).toBeGreaterThan(0);
+});
+
 test('E1 calc: contractor opt-in after size; homeowner never sees it', () => {
   // Contractor: bathroom + paint scope + a real room area → calc step appears.
   let c = emptyDraft();
