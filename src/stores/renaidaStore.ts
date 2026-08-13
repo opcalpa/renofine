@@ -31,6 +31,10 @@ interface RenaidaStoreState {
    *  share-target route) can open Renaida — not just her own floating button. */
   panelOpen: boolean;
   setPanelOpen: (open: boolean) => void;
+  /** Files handed over by the PWA share-target (/capture) — the panel consumes
+   *  them through the same D1 document flow as the paperclip button. */
+  pendingShareFiles: File[] | null;
+  setPendingShareFiles: (files: File[] | null) => void;
   /** Project identity — owned by ProjectDetail (lives for the whole project visit,
    *  across tab switches). Voice capture/apply/proactive all key off projectId. */
   setProject: (projectId: string, projectName?: string | null, projectCountry?: string | null) => void;
@@ -49,6 +53,8 @@ export const useRenaidaStore = create<RenaidaStoreState>((set) => ({
   autonomy: cachedAutonomy(),
   panelOpen: false,
   setPanelOpen: (open) => set({ panelOpen: open }),
+  pendingShareFiles: null,
+  setPendingShareFiles: (files) => set({ pendingShareFiles: files }),
   setProject: (projectId, projectName, projectCountry) =>
     set({ projectId, projectName: projectName ?? null, projectCountry: projectCountry ?? null }),
   clearProject: () =>

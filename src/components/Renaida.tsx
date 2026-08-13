@@ -1077,6 +1077,20 @@ export function Renaida() {
     }
   }, [capturing, loading, input, t, wakeRenaida, flashRenaida, setMessages]);
 
+  // PWA share-target handover: files stashed by /capture are consumed the
+  // moment the panel is open — the exact same D1 flow as the paperclip button.
+  const pendingShareFiles = useRenaidaStore((s) => s.pendingShareFiles);
+  useEffect(() => {
+    if (!open || !pendingShareFiles?.length) return;
+    useRenaidaStore.getState().setPendingShareFiles(null);
+    void (async () => {
+      for (const f of pendingShareFiles) {
+        // Sequential on purpose — each file appends its own message/proposal.
+        await handleDocumentSelected(f);
+      }
+    })();
+  }, [open, pendingShareFiles, handleDocumentSelected]);
+
   // D2: the dedicated review dialog finished importing — acknowledge in the feed
   // so the conversation reflects what actually happened, and nudge data consumers.
   const handleDocHandoffComplete = useCallback(() => {

@@ -35,4 +35,14 @@ if (typeof window !== 'undefined') {
   (window as unknown as { supabase: typeof supabase }).supabase = supabase;
 }
 
+// PWA share-target relay (public/sw.js) — a no-cache worker whose only job is
+// receiving "dela till Renofine" files and bouncing them to /capture → Renaida.
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => {
+      // PWA share is progressive enhancement — the app works fine without it.
+    });
+  });
+}
+
 createRoot(document.getElementById("root")!).render(<App />);

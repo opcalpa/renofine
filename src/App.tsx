@@ -51,6 +51,7 @@ const WorkerView = lazy(() => import("./pages/WorkerView"));
 const AtaApproval = lazy(() => import("./pages/AtaApproval"));
 const AttendanceCheckIn = lazy(() => import("./pages/AttendanceCheckIn"));
 const DocPlayground = lazy(() => import("./pages/_DocPlayground"));
+const Capture = lazy(() => import("./pages/Capture"));
 import { Renaida } from "./components/Renaida";
 import { BetaBanner } from "./components/BetaBanner";
 import { Canonical } from "./components/seo/Canonical";
@@ -118,6 +119,8 @@ const App = () => (
               <Route path="/changelog" element={<Changelog />} />
               <Route path="/feedback" element={<Feedback />} />
               <Route path="/find-pros" element={<FindProfessionals />} />
+              {/* PWA landing pad: shared files / home-screen shortcuts → Renaida */}
+              <Route path="/capture" element={<Suspense fallback={null}><Capture /></Suspense>} />
               <Route path="/intake/:token" element={<CustomerIntake />} />
               <Route path="/w/:token" element={<Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>}><WorkerView /></Suspense>} />
               <Route path="/ata/:token" element={<Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>}><AtaApproval /></Suspense>} />
