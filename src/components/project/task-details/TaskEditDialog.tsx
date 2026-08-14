@@ -203,6 +203,7 @@ export const TaskEditDialog = ({
   const [relatedPOs, setRelatedPOs] = useState<RelatedPurchaseOrder[]>([]);
   const [photoCount, setPhotoCount] = useState(0);
   const [commentCount, setCommentCount] = useState(0);
+  const [loggedHours, setLoggedHours] = useState(0);
   const [fieldPrefs, setFieldPrefs] = useState<Record<string, boolean>>(loadFieldPrefs);
 
   const updateFieldPref = useCallback((key: string, visible: boolean) => {
@@ -277,6 +278,15 @@ export const TaskEditDialog = ({
         .select("id", { count: "exact", head: true })
         .eq("task_id", data.id)
         .then(({ count }) => setCommentCount(count || 0));
+      // Logged hours on this task — the "light" home for time (esp. homeowner DIY
+      // hours Renaida logs; they have no Tid tab, so this is where they surface).
+      supabase
+        .from("time_entries")
+        .select("hours")
+        .eq("task_id", data.id)
+        .then(({ data: rows }) =>
+          setLoggedHours((rows ?? []).reduce((s, r) => s + Number(r.hours || 0), 0)),
+        );
 
       // Material spend = non-planned materials linked to this task
       const actualSpend = allMaterials
@@ -733,6 +743,7 @@ export const TaskEditDialog = ({
                 fieldPrefs={fieldPrefs}
                 photoCount={photoCount}
                 commentCount={commentCount}
+                loggedHours={loggedHours}
               />
             )}
             {tab === "economy" && (

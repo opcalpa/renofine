@@ -1067,7 +1067,9 @@
     "fieldSettingsTitle": "Show fields",
     "fieldInUse": "in use",
     "fieldHasContent": "Has content — always shown",
-    "fieldSettingsHint": "Fields with content are always shown. Applies only to you, on this device."
+    "fieldSettingsHint": "Fields with content are always shown. Applies only to you, on this device.",
+    "loggedTime": "Logged time",
+    "ofEstimatedHours": "of ~{{hours}} h"
   },
   "tasksTable": {
     "columns": "Columns",

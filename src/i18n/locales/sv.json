@@ -1067,7 +1067,9 @@
     "fieldSettingsTitle": "Visa fält",
     "fieldInUse": "används",
     "fieldHasContent": "Har innehåll — visas alltid",
-    "fieldSettingsHint": "Fält med innehåll visas alltid. Gäller bara dig, på den här enheten."
+    "fieldSettingsHint": "Fält med innehåll visas alltid. Gäller bara dig, på den här enheten.",
+    "loggedTime": "Loggad tid",
+    "ofEstimatedHours": "av ~{{hours}} h"
   },
   "tasksTable": {
     "columns": "Kolumner",

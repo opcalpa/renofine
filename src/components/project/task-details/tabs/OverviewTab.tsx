@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Info } from "lucide-react";
+import { Info, Clock } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
@@ -37,6 +37,8 @@ interface OverviewTabProps {
   fieldPrefs: Record<string, boolean>;
   photoCount: number;
   commentCount: number;
+  /** Total hours logged against this task (time_entries). */
+  loggedHours: number;
 }
 
 export function OverviewTab({
@@ -55,6 +57,7 @@ export function OverviewTab({
   fieldPrefs,
   photoCount,
   commentCount,
+  loggedHours,
 }: OverviewTabProps) {
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
@@ -176,6 +179,25 @@ export function OverviewTab({
         `${dependencies.length} ${dependencies.length === 1 ? t("tasks.dependencyOne", "beroende") : t("tasks.dependencyMany", "beroenden")}`,
         onShowRelated,
       )}
+    </div>
+  );
+
+  // Logged time — the "light" home for hours (esp. homeowner DIY, who have no
+  // Tid tab). Read-only summary; logging happens via Renaida or the Tid tab.
+  const estimated = typeof task.estimated_hours === "number" ? task.estimated_hours : null;
+  const loggedTimeSection = loggedHours > 0 && (
+    <div className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm"
+      style={{ borderColor: "var(--rf-hairline)", background: "var(--rf-paper-2)" }}>
+      <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
+      <span className="rf-section-label">{t("tasks.loggedTime", "Loggad tid")}</span>
+      <span className="ml-auto font-medium tabular-nums">
+        {loggedHours} {t("timeTracking.hoursShort", "h")}
+        {estimated ? (
+          <span className="ml-1 font-normal text-muted-foreground">
+            {t("tasks.ofEstimatedHours", "av ~{{hours}} h", { hours: estimated })}
+          </span>
+        ) : null}
+      </span>
     </div>
   );
 
@@ -350,6 +372,7 @@ export function OverviewTab({
         </>
       )}
 
+      {loggedTimeSection}
       {showField("photos", photoCount > 0) && photosSection}
       {showField("quickInfo", relatedPOCount > 0 || dependencies.length > 0) && quickInfo}
       {showField("comments", commentCount > 0) && commentsSection}
