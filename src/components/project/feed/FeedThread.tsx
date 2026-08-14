@@ -33,9 +33,11 @@ interface FeedThreadProps {
   projectId: string;
   onNavigate?: (comment: FeedComment) => void;
   onCommentPosted: () => void;
+  currentProfileId?: string | null;
+  onCommentDeleted?: (commentId: string) => void;
 }
 
-export const FeedThread = ({ group, projectId, onNavigate, onCommentPosted }: FeedThreadProps) => {
+export const FeedThread = ({ group, projectId, onNavigate, onCommentPosted, currentProfileId, onCommentDeleted }: FeedThreadProps) => {
   const { t, i18n } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const [replyTarget, setReplyTarget] = useState<FeedComment | null>(null);
@@ -129,6 +131,8 @@ export const FeedThread = ({ group, projectId, onNavigate, onCommentPosted }: Fe
               translatedContent={translationsEnabled ? getTranslatedContent(comment.id, comment.content) : undefined}
               onReply={() => setReplyTarget(group.firstComment)}
               onNavigate={onNavigate}
+              currentProfileId={currentProfileId}
+              onDeleted={onCommentDeleted}
             />
           </div>
         ))}

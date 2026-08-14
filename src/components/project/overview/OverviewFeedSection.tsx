@@ -8,6 +8,7 @@ import { ActivityCard } from "../feed/ActivityCard";
 import { FeedReplyInput } from "../feed/FeedReplyInput";
 import { fetchAllProjectComments, fetchProjectActivities, mergeIntoUnifiedFeed } from "../feed/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { useCurrentProfileId } from "@/hooks/useCurrentProfileId";
 import { formatDistanceToNow } from "date-fns";
 import { getDateLocale } from "@/lib/dateFnsLocale";
 import type { FeedComment, ActivityLogItem, UnifiedFeedItem, FeedFilterMode, PhotoFeedItem } from "../feed/types";
@@ -173,6 +174,11 @@ export function OverviewFeedSection({
   const [loading, setLoading] = useState(true);
   const [filterMode, setFilterMode] = useState<FeedFilterMode>("all");
   const [replyingTo, setReplyingTo] = useState<FeedComment | null>(null);
+  const currentProfileId = useCurrentProfileId();
+
+  const handleCommentDeleted = (commentId: string) => {
+    setComments((prev) => prev.filter((c) => c.id !== commentId));
+  };
 
   const loadData = useCallback(async () => {
     try {
@@ -291,6 +297,8 @@ export function OverviewFeedSection({
             comment={item.comment}
             onNavigate={onNavigateToEntity}
             onReply={handleReply}
+            currentProfileId={currentProfileId}
+            onDeleted={handleCommentDeleted}
           />
           {isReplyingToThis && (
             <div className="ml-11">

@@ -565,6 +565,7 @@ export function ProjectChatSection({ projectId, userType, onNavigateToEntity, on
           onReply={handleReply}
           currentProfileId={currentProfileId}
           projectId={projectId}
+          onDeleted={(id) => setComments((prev) => prev.filter((c) => c.id !== id))}
         />
       );
     }

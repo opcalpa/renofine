@@ -9,6 +9,7 @@ import { FeedCommentCard } from "./feed/FeedCommentCard";
 import { ActivityCard } from "./feed/ActivityCard";
 import { GeneralCommentInput } from "./feed/GeneralCommentInput";
 import { fetchAllProjectComments, groupComments, parseMentions, fetchProjectActivities, mergeIntoUnifiedFeed } from "./feed/utils";
+import { useCurrentProfileId } from "@/hooks/useCurrentProfileId";
 import type { FeedComment, FeedThreadGroup, ActivityLogItem, FeedFilterMode, UnifiedFeedItem } from "./feed/types";
 
 interface ProjectFeedTabProps {
@@ -87,6 +88,11 @@ const ProjectFeedTab = ({ projectId, onNavigateToEntity, restrictToUserId }: Pro
   const [filteredGroups, setFilteredGroups] = useState<FeedThreadGroup[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [filterMode, setFilterMode] = useState<FeedFilterMode>("all");
+  const currentProfileId = useCurrentProfileId();
+
+  const handleCommentDeleted = (commentId: string) => {
+    setComments((prev) => prev.filter((c) => c.id !== commentId));
+  };
 
   const loadData = async () => {
     try {
@@ -176,6 +182,8 @@ const ProjectFeedTab = ({ projectId, onNavigateToEntity, restrictToUserId }: Pro
             comment={item.comment}
             onNavigate={onNavigateToEntity}
             projectId={projectId}
+            currentProfileId={currentProfileId}
+            onDeleted={handleCommentDeleted}
           />
         );
       }
@@ -215,6 +223,8 @@ const ProjectFeedTab = ({ projectId, onNavigateToEntity, restrictToUserId }: Pro
                 projectId={projectId}
                 onNavigate={onNavigateToEntity}
                 onCommentPosted={loadData}
+                currentProfileId={currentProfileId}
+                onCommentDeleted={handleCommentDeleted}
               />
             ))
           )
