@@ -2154,10 +2154,12 @@ Carls screenshot 14 aug: "plottrigt i mobil att scrolla för alla funktioner så
 
 ---
 id: renaida-review-inline-edit
-status: todo
+status: done
 priority: P2
 tags: [renaida, projektfödelse, fas-b, granska, screenshot-fynd]
 created: 2026-08-14
 ---
 ## Fas B inc3: inline-edit i "Granska innan du skapar" (rumsnamn, yta, task-titlar)
 Carls screenshot 14 aug: "Låt användare klicka och redigera namn o värden i dessa Granska-lägen." = exakt Fas B inc3 ur [[renaida-projektfodelse-multimodal]]. Kartlagt: draft-state + fält finns (DraftRoom.name/areaSqm, DraftTask.customTitle via taskTitle()-härledning), MEN inga generiska setters i renaidaProjectFlow.ts (bara stegbunden applyAnswer) och inget edit-läge i TaskReviewList/rum-raderna (RenaidaProjectDialog.tsx:1234-1305, 1397-1448). FÄRDIG MALL: AIProjectImportModal.tsx:471-767 har exakt mönstret (editingIndex + updateRoom/updateTask + blyerts-toggle). OBS: titel-edit måste skriva customTitle (annars skrivs den över av workType-labeln). Rum-raden finns i BÅDE mobil- och desktop-grenen → bryt ut delad EditableRoomRow (single-source). Bonus: täcker automatiskt mapp-ingest + critic-flaggornas resultat (samma draft).
+
+**✅ LEVERERAT 2026-08-14 (`459962e`):** delad EditableRoomRow (rum namn+yta) + TaskReviewList edit-läge; rena helpers updateDraftRoom (döp om → task-roomName följer) + renameDraftTask (customTitle). Enhetstest + live-verifierad gäst-dialog. 20/20 flow + 39/39 renaida gröna.
