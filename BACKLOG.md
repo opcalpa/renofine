@@ -1603,6 +1603,31 @@ Audit-fynd: `RoomItemsSection.tsx` add/edit-dialog är halvfärdig utanför el. 
 LEVERERAT 2026-07-28 (`bdb99cc`): (a) subtyp för alla kategorier (härledd ur getObjectsByCategory); (b) finish-fält i dialogen + på raden; (c) referensbild per objekt (upload→detail.image_url, thumbnail i dialog+rad, renderas i arbetarvyns ObjectInfoCard). place-on-plan gatas fortsatt electrical (utökning = follow-up).
 
 ---
+id: room-delete-canvas-no-persist-freeze
+status: todo
+priority: P2
+tags: [floorplanner, canvas, bug, data-integrity, objekt-instruktions-audit]
+created: 2026-08-14
+---
+## Rumsradering: canvas-radering persisterar aldrig + möjlig renderar-freeze
+Ur objekt-instruktions-auditens (2026-08-04) buggflagga, **re-verifierad mot kod 2026-08-14** (3 agenter). Två separata, äkta, fortfarande närvarande problem (inget commit rört rumsradering sedan 2026-08-01):
+
+1. **Canvas "Ta bort markerade" raderar ALDRIG rummet server-side (definitivt, kod-verifierat).** `onDeleteSelection` (`UnifiedKonvaCanvas.tsx:4279-4314`) muterar bara Konva-storet (`deleteShapes` + väggregen), anropar aldrig `supabase.from("rooms").delete()`. Användaren markerar rumspolygonen, raderar, ser den försvinna — men `rooms`-raden (+ dess cascade) finns kvar i DB/rumslistan. Datakonfusion. Produktfråga: SKA canvas-radering av en rumspolygon radera DB-rummet, eller bara skissen? Om ja → koppla in rooms-delete + bekräftelse; om nej → förhindra att rumspolygoner plockas i bulk-delete.
+2. **Renderar-freeze (hypotes, ej statiskt bevisad — kräver runtime-repro).** Delad post-delete-cleanup (`deleteShapes`+`regenerateAutoWalls`, `store.ts:395-444`) re-fyrar effekten `UnifiedKonvaCanvas.tsx:701-710` (global CustomEvent på varje shapes-ändring) + comment-fetch + autosave; om någon lyssnare skriver tillbaka i `shapes` → obunden synkron re-render låser main-tråden. Panel-vägen (`useRoomForm.ts:267-300`, `ProjectDetail.tsx:728-788`) fyrar DELETE före ev. freeze → kan committa men toast/setRoomsData körs aldrig ("blir aldrig klar"). Bekräfta med React-profiler / `console.count` på :701-710-effekten under radering.
+
+**Latent relaterat:** rumslistans bulk-delete (`RoomsList.tsx:193-210`, `rooms-list-v2/RoomsListV2.tsx:234-252`) loopar `onDeleteRoom` som var för sig poppar egen `confirm()` → N blockerande confirm-dialoger, ej awaitade. DB-cascade är frisk (FK ON DELETE CASCADE/SET NULL verifierat) — problemet är helt klient-sida.
+
+---
+id: worker-view-ui-chrome-i18n
+status: todo
+priority: P3
+tags: [worker, i18n, arbetarvy, objekt-instruktions-audit]
+created: 2026-08-14
+---
+## Arbetarvyns UI-chrome blandar sv/en för icke-sv/en arbetare (Fas 6c)
+Audit-fynd (2026-08-04) för polsk arbetare: task-status + objekt-typnamn översätts (polska), men UI-chromen är en blandning av **svenska** ("UPPGIFT"/"RUM"/"Dela foto") och **engelska** ("Request purchase"/"Mark complete + photo"/"Take photo"/"PHOTOS"/"MESSAGES"/"Ceiling"/"Colour/finish"/"Planned"/"Electrical"/"Plumbing"). Distinkt från [[worker-freetext-translation]] (som gäller fritext-INNEHÅLL: väggnoteringar/finish/bildtexter — objekt-finish är KLART där). Detta = statiska UI-etiketter i `/w/:token`-vyn som inte följer arbetarens inbjudna språk (troligen hårdkodade strängar ELLER ofullständig pl-locale + en-fallback). **Verifiera rotorsak i kod först** (WorkerView + roomObjectShared + WorkerTaskCard: hårdkodat vs `t()` med saknade pl-nycklar), åtgärda sedan. Urholkar arbetar-språk-löftet.
+
+---
 id: worker-object-markers-icons-images
 status: done
 priority: P3
