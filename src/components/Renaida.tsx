@@ -693,9 +693,23 @@ export function Renaida() {
     // Each bullet that created or changed an object IS the link to it (Carl
     // 9 Jul) — created rooms/tasks/orders and edited tasks open on tap.
     const pathForProposal = (p: AgentProposal): string | undefined => {
+      const isHomeowner = userType === "homeowner";
       const created = result.created.find((c) => c.proposalId === p.id);
       if (created) {
         if (created.type === "room") return `/projects/${projectId}?room=${created.id}`;
+        if (created.type === "time") {
+          // Homeowners have no Tid tab (module-gated) — fall back to the task
+          // the log sits on, or skip the link rather than land on "Ingen behörighet"
+          if (!isHomeowner) return `/projects/${projectId}?tab=timetracking&entityId=${created.id}`;
+          const a = p.action;
+          if (a.type === "log_time" && a.taskId) return `/projects/${projectId}?tab=tasks&entityId=${a.taskId}`;
+          return undefined;
+        }
+        if (created.type === "purchase" && isHomeowner) {
+          // Purchases tab is module-gated off for homeowners — Budget is their
+          // money surface (same trap as the Beställningar overview shortcut)
+          return `/projects/${projectId}?tab=budget`;
+        }
         return `/projects/${projectId}?tab=${created.type === "purchase" ? "purchases" : "tasks"}&entityId=${created.id}`;
       }
       const a = p.action;
@@ -1360,8 +1374,11 @@ export function Renaida() {
   return (
     <>
       {/* FAB — hidden on mobile /start, where the bottom nav's Renaida slot is
-          the entry (one clear door per surface, no double affordance). */}
-      {!open && !(isMobile && location.pathname === "/start") && (
+          the entry (one clear door per surface, no double affordance). Also
+          hidden in the mobile floor-planner editor: the bottom-right corner is
+          already taken by the zoom pill and the FAB stacked on top of it,
+          covering the canvas empty-state cards (Carl's screenshot 14 aug). */}
+      {!open && !(isMobile && (location.pathname === "/start" || location.search.includes("subtab=floorplan"))) && (
         <button
           onClick={() => setOpen(true)}
           className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-4 md:bottom-6 md:right-6 z-50 h-14 w-14 rounded-full shadow-lg bg-white border-2 border-primary/20 hover:border-primary/40 transition-colors flex items-center justify-center"

@@ -710,14 +710,14 @@ export function PlanningRoomList({ projectId, locked = false, onRoomChange }: Pl
                           }}
                           disabled={addingLoading}
                         />
-                        <Button type="submit" size="sm" variant="ghost" className="h-7 text-xs" disabled={!newName.trim() || addingLoading}>
+                        <Button type="submit" size="sm" className="h-8 sm:h-7 text-xs" disabled={!newName.trim() || addingLoading}>
                           {t("common.add", "Add")}
                         </Button>
                         <Button
                           type="button"
                           size="sm"
-                          variant="ghost"
-                          className="h-7 text-xs text-muted-foreground"
+                          variant="outline"
+                          className="h-8 sm:h-7 text-xs text-muted-foreground"
                           onClick={() => { setIsAdding(false); setNewName(""); }}
                         >
                           {t("common.cancel")}

@@ -55,7 +55,9 @@ export function CanvasEmptyState({
   };
 
   return (
-    <div className="pointer-events-none absolute inset-0 flex items-center justify-center z-10">
+    // pb-36 on mobile shifts the card stack up, clear of the fixed zoom pill
+    // (bottom-24) that otherwise overlaps the bottom card + hint text
+    <div className="pointer-events-none absolute inset-0 flex items-center justify-center z-10 pb-36 sm:pb-0">
       <div className="pointer-events-auto flex flex-col items-center gap-5 max-w-sm w-full mx-4">
         {/* Heading */}
         <div className="text-center">

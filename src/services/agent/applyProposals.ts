@@ -15,7 +15,7 @@ import type { ActionableProposal, AgentProposal, UndoOp } from "./types";
 import { isActionable } from "./types";
 
 export interface CreatedRef {
-  type: "task" | "purchase" | "room";
+  type: "task" | "purchase" | "room" | "time";
   id: string;
   title: string;
   /** Which accepted proposal produced this object — lets the receipt link its bullet. */
@@ -464,6 +464,10 @@ export async function applyProposals(
         result.created.push({ type: "room", id: undo.roomId, title: proposal.action.name, proposalId: proposal.id });
       } else if (undo.kind === "delete_import_purchase" && proposal.action.type === "import_purchase") {
         result.created.push({ type: "purchase", id: undo.purchaseOrderId, title: proposal.action.vendorName, proposalId: proposal.id });
+      } else if (undo.kind === "delete_time" && proposal.action.type === "log_time") {
+        // Time entries are created objects too — without this ref the receipt
+        // bullet ("Loggar fem timmar…") had nothing to link to (Carl 14 aug)
+        result.created.push({ type: "time", id: undo.timeEntryId, title: proposal.summary, proposalId: proposal.id });
       }
       // Changed-in-place tasks → refs for "open & edit" links next to Undo
       switch (undo.kind) {

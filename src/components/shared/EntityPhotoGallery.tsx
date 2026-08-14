@@ -301,7 +301,7 @@ export function EntityPhotoGallery({ entityId, entityType, projectId, storagePat
           <Label>{t('entityPhotos.photosAndDocuments')}</Label>
         </div>
         <div className="text-xs text-gray-500">
-          {photos.length} {t('entityPhotos.fileCount', { count: photos.length })}
+          {t('entityPhotos.fileCount', { count: photos.length })}
         </div>
       </div>
 

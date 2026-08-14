@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthSession } from "@/hooks/useAuthSession";
@@ -15,6 +15,9 @@ interface TimeTrackingTabProps {
   projectId: string;
   isReadOnly: boolean;
   userType: string;
+  /** Deep-link target (?entityId=) — highlights + scrolls to that time entry. */
+  openEntityId?: string | null;
+  onEntityOpened?: () => void;
 }
 
 interface TimeEntry {
@@ -39,7 +42,7 @@ interface Task {
   hourly_rate: number | null;
 }
 
-export function TimeTrackingTab({ projectId, isReadOnly, userType }: TimeTrackingTabProps) {
+export function TimeTrackingTab({ projectId, isReadOnly, userType, openEntityId, onEntityOpened }: TimeTrackingTabProps) {
   const { t } = useTranslation();
   const { user } = useAuthSession();
   const { toast } = useToast();
@@ -61,6 +64,24 @@ export function TimeTrackingTab({ projectId, isReadOnly, userType }: TimeTrackin
     (!isTeamV2MaskingEnabled() ||
       viewerMode === "full" ||
       projectId === PUBLIC_DEMO_PROJECT_ID);
+
+  // Deep-link highlight (?entityId= — e.g. Renaida's receipt link to a logged
+  // entry). Consumed once via ref — NOT via state in the deps array, which
+  // self-cancels on re-render (the addons-spinner lesson, s68).
+  const [highlightedId, setHighlightedId] = useState<string | null>(null);
+  const consumedEntityRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!openEntityId || loading || consumedEntityRef.current === openEntityId) return;
+    if (!entries.some((e) => e.id === openEntityId)) return;
+    consumedEntityRef.current = openEntityId;
+    setHighlightedId(openEntityId);
+    onEntityOpened?.();
+    requestAnimationFrame(() => {
+      document.getElementById(`time-entry-${openEntityId}`)?.scrollIntoView({ block: "center", behavior: "smooth" });
+    });
+    const timer = setTimeout(() => setHighlightedId(null), 4000);
+    return () => clearTimeout(timer);
+  }, [openEntityId, loading, entries, onEntityOpened]);
 
   const fetchData = useCallback(async () => {
     if (!user) { setLoading(false); return; }
@@ -325,7 +346,8 @@ export function TimeTrackingTab({ projectId, isReadOnly, userType }: TimeTrackin
                   {weekEntries.map((entry, i) => (
                     <div
                       key={entry.id}
-                      className={`flex items-center gap-3 px-4 py-3 text-sm ${i > 0 ? "border-t" : ""} ${entry.approved ? "bg-muted/30" : ""}`}
+                      id={`time-entry-${entry.id}`}
+                      className={`flex items-center gap-3 px-4 py-3 text-sm transition-colors ${i > 0 ? "border-t" : ""} ${entry.approved ? "bg-muted/30" : ""} ${highlightedId === entry.id ? "bg-primary/10 ring-1 ring-inset ring-primary/40" : ""}`}
                     >
                       {/* Date */}
                       <div className="w-20 shrink-0 text-muted-foreground tabular-nums">

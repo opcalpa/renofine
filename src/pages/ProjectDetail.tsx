@@ -345,6 +345,20 @@ const ProjectDetail = () => {
     setSearchParams(params, { replace: true });
   }, [activeTab, activeSubTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Atomic tab navigation: update state AND the URL in the same commit. A bare
+  // setActiveTab() while ?tab=/?subtab= still point at the old tab makes the
+  // URL→state sync effect above see a mismatch and bounce the change straight
+  // back (the "dead Tillbaka button in the floor planner" bug). Any programmatic
+  // tab jump from a tab that carries URL params MUST go through this helper.
+  const navigateToTab = (tab: string, subTab: string | null = null) => {
+    setActiveTab(tab);
+    setActiveSubTab(subTab);
+    const params: Record<string, string> = {};
+    if (tab !== "overview") params.tab = tab;
+    if (tab === "spaceplanner" && subTab) params.subtab = subTab;
+    setSearchParams(params, { replace: true });
+  };
+
   // Client in quote phase → redirect to quote (they can only see the quote until accepted)
   const isQuotePhase = ["planning", "quote_created", "quote_sent"].includes(project?.status ?? "");
   useEffect(() => {
@@ -1301,6 +1315,7 @@ const ProjectDetail = () => {
                 isPlanningContributor={permissions.isPlanningContributor}
                 purchasesAccess={permissions.purchases}
                 overviewAccess={permissions.overview}
+                purchasesTabEnabled={!isTabBlocked("purchases")}
                 onProjectUpdate={isGuest ? loadGuestData : loadData}
                 onNavigateToEntity={handleFeedNavigate}
                 onNavigateToPurchases={(materialId?: string) => {
@@ -1343,9 +1358,9 @@ const ProjectDetail = () => {
                   projectId={project.id}
                   projectName={project.name}
                   onBack={() => {
-                    // Restore previous tab (where user was before entering floor planner)
-                    setActiveTab(previousTab.tab);
-                    setActiveSubTab(previousTab.subTab);
+                    // Restore previous tab (where user was before entering floor
+                    // planner) — atomically, or the URL sync bounces us back here
+                    navigateToTab(previousTab.tab, previousTab.subTab);
                   }}
                   backLabel={previousTab.label}
                   isReadOnly={permissions.spacePlanner === 'view'}
@@ -1482,6 +1497,8 @@ const ProjectDetail = () => {
                 projectId={project.id}
                 isReadOnly={permissions.timeTracking === "view"}
                 userType={effectiveUserType}
+                openEntityId={openEntityId}
+                onEntityOpened={() => setOpenEntityId(null)}
               />
             </div>
           )}
@@ -1520,10 +1537,16 @@ const ProjectDetail = () => {
                   projectName={project.name}
                   projectAddress={project.address}
                   currency={project.currency}
-                  onActivate={permissions.isPlanningContributor ? undefined : (isGuest ? loadGuestData : loadData)}
+                  onActivate={permissions.isPlanningContributor ? undefined : () => {
+                    // Activation = the project's big moment: land on the new
+                    // Översikt instead of staying on the now-locked Planering
+                    (isGuest ? loadGuestData : loadData)();
+                    navigateToTab("overview");
+                  }}
                   contributorMode={permissions.isPlanningContributor}
                   locked={!isQuotePhase}
-                  onNavigateTab={(tab) => setActiveTab(tab)}
+                  canOpenPurchases={!isTabBlocked("purchases")}
+                  onNavigateTab={(tab) => navigateToTab(tab)}
                 />
               ) : (
                 <div className="space-y-6">
@@ -1532,7 +1555,10 @@ const ProjectDetail = () => {
                     currency={project.currency}
                     isHomeowner={false}
                     onCreateQuote={() => setQuoteDialogOpen(true)}
-                    onActivateProject={isGuest ? loadGuestData : loadData}
+                    onActivateProject={() => {
+                      (isGuest ? loadGuestData : loadData)();
+                      navigateToTab("overview"); // land on Översikt after activation
+                    }}
                     locked={!isQuotePhase}
                     roomsVersion={roomsVersion}
                   />
@@ -1665,8 +1691,13 @@ const ProjectDetail = () => {
           activeTab={activeTab}
           activeSubTab={activeSubTab}
           onTabChange={(tab, subTab) => {
-            setActiveTab(tab);
-            setActiveSubTab(subTab ?? null);
+            // Save where we came from before entering the floor planner so its
+            // Tillbaka button can restore it (desktop's handleMenuSelect already
+            // does this; mobile previously always fell back to Översikt)
+            if (tab === "spaceplanner" && activeTab !== "spaceplanner") {
+              setPreviousTab({ tab: activeTab, subTab: activeSubTab, label: getTabLabelKey(activeTab) });
+            }
+            navigateToTab(tab, subTab ?? null);
           }}
           isTabBlocked={isTabBlocked}
           isQuotePhase={isQuotePhase}

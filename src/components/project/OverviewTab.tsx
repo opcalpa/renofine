@@ -91,6 +91,9 @@ interface OverviewTabProps {
   isPlanningContributor?: boolean;
   purchasesAccess?: string;
   overviewAccess?: string;
+  /** False when the purchases tab is module-gated off for this role (homeowner) —
+      hides shortcuts that would land on "Ingen behörighet". */
+  purchasesTabEnabled?: boolean;
   onProjectUpdate?: () => void;
   onNavigateToEntity?: (comment: FeedComment) => void;
   onNavigateToPurchases?: (materialId?: string) => void;
@@ -109,6 +112,7 @@ const OverviewTab = ({
   isPlanningContributor = false,
   purchasesAccess = 'none',
   overviewAccess = 'none',
+  purchasesTabEnabled = true,
   onProjectUpdate,
   onNavigateToEntity,
   onNavigateToPurchases,
@@ -475,13 +479,16 @@ const OverviewTab = ({
           currency={project.currency}
           isBuilder={!isHomeowner}
           loading={overviewLoading}
+          showOrders={purchasesTabEnabled}
       />
 
-      <UpcomingPaymentsWidget
-        projectId={project.id}
-        currency={project.currency}
-        onNavigateToPurchases={onNavigateToPurchases ? (poId) => onNavigateToPurchases(poId) : undefined}
-      />
+      {purchasesTabEnabled && (
+        <UpcomingPaymentsWidget
+          projectId={project.id}
+          currency={project.currency}
+          onNavigateToPurchases={onNavigateToPurchases ? (poId) => onNavigateToPurchases(poId) : undefined}
+        />
+      )}
 
       {/* Projektets kund (CRM-link) — proffs owner only */}
       {!isHomeowner && isProjectOwner && (

@@ -13,6 +13,8 @@ interface PulseCardsProps {
   currency?: string | null;
   isBuilder?: boolean;
   loading?: boolean;
+  /** False when the purchases tab is module-gated off for the viewer's role. */
+  showOrders?: boolean;
 }
 
 function getTaskColor(percentage: number): string {
@@ -68,13 +70,14 @@ export function PulseCards({
   currency,
   isBuilder,
   loading,
+  showOrders = true,
 }: PulseCardsProps) {
   const { t } = useTranslation();
   const PLACEHOLDER = "—";
 
   return (
     <div className="rounded-xl border bg-card overflow-hidden">
-      <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-border">
+      <div className={`grid grid-cols-2 ${showOrders ? "lg:grid-cols-4" : "lg:grid-cols-3"} divide-x divide-border`}>
       {/* Tasks Card */}
       <button
         type="button"
@@ -220,7 +223,9 @@ export function PulseCards({
         </div>
       </button>
 
-      {/* Orders Card */}
+      {/* Orders Card — hidden when the purchases tab is module-gated off for the
+          role (homeowner): the click landed on "Ingen behörighet" otherwise */}
+      {showOrders && (
       <button
         type="button"
         className="cursor-pointer min-w-0 text-left hover:bg-accent/50 transition-colors"
@@ -245,6 +250,7 @@ export function PulseCards({
           </p>
         </div>
       </button>
+      )}
       </div>
     </div>
   );

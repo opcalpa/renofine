@@ -128,6 +128,9 @@ interface HomeownerPlanningViewProps {
   contributorMode?: boolean;
   /** When true, planning is read-only because the project has been activated */
   locked?: boolean;
+  /** False when the purchases tab is module-gated off for this role — hides the
+      "Ny offert"-shortcut that would land on "Ingen behörighet". */
+  canOpenPurchases?: boolean;
   /** Callback to navigate to another tab */
   onNavigateTab?: (tab: string) => void;
   reminders?: ProjectReminder[];
@@ -149,6 +152,7 @@ export function HomeownerPlanningView({
   onActivate,
   contributorMode = false,
   locked = false,
+  canOpenPurchases = true,
   onNavigateTab,
   reminders = [],
   onDismissReminder,
@@ -651,7 +655,9 @@ export function HomeownerPlanningView({
   }
 
   return (
-    <div className={cn("space-y-6", locked && "select-none")}>
+    // pb-24 on mobile: clearance so the fixed Renaida FAB (bottom-right) can't
+    // cover the last interactive row ("+ Lägg till rum") when scrolled to bottom
+    <div className={cn("space-y-6 pb-24 md:pb-0", locked && "select-none")}>
       {/* Locked banner — project has been activated */}
       {locked && (
         <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-5 flex flex-col sm:flex-row gap-4 items-start">
@@ -672,7 +678,7 @@ export function HomeownerPlanningView({
                   {t("homeownerPlanning.goToTasks", "Gå till Arbeten")}
                 </Button>
               )}
-              {onNavigateTab && (
+              {onNavigateTab && canOpenPurchases && (
                 <Button variant="outline" size="sm" className="gap-1.5 border-amber-300 hover:bg-amber-100/60" onClick={() => onNavigateTab("purchases")}>
                   <Send className="h-3.5 w-3.5" />
                   {t("homeownerPlanning.newQuote", "Ny offert")}
@@ -813,7 +819,7 @@ export function HomeownerPlanningView({
                 <thead className="sticky top-0 z-20">
                   <tr className="bg-muted border-b" onContextMenu={(e) => { e.preventDefault(); setHeaderMenu({ x: e.clientX, y: e.clientY }); }}>
                     <th className="px-3 py-2.5 kicker text-left min-w-[140px]">{t("planningTasks.task", "Task")}</th>
-                    {show.description && <th className="px-3 py-2.5 kicker text-left min-w-[120px]">{t("tasks.description", "Description")}</th>}
+                    {show.description && <th className="px-3 py-2.5 kicker text-left min-w-[120px] hidden sm:table-cell">{t("tasks.description", "Description")}</th>}
                     {show.room && <th className="px-3 py-2.5 kicker text-left min-w-[100px]">{t("tasks.room", "Room")}</th>}
                     {show.area && <th className="px-3 py-2.5 kicker text-right min-w-[60px] hidden sm:table-cell">{t("homeownerPlanning.area", "Area")}</th>}
                     {show.quote && <th className="px-3 py-2.5 kicker text-center min-w-[80px]">{t("homeownerPlanning.quote", "Quote")}</th>}
@@ -909,9 +915,10 @@ export function HomeownerPlanningView({
                           )}
                         </td>
 
-                        {/* Description */}
+                        {/* Description — hidden on mobile (with it the table's min-widths
+                            overflow a phone viewport; details are editable via the task) */}
                         {show.description && (
-                        <td className="text-muted-foreground text-sm px-3 py-2.5">
+                        <td className="text-muted-foreground text-sm px-3 py-2.5 hidden sm:table-cell">
                           {editingCell?.taskId === task.id && editingCell.field === "description" ? (
                             <Input
                               autoFocus
@@ -1108,7 +1115,10 @@ export function HomeownerPlanningView({
                         colSpan={1 + (show.description ? 1 : 0) + (show.room ? 1 : 0) + (show.area ? 1 : 0) + (show.quote ? 1 : 0) + (show.budget ? 1 : 0) + (show.materialEstimate ? 1 : 0) + (show.rotAmount ? 1 : 0) + 1}
                         className="px-3 py-2.5"
                       >
-                        <div className="flex items-center gap-2">
+                        {/* flex-col on mobile — matches GuestPlanningSection; a plain
+                            flex row pushed the Add button past the right viewport edge
+                            because the table's min-widths already fill a phone screen */}
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                           <Input
                             autoFocus
                             placeholder={t("homeownerPlanning.taskPlaceholder", "e.g. Paint living room, new flooring in kitchen...")}
