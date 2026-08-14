@@ -11,6 +11,8 @@ import {
   unattributedTaskCount,
   estimateDraftCalc,
   calcEligibleTaskCount,
+  updateDraftRoom,
+  renameDraftTask,
 } from '../src/services/renaidaProjectFlow';
 import type { AIParsedResult } from '../src/components/project/overview/planning-wizard/types';
 
@@ -453,4 +455,35 @@ test('E1 calc: no area or unrecognized work → step never appears', () => {
     c = applyAnswer(s, { kind: 'skip' }, c);
     s = nextStep(c, 'contractor');
   }
+});
+
+test('Fas B inc3 inline-edit: renaming a room re-points its tasks; area updates; task customTitle wins', () => {
+  const labelFor = (w: string) => ({ carpentry: 'Snickeri', electrical: 'El', paint: 'Målning' }[w] ?? w);
+
+  let d = emptyDraft();
+  d = { ...d, rooms: [{ name: 'Rum' }], tasks: [
+    { workType: 'carpentry' as never, roomName: 'Rum', costCenter: 'labor' },
+    { workType: 'paint' as never, roomName: 'Rum', costCenter: 'labor' },
+  ] };
+  // Derived titles follow the room name
+  expect(taskTitle(d.tasks[0], labelFor)).toBe('Snickeri – Rum');
+
+  // Rename the room → tasks referencing it follow
+  d = updateDraftRoom(d, 0, { name: 'Kök', areaSqm: 12 });
+  expect(d.rooms[0].name).toBe('Kök');
+  expect(d.rooms[0].areaSqm).toBe(12);
+  expect(d.tasks[0].roomName).toBe('Kök');
+  expect(taskTitle(d.tasks[0], labelFor)).toBe('Snickeri – Kök');
+
+  // Empty name is rejected (keeps previous), area can be cleared to null
+  d = updateDraftRoom(d, 0, { name: '   ', areaSqm: null });
+  expect(d.rooms[0].name).toBe('Kök');
+  expect(d.rooms[0].areaSqm).toBeNull();
+
+  // Task title override wins; empty reverts to derived
+  d = renameDraftTask(d, 0, 'Specialsnickeri köksö');
+  expect(taskTitle(d.tasks[0], labelFor)).toBe('Specialsnickeri köksö');
+  d = renameDraftTask(d, 0, '  ');
+  expect(d.tasks[0].customTitle).toBeUndefined();
+  expect(taskTitle(d.tasks[0], labelFor)).toBe('Snickeri – Kök');
 });

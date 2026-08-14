@@ -117,6 +117,50 @@ export function taskTitle(task: DraftTask, labelFor: WorkTypeLabeller): string {
   return task.roomName ? `${label} – ${task.roomName}` : label;
 }
 
+/**
+ * Inline-edit a draft room during review (Fas B inc3). Renaming a room also
+ * re-points every task that referenced the old name, so derived titles
+ * ("Snickeri – Kök") follow instead of stranding on the old room name.
+ */
+export function updateDraftRoom(
+  draft: ProjectDraft,
+  index: number,
+  updates: { name?: string; areaSqm?: number | null },
+): ProjectDraft {
+  const room = draft.rooms[index];
+  if (!room) return draft;
+  const nextName =
+    updates.name !== undefined ? updates.name.trim() || room.name : room.name;
+  const renamed = nextName !== room.name;
+  const rooms = draft.rooms.map((r, i) =>
+    i === index ? { ...r, ...updates, name: nextName } : r,
+  );
+  const tasks = renamed
+    ? draft.tasks.map((tk) =>
+        tk.roomName === room.name ? { ...tk, roomName: nextName } : tk,
+      )
+    : draft.tasks;
+  return { ...draft, rooms, tasks };
+}
+
+/**
+ * Inline-edit a task title during review. Writes `customTitle` (which wins in
+ * taskTitle); an empty value reverts to the workType-derived title.
+ */
+export function renameDraftTask(
+  draft: ProjectDraft,
+  index: number,
+  title: string,
+): ProjectDraft {
+  const trimmed = title.trim();
+  return {
+    ...draft,
+    tasks: draft.tasks.map((tk, i) =>
+      i === index ? { ...tk, customTitle: trimmed || undefined } : tk,
+    ),
+  };
+}
+
 /** Cross-cutting overhead a builder often quotes separately (any project type). */
 const CONTRACTOR_OVERHEAD: Chip[] = [
   { id: 'establishment', labelKey: 'renaidaFlow.overhead.establishment' },

@@ -14,7 +14,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Sparkles, ArrowRight, Home, Hammer, Wallet, MapPin, Loader2, Check, Camera,
   MessageSquare, FileText, PenTool, X, RotateCcw, FolderUp, User, Calculator,
-  ShieldAlert,
+  ShieldAlert, Pencil,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -46,6 +46,8 @@ import {
   applyAnswer,
   toScaffoldInput,
   taskTitle,
+  updateDraftRoom,
+  renameDraftTask,
   seedDraftFromParse,
   deterministicAddons,
   applyAddonWorkTypes,
@@ -62,6 +64,7 @@ import {
   type UserType,
   type Provenance,
   type DraftTask,
+  type DraftRoom,
   type WorkTypeLabeller,
 } from '@/services/renaidaProjectFlow';
 
@@ -889,6 +892,16 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
     }));
   };
 
+  /** Inline-edit the room name/area during review (Fas B inc3). */
+  const editRoom = (updates: { name?: string; areaSqm?: number | null }) => {
+    setDraft((d) => updateDraftRoom(d, 0, updates));
+  };
+
+  /** Inline-edit a task title during review — writes customTitle. */
+  const editTaskTitle = (index: number, title: string) => {
+    setDraft((d) => renameDraftTask(d, index, title));
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="5xl" className="grid-rows-1 gap-0 overflow-hidden p-0 sm:h-[640px] md:p-0 md:h-[680px]">
@@ -1231,19 +1244,9 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
                         </div>
                       )}
                     </div>
-                    {room && (
-                      <div className="flex items-center justify-between gap-2 rounded-md bg-background px-2.5 py-1.5 text-sm">
-                        <span className="flex min-w-0 items-center gap-1.5">
-                          <SourceChip source={room.source} />
-                          <span className="truncate">{room.name}</span>
-                        </span>
-                        {room.areaSqm ? (
-                          <span className="flex-shrink-0 text-xs text-muted-foreground">{room.areaSqm} m²</span>
-                        ) : null}
-                      </div>
-                    )}
+                    {room && <EditableRoomRow room={room} onUpdate={editRoom} />}
                     {draft.tasks.length > 0 && (
-                      <TaskReviewList tasks={draft.tasks} labelFor={labelFor} onToggle={toggleTaskExcluded} />
+                      <TaskReviewList tasks={draft.tasks} labelFor={labelFor} onToggle={toggleTaskExcluded} onRename={editTaskTitle} />
                     )}
                     {draft.totalBudget ? (
                       <div className="rounded-md bg-background px-2.5 py-1.5 text-sm">
@@ -1294,13 +1297,7 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
 
               {room && (
                 <PreviewSection icon={<Home className="h-3.5 w-3.5" />} label={t('renaidaFlow.ui.section.rooms')}>
-                  <div className="flex items-center justify-between gap-2 rounded-md bg-background px-2.5 py-1.5 text-sm animate-in fade-in slide-in-from-bottom-1">
-                    <span className="flex min-w-0 items-center gap-1.5">
-                      <SourceChip source={room.source} />
-                      <span className="truncate">{room.name}</span>
-                    </span>
-                    {room.areaSqm ? <span className="flex-shrink-0 text-xs text-muted-foreground">{room.areaSqm} m²</span> : null}
-                  </div>
+                  <EditableRoomRow room={room} onUpdate={editRoom} />
                 </PreviewSection>
               )}
 
@@ -1309,7 +1306,7 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
                   icon={<Hammer className="h-3.5 w-3.5" />}
                   label={`${t('renaidaFlow.ui.section.tasks')} (${taskCount})`}
                 >
-                  <TaskReviewList tasks={draft.tasks} labelFor={labelFor} onToggle={toggleTaskExcluded} />
+                  <TaskReviewList tasks={draft.tasks} labelFor={labelFor} onToggle={toggleTaskExcluded} onRename={editTaskTitle} />
                 </PreviewSection>
               )}
 
@@ -1392,21 +1389,152 @@ function SourceChip({ source }: { source?: Provenance }) {
   );
 }
 
-/** Task rows with source chip + reversible include/exclude — shared by the
- *  desktop side-panel and the mobile review (so both stay identical). */
+/** Editable room row (name + area) with source chip — shared by the desktop
+ *  side-panel and the mobile review so both stay identical (Fas B inc3). */
+function EditableRoomRow({
+  room,
+  onUpdate,
+}: {
+  room: DraftRoom;
+  onUpdate: (updates: { name?: string; areaSqm?: number | null }) => void;
+}) {
+  const { t } = useTranslation();
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(room.name);
+  const [area, setArea] = useState(room.areaSqm != null ? String(room.areaSqm) : '');
+
+  // Re-sync when the draft changes underneath us (e.g. rename propagated)
+  useEffect(() => {
+    if (editing) return;
+    setName(room.name);
+    setArea(room.areaSqm != null ? String(room.areaSqm) : '');
+  }, [room.name, room.areaSqm, editing]);
+
+  const commit = () => {
+    const trimmedArea = area.trim();
+    const parsed = trimmedArea === '' ? null : Number(trimmedArea.replace(',', '.'));
+    onUpdate({
+      name,
+      areaSqm: parsed === null ? null : Number.isFinite(parsed) ? parsed : room.areaSqm,
+    });
+    setEditing(false);
+  };
+
+  const cancel = () => {
+    setName(room.name);
+    setArea(room.areaSqm != null ? String(room.areaSqm) : '');
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-1.5 rounded-md bg-background px-2 py-1.5">
+        <Input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') cancel(); }}
+          className="h-8 flex-1 text-sm"
+          autoFocus
+          aria-label={t('renaidaFlow.ui.section.rooms', 'Rum')}
+        />
+        <Input
+          value={area}
+          onChange={(e) => setArea(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') cancel(); }}
+          className="h-8 w-14 text-right text-sm"
+          inputMode="decimal"
+          placeholder="m²"
+          aria-label="m²"
+        />
+        <button
+          type="button"
+          onClick={commit}
+          className="flex-shrink-0 rounded p-1 text-primary hover:bg-primary/10"
+          aria-label={t('common.save', 'Spara')}
+        >
+          <Check className="h-4 w-4" />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="group flex items-center justify-between gap-2 rounded-md bg-background px-2.5 py-1.5 text-sm">
+      <span className="flex min-w-0 items-center gap-1.5">
+        <SourceChip source={room.source} />
+        <span className="truncate">{room.name}</span>
+      </span>
+      <span className="flex flex-shrink-0 items-center gap-2">
+        {room.areaSqm ? <span className="text-xs text-muted-foreground">{room.areaSqm} m²</span> : null}
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          className="text-muted-foreground/50 transition-opacity hover:text-foreground md:opacity-0 md:group-hover:opacity-100"
+          title={t('common.edit', 'Redigera')}
+          aria-label={t('common.edit', 'Redigera')}
+        >
+          <Pencil className="h-3.5 w-3.5" />
+        </button>
+      </span>
+    </div>
+  );
+}
+
+/** Task rows with source chip + reversible include/exclude + inline title edit —
+ *  shared by the desktop side-panel and the mobile review (so both stay identical). */
 function TaskReviewList({
   tasks,
   labelFor,
   onToggle,
+  onRename,
 }: {
   tasks: DraftTask[];
   labelFor: WorkTypeLabeller;
   onToggle: (index: number) => void;
+  onRename?: (index: number, title: string) => void;
 }) {
   const { t } = useTranslation();
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editValue, setEditValue] = useState('');
+
+  const startEdit = (index: number) => {
+    setEditValue(taskTitle(tasks[index], labelFor));
+    setEditingIndex(index);
+  };
+  const commitEdit = (index: number) => {
+    onRename?.(index, editValue);
+    setEditingIndex(null);
+  };
+
   return (
     <div className="space-y-1.5">
-      {tasks.map((task, i) => (
+      {tasks.map((task, i) => {
+        if (editingIndex === i && onRename) {
+          return (
+            <div key={task.workType + i} className="flex items-center gap-1.5 rounded-md bg-background px-2 py-1.5">
+              <Input
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') commitEdit(i);
+                  if (e.key === 'Escape') setEditingIndex(null);
+                }}
+                className="h-8 flex-1 text-sm"
+                autoFocus
+                aria-label={t('renaidaFlow.ui.section.tasks', 'Arbeten')}
+              />
+              <button
+                type="button"
+                onClick={() => commitEdit(i)}
+                className="flex-shrink-0 rounded p-1 text-primary hover:bg-primary/10"
+                aria-label={t('common.save', 'Spara')}
+              >
+                <Check className="h-4 w-4" />
+              </button>
+            </div>
+          );
+        }
+        return (
         <div
           key={task.workType + i}
           className={`group flex items-center justify-between gap-2 rounded-md bg-background px-2.5 py-1.5 text-sm animate-in fade-in slide-in-from-bottom-1 ${
@@ -1432,17 +1560,31 @@ function TaskReviewList({
               </span>
             )}
           </span>
-          <button
-            type="button"
-            onClick={() => onToggle(i)}
-            className="flex-shrink-0 text-muted-foreground/50 transition-opacity hover:text-foreground md:opacity-0 md:group-hover:opacity-100"
-            title={task.excluded ? t('renaidaFlow.include', 'Ta med igen') : t('renaidaFlow.exclude', 'Ta bort')}
-            aria-label={task.excluded ? t('renaidaFlow.include', 'Ta med igen') : t('renaidaFlow.exclude', 'Ta bort')}
-          >
-            {task.excluded ? <RotateCcw className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
-          </button>
+          <span className="flex flex-shrink-0 items-center gap-1">
+            {onRename && !task.excluded && (
+              <button
+                type="button"
+                onClick={() => startEdit(i)}
+                className="text-muted-foreground/50 transition-opacity hover:text-foreground md:opacity-0 md:group-hover:opacity-100"
+                title={t('common.edit', 'Redigera')}
+                aria-label={t('common.edit', 'Redigera')}
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => onToggle(i)}
+              className="text-muted-foreground/50 transition-opacity hover:text-foreground md:opacity-0 md:group-hover:opacity-100"
+              title={task.excluded ? t('renaidaFlow.include', 'Ta med igen') : t('renaidaFlow.exclude', 'Ta bort')}
+              aria-label={task.excluded ? t('renaidaFlow.include', 'Ta med igen') : t('renaidaFlow.exclude', 'Ta bort')}
+            >
+              {task.excluded ? <RotateCcw className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
+            </button>
+          </span>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
