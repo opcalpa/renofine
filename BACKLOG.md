@@ -2146,13 +2146,15 @@ Fynd under screenshot-svepet 14 aug (S2 "kan ej klicka för att verifiera"): `lo
 
 ---
 id: task-sheet-mobile-quick-actions
-status: todo
+status: done
 priority: P2
 tags: [mobil, arbetskort, ux, screenshot-fynd]
 created: 2026-08-14
 ---
 ## Task-sheetens mobila snabbåtgärder — foto direkt utan scroll
 Carls screenshot 14 aug: "plottrigt i mobil att scrolla för alla funktioner såsom att ladda upp snabb bild i ett arbete". Task-sheeten (Målning – Rum, Översikt-fliken) kräver scroll förbi slutdatum/framsteg för att nå FOTON-sektionen. Bygg en snabbåtgärds-rad överst på mobil (md:hidden): [📷 Fota] (triggar EntityPhotoGallerys kamera-input direkt) + ev. framsteg-stepper. Breddtänk: samma mönster för rumsdetalj-sheeten (fota rummet). Relaterat: mobil = Renaida-first capture-regeln ([[renaida-mobile-first-surface]]) — övervag om "Fota till detta arbete" ska gå via Renaida-capture med task-kontext istället för egen väg (EN mekanik, inte två).
+
+**✅ LEVERERAT 2026-08-14 (`e9f371a`):** mobil-only "Fota"-knapp överst i arbetskortets Översikt → triggar samma kamera-uppladdning som galleriet (EntityPhotoGallery.openCamera via forwardRef, DRY). Valde direkt-knapp (färre steg) framför Renaida-capture-vägen — den senare kvarstår som framtida "EN mekanik"-alternativ. Ej ögonkollad live (demo gate:ar Tasks headless).
 
 ---
 id: renaida-review-inline-edit
