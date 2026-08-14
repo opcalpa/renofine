@@ -6352,6 +6352,8 @@
     "active": "Active",
     "expired": "Expired",
     "lastAccessed": "Last accessed",
+    "opened": "Opened",
+    "notOpenedYet": "Not opened yet",
     "never": "Never",
     "noWorkers": "No workers invited yet.",
     "tasksAssigned": "{{count}} tasks",
@@ -7062,5 +7064,11 @@
       "add": "Add",
       "looksGood": "Looks good as is"
     }
+  },
+  "pwa": {
+    "installTitle": "Install Renofine",
+    "installBody": "Add it to your home screen for quick access and share straight into Renaida.",
+    "installButton": "Install",
+    "installDismiss": "Not now"
   }
 }

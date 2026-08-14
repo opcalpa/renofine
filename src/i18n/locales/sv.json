@@ -6352,6 +6352,8 @@
     "active": "Aktiv",
     "expired": "Utgången",
     "lastAccessed": "Senast besökt",
+    "opened": "Öppnad",
+    "notOpenedYet": "Ej öppnad ännu",
     "never": "Aldrig",
     "noWorkers": "Inga arbetare inbjudna ännu.",
     "tasksAssigned": "{{count}} uppgifter",
@@ -7062,5 +7064,11 @@
       "add": "Lägg till",
       "looksGood": "Ser bra ut ändå"
     }
+  },
+  "pwa": {
+    "installTitle": "Installera Renofine",
+    "installBody": "Lägg till på hemskärmen för snabb åtkomst och dela direkt till Renaida.",
+    "installButton": "Installera",
+    "installDismiss": "Inte nu"
   }
 }

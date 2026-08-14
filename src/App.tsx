@@ -53,6 +53,7 @@ const AttendanceCheckIn = lazy(() => import("./pages/AttendanceCheckIn"));
 const DocPlayground = lazy(() => import("./pages/_DocPlayground"));
 const Capture = lazy(() => import("./pages/Capture"));
 import { Renaida } from "./components/Renaida";
+import { InstallPwaBanner } from "./components/InstallPwaBanner";
 import { BetaBanner } from "./components/BetaBanner";
 import { Canonical } from "./components/seo/Canonical";
 
@@ -60,13 +61,27 @@ import { Canonical } from "./components/seo/Canonical";
  *  MUST live inside BrowserRouter and read useLocation — window.location read
  *  once at mount froze visibility to the initial URL: a session that started
  *  on the landing page never got the FAB at all (Carl's iPhone finding 7 Jul). */
+function isPublicAppPath(pathname: string): boolean {
+  const publicPaths = ["/", "/auth", "/landing-test", "/about", "/contact", "/terms", "/privacy", "/tips"];
+  return (
+    publicPaths.includes(pathname) ||
+    pathname.startsWith("/w/") ||
+    pathname.startsWith("/intake/") ||
+    pathname.startsWith("/quotes/") ||
+    pathname.startsWith("/invoices/")
+  );
+}
+
 function AuthenticatedRenaida() {
   const { pathname } = useLocation();
-  const publicPaths = ["/", "/auth", "/landing-test", "/about", "/contact", "/terms", "/privacy", "/tips"];
-  if (publicPaths.includes(pathname) || pathname.startsWith("/w/") || pathname.startsWith("/intake/") || pathname.startsWith("/quotes/") || pathname.startsWith("/invoices/")) {
-    return null;
-  }
+  if (isPublicAppPath(pathname)) return null;
   return <Renaida />;
+}
+
+function AuthenticatedInstallBanner() {
+  const { pathname } = useLocation();
+  if (isPublicAppPath(pathname)) return null;
+  return <InstallPwaBanner />;
 }
 
 const queryClient = new QueryClient();
@@ -144,6 +159,7 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
             <AuthenticatedRenaida />
+            <AuthenticatedInstallBanner />
           </BrowserRouter>
         </TooltipProvider>
         </MeasurementProvider>
