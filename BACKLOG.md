@@ -2132,6 +2132,8 @@ created: 2026-08-13
 ## Arbetar-meddelande fel-attribuerat i översiktens "General"-flöde
 Cowork-fynd A2 (2026-08-13). I ägarens Overview → Messages → "General" attribueras arbetarens meddelande till ÄGAREN (created_by), inte till "{namn} (worker)" via author_display_name — och visas som "General" i stället för kopplat till uppgiften. Notisen är korrekt. **Task_id-delen är FIXAD** (`9ad2a55` — meddelandet trådar nu under uppgiften). Kvar: det generella översiktsflödet bör rendera author_display_name för worker-poster (kolla vilken komponent som driver "General"-listan).
 
+**Cowork retest 2026-08-14 (C-runda) — förfinad diagnos:** samma meddelande (task_id + project_id båda satta efter `9ad2a55`) renderas nu i BÅDE uppgiftstråden OCH General-flödet = **en DB-rad speglad i två feed-containers** (en radering tog bort båda raderna → inte två skrivna rader, inte optimistisk dubbel). Rotorsak sannolikt: General-flödets query fångar poster med project_id UTAN att exkludera de som redan trådats under en task_id. Fix: General-listan bör filtrera bort task-scopade worker-poster (eller dedupa mot task-trådarna). Skild från [[worker-msg-optimistic-double-render]] (den = arbetarens egen optimistiska bubbla). DB-verifiering: bekräfta EN rad i comments (ej två) — Cowork-radering-beteendet indikerar redan det.
+
 ---
 id: worker-msg-optimistic-double-render
 status: todo

@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ImageLightbox, useLightbox } from "@/components/shared/ImageLightbox";
 import { WorkerInstructionsView } from "@/components/project/WorkerInstructionsView";
 import { Loader2, MessageSquare, HelpCircle, Camera, Eye, ClipboardCheck } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 interface WorkerActivityPanelProps {
   projectId: string;
@@ -33,6 +34,24 @@ interface TaskStatusRow {
   progress: number | null;
 }
 
+/** A standalone worker photo from the `photos` table (not mirrored to a comment). */
+interface WorkerPhoto {
+  id: string;
+  url: string;
+  caption: string | null;
+  created_at: string;
+}
+
+/** Unified activity entry — a comment (message/question/photo) or a standalone photo. */
+interface ActivityItem {
+  id: string;
+  icon: LucideIcon;
+  label: string;
+  created_at: string;
+  content: string | null;
+  images: CommentImage[] | null;
+}
+
 /**
  * Per-worker activity roll-up shown in the expanded Team row. Answers the
  * owner's "what has this worker actually done?" — questions, messages, submitted
@@ -47,6 +66,7 @@ export function WorkerActivityPanel({ projectId, workerToken, workerName, assign
   const [loading, setLoading] = useState(true);
   const [comments, setComments] = useState<WorkerComment[]>([]);
   const [tasks, setTasks] = useState<TaskStatusRow[]>([]);
+  const [photos, setPhotos] = useState<WorkerPhoto[]>([]);
   const [previewOpen, setPreviewOpen] = useState(false);
 
   useEffect(() => {
@@ -69,15 +89,31 @@ export function WorkerActivityPanel({ projectId, workerToken, workerName, assign
         taskIds.length > 0
           ? commentsQuery.or(`project_id.eq.${projectId},task_id.in.(${taskIds.join(",")})`)
           : commentsQuery.eq("project_id", projectId);
-      const [commentsRes, tasksRes] = await Promise.all([
+      // Worker photos: worker-upload-photo mirrors a photo into `comments`
+      // ONLY for completed-task hand-offs (linked_to_type=task, category=completed).
+      // General / non-completed uploads live only in `photos`, so a comments-only
+      // panel drops them (Cowork C-finding). Query `photos` too, scoped to this
+      // worker (caption = name, source ilike 'worker%') within the project's
+      // task/project ids — mirrors RecentPhotos' owner-readable pattern.
+      const photoLinkIds = [projectId, ...taskIds];
+      const [commentsRes, tasksRes, photosRes] = await Promise.all([
         commentsQuery,
         taskIds.length > 0
           ? supabase.from("tasks").select("id, title, status, progress").in("id", taskIds)
           : Promise.resolve({ data: [] as TaskStatusRow[] }),
+        supabase
+          .from("photos")
+          .select("id, url, caption, created_at")
+          .ilike("source", "worker%")
+          .eq("caption", workerName)
+          .in("linked_to_id", photoLinkIds)
+          .order("created_at", { ascending: false })
+          .limit(12),
       ]);
       if (!active) return;
       setComments((commentsRes.data as WorkerComment[] | null) ?? []);
       setTasks((tasksRes.data as TaskStatusRow[] | null) ?? []);
+      setPhotos((photosRes.data as WorkerPhoto[] | null) ?? []);
       setLoading(false);
     })();
     return () => {
@@ -101,6 +137,30 @@ export function WorkerActivityPanel({ projectId, workerToken, workerName, assign
     if (c.images && c.images.length > 0) return { icon: Camera, label: t("workerActivity.photo", "Foto") };
     return { icon: MessageSquare, label: t("workerActivity.message", "Meddelande") };
   };
+
+  // Merge standalone worker photos into the activity list, deduped against
+  // photos already surfaced via a completion-comment (comment.images[].id).
+  const commentImageIds = new Set(
+    comments.flatMap((c) => (c.images ?? []).map((img) => img.id)).filter(Boolean),
+  );
+  const activity: ActivityItem[] = [
+    ...comments.map((c): ActivityItem => {
+      const k = kindOf(c);
+      return { id: c.id, icon: k.icon, label: k.label, created_at: c.created_at, content: c.content, images: c.images };
+    }),
+    ...photos
+      .filter((p) => !commentImageIds.has(p.id))
+      .map((p): ActivityItem => ({
+        id: `photo-${p.id}`,
+        icon: Camera,
+        label: t("workerActivity.photo", "Foto"),
+        created_at: p.created_at,
+        content: null,
+        images: [{ id: p.id, url: p.url, filename: p.caption ?? "" }],
+      })),
+  ]
+    .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))
+    .slice(0, 12);
 
   return (
     <div className="rounded-lg border bg-background/60 p-3">
@@ -141,33 +201,33 @@ export function WorkerActivityPanel({ projectId, workerToken, workerName, assign
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
           {t("common.loading", "Laddar…")}
         </div>
-      ) : comments.length === 0 ? (
+      ) : activity.length === 0 ? (
         <p className="py-1 text-xs text-muted-foreground">
           {t("workerActivity.empty", "Ingen aktivitet från {{name}} än.", { name: workerName })}
         </p>
       ) : (
         <ul className="space-y-2">
-          {comments.map((c) => {
-            const { icon: Icon, label } = kindOf(c);
+          {activity.map((item) => {
+            const Icon = item.icon;
             return (
-              <li key={c.id} className="flex gap-2 text-xs">
+              <li key={item.id} className="flex gap-2 text-xs">
                 <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5 text-muted-foreground">
-                    <span className="font-medium text-foreground">{label}</span>
+                    <span className="font-medium text-foreground">{item.label}</span>
                     <span>·</span>
-                    <span>{fmt(c.created_at)}</span>
+                    <span>{fmt(item.created_at)}</span>
                   </div>
-                  {c.content && <p className="mt-0.5 break-words text-foreground/80">{c.content}</p>}
-                  {c.images && c.images.length > 0 && (
+                  {item.content && <p className="mt-0.5 break-words text-foreground/80">{item.content}</p>}
+                  {item.images && item.images.length > 0 && (
                     <div className="mt-1 flex flex-wrap gap-1.5">
-                      {c.images.map((img, idx) => (
+                      {item.images.map((img, idx) => (
                         <img
                           key={img.id ?? idx}
                           src={img.url}
                           alt={img.filename ?? ""}
                           className="h-14 w-14 cursor-pointer rounded border object-cover hover:opacity-90"
-                          onClick={() => lightbox.open(c.images!.map((i) => ({ id: i.id, url: i.url, filename: i.filename })), idx)}
+                          onClick={() => lightbox.open(item.images!.map((i) => ({ id: i.id, url: i.url, filename: i.filename })), idx)}
                         />
                       ))}
                     </div>
