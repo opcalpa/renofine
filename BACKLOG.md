@@ -2134,13 +2134,15 @@ Carls screenshot 14 aug (invite-wizard steg 2): personabeskrivningen säger vad 
 
 ---
 id: homeowner-time-surface-missing
-status: todo
+status: doing
 priority: P2
 tags: [hemägare, tid, renaida, modul-gating, produktval]
 created: 2026-08-14
 ---
 ## Hemägare saknar tidsyta — men Renaida loggar glatt tid åt dem
 Fynd under screenshot-svepet 14 aug (S2 "kan ej klicka för att verifiera"): `log_time` är tillgängligt för hemägare via Renaida (DIY-scenariot "målat fem timmar i barnrummet" är legitimt), datat landar i time_entries — men `timetracking`-fliken är modul-gatad av för hemägare (modules.ts homeowner:false) så posten går ALDRIG att se/redigera/radera i UI:t. Kvittolänken faller nu tillbaka på tasken (fix 4ec5c8d), men lösa loggar (utan task) är helt osynliga. Produktval: (a) enkel "Min tid"-yta för hemägare (DIY-timmar har ROT/underlags-värde), (b) slå på timetracking-modulen för hemägare, eller (c) gata bort log_time för hemägare utan task. Rekommendation: (a) light — visa loggade timmar per rum/arbete i Budget/arbetskortet.
+
+**✅ DELVIS LEVERERAT 2026-08-14 (`ea61233`, väg a light):** loggad tid visas nu på arbetskortets Översikt ("Loggad tid: X h av ~Y h"), summerad per task_id, synlig alla roller. Routern biasar mot task-matchning så de flesta DIY-loggar blir synliga. **KVAR:** löst loggad tid (task_id null, ingen task matchade) är fortfarande osynlig — behöver en projekt-/rum-nivå-rollup (ev. i Budget) ELLER att routern alltid kopplar till närmaste rum-task. Lågprio tills vi ser att hemägare faktiskt loggar löst.
 
 ---
 id: task-sheet-mobile-quick-actions
