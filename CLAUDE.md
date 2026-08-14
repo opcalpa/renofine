@@ -149,6 +149,22 @@ if (error) {
 }
 ```
 
+### Dialog width — use the `size` prop, NEVER `max-w-*` in className
+`DialogContent` is a full-width bottom sheet on mobile and a centered card on
+desktop, so its desktop width cap is a **responsive** `md:max-w-lg` in the base.
+A plain `max-w-2xl` in `className` is unprefixed → at `md+` the base's
+`md:max-w-lg` wins in the cascade and silently clips your dialog back to `lg`
+(512px). This is the recurring "popup too narrow / cut off" bug.
+```tsx
+// GOOD — width via the size prop (emits a correctly md:-prefixed class)
+<DialogContent size="4xl" className="max-h-[90vh] overflow-y-auto">
+
+// BAD — unprefixed max-w is overridden by the base md:max-w-lg on desktop
+<DialogContent className="max-w-4xl ...">   // renders at lg (512px), not 4xl
+```
+Sizes: `sm | md | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl | 7xl`. Same trap for
+padding: to change the base `md:p-6`, use a `md:`-prefixed class (`md:p-0`).
+
 ## File Naming
 
 - Components: `PascalCase.tsx` (e.g., `WallShape.tsx`)
@@ -305,3 +321,11 @@ Versionssystem (semver):
 
 ---
 *Last Updated: 2026-05-09*
+
+## Självförbättrings-loop (SIL)
+Renofine kör Calles portfölj-loop (full modell: ~/.claude/skills/starta-projekt/self-improvement-loop.md). Tre regler:
+1. **Instrumentera** AI-anrop till aidev-admin (`lab:renofine:…`) — observe-lagret.
+2. **Alla förslag → denna BACKLOG.md** (format: /Users/calpa/Developer/PA/BACKLOG_FORMAT.md), aldrig tysta refaktorer.
+3. **Shippa bakom eval-gate** (bygg + klara eval-tröskel → deploy, annars block).
+
+Veckovis Scout+Audit-rutin (cron, måndag morgon) skriver backlog-kort; Calle triagerar i pappens Developer-flik. Agenter FÖRESLÅR alltid, applicerar aldrig auto på prod.

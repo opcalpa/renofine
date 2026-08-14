@@ -1,0 +1,137 @@
+{
+  "args": {
+    "models": [
+      "gpt-4o-mini"
+    ],
+    "judge": "gpt-4o",
+    "cases": [
+      "plan-deadline-onsdag",
+      "plan-deadline",
+      "plan-start-date"
+    ],
+    "judgeOn": false
+  },
+  "summary": [
+    {
+      "model": "gpt-4o-mini",
+      "n": 3,
+      "passed": 3,
+      "recall": 1,
+      "fp": 0,
+      "invented": 0,
+      "critical": 0,
+      "judgeAvg": null,
+      "errors": 0
+    }
+  ],
+  "rows": [
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "plan-deadline",
+      "score": {
+        "id": "plan-deadline",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Sätter deadline på fredag för kakelsättningen.",
+          "confidence": 0.9,
+          "action": {
+            "type": "update_task",
+            "taskId": "t-tile",
+            "changes": {
+              "due_date": "2026-07-17"
+            }
+          },
+          "matchConfidence": 0.9,
+          "candidateTaskIds": [
+            "t-tile"
+          ]
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "plan-start-date",
+      "score": {
+        "id": "plan-start-date",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Sätter startdatum för målningen på måndag.",
+          "confidence": 0.9,
+          "action": {
+            "type": "update_task",
+            "taskId": "t-paint",
+            "changes": {
+              "start_date": "2026-07-13"
+            }
+          },
+          "matchConfidence": 0.9,
+          "candidateTaskIds": [
+            "t-paint"
+          ]
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "plan-deadline-onsdag",
+      "score": {
+        "id": "plan-deadline-onsdag",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Sätt deadline för kakelsättningen på onsdag.",
+          "confidence": 0.9,
+          "action": {
+            "type": "update_task",
+            "taskId": "t-tile",
+            "changes": {
+              "due_date": "2026-07-15"
+            }
+          },
+          "matchConfidence": 0.9,
+          "candidateTaskIds": [
+            "t-tile"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1129 @@
+{
+  "args": {
+    "models": [
+      "gpt-4o-mini"
+    ],
+    "judge": "gpt-4o",
+    "cases": null,
+    "judgeOn": false
+  },
+  "summary": [
+    {
+      "model": "gpt-4o-mini",
+      "n": 31,
+      "passed": 31,
+      "recall": 1,
+      "fp": 0,
+      "invented": 0,
+      "critical": 0,
+      "judgeAvg": null,
+      "errors": 0
+    }
+  ],
+  "rows": [
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "seal-done",
+      "score": {
+        "id": "seal-done",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Sätter status på tätskiktet i badrummet som klart.",
+          "confidence": 0.9,
+          "action": {
+            "type": "set_progress",
+            "taskId": "t-seal",
+            "progress": 100,
+            "status": "completed"
+          },
+          "matchConfidence": 0.9,
+          "candidateTaskIds": [
+            "t-seal"
+          ]
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "buy-tiles",
+      "score": {
+        "id": "buy-tiles",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Beställa 10 kvm klinker till badrummet",
+          "confidence": 1,
+          "action": {
+            "type": "create_purchase",
+            "roomId": "r-bath",
+            "item": "Klinker",
+            "quantity": 10,
+            "unit": "kvm"
+          },
+          "matchConfidence": 1,
+          "candidateTaskIds": []
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "combo-progress-and-purchase",
+      "score": {
+        "id": "combo-progress-and-purchase",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 2,
+          "expected": 2
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 2
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Sätter 100% på tätskiktet i badrummet",
+          "confidence": 0.9,
+          "action": {
+            "type": "set_progress",
+            "taskId": "t-seal",
+            "progress": 100,
+            "status": "completed"
+          },
+          "matchConfidence": 0.9,
+          "candidateTaskIds": [
+            "t-seal"
+          ]
+        },
+        {
+          "summary": "Beställer tio kvadratmeter klinker till badrummet",
+          "confidence": 0.9,
+          "action": {
+            "type": "create_purchase",
+            "roomId": "r-bath",
+            "item": "Klinker",
+            "quantity": 10,
+            "unit": "kvm"
+          },
+          "matchConfidence": 0.9,
+          "candidateTaskIds": []
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "unknown-garage",
+      "score": {
+        "id": "unknown-garage",
+        "kind": "unknown",
+        "ok": true,
+        "recall": {
+          "found": 0,
+          "expected": 0
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Oklarhet kring garaget och dubbelgaraget",
+          "confidence": 0,
+          "action": {
+            "type": "unknown",
+            "rawText": "taket på garaget och dubbelgaraget",
+            "reason": "Garaget och dubbelgaraget finns inte i projektet."
+          }
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "add-task-room",
+      "score": {
+        "id": "add-task-room",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Skapa en uppgift för att byta dörrhandtag i sovrummet.",
+          "confidence": 0.8,
+          "action": {
+            "type": "create_task",
+            "roomId": "r-bed",
+            "title": "Byta dörrhandtag"
+          },
+          "matchConfidence": 0.5,
+          "candidateTaskIds": []
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "buy-no-room",
+      "score": {
+        "id": "buy-no-room",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Behöver köpa en köksblandare",
+          "confidence": 0.9,
+          "action": {
+            "type": "create_purchase",
+            "roomId": "r-kitchen",
+            "item": "Köksblandare",
+            "quantity": 1,
+            "unit": "st"
+          },
+          "matchConfidence": 1,
+          "candidateTaskIds": []
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "chitchat",
+      "score": {
+        "id": "chitchat",
+        "kind": "empty",
+        "ok": true,
+        "recall": {
+          "found": 0,
+          "expected": 0
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 0
+      },
+      "judge": null,
+      "error": null,
+      "proposals": []
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "progress-partial",
+      "score": {
+        "id": "progress-partial",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Målningen är halvklar",
+          "confidence": 0.6,
+          "action": {
+            "type": "set_progress",
+            "taskId": "t-paint",
+            "progress": 50
+          },
+          "matchConfidence": 0.6,
+          "candidateTaskIds": [
+            "t-paint"
+          ]
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "wrong-room-trap",
+      "score": {
+        "id": "wrong-room-trap",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Sätter igång kakelsättningen i badrummet",
+          "confidence": 0.6,
+          "action": {
+            "type": "set_progress",
+            "taskId": "t-tile",
+            "progress": 10,
+            "status": "in_progress"
+          },
+          "matchConfidence": 0.6,
+          "candidateTaskIds": [
+            "t-tile"
+          ]
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "lister-checklist-not-room",
+      "score": {
+        "id": "lister-checklist-not-room",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Montera lister i vardagsrummet är klart.",
+          "confidence": 0.9,
+          "action": {
+            "type": "toggle_checklist",
+            "taskId": "t-trim",
+            "itemText": "Montera lister",
+            "completed": true
+          },
+          "matchConfidence": 0.9,
+          "candidateTaskIds": [
+            "t-trim"
+          ]
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "no-matching-task-borra-trap",
+      "score": {
+        "id": "no-matching-task-borra-trap",
+        "kind": "no-confident-mutation",
+        "ok": true,
+        "recall": {
+          "found": 0,
+          "expected": 0
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Golvvärmen i badrummet är klar.",
+          "confidence": 0.6,
+          "action": {
+            "type": "unknown",
+            "rawText": "Golvvärmen i badrummet är inkopplad och klar.",
+            "reason": "Det finns ingen specifik uppgift för golvvärme."
+          },
+          "matchConfidence": 0.5,
+          "candidateTaskIds": []
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "log-time-on-task",
+      "score": {
+        "id": "log-time-on-task",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Loggar tre timmar för målningen.",
+          "confidence": 0.9,
+          "action": {
+            "type": "log_time",
+            "taskId": "t-paint",
+            "hours": 3,
+            "date": "2026-07-08"
+          },
+          "matchConfidence": 0.9,
+          "candidateTaskIds": [
+            "t-paint"
+          ]
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "toggle-checklist-item",
+      "score": {
+        "id": "toggle-checklist-item",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Listerna är klara i badrummet.",
+          "confidence": 0.9,
+          "action": {
+            "type": "toggle_checklist",
+            "taskId": "t-trim",
+            "itemText": "Montera lister",
+            "completed": true
+          },
+          "matchConfidence": 0.9,
+          "candidateTaskIds": [
+            "t-trim"
+          ]
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "ambiguous-same-trade",
+      "score": {
+        "id": "ambiguous-same-trade",
+        "kind": "ambiguous-pick",
+        "ok": true,
+        "recall": {
+          "found": 0,
+          "expected": 0
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Sätt klart spacklingen i sovrummet eller vardagsrummet.",
+          "confidence": 0.6,
+          "action": {
+            "type": "set_progress",
+            "taskId": "t-spackle-bed",
+            "progress": 100,
+            "status": "completed"
+          },
+          "matchConfidence": 0.6,
+          "candidateTaskIds": [
+            "t-spackle-bed",
+            "t-spackle-living"
+          ]
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "scaffold-new-room",
+      "score": {
+        "id": "scaffold-new-room",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 2,
+          "expected": 2
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 2
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Skapa tvättstuga och kakelsättning",
+          "confidence": 0.9,
+          "action": {
+            "type": "create_room",
+            "name": "Tvättstuga"
+          },
+          "matchConfidence": 1,
+          "candidateTaskIds": []
+        },
+        {
+          "summary": "Skapa kakelsättning i tvättstugan",
+          "confidence": 0.9,
+          "action": {
+            "type": "create_task",
+            "roomName": "Tvättstuga",
+            "title": "Kakelsättning tvättstuga"
+          },
+          "matchConfidence": 1,
+          "candidateTaskIds": []
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "checklist-authoring",
+      "score": {
+        "id": "checklist-authoring",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Skapar en checklista för kakelsättningen.",
+          "confidence": 1,
+          "action": {
+            "type": "create_checklist",
+            "taskId": "t-tile",
+            "items": [
+              "Primer",
+              "Tätskikt vägg",
+              "Tätskikt golv",
+              "Sätta kakel",
+              "Foga"
+            ]
+          },
+          "matchConfidence": 1,
+          "candidateTaskIds": [
+            "t-tile"
+          ]
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "instruction-say-to-trade",
+      "score": {
+        "id": "instruction-say-to-trade",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Notera att taket ska ha två strykningar.",
+          "confidence": 0.9,
+          "action": {
+            "type": "add_note",
+            "target": "task",
+            "targetId": "t-paint",
+            "text": "Taket ska ha två strykningar."
+          },
+          "matchConfidence": 0.9,
+          "candidateTaskIds": [
+            "t-paint"
+          ]
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "instruction-remind",
+      "score": {
+        "id": "instruction-remind",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Notera att listerna monteras sist.",
+          "confidence": 0.9,
+          "action": {
+            "type": "add_note",
+            "target": "task",
+            "targetId": "t-trim",
+            "text": "Listerna monteras allra sist."
+          },
+          "matchConfidence": 1,
+          "candidateTaskIds": [
+            "t-trim"
+          ]
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "instruction-room-scope",
+      "score": {
+        "id": "instruction-room-scope",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Lägger till instruktionen för badrummet.",
+          "confidence": 0.9,
+          "action": {
+            "type": "add_note",
+            "target": "room",
+            "targetId": "r-bath",
+            "text": "inga arbeten där före den 15:e."
+          },
+          "matchConfidence": 1,
+          "candidateTaskIds": []
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "plan-deadline",
+      "score": {
+        "id": "plan-deadline",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Sätter deadline på fredag för kakelsättningen.",
+          "confidence": 0.9,
+          "action": {
+            "type": "update_task",
+            "taskId": "t-tile",
+            "changes": {
+              "due_date": "2026-07-17"
+            }
+          },
+          "matchConfidence": 0.9,
+          "candidateTaskIds": [
+            "t-tile"
+          ]
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "plan-start-date",
+      "score": {
+        "id": "plan-start-date",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Målningen ska börja på måndag",
+          "confidence": 0.9,
+          "action": {
+            "type": "update_task",
+            "taskId": "t-paint",
+            "changes": {
+              "start_date": "2026-07-13"
+            }
+          },
+          "matchConfidence": 0.9,
+          "candidateTaskIds": [
+            "t-paint"
+          ]
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "plan-budget",
+      "score": {
+        "id": "plan-budget",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Höjer budgeten för golvslipningen",
+          "confidence": 0.9,
+          "action": {
+            "type": "update_task",
+            "taskId": "t-floor",
+            "changes": {
+              "budget": 15000
+            }
+          },
+          "matchConfidence": 0.9,
+          "candidateTaskIds": [
+            "t-floor"
+          ]
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "plan-priority",
+      "score": {
+        "id": "plan-priority",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Sätter hög prioritet på kakelsättningen.",
+          "confidence": 0.9,
+          "action": {
+            "type": "update_task",
+            "taskId": "t-tile",
+            "changes": {
+              "priority": "high"
+            }
+          },
+          "matchConfidence": 0.9,
+          "candidateTaskIds": [
+            "t-tile"
+          ]
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "checklist-remove-item",
+      "score": {
+        "id": "checklist-remove-item",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Ta bort punkten om montering från listernas checklista.",
+          "confidence": 0.9,
+          "action": {
+            "type": "remove_checklist_item",
+            "taskId": "t-trim",
+            "itemText": "Montera lister"
+          },
+          "matchConfidence": 0.9,
+          "candidateTaskIds": [
+            "t-trim"
+          ]
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "plan-clear-deadline",
+      "score": {
+        "id": "plan-clear-deadline",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Ta bort deadlinen på kakelsättningen.",
+          "confidence": 0.9,
+          "action": {
+            "type": "update_task",
+            "taskId": "t-tile",
+            "changes": {
+              "due_date": null
+            }
+          },
+          "matchConfidence": 0.9,
+          "candidateTaskIds": [
+            "t-tile"
+          ]
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "assign-member",
+      "score": {
+        "id": "assign-member",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Tilldela eluttag och belysning till Ahmed",
+          "confidence": 0.9,
+          "action": {
+            "type": "assign_task",
+            "taskId": "t-elec",
+            "assigneeProfileId": "m-ahmed"
+          },
+          "matchConfidence": 0.9,
+          "candidateTaskIds": [
+            "t-elec"
+          ]
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "assign-nonmember-fallback",
+      "score": {
+        "id": "assign-nonmember-fallback",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Notera att Ficticious Person ska måla.",
+          "confidence": 0.5,
+          "action": {
+            "type": "add_note",
+            "target": "task",
+            "targetId": "t-paint",
+            "text": "Ficticious Person ska måla."
+          },
+          "matchConfidence": 0.85,
+          "candidateTaskIds": [
+            "t-paint"
+          ]
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "curated-purchase-title",
+      "score": {
+        "id": "curated-purchase-title",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Köp spikar 3 mm",
+          "confidence": 1,
+          "action": {
+            "type": "create_purchase",
+            "item": "Spikar 3 mm",
+            "quantity": 1,
+            "unit": "förpackning"
+          },
+          "matchConfidence": 1,
+          "candidateTaskIds": []
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "taulant-north-star",
+      "score": {
+        "id": "taulant-north-star",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 3,
+          "expected": 3
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 3
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Målningen i köket är klar",
+          "confidence": 1,
+          "action": {
+            "type": "set_progress",
+            "taskId": "t-paint",
+            "progress": 100
+          },
+          "matchConfidence": 1,
+          "candidateTaskIds": [
+            "t-paint"
+          ]
+        },
+        {
+          "summary": "Lägger till punkten 'Montera lister' i monteringen av lister",
+          "confidence": 0.9,
+          "action": {
+            "type": "toggle_checklist",
+            "taskId": "t-trim",
+            "itemText": "Montera lister",
+            "completed": false
+          },
+          "matchConfidence": 0.9,
+          "candidateTaskIds": [
+            "t-trim"
+          ]
+        },
+        {
+          "summary": "Beställa golvsockel",
+          "confidence": 0.8,
+          "action": {
+            "type": "create_purchase",
+            "roomId": "r-kitchen",
+            "item": "Golvsockel",
+            "quantity": 10,
+            "unit": "meter"
+          },
+          "matchConfidence": 0.8,
+          "candidateTaskIds": []
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "polite-question-create-room",
+      "score": {
+        "id": "polite-question-create-room",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Skapa ett gästrum",
+          "confidence": 1,
+          "action": {
+            "type": "create_room",
+            "name": "Gästrum"
+          },
+          "matchConfidence": 1,
+          "candidateTaskIds": []
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "polite-question-priority",
+      "score": {
+        "id": "polite-question-priority",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Sätter hög prioritet på kakelsättningen",
+          "confidence": 0.9,
+          "action": {
+            "type": "update_task",
+            "taskId": "t-tile",
+            "changes": {
+              "priority": "high"
+            }
+          },
+          "matchConfidence": 0.9,
+          "candidateTaskIds": [
+            "t-tile"
+          ]
+        }
+      ]
+    }
+  ]
+}

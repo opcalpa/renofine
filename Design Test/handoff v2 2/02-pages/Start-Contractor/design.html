@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="sv" data-theme="paper">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Renofine · Home — Contractor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600;700&family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="tokens.css"/>
+<style>
+  html, body { margin:0; padding:0; background:var(--bg); height:100%; }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="shared.jsx"></script>
+<script type="text/babel" src="v2/tweaks-panel.jsx"></script>
+<script type="text/babel" src="v2/home-contractor.jsx"></script>
+
+<script type="text/babel">
+const CO_TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "state": "active"
+}/*EDITMODE-END*/;
+
+function App() {
+  const [t, setTweak] = useTweaks(CO_TWEAK_DEFAULTS);
+
+  const View = t.state === "empty"  ? CoEmpty
+            : t.state === "quiet"  ? CoQuiet
+            : CoActive;
+
+  return (
+    <div data-screen-label={`Home Contractor · ${t.state}`}>
+      <View/>
+      <TweaksPanel title="Tweaks · Entreprenör-hem">
+        <TweakSection label="Läge"/>
+        <TweakRadio
+          label="Tillstånd"
+          value={t.state}
+          options={[
+            { value:"empty",  label:"Tom (ny)" },
+            { value:"active", label:"Aktiv vardag" },
+            { value:"quiet",  label:"Lugn dag" },
+          ]}
+          onChange={(v)=>setTweak("state", v)}
+        />
+        <TweakSection label="Beskrivning"/>
+        <div style={{ fontSize:11, lineHeight:1.55, color:"rgba(41,38,27,.7)", padding:"4px 2px" }}>
+          {t.state === "empty"  && <span><strong>Tom · första gången.</strong> Tre likvärdiga vägar in: AI-offert, lägg till kund, eller skicka kund-intag. Plus en kort uppstartschecklista (ca 12 min).</span>}
+          {t.state === "active" && <span><strong>Aktiv vardag.</strong> KPI-strip med pipeline & likviditet, dagens jobb, godkännanden i sidolisten, pipeline-staplar, och fakturor att jaga. Allt på ett uppslag.</span>}
+          {t.state === "quiet"  && <span><strong>Lugn dag.</strong> Inget brådskar — &quot;all-clear&quot;-kort, förslag på arbete som annars hamnar längst ner, och vecko-summering. Ingen falsk panik.</span>}
+        </div>
+      </TweaksPanel>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>

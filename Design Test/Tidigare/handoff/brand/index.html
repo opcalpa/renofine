@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Renofine · brand pack · v1.0</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;1,9..144,400&family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css"/>
+<link rel="icon" type="image/svg+xml" href="svg/mark/mark-ink.svg"/>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--rf-paper); color: var(--rf-fg); font-family: var(--rf-font-ui); }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 64px 32px 96px; }
+  .display { font-family: var(--rf-font-display); font-weight: 400; letter-spacing: -0.025em; }
+  .mono { font-family: var(--rf-font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--rf-fg-subtle); }
+  hr.hair { border: 0; border-top: 1px solid var(--rf-hairline); margin: 48px 0; }
+
+  header { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 24px; }
+  header h1 { font-size: 64px; margin: 8px 0 0; letter-spacing: -0.04em; line-height: 1; }
+  header .subtitle { font-size: 18px; color: var(--rf-fg-muted); margin-top: 12px; max-width: 520px; line-height: 1.5; }
+
+  section { margin-top: 56px; }
+  section > h2 { font-family: var(--rf-font-display); font-size: 28px; font-weight: 400; letter-spacing: -0.02em; margin: 0 0 4px; }
+  section > .lede { font-size: 14px; color: var(--rf-fg-muted); margin: 0 0 20px; max-width: 600px; line-height: 1.55; }
+
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .grid-6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+
+  .tile { background: var(--rf-surface-1); border: 1px solid var(--rf-hairline); border-radius: 8px; padding: 32px; min-height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; position: relative; }
+  .tile.dark { background: var(--rf-ink); }
+  .tile.green { background: var(--rf-green); }
+  .tile .label { position: absolute; top: 10px; left: 12px; font-family: var(--rf-font-mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--rf-fg-subtle); }
+  .tile.dark .label, .tile.green .label { color: rgba(250,250,247,0.55); }
+  .tile .dl { position: absolute; top: 8px; right: 10px; font-family: var(--rf-font-mono); font-size: 10px; color: var(--rf-fg-subtle); text-decoration: none; }
+  .tile.dark .dl, .tile.green .dl { color: rgba(250,250,247,0.7); }
+  .tile .dl:hover { color: var(--rf-fg); }
+  .tile.dark .dl:hover, .tile.green .dl:hover { color: var(--rf-paper); }
+
+  .swatches { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+  .sw { border: 1px solid var(--rf-hairline); border-radius: 6px; padding: 12px; }
+  .sw .chip { width: 100%; height: 60px; border-radius: 4px; }
+  .sw .name { font-size: 12px; font-weight: 500; margin-top: 8px; }
+  .sw .hex { font-family: var(--rf-font-mono); font-size: 10px; color: var(--rf-fg-muted); }
+
+  .filelist { display: grid; grid-template-columns: 1fr 1fr; gap: 0 32px; font-family: var(--rf-font-mono); font-size: 11px; line-height: 1.8; color: var(--rf-fg-muted); }
+  .filelist a { color: var(--rf-fg); text-decoration: none; }
+  .filelist a:hover { color: var(--rf-green); }
+
+  pre { background: var(--rf-surface-1); border: 1px solid var(--rf-hairline); border-radius: 6px; padding: 16px 18px; font-family: var(--rf-font-mono); font-size: 12px; line-height: 1.6; overflow-x: auto; color: var(--rf-fg); margin: 0; }
+
+  .download-cta { background: var(--rf-ink); color: var(--rf-paper); border-radius: 12px; padding: 32px 36px; display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; }
+  .download-cta .display { color: var(--rf-paper); font-size: 26px; margin: 0; }
+  .download-cta p { color: rgba(250,250,247,0.7); margin: 6px 0 0; font-size: 14px; max-width: 480px; }
+  .btn { display: inline-block; background: var(--rf-paper); color: var(--rf-ink); padding: 14px 24px; border-radius: 8px; text-decoration: none; font-weight: 500; font-size: 15px; }
+  .btn:hover { background: #fff; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <div class="mono">Renofine · brand pack v1.0</div>
+      <h1 class="display">Renofine</h1>
+      <p class="subtitle">Skåra mark + Fraunces wordmark. SVG, PNG, app-ikoner, favicon, OG-bild, design-tokens, React-komponent och printbart brand-blad. Allt i en mapp.</p>
+    </div>
+    <svg viewBox="0 0 64 64" width="120" height="120"><path d="M32 6 a26 26 0 1 0 26 26 h-12 v-14 h-14 z" fill="#1A1A17"/></svg>
+  </header>
+
+  <hr class="hair"/>
+
+  <!-- Mark variants -->
+  <section>
+    <h2>Marken</h2>
+    <p class="lede">Tre färgvarianter. Använd alltid SVG på webben — PNG bara där SVG inte fungerar.</p>
+    <div class="grid-3">
+      <div class="tile">
+        <span class="label">mark-ink.svg</span>
+        <a class="dl" href="svg/mark/mark-ink.svg" download>↓</a>
+        <img src="svg/mark/mark-ink.svg" width="120" height="120" alt="Mark · ink"/>
+      </div>
+      <div class="tile dark">
+        <span class="label">mark-paper.svg</span>
+        <a class="dl" href="svg/mark/mark-paper.svg" download>↓</a>
+        <img src="svg/mark/mark-paper.svg" width="120" height="120" alt="Mark · paper"/>
+      </div>
+      <div class="tile green">
+        <span class="label">mark-paper.svg (på grön)</span>
+        <a class="dl" href="svg/mark/mark-paper.svg" download>↓</a>
+        <img src="svg/mark/mark-paper.svg" width="120" height="120" alt="Mark · on green"/>
+      </div>
+    </div>
+  </section>
+
+  <!-- Lockups -->
+  <section>
+    <h2>Lockups</h2>
+    <p class="lede">Mark + ordbild som en enhet. Horisontell för nav/footer, stackad för splash/hero.</p>
+    <div class="grid-2">
+      <div class="tile" style="min-height:130px">
+        <span class="label">lockup-horizontal-ink.svg</span>
+        <a class="dl" href="svg/lockup/lockup-horizontal-ink.svg" download>↓</a>
+        <img src="svg/lockup/lockup-horizontal-ink.svg" height="50" alt="Horizontal ink"/>
+      </div>
+      <div class="tile dark" style="min-height:130px">
+        <span class="label">lockup-horizontal-on-dark.svg</span>
+        <a class="dl" href="svg/lockup/lockup-horizontal-on-dark.svg" download>↓</a>
+        <img src="svg/lockup/lockup-horizontal-on-dark.svg" height="50" alt="Horizontal on dark"/>
+      </div>
+      <div class="tile" style="min-height:200px">
+        <span class="label">lockup-stacked-ink.svg</span>
+        <a class="dl" href="svg/lockup/lockup-stacked-ink.svg" download>↓</a>
+        <img src="svg/lockup/lockup-stacked-ink.svg" height="140" alt="Stacked ink"/>
+      </div>
+      <div class="tile" style="min-height:200px; background: var(--rf-green)">
+        <span class="label" style="color: rgba(250,250,247,0.55)">lockup-stacked-on-dark.svg</span>
+        <a class="dl" href="svg/lockup/lockup-stacked-on-dark.svg" download style="color: rgba(250,250,247,0.7)">↓</a>
+        <img src="svg/lockup/lockup-stacked-on-dark.svg" height="140" alt="Stacked on green"/>
+      </div>
+    </div>
+  </section>
+
+  <!-- App icons -->
+  <section>
+    <h2>App-ikoner</h2>
+    <p class="lede">Full-bleed plåtar. iOS/Android lägger till maskningen automatiskt — använd inte den rundade SVG-versionen som upload.</p>
+    <div class="grid-3">
+      <div class="tile" style="background: var(--rf-paper); padding: 16px;">
+        <span class="label">app-icon-paper · 180–1024 px</span>
+        <a class="dl" href="png/app-icons/app-icon-paper-512.png" download>↓ 512</a>
+        <img src="png/app-icons/app-icon-paper-512.png" width="160" height="160" style="border-radius: 36px; box-shadow: 0 4px 16px rgba(0,0,0,0.08);"/>
+      </div>
+      <div class="tile" style="background: var(--rf-surface-2); padding: 16px;">
+        <span class="label">app-icon-ink · 180–512 px</span>
+        <a class="dl" href="png/app-icons/app-icon-ink-512.png" download>↓ 512</a>
+        <img src="png/app-icons/app-icon-ink-512.png" width="160" height="160" style="border-radius: 36px;"/>
+      </div>
+      <div class="tile" style="background: var(--rf-surface-2); padding: 16px;">
+        <span class="label">app-icon-green · 180–1024 px</span>
+        <a class="dl" href="png/app-icons/app-icon-green-512.png" download>↓ 512</a>
+        <img src="png/app-icons/app-icon-green-512.png" width="160" height="160" style="border-radius: 36px;"/>
+      </div>
+    </div>
+  </section>
+
+  <!-- Favicon -->
+  <section>
+    <h2>Favicon</h2>
+    <p class="lede">SVG först, PNG som fallback, ICO för riktigt gamla browsers.</p>
+    <div class="grid-6">
+      <div class="tile" style="padding: 14px; min-height:90px"><span class="label">16</span><img src="png/favicon/favicon-16.png" width="16" height="16"/></div>
+      <div class="tile" style="padding: 14px; min-height:90px"><span class="label">32</span><img src="png/favicon/favicon-32.png" width="32" height="32"/></div>
+      <div class="tile" style="padding: 14px; min-height:90px"><span class="label">48</span><img src="png/favicon/favicon-48.png" width="48" height="48"/></div>
+      <div class="tile" style="padding: 14px; min-height:90px"><span class="label">SVG</span><img src="svg/mark/mark-ink.svg" width="48" height="48"/></div>
+      <div class="tile" style="padding: 14px; min-height:90px"><span class="label">.ico</span><img src="png/favicon/favicon.ico" width="32" height="32"/></div>
+      <div class="tile" style="padding: 14px; min-height:90px"><span class="label">apple-touch</span><img src="png/app-icons/app-icon-paper-180.png" width="48" height="48" style="border-radius: 11px;"/></div>
+    </div>
+  </section>
+
+  <!-- OG card -->
+  <section>
+    <h2>Social / Open Graph</h2>
+    <p class="lede">1200×630 — för länk-previews i Slack, iMessage, Twitter etc.</p>
+    <div class="tile" style="padding: 16px;">
+      <span class="label">og-card-1200x630.png</span>
+      <a class="dl" href="png/social/og-card-1200x630.png" download>↓</a>
+      <img src="png/social/og-card-1200x630.png" style="width: 100%; max-width: 600px; border: 1px solid var(--rf-hairline); border-radius: 6px;"/>
+    </div>
+  </section>
+
+  <!-- Color -->
+  <section>
+    <h2>Färger</h2>
+    <p class="lede">Tokens i <code>tokens.css</code>.</p>
+    <div class="swatches">
+      <div class="sw"><div class="chip" style="background:#1A1A17;"></div><div class="name">Ink</div><div class="hex">#1A1A17</div></div>
+      <div class="sw"><div class="chip" style="background:#FAFAF7; border: 1px solid var(--rf-hairline);"></div><div class="name">Paper</div><div class="hex">#FAFAF7</div></div>
+      <div class="sw"><div class="chip" style="background:#2F5D4E;"></div><div class="name">Green</div><div class="hex">#2F5D4E</div></div>
+      <div class="sw"><div class="chip" style="background:#F5F2E8; border: 1px solid var(--rf-hairline);"></div><div class="name">Surface 1</div><div class="hex">#F5F2E8</div></div>
+      <div class="sw"><div class="chip" style="background:#EFEAE0;"></div><div class="name">Surface 2</div><div class="hex">#EFEAE0</div></div>
+      <div class="sw"><div class="chip" style="background:#E8E4D8;"></div><div class="name">Hairline</div><div class="hex">#E8E4D8</div></div>
+    </div>
+  </section>
+
+  <!-- Code -->
+  <section>
+    <h2>HTML-snippets</h2>
+    <p class="lede">Klistra in i din <code>&lt;head&gt;</code>.</p>
+    <pre>&lt;link rel="icon" type="image/svg+xml" href="/brand/svg/mark/mark-ink.svg"&gt;
+&lt;link rel="icon" type="image/png" sizes="32x32" href="/brand/png/favicon/favicon-32.png"&gt;
+&lt;link rel="apple-touch-icon" sizes="180x180" href="/brand/png/app-icons/app-icon-paper-180.png"&gt;
+&lt;link rel="manifest" href="/brand/manifest.webmanifest"&gt;
+
+&lt;meta property="og:title" content="Renofine"&gt;
+&lt;meta property="og:image" content="https://renofine.com/brand/png/social/og-card-1200x630.png"&gt;
+&lt;meta name="twitter:card" content="summary_large_image"&gt;</pre>
+  </section>
+
+  <!-- Files -->
+  <section>
+    <h2>Filer</h2>
+    <p class="lede">Hela katalogstrukturen.</p>
+    <div class="filelist">
+      <div>
+        <strong style="color: var(--rf-fg)">svg/</strong><br>
+        <a href="svg/mark/mark-ink.svg">mark/mark-ink.svg</a><br>
+        <a href="svg/mark/mark-paper.svg">mark/mark-paper.svg</a><br>
+        <a href="svg/mark/mark-green.svg">mark/mark-green.svg</a><br>
+        <a href="svg/wordmark/wordmark-ink.svg">wordmark/wordmark-ink.svg</a><br>
+        <a href="svg/wordmark/wordmark-paper.svg">wordmark/wordmark-paper.svg</a><br>
+        <a href="svg/wordmark/wordmark-green.svg">wordmark/wordmark-green.svg</a><br>
+        <a href="svg/lockup/lockup-horizontal-ink.svg">lockup/lockup-horizontal-ink.svg</a><br>
+        <a href="svg/lockup/lockup-horizontal-green.svg">lockup/lockup-horizontal-green.svg</a><br>
+        <a href="svg/lockup/lockup-horizontal-on-dark.svg">lockup/lockup-horizontal-on-dark.svg</a><br>
+        <a href="svg/lockup/lockup-horizontal-on-paper.svg">lockup/lockup-horizontal-on-paper.svg</a><br>
+        <a href="svg/lockup/lockup-stacked-ink.svg">lockup/lockup-stacked-ink.svg</a><br>
+        <a href="svg/lockup/lockup-stacked-green.svg">lockup/lockup-stacked-green.svg</a><br>
+        <a href="svg/lockup/lockup-stacked-on-dark.svg">lockup/lockup-stacked-on-dark.svg</a><br>
+        <a href="svg/app-icon/app-icon-paper.svg">app-icon/app-icon-paper.svg</a><br>
+        <a href="svg/app-icon/app-icon-ink.svg">app-icon/app-icon-ink.svg</a><br>
+        <a href="svg/app-icon/app-icon-green.svg">app-icon/app-icon-green.svg</a><br>
+        <a href="svg/social/og-card.svg">social/og-card.svg</a>
+      </div>
+      <div>
+        <strong style="color: var(--rf-fg)">png/</strong><br>
+        favicon/favicon-{16,32,48}.png<br>
+        favicon/favicon-{16,32,48}-paper.png<br>
+        favicon/favicon.ico<br>
+        app-icons/app-icon-paper-{180,192,512,1024}.png<br>
+        app-icons/app-icon-green-{180,192,512,1024}.png<br>
+        app-icons/app-icon-ink-{180,192,512}.png<br>
+        social/og-card-1200x630.png<br>
+        <br>
+        <strong style="color: var(--rf-fg)">övrigt</strong><br>
+        <a href="components/Logo.jsx">components/Logo.jsx</a><br>
+        <a href="tokens.css">tokens.css</a><br>
+        <a href="manifest.webmanifest">manifest.webmanifest</a><br>
+        <a href="brand-sheet.html">brand-sheet.html</a> <span style="color: var(--rf-fg-subtle)">— printable A4</span><br>
+        <a href="README.md">README.md</a><br>
+        <a href="BRAND-GUIDE.md">BRAND-GUIDE.md</a>
+      </div>
+    </div>
+  </section>
+
+  <hr class="hair"/>
+
+  <div class="download-cta">
+    <div>
+      <h3 class="display">Ladda ned hela paketet</h3>
+      <p>En zip med alla SVGs, PNGs, tokens, React-komponent och brand-guide. Be om en zip-export i chatten så packar jag och delar.</p>
+    </div>
+    <a class="btn" href="brand-sheet.html">Öppna brand-blad →</a>
+  </div>
+
+</div>
+</body>
+</html>

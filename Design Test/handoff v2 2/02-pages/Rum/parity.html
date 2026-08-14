@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Rum v2 · Feature parity</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root{
+    --bg:#FAFAF7; --paper:#FFFFFC; --fg:#15110A; --mut:#6B6357; --line:rgba(20,15,5,.10);
+    --ink:#1A140A; --kept:#2F7D4F; --merged:#A06A1F; --gap:#B5341E; --add:#3A5BA7;
+    --ff-d:'Fraunces',serif; --ff-u:'Inter Tight',ui-sans-serif,system-ui;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--ff-u);font-size:15px;line-height:1.55}
+  .wrap{max-width:1180px;margin:0 auto;padding:48px 32px 96px}
+  h1{font-family:var(--ff-d);font-weight:400;font-size:54px;line-height:1.05;letter-spacing:-.02em;margin:0 0 8px}
+  h2{font-family:var(--ff-d);font-weight:400;font-size:30px;line-height:1.15;letter-spacing:-.015em;margin:48px 0 8px}
+  h3{font-family:var(--ff-u);font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--mut);margin:28px 0 10px}
+  p{margin:0 0 12px;color:var(--ink)}
+  .lede{font-size:18px;color:var(--mut);max-width:72ch;margin-bottom:36px}
+  .legend{display:flex;flex-wrap:wrap;gap:16px;margin:0 0 28px;padding:14px 18px;background:var(--paper);border:1px solid var(--line);border-radius:14px}
+  .legend > div{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink)}
+  .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+  .d-kept{background:var(--kept)} .d-merged{background:var(--merged)} .d-gap{background:var(--gap)} .d-add{background:var(--add)}
+  table{width:100%;border-collapse:collapse;background:var(--paper);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin:0 0 8px}
+  thead th{text-align:left;font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);padding:14px 18px;background:#F4F1E9;border-bottom:1px solid var(--line)}
+  tbody td{padding:14px 18px;border-bottom:1px solid var(--line);vertical-align:top;font-size:14px}
+  tbody tr:last-child td{border-bottom:0}
+  td.tag{width:120px}
+  .tag span{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;padding:4px 10px;border-radius:999px;border:1px solid currentColor}
+  .t-kept{color:var(--kept)} .t-merged{color:var(--merged)} .t-gap{color:var(--gap)} .t-add{color:var(--add)}
+  td.feat{width:240px;font-weight:500;color:var(--ink)}
+  td.now{width:280px;color:var(--mut);font-size:13.5px}
+  td.v2{font-size:13.5px}
+  .decision{margin-top:6px;padding:8px 10px;background:#F8F5EC;border:1px dashed rgba(160,106,31,.35);border-radius:8px;font-size:13px;color:var(--ink)}
+  .decision strong{font-weight:600;color:#7A4A0F}
+  .summary{margin:32px 0;padding:24px 28px;background:#FFF;border:1px solid var(--line);border-radius:16px}
+  .summary ul{margin:8px 0 0;padding:0;list-style:none}
+  .summary li{padding:6px 0;font-size:14.5px;border-bottom:1px solid var(--line)}
+  .summary li:last-child{border-bottom:0}
+  .summary strong{font-weight:600}
+  code{font-family:'JetBrains Mono',monospace;font-size:12.5px;background:rgba(0,0,0,.05);padding:1px 6px;border-radius:4px}
+  .meta{font-size:13px;color:var(--mut);margin:24px 0 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Rum v2 · feature parity</h1>
+  <p class="lede">Genomgång av <code>RoomsList.tsx</code> + <code>RoomDetailDialog</code> + <code>RoomDetailForm</code> mot designen i <em>Rum v2</em>. Varje rad är ett beslut: behålla, slå ihop, lägga till nytt — eller en lucka som måste tillbaka innan handoff.</p>
+
+  <div class="legend">
+    <div><span class="dot d-kept"></span> <strong>Behållet</strong> — finns i v2 i samma form</div>
+    <div><span class="dot d-merged"></span> <strong>Sammanslaget</strong> — finns men i ny tab/yta</div>
+    <div><span class="dot d-gap"></span> <strong>Lucka</strong> — saknas i v2, måste lösas</div>
+    <div><span class="dot d-add"></span> <strong>Nytt i v2</strong> — finns ej idag</div>
+  </div>
+
+  <h2>Listvyn</h2>
+  <table>
+    <thead><tr><th>Status</th><th>Funktion</th><th>Idag</th><th>Plats i v2 / förslag</th></tr></thead>
+    <tbody>
+      <tr><td class="tag"><span class="t-kept">Behåll</span></td><td class="feat">Sökruta</td><td class="now">Fritextfilter på namn + beskrivning</td><td class="v2">Toolbar längst upp i lista. Behålls.</td></tr>
+      <tr><td class="tag"><span class="t-merged">Slå ihop</span></td><td class="feat">Visa fält / kolumninställning</td><td class="now">Användaren väljer vilka av 14 fält som visas på korten (sparas per användare via <code>usePersistedPreference</code>)</td><td class="v2">Inte direkt synlig i v2-listan.<div class="decision"><strong>Beslut:</strong> v2-raden visar <em>kuraterat set</em> (yta · arbeten · status · senast). Lägg till "Visa fält"-knapp i toolbar som öppnar samma popover som idag — annars förlorar power-användare kontroll.</div></td></tr>
+      <tr><td class="tag"><span class="t-gap">Lucka</span></td><td class="feat">Sortering (6 alternativ)</td><td class="now">Namn A–Ö / Ö–A, Yta upp/ner, Skapad nyast/äldst</td><td class="v2">Saknas helt i toolbar.<div class="decision"><strong>Beslut:</strong> återinför som dropdown bredvid sökrutan. Standard <code>created_desc</code>.</div></td></tr>
+      <tr><td class="tag"><span class="t-gap">Lucka</span></td><td class="feat">Vyväxlare kort ↔ tabell</td><td class="now">Desktop-toggle, tabellvy via <code>RoomsTableView</code> med densare layout för entreprenörer</td><td class="v2">Bara list-vyn finns i v2.<div class="decision"><strong>Beslut:</strong> behåll toggle. Mappa "tabell" till en kompakt rad-variant av v2-listan (mindre vertikal padding, fält som kolumner istället för chips). Inte ett separat dataobjekt.</div></td></tr>
+      <tr><td class="tag"><span class="t-gap">Lucka</span></td><td class="feat">Bulk-select + radera</td><td class="now">Checkbox per rad, "select all", blå banner med antal + "Ta bort"-knapp</td><td class="v2">Saknas i v2.<div class="decision"><strong>Beslut:</strong> återinför. Checkboxen kan döljas tills användaren long-pressar / klickar "Välj" i toolbar — håller listan ren i normalfallet.</div></td></tr>
+      <tr><td class="tag"><span class="t-gap">Lucka</span></td><td class="feat">"Placera/visa på ritning" (MapPin)</td><td class="now">Per rad: ikon växlar färg om rummet redan är placerat på floor plan. Klick = scrolla till rummet på canvas eller starta placeringsläge.</td><td class="v2">Helt borta — ändå ett av appens mest använda actions.<div class="decision"><strong>Beslut:</strong> lägg tillbaka som höger-action på raden, bredvid chevronen. Color-coded ikon (grön = placerad, grå/orange = ej placerad).</div></td></tr>
+      <tr><td class="tag"><span class="t-kept">Behåll</span></td><td class="feat">Antal rum-badge</td><td class="now"><code>&lt;Badge&gt;</code> bredvid rubriken</td><td class="v2">Behålls i toolbar-rubriken.</td></tr>
+      <tr><td class="tag"><span class="t-kept">Behåll</span></td><td class="feat">Tomt läge / loading</td><td class="now">Två varianter: ingen sökträff vs. inga rum alls</td><td class="v2">Designer in v2 har platshållare för båda. OK.</td></tr>
+      <tr><td class="tag"><span class="t-add">Nytt</span></td><td class="feat">Färgband + form-mini-SVG på rad</td><td class="now">Finns ej</td><td class="v2">Ny visuell signatur för varje rum. Kräver att rum-färg och floor_plan_position-points hämtas till listan (gör de redan).</td></tr>
+      <tr><td class="tag"><span class="t-add">Nytt</span></td><td class="feat">Progress baserad på arbeten</td><td class="now">Finns ej i listan</td><td class="v2">Liten progress-bar per rad. Kräver aggregerad query mot <code>tasks</code> per rum, eller derived fält. <strong>Bekräfta att data finns innan ni bygger.</strong></td></tr>
+    </tbody>
+  </table>
+
+  <h2>Detaljvyn (drawer / dialog)</h2>
+  <table>
+    <thead><tr><th>Status</th><th>Funktion</th><th>Idag</th><th>Plats i v2 / förslag</th></tr></thead>
+    <tbody>
+      <tr><td class="tag"><span class="t-gap">Lucka</span></td><td class="feat">Inline-redigerbart namn</td><td class="now">Klicka rubriken → input + auto-select. Enter/Escape stänger.</td><td class="v2">Hero visar statiskt namn.<div class="decision"><strong>Beslut:</strong> behåll inline-edit. Pencil-ikon visas vid hover. Viktigt — namn är primär identitet.</div></td></tr>
+      <tr><td class="tag"><span class="t-gap">Lucka</span></td><td class="feat">Inline status-pill (klickbar select)</td><td class="now">Liten pill i header som öppnar dropdown med 3 statusar (befintligt, renoveras, nybygge)</td><td class="v2">Pill finns men är ej klickbar i designen.<div class="decision"><strong>Beslut:</strong> gör pillen klickbar — popover med samma 3 alternativ.</div></td></tr>
+      <tr><td class="tag"><span class="t-gap">Lucka</span></td><td class="feat">Prioritet (hög/medel/låg)</td><td class="now">Inline pill bredvid status, klickbar select</td><td class="v2">Saknas helt.<div class="decision"><strong>Beslut:</strong> lägg in som andra pill i hero. Liten färgkodning (röd/gul/grå).</div></td></tr>
+      <tr><td class="tag"><span class="t-gap">Lucka</span></td><td class="feat">Interna anteckningar (alltid synliga)</td><td class="now">Textarea direkt under header — ingen accordion-klick krävs</td><td class="v2">Inte synligt i v2.<div class="decision"><strong>Beslut:</strong> behåll alltid-synlig textarea direkt under hero, eller flytta till "Översikt"-tabben med tydlig placering högt upp.</div></td></tr>
+      <tr><td class="tag"><span class="t-merged">Slå ihop</span></td><td class="feat">Kundens önskemål (Vision)</td><td class="now">Egen accordion-sektion under "Instruktioner"</td><td class="v2">Mappa till <strong>Översikt</strong>-tabben som första block. Egen rubrik "Kundens önskemål".</td></tr>
+      <tr><td class="tag"><span class="t-merged">Slå ihop</span></td><td class="feat">Golv & Tak (HorizontalSection)</td><td class="now">Accordion under "Instruktioner" — många fält</td><td class="v2">Mappa till <strong>Material</strong>-tabben, sektion "Golv & Tak".</td></tr>
+      <tr><td class="tag"><span class="t-merged">Slå ihop</span></td><td class="feat">Väggar & Snickerier (VerticalSection)</td><td class="now">Accordion under "Instruktioner"</td><td class="v2">Mappa till <strong>Material</strong>-tabben, sektion "Väggar & Snickerier".</td></tr>
+      <tr><td class="tag"><span class="t-gap">Lucka</span></td><td class="feat">El & Värme (TechnicalSection)</td><td class="now">Accordion under "Instruktioner" — eluttag, värmegolv etc.</td><td class="v2">Otydligt var den lever i v2.<div class="decision"><strong>Beslut:</strong> egen sektion i Material-tabben ("El & Värme"), eller egen tab om innehållet växer. Inte ihopslaget med material-tabellen — det är annan typ av data.</div></td></tr>
+      <tr><td class="tag"><span class="t-gap">Lucka</span></td><td class="feat">FilledIndicator per sektion</td><td class="now">Visar "3/8 ifyllda" per accordion-sektion (signal till slutkund att fylla mer)</td><td class="v2">Saknas.<div class="decision"><strong>Beslut:</strong> visa per Material-undersektion + på tabbarna (liten dot om något tomt). Bevarar nudge-effekten.</div></td></tr>
+      <tr><td class="tag"><span class="t-kept">Behåll</span></td><td class="feat">Materialkalkyl (CalculationsSection)</td><td class="now">Egen accordion: yta, omkrets, takhöjd, volym</td><td class="v2">Hero visar de 4 tal-värdena. Detaljerad kalkyl (med åtgång per material) hör hemma i <strong>Mått</strong>-tabben.</td></tr>
+      <tr><td class="tag"><span class="t-merged">Slå ihop</span></td><td class="feat">Kopplingar — arbeten + inköp</td><td class="now">Egen accordion med två listor</td><td class="v2">Mappa till <strong>Relaterat</strong>-tabben, två block.</td></tr>
+      <tr><td class="tag"><span class="t-kept">Behåll</span></td><td class="feat">Foton (PhotoSection, 25kb komponent)</td><td class="now">Upload, gallery, ev. Pinterest-import</td><td class="v2">Egen <strong>Foton</strong>-tab. Behåll all funktionalitet.</td></tr>
+      <tr><td class="tag"><span class="t-gap">Lucka</span></td><td class="feat">Checklistor</td><td class="now">Flera checklistor per rum, varje med titel + items + progress + radera. Skapas inline.</td><td class="v2">Saknas helt i v2.<div class="decision"><strong>Beslut:</strong> ny tab <strong>Checklistor</strong>, eller block i Översikt. Eftersom hela funktionen är ganska tung — egen tab är säkrast.</div></td></tr>
+      <tr><td class="tag"><span class="t-gap">Lucka</span></td><td class="feat">Kommentarer (CommentsSection)</td><td class="now">Egen accordion-sektion, full thread per rum</td><td class="v2">Saknas.<div class="decision"><strong>Beslut:</strong> egen tab <strong>Kommentarer</strong> eller block i Relaterat-tabben.</div></td></tr>
+      <tr><td class="tag"><span class="t-gap">Lucka</span></td><td class="feat">Canvas-färg (CanvasSettingsPopover)</td><td class="now">Liten knapp i header öppnar popover för rumsfärg på floor plan</td><td class="v2">Color-band finns på listan men inget sätt att <em>ändra</em> färgen.<div class="decision"><strong>Beslut:</strong> klicka color-bandet på listraden → popover. I drawer: liten knapp i hero.</div></td></tr>
+      <tr><td class="tag"><span class="t-gap">Lucka</span></td><td class="feat">Action bar — Delete + View Elevation</td><td class="now">Footer: <em>Ta bort rum</em> (vänster, destructive), <em>Stäng</em>, <em>View Elevation</em>, <em>Spara</em></td><td class="v2">Bara Cancel + Spara visas.<div class="decision"><strong>Beslut:</strong> återinför Delete (vänster, lågkontrast destructive) och View Elevation (sekundär). Båda måste finnas — det är hur användaren navigerar till elevationsvyn.</div></td></tr>
+      <tr><td class="tag"><span class="t-kept">Behåll</span></td><td class="feat">Skapad-datum</td><td class="now">Diskret centrerad text längst ner</td><td class="v2">Visa motsvarande i hero eller footer på drawer.</td></tr>
+      <tr><td class="tag"><span class="t-add">Nytt</span></td><td class="feat">Hero med form-SVG + 4 stats</td><td class="now">Finns ej — bara textuell area i header</td><td class="v2">Ny visuell ankarpunkt. Stats hämtas från <code>dimensions</code> + beräkningar (volym = area × ceiling_height).</td></tr>
+      <tr><td class="tag"><span class="t-add">Nytt</span></td><td class="feat">Tabbnavigering</td><td class="now">Idag: scrollande accordion</td><td class="v2">5 tabs istället för 9-sektioners scroll. Bevara hela <code>openSections</code>-state-modellen som tab-state istället.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Mobil bottom-sheet</h2>
+  <table>
+    <thead><tr><th>Status</th><th>Funktion</th><th>Idag</th><th>Plats i v2</th></tr></thead>
+    <tbody>
+      <tr><td class="tag"><span class="t-merged">Slå ihop</span></td><td class="feat">Centrerad full-screen Dialog</td><td class="now"><code>&lt;Dialog&gt;</code> med <code>max-w-2xl lg:max-w-5xl max-h-[90vh]</code> på mobil</td><td class="v2">Ersatt med bottom-sheet (peek/half/full snap-points). Förbättring för one-thumb-drift.</td></tr>
+      <tr><td class="tag"><span class="t-add">Nytt</span></td><td class="feat">Sticky CTA i sheet</td><td class="now">Action bar är inline footer, scrollas bort</td><td class="v2">Sheet har sticky bottom-CTA — ändra inget annat.</td></tr>
+      <tr><td class="tag"><span class="t-gap">Lucka</span></td><td class="feat">Alla detaljvy-luckor ovan</td><td class="now">—</td><td class="v2">Samma luckor som desktop. Sheet-arkitekturen är fin men innehåll måste matcha.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Övrigt — hooks &amp; data-kontrakt</h2>
+  <table>
+    <thead><tr><th>Status</th><th>Funktion</th><th>Idag</th><th>Plats i v2 / not</th></tr></thead>
+    <tbody>
+      <tr><td class="tag"><span class="t-kept">Behåll</span></td><td class="feat"><code>useRoomForm</code></td><td class="now">Orkestrerar formData, save, delete, optimistic updates</td><td class="v2">Återanvänds 1:1. Designen påverkar inte hook-kontraktet.</td></tr>
+      <tr><td class="tag"><span class="t-kept">Behåll</span></td><td class="feat"><code>countFilledFields</code> + FilledIndicator</td><td class="now">Räknar ifyllda fält per sektion</td><td class="v2">Behåll. Använd resultatet som tab-dot + sektions-meter.</td></tr>
+      <tr><td class="tag"><span class="t-kept">Behåll</span></td><td class="feat"><code>scheduleServerSync</code> för preferenser</td><td class="now">Sort, vyläge, synliga fält synkas till server</td><td class="v2">Behåll. Sort + vyväxlare som återinförs ska använda samma mekanism.</td></tr>
+      <tr><td class="tag"><span class="t-kept">Behåll</span></td><td class="feat"><code>ROOM_STATUS_OPTIONS</code> + <code>PRIORITY_OPTIONS</code></td><td class="now">Konstanter med <code>labelKey</code> för i18n</td><td class="v2">Behåll. v2 ska läsa samma konstanter — inga hårdkodade strängar.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="summary">
+    <h3 style="margin-top:0">Sammanfattning</h3>
+    <ul>
+      <li><strong>10 luckor</strong> som måste lösas innan handoff. Mest kritiska: <em>"Placera på ritning"</em>-action på listan, <em>inline-redigerbart namn</em>, <em>checklistor</em>, <em>kommentarer</em>, <em>delete + view elevation</em> i action bar.</li>
+      <li><strong>4 power-features</strong> (sort, vyväxlare, kolumninställning, bulk-select) som inte är synliga i v2 men måste finnas — power-användare och entreprenörer förlitar sig på dem.</li>
+      <li><strong>5 sektioner från detaljvyn</strong> mappar rent till nya tabbarna; ett par (El&nbsp;&amp;&nbsp;Värme, Checklistor, Kommentarer) behöver explicit hem.</li>
+      <li><strong>Inga data-kontrakt bryts</strong> — alla hooks och konstanter återanvänds.</li>
+    </ul>
+    <p class="meta">Nästa steg: säg till om du vill att jag uppdaterar <code>Rum v2.html</code> för att stoppa luckorna direkt — eller om du vill köra samma audit på övriga v2-ytor (Start, Owner Start, Contractor Start, Project Overview, Landing) först.</p>
+  </div>
+
+</div>
+</body>
+</html>

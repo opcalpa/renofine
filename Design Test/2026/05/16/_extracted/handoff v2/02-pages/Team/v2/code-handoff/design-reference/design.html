@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="sv" data-theme="paper">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Renofine · Team v2 · design</title>
+<link rel="stylesheet" href="../../../03-source/tokens.css"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  html, body { background:#f0eee9; color: var(--fg); font-family: "Inter Tight", system-ui; margin:0; padding:0; }
+  .font-display { font-family: "Fraunces", serif; }
+  *::-webkit-scrollbar { width:8px; height:8px; }
+  *::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius:4px; }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="../../../03-source/design-canvas.jsx"></script>
+<script type="text/babel" src="../../../03-source/shared.jsx"></script>
+<script type="text/babel" src="../../../03-source/v2/team-v2.jsx"></script>
+<script type="text/babel">
+const W_WIDE = 1320, H_WIDE = 900;
+const W_MODAL = 720, H_MODAL = 720;
+const W_MATRIX = 1320, H_MATRIX = 800;
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(
+  <DesignCanvas>
+
+    <DCSection id="strategy" title="Strategi" subtitle="V2 designramverk — vad ändras och varför">
+      <DCArtboard id="strat" label="Strategi · V2 ramverk" width={W_WIDE} height={760}>
+        <TeamV2Strategy />
+      </DCArtboard>
+    </DCSection>
+
+    <DCSection id="wizard" title="Wizard" subtitle="3 steg — 4 personas + ekonomi-mode + förhandsvisning">
+      <DCArtboard id="w1" label="Steg 1 · Persona" width={W_MODAL} height={H_MODAL}>
+        <TeamV2WizardStep1 />
+      </DCArtboard>
+      <DCArtboard id="w2-ue" label="Steg 2 · UE-medlem" width={W_MODAL} height={H_MODAL}>
+        <TeamV2WizardStep2_UE />
+      </DCArtboard>
+      <DCArtboard id="w2-pm" label="Steg 2 · PM/Co-owner" width={W_MODAL} height={H_MODAL}>
+        <TeamV2WizardStep2_PM />
+      </DCArtboard>
+      <DCArtboard id="w3" label="Steg 3 · Kontakt + förhandsvisning" width={920} height={H_MODAL}>
+        <TeamV2WizardStep3 />
+      </DCArtboard>
+    </DCSection>
+
+    <DCSection id="table" title="Team-tabellen" subtitle="V2 med synlig persona, mode, last-active">
+      <DCArtboard id="team-table" label="Team-tabellen · V2" width={W_WIDE} height={760}>
+        <TeamV2Table />
+      </DCArtboard>
+      <DCArtboard id="audit" label="Audit-log · vem har sett vad" width={W_WIDE} height={760}>
+        <TeamV2AuditLog />
+      </DCArtboard>
+    </DCSection>
+
+    <DCSection id="preview" title="Preview-matris" subtitle="Samma sida sett av olika personas">
+      <DCArtboard id="prev" label="Översikt · 4 personas" width={W_MATRIX} height={H_MATRIX}>
+        <TeamV2PreviewMatrix />
+      </DCArtboard>
+    </DCSection>
+
+    <DCSection id="project-setup" title="Projekt-skapande" subtitle="Nya toggles · tracks_economy + tracks_rot">
+      <DCArtboard id="proj-create" label="Skapa projekt · V2 toggles" width={920} height={H_MODAL}>
+        <TeamV2ProjectCreate />
+      </DCArtboard>
+    </DCSection>
+
+  </DesignCanvas>
+);
+</script>
+</body>
+</html>

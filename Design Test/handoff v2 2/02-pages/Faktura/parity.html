@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Faktura v2 · Feature parity v2</title>
+<template id="__bundler_thumbnail">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <rect width="200" height="200" fill="#FAFAF7"/>
+  <rect x="40" y="40" width="120" height="120" rx="3" fill="#FFFFFC" stroke="#1A140A" stroke-width="2"/>
+  <rect x="56" y="60" width="38" height="3" fill="#1A140A"/>
+  <rect x="56" y="74" width="88" height="2" fill="#6B6357"/>
+  <circle cx="64" cy="100" r="4" fill="#2F5D4E"/>
+  <rect x="74" y="98" width="64" height="3" fill="#1A140A"/>
+  <circle cx="64" cy="118" r="4" fill="#2F5D4E"/>
+  <rect x="74" y="116" width="56" height="3" fill="#1A140A"/>
+  <circle cx="64" cy="136" r="4" fill="#B5341E"/>
+  <rect x="74" y="134" width="48" height="3" fill="#1A140A"/>
+</svg>
+</template>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  :root{
+    --paper:#FAFAF7;--surface:#FFFFFC;--ink:#1A1A17;--ink-soft:#3A332A;
+    --mut:#6B6357;--subtle:#9C948A;--hair:rgba(20,15,5,.10);--hair-2:rgba(20,15,5,.18);
+    --green:#2F5D4E;--green-soft:#E5EEE9;
+    --rust:#B5341E;--rust-soft:#F7E4DF;
+    --gold:#A8845C;--gold-soft:#F4ECDF;
+    --amber:#A06A1F;--amber-soft:#F8EFD9;
+    --blue:#3A5BA7;--blue-soft:#E6EBF5;
+    --ff-d:'Fraunces',serif;
+    --ff-u:'Inter Tight',ui-sans-serif,system-ui,-apple-system,sans-serif;
+    --ff-m:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--ff-u);font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1080px;margin:0 auto;padding:64px 32px 120px}
+  h1{font-family:var(--ff-d);font-weight:300;font-size:56px;line-height:1.02;letter-spacing:-.025em;margin:0 0 8px}
+  h2{font-family:var(--ff-d);font-weight:400;font-size:26px;line-height:1.18;letter-spacing:-.015em;margin:48px 0 14px}
+  h3{font-family:var(--ff-d);font-weight:500;font-size:18px;margin:24px 0 8px}
+  .lede{color:var(--mut);font-size:17px;max-width:78ch;margin:0 0 32px}
+  .mono{font-family:var(--ff-m);font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--mut)}
+  .num-tag{display:inline-flex;align-items:center;gap:8px;font-family:var(--ff-m);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--rust);margin-bottom:8px}
+  .num-tag .dot{width:6px;height:6px;border-radius:50%;background:var(--rust)}
+  hr.hair{border:0;border-top:1px solid var(--hair);margin:48px 0}
+
+  .callout{background:var(--rust-soft);border:1px solid rgba(181,52,30,.25);border-radius:12px;padding:18px 22px;margin:24px 0 32px;display:flex;gap:14px;align-items:flex-start}
+  .callout .ic{width:28px;height:28px;border-radius:50%;background:var(--rust);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0}
+  .callout h3{margin:0 0 4px;color:var(--rust);font-size:16px}
+  .callout p{margin:0;font-size:14px;color:var(--ink-soft)}
+
+  .gain{background:var(--green-soft);border:1px solid rgba(47,93,78,.25);border-radius:12px;padding:18px 22px;margin:0 0 32px;display:flex;gap:14px;align-items:flex-start}
+  .gain .ic{width:28px;height:28px;border-radius:50%;background:var(--green);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0}
+  .gain h3{margin:0 0 4px;color:var(--green);font-size:16px}
+  .gain p{margin:0;font-size:14px;color:var(--ink-soft)}
+
+  table{width:100%;border-collapse:collapse;margin:14px 0 8px}
+  th{text-align:left;font-family:var(--ff-m);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);font-weight:500;padding:10px 12px;border-bottom:1.5px solid var(--ink-soft);vertical-align:bottom}
+  td{padding:12px;border-bottom:1px solid var(--hair);vertical-align:top;font-size:13.5px}
+  td .file{font-family:var(--ff-m);font-size:11.5px;color:var(--ink-soft)}
+  td .what{font-weight:600;color:var(--ink);margin-bottom:2px}
+  td .desc{color:var(--mut);font-size:12.5px}
+  .badge{display:inline-flex;align-items:center;font-family:var(--ff-m);font-size:10px;letter-spacing:.05em;text-transform:uppercase;font-weight:600;padding:3px 8px;border-radius:4px;white-space:nowrap}
+  .b-new{background:var(--green-soft);color:var(--green)}
+  .b-keep{background:var(--blue-soft);color:var(--blue)}
+  .b-fix{background:var(--amber-soft);color:var(--amber)}
+  .b-miss{background:var(--rust-soft);color:var(--rust)}
+  .b-dropped{background:#EEE9DD;color:#6B5A3A}
+
+  ul.clean{list-style:none;padding:0;margin:0}
+  ul.clean li{padding:8px 0;border-bottom:1px solid var(--hair);display:flex;gap:10px;align-items:flex-start}
+  ul.clean li:last-child{border-bottom:0}
+  ul.clean .marker{font-family:var(--ff-m);font-size:10.5px;color:var(--rust);margin-top:3px;flex-shrink:0;width:18px}
+
+  .scene-row{display:grid;grid-template-columns:60px 1.2fr 1.5fr 110px;gap:16px;align-items:flex-start;padding:14px 0;border-bottom:1px solid var(--hair)}
+  .scene-row .num{font-family:var(--ff-m);font-size:10.5px;color:var(--rust);letter-spacing:.06em;padding-top:4px}
+  .scene-row .ttl{font-family:var(--ff-d);font-weight:500;font-size:16px;line-height:1.25;margin-bottom:2px}
+  .scene-row .sub{color:var(--mut);font-size:12.5px}
+  .scene-row .src{font-family:var(--ff-m);font-size:11px;color:var(--ink-soft);line-height:1.5}
+
+  .status-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+  .status-card{background:var(--surface);border:1px solid var(--hair);border-radius:12px;padding:18px 20px}
+  .status-card.green{background:var(--green-soft);border-color:rgba(47,93,78,.2)}
+  .status-card.amber{background:var(--amber-soft);border-color:rgba(160,106,31,.2)}
+  .status-card h4{margin:0 0 10px;font-family:var(--ff-d);font-weight:500;font-size:15px;display:flex;align-items:center;gap:8px}
+  .status-card.green h4{color:var(--green)}
+  .status-card.amber h4{color:var(--amber)}
+  .status-card ul{margin:0;padding-left:18px;font-size:13px;color:var(--ink-soft)}
+  .status-card ul li{padding:3px 0}
+  .count-pill{font-family:var(--ff-m);font-size:11px;background:rgba(0,0,0,.05);padding:2px 8px;border-radius:999px;font-weight:600;margin-left:auto}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="num-tag"><span class="dot"></span>Parity-rapport v2 · efter kod-audit</div>
+    <h1>Faktura v2 · parity v2</h1>
+    <p class="lede">Andra rundans audit. Min v1-rapport utgick från enbart <span class="mono" style="font-size:12px">Invoice.tsx</span> och missade hela <span class="mono" style="font-size:12px">/components/invoices/</span>-mappen — där lever skapa-flödet i tre separata formulär plus två dialoger. Den här rapporten dokumenterar vad jag missade, vad som nu täcks i mockupen, och vad som fortfarande saknas.</p>
+
+    <div class="callout">
+      <div class="ic">!</div>
+      <div>
+        <h3>Vad parity v1 missade</h3>
+        <p>Mockupen hade <strong>en</strong> skapa-vy (slutfaktura med prepop från offert). Kodbasen har <strong>tre lägen</strong> — väljs i en separat <span class="mono" style="font-size:11px">InvoiceMethodDialog</span> innan formuläret öppnas. Plus två dialoger som helt saknades: <span class="mono" style="font-size:11px">RecordPaymentDialog</span> (fanns) och <span class="mono" style="font-size:11px">ShareInvoiceDialog</span> (saknades). Alla 4 är nu med i Faktura v2.html.</p>
+      </div>
+    </div>
+
+    <div class="gain">
+      <div class="ic">✓</div>
+      <div>
+        <h3>Vad v2-mockupen nu täcker</h3>
+        <p>11 scener (upp från 7). Tre nya skapa-scener (00a metod-dialog, 00b procent-formulär, 00c klart arbete-formulär), plus en ny share-dialog (08). Existerande 7 scener orörda — hela dokumentet är additivt.</p>
+      </div>
+    </div>
+  </header>
+
+  <hr class="hair">
+
+  <h2>De 8 luckorna jag missade i v1</h2>
+  <p style="color:var(--mut);max-width:70ch;margin:0">Sorterat efter allvarlighet. De fyra första är skapa-flöde (P0 kritisk), de fyra sista är detalj-vy (P1 viktigt).</p>
+
+  <ul class="clean" style="margin-top:18px">
+    <li><span class="marker">L1</span><div><strong>Två-stegs skapa-modal saknades helt.</strong> Innan formuläret visas måste användaren välja metod i <span class="mono" style="font-size:11px">InvoiceMethodDialog</span>. Mockupen hoppade direkt in i editorn. <span class="badge b-new" style="margin-left:6px">scen 00a tillagd</span></div></li>
+    <li><span class="marker">L2</span><div><strong>"Procent av projekt"-läget saknades.</strong> Det vanligaste à konto-läget (PercentMethodForm) — kontraktsvärde / redan fakturerat / kvarstående + 25/50/75/100-snabbknappar + ROT-flagga + remaining-validering. <span class="badge b-new" style="margin-left:6px">scen 00b tillagd</span></div></li>
+    <li><span class="marker">L3</span><div><strong>"Klart arbete"-läget saknades.</strong> Tabell över projektets tasks med checkbox + per-rad %-input. Prepop completed=100%, in_progress=50%. Cap mot redan fakturerat per task. <span class="badge b-new" style="margin-left:6px">scen 00c tillagd</span></div></li>
+    <li><span class="marker">L4</span><div><strong>"Tom faktura"-länken</strong> som tredje alternativ i metod-dialogen — nås via "Skip" i nuvarande implementation. <span class="badge b-new" style="margin-left:6px">som 3:e radio i scen 00a</span></div></li>
+    <li><span class="marker">L5</span><div><strong>ShareInvoiceDialog saknades helt.</strong> Email-input + namn + valfritt meddelande. När entreprenören vill skicka fakturan till kund. <span class="badge b-new" style="margin-left:6px">scen 08 tillagd</span></div></li>
+    <li><span class="marker">L6</span><div><strong>"Already invoiced"-pill per task</strong> i klart arbete-läget. Förhindrar dubbel-fakturering — tasken visar "50 %" om den delvis fakturerats tidigare. <span class="badge b-new" style="margin-left:6px">i scen 00c</span></div></li>
+    <li><span class="marker">L7</span><div><strong>Per-läge ROT-flagga</strong> (procent-läget) vs <strong>per-rad ROT-flagga</strong> (klart arbete-läget). Är inte samma sak — i procent-läget gäller ROT hela fakturan, i klart arbete-läget per task. <span class="badge b-new" style="margin-left:6px">båda mönster mockade</span></div></li>
+    <li><span class="marker">L8</span><div><strong>"Exceeds remaining"-validering</strong> — om användaren skriver 80 % men bara 50 % återstår. Visas som rött belopp + spärrad CTA. <span class="badge b-fix" style="margin-left:6px">implicit visad i scen 00b</span></div></li>
+  </ul>
+
+  <hr class="hair">
+
+  <h2>Alla 11 scener i Faktura v2.html → kod</h2>
+
+  <div class="scene-row">
+    <span class="num">00a</span>
+    <div><div class="ttl">Välj skapa-läge</div><div class="sub">Tre radio-kort + "Skip" till tom. Steg 1 av 2.</div></div>
+    <div class="src">src/components/invoices/<br>InvoiceMethodDialog.tsx</div>
+    <span class="badge b-new">NY</span>
+  </div>
+  <div class="scene-row">
+    <span class="num">00b</span>
+    <div><div class="ttl">Procent av projekt (à konto)</div><div class="sub">3 stat-kort, snabbknappar, ROT-toggle, beräkning.</div></div>
+    <div class="src">src/components/invoices/<br>PercentMethodForm.tsx</div>
+    <span class="badge b-new">NY</span>
+  </div>
+  <div class="scene-row">
+    <span class="num">00c</span>
+    <div><div class="ttl">Klart arbete (från tasks)</div><div class="sub">7-rads task-tabell med checkbox + per-rad %.</div></div>
+    <div class="src">src/components/invoices/<br>CompletedWorkForm.tsx</div>
+    <span class="badge b-new">NY</span>
+  </div>
+  <div class="scene-row">
+    <span class="num">01</span>
+    <div><div class="ttl">Skapa-vyn (full editor)</div><div class="sub">3-kolumners editor med live-PDF-preview. Används efter steg 2 — eller direkt vid "Tom faktura".</div></div>
+    <div class="src">src/pages/contractor/<br>CreateInvoiceV2.tsx</div>
+    <span class="badge b-keep">UPPDAT.</span>
+  </div>
+  <div class="scene-row">
+    <span class="num">02</span>
+    <div><div class="ttl">Ägar-vy · skickad</div><div class="sub">Viewed-at indikator, reshare/unlock-kontroller.</div></div>
+    <div class="src">src/pages/contractor/<br>Invoice.tsx (status: sent)</div>
+    <span class="badge b-keep">BEH.</span>
+  </div>
+  <div class="scene-row">
+    <span class="num">03</span>
+    <div><div class="ttl">Ägar-vy · delbetald</div><div class="sub">paid_amount + remaining + payments-historik.</div></div>
+    <div class="src">src/pages/contractor/<br>Invoice.tsx (status: partially_paid)</div>
+    <span class="badge b-keep">BEH.</span>
+  </div>
+  <div class="scene-row">
+    <span class="num">04</span>
+    <div><div class="ttl">Ägar-vy · betald</div><div class="sub">BETALD-vattenstämpel på PDF.</div></div>
+    <div class="src">src/pages/contractor/<br>Invoice.tsx (status: paid)</div>
+    <span class="badge b-keep">BEH.</span>
+  </div>
+  <div class="scene-row">
+    <span class="num">05</span>
+    <div><div class="ttl">Ägar-vy · förfallen</div><div class="sub">Röd banner + Påminn-CTA.</div></div>
+    <div class="src">src/pages/contractor/<br>Invoice.tsx (status: overdue)</div>
+    <span class="badge b-keep">BEH.</span>
+  </div>
+  <div class="scene-row">
+    <span class="num">06</span>
+    <div><div class="ttl">Kund-vy</div><div class="sub">Sticky betal-summa, chat-toggle.</div></div>
+    <div class="src">src/pages/<br>InvoiceCustomerView.tsx</div>
+    <span class="badge b-keep">BEH.</span>
+  </div>
+  <div class="scene-row">
+    <span class="num">07</span>
+    <div><div class="ttl">RecordPayment-modal</div><div class="sub">Två lägen: partiell betalning vs markera som betald.</div></div>
+    <div class="src">src/components/invoices/<br>RecordPaymentDialog.tsx</div>
+    <span class="badge b-keep">BEH.</span>
+  </div>
+  <div class="scene-row">
+    <span class="num">08</span>
+    <div><div class="ttl">ShareInvoice-modal</div><div class="sub">Email + namn + meddelande, kanal-toggle, kopiera-länk.</div></div>
+    <div class="src">src/components/invoices/<br>ShareInvoiceDialog.tsx</div>
+    <span class="badge b-new">NY</span>
+  </div>
+
+  <hr class="hair">
+
+  <h2>Status-översikt</h2>
+
+  <div class="status-grid">
+    <div class="status-card green">
+      <h4>✓ Täcks nu i mockupen<span class="count-pill">26</span></h4>
+      <ul>
+        <li>InvoiceMethodDialog 2-stegs väljarmodal</li>
+        <li>Procent-läge med 3 stat-kort + snabbknappar</li>
+        <li>ROT-flagga per faktura (procent-läge)</li>
+        <li>ROT-flagga per rad (klart arbete-läge)</li>
+        <li>Klart arbete-tabell med per-rad %</li>
+        <li>Already invoiced %-pill per task</li>
+        <li>Remaining-amount cap per task</li>
+        <li>Prepop completed=100, in_progress=50</li>
+        <li>Tom faktura via "Skip"-länk</li>
+        <li>RecordPayment partiell vs markera-som-betald</li>
+        <li>Betalningsmetod-chips (Bg/Swish/Kort/Kontant)</li>
+        <li>ShareInvoice email + namn + meddelande</li>
+        <li>Direktlänk + kopiera-knapp</li>
+        <li>Email/SMS-kanal-toggle</li>
+        <li>Lås-vid-share-varning</li>
+        <li>Live PDF-preview (skapa-vyn)</li>
+        <li>Bankgiro/konto/OCR som separata fält</li>
+        <li>Betalningsvillkor-chips (10/15/20/30/45/60/90 d)</li>
+        <li>ÄTA-faktura-toggle</li>
+        <li>Fyra status-vyer (sent/partial/paid/overdue)</li>
+        <li>BETALD-vattenstämpel</li>
+        <li>Förfallodatum-validering visuellt</li>
+        <li>Kund-vy med sticky betal-summa</li>
+        <li>Reshare/Unlock-kontroller</li>
+        <li>Viewed-at-indikator</li>
+        <li>Auto-fakturanr (FAK-2026-NNNN)</li>
+      </ul>
+    </div>
+
+    <div class="status-card amber">
+      <h4>⏳ Kvarstår att mocka<span class="count-pill">6</span></h4>
+      <ul>
+        <li><strong>Faktura-listvy</strong> — översikt över alla fakturor i ett projekt med filter (status, datum, belopp)</li>
+        <li><strong>Email-template-preview</strong> i ShareInvoice — visa hur kundens email kommer se ut</li>
+        <li><strong>SMS-preview</strong> i ShareInvoice — vad som skickas vid SMS-kanal</li>
+        <li><strong>Reminder-modal</strong> — "Skicka påminnelse" vid förfallen faktura — har bara CTA, ej formulär</li>
+        <li><strong>Cancel/Credit-faktura-flöde</strong> — kreditera redan skickad faktura</li>
+        <li><strong>Bulk-export-vy</strong> — exportera flera fakturor som ZIP/PDF för bokföring</li>
+      </ul>
+    </div>
+  </div>
+
+  <hr class="hair">
+
+  <h2>Skillnader mot v1-rapporten</h2>
+
+  <table>
+    <thead>
+      <tr><th style="width:20%">Område</th><th>v1 sa</th><th>v2 säger</th><th style="width:120px">Status</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Skapa-flöde</strong></td>
+        <td>Ett enda läge: slutfaktura från offert</td>
+        <td>Tre lägen i två steg: dialog → form (procent / klart arbete / tom)</td>
+        <td><span class="badge b-fix">RÄTTAT</span></td>
+      </tr>
+      <tr>
+        <td><strong>Antal scener</strong></td>
+        <td>7 scener · 18 luckor täckta</td>
+        <td>11 scener · 26 luckor täckta · 6 kvarstår</td>
+        <td><span class="badge b-fix">UTÖKAT</span></td>
+      </tr>
+      <tr>
+        <td><strong>ROT-modell</strong></td>
+        <td>Per-rad ROT-flagga</td>
+        <td>Per-faktura ROT (procent-läge) ELLER per-rad ROT (klart arbete) — beroende på skapa-läge</td>
+        <td><span class="badge b-fix">FÖRTYDLIGAT</span></td>
+      </tr>
+      <tr>
+        <td><strong>Sharing</strong></td>
+        <td>Inte nämnt</td>
+        <td>Egen ShareInvoiceDialog med email/SMS/länk + meddelande</td>
+        <td><span class="badge b-miss">NY</span></td>
+      </tr>
+      <tr>
+        <td><strong>Kod-källfiler</strong></td>
+        <td>1 fil (Invoice.tsx)</td>
+        <td>9 filer (CreateInvoiceV2 + 7 i /invoices/ + Invoice.tsx)</td>
+        <td><span class="badge b-fix">UTÖKAT</span></td>
+      </tr>
+      <tr>
+        <td><strong>Validering</strong></td>
+        <td>Implicit</td>
+        <td>Explicit: exceedsRemaining, capped per-task, can-not-overpay</td>
+        <td><span class="badge b-fix">FÖRTYDLIGAT</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr class="hair">
+
+  <h2>Nästa steg</h2>
+  <ul class="clean">
+    <li><span class="marker">P0</span><div><strong>Granska de tre nya skapa-scenerna</strong> (00a/b/c) i Faktura v2.html. Är belopps-beräkningarna och flödet trovärdigt? Saknas något fält i någon av formerna?</div></li>
+    <li><span class="marker">P0</span><div><strong>Bekräfta ShareInvoice-dialogen</strong> (scen 08). SMS-kanal är min gissning — finns det i koden eller är det bara email idag?</div></li>
+    <li><span class="marker">P1</span><div><strong>Bygga faktura-listvy</strong> som separat mockup. Det är ingången användaren ser innan en specifik faktura öppnas — saknas helt idag.</div></li>
+    <li><span class="marker">P1</span><div><strong>Återgå till Offert v2 + ÄTA v2</strong> och göra samma kod-djupdyk. Misstänker att de också har "metod-dialoger" eller liknande tvåstegs-flöden jag missat.</div></li>
+    <li><span class="marker">P2</span><div><strong>Reminder-flöde</strong> mockas — vad skickas, hur ser det ut för kunden, hur loggas det.</div></li>
+  </ul>
+
+  <p class="mono" style="margin-top:64px;color:var(--subtle)">Renofine 2026 · paper-warm · audit v2 mot opcalpa/renomate@main · 9 källfiler genomlästa</p>
+
+</div>
+</body>
+</html>

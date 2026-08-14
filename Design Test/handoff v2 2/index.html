@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Renofine · Handoff v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FAFAF7;--paper-2:#F4F1EA;--paper-3:#EFEAE0;
+  --ink:#1A1A17;--ink-soft:#3A332A;--mut:#6B6357;--subtle:#9C948A;
+  --hair:#E5DFD2;--hair-2:#D8D1BF;
+  --green:#2F5D4E;--green-soft:#E4ECE6;
+  --rust:#B5341E;--rust-soft:#F2DDD5;
+  --gold:#A8845C;--gold-soft:#F0E5D4;
+  --amber:#7A4A0F;--amber-soft:#F4E4C7;
+  --ff-d:'Fraunces',Georgia,serif;
+  --ff-u:'Inter Tight',-apple-system,sans-serif;
+  --ff-m:'JetBrains Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--ff-u);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body{padding:64px 48px 96px;max-width:1200px;margin:0 auto}
+.num-tag{display:inline-flex;align-items:center;gap:8px;font-family:var(--ff-m);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--rust);margin-bottom:8px}
+.num-tag .dot{width:6px;height:6px;border-radius:50%;background:var(--rust)}
+h1{font-family:var(--ff-d);font-weight:300;font-size:64px;letter-spacing:-.02em;margin:0 0 16px;line-height:1}
+h2{font-family:var(--ff-d);font-weight:400;font-size:30px;letter-spacing:-.01em;margin:48px 0 18px;line-height:1.15}
+.lede{color:var(--mut);font-size:17px;max-width:78ch;margin:0 0 12px;line-height:1.55}
+.mono{font-family:var(--ff-m);font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--mut)}
+hr.hair{border:0;border-top:1px solid var(--hair);margin:48px 0 32px}
+
+.bar{display:flex;gap:12px;flex-wrap:wrap;margin-top:18px;font-size:12.5px;color:var(--mut)}
+.bar a{color:var(--green);text-decoration:none;font-weight:500}
+.bar a:hover{text-decoration:underline}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-top:14px}
+.card{display:block;text-decoration:none;color:inherit;background:var(--paper-2);border:1px solid var(--hair);border-radius:10px;padding:18px 20px;transition:transform .12s ease,border-color .12s ease}
+.card:hover{transform:translateY(-2px);border-color:var(--hair-2)}
+.card .top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.card .ttl{font-family:var(--ff-d);font-weight:400;font-size:18px;color:var(--ink);letter-spacing:-.005em}
+.card .desc{font-size:13px;color:var(--mut);line-height:1.5;margin:6px 0 8px}
+.card .meta{font-family:var(--ff-m);font-size:10.5px;color:var(--subtle);letter-spacing:.04em;text-transform:uppercase}
+.card .links{display:flex;gap:10px;margin-top:10px;font-size:11.5px;font-family:var(--ff-m);text-transform:uppercase;letter-spacing:.04em}
+.card .links span{color:var(--green)}
+
+.badge{display:inline-flex;align-items:center;gap:6px;padding:3px 8px;border-radius:99px;font-family:var(--ff-m);font-size:10px;letter-spacing:.06em;text-transform:uppercase;font-weight:500}
+.b-done{background:var(--green-soft);color:var(--green)}
+.b-partial{background:var(--gold-soft);color:var(--amber)}
+.b-todo{background:var(--paper-3);color:var(--mut)}
+.dot-s{width:6px;height:6px;border-radius:50%;background:currentColor}
+
+.legend{display:flex;gap:18px;flex-wrap:wrap;margin:24px 0 8px;padding:14px 18px;background:var(--paper-2);border-radius:10px;border:1px solid var(--hair);font-size:12px;color:var(--ink-soft)}
+.legend strong{font-family:var(--ff-m);font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--mut);font-weight:500}
+
+.lvl{font-family:var(--ff-m);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--subtle);margin:32px 0 10px}
+</style>
+</head>
+<body>
+
+<header style="margin-bottom:36px">
+  <div class="num-tag"><span class="dot"></span>Handoff v2.0.0 · 9 maj 2026</div>
+  <h1>Renofine</h1>
+  <p class="lede">Designpaket med full feature parity mot kodbasen. Klar struktur, en mapp per sida, statusflagga per modul.</p>
+  <div class="bar">
+    <a href="STATUS.md">📋 STATUS.md</a>
+    <span>·</span>
+    <a href="CHANGELOG.md">🔖 CHANGELOG</a>
+    <span>·</span>
+    <a href="README.md">📘 README.md</a>
+    <span>·</span>
+    <a href="00-roadmap/Feature-roadmap.html">🗺 Roadmap</a>
+    <span>·</span>
+    <a href="00-roadmap/Feature-inventory.html">📚 Inventory</a>
+  </div>
+</header>
+
+<div class="legend">
+  <span><strong>Status:</strong></span>
+  <span><span class="badge b-done"><span class="dot-s"></span>Klar</span> &nbsp; full feature parity, parity-rapport finns</span>
+  <span><span class="badge b-partial"><span class="dot-s"></span>Delvis</span> &nbsp; design finns men ej parity-auditad</span>
+  <span><span class="badge b-todo"><span class="dot-s"></span>Saknas</span> &nbsp; ingen design ännu</span>
+</div>
+
+<hr class="hair">
+
+<div class="lvl">00 · Planering</div>
+<div class="grid">
+  <a class="card" href="00-roadmap/Feature-roadmap.html">
+    <div class="top"><span class="ttl">Feature roadmap</span><span class="badge b-done"><span class="dot-s"></span>Klar</span></div>
+    <p class="desc">Prioriterad lista över alla moduler (P0–P3) med beslut om vad som byggs i vilken ordning.</p>
+    <div class="meta">v3 · prioritering</div>
+  </a>
+  <a class="card" href="00-roadmap/Feature-inventory.html">
+    <div class="top"><span class="ttl">Feature inventory</span><span class="badge b-done"><span class="dot-s"></span>Klar</span></div>
+    <p class="desc">Komplett feature-lista per sida från kodbasen. Källan för alla parity-rundor.</p>
+    <div class="meta">v2 · referens</div>
+  </a>
+</div>
+
+<div class="lvl">01 · Brand</div>
+<div class="grid">
+  <a class="card" href="01-brand/Logotyp.html">
+    <div class="top"><span class="ttl">Logotyp &amp; brand</span><span class="badge b-done"><span class="dot-s"></span>Klar</span></div>
+    <p class="desc">Mark, lockup (horisontell + stackad), monogram, app-ikoner, favicon, OG-bild, brand-guide.</p>
+    <div class="meta">→ assets/ tokens, brand-guide.md</div>
+  </a>
+</div>
+
+<div class="lvl">02 · Sidor</div>
+<div class="grid">
+
+  <a class="card" href="02-pages/Rum/design.html">
+    <div class="top"><span class="ttl">Rum</span><span class="badge b-done"><span class="dot-s"></span>Klar</span></div>
+    <p class="desc">Desktop list + drawer + mobil bottom-sheet. Alla 7 tabs: Detaljer, Yta, Tasks, El &amp; värme, Material, Checklistor, Kommentarer.</p>
+    <div class="meta">→ src/components/RoomEditor.tsx · 47 KB</div>
+    <div class="links"><a href="02-pages/Rum/design.html"><span>design</span></a> · <a href="02-pages/Rum/parity.html"><span>parity</span></a></div>
+  </a>
+
+  <a class="card" href="02-pages/Offert/design.html">
+    <div class="top"><span class="ttl">Offert</span><span class="badge b-done"><span class="dot-s"></span>Klar</span></div>
+    <p class="desc">9 scener: skapa-vy, ägar-vy skickad/accepterad, kund-vy, ROT-modal, ÄTA-läge, ImportRoom, CreateClient, ShareQuote.</p>
+    <div class="meta">→ src/pages/contractor/Quote.tsx</div>
+    <div class="links"><a href="02-pages/Offert/design.html"><span>design</span></a> · <a href="02-pages/Offert/parity.html"><span>parity</span></a></div>
+  </a>
+
+  <a class="card" href="02-pages/Faktura/design.html">
+    <div class="top"><span class="ttl">Faktura</span><span class="badge b-done"><span class="dot-s"></span>Klar</span></div>
+    <p class="desc">8 scener: MethodDialog, Procent, Klart arbete, Manuell, ägar-vy, kund-vy, RecordPayment, Share.</p>
+    <div class="meta">→ src/pages/contractor/Invoice.tsx</div>
+    <div class="links"><a href="02-pages/Faktura/design.html"><span>design</span></a> · <a href="02-pages/Faktura/parity.html"><span>parity</span></a></div>
+  </a>
+
+  <a class="card" href="02-pages/Start-Homeowner/design.html">
+    <div class="top"><span class="ttl">Start · Homeowner</span><span class="badge b-partial"><span class="dot-s"></span>Delvis</span></div>
+    <p class="desc">Hemskärm för privatperson. 3 lägen via Tweaks: empty / 1 active / many+history. Parity ej kontrollerad.</p>
+    <div class="meta">→ src/pages/OwnerStart.tsx</div>
+  </a>
+
+  <a class="card" href="02-pages/Start-Contractor/design.html">
+    <div class="top"><span class="ttl">Start · Contractor</span><span class="badge b-partial"><span class="dot-s"></span>Delvis</span></div>
+    <p class="desc">Hemskärm för företag. 3 lägen via Tweaks. Parity ej kontrollerad.</p>
+    <div class="meta">→ src/pages/Index.tsx</div>
+  </a>
+
+  <a class="card" href="02-pages/Landing/design.html">
+    <div class="top"><span class="ttl">Landing</span><span class="badge b-partial"><span class="dot-s"></span>Delvis</span></div>
+    <p class="desc">Publik landningssida. Skiss, ej parity-auditad.</p>
+    <div class="meta">→ src/pages/Landing.tsx</div>
+  </a>
+
+  <div class="card" style="cursor:default">
+    <div class="top"><span class="ttl">Project Detail</span><span class="badge b-todo"><span class="dot-s"></span>Saknas</span></div>
+    <p class="desc">Stor sida — 58 KB i koden. Splittas i 5 rundor: A Översikt · B Tasks · C Floor map · D Inköp/Dokument/Aktivitet · E Inbjudningar/Klientvy.</p>
+    <div class="meta">→ src/pages/ProjectDetail.tsx · 58 KB</div>
+  </div>
+
+  <div class="card" style="cursor:default">
+    <div class="top"><span class="ttl">Profil &amp; inställningar</span><span class="badge b-todo"><span class="dot-s"></span>Saknas</span></div>
+    <p class="desc">Användarens profil, företagsinfo, fakturainställningar, språk.</p>
+    <div class="meta">→ src/pages/Profile.tsx</div>
+  </div>
+
+  <div class="card" style="cursor:default">
+    <div class="top"><span class="ttl">Worker view / närvaro</span><span class="badge b-todo"><span class="dot-s"></span>Saknas</span></div>
+    <p class="desc">Hantverkar-vy med tids-incheckning, dagbok, projektläge.</p>
+    <div class="meta">→ WorkerView.tsx, AttendanceCheckIn.tsx</div>
+  </div>
+
+  <div class="card" style="cursor:default">
+    <div class="top"><span class="ttl">Klientregister</span><span class="badge b-todo"><span class="dot-s"></span>Saknas</span></div>
+    <p class="desc">CRUD för kunder. Använder samma dialog som Offert (CreateClientDialog).</p>
+    <div class="meta">→ src/pages/contractor/ClientRegistry.tsx</div>
+  </div>
+
+  <div class="card" style="cursor:default">
+    <div class="top"><span class="ttl">Intake-förfrågningar</span><span class="badge b-todo"><span class="dot-s"></span>Saknas</span></div>
+    <p class="desc">Inkommande projektförfrågningar från privatpersoner som söker hantverkare.</p>
+    <div class="meta">→ IntakeRequests.tsx, FindProfessionals.tsx</div>
+  </div>
+
+  <div class="card" style="cursor:default">
+    <div class="top"><span class="ttl">Customer-flöden (publika länkar)</span><span class="badge b-todo"><span class="dot-s"></span>Saknas</span></div>
+    <p class="desc">Publika sidor som kund ser via länk: intake-formulär, inbjudan, projektaccept.</p>
+    <div class="meta">→ CustomerIntake.tsx, InvitationResponse.tsx</div>
+  </div>
+
+</div>
+
+<p class="mono" style="margin-top:64px;color:var(--subtle)">Renofine 2026 · paper-warm · Fraunces + Inter Tight + JetBrains Mono</p>
+
+</body>
+</html>

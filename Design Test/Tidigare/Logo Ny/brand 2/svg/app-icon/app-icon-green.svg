@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="512" height="512" role="img" aria-label="Renofine app icon">
+  <rect width="128" height="128" rx="28" fill="#2F5D4E"></rect>
+  <g transform="translate(32,32)">
+    <path d="M32 6 a26 26 0 1 0 26 26 h-12 v-14 h-14 z" fill="#FAFAF7"></path>
+  </g>
+</svg>

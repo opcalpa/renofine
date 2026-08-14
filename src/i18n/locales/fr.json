@@ -2491,5 +2491,10 @@
     "preview": {
       "workerSeeExact": "Envoie l'invitation, puis ouvre Partage → « Voir en tant que » pour voir exactement ce que l'ouvrier voit — et passe au suédois pour vérifier la traduction."
     }
+  },
+  "clientPreview": {
+    "title": "Vue client",
+    "seeWhatTheySee": "Voir exactement ce que voit {{name}}",
+    "hint": "Prévisualise la vue client masquée — sans prix internes ni marges."
   }
 }

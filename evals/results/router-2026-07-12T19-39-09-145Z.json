@@ -1,0 +1,55 @@
+{
+  "args": {
+    "models": [
+      "gpt-4o-mini"
+    ],
+    "judge": "gpt-4o",
+    "cases": [
+      "prepare-quote-open-feature"
+    ],
+    "judgeOn": false
+  },
+  "summary": [
+    {
+      "model": "gpt-4o-mini",
+      "n": 1,
+      "passed": 0,
+      "recall": 0,
+      "fp": 0,
+      "invented": 0,
+      "critical": 1,
+      "judgeAvg": null,
+      "errors": 0
+    }
+  ],
+  "rows": [
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "prepare-quote-open-feature",
+      "score": {
+        "id": "prepare-quote-open-feature",
+        "kind": "expect",
+        "ok": false,
+        "recall": {
+          "found": 0,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [
+          "missed the only expected action"
+        ],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "type": "open_feature",
+          "feature": "new_quote",
+          "label": "Ny offert"
+        }
+      ]
+    }
+  ]
+}

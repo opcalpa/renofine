@@ -22,6 +22,7 @@ import { Info } from "lucide-react";
 import { FeatureAccessEditor } from "./FeatureAccessEditor";
 import type { FeatureAccess } from "./FeatureAccessEditor";
 import { WorkerActivityPanel } from "./WorkerActivityPanel";
+import { ClientViewPanel } from "./ClientViewPanel";
 import { isTeamV2MaskingEnabled } from "@/lib/featureFlags";
 
 // ---------------------------------------------------------------------------
@@ -737,6 +738,14 @@ function ExpandedRowContent({ row, t, projectId }: { row: TeamRow; t: (key: stri
           />
         </>
       )}
+
+      {/* Client-specific: "see exactly what the client sees" preview */}
+      {row.type !== "owner" &&
+        row.type !== "worker" &&
+        row.type !== "rot" &&
+        (row.role === "client" || row.roleTemplate === "client") && (
+          <ClientViewPanel projectId={projectId} clientName={row.name} />
+        )}
 
       {/* ROT-specific: personnummer */}
       {row.type === "rot" && row.personnummerLast4 && (

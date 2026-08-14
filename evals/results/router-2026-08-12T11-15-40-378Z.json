@@ -1,0 +1,158 @@
+{
+  "args": {
+    "models": [
+      "gpt-4o-mini"
+    ],
+    "judge": "gpt-4o",
+    "cases": [
+      "set-default-hourly-rate",
+      "set-material-markup-not-task-budget",
+      "prepare-quote-open-feature",
+      "prepare-ata-open-feature"
+    ],
+    "judgeOn": false
+  },
+  "summary": [
+    {
+      "model": "gpt-4o-mini",
+      "n": 4,
+      "passed": 4,
+      "recall": 1,
+      "fp": 0,
+      "invented": 0,
+      "critical": 0,
+      "judgeAvg": null,
+      "errors": 0
+    }
+  ],
+  "rows": [
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "prepare-quote-open-feature",
+      "score": {
+        "id": "prepare-quote-open-feature",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Förbereder en offert till kunden.",
+          "confidence": 1,
+          "action": {
+            "type": "open_feature",
+            "feature": "new_quote",
+            "label": "Ny offert"
+          },
+          "matchConfidence": 1,
+          "candidateTaskIds": []
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "prepare-ata-open-feature",
+      "score": {
+        "id": "prepare-ata-open-feature",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Öppnar en ÄTA för extra arbete",
+          "confidence": 1,
+          "action": {
+            "type": "open_feature",
+            "feature": "new_ata",
+            "label": "Ny ÄTA"
+          },
+          "matchConfidence": 1,
+          "candidateTaskIds": []
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "set-default-hourly-rate",
+      "score": {
+        "id": "set-default-hourly-rate",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Sätter timpris till 640 kr",
+          "confidence": 1,
+          "action": {
+            "type": "set_default_rate",
+            "field": "hourly_rate",
+            "value": 640
+          },
+          "matchConfidence": 1,
+          "candidateTaskIds": []
+        }
+      ]
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "set-material-markup-not-task-budget",
+      "score": {
+        "id": "set-material-markup-not-task-budget",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 1,
+          "expected": 1
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 1
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Sätter 12% påslag på material",
+          "confidence": 1,
+          "action": {
+            "type": "set_default_rate",
+            "field": "material_markup_percent",
+            "value": 12
+          },
+          "matchConfidence": 1,
+          "candidateTaskIds": []
+        }
+      ]
+    }
+  ]
+}

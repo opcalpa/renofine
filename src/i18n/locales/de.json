@@ -2491,5 +2491,10 @@
     "preview": {
       "workerSeeExact": "Sende die Einladung, öffne dann Freigabe → „Ansehen als“, um genau zu sehen, was der Handwerker sieht — und wechsle zu Schwedisch, um die Übersetzung zu prüfen."
     }
+  },
+  "clientPreview": {
+    "title": "Kundenansicht",
+    "seeWhatTheySee": "Genau sehen, was {{name}} sieht",
+    "hint": "Vorschau der maskierten Kundenansicht — ohne interne Preise oder Aufschläge."
   }
 }

@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Renofine · brand sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;1,9..144,400&family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1A1A17;
+    --paper: #FAFAF7;
+    --green: #2F5D4E;
+    --s1: #F5F2E8;
+    --s2: #EFEAE0;
+    --hair: #E8E4D8;
+    --muted: #585548;
+    --subtle: #8A8576;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #DBD7CB; color: var(--ink); font-family: "Inter Tight", system-ui, sans-serif; }
+  .page {
+    width: 210mm; min-height: 297mm; margin: 24px auto; padding: 18mm;
+    background: var(--paper); box-shadow: 0 8px 32px rgba(26,26,23,0.10);
+    display: grid; grid-template-rows: auto auto auto auto auto auto 1fr; gap: 8mm;
+  }
+  .display { font-family: "Fraunces", Georgia, serif; font-weight: 400; letter-spacing: -0.025em; }
+  .mono { font-family: "JetBrains Mono", monospace; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--subtle); }
+  .hr { border: 0; border-top: 1px solid var(--hair); margin: 0; }
+
+  /* Header */
+  header { display: flex; align-items: flex-end; justify-content: space-between; }
+  header h1 { margin: 0; font-size: 28px; }
+  header .meta { text-align: right; }
+
+  /* Hero block */
+  .hero { background: var(--s1); border: 1px solid var(--hair); border-radius: 6px; padding: 32px; display: grid; grid-template-columns: auto 1fr; gap: 28px; align-items: center; }
+  .hero svg { display: block; }
+
+  /* Section */
+  section h2 { font-family: "Fraunces", serif; font-weight: 400; font-size: 18px; margin: 0 0 8px; letter-spacing: -0.01em; }
+  section p { margin: 0; font-size: 11px; line-height: 1.5; color: var(--muted); }
+
+  /* Color swatches */
+  .swatches { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+  .swatch { border: 1px solid var(--hair); border-radius: 4px; padding: 8px; display: flex; flex-direction: column; gap: 4px; min-height: 78px; }
+  .swatch .chip { width: 100%; height: 32px; border-radius: 3px; }
+  .swatch .name { font-size: 10px; font-weight: 500; }
+  .swatch .hex { font-family: "JetBrains Mono", monospace; font-size: 9px; color: var(--muted); }
+
+  /* Type specimen */
+  .type-row { display: flex; align-items: baseline; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--hair); }
+  .type-row:last-child { border-bottom: 0; }
+  .type-row .label { width: 90px; font-size: 9.5px; color: var(--subtle); font-family: "JetBrains Mono", monospace; text-transform: uppercase; letter-spacing: 0.08em; }
+  .type-row .spec { flex: 1; }
+
+  /* Sizing */
+  .sizes { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; align-items: end; }
+  .size-item { background: var(--paper); border: 1px solid var(--hair); border-radius: 4px; padding: 12px 8px; text-align: center; }
+  .size-item .px { font-family: "JetBrains Mono", monospace; font-size: 9px; color: var(--subtle); margin-top: 6px; }
+
+  /* Backgrounds */
+  .bgs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .bg-tile { border-radius: 4px; padding: 18px 14px; display: flex; align-items: center; gap: 10px; min-height: 60px; border: 1px solid var(--hair); }
+  .bg-tile.paper { background: var(--paper); }
+  .bg-tile.surface { background: var(--s2); }
+  .bg-tile.ink { background: var(--ink); border-color: var(--ink); }
+  .bg-tile.green { background: var(--green); border-color: var(--green); }
+
+  /* Don'ts */
+  .donts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .dont { border: 1px solid var(--hair); border-radius: 4px; padding: 14px; text-align: center; min-height: 90px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; position: relative; }
+  .dont .x { position: absolute; top: 4px; right: 6px; font-size: 12px; color: #B33; }
+  .dont .why { font-size: 9.5px; color: var(--muted); }
+
+  footer { display: flex; justify-content: space-between; align-items: end; font-size: 9px; color: var(--subtle); }
+
+  @media print {
+    body { background: white; }
+    .page { margin: 0; box-shadow: none; }
+    @page { size: A4; margin: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div>
+      <div class="mono">Brand sheet · v1.0</div>
+      <h1 class="display">Renofine</h1>
+    </div>
+    <div class="meta">
+      <div class="mono">Skåra mark · Fraunces wordmark</div>
+      <div class="mono" style="margin-top:4px">A4 · printer-friendly</div>
+    </div>
+  </header>
+
+  <hr class="hr"/>
+
+  <!-- Hero -->
+  <div class="hero">
+    <svg viewBox="0 0 64 64" width="120" height="120"><path d="M32 6 a26 26 0 1 0 26 26 h-12 v-14 h-14 z" fill="#1A1A17"/></svg>
+    <div>
+      <div class="display" style="font-size: 56px; line-height: 1; letter-spacing: -0.03em;">Renofine</div>
+      <p style="margin-top: 10px; max-width: 420px;">A solid disc with an exact rectangular notch — a constructed shape that references measured, fitted work without literal building clichés. Set against Fraunces, an editorial serif that earns its considered feel.</p>
+    </div>
+  </div>
+
+  <!-- Color -->
+  <section>
+    <h2>Color</h2>
+    <p>Warm paper as the default canvas. Ink for type. Green is a seasoning — never a wash.</p>
+    <div class="swatches" style="margin-top: 8px;">
+      <div class="swatch"><div class="chip" style="background:#1A1A17;"></div><div class="name">Ink</div><div class="hex">#1A1A17</div></div>
+      <div class="swatch"><div class="chip" style="background:#FAFAF7; border: 1px solid var(--hair);"></div><div class="name">Paper</div><div class="hex">#FAFAF7</div></div>
+      <div class="swatch"><div class="chip" style="background:#2F5D4E;"></div><div class="name">Green</div><div class="hex">#2F5D4E</div></div>
+      <div class="swatch"><div class="chip" style="background:#F5F2E8; border: 1px solid var(--hair);"></div><div class="name">Surface 1</div><div class="hex">#F5F2E8</div></div>
+      <div class="swatch"><div class="chip" style="background:#EFEAE0;"></div><div class="name">Surface 2</div><div class="hex">#EFEAE0</div></div>
+      <div class="swatch"><div class="chip" style="background:#E8E4D8;"></div><div class="name">Hairline</div><div class="hex">#E8E4D8</div></div>
+    </div>
+  </section>
+
+  <!-- Type -->
+  <section>
+    <h2>Typography</h2>
+    <div style="border: 1px solid var(--hair); border-radius: 6px; padding: 10px 14px;">
+      <div class="type-row">
+        <span class="label">Display</span>
+        <span class="spec display" style="font-size: 30px;">Fraunces · regular</span>
+      </div>
+      <div class="type-row">
+        <span class="label">UI</span>
+        <span class="spec" style="font-size: 17px; font-weight: 500;">Inter Tight · 400/500/600</span>
+      </div>
+      <div class="type-row">
+        <span class="label">Mono</span>
+        <span class="spec mono" style="font-size: 13px; color: var(--ink); letter-spacing: 0.05em;">JetBrains Mono · 400/500</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Sizing -->
+  <section>
+    <h2>Sizing — Skåra holds at 14 px</h2>
+    <div class="sizes">
+      <div class="size-item"><svg viewBox="0 0 64 64" width="14" height="14"><path d="M32 6 a26 26 0 1 0 26 26 h-12 v-14 h-14 z" fill="#1A1A17"/></svg><div class="px">14</div></div>
+      <div class="size-item"><svg viewBox="0 0 64 64" width="22" height="22"><path d="M32 6 a26 26 0 1 0 26 26 h-12 v-14 h-14 z" fill="#1A1A17"/></svg><div class="px">22</div></div>
+      <div class="size-item"><svg viewBox="0 0 64 64" width="32" height="32"><path d="M32 6 a26 26 0 1 0 26 26 h-12 v-14 h-14 z" fill="#1A1A17"/></svg><div class="px">32</div></div>
+      <div class="size-item"><svg viewBox="0 0 64 64" width="48" height="48"><path d="M32 6 a26 26 0 1 0 26 26 h-12 v-14 h-14 z" fill="#1A1A17"/></svg><div class="px">48</div></div>
+      <div class="size-item"><svg viewBox="0 0 64 64" width="72" height="72"><path d="M32 6 a26 26 0 1 0 26 26 h-12 v-14 h-14 z" fill="#1A1A17"/></svg><div class="px">72</div></div>
+    </div>
+  </section>
+
+  <!-- Backgrounds -->
+  <section>
+    <h2>Background pairings</h2>
+    <div class="bgs">
+      <div class="bg-tile paper">
+        <svg viewBox="0 0 64 64" width="32" height="32"><path d="M32 6 a26 26 0 1 0 26 26 h-12 v-14 h-14 z" fill="#1A1A17"/></svg>
+        <span class="display" style="font-size: 22px; color: #1A1A17;">Renofine</span>
+      </div>
+      <div class="bg-tile surface">
+        <svg viewBox="0 0 64 64" width="32" height="32"><path d="M32 6 a26 26 0 1 0 26 26 h-12 v-14 h-14 z" fill="#1A1A17"/></svg>
+        <span class="display" style="font-size: 22px; color: #1A1A17;">Renofine</span>
+      </div>
+      <div class="bg-tile ink">
+        <svg viewBox="0 0 64 64" width="32" height="32"><path d="M32 6 a26 26 0 1 0 26 26 h-12 v-14 h-14 z" fill="#FAFAF7"/></svg>
+        <span class="display" style="font-size: 22px; color: #FAFAF7;">Renofine</span>
+      </div>
+      <div class="bg-tile green">
+        <svg viewBox="0 0 64 64" width="32" height="32"><path d="M32 6 a26 26 0 1 0 26 26 h-12 v-14 h-14 z" fill="#FAFAF7"/></svg>
+        <span class="display" style="font-size: 22px; color: #FAFAF7;">Renofine</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Don'ts -->
+  <section>
+    <h2>Don't</h2>
+    <div class="donts">
+      <div class="dont">
+        <span class="x">✕</span>
+        <svg viewBox="0 0 64 64" width="36" height="36" style="filter: drop-shadow(2px 4px 4px rgba(0,0,0,0.3));"><path d="M32 6 a26 26 0 1 0 26 26 h-12 v-14 h-14 z" fill="#1A1A17"/></svg>
+        <span class="why">No drop shadows</span>
+      </div>
+      <div class="dont">
+        <span class="x">✕</span>
+        <svg viewBox="0 0 64 64" width="36" height="36"><path d="M32 6 a26 26 0 1 0 26 26 h-12 v-14 h-14 z" fill="none" stroke="#1A1A17" stroke-width="2"/></svg>
+        <span class="why">No outline-only</span>
+      </div>
+      <div class="dont">
+        <span class="x">✕</span>
+        <svg viewBox="0 0 64 64" width="36" height="36" style="transform: rotate(15deg);"><path d="M32 6 a26 26 0 1 0 26 26 h-12 v-14 h-14 z" fill="#1A1A17"/></svg>
+        <span class="why">No rotation</span>
+      </div>
+      <div class="dont">
+        <span class="x">✕</span>
+        <svg viewBox="0 0 64 64" width="36" height="36"><defs><linearGradient id="g"><stop offset="0%" stop-color="#FF6B35"/><stop offset="100%" stop-color="#7B2CBF"/></linearGradient></defs><path d="M32 6 a26 26 0 1 0 26 26 h-12 v-14 h-14 z" fill="url(#g)"/></svg>
+        <span class="why">No off-palette colors</span>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="mono">Renofine · brand v1.0</div>
+    <div class="mono">Print A4 · cmd/ctrl + P</div>
+  </footer>
+
+</div>
+</body>
+</html>

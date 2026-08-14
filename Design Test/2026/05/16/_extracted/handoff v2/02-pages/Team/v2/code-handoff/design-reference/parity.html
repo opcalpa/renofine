@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Renofine · Team v2 · feature parity &amp; handoff</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root{
+    --bg:#FAFAF7; --paper:#FFFFFC; --paper-2:#F4F1EA; --fg:#15110A; --mut:#6B6357; --line:rgba(20,15,5,.10);
+    --ink:#1A140A;
+    --kept:#2F7D4F; --merged:#A06A1F; --gap:#B5341E; --add:#3A5BA7; --uncertain:#7A4A0F;
+    --rust:#B5341E; --gold:#A8845C; --green:#2F5D4E;
+    --green-soft:rgba(47,93,78,.10); --rust-soft:#FCE7E3;
+    --ff-d:'Fraunces',serif; --ff-u:'Inter Tight',ui-sans-serif,system-ui; --ff-m:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--ff-u);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1180px;margin:0 auto;padding:48px 32px 96px}
+  .topbar{display:flex;align-items:center;gap:12px;margin-bottom:16px;font-size:12.5px;color:var(--mut);flex-wrap:wrap}
+  .topbar a{color:var(--green);text-decoration:none;font-weight:500}
+  .topbar .sep{opacity:.4}
+  .num-tag{display:inline-flex;align-items:center;gap:8px;font-family:var(--ff-m);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--rust);margin-bottom:10px}
+  .num-tag .dot{width:6px;height:6px;border-radius:50%;background:var(--rust)}
+  h1{font-family:var(--ff-d);font-weight:300;font-size:54px;line-height:1.02;letter-spacing:-.025em;margin:0 0 8px}
+  h2{font-family:var(--ff-d);font-weight:400;font-size:30px;line-height:1.15;letter-spacing:-.018em;margin:48px 0 8px}
+  h3{font-family:var(--ff-u);font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--mut);margin:28px 0 12px}
+  p{margin:0 0 12px;color:var(--ink)}
+  .lede{font-size:17px;color:var(--mut);max-width:74ch;margin-bottom:36px;line-height:1.55}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;margin:0 0 28px;padding:14px 18px;background:var(--paper);border:1px solid var(--line);border-radius:14px}
+  .legend > div{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink)}
+  .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+  .d-kept{background:var(--kept)} .d-merged{background:var(--merged)} .d-gap{background:var(--gap)} .d-add{background:var(--add)}
+  table{width:100%;border-collapse:collapse;background:var(--paper);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin:0 0 8px}
+  thead th{text-align:left;font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);padding:14px 16px;background:#F4F1E9;border-bottom:1px solid var(--line);vertical-align:bottom}
+  tbody td{padding:13px 16px;border-bottom:1px solid var(--line);vertical-align:top;font-size:13.5px;line-height:1.55}
+  tbody tr:last-child td{border-bottom:0}
+  td.tag{width:120px}
+  .tag span{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;padding:3px 9px;border-radius:999px;border:1px solid currentColor}
+  .t-kept{color:var(--kept)} .t-merged{color:var(--merged)} .t-gap{color:var(--gap)} .t-add{color:var(--add)}
+  td.feat{width:220px;font-weight:500;color:var(--ink)}
+  td.now{width:280px;color:var(--mut);font-size:13px}
+  td.v2{font-size:13px}
+  code{font-family:var(--ff-m);font-size:11.5px;background:rgba(0,0,0,.05);padding:1px 5px;border-radius:3px}
+  .decision{margin-top:6px;padding:8px 10px;background:#F8F5EC;border:1px dashed rgba(160,106,31,.35);border-radius:8px;font-size:12.5px;color:var(--ink)}
+  .decision strong{font-weight:600;color:#7A4A0F}
+  .schema-box{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:18px 22px;margin:14px 0}
+  .schema-box h4{margin:0 0 12px;font-family:var(--ff-d);font-weight:400;font-size:18px;letter-spacing:-.01em}
+  .schema-box pre{margin:0;font-family:var(--ff-m);font-size:11.5px;color:var(--ink);line-height:1.65;overflow-x:auto;background:#FAF7F1;padding:14px;border-radius:6px}
+  .summary{margin:48px 0 0;padding:24px 28px;background:#FFF;border:1px solid var(--line);border-radius:16px}
+  ul.bullets{padding-left:20px;margin:8px 0 14px}
+  ul.bullets li{margin:4px 0;font-size:14px;line-height:1.55}
+  .meta{font-size:13px;color:var(--mut);margin:24px 0 0}
+  .step{padding:16px 18px;border:1px solid var(--line);border-radius:12px;background:var(--paper);margin:10px 0;display:grid;grid-template-columns:48px 1fr;gap:14px}
+  .step .n{font-family:var(--ff-m);font-size:22px;color:var(--rust);font-weight:500}
+  .step .t{font-family:var(--ff-d);font-size:18px;font-weight:400;letter-spacing:-.01em;margin:0 0 4px;line-height:1.2}
+  .step .b{font-size:13.5px;color:var(--mut);line-height:1.55;margin:0}
+  .step code{font-size:11px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="topbar">
+  <a href="../analysis.html">Del 1 · Struktur</a><span class="sep">/</span>
+  <a href="../analysis-2-access-logic.html">Del 2 · Logik</a><span class="sep">/</span>
+  <a href="../plattform-och-personer.html">Del 3 · Plattform</a><span class="sep">/</span>
+  <a href="../del-4-uppfoljning.html">Del 4 · Frågor</a><span class="sep">/</span>
+  <strong>Del 5 · Parity &amp; handoff</strong>
+</div>
+
+<div class="num-tag"><span class="dot"></span>Team v2.2.0 · parity-rapport · 16 maj 2026</div>
+<h1>Team v2 · feature parity &amp; Claude Code-handoff</h1>
+<p class="lede">Genomgång av V2-designen mot befintlig kod. Varje rad är ett beslut: behålla, slå ihop, lägga till nytt, eller en lucka som måste tillbaka. Plus konkreta implementations­steg för Claude Code längst ner.</p>
+
+<div class="legend">
+  <div><span class="dot d-kept"></span> <strong>Behållet</strong> — finns i V2 i samma form</div>
+  <div><span class="dot d-merged"></span> <strong>Omarbetat</strong> — finns men i ny form/yta</div>
+  <div><span class="dot d-gap"></span> <strong>Lucka/fix</strong> — bug eller läcka som åtgärdas</div>
+  <div><span class="dot d-add"></span> <strong>Nytt</strong> — finns ej idag</div>
+</div>
+
+<h2>Wizard</h2>
+<table>
+  <thead><tr><th>Status</th><th>Funktion</th><th>Idag</th><th>Plats i V2</th></tr></thead>
+  <tbody>
+    <tr><td class="tag"><span class="t-merged">Omarbetat</span></td><td class="feat">Steg 1 · Path-val</td><td class="now"><code>InvitePath: "worker" | "member"</code> — datakontrakt-fråga</td><td class="v2">Steg 1 blir <strong>4 personas</strong>: Worker · Klient · UE-medlem · PM/Co-owner. Mänsklig fråga istället för teknisk. Mappar internt till worker_access_tokens vs project_shares.<div class="decision"><strong>Beslut:</strong> behåll <code>WizardStep1Path.tsx</code> som ramverk, byt ut <code>InvitePath</code>-typen till <code>InvitePersona = "worker" | "client" | "member" | "pm"</code>. Path är härledd från persona.</div></td></tr>
+    <tr><td class="tag"><span class="t-merged">Omarbetat</span></td><td class="feat">Steg 2 · Member-konfiguration</td><td class="now"><code>WizardStep3Member.tsx</code>: Profession + Insyn/Aktiv-preset + Bara tilldelat + 11 fält</td><td class="v2"><strong>Mode-toggle</strong> ersätter preset+11 fält. För UE-medlem: 2 alternativ (None/Egna). För PM/Co-owner: 3 alternativ (None/Egna/Full). Profession kvar som etikett.<div class="decision"><strong>Beslut:</strong> ta bort <code>packageToAccess.ts</code> och <code>diffCount</code>-logiken. Ersätt med <code>personaToAccess(persona, mode, scopeRule)</code> som returnerar full <code>FeatureAccess</code> deterministiskt.</div></td></tr>
+    <tr><td class="tag"><span class="t-kept">Behåll</span></td><td class="feat">Steg 2 · Worker-konfiguration</td><td class="now"><code>WizardStep3Worker.tsx</code> — task-val + instruction-images + canPropose/canLog</td><td class="v2">Behåll i sin helhet. Inga ändringar i datakontraktet för worker-tokens.</td></tr>
+    <tr><td class="tag"><span class="t-kept">Behåll</span></td><td class="feat">Steg 3 · Kontakt</td><td class="now"><code>WizardStep4Contact.tsx</code> — namn/email/telefon/språk/välkomstmsg</td><td class="v2">Behåll men <strong>lägg till "Förhandsgranska som"-knapp</strong> som renderar en preview-overlay av 3 sidor sett från den invitades vy.</td></tr>
+    <tr><td class="tag"><span class="t-add">Nytt</span></td><td class="feat">Förhandsgranska som [persona]</td><td class="now">Finns ej</td><td class="v2">Ny komponent <code>InvitePreviewOverlay.tsx</code> — renderar 3 mockade vyer (Översikt + en task + Inköp) med field-masking enligt vald mode. Som Google Drive's "View as".</td></tr>
+    <tr><td class="tag"><span class="t-gap">Lucka</span></td><td class="feat">Två parallella worker-dialoger</td><td class="now"><code>InviteWorkerDialog.tsx</code> (610 rader, legacy) <em>och</em> <code>InviteWizard.tsx</code> (368 rader). Båda skriver till worker_access_tokens.</td><td class="v2"><strong>Avskaffa <code>InviteWorkerDialog.tsx</code></strong> efter att <code>generateChecklists</code>-knappen migrerats till <code>WizardStep3Worker</code>.</td></tr>
+    <tr><td class="tag"><span class="t-gap">Lucka</span></td><td class="feat">Dup-check över worker/member</td><td class="now"><code>DuplicateContactError</code> blockerar samma e-post i båda flödena</td><td class="v2">Tillåt korsning — användare som var worker kan invitieras som member senare (svar på F7).</td></tr>
+  </tbody>
+</table>
+
+<h2>TeamTable</h2>
+<table>
+  <thead><tr><th>Status</th><th>Funktion</th><th>Idag</th><th>Plats i V2</th></tr></thead>
+  <tbody>
+    <tr><td class="tag"><span class="t-kept">Behåll</span></td><td class="feat">Tabellstruktur · grupper</td><td class="now"><code>TeamTable.tsx</code>: Active/Pending/Inactive-sektioner, expanderbara rader</td><td class="v2">Behåll. Lägg bara till nya kolumner.</td></tr>
+    <tr><td class="tag"><span class="t-add">Nytt</span></td><td class="feat">Persona-pill</td><td class="now">Saknas — alla "member" ser likadana ut</td><td class="v2">Färgkodad pill bredvid namn: Owner · Co-owner · Anlitad PM · UE-medlem · Klient · Worker.<div class="decision"><strong>Beslut:</strong> exponera <code>project_shares.role_type</code> som synlig kolumn med färgkod (rust för PM, grön för Co-owner/Klient, blå för UE, gold för Worker).</div></td></tr>
+    <tr><td class="tag"><span class="t-add">Nytt</span></td><td class="feat">Mode-pill</td><td class="now">Saknas</td><td class="v2">Synlig kolumn: "Full ekonomi" (rust) · "Egna belopp" (grön) · "Inga belopp" (grå) · "Klientvy" (grön). Klick öppnar Settings för att ändra.</td></tr>
+    <tr><td class="tag"><span class="t-add">Nytt</span></td><td class="feat">Senast aktiv</td><td class="now">Saknas — finns bara "added"-datum</td><td class="v2">Ny kolumn. Datakälla: <code>access_log</code>-tabell (ny). Visar "Nu" / "12 min sedan" / "3 veckor sedan".</td></tr>
+    <tr><td class="tag"><span class="t-add">Nytt</span></td><td class="feat">Tidsbegränsning · expires</td><td class="now">Saknas på <code>project_shares</code></td><td class="v2">Lägg till <code>project_shares.expires_at: timestamp | null</code>. Visas under last-active som "Slutar 1 jul 2026".</td></tr>
+    <tr><td class="tag"><span class="t-kept">Behåll</span></td><td class="feat">Edit-knapp · radera-knapp · DM-knapp</td><td class="now">Befintliga actions</td><td class="v2">Behåll. Plus ny action: "Förhandsgranska som" (öga-ikon).</td></tr>
+  </tbody>
+</table>
+
+<h2>Mode-systemet (3 ekonomi-lägen)</h2>
+<table>
+  <thead><tr><th>Status</th><th>Funktion</th><th>Idag</th><th>Plats i V2</th></tr></thead>
+  <tbody>
+    <tr><td class="tag"><span class="t-merged">Omarbetat</span></td><td class="feat">FeatureAccess-matrisen</td><td class="now">11 fält × 2-4 nivåer per share. Kollapsar in i 2 presets + Custom.</td><td class="v2">Kvar som datakontrakt men deriveras från <code>(persona, mode, scopeRule)</code>. Användaren ser aldrig matrisen direkt — UI:n exponerar bara persona och mode.<div class="decision"><strong>Beslut:</strong> behåll DB-fälten men ändra inviterings-UI:n. Backend-funktion <code>derive_feature_access(persona, mode, scope)</code> sätter alla 11 fälten deterministiskt.</div></td></tr>
+    <tr><td class="tag"><span class="t-add">Nytt</span></td><td class="feat">Field-masking på Tasks</td><td class="now">Alla med tasks:view ser <code>tasks.budget</code></td><td class="v2"><strong>Mode None:</strong> dölj <code>tasks.budget</code>, <code>payment_status</code>, <code>paid_amount</code>.<br/><strong>Mode Egna:</strong> dölj <code>tasks.budget</code>, men visa egna materials-priser kopplade till tasks.<br/><strong>Mode Full:</strong> allt synligt.</td></tr>
+    <tr><td class="tag"><span class="t-add">Nytt</span></td><td class="feat">Field-masking på Materials</td><td class="now">Alla ser <code>price_per_unit</code>, <code>price_total</code>, <code>vendor_name</code></td><td class="v2"><strong>Mode None:</strong> dölj alla prisfält.<br/><strong>Mode Egna:</strong> visa bara där <code>materials.created_by_user_id = aktuell user</code>.<br/><strong>Mode Full:</strong> allt synligt.</td></tr>
+    <tr><td class="tag"><span class="t-add">Nytt</span></td><td class="feat">Field-masking på Time logs</td><td class="now">Alla med time_tracking:view ser allas timrapporter</td><td class="v2"><strong>Mode None/Egna:</strong> filtrera till bara <code>logged_by = aktuell user</code>.<br/><strong>Mode Full:</strong> allt synligt.</td></tr>
+    <tr><td class="tag"><span class="t-add">Nytt</span></td><td class="feat">Field-masking på Budget</td><td class="now">budget:view räcker för att se total_budget + cost centers + marginal</td><td class="v2"><strong>Mode None/Egna:</strong> Budget-tab göms (<code>visibility: hide</code>).<br/><strong>Mode Full:</strong> tab visas. Marginal-fält bara synliga för PM/Co-owner med Full.</td></tr>
+    <tr><td class="tag"><span class="t-add">Nytt</span></td><td class="feat">paid_by-flagga på materials</td><td class="now">Saknas — inköp har bara <code>created_by</code></td><td class="v2">Ny kolumn <code>materials.paid_by: uuid | null</code> (profile_id). Användbart i hemägar-projekt där hemägaren betalar UE-inköp direkt. UI: dropdown "Betald av" på inköpsraden.</td></tr>
+  </tbody>
+</table>
+
+<h2>Projekt-toggles</h2>
+<table>
+  <thead><tr><th>Status</th><th>Funktion</th><th>Idag</th><th>Plats i V2</th></tr></thead>
+  <tbody>
+    <tr><td class="tag"><span class="t-add">Nytt</span></td><td class="feat">tracks_economy</td><td class="now">Saknas</td><td class="v2">Boolean på <code>projects</code>-tabellen. Default <code>true</code> för proffs-projekt, <code>false</code> för hemägar-projekt (där användaren får aktivt välja). När <code>false</code>: Budget-tab göms, Mode Full blir omöjlig att välja, klientvy går i "klient-light"-läge utan ekonomi-sektioner.</td></tr>
+    <tr><td class="tag"><span class="t-add">Nytt</span></td><td class="feat">tracks_rot</td><td class="now"><code>rot_deduction</code>-modulen styrs per profil (global)</td><td class="v2">Boolean på <code>projects</code>-tabellen. Default <code>false</code>. När <code>true</code>: ROT-fält visas på offert/faktura, personnummer samlas in, Skatteverket-export tillgänglig.<div class="decision"><strong>Beslut:</strong> ROT blir <em>per-projekt</em> opt-in. Profil-modulen <code>rot_deduction</code> kan vara på, men projekten väljer själva om de använder.</div></td></tr>
+    <tr><td class="tag"><span class="t-add">Nytt</span></td><td class="feat">owner_user_type</td><td class="now">Härleds från <code>profiles.onboarding_user_type</code> på project_owner</td><td class="v2">Cachat per projekt. Driver påslag-modellen: hemägar-projekt har inga påslag-fält, proffs-projekt har det. Påverkar copy och vissa UI-element.</td></tr>
+  </tbody>
+</table>
+
+<h2>Nya komponenter att skapa</h2>
+<table>
+  <thead><tr><th>Status</th><th>Komponent</th><th>Källa idag</th><th>Plats i V2</th></tr></thead>
+  <tbody>
+    <tr><td class="tag"><span class="t-add">Nytt</span></td><td class="feat">InvitePreviewOverlay</td><td class="now">—</td><td class="v2">Renderar mockade Översikt + Task + Inköp för en given (persona, mode). Använder vanliga komponenter men med <code>previewAs</code>-prop som triggerar field-masking på samma sätt som riktig vy. Öppnas från Wizard step 3 och från TeamTable.</td></tr>
+    <tr><td class="tag"><span class="t-add">Nytt</span></td><td class="feat">AccessAuditLog</td><td class="now">—</td><td class="v2">Ny tab/sektion under Team-fliken. Visar senaste sidvisningar + nekade åtkomster + inställningsändringar per medlem.<div class="decision"><strong>Beslut:</strong> ny tabell <code>access_log(project_id, profile_id, action, target, denied bool, created_at)</code>. Loggas via middleware på alla page-renderingar och RLS-fail.</div></td></tr>
+    <tr><td class="tag"><span class="t-add">Nytt</span></td><td class="feat">ProjectSetupDialog v2</td><td class="now"><code>CreateProjectDialog.tsx</code></td><td class="v2">Lägg till de två nya toggles + owner_user_type-val. Större förenklat första-steg.</td></tr>
+    <tr><td class="tag"><span class="t-add">Nytt</span></td><td class="feat">deriveAccess(persona, mode, scope)</td><td class="now"><code>packageToAccess.applyPackage(preset, onlyAssigned)</code></td><td class="v2">Ersätter applyPackage. Tar 3 args, returnerar full <code>FeatureAccess</code>. Hela mappningen är deterministisk — wizarden behöver inte exponera matrisen.</td></tr>
+    <tr><td class="tag"><span class="t-add">Nytt</span></td><td class="feat">get_project_data RPC</td><td class="now">Direkta supabase-queries med <code>.select(...)</code></td><td class="v2">Edge function eller RPC som tar <code>(project_id, viewer_share_id)</code> och returnerar field-maskad data. <strong>Datalagret är källan till sanning för vad som visas</strong> (svar på F8).</td></tr>
+  </tbody>
+</table>
+
+<h2>Schema-ändringar</h2>
+
+<div class="schema-box">
+  <h4>1. Nya kolumner på projects</h4>
+  <pre>ALTER TABLE projects ADD COLUMN tracks_economy boolean NOT NULL DEFAULT true;
+ALTER TABLE projects ADD COLUMN tracks_rot boolean NOT NULL DEFAULT false;
+ALTER TABLE projects ADD COLUMN owner_user_type text;  -- cachat från profile vid skapande
+-- Backfill: tracks_economy = (owner är proffs); tracks_rot = false (alla får aktivt välja)</pre>
+</div>
+
+<div class="schema-box">
+  <h4>2. project_shares — expires_at + new role_types</h4>
+  <pre>ALTER TABLE project_shares ADD COLUMN expires_at timestamptz;
+-- role_type får nya värden: "owner", "co_owner", "pm_hired", "member", "client", "worker"
+-- (worker är synonym till worker_access_tokens — för enklare query-uniform)</pre>
+</div>
+
+<div class="schema-box">
+  <h4>3. materials — paid_by</h4>
+  <pre>ALTER TABLE materials ADD COLUMN paid_by uuid REFERENCES profiles(id);
+COMMENT ON COLUMN materials.paid_by IS 'Vem betalade — användbar i hemägar-projekt';</pre>
+</div>
+
+<div class="schema-box">
+  <h4>4. Ny tabell: access_log</h4>
+  <pre>CREATE TABLE access_log (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id uuid REFERENCES projects(id) ON DELETE CASCADE,
+  profile_id uuid REFERENCES profiles(id),
+  action text NOT NULL,         -- 'view' | 'download' | 'edit' | 'denied'
+  target text,                  -- e.g. 'budget.tab', 'task.123', 'file:ritning_v3.pdf'
+  denied boolean DEFAULT false,
+  created_at timestamptz DEFAULT now()
+);
+CREATE INDEX idx_access_log_project_created ON access_log(project_id, created_at DESC);
+CREATE INDEX idx_access_log_profile ON access_log(profile_id);</pre>
+</div>
+
+<div class="schema-box">
+  <h4>5. get_project_data RPC (skiss)</h4>
+  <pre>CREATE FUNCTION get_project_overview(p_project_id uuid)
+RETURNS jsonb
+LANGUAGE plpgsql STABLE SECURITY DEFINER AS $$
+DECLARE
+  v_share project_shares;
+  v_mode text;
+BEGIN
+  -- Hämta viewer's share för detta projekt
+  SELECT * INTO v_share FROM project_shares
+  WHERE project_id = p_project_id
+  AND shared_with_user_id = get_user_profile_id();
+
+  -- Härled mode från share
+  v_mode := CASE
+    WHEN v_share.role_type IN ('owner', 'co_owner') THEN 'full'
+    WHEN v_share.budget_access = 'edit' THEN 'full'
+    WHEN v_share.budget_access = 'view' THEN 'own'
+    ELSE 'none'
+  END;
+
+  -- Returnera filtrerat JSON
+  RETURN jsonb_build_object(
+    'project', jsonb_build_object(
+      'id', p.id, 'name', p.name,
+      'total_budget', CASE WHEN v_mode = 'full' THEN p.total_budget ELSE null END,
+      ...
+    ),
+    'tasks', (SELECT jsonb_agg(...) FROM tasks WHERE ...),
+    'materials', ...
+  );
+END $$;</pre>
+</div>
+
+<h2>Quick-wins · L1–L10 från del 2</h2>
+<table>
+  <thead><tr><th>#</th><th>Läcka</th><th>Fix-status i V2</th></tr></thead>
+  <tbody>
+    <tr><td>L1</td><td>files:"upload" är dead code</td><td>✓ Löst — V2 propar hela permissions.files-strängen, ej canEdit-binär</td></tr>
+    <tr><td>L2</td><td>Default teams:"view" i alla presets</td><td>✓ Löst — Mode-systemet ersätter presets, teams:"view" bara för co_owner/pm</td></tr>
+    <tr><td>L3</td><td>UE ser andra UE:s leverantörspriser</td><td>✓ Löst — Mode Egna filtrerar materials på created_by_user_id</td></tr>
+    <tr><td>L4</td><td>Estimerad vinst läcker via Budget</td><td>✓ Löst — Mode Full krävs för Budget-tab; marginal-fält bara där</td></tr>
+    <tr><td>L5</td><td>Time tracking visar timpriser</td><td>✓ Löst — Mode Egna filtrerar time_logs på logged_by</td></tr>
+    <tr><td>L6</td><td>OverviewTab builder-mode för alla !isHomeowner</td><td>✓ Löst — byter isBuilder till isOwner||isCoOwner; UE-members får Mode-baserad vy</td></tr>
+    <tr><td>L7</td><td>Interna kommentarer i task-tråd</td><td>✓ Löst — CommentsSection filtrerar på visible_to_client baserat på Mode</td></tr>
+    <tr><td>L8</td><td>Granskar-personan saknas</td><td>✓ Löst — UE-medlem med Mode None + expires_at täcker granskar-fallet</td></tr>
+    <tr><td>L9</td><td>Planning contributor ser quick-actions</td><td>✓ Löst — quick-actions raden gömd för icke-PM/Co-owner</td></tr>
+    <tr><td>L10</td><td>Worker-tokens listas med kopiera-knapp</td><td>✓ Löst — kopierings-knapp bara för teams:"invite" (= PM/Co-owner)</td></tr>
+  </tbody>
+</table>
+
+<h2 id="claude-code">Claude Code-instruktioner · implementation i 5 steg</h2>
+<p>Föreslagen ordning för att minimera blockerings­risker:</p>
+
+<div class="step">
+  <div class="n">01</div>
+  <div>
+    <h3 class="t" style="margin:0">Schema-migration först</h3>
+    <p class="b">Migrationsfil: <code>add_team_v2.sql</code>. Innehåller alla 5 schema-block ovan (projects-toggles, project_shares.expires_at, materials.paid_by, access_log-tabell, get_project_overview RPC). Backfill <code>projects.tracks_economy</code> till <code>true</code> för existerande projekt så inget bryts.</p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="n">02</div>
+  <div>
+    <h3 class="t" style="margin:0">Mode-derivation + field-masking i datalagret</h3>
+    <p class="b">Skapa <code>src/services/projectDataService.ts</code> med wrappers runt alla <code>supabase.from(...)</code>-queries som tar viewer-context. Hooks som <code>useTasksData</code>, <code>useMaterialsList</code>, <code>useBudgetData</code> går via dessa istället för direkt mot tabellerna. Edge function <code>get_project_overview</code> för stora aggregat.</p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="n">03</div>
+  <div>
+    <h3 class="t" style="margin:0">Wizard-refaktor</h3>
+    <p class="b">Byt <code>InvitePath</code>-typen till <code>InvitePersona</code>. Skriv om <code>WizardStep1Path.tsx</code> till 4 persona-kort. Ta bort <code>packageToAccess.ts</code>; ersätt med <code>personaToAccess.ts</code>. Lägg till <code>InvitePreviewOverlay.tsx</code>. Avskaffa <code>InviteWorkerDialog.tsx</code> efter migration av <code>generateChecklists</code>.</p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="n">04</div>
+  <div>
+    <h3 class="t" style="margin:0">TeamTable v2 + Audit log</h3>
+    <p class="b">Lägg till persona-pill, mode-pill, last-active-kolumn. Implementera <code>useLastActive(profile_id, project_id)</code>-hook som läser från access_log. Bygg <code>AccessAuditLog.tsx</code>-tab. <code>ProjectSetupDialog.tsx</code> får två nya toggles.</p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="n">05</div>
+  <div>
+    <h3 class="t" style="margin:0">Komponenter som läser data</h3>
+    <p class="b">Uppdatera <code>OverviewTab</code>, <code>BudgetTab</code>, <code>TasksTab</code>, <code>PurchaseRequestsTab</code>, <code>ProjectFilesTab</code> till att läsa via service-lagret istället för direkt. UI-rendering behöver inte ändras för fält som är <code>null</code> efter masking — komponenterna ska gracefully visa "—" eller dölja sektionen.</p>
+  </div>
+</div>
+
+<div class="summary">
+  <h2 style="margin-top:0">Sammanfattning · vad som levereras</h2>
+  <ul class="bullets">
+    <li><strong>9 artboards</strong> i <code>design.html</code>: strategi · wizard (4 steg) · TeamTable · Audit log · Preview-matris · Projekt-skapande</li>
+    <li><strong>Parity mot kodbasen</strong>: alla nya komponenter mappade mot befintliga, alla L1–L10-läckor markerade lösta</li>
+    <li><strong>Schema-skiss</strong>: 5 förändringar (3 nya kolumner, 1 ny tabell, 1 RPC)</li>
+    <li><strong>5 implementations­steg</strong> för Claude Code, optimerat för minimal blockering</li>
+  </ul>
+  <p style="margin-top:14px;margin-bottom:0;font-size:13.5px;color:var(--mut)"><strong>Status:</strong> Team v2 är design-klar (🟡 Delvis → 🟢 Klar när dessa schema-ändringar och komponentlistor är godkända). Bumpar till <strong>v2.2.0</strong>.</p>
+</div>
+
+</div>
+</body>
+</html>

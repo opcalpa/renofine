@@ -7084,5 +7084,10 @@
     "photo": "Foto",
     "message": "Meddelande",
     "empty": "Ingen aktivitet från {{name}} än."
+  },
+  "clientPreview": {
+    "title": "Kundvy",
+    "seeWhatTheySee": "Se exakt vad {{name}} ser",
+    "hint": "Förhandsgranska den maskade kundvyn – utan interna priser eller påslag."
   }
 }

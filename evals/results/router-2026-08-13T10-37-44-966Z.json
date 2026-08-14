@@ -1,0 +1,89 @@
+{
+  "args": {
+    "models": [
+      "gpt-4o-mini"
+    ],
+    "judge": "gpt-4o",
+    "cases": [
+      "taulant-north-star"
+    ],
+    "judgeOn": false
+  },
+  "summary": [
+    {
+      "model": "gpt-4o-mini",
+      "n": 1,
+      "passed": 1,
+      "recall": 1,
+      "fp": 0,
+      "invented": 0,
+      "critical": 0,
+      "judgeAvg": null,
+      "errors": 0
+    }
+  ],
+  "rows": [
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "taulant-north-star",
+      "score": {
+        "id": "taulant-north-star",
+        "kind": "expect",
+        "ok": true,
+        "recall": {
+          "found": 3,
+          "expected": 3
+        },
+        "falsePositives": 0,
+        "inventedIds": [],
+        "critical": [],
+        "proposalCount": 3
+      },
+      "judge": null,
+      "error": null,
+      "proposals": [
+        {
+          "summary": "Målningen i köket är klar.",
+          "confidence": 1,
+          "action": {
+            "type": "set_progress",
+            "taskId": "t-paint",
+            "progress": 100,
+            "status": "completed"
+          },
+          "matchConfidence": 1,
+          "candidateTaskIds": [
+            "t-paint"
+          ]
+        },
+        {
+          "summary": "Behöver beställa tio meter golvsockel.",
+          "confidence": 1,
+          "action": {
+            "type": "create_purchase",
+            "roomId": "r-kitchen",
+            "item": "Golvsockel",
+            "quantity": 10,
+            "unit": "meter"
+          },
+          "matchConfidence": 1,
+          "candidateTaskIds": []
+        },
+        {
+          "summary": "Det saknas lister.",
+          "confidence": 0.9,
+          "action": {
+            "type": "add_note",
+            "target": "task",
+            "targetId": "t-trim",
+            "text": "Det saknas lister."
+          },
+          "matchConfidence": 0.9,
+          "candidateTaskIds": [
+            "t-trim"
+          ]
+        }
+      ]
+    }
+  ]
+}

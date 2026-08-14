@@ -2124,13 +2124,17 @@ Cowork-fynd B1 (2026-08-13). Toggeln i WorkerInstructionsView är asymmetrisk: a
 
 ---
 id: invite-persona-preview-client-reviewer
-status: todo
+status: doing
 priority: P2
 tags: [invite, trust, preview, kund, granskare, screenshot-fynd]
 created: 2026-08-14
 ---
 ## "Se exakt vad kunden/granskaren ser" — utöka worker-previewens mönster
 Carls screenshot 14 aug (invite-wizard steg 2): personabeskrivningen säger vad kunden/granskaren FÅR se, men ägaren kan inte verifiera det själv → önskan om preview + "testa UI"-kontroll. Worker-personan har redan hela mönstret (WorkerInstructionsView preview via get-worker-data preview+previewLang, "se exakt vad {namn} ser"). Bygg motsvarande för kund (maskad kundvy) och granskare (läs+anmärkningar-vyn): en "Förhandsgranska vyn"-knapp i wizard-steget + i Team-fliken per medlem. Trust-epicens naturliga fortsättning ([[worker-trust-owner-confidence]]) — samma princip: ägarens trygghet = att kunna SE vad motparten ser, inte lita på en beskrivning.
+
+**✅ KLIENT LEVERERAT 2026-08-14 (session 70):** ny `ClientViewPanel` (klient-analogen till WorkerActivityPanel) i Team-flikens expanderade medlemsrad — "Se exakt vad {namn} ser"-knapp → Dialog med den RIKTIGA `CustomerViewTab` (exakt maskad kundvy, inga interna priser/påslag). Trogen (ingen fejk-summering): renderar samma komponent som klienten själv får via SharingTab. Projekt-fält hämtas lazy vid första öppning, dubbelt lazy-mountad (isExpanded + previewOpen). Klient-rad upptäcks via befintliga `row.role/roleTemplate === "client"` → INGEN pipeline-ändring. i18n `clientPreview.*` (5 språk). typecheck:strict + build gröna. **Ej ögonkollad populerad** (kräver projekt med inbjuden klient) → on-device/Cowork-verifiering.
+
+**⏳ GRANSKARE KVAR — medvetet uppskjuten (ärlig avvägning):** till skillnad från klient (CustomerViewTab) och worker (WorkerInstructionsView) finns INGEN färdig granskar-vy-komponent. Granskaren återanvänder den vanliga read-only kontraktörs-shellen (ProjectDetail:218-224 gate:ar till overview+files+chat+inspections). En TROGEN granskar-preview = "visa som granskare" i den riktiga shellen = en betydligt större "view-as-role"-feature med risk; en lätt sammanfattning vore INTE "exakt vad de ser" (vore vilseledande). Wizard-steget har redan en lättare preview (InvitePreviewOverlay, maskad summering, fejkar dock granskare→member). **Beslut:** vänta med granskar-previewn tills (a) en granskare faktiskt bjuds in i skarp drift, eller (b) vi ändå bygger view-as-role. Eget kort vid behov.
 
 ---
 id: homeowner-time-surface-missing

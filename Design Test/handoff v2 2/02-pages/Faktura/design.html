@@ -1,0 +1,1399 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Faktura v2 · hi-fi mockup</title>
+<template id="__bundler_thumbnail">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <rect width="200" height="200" fill="#FAFAF7"/>
+  <rect x="44" y="40" width="112" height="120" rx="3" fill="#FFFFFC" stroke="#1A140A" stroke-width="2"/>
+  <rect x="56" y="56" width="46" height="3" fill="#1A140A"/>
+  <rect x="56" y="68" width="60" height="2" fill="#6B6357"/>
+  <rect x="56" y="84" width="88" height="1.5" fill="#6B6357"/>
+  <rect x="56" y="92" width="88" height="1.5" fill="#6B6357"/>
+  <rect x="56" y="100" width="64" height="1.5" fill="#6B6357"/>
+  <rect x="56" y="124" width="44" height="6" fill="#2F5D4E"/>
+  <rect x="106" y="124" width="38" height="6" fill="#1A140A"/>
+  <text x="120" y="156" font-family="Georgia,serif" font-size="9" fill="#2F5D4E" font-weight="700" text-anchor="middle" transform="rotate(-12 120 156)">BETALD</text>
+</svg>
+</template>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  :root{
+    --paper:#FAFAF7;--surface:#FFFFFC;--ink:#1A1A17;--ink-soft:#3A332A;
+    --mut:#6B6357;--subtle:#9C948A;--hair:rgba(20,15,5,.10);--hair-2:rgba(20,15,5,.18);
+    --green:#2F5D4E;--green-soft:#E5EEE9;
+    --rust:#B5341E;--rust-soft:#F7E4DF;
+    --gold:#A8845C;--gold-soft:#F4ECDF;
+    --amber:#A06A1F;--amber-soft:#F8EFD9;
+    --blue:#3A5BA7;--blue-soft:#E6EBF5;
+    --ff-d:'Fraunces',serif;
+    --ff-u:'Inter Tight',ui-sans-serif,system-ui,-apple-system,sans-serif;
+    --ff-m:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--ff-u);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1480px;margin:0 auto;padding:56px 32px 120px}
+  h1{font-family:var(--ff-d);font-weight:300;font-size:64px;line-height:1.02;letter-spacing:-.025em;margin:0 0 6px}
+  h2{font-family:var(--ff-d);font-weight:400;font-size:30px;line-height:1.15;letter-spacing:-.02em;margin:0 0 6px}
+  .lede{color:var(--mut);font-size:17px;max-width:78ch;margin:0 0 40px}
+  .mono{font-family:var(--ff-m);font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--mut)}
+  .num-tag{display:inline-flex;align-items:center;gap:8px;font-family:var(--ff-m);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--rust);margin-bottom:8px}
+  .num-tag .dot{width:6px;height:6px;border-radius:50%;background:var(--rust)}
+  hr.hair{border:0;border-top:1px solid var(--hair);margin:64px 0 48px}
+
+  .scene-cap{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px}
+  .scene-cap h2{margin:0}
+  .scene-cap p{margin:0;color:var(--mut);font-size:14px;max-width:62ch}
+
+  .mock{background:var(--surface);border:1px solid var(--hair);border-radius:14px;overflow:hidden;box-shadow:0 1px 0 rgba(0,0,0,.02),0 24px 60px -28px rgba(20,15,5,.16);position:relative}
+  .mock-head{display:flex;align-items:center;justify-content:space-between;padding:14px 22px;background:#FBF8F1;border-bottom:1px solid var(--hair)}
+  .mock-head .lights{display:flex;gap:7px}
+  .mock-head .lights span{width:11px;height:11px;border-radius:50%;background:#E0DAD0}
+  .mock-head .ttl{font-family:var(--ff-d);font-weight:400;font-size:14px;color:var(--ink-soft)}
+  .mock-head .meta{font-family:var(--ff-m);font-size:11px;color:var(--subtle)}
+
+  /* editor 3-col */
+  .editor{display:grid;grid-template-columns:340px 1fr 1fr;min-height:880px}
+  .ed-form{padding:24px 26px;background:#FBF8F1;border-right:1px solid var(--hair);overflow:hidden}
+  .ed-rows{padding:24px 26px;border-right:1px solid var(--hair);overflow:hidden}
+  .ed-prev{padding:0;background:#EFEAE0;display:flex;flex-direction:column}
+
+  .sec-label{font-family:var(--ff-m);font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);margin:24px 0 10px}
+  .sec-label:first-child{margin-top:0}
+  .field{margin-bottom:12px}
+  .field label{display:block;font-size:11px;font-weight:500;color:var(--mut);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+  .input{width:100%;border:1px solid var(--hair-2);background:var(--surface);padding:8px 10px;border-radius:6px;font:inherit;font-size:13px;color:var(--ink)}
+  .row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+  .prepop{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:var(--green-soft);border:1px solid rgba(47,93,78,.25);border-radius:10px;margin-bottom:18px}
+  .prepop .ic{width:24px;height:24px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0}
+  .prepop .copy{flex:1}
+  .prepop .copy .l{font-size:12.5px;font-weight:600;color:var(--green);margin-bottom:2px}
+  .prepop .copy .s{font-size:12px;color:var(--ink-soft);line-height:1.4}
+  .prepop .copy a{color:var(--green);text-decoration:underline;font-weight:500}
+
+  .ata-bar{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--rust-soft);border:1px solid rgba(181,52,30,.25);border-radius:8px;margin-bottom:14px;font-size:12px;color:var(--rust)}
+  .ata-bar .pill{font-family:var(--ff-m);font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;background:var(--rust);color:#fff;padding:2px 8px;border-radius:999px}
+
+  .chips-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:14px}
+  .chips-row > .lbl{font-size:11px;color:var(--mut);font-family:var(--ff-m);letter-spacing:.06em;text-transform:uppercase;margin-right:4px}
+  .chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:4px 10px;border-radius:999px;border:1px solid var(--hair-2);background:var(--surface);color:var(--ink-soft)}
+  .chip.active{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+  .chip.green{background:var(--green-soft);color:var(--green);border-color:rgba(47,93,78,.3)}
+
+  .item-row{padding:14px;border:1px solid var(--hair);border-radius:10px;margin-bottom:8px;background:var(--surface);display:grid;grid-template-columns:14px 1fr;gap:10px}
+  .item-row.imported{border-left:3px solid var(--green)}
+  .item-row .drag{color:var(--subtle);font-size:14px;cursor:grab;line-height:1;padding-top:4px;text-align:center}
+  .ir-top{display:grid;grid-template-columns:1fr 60px 80px 90px;gap:8px;align-items:center}
+  .ir-top .desc{font-size:13.5px;font-weight:500;color:var(--ink);line-height:1.35}
+  .ir-top .qty,.ir-top .price{font-family:var(--ff-m);font-size:12.5px;text-align:right;color:var(--ink-soft);font-feature-settings:'tnum'}
+  .ir-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px}
+  .ir-meta .src{font-family:var(--ff-m);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;padding:1px 6px;border-radius:3px;font-weight:600}
+  .src-hours{background:var(--green-soft);color:var(--green)}
+  .src-mat{background:var(--gold-soft);color:var(--amber)}
+  .src-sub{background:var(--blue-soft);color:var(--blue)}
+  .ir-meta .room{font-size:11.5px;color:var(--mut)}
+  .ir-meta .rot{font-size:10px;font-weight:600;color:var(--green);padding:1px 6px;background:var(--green-soft);border-radius:3px;letter-spacing:.04em}
+  .ir-meta .disc{font-size:10px;font-weight:600;color:var(--rust);padding:1px 6px;background:var(--rust-soft);border-radius:3px;letter-spacing:.04em}
+  .ir-comment{margin-top:6px;font-size:12px;color:var(--mut);line-height:1.5;font-style:italic}
+
+  .addrow{width:100%;text-align:center;padding:10px;border:1px dashed var(--hair-2);border-radius:8px;color:var(--mut);font-size:12.5px;background:transparent;cursor:pointer;margin-top:8px;font:inherit}
+
+  /* zoombar */
+  .zoombar{display:flex;align-items:center;gap:6px;padding:10px 16px;background:#F4F0E5;border-bottom:1px solid var(--hair);justify-content:flex-end}
+  .zoombar .lbl{font-size:11px;color:var(--mut);margin-right:auto;display:flex;align-items:center;gap:6px}
+  .zoombar .live-dot{width:8px;height:8px;border-radius:50%;background:#3FAB67;box-shadow:0 0 0 3px rgba(63,171,103,.2)}
+  .zoombar button{width:26px;height:26px;border-radius:5px;border:1px solid transparent;background:transparent;color:var(--mut);font-size:13px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+  .zoombar .pct{font-family:var(--ff-m);font-size:11px;color:var(--ink-soft);width:34px;text-align:center}
+  .zoombar .sep{width:1px;height:14px;background:var(--hair-2);margin:0 4px}
+
+  /* document */
+  .doc-scroll{flex:1;padding:24px;overflow:hidden;display:flex;justify-content:center;align-items:flex-start}
+  .doc{background:var(--surface);width:100%;max-width:520px;padding:32px 36px;border-radius:2px;box-shadow:0 2px 8px rgba(0,0,0,.06),0 18px 36px -16px rgba(0,0,0,.12);font-size:11.5px;position:relative;overflow:hidden}
+  .doc .doc-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px}
+  .doc .biz{display:flex;gap:10px;align-items:flex-start}
+  .doc .biz .lg{width:34px;height:34px;background:var(--green);color:#fff;border-radius:5px;display:flex;align-items:center;justify-content:center;font-family:var(--ff-d);font-size:18px;font-weight:400}
+  .doc .biz .nm{font-weight:600;font-size:13px;color:var(--ink);margin-bottom:1px}
+  .doc .biz .info{font-size:9.5px;color:var(--mut);line-height:1.4}
+  .doc .right{text-align:right;font-size:10px;color:var(--mut)}
+  .doc h1.dt{font-family:var(--ff-d);font-weight:300;font-size:24px;letter-spacing:-.01em;margin:0 0 10px;color:var(--ink);text-transform:uppercase;letter-spacing:.04em}
+  .doc .dmeta{font-size:10px;color:var(--mut);margin-bottom:16px;line-height:1.6}
+  .doc .dmeta .lab{color:var(--subtle);display:inline-block;width:62px}
+  .doc .freetext{font-size:10.5px;color:var(--ink-soft);line-height:1.6;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--hair)}
+  .doc table{width:100%;border-collapse:collapse;margin-bottom:14px}
+  .doc thead th{text-align:left;font-size:9.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--mut);padding:6px 0;border-bottom:1.5px solid var(--ink-soft)}
+  .doc thead th.r{text-align:right}
+  .doc tbody td{padding:7px 0;border-bottom:1px solid var(--hair);font-size:10.5px;vertical-align:top}
+  .doc tbody td.r{text-align:right;font-family:var(--ff-m);font-feature-settings:'tnum'}
+  .doc tbody .ds{font-size:9.5px;color:var(--mut);margin-top:1px}
+  .doc tbody .roth{display:inline;font-size:9px;color:var(--mut);margin-left:4px}
+  .doc .sums{margin-left:auto;width:55%;font-size:10.5px;margin-top:4px}
+  .doc .sums div{display:flex;justify-content:space-between;padding:3px 0}
+  .doc .sums .rot{color:var(--green)}
+  .doc .sums .paid{color:var(--green)}
+  .doc .sums .tot{font-weight:700;font-size:13px;border-top:1px solid var(--ink-soft);padding-top:7px;margin-top:4px;font-family:var(--ff-d)}
+  .doc .sums .rem{font-weight:700;color:var(--amber);font-size:12px}
+  .doc .pay-block{margin-top:14px;padding:10px 12px;background:#F8F4EA;border:1px solid var(--hair);border-radius:6px;font-size:10px}
+  .doc .pay-block .h{font-weight:600;color:var(--ink);margin-bottom:5px;font-size:10.5px}
+  .doc .pay-block .row{display:flex;gap:10px;margin:2px 0}
+  .doc .pay-block .row .l{color:var(--mut);min-width:80px}
+  .doc .pay-block .row .v{font-family:var(--ff-m);color:var(--ink);font-weight:500}
+  .doc .footer-d{margin-top:24px;padding-top:10px;border-top:1px solid var(--hair);display:flex;justify-content:space-between;font-size:9px;color:var(--mut)}
+  .doc .footer-d .col div{margin:1px 0}
+
+  /* paid watermark */
+  .paid-stamp{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;font-family:var(--ff-d);font-weight:700;font-size:78px;color:rgba(47,93,78,.16);transform:rotate(-22deg);letter-spacing:.04em;z-index:1}
+
+  /* sidopanel */
+  .view-grid{display:grid;grid-template-columns:1fr 320px;min-height:880px}
+  .view-doc{background:#EFEAE0;padding:32px;display:flex;justify-content:center;overflow:hidden}
+  .view-doc .doc{max-width:580px}
+  .view-side{padding:22px;background:#FBF8F1;border-left:1px solid var(--hair);display:flex;flex-direction:column;gap:18px;overflow:hidden}
+  .sb-card{background:var(--surface);border:1px solid var(--hair);border-radius:10px;padding:14px 16px}
+  .sb-card .lbl{font-family:var(--ff-m);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);margin-bottom:6px}
+  .status-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+  .stat-draft{background:#EEE9DD;color:#6B5A3A}
+  .stat-sent{background:var(--blue-soft);color:var(--blue)}
+  .stat-paid{background:var(--green-soft);color:var(--green)}
+  .stat-partial{background:var(--amber-soft);color:var(--amber)}
+  .stat-overdue{background:var(--rust-soft);color:var(--rust)}
+  .viewed{font-size:12px;color:var(--green);display:flex;align-items:center;gap:6px;margin-top:6px}
+
+  .timeline{display:flex;flex-direction:column;gap:8px}
+  .tl-item{display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--ink-soft)}
+  .tl-item .d{width:6px;height:6px;border-radius:50%;background:var(--mut);margin-top:5px;flex-shrink:0}
+  .tl-item.now .d{background:var(--green);box-shadow:0 0 0 3px var(--green-soft)}
+  .tl-item.over .d{background:var(--rust);box-shadow:0 0 0 3px var(--rust-soft)}
+  .tl-item .when{font-family:var(--ff-m);font-size:10px;color:var(--subtle);margin-left:auto;flex-shrink:0}
+
+  .actions{display:flex;flex-direction:column;gap:8px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 14px;font-size:13px;font-weight:500;border:1px solid var(--hair-2);border-radius:8px;background:var(--surface);color:var(--ink);cursor:pointer;font-family:inherit;text-decoration:none}
+  .btn:hover{background:#F2EEE3}
+  .btn.primary{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+  .btn.green{background:var(--green);color:#fff;border-color:var(--green)}
+  .btn.rust{background:var(--rust);color:#fff;border-color:var(--rust)}
+  .btn.amber{background:var(--amber);color:#fff;border-color:var(--amber)}
+  .btn.ghost{background:transparent}
+  .btn.danger{color:var(--rust)}
+  .btn.lg{padding:14px 18px;font-size:14.5px}
+  .btn.full{width:100%}
+
+  /* overdue / paid banner */
+  .alert{display:flex;align-items:flex-start;gap:8px;padding:12px 14px;border-radius:10px;font-size:13px;margin-bottom:14px}
+  .alert.over{background:var(--rust-soft);color:var(--rust);border:1px solid rgba(181,52,30,.25)}
+  .alert.paid-a{background:var(--green-soft);color:var(--green);border:1px solid rgba(47,93,78,.25)}
+  .alert .ic{font-weight:700;flex-shrink:0}
+
+  /* customer sticky */
+  .cust-grid{display:grid;grid-template-columns:1fr;min-height:880px;position:relative}
+  .cust-doc{background:#EFEAE0;padding:32px;display:flex;justify-content:center;overflow:hidden;padding-bottom:280px}
+  .cust-doc .doc{max-width:600px}
+  .cust-sticky{position:absolute;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--hair);box-shadow:0 -8px 28px -10px rgba(0,0,0,.08);padding:14px 24px}
+  .cust-chat-toggle{display:flex;align-items:center;justify-content:space-between;padding:6px 0 10px;border-bottom:1px solid var(--hair);font-size:13px;font-weight:500}
+  .cust-chat-toggle .ico{color:var(--green);margin-right:6px}
+  .cust-actions{padding-top:12px;display:flex;flex-direction:column;gap:8px}
+  .pay-summary{display:flex;flex-direction:column;gap:4px;padding:8px 0;font-size:13px}
+  .pay-summary .row{display:flex;justify-content:space-between}
+  .pay-summary .row.tot{font-weight:700;font-size:15px;font-family:var(--ff-d);padding-top:6px;border-top:1px solid var(--hair);margin-top:4px}
+  .pay-summary .row.rem{color:var(--amber);font-weight:600}
+
+  /* modal */
+  .modal-scrim{position:relative;background:rgba(20,15,5,.4);min-height:680px;display:flex;align-items:center;justify-content:center;padding:32px}
+  .modal{background:var(--surface);border-radius:14px;width:100%;max-width:520px;padding:28px 30px;box-shadow:0 30px 80px -20px rgba(0,0,0,.4)}
+  .modal h3{font-family:var(--ff-d);font-weight:400;font-size:24px;margin:0 0 6px}
+  .modal .sub{color:var(--mut);font-size:13.5px;margin:0 0 20px}
+  .mode-toggle{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#F2EEE3;padding:4px;border-radius:10px;margin-bottom:20px}
+  .mode-toggle button{padding:10px;border-radius:7px;border:0;background:transparent;font-family:inherit;font-size:13px;font-weight:500;color:var(--mut);cursor:pointer}
+  .mode-toggle button.active{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.06)}
+  .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+  .summary-card{background:var(--paper);border-radius:10px;padding:14px 16px;font-size:13px;margin-bottom:14px}
+  .summary-card .row{display:flex;justify-content:space-between;padding:3px 0}
+  .summary-card .row.rem{font-weight:700;color:var(--amber);border-top:1px solid var(--hair);padding-top:7px;margin-top:4px}
+
+  /* small method dialog (s0a) */
+  .modal.sm{max-width:480px}
+  .method-list{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+  .method-card{display:grid;grid-template-columns:24px 1fr auto;gap:14px;align-items:flex-start;padding:16px 18px;border:1.5px solid var(--hair-2);border-radius:10px;background:var(--surface);cursor:pointer;transition:border-color .15s}
+  .method-card:hover{border-color:var(--ink-soft)}
+  .method-card.active{border-color:var(--ink);background:#FBF8F1;box-shadow:0 0 0 3px rgba(26,26,23,.06)}
+  .method-card .radio{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--hair-2);margin-top:2px;background:var(--surface);position:relative;flex-shrink:0}
+  .method-card.active .radio{border-color:var(--ink)}
+  .method-card.active .radio::after{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--ink)}
+  .method-card .ic-row{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+  .method-card .ic{width:22px;height:22px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+  .method-card .ic.percent{background:var(--blue-soft);color:var(--blue)}
+  .method-card .ic.tasks{background:var(--green-soft);color:var(--green)}
+  .method-card .ic.blank{background:#EEE9DD;color:#6B5A3A}
+  .method-card .ttl{font-size:14px;font-weight:600;color:var(--ink);font-family:var(--ff-d);font-weight:500}
+  .method-card .desc{font-size:12.5px;color:var(--mut);line-height:1.45}
+  .method-card .badge{font-family:var(--ff-m);font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--mut);align-self:center;white-space:nowrap}
+  .method-blank{margin-top:14px;padding-top:14px;border-top:1px solid var(--hair);text-align:center}
+  .method-blank a{color:var(--mut);font-size:12.5px;text-decoration:underline}
+
+  /* percent / completed work form layout */
+  .form-stage{display:grid;grid-template-columns:1fr 1.2fr;min-height:680px}
+  .form-pane{padding:32px 36px;background:#FBF8F1;border-right:1px solid var(--hair);display:flex;flex-direction:column;gap:18px;overflow:hidden}
+  .form-side{padding:32px 36px;display:flex;flex-direction:column;gap:18px;overflow:hidden;background:var(--surface)}
+  .form-pane h3{font-family:var(--ff-d);font-weight:400;font-size:24px;margin:0 0 4px;line-height:1.15}
+  .form-pane .formhint{color:var(--mut);font-size:13px;margin:0 0 8px}
+
+  .stat-3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .stat-card{background:var(--surface);border:1px solid var(--hair);border-radius:10px;padding:14px 12px;text-align:center}
+  .stat-card .l{font-family:var(--ff-m);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);margin-bottom:6px}
+  .stat-card .v{font-family:var(--ff-d);font-size:20px;font-weight:400;color:var(--ink);font-feature-settings:'tnum'}
+  .stat-card .ext{font-size:11px;color:var(--subtle);font-family:var(--ff-m);margin-top:2px}
+  .stat-card.green{background:var(--green-soft);border-color:rgba(47,93,78,.2)}
+  .stat-card.green .v{color:var(--green)}
+  .stat-card.amber{background:var(--amber-soft);border-color:rgba(160,106,31,.2)}
+  .stat-card.amber .v{color:var(--amber)}
+
+  .pct-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .pct-input{width:120px;padding:14px 16px;font-family:var(--ff-d);font-weight:400;font-size:32px;text-align:center;border:1.5px solid var(--hair-2);border-radius:10px;background:var(--surface);color:var(--ink);font-feature-settings:'tnum'}
+  .pct-input:focus{outline:0;border-color:var(--ink)}
+  .pct-pct{font-family:var(--ff-d);font-size:24px;color:var(--mut)}
+  .pct-quick{display:flex;gap:6px;margin-left:auto}
+  .pct-quick button{padding:8px 12px;font-family:var(--ff-m);font-size:11.5px;font-weight:500;border:1px solid var(--hair-2);border-radius:7px;background:var(--surface);color:var(--ink-soft);cursor:pointer}
+  .pct-quick button.active{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+
+  .checkbox-row{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--surface);border:1px solid var(--hair);border-radius:10px;font-size:13.5px;cursor:pointer}
+  .checkbox-row .cb{width:18px;height:18px;border-radius:4px;border:1.5px solid var(--hair-2);background:var(--surface);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+  .checkbox-row .cb.checked{background:var(--green);border-color:var(--green);color:#fff;font-size:11px;font-weight:700}
+  .checkbox-row .meta{margin-left:auto;font-family:var(--ff-m);font-size:10.5px;color:var(--mut)}
+
+  .preview-card{background:var(--paper);border:1px solid var(--hair);border-radius:12px;padding:24px 26px}
+  .preview-card .lab{font-family:var(--ff-m);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut)}
+  .preview-card .big{font-family:var(--ff-d);font-weight:300;font-size:48px;line-height:1;letter-spacing:-.02em;color:var(--ink);margin:6px 0 4px;font-feature-settings:'tnum'}
+  .preview-card .calc{font-family:var(--ff-m);font-size:12px;color:var(--mut)}
+
+  /* task picker */
+  .task-table{width:100%;border-collapse:collapse;font-size:13px}
+  .task-table thead th{font-family:var(--ff-m);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);font-weight:500;text-align:left;padding:8px 8px 10px;border-bottom:1.5px solid var(--ink-soft)}
+  .task-table thead th.r{text-align:right}
+  .task-table tbody tr{border-bottom:1px solid var(--hair)}
+  .task-table tbody tr.selected{background:#FBF8F1}
+  .task-table tbody td{padding:10px 8px;vertical-align:middle}
+  .task-table tbody td.r{text-align:right;font-family:var(--ff-m);font-feature-settings:'tnum'}
+  .task-table .tname{font-weight:600;color:var(--ink);font-size:13px;line-height:1.3}
+  .task-table .tstat{font-size:10.5px;color:var(--mut);font-family:var(--ff-m);letter-spacing:.04em;text-transform:uppercase;margin-top:2px}
+  .task-table .pct-mini{width:70px;padding:5px 8px;font-family:var(--ff-m);font-size:12.5px;text-align:right;border:1px solid var(--hair-2);border-radius:5px;background:var(--surface);color:var(--ink);font-feature-settings:'tnum'}
+  .task-table .pct-mini:disabled{background:#F2EEE3;color:var(--subtle)}
+  .task-table .invoiced-pill{font-family:var(--ff-m);font-size:10px;color:var(--amber);background:var(--amber-soft);padding:2px 6px;border-radius:3px;letter-spacing:.04em}
+  .task-table .cb-cell{width:32px}
+  .task-table .cb-cell .cb{width:18px;height:18px;border-radius:4px;border:1.5px solid var(--hair-2);background:var(--surface);display:inline-flex;align-items:center;justify-content:center}
+  .task-table .cb-cell .cb.checked{background:var(--green);border-color:var(--green);color:#fff;font-size:11px;font-weight:700}
+
+  .total-bar{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:#FBF8F1;border:1.5px solid var(--hair-2);border-radius:10px}
+  .total-bar .lab{font-family:var(--ff-m);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut)}
+  .total-bar .v{font-family:var(--ff-d);font-weight:400;font-size:24px;color:var(--ink);font-feature-settings:'tnum'}
+
+  /* share modal */
+  .share-channel-list{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
+  .share-channel{display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--hair-2);border-radius:8px;font-size:12.5px;color:var(--ink-soft);cursor:pointer;background:var(--surface)}
+  .share-channel.active{border-color:var(--ink);background:#FBF8F1}
+  .share-channel .ico{width:18px;height:18px;border-radius:4px;background:var(--green-soft);color:var(--green);display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
+  .share-link-row{display:grid;grid-template-columns:1fr auto;gap:6px;align-items:center}
+  .share-link-row .link{font-family:var(--ff-m);font-size:11.5px;color:var(--ink);background:#F2EEE3;padding:9px 12px;border-radius:6px;border:1px solid var(--hair);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+  /* scene */
+  .scene{margin-bottom:80px}
+  .feature-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .ft{font-family:var(--ff-m);font-size:10px;letter-spacing:.04em;text-transform:uppercase;padding:3px 7px;border-radius:4px;background:#F0EAD6;color:#7A4A0F}
+  .mock,.editor,.view-grid,.cust-grid,.modal-scrim{overflow:hidden}
+
+  .toc{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-bottom:48px}
+  .toc a{display:flex;flex-direction:column;gap:2px;padding:14px 16px;background:var(--surface);border:1px solid var(--hair);border-radius:10px;text-decoration:none;color:var(--ink)}
+  .toc a:hover{border-color:var(--ink)}
+  .toc a .num{font-family:var(--ff-m);font-size:10px;color:var(--rust);letter-spacing:.06em}
+  .toc a .ttl{font-family:var(--ff-d);font-size:16px;font-weight:400;line-height:1.2}
+  .toc a .sub{font-size:11.5px;color:var(--mut)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header style="margin-bottom:48px">
+    <div class="num-tag"><span class="dot"></span>Faktura v2 · hi-fi mockup</div>
+    <h1>Faktura v2</h1>
+    <p class="lede">Elva scener efter parity-audit v2. Tre skapa-lägen från koden (<span class="mono" style="font-size:11px">InvoiceMethodDialog</span>: procent · klart arbete · tom), fyra status-vyer, kund-vy, samt RecordPayment- och ShareInvoice-modaler. Tidigare hade mockupen bara ett skapa-läge — nu täcker den alla tre + delning.</p>
+
+    <div class="toc">
+      <a href="#s0a"><span class="num">00 · metod</span><span class="ttl">Välj skapa-läge</span><span class="sub">InvoiceMethodDialog · steg 1</span></a>
+      <a href="#s0b"><span class="num">00 · à konto</span><span class="ttl">Procent av projekt</span><span class="sub">PercentMethodForm · ROT-flagga</span></a>
+      <a href="#s0c"><span class="num">00 · klart arbete</span><span class="ttl">Klart arbete från tasks</span><span class="sub">CompletedWorkForm · per rad</span></a>
+      <a href="#s1"><span class="num">01 · skapa</span><span class="ttl">Skapa-vyn (full editor)</span><span class="sub">Tom faktura / fortsatt redigering</span></a>
+      <a href="#s2"><span class="num">02 · sent</span><span class="ttl">Ägar-vy · skickad</span><span class="sub">Viewed-at · Reshare/Unlock</span></a>
+      <a href="#s3"><span class="num">03 · partial</span><span class="ttl">Ägar-vy · delbetald</span><span class="sub">paid_amount + remaining</span></a>
+      <a href="#s4"><span class="num">04 · paid</span><span class="ttl">Ägar-vy · betald</span><span class="sub">BETALD-vattenstämpel</span></a>
+      <a href="#s5"><span class="num">05 · overdue</span><span class="ttl">Ägar-vy · förfallen</span><span class="sub">Röd banner · Påminn-CTA</span></a>
+      <a href="#s6"><span class="num">06 · kund</span><span class="ttl">Kund-vy</span><span class="sub">Sticky · chat · remaining</span></a>
+      <a href="#s7"><span class="num">07 · payment</span><span class="ttl">RecordPayment-modal</span><span class="sub">Partiell vs hel</span></a>
+      <a href="#s8"><span class="num">08 · share</span><span class="ttl">ShareInvoice-modal</span><span class="sub">Email + namn · skicka till kund</span></a>
+    </div>
+  </header>
+
+  <!-- ─── 00a · METOD-DIALOG ───────────────────────────────────────── -->
+  <section class="scene" id="s0a">
+    <div class="scene-cap">
+      <div>
+        <div class="num-tag"><span class="dot"></span>00 · Välj skapa-läge</div>
+        <h2>InvoiceMethodDialog · steg 1</h2>
+        <p>Innan formuläret öppnas väljer användaren hur fakturan ska skapas. Tre lägen från koden: procent av accepterad offert, klart arbete från projektets tasks, eller en helt tom faktura.</p>
+        <div class="feature-tags"><span class="ft">InvoiceMethodDialog</span><span class="ft">percent_of_project</span><span class="ft">completed_work</span><span class="ft">blank-invoice</span><span class="ft">2-step modal</span></div>
+      </div>
+      <span class="mono">→ src/components/invoices/InvoiceMethodDialog.tsx</span>
+    </div>
+
+    <div class="mock">
+      <div class="mock-head">
+        <div style="display:flex;align-items:center;gap:14px"><div class="lights"><span></span><span></span><span></span></div><span class="ttl">Modal · Ny faktura · Brf Linden 12B</span></div>
+        <span class="meta">Steg 1 av 2</span>
+      </div>
+      <div class="modal-scrim" style="min-height:560px">
+        <div class="modal sm">
+          <h3>Hur vill du skapa fakturan?</h3>
+          <p class="sub">Välj utgångsläge — du kan ändra raderna efteråt.</p>
+
+          <div class="method-list">
+            <label class="method-card active">
+              <span class="radio"></span>
+              <span>
+                <span class="ic-row"><span class="ic percent">%</span><span class="ttl">Procent av projekt</span></span>
+                <span class="desc">À konto-faktura. Fakturera en andel av accepterad offertsumma — bra för delbetalningar i löpande projekt.</span>
+              </span>
+              <span class="badge">231 250 kr kvar</span>
+            </label>
+
+            <label class="method-card">
+              <span class="radio"></span>
+              <span>
+                <span class="ic-row"><span class="ic tasks">✓</span><span class="ttl">Klart arbete</span></span>
+                <span class="desc">Bygg faktura från tasks i projektet. Markera vilka rader som är färdiga eller delvis utförda och fakturera per rad.</span>
+              </span>
+              <span class="badge">7 av 12 klara</span>
+            </label>
+
+            <label class="method-card">
+              <span class="radio"></span>
+              <span>
+                <span class="ic-row"><span class="ic blank">∅</span><span class="ttl">Tom faktura</span></span>
+                <span class="desc">Börja från noll utan rader förvalda. Använd för fristående fakturor som inte hänger ihop med ett projekt.</span>
+              </span>
+              <span class="badge">manuell</span>
+            </label>
+          </div>
+
+          <div class="modal-actions">
+            <button class="btn ghost">Avbryt</button>
+            <button class="btn primary">Fortsätt →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="hair">
+
+  <!-- ─── 00b · PERCENT-FORMULÄR ──────────────────────────────────── -->
+  <section class="scene" id="s0b">
+    <div class="scene-cap">
+      <div>
+        <div class="num-tag"><span class="dot"></span>00 · À konto · procent av projekt</div>
+        <h2>PercentMethodForm · enkelt belopp från offertsumma</h2>
+        <p>Tre stat-kort visar kontraktsvärde / redan fakturerat / kvarstående. Snabbknappar 25/50/75/100 % plus fritt fält. ROT-flagga sätts på hela fakturan. Validering: kan inte överstiga kvarstående.</p>
+        <div class="feature-tags"><span class="ft">PercentMethodForm</span><span class="ft">contract-value</span><span class="ft">already-invoiced</span><span class="ft">remaining-cap</span><span class="ft">quick-pct-buttons</span><span class="ft">rot-flag</span></div>
+      </div>
+      <span class="mono">→ src/components/invoices/PercentMethodForm.tsx</span>
+    </div>
+
+    <div class="mock">
+      <div class="mock-head">
+        <div style="display:flex;align-items:center;gap:14px"><div class="lights"><span></span><span></span><span></span></div><span class="ttl">À konto · Brf Linden 12B Kök</span></div>
+        <span class="meta">Steg 2 av 2 · Procent av projekt</span>
+      </div>
+      <div class="form-stage">
+        <div class="form-pane">
+          <div>
+            <h3>Hur stor andel ska faktureras nu?</h3>
+            <p class="formhint">Beloppet beräknas som procent av accepterad offertsumma. Tidigare à konto-fakturor på samma projekt dras av från taket.</p>
+          </div>
+
+          <div class="stat-3">
+            <div class="stat-card">
+              <div class="l">Kontraktsvärde</div>
+              <div class="v">462 500</div>
+              <div class="ext">kr inkl. moms</div>
+            </div>
+            <div class="stat-card green">
+              <div class="l">Redan fakturerat</div>
+              <div class="v">231 250</div>
+              <div class="ext">kr · 50 %</div>
+            </div>
+            <div class="stat-card amber">
+              <div class="l">Kvarstår</div>
+              <div class="v">231 250</div>
+              <div class="ext">kr · 50 %</div>
+            </div>
+          </div>
+
+          <div>
+            <div class="sec-label">Andel att fakturera</div>
+            <div class="pct-row">
+              <input class="pct-input" value="30">
+              <span class="pct-pct">%</span>
+              <div class="pct-quick">
+                <button>25 %</button>
+                <button class="active">30 %</button>
+                <button>50 %</button>
+                <button>75 %</button>
+                <button>100 %</button>
+              </div>
+            </div>
+          </div>
+
+          <label class="checkbox-row">
+            <span class="cb checked">✓</span>
+            <span>Fakturan är ROT-berättigad</span>
+            <span class="meta">Privat ägare</span>
+          </label>
+
+          <div style="margin-top:auto;display:flex;gap:8px">
+            <button class="btn">← Byt läge</button>
+            <button class="btn primary" style="flex:1">Skapa utkast →</button>
+          </div>
+        </div>
+
+        <div class="form-side">
+          <div class="sec-label" style="margin:0">Förhandsberäkning</div>
+          <div class="preview-card">
+            <div class="lab">À konto-belopp</div>
+            <div class="big">138 750 kr</div>
+            <div class="calc">30 % × 462 500 kr</div>
+          </div>
+
+          <div class="preview-card">
+            <div class="lab" style="margin-bottom:8px">Bryts ner som</div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0"><span style="color:var(--mut)">Subtotal exkl. moms</span><span class="mono" style="text-transform:none;color:var(--ink)">111 000 kr</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0"><span style="color:var(--mut)">Moms 25 %</span><span class="mono" style="text-transform:none;color:var(--ink)">27 750 kr</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;color:var(--green)"><span>ROT-avdrag (proportionellt)</span><span class="mono" style="text-transform:none;color:var(--green)">−18 750 kr</span></div>
+            <div style="display:flex;justify-content:space-between;border-top:1px solid var(--hair);padding-top:10px;margin-top:6px;font-family:var(--ff-d);font-size:18px;font-weight:500"><span>Att betala</span><span style="font-feature-settings:'tnum'">120 000 kr</span></div>
+          </div>
+
+          <div style="background:var(--blue-soft);border:1px solid rgba(58,91,167,.2);border-radius:10px;padding:12px 14px;font-size:12.5px;color:var(--blue);display:flex;gap:8px;align-items:flex-start">
+            <span>🛈</span><span>Efter att fakturan skapats hamnar du i full skapa-vyn där du kan justera radtext, lägga till fri text, byta förfallodatum och förhandsgranska PDF.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="hair">
+
+  <!-- ─── 00c · COMPLETED WORK-FORMULÄR ───────────────────────────── -->
+  <section class="scene" id="s0c">
+    <div class="scene-cap">
+      <div>
+        <div class="num-tag"><span class="dot"></span>00 · Klart arbete</div>
+        <h2>CompletedWorkForm · välj tasks att fakturera</h2>
+        <p>Tabell över alla fakturerbara tasks i projektet. Prepop: completed=100 %, in_progress=50 %. Kolumner: namn/status, totalkostnad, redan fakturerat, andel att ta nu, beräknat radbelopp. Cap per rad mot kvarstående — kan inte överfakturera.</p>
+        <div class="feature-tags"><span class="ft">CompletedWorkForm</span><span class="ft">task-checkbox</span><span class="ft">per-row-pct</span><span class="ft">invoiced-pct</span><span class="ft">remaining-amount-cap</span><span class="ft">prepop-completed-100</span><span class="ft">prepop-inprogress-50</span></div>
+      </div>
+      <span class="mono">→ src/components/invoices/CompletedWorkForm.tsx</span>
+    </div>
+
+    <div class="mock">
+      <div class="mock-head">
+        <div style="display:flex;align-items:center;gap:14px"><div class="lights"><span></span><span></span><span></span></div><span class="ttl">Klart arbete · Brf Linden 12B Kök</span></div>
+        <span class="meta">Steg 2 av 2 · 4 av 7 tasks valda</span>
+      </div>
+      <div class="form-stage" style="grid-template-columns:1.4fr 1fr">
+        <div class="form-pane" style="padding:28px 32px">
+          <div>
+            <h3>Vilka tasks ingår i fakturan?</h3>
+            <p class="formhint">Markera färdigt eller delvis utfört arbete. Procentkolumnen är hur stor del av tasken som faktureras nu — capped mot vad som inte redan är fakturerat.</p>
+          </div>
+
+          <table class="task-table">
+            <thead>
+              <tr>
+                <th class="cb-cell"></th>
+                <th>Task</th>
+                <th class="r">Kostnad</th>
+                <th class="r">Fakt.</th>
+                <th class="r" style="width:90px">% nu</th>
+                <th class="r">Belopp</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="selected">
+                <td class="cb-cell"><span class="cb checked">✓</span></td>
+                <td>
+                  <div class="tname">Demontage gammalt kök</div>
+                  <span class="tstat">Klart</span>
+                </td>
+                <td class="r">14 200 kr</td>
+                <td class="r">—</td>
+                <td class="r"><input class="pct-mini" value="100"></td>
+                <td class="r" style="font-weight:600">14 200 kr</td>
+              </tr>
+              <tr class="selected">
+                <td class="cb-cell"><span class="cb checked">✓</span></td>
+                <td>
+                  <div class="tname">VVS · ny stamledning &amp; vatten</div>
+                  <span class="tstat">Klart</span>
+                </td>
+                <td class="r">28 400 kr</td>
+                <td class="r"><span class="invoiced-pill">50 %</span></td>
+                <td class="r"><input class="pct-mini" value="50"></td>
+                <td class="r" style="font-weight:600">14 200 kr</td>
+              </tr>
+              <tr class="selected">
+                <td class="cb-cell"><span class="cb checked">✓</span></td>
+                <td>
+                  <div class="tname">El · ny gruppcentral kök</div>
+                  <span class="tstat">Klart</span>
+                </td>
+                <td class="r">18 900 kr</td>
+                <td class="r">—</td>
+                <td class="r"><input class="pct-mini" value="100"></td>
+                <td class="r" style="font-weight:600">18 900 kr</td>
+              </tr>
+              <tr class="selected">
+                <td class="cb-cell"><span class="cb checked">✓</span></td>
+                <td>
+                  <div class="tname">Stommar &amp; luckor monterade</div>
+                  <span class="tstat">Pågår</span>
+                </td>
+                <td class="r">52 090 kr</td>
+                <td class="r">—</td>
+                <td class="r"><input class="pct-mini" value="50"></td>
+                <td class="r" style="font-weight:600">26 045 kr</td>
+              </tr>
+              <tr>
+                <td class="cb-cell"><span class="cb"></span></td>
+                <td>
+                  <div class="tname">Bänkskiva · sten installeras</div>
+                  <span class="tstat">Pågår</span>
+                </td>
+                <td class="r">22 800 kr</td>
+                <td class="r">—</td>
+                <td class="r"><input class="pct-mini" value="0" disabled></td>
+                <td class="r" style="color:var(--subtle)">—</td>
+              </tr>
+              <tr>
+                <td class="cb-cell"><span class="cb"></span></td>
+                <td>
+                  <div class="tname">Diskmaskin Bosch · install</div>
+                  <span class="tstat">Ej startat</span>
+                </td>
+                <td class="r">8 990 kr</td>
+                <td class="r">—</td>
+                <td class="r"><input class="pct-mini" value="0" disabled></td>
+                <td class="r" style="color:var(--subtle)">—</td>
+              </tr>
+              <tr>
+                <td class="cb-cell"><span class="cb"></span></td>
+                <td>
+                  <div class="tname">Hall · måleri tak + väggar</div>
+                  <span class="tstat">Ej startat</span>
+                </td>
+                <td class="r">14 540 kr</td>
+                <td class="r">—</td>
+                <td class="r"><input class="pct-mini" value="0" disabled></td>
+                <td class="r" style="color:var(--subtle)">—</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div style="margin-top:auto;display:flex;gap:8px">
+            <button class="btn">← Byt läge</button>
+            <button class="btn primary" style="flex:1">Skapa utkast →</button>
+          </div>
+        </div>
+
+        <div class="form-side">
+          <div class="sec-label" style="margin:0">Sammanställning</div>
+
+          <div class="total-bar">
+            <div>
+              <div class="lab">Totalt belopp · 4 rader</div>
+              <div style="font-size:11px;color:var(--mut);font-family:var(--ff-m);margin-top:2px">exkl. moms · ROT räknas vid PDF</div>
+            </div>
+            <div class="v">73 345 kr</div>
+          </div>
+
+          <div class="preview-card">
+            <div class="lab" style="margin-bottom:8px">Per rad</div>
+            <div style="display:flex;justify-content:space-between;font-size:12.5px;padding:5px 0;border-bottom:1px solid var(--hair)"><span style="color:var(--ink)">Demontage</span><span class="mono" style="text-transform:none;color:var(--ink)">14 200</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:12.5px;padding:5px 0;border-bottom:1px solid var(--hair)"><span style="color:var(--ink)">VVS · 50 %</span><span class="mono" style="text-transform:none;color:var(--ink)">14 200</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:12.5px;padding:5px 0;border-bottom:1px solid var(--hair)"><span style="color:var(--ink)">El · 100 %</span><span class="mono" style="text-transform:none;color:var(--ink)">18 900</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:12.5px;padding:5px 0"><span style="color:var(--ink)">Stommar · 50 %</span><span class="mono" style="text-transform:none;color:var(--ink)">26 045</span></div>
+          </div>
+
+          <div style="background:var(--green-soft);border:1px solid rgba(47,93,78,.22);border-radius:10px;padding:12px 14px;font-size:12.5px;color:var(--green);display:flex;gap:8px;align-items:flex-start">
+            <span>✓</span><span>VVS-tasken har redan 50 % fakturerat. Återstoden (50 %) tas nu — kan inte överstigas.</span>
+          </div>
+
+          <div style="background:#F2EEE3;border-radius:10px;padding:12px 14px;font-size:12px;color:var(--mut);font-family:var(--ff-m)">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>Färdiga tasks</span><span>3</span></div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>Pågående tasks</span><span>2</span></div>
+            <div style="display:flex;justify-content:space-between"><span>Ej startade</span><span>2</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="hair">
+
+  <!-- ─── 01 SKAPA ────────────────────────────────────────────────── -->
+  <section class="scene" id="s1">
+    <div class="scene-cap">
+      <div>
+        <div class="num-tag"><span class="dot"></span>01 · Skapa-vyn</div>
+        <h2>Skapa faktura · prepopulering från offert</h2>
+        <p>Tre kolumner: metadata + betalningsinfo · radredigering · live-preview. Prepop-banner när fromQuoteId, payment-terms-chips, Bg/konto/OCR som separata fält.</p>
+        <div class="feature-tags"><span class="ft">prepop-from-quote</span><span class="ft">payment-terms-chips</span><span class="ft">bankgiro+konto</span><span class="ft">ocr-fält</span><span class="ft">äta-toggle</span><span class="ft">auto-fakturanr</span></div>
+      </div>
+      <span class="mono">→ src/pages/contractor/CreateInvoice.tsx</span>
+    </div>
+
+    <div class="mock">
+      <div class="mock-head">
+        <div style="display:flex;align-items:center;gap:14px"><div class="lights"><span></span><span></span><span></span></div><span class="ttl">Ny faktura · Brf Linden 12B Kök</span></div>
+        <span class="meta">Utkast · Auto-sparad 09:47</span>
+      </div>
+      <div class="editor">
+
+        <!-- COL 1 -->
+        <div class="ed-form">
+          <div class="prepop">
+            <div class="ic">↓</div>
+            <div class="copy">
+              <div class="l">Skapad från offert OFF-2026-0142-R1</div>
+              <div class="s">7 rader, klient och ROT-flaggor importerade. <a href="#">Visa offert</a></div>
+            </div>
+          </div>
+
+          <div class="sec-label">Faktura</div>
+          <div class="row-2">
+            <div class="field"><label>Fakturanr</label><input class="input" value="FAK-2026-0017"></div>
+            <div class="field"><label>Projekt</label><input class="input" value="Brf Linden 12B" readonly></div>
+          </div>
+          <div class="field"><label>Mottagare</label><input class="input" value="Eric &amp; Linn Norström"></div>
+          <div class="field"><label>Titel</label><input class="input" value="Slutfaktura · Köksrenovering"></div>
+
+          <div class="sec-label">Betalningsvillkor</div>
+          <div class="chips-row">
+            <span class="chip">10 d</span>
+            <span class="chip">15 d</span>
+            <span class="chip">20 d</span>
+            <span class="chip active">30 d</span>
+            <span class="chip">45 d</span>
+            <span class="chip">60 d</span>
+            <span class="chip">90 d</span>
+          </div>
+          <div class="field"><label>Förfallodatum</label><input class="input" value="2026-06-15" type="date"></div>
+
+          <div class="sec-label">Betalning</div>
+          <div class="field"><label>Bankgiro</label><input class="input" value="123-4567" placeholder="000-0000"></div>
+          <div class="field"><label>Bankkonto</label><input class="input" value="" placeholder="1234-12 345 67"></div>
+          <div class="field"><label>OCR-referens</label><input class="input" value="2026001725" placeholder="OCR / fakturanr"></div>
+
+          <div class="ata-bar" style="margin-top:18px">
+            <input type="checkbox" style="margin:0">
+            <span>Detta är en ÄTA-faktura</span>
+          </div>
+
+          <div class="sec-label">Status</div>
+          <div style="font-size:13px;color:var(--ink-soft);line-height:1.5">
+            <div style="display:flex;justify-content:space-between"><span>Subtotal</span><span class="mono" style="text-transform:none;font-size:13px;color:var(--ink)">123 030 kr</span></div>
+            <div style="display:flex;justify-content:space-between"><span>Moms 25%</span><span class="mono" style="text-transform:none;font-size:13px;color:var(--ink)">30 757 kr</span></div>
+            <div style="display:flex;justify-content:space-between;color:var(--green)"><span>ROT-avdrag</span><span class="mono" style="text-transform:none;font-size:13px;color:var(--green)">−18 750 kr</span></div>
+            <div style="display:flex;justify-content:space-between;font-weight:700;border-top:1px solid var(--hair);padding-top:8px;margin-top:8px;font-family:var(--ff-d)"><span>Att betala</span><span style="font-size:18px">135 037 kr</span></div>
+          </div>
+        </div>
+
+        <!-- COL 2 rows -->
+        <div class="ed-rows">
+          <div class="sec-label" style="margin-top:0">Fakturarader · 7 st</div>
+
+          <div class="item-row imported"><div class="drag">⋮⋮</div><div>
+            <div class="ir-top"><div class="desc">Köksrenovering · arbete</div><div class="qty">1 st</div><div class="price">42 200 kr</div><div class="price" style="font-weight:600;color:var(--ink)">42 200 kr</div></div>
+            <div class="ir-meta"><span class="src src-hours">Arbete</span><span class="rot">ROT</span><span class="room">📍 Kök</span></div>
+            <div class="ir-comment">Demontage, montage stommar, lucka, bänkskiva. 2 hantverkare × 4 dagar.</div>
+          </div></div>
+
+          <div class="item-row imported"><div class="drag">⋮⋮</div><div>
+            <div class="ir-top"><div class="desc">Material · stommar, luckor, bänkskiva</div><div class="qty">1 st</div><div class="price">52 090 kr</div><div class="price" style="font-weight:600;color:var(--ink)">52 090 kr</div></div>
+            <div class="ir-meta"><span class="src src-mat">Material</span><span class="room">📍 Kök</span><span class="disc">−10%</span></div>
+          </div></div>
+
+          <div class="item-row imported"><div class="drag">⋮⋮</div><div>
+            <div class="ir-top"><div class="desc">VVS-installation underentreprenör</div><div class="qty">1 st</div><div class="price">14 200 kr</div><div class="price" style="font-weight:600;color:var(--ink)">14 200 kr</div></div>
+            <div class="ir-meta"><span class="src src-sub">UE</span><span class="rot">ROT</span><span class="room">📍 Kök</span></div>
+          </div></div>
+
+          <div class="item-row imported"><div class="drag">⋮⋮</div><div>
+            <div class="ir-top"><div class="desc">Diskmaskin Bosch SMV6 · installation</div><div class="qty">1 st</div><div class="price">8 990 kr</div><div class="price" style="font-weight:600;color:var(--ink)">8 990 kr</div></div>
+            <div class="ir-meta"><span class="src src-mat">Material</span><span class="room">📍 Kök</span></div>
+          </div></div>
+
+          <div class="item-row imported"><div class="drag">⋮⋮</div><div>
+            <div class="ir-top"><div class="desc">Hall · måleri tak + väggar</div><div class="qty">1 st</div><div class="price">12 400 kr</div><div class="price" style="font-weight:600;color:var(--ink)">12 400 kr</div></div>
+            <div class="ir-meta"><span class="src src-hours">Arbete</span><span class="rot">ROT</span><span class="room">📍 Hall</span></div>
+          </div></div>
+
+          <div class="item-row imported"><div class="drag">⋮⋮</div><div>
+            <div class="ir-top"><div class="desc">Hall · material färg + spackel</div><div class="qty">1 st</div><div class="price">2 140 kr</div><div class="price" style="font-weight:600;color:var(--ink)">2 140 kr</div></div>
+            <div class="ir-meta"><span class="src src-mat">Material</span><span class="room">📍 Hall</span></div>
+          </div></div>
+
+          <button class="addrow">+ Lägg till rad</button>
+
+          <div style="margin-top:18px;display:flex;gap:8px">
+            <button class="btn primary" style="flex:1">Spara &amp; granska</button>
+            <button class="btn">Förhandsgranska PDF</button>
+          </div>
+        </div>
+
+        <!-- COL 3 preview -->
+        <div class="ed-prev">
+          <div class="zoombar">
+            <span class="lbl"><span class="live-dot"></span>Live-förhandsgranskning</span>
+            <button>−</button><span class="pct">75%</span><button>+</button><span class="sep"></span><button>⤢</button>
+          </div>
+          <div class="doc-scroll"><div class="doc">
+            <div class="doc-head">
+              <div class="biz"><div class="lg">N</div><div><div class="nm">Norrström Bygg AB</div><div class="info">Org.nr 559123-4567<br>Kungsgatan 18, 112 35 Stockholm</div></div></div>
+              <div class="right">16 maj 2026</div>
+            </div>
+            <h1 class="dt">Faktura</h1>
+            <div class="dmeta">
+              <div><span class="lab">Projekt</span> Brf Linden 12B Kök</div>
+              <div><span class="lab">Mottagare</span> Eric &amp; Linn Norström</div>
+              <div><span class="lab">Fakturanr</span> FAK-2026-0017</div>
+              <div><span class="lab">Förfaller</span> 15 juni 2026</div>
+            </div>
+            <div class="freetext">Slutfaktura för köksrenovering enligt offert OFF-2026-0142-R1. Tack för förtroendet.</div>
+            <table>
+              <thead><tr><th>Beskrivning</th><th class="r">Antal</th><th class="r">à-pris</th><th class="r">Summa</th></tr></thead>
+              <tbody>
+                <tr><td>Köksrenovering · arbete<span class="roth">(ROT)</span></td><td class="r">1 st</td><td class="r">42 200</td><td class="r">42 200</td></tr>
+                <tr><td>Material · stommar, luckor, bänkskiva</td><td class="r">1 st</td><td class="r">52 090</td><td class="r">52 090</td></tr>
+                <tr><td>VVS underentreprenör<span class="roth">(ROT)</span></td><td class="r">1 st</td><td class="r">14 200</td><td class="r">14 200</td></tr>
+                <tr><td>Diskmaskin · installation</td><td class="r">1 st</td><td class="r">8 990</td><td class="r">8 990</td></tr>
+                <tr><td>Hall · måleri<span class="roth">(ROT)</span></td><td class="r">1 st</td><td class="r">12 400</td><td class="r">12 400</td></tr>
+                <tr><td>Hall · material</td><td class="r">1 st</td><td class="r">2 140</td><td class="r">2 140</td></tr>
+              </tbody>
+            </table>
+            <div class="sums">
+              <div><span>Subtotal</span><span>123 030 kr</span></div>
+              <div><span>Moms 25%</span><span>30 757 kr</span></div>
+              <div class="rot"><span>ROT-avdrag</span><span>−18 750 kr</span></div>
+              <div class="tot"><span>Att betala</span><span>135 037 kr</span></div>
+            </div>
+            <div class="pay-block">
+              <div class="h">Betalningsinformation</div>
+              <div class="row"><span class="l">Bankgiro</span><span class="v">123-4567</span></div>
+              <div class="row"><span class="l">OCR-referens</span><span class="v">2026001725</span></div>
+              <div class="row"><span class="l">Förfaller</span><span class="v">15 juni 2026</span></div>
+            </div>
+            <div class="footer-d">
+              <div class="col"><div>Norrström Bygg AB</div><div>Org.nr 559123-4567</div><div>Bg: 123-4567</div></div>
+              <div class="col" style="text-align:right"><div>norrstrom.se</div><div>08-123 45 67</div><div>info@norrstrom.se</div></div>
+            </div>
+          </div></div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <hr class="hair">
+
+  <!-- ─── 02 SENT ─────────────────────────────────────────────────── -->
+  <section class="scene" id="s2">
+    <div class="scene-cap">
+      <div>
+        <div class="num-tag"><span class="dot"></span>02 · Ägar-vy · skickad</div>
+        <h2>Faktura skickad · väntar på betalning</h2>
+        <p>Sidopanel med viewed-at, tidslinje, owner-actions: Record payment, Mark as paid, Unlock-edit, Reshare, PDF.</p>
+        <div class="feature-tags"><span class="ft">viewed-at</span><span class="ft">record-payment</span><span class="ft">mark-as-paid</span><span class="ft">unlock-edit</span><span class="ft">reshare</span><span class="ft">pdf-auto-finalize</span></div>
+      </div>
+      <span class="mono">→ status=sent · isOwner=true</span>
+    </div>
+
+    <div class="mock">
+      <div class="mock-head">
+        <div style="display:flex;align-items:center;gap:14px"><div class="lights"><span></span><span></span><span></span></div><span class="ttl">FAK-2026-0017 · Brf Linden 12B</span></div>
+        <span class="meta">Skickad 16 maj · Visad 1 timme sen</span>
+      </div>
+      <div class="view-grid">
+
+        <div class="view-doc"><div class="doc">
+          <div class="doc-head">
+            <div class="biz"><div class="lg">N</div><div><div class="nm">Norrström Bygg AB</div><div class="info">Org.nr 559123-4567<br>Kungsgatan 18, 112 35 Stockholm</div></div></div>
+            <div class="right">16 maj 2026</div>
+          </div>
+          <h1 class="dt">Faktura</h1>
+          <div class="dmeta">
+            <div><span class="lab">Projekt</span> Brf Linden 12B Kök</div>
+            <div><span class="lab">Mottagare</span> Eric &amp; Linn Norström</div>
+            <div><span class="lab">Fakturanr</span> FAK-2026-0017</div>
+            <div><span class="lab">Förfaller</span> 15 juni 2026 <span style="color:var(--mut)">(om 30 dagar)</span></div>
+          </div>
+          <div class="freetext">Slutfaktura för köksrenovering enligt offert OFF-2026-0142-R1. Tack för förtroendet.</div>
+          <table>
+            <thead><tr><th>Beskrivning</th><th class="r">Antal</th><th class="r">à-pris</th><th class="r">Summa</th></tr></thead>
+            <tbody>
+              <tr><td>Köksrenovering · arbete<span class="roth">(ROT)</span></td><td class="r">1 st</td><td class="r">42 200</td><td class="r">42 200</td></tr>
+              <tr><td>Material · stommar, luckor, bänkskiva</td><td class="r">1 st</td><td class="r">52 090</td><td class="r">52 090</td></tr>
+              <tr><td>VVS UE<span class="roth">(ROT)</span></td><td class="r">1 st</td><td class="r">14 200</td><td class="r">14 200</td></tr>
+              <tr><td>Diskmaskin · installation</td><td class="r">1 st</td><td class="r">8 990</td><td class="r">8 990</td></tr>
+              <tr><td>Hall · måleri<span class="roth">(ROT)</span></td><td class="r">1 st</td><td class="r">12 400</td><td class="r">12 400</td></tr>
+              <tr><td>Hall · material</td><td class="r">1 st</td><td class="r">2 140</td><td class="r">2 140</td></tr>
+            </tbody>
+          </table>
+          <div class="sums">
+            <div><span>Subtotal</span><span>123 030 kr</span></div>
+            <div><span>Moms 25%</span><span>30 757 kr</span></div>
+            <div class="rot"><span>ROT-avdrag</span><span>−18 750 kr</span></div>
+            <div class="tot"><span>Att betala</span><span>135 037 kr</span></div>
+          </div>
+          <div class="pay-block">
+            <div class="h">Betalningsinformation</div>
+            <div class="row"><span class="l">Bankgiro</span><span class="v">123-4567</span></div>
+            <div class="row"><span class="l">OCR-referens</span><span class="v">2026001725</span></div>
+            <div class="row"><span class="l">Förfaller</span><span class="v">15 juni 2026</span></div>
+          </div>
+          <div class="footer-d">
+            <div class="col"><div>Norrström Bygg AB</div><div>Org.nr 559123-4567</div><div>Bg: 123-4567</div></div>
+            <div class="col" style="text-align:right"><div>norrstrom.se</div><div>08-123 45 67</div><div>info@norrstrom.se</div></div>
+          </div>
+        </div></div>
+
+        <aside class="view-side">
+          <div class="sb-card">
+            <div class="lbl">Status</div>
+            <span class="status-pill stat-sent">● Skickad</span>
+            <div class="viewed">👁 Visad för 1 timme sen</div>
+          </div>
+
+          <div class="sb-card">
+            <div class="lbl">Tidslinje</div>
+            <div class="timeline">
+              <div class="tl-item now"><span class="d"></span><span>Visad av Eric</span><span class="when">10:34</span></div>
+              <div class="tl-item"><span class="d"></span><span>Skickad till kund</span><span class="when">09:51</span></div>
+              <div class="tl-item"><span class="d"></span><span>PDF nedladdad → status=sent</span><span class="when">09:51</span></div>
+              <div class="tl-item"><span class="d"></span><span>Skapad från offert OFF-…-R1</span><span class="when">09:47</span></div>
+            </div>
+          </div>
+
+          <div class="sb-card">
+            <div class="lbl">Konversation · 0</div>
+            <div style="font-size:12px;color:var(--mut);margin-bottom:6px">Inga frågor från kund än.</div>
+            <button class="btn ghost" style="width:100%;font-size:12px">Öppna chat →</button>
+          </div>
+
+          <div class="sb-card">
+            <div class="lbl">Åtgärder</div>
+            <div class="actions">
+              <button class="btn primary">💳 Registrera betalning</button>
+              <button class="btn green">✓ Markera som betald</button>
+              <button class="btn">⚙ Lås upp &amp; redigera</button>
+              <button class="btn">📤 Skicka igen</button>
+              <button class="btn">📄 Ladda ner PDF</button>
+            </div>
+          </div>
+        </aside>
+
+      </div>
+    </div>
+  </section>
+
+  <hr class="hair">
+
+  <!-- ─── 03 PARTIALLY PAID ───────────────────────────────────────── -->
+  <section class="scene" id="s3">
+    <div class="scene-cap">
+      <div>
+        <div class="num-tag"><span class="dot"></span>03 · Ägar-vy · delbetald</div>
+        <h2>Partiellt betald · 50% inbetalt</h2>
+        <p>Dokumentet visar Inbetalt + Återstår. Sidopanel har amber status-pill. Tidslinje med betalningshändelser.</p>
+        <div class="feature-tags"><span class="ft">paid_amount</span><span class="ft">remaining</span><span class="ft">partially_paid-status</span><span class="ft">no-unlock-edit</span></div>
+      </div>
+      <span class="mono">→ status=partially_paid · paid_amount=67 500</span>
+    </div>
+
+    <div class="mock">
+      <div class="mock-head">
+        <div style="display:flex;align-items:center;gap:14px"><div class="lights"><span></span><span></span><span></span></div><span class="ttl">FAK-2026-0017 · Brf Linden 12B</span></div>
+        <span class="meta">À konto · 67 500 kr inbetalt</span>
+      </div>
+      <div class="view-grid">
+
+        <div class="view-doc"><div class="doc">
+          <div class="doc-head">
+            <div class="biz"><div class="lg">N</div><div><div class="nm">Norrström Bygg AB</div><div class="info">Org.nr 559123-4567</div></div></div>
+            <div class="right">16 maj 2026</div>
+          </div>
+          <h1 class="dt">Faktura</h1>
+          <div class="dmeta">
+            <div><span class="lab">Projekt</span> Brf Linden 12B Kök</div>
+            <div><span class="lab">Mottagare</span> Eric &amp; Linn Norström</div>
+            <div><span class="lab">Fakturanr</span> FAK-2026-0017</div>
+            <div><span class="lab">Förfaller</span> 15 juni 2026</div>
+          </div>
+          <table>
+            <thead><tr><th>Beskrivning</th><th class="r">Antal</th><th class="r">à-pris</th><th class="r">Summa</th></tr></thead>
+            <tbody>
+              <tr><td>Köksrenovering · arbete<span class="roth">(ROT)</span></td><td class="r">1 st</td><td class="r">42 200</td><td class="r">42 200</td></tr>
+              <tr><td>Material · stommar, luckor, bänkskiva</td><td class="r">1 st</td><td class="r">52 090</td><td class="r">52 090</td></tr>
+              <tr><td>VVS UE<span class="roth">(ROT)</span></td><td class="r">1 st</td><td class="r">14 200</td><td class="r">14 200</td></tr>
+              <tr><td>Diskmaskin · installation</td><td class="r">1 st</td><td class="r">8 990</td><td class="r">8 990</td></tr>
+              <tr><td>Hall · måleri<span class="roth">(ROT)</span></td><td class="r">1 st</td><td class="r">12 400</td><td class="r">12 400</td></tr>
+              <tr><td>Hall · material</td><td class="r">1 st</td><td class="r">2 140</td><td class="r">2 140</td></tr>
+            </tbody>
+          </table>
+          <div class="sums">
+            <div><span>Subtotal</span><span>123 030 kr</span></div>
+            <div><span>Moms 25%</span><span>30 757 kr</span></div>
+            <div class="rot"><span>ROT-avdrag</span><span>−18 750 kr</span></div>
+            <div class="tot"><span>Att betala</span><span>135 037 kr</span></div>
+            <div class="paid"><span>Inbetalt 1 juni</span><span>−67 500 kr</span></div>
+            <div class="rem"><span>Återstår</span><span>67 537 kr</span></div>
+          </div>
+          <div class="pay-block">
+            <div class="h">Betalningsinformation · återstår 67 537 kr</div>
+            <div class="row"><span class="l">Bankgiro</span><span class="v">123-4567</span></div>
+            <div class="row"><span class="l">OCR-referens</span><span class="v">2026001725</span></div>
+            <div class="row"><span class="l">Förfaller</span><span class="v">15 juni 2026</span></div>
+          </div>
+        </div></div>
+
+        <aside class="view-side">
+          <div class="sb-card" style="background:var(--amber-soft);border-color:rgba(160,106,31,.3)">
+            <div class="lbl" style="color:var(--amber)">Status</div>
+            <span class="status-pill stat-partial">◐ Delbetald</span>
+            <div style="font-size:12px;color:var(--amber);margin-top:6px;font-weight:500">67 500 kr av 135 037 kr (50%)</div>
+            <div style="height:6px;background:rgba(160,106,31,.15);border-radius:3px;margin-top:8px;overflow:hidden"><div style="width:50%;height:100%;background:var(--amber)"></div></div>
+          </div>
+
+          <div class="sb-card">
+            <div class="lbl">Tidslinje</div>
+            <div class="timeline">
+              <div class="tl-item now"><span class="d"></span><span><strong>Inbetalning · 67 500 kr</strong></span><span class="when">1 jun</span></div>
+              <div class="tl-item"><span class="d"></span><span>Påminnelse skickad</span><span class="when">28 maj</span></div>
+              <div class="tl-item"><span class="d"></span><span>Skickad till kund</span><span class="when">16 maj</span></div>
+            </div>
+          </div>
+
+          <div class="sb-card">
+            <div class="lbl">Åtgärder</div>
+            <div class="actions">
+              <button class="btn primary">💳 Registrera ytterligare</button>
+              <button class="btn green">✓ Markera som helt betald</button>
+              <button class="btn">📤 Påminn om återstående</button>
+              <button class="btn">📄 Ladda ner PDF</button>
+            </div>
+            <div style="font-size:11px;color:var(--mut);margin-top:8px;line-height:1.5">Lås upp-redigera är inte möjligt när delbetalning finns registrerad.</div>
+          </div>
+        </aside>
+
+      </div>
+    </div>
+  </section>
+
+  <hr class="hair">
+
+  <!-- ─── 04 PAID ─────────────────────────────────────────────────── -->
+  <section class="scene" id="s4">
+    <div class="scene-cap">
+      <div>
+        <div class="num-tag"><span class="dot"></span>04 · Ägar-vy · betald</div>
+        <h2>Betald · BETALD-vattenstämpel</h2>
+        <p>Stor diagonal grön vattenstämpel över dokumentet. Bara PDF-action kvar. Grön status-pill. Auto-tasks markerade som klara i tidslinjen.</p>
+        <div class="feature-tags"><span class="ft">betald-watermark</span><span class="ft">paid-status</span><span class="ft">only-pdf-action</span><span class="ft">project-archived</span></div>
+      </div>
+      <span class="mono">→ status=paid · paid_amount=135 037</span>
+    </div>
+
+    <div class="mock">
+      <div class="mock-head">
+        <div style="display:flex;align-items:center;gap:14px"><div class="lights"><span></span><span></span><span></span></div><span class="ttl">FAK-2026-0017 · Brf Linden 12B</span></div>
+        <span class="meta">✓ Betald 12 juni</span>
+      </div>
+      <div class="view-grid">
+
+        <div class="view-doc"><div class="doc">
+          <div class="paid-stamp">BETALD</div>
+          <div class="doc-head">
+            <div class="biz"><div class="lg">N</div><div><div class="nm">Norrström Bygg AB</div><div class="info">Org.nr 559123-4567</div></div></div>
+            <div class="right">16 maj 2026</div>
+          </div>
+          <h1 class="dt">Faktura</h1>
+          <div class="dmeta">
+            <div><span class="lab">Projekt</span> Brf Linden 12B Kök</div>
+            <div><span class="lab">Mottagare</span> Eric &amp; Linn Norström</div>
+            <div><span class="lab">Fakturanr</span> FAK-2026-0017</div>
+            <div><span class="lab">Förfaller</span> 15 juni 2026</div>
+          </div>
+          <table>
+            <thead><tr><th>Beskrivning</th><th class="r">Antal</th><th class="r">à-pris</th><th class="r">Summa</th></tr></thead>
+            <tbody>
+              <tr><td>Köksrenovering · arbete<span class="roth">(ROT)</span></td><td class="r">1 st</td><td class="r">42 200</td><td class="r">42 200</td></tr>
+              <tr><td>Material · stommar, luckor, bänkskiva</td><td class="r">1 st</td><td class="r">52 090</td><td class="r">52 090</td></tr>
+              <tr><td>VVS UE<span class="roth">(ROT)</span></td><td class="r">1 st</td><td class="r">14 200</td><td class="r">14 200</td></tr>
+              <tr><td>Diskmaskin · installation</td><td class="r">1 st</td><td class="r">8 990</td><td class="r">8 990</td></tr>
+              <tr><td>Hall · måleri<span class="roth">(ROT)</span></td><td class="r">1 st</td><td class="r">12 400</td><td class="r">12 400</td></tr>
+              <tr><td>Hall · material</td><td class="r">1 st</td><td class="r">2 140</td><td class="r">2 140</td></tr>
+            </tbody>
+          </table>
+          <div class="sums">
+            <div><span>Subtotal</span><span>123 030 kr</span></div>
+            <div><span>Moms 25%</span><span>30 757 kr</span></div>
+            <div class="rot"><span>ROT-avdrag</span><span>−18 750 kr</span></div>
+            <div class="tot"><span>Att betala</span><span>135 037 kr</span></div>
+            <div class="paid"><span>Inbetalt</span><span>−135 037 kr</span></div>
+          </div>
+        </div></div>
+
+        <aside class="view-side">
+          <div class="sb-card" style="background:var(--green-soft);border-color:rgba(47,93,78,.3)">
+            <div class="lbl" style="color:var(--green)">Status</div>
+            <span class="status-pill stat-paid">✓ Betald</span>
+            <div style="font-size:12px;color:var(--green);margin-top:6px">Slutbetalning 12 juni 2026</div>
+          </div>
+
+          <div class="sb-card">
+            <div class="lbl">Tidslinje</div>
+            <div class="timeline">
+              <div class="tl-item now"><span class="d"></span><span><strong>Slutbetalning · 67 537 kr</strong></span><span class="when">12 jun</span></div>
+              <div class="tl-item"><span class="d"></span><span>À konto · 67 500 kr</span><span class="when">1 jun</span></div>
+              <div class="tl-item"><span class="d"></span><span>Skickad till kund</span><span class="when">16 maj</span></div>
+              <div class="tl-item"><span class="d"></span><span>Skapad från offert</span><span class="when">16 maj</span></div>
+            </div>
+          </div>
+
+          <div class="sb-card">
+            <div class="lbl">Projekt</div>
+            <div style="font-size:12.5px;color:var(--ink-soft);line-height:1.5">Alla fakturor är betalda. Vill du arkivera projektet?</div>
+            <button class="btn ghost" style="width:100%;font-size:12px;margin-top:8px">📦 Arkivera projekt</button>
+          </div>
+
+          <div class="sb-card">
+            <div class="lbl">Åtgärder</div>
+            <div class="actions">
+              <button class="btn primary">📄 Ladda ner kvitto-PDF</button>
+            </div>
+          </div>
+        </aside>
+
+      </div>
+    </div>
+  </section>
+
+  <hr class="hair">
+
+  <!-- ─── 05 OVERDUE ──────────────────────────────────────────────── -->
+  <section class="scene" id="s5">
+    <div class="scene-cap">
+      <div>
+        <div class="num-tag"><span class="dot"></span>05 · Ägar-vy · förfallen</div>
+        <h2>Förfallen · 5 dagar sen</h2>
+        <p>Röd banner ovan dokumentet, röd status-pill. Påminn-CTA primär. Tidslinjen visar förfallodatum passerat.</p>
+        <div class="feature-tags"><span class="ft">overdue-banner</span><span class="ft">red-pill</span><span class="ft">påminn-cta</span><span class="ft">getDisplayStatus</span></div>
+      </div>
+      <span class="mono">→ getDisplayStatus → overdue (sent + due_date past)</span>
+    </div>
+
+    <div class="mock">
+      <div class="mock-head">
+        <div style="display:flex;align-items:center;gap:14px"><div class="lights"><span></span><span></span><span></span></div><span class="ttl">FAK-2026-0017 · Brf Linden 12B</span></div>
+        <span class="meta" style="color:var(--rust)">⚠ Förfallen sedan 20 juni</span>
+      </div>
+      <div class="view-grid">
+
+        <div class="view-doc">
+          <div style="max-width:580px;width:100%">
+            <div class="alert over"><span class="ic">⚠</span><span><strong>Fakturan är förfallen sedan 5 dagar.</strong> Skicka påminnelse eller registrera betalning. Dröjsmålsränta från förfallodag enligt avtal.</span></div>
+            <div class="doc">
+              <div class="doc-head">
+                <div class="biz"><div class="lg">N</div><div><div class="nm">Norrström Bygg AB</div><div class="info">Org.nr 559123-4567</div></div></div>
+                <div class="right">16 maj 2026</div>
+              </div>
+              <h1 class="dt">Faktura</h1>
+              <div class="dmeta">
+                <div><span class="lab">Projekt</span> Brf Linden 12B Kök</div>
+                <div><span class="lab">Mottagare</span> Eric &amp; Linn Norström</div>
+                <div><span class="lab">Fakturanr</span> FAK-2026-0017</div>
+                <div><span class="lab">Förföll</span> <span style="color:var(--rust);font-weight:600">20 juni 2026 (5 dagar sen)</span></div>
+              </div>
+              <table>
+                <thead><tr><th>Beskrivning</th><th class="r">Antal</th><th class="r">à-pris</th><th class="r">Summa</th></tr></thead>
+                <tbody>
+                  <tr><td>Köksrenovering · arbete<span class="roth">(ROT)</span></td><td class="r">1 st</td><td class="r">42 200</td><td class="r">42 200</td></tr>
+                  <tr><td>Material · stommar, luckor, bänkskiva</td><td class="r">1 st</td><td class="r">52 090</td><td class="r">52 090</td></tr>
+                  <tr><td>VVS UE<span class="roth">(ROT)</span></td><td class="r">1 st</td><td class="r">14 200</td><td class="r">14 200</td></tr>
+                  <tr><td>Diskmaskin · installation</td><td class="r">1 st</td><td class="r">8 990</td><td class="r">8 990</td></tr>
+                  <tr><td>Hall · måleri<span class="roth">(ROT)</span></td><td class="r">1 st</td><td class="r">12 400</td><td class="r">12 400</td></tr>
+                  <tr><td>Hall · material</td><td class="r">1 st</td><td class="r">2 140</td><td class="r">2 140</td></tr>
+                </tbody>
+              </table>
+              <div class="sums">
+                <div><span>Subtotal</span><span>123 030 kr</span></div>
+                <div><span>Moms 25%</span><span>30 757 kr</span></div>
+                <div class="rot"><span>ROT-avdrag</span><span>−18 750 kr</span></div>
+                <div class="tot"><span>Att betala</span><span>135 037 kr</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <aside class="view-side">
+          <div class="sb-card" style="background:var(--rust-soft);border-color:rgba(181,52,30,.3)">
+            <div class="lbl" style="color:var(--rust)">Status</div>
+            <span class="status-pill stat-overdue">⚠ Förfallen</span>
+            <div style="font-size:12px;color:var(--rust);margin-top:6px;font-weight:500">5 dagar sedan förfallodatum</div>
+          </div>
+
+          <div class="sb-card">
+            <div class="lbl">Tidslinje</div>
+            <div class="timeline">
+              <div class="tl-item over"><span class="d"></span><span><strong>Förfallodatum passerat</strong></span><span class="when">20 jun</span></div>
+              <div class="tl-item"><span class="d"></span><span>Visad av kund</span><span class="when">17 maj</span></div>
+              <div class="tl-item"><span class="d"></span><span>Skickad till kund</span><span class="when">16 maj</span></div>
+            </div>
+          </div>
+
+          <div class="sb-card">
+            <div class="lbl">Åtgärder</div>
+            <div class="actions">
+              <button class="btn rust">📤 Skicka påminnelse</button>
+              <button class="btn primary">💳 Registrera betalning</button>
+              <button class="btn green">✓ Markera som betald</button>
+              <button class="btn">📄 Ladda ner PDF</button>
+              <button class="btn ghost danger" style="font-size:12px;margin-top:4px">Avbryt faktura</button>
+            </div>
+          </div>
+        </aside>
+
+      </div>
+    </div>
+  </section>
+
+  <hr class="hair">
+
+  <!-- ─── 06 KUND ──────────────────────────────────────────────────── -->
+  <section class="scene" id="s6">
+    <div class="scene-cap">
+      <div>
+        <div class="num-tag"><span class="dot"></span>06 · Kund-vy</div>
+        <h2>Kund tittar på fakturan · sticky-bar</h2>
+        <p>Kunden ser dokumentet rent. Sticky-footer med chat-toggle, payment-summary med remaining, och overdue-warning om tillämpligt.</p>
+        <div class="feature-tags"><span class="ft">sticky-footer</span><span class="ft">chat-toggle</span><span class="ft">remaining-display</span><span class="ft">overdue-warning</span><span class="ft">mark-as-viewed</span></div>
+      </div>
+      <span class="mono">→ status=sent · isOwner=false</span>
+    </div>
+
+    <div class="mock">
+      <div class="mock-head">
+        <div style="display:flex;align-items:center;gap:14px"><div class="lights"><span></span><span></span><span></span></div><span class="ttl">Faktura från Norrström Bygg AB</span></div>
+        <span class="meta">renofine.se/i/9pq2tx</span>
+      </div>
+      <div class="cust-grid">
+
+        <div class="cust-doc"><div class="doc">
+          <div class="doc-head">
+            <div class="biz"><div class="lg">N</div><div><div class="nm">Norrström Bygg AB</div><div class="info">Org.nr 559123-4567<br>Kungsgatan 18, 112 35 Stockholm</div></div></div>
+            <div class="right">16 maj 2026</div>
+          </div>
+          <h1 class="dt">Faktura</h1>
+          <div class="dmeta">
+            <div><span class="lab">Projekt</span> Brf Linden 12B Kök</div>
+            <div><span class="lab">Mottagare</span> Eric &amp; Linn Norström</div>
+            <div><span class="lab">Fakturanr</span> FAK-2026-0017</div>
+            <div><span class="lab">Förfaller</span> 15 juni 2026</div>
+          </div>
+          <table>
+            <thead><tr><th>Beskrivning</th><th class="r">Antal</th><th class="r">à-pris</th><th class="r">Summa</th></tr></thead>
+            <tbody>
+              <tr><td>Köksrenovering · arbete<span class="roth">(ROT)</span></td><td class="r">1 st</td><td class="r">42 200</td><td class="r">42 200</td></tr>
+              <tr><td>Material · stommar, luckor, bänkskiva</td><td class="r">1 st</td><td class="r">52 090</td><td class="r">52 090</td></tr>
+              <tr><td>VVS UE<span class="roth">(ROT)</span></td><td class="r">1 st</td><td class="r">14 200</td><td class="r">14 200</td></tr>
+              <tr><td>Diskmaskin · installation</td><td class="r">1 st</td><td class="r">8 990</td><td class="r">8 990</td></tr>
+              <tr><td>Hall · måleri<span class="roth">(ROT)</span></td><td class="r">1 st</td><td class="r">12 400</td><td class="r">12 400</td></tr>
+              <tr><td>Hall · material</td><td class="r">1 st</td><td class="r">2 140</td><td class="r">2 140</td></tr>
+            </tbody>
+          </table>
+          <div class="sums">
+            <div><span>Subtotal</span><span>123 030 kr</span></div>
+            <div><span>Moms 25%</span><span>30 757 kr</span></div>
+            <div class="rot"><span>ROT-avdrag</span><span>−18 750 kr</span></div>
+            <div class="tot"><span>Att betala</span><span>135 037 kr</span></div>
+          </div>
+          <div class="pay-block">
+            <div class="h">Betalningsinformation</div>
+            <div class="row"><span class="l">Bankgiro</span><span class="v">123-4567</span></div>
+            <div class="row"><span class="l">OCR-referens</span><span class="v">2026001725</span></div>
+            <div class="row"><span class="l">Förfaller</span><span class="v">15 juni 2026</span></div>
+          </div>
+        </div></div>
+
+        <div class="cust-sticky">
+          <div class="cust-chat-toggle">
+            <span><span class="ico">💬</span> Frågor om fakturan?</span>
+            <span style="color:var(--mut);font-size:11px">▾</span>
+          </div>
+          <div class="pay-summary">
+            <div class="row"><span style="color:var(--mut)">Att betala</span><span class="mono" style="font-size:13px;color:var(--ink)">135 037 kr</span></div>
+            <div class="row"><span style="color:var(--mut)">Förfaller</span><span class="mono" style="font-size:13px;color:var(--ink)">15 juni 2026</span></div>
+            <div class="row tot"><span>Totalt att betala</span><span style="font-family:var(--ff-d)">135 037 kr</span></div>
+          </div>
+          <div class="cust-actions">
+            <button class="btn primary lg full">📋 Kopiera betalningsuppgifter</button>
+            <div style="display:flex;gap:8px"><button class="btn" style="flex:1">📄 Ladda ner PDF</button><button class="btn" style="flex:1">📧 Maila till mig</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="hair">
+
+  <!-- ─── 07 RECORD PAYMENT MODAL ────────────────────────────────── -->
+  <section class="scene" id="s7">
+    <div class="scene-cap">
+      <div>
+        <div class="num-tag"><span class="dot"></span>07 · RecordPayment-modal</div>
+        <h2>Registrera betalning · två lägen</h2>
+        <p>Toggle mellan "Partiell betalning" och "Markera som helt betald". Vid partiell: belopp + datum + anteckning. Vid hel: bara bekräftelse + datum.</p>
+        <div class="feature-tags"><span class="ft">two-mode-toggle</span><span class="ft">partial-vs-full</span><span class="ft">RecordPaymentDialog</span><span class="ft">markAsPaidMode</span></div>
+      </div>
+      <span class="mono">→ src/components/invoices/RecordPaymentDialog.tsx</span>
+    </div>
+
+    <div class="mock">
+      <div class="mock-head">
+        <div style="display:flex;align-items:center;gap:14px"><div class="lights"><span></span><span></span><span></span></div><span class="ttl">Modal · Registrera betalning</span></div>
+        <span class="meta">FAK-2026-0017</span>
+      </div>
+      <div class="modal-scrim">
+        <div class="modal">
+          <h3>Registrera betalning</h3>
+          <p class="sub">Lägg in en delbetalning eller markera fakturan som helt betald.</p>
+
+          <div class="mode-toggle">
+            <button class="active">Partiell betalning</button>
+            <button>Markera som betald</button>
+          </div>
+
+          <div class="summary-card">
+            <div class="row"><span style="color:var(--mut)">Fakturabelopp</span><span class="mono" style="text-transform:none">135 037 kr</span></div>
+            <div class="row"><span style="color:var(--mut)">Tidigare inbetalt</span><span class="mono" style="text-transform:none">0 kr</span></div>
+            <div class="row rem"><span>Återstår</span><span class="mono" style="text-transform:none">135 037 kr</span></div>
+          </div>
+
+          <div class="row-2">
+            <div class="field"><label>Belopp</label><input class="input" value="67 500" placeholder="0"></div>
+            <div class="field"><label>Datum</label><input class="input" type="date" value="2026-06-01"></div>
+          </div>
+          <div class="field"><label>Anteckning (valfritt)</label><input class="input" value="À konto enligt avtal · 50%"></div>
+          <div class="field"><label>Betalningsmetod</label>
+            <div class="chips-row" style="margin-bottom:0">
+              <span class="chip active">Bankgiro</span>
+              <span class="chip">Swish</span>
+              <span class="chip">Kort</span>
+              <span class="chip">Kontant</span>
+              <span class="chip">Annan</span>
+            </div>
+          </div>
+
+          <div style="background:var(--amber-soft);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--amber);margin-top:14px;display:flex;gap:8px;align-items:flex-start">
+            <span>🛈</span><span>Status ändras till <strong>Delbetald</strong>. Fakturan kan inte längre låsas upp för redigering.</span>
+          </div>
+
+          <div class="modal-actions">
+            <button class="btn ghost">Avbryt</button>
+            <button class="btn primary">Registrera betalning</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="hair">
+
+  <!-- ─── 08 SHARE INVOICE MODAL ──────────────────────────────────── -->
+  <section class="scene" id="s8">
+    <div class="scene-cap">
+      <div>
+        <div class="num-tag"><span class="dot"></span>08 · ShareInvoice-modal</div>
+        <h2>Dela faktura med kund · email + namn</h2>
+        <p>När entreprenören vill skicka fakturan till kund. Fyll i email + namn → systemet skickar länk till kund-vyn. Kanaltoggle (Email/SMS), kopiera-länk-fält och förhandsvisning av meddelandet.</p>
+        <div class="feature-tags"><span class="ft">ShareInvoiceDialog</span><span class="ft">customer-email</span><span class="ft">customer-name</span><span class="ft">share-link</span><span class="ft">channel-email-sms</span></div>
+      </div>
+      <span class="mono">→ src/components/invoices/ShareInvoiceDialog.tsx</span>
+    </div>
+
+    <div class="mock">
+      <div class="mock-head">
+        <div style="display:flex;align-items:center;gap:14px"><div class="lights"><span></span><span></span><span></span></div><span class="ttl">Modal · Dela faktura med kund</span></div>
+        <span class="meta">FAK-2026-0017 · 135 037 kr</span>
+      </div>
+      <div class="modal-scrim" style="min-height:560px">
+        <div class="modal sm">
+          <h3>Dela med kund</h3>
+          <p class="sub">Skicka en länk till fakturan. Kunden kan visa, kommentera och betala direkt utan inloggning.</p>
+
+          <div>
+            <div class="sec-label">Kanal</div>
+            <div class="share-channel-list">
+              <label class="share-channel active">
+                <span class="ico">@</span>
+                <span>Email</span>
+              </label>
+              <label class="share-channel">
+                <span class="ico">SMS</span>
+                <span>SMS-länk</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="row-2" style="margin-top:14px">
+            <div class="field"><label>Email</label><input class="input" value="eric.norstrom@gmail.com" placeholder="kund@example.com"></div>
+            <div class="field"><label>Namn (valfritt)</label><input class="input" value="Eric Norström" placeholder="Anna Svensson"></div>
+          </div>
+
+          <div class="field"><label>Personligt meddelande (valfritt)</label><textarea class="input" style="min-height:64px;resize:vertical;font-family:inherit">Hej Eric, här är slutfakturan för köksrenoveringen. Tack för förtroendet — hör av dig om något är oklart!</textarea></div>
+
+          <div>
+            <div class="sec-label">Direktlänk</div>
+            <div class="share-link-row">
+              <span class="link">renofine.se/i/FAK-2026-0017?t=8f3a…</span>
+              <button class="btn" style="padding:9px 12px">Kopiera</button>
+            </div>
+          </div>
+
+          <div style="background:var(--green-soft);border:1px solid rgba(47,93,78,.22);border-radius:10px;padding:11px 14px;font-size:12.5px;color:var(--green);margin-top:14px;display:flex;gap:8px;align-items:flex-start">
+            <span>✓</span><span>När du delar låses fakturan för redigering. Du kan låsa upp igen från ägar-vyn om kunden inte hunnit titta.</span>
+          </div>
+
+          <div class="modal-actions">
+            <button class="btn ghost">Avbryt</button>
+            <button class="btn primary">Skicka länk</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <p class="mono" style="margin-top:64px;color:var(--subtle)">Renofine 2026 · paper-warm · Fraunces + Inter Tight + JetBrains Mono · audit v2 mot main@0004c7bf · 11 scener / 3 skapa-lägen</p>
+
+</div>
+</body>
+</html>

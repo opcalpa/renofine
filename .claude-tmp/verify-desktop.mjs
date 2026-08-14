@@ -1,0 +1,22 @@
+import { chromium } from '@playwright/test';
+const SCRATCH = '/private/tmp/claude-501/-Users-calpa-Developer-Renofine/fe9a3851-2fea-46b9-8b43-9a88e38a50c0/scratchpad';
+const browser = await chromium.launch();
+const page = await (await browser.newContext({ viewport: { width: 1280, height: 800 } })).newPage();
+await page.addInitScript(() => {
+  localStorage.setItem('renofine_guest_mode', JSON.stringify({ isGuest: true, guestId: 'guest_shot' }));
+  localStorage.setItem('i18nextLng', 'sv');
+  localStorage.setItem('guest_onboarding_completed', 'true');
+  localStorage.setItem('guest_user_type', 'homeowner');
+});
+await page.goto('http://localhost:5002/start');
+await page.getByRole('heading', { name: 'Mina projekt' }).waitFor({ timeout: 25000 });
+await page.waitForTimeout(500);
+const fab = await page.locator('button[aria-label="Renaida"].fixed').count();
+const navSlots = await page.locator('nav.fixed button[aria-label="Renaida"]').count();
+const lockupVisible = await page.locator('img[src*="lockup-horizontal"]').isVisible();
+console.log('desktop FAB (expect 1):', fab, '| mobile-nav hidden (expect 0 visible):', navSlots ? await page.locator('nav.fixed').isVisible() : 'n/a', '| lockup visible:', lockupVisible);
+await page.locator('button[aria-label="Renaida"].fixed').click();
+await page.waitForTimeout(500);
+await page.screenshot({ path: `${SCRATCH}/desktop-panel-chips.png` });
+console.log('chips desktop:', await page.getByText('Fota kvitto').count());
+await browser.close();

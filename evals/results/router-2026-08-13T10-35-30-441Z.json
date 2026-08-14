@@ -1,0 +1,298 @@
+{
+  "args": {
+    "models": [
+      "gpt-4o-mini"
+    ],
+    "judge": "gpt-4o",
+    "cases": null,
+    "judgeOn": false
+  },
+  "summary": [
+    {
+      "model": "gpt-4o-mini",
+      "n": 0,
+      "passed": 0,
+      "recall": 1,
+      "fp": 0,
+      "invented": 0,
+      "critical": 0,
+      "judgeAvg": null,
+      "errors": 39
+    }
+  ],
+  "rows": [
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "seal-done",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "buy-tiles",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "combo-progress-and-purchase",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "unknown-garage",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "add-task-room",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "buy-no-room",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "chitchat",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "progress-partial",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "wrong-room-trap",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "lister-checklist-not-room",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "no-matching-task-borra-trap",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "log-time-on-task",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "toggle-checklist-item",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "ambiguous-same-trade",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "scaffold-new-room",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "checklist-authoring",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "instruction-say-to-trade",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "instruction-remind",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "instruction-room-scope",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "plan-deadline",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "plan-start-date",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "plan-deadline-onsdag",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "plan-budget",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "plan-priority",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "checklist-remove-item",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "plan-clear-deadline",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "assign-member",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "assign-nonmember-fallback",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "curated-purchase-title",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "taulant-north-star",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "polite-question-create-room",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "polite-question-priority",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "prepare-quote-open-feature",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "prepare-ata-open-feature",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "set-default-hourly-rate",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "set-material-markup-not-task-budget",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "hint-time-disambiguates",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "hint-overridden-by-utterance",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "hint-status-terse",
+      "score": null,
+      "judge": null,
+      "error": "OPENAI_API_KEY not set (needed for gpt-4o-mini)"
+    }
+  ]
+}

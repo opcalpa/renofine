@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#FAFAF7"></rect>
+  
+  <g stroke="#E8E4D8" stroke-width="1">
+    <line x1="0" y1="158" x2="1200" y2="158"></line>
+    <line x1="0" y1="472" x2="1200" y2="472"></line>
+    <line x1="300" y1="0" x2="300" y2="630"></line>
+    <line x1="900" y1="0" x2="900" y2="630"></line>
+  </g>
+  
+  <g transform="translate(420,210)">
+    <svg viewBox="0 0 64 64" width="160" height="160"><path d="M32 6 a26 26 0 1 0 26 26 h-12 v-14 h-14 z" fill="#1A1A17"></path></svg>
+  </g>
+  
+  <text x="600" y="430" text-anchor="middle" font-family="Fraunces, Georgia, serif" font-weight="400" font-size="84" letter-spacing="-2.1" fill="#1A1A17">Renofine</text>
+  
+  <text x="600" y="478" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-weight="400" font-size="20" letter-spacing="0.4" fill="#666">Modern projektledning för renoveringar</text>
+</svg>

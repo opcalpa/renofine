@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Renofine · design handoff</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;1,9..144,400&family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="brand/tokens.css"/>
+<link rel="icon" type="image/svg+xml" href="brand/svg/mark/mark-ink.svg"/>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--rf-paper); color: var(--rf-fg); font-family: var(--rf-font-ui); }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 64px 32px 96px; }
+  .display { font-family: var(--rf-font-display); font-weight: 400; letter-spacing: -0.025em; }
+  .mono { font-family: var(--rf-font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--rf-fg-subtle); }
+  hr.hair { border: 0; border-top: 1px solid var(--rf-hairline); margin: 48px 0; }
+
+  header { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 24px; }
+  header h1 { font-size: 64px; margin: 8px 0 0; letter-spacing: -0.04em; line-height: 1; }
+  header .subtitle { font-size: 18px; color: var(--rf-fg-muted); margin-top: 12px; max-width: 580px; line-height: 1.5; }
+
+  section { margin-top: 56px; }
+  section > h2 { font-family: var(--rf-font-display); font-size: 28px; font-weight: 400; letter-spacing: -0.02em; margin: 0 0 6px; }
+  section > .lede { font-size: 14px; color: var(--rf-fg-muted); margin: 0 0 24px; max-width: 600px; line-height: 1.55; }
+
+  .pages { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .card { background: var(--rf-surface-1); border: 1px solid var(--rf-hairline); border-radius: 10px; padding: 24px; text-decoration: none; color: inherit; display: flex; flex-direction: column; gap: 10px; transition: transform .15s ease, border-color .15s ease; }
+  .card:hover { border-color: var(--rf-green); transform: translateY(-1px); }
+  .card .num { font-family: var(--rf-font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--rf-green); }
+  .card .ttl { font-family: var(--rf-font-display); font-size: 22px; letter-spacing: -0.02em; }
+  .card .desc { font-size: 13px; color: var(--rf-fg-muted); line-height: 1.5; }
+  .card .meta { font-family: var(--rf-font-mono); font-size: 10px; color: var(--rf-fg-subtle); margin-top: 6px; }
+
+  .quick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .quick a { background: var(--rf-paper); border: 1px solid var(--rf-hairline); border-radius: 8px; padding: 16px; text-decoration: none; color: inherit; display: flex; flex-direction: column; gap: 4px; }
+  .quick a:hover { border-color: var(--rf-green); }
+  .quick .lbl { font-family: var(--rf-font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--rf-fg-subtle); }
+  .quick .nm { font-size: 14px; font-weight: 500; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <div class="mono">Renofine · design handoff · v1.0</div>
+      <h1 class="display">Renofine</h1>
+      <p class="subtitle">Sex mockups + brand-paket + JSX-källor. Allt som behövs för att implementera 2026-refreshen i kodbasen.</p>
+    </div>
+    <svg viewBox="0 0 64 64" width="120" height="120"><path d="M32 6 a26 26 0 1 0 26 26 h-12 v-14 h-14 z" fill="#1A1A17"/></svg>
+  </header>
+
+  <hr class="hair"/>
+
+  <section>
+    <h2>Mockups</h2>
+    <p class="lede">Varje fil öppnas standalone — ingen build behövs. Klicka för att granska.</p>
+    <div class="pages">
+      <a class="card" href="01-Renofine-2026.html">
+        <div class="num">01 · Översikt</div>
+        <div class="ttl">Renofine 2026</div>
+        <div class="desc">Sju surfaces på en pan/zoom-canvas: Dashboard, Projekt-detalj, Floor map, Tasks/Kanban, Inköp, Klientvy, Tidslinje.</div>
+        <div class="meta">→ src/pages/Projects, ProjectDetail, components/floormap</div>
+      </a>
+      <a class="card" href="02-Dashboard-Full-Spec.html">
+        <div class="num">02 · Dashboard</div>
+        <div class="ttl">Full Spec</div>
+        <div class="desc">Dashboard ensam med alla data-states (tom, 1 projekt, många, error, loading) + handoff-spec.</div>
+        <div class="meta">→ src/pages/Projects.tsx</div>
+      </a>
+      <a class="card" href="03-Home-Homeowner.html">
+        <div class="num">03 · Hem</div>
+        <div class="ttl">Hemägare</div>
+        <div class="desc">Hemskärm för hemägare. Tre lägen via Tweaks: tom · ett aktivt projekt · flera + historik.</div>
+        <div class="meta">→ src/pages/OwnerStart.tsx</div>
+      </a>
+      <a class="card" href="04-Home-Contractor.html">
+        <div class="num">04 · Hem</div>
+        <div class="ttl">Hantverkare</div>
+        <div class="desc">Hemskärm för hantverkare. Tre lägen: tom · aktiv vardag · lugn dag.</div>
+        <div class="meta">→ src/pages/Index.tsx (contractor)</div>
+      </a>
+      <a class="card" href="05-Landing.html">
+        <div class="num">05 · Public</div>
+        <div class="ttl">Landningssida</div>
+        <div class="desc">Utloggad publik landningssida.</div>
+        <div class="meta">→ src/pages/Index.tsx (logged-out)</div>
+      </a>
+      <a class="card" href="06-Logotyp.html">
+        <div class="num">06 · Brand</div>
+        <div class="ttl">Logotyp-utforskning</div>
+        <div class="desc">Logo-riktningar och slutlig Skåra-mark + lockups.</div>
+        <div class="meta">→ brand/</div>
+      </a>
+    </div>
+  </section>
+
+  <section>
+    <h2>Brand-paket</h2>
+    <p class="lede">Färdiga assets — SVG, PNG, app-ikoner, favicon, OG-bild, tokens, React-komponent, brand-blad.</p>
+    <div class="quick">
+      <a href="brand/index.html"><span class="lbl">Översikt</span><span class="nm">brand/index.html</span></a>
+      <a href="brand/brand-sheet.html"><span class="lbl">Printbart blad</span><span class="nm">brand-sheet.html</span></a>
+      <a href="brand/BRAND-GUIDE.md"><span class="lbl">Guide</span><span class="nm">BRAND-GUIDE.md</span></a>
+      <a href="brand/tokens.css"><span class="lbl">CSS-tokens</span><span class="nm">tokens.css</span></a>
+      <a href="brand/components/Logo.jsx"><span class="lbl">React</span><span class="nm">components/Logo.jsx</span></a>
+      <a href="brand/manifest.webmanifest"><span class="lbl">PWA</span><span class="nm">manifest.webmanifest</span></a>
+    </div>
+  </section>
+
+  <section>
+    <h2>Implementation</h2>
+    <p class="lede">Läs <a href="README.md" style="color: var(--rf-green); text-decoration: none;">README.md</a> för full handoff-instruktion till Claude Code / utvecklare. Innehåller mappning surface → kodfil, Tailwind-config, copy-guidance och öppna frågor till teamet.</p>
+  </section>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="sv" data-theme="paper">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Renofine · Publik landingssida v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600;700&family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="tokens.css"/>
+<style>
+  html, body { margin:0; padding:0; background:#f0eee9; height:100%; }
+  .themed { isolation:isolate; }
+  [data-dc-slot] .dc-card > .artboard { border:1px solid oklch(88% 0.01 85); border-radius:10px; overflow:hidden; box-sizing:border-box; }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="v2/design-canvas.jsx"></script>
+<script type="text/babel" src="shared.jsx"></script>
+<script type="text/babel" src="v2/landing.jsx"></script>
+<script type="text/babel">
+function Frame({ width=1280, height=820, children }) {
+  return <div data-theme="paper" className="themed artboard" style={{ width, height, overflow:"hidden", background:"var(--bg)", boxSizing:"border-box" }}>{children}</div>;
+}
+
+function App() {
+  return (
+    <DesignCanvas>
+      <DCSection id="0-strategy" title="Renofine · Landing v2" subtitle="Strategi: byggare-först (primär kund, betalar 549 kr/mån), hemägare som distribution (gratisvy bjuder in kunder, blir viraliseringsmotor). Ingen jämbördig dual-funnel — en CTA, en målgrupp, en hierarki.">
+        <DCArtboard id="strategy" label="Strategi · positionering" width={1100} height={520}>
+          <Frame width={1100} height={520}>
+            <div style={{ padding:40, height:"100%", boxSizing:"border-box", display:"grid", gridTemplateColumns:"1.1fr 1fr", gap:40 }}>
+              <div>
+                <div className="mono" style={{ fontSize:10, textTransform:"uppercase", letterSpacing:"0.1em", color:"var(--fg-subtle)", marginBottom:14 }}>Strategi</div>
+                <h2 className="font-display" style={{ fontSize:30, fontWeight:400, margin:"0 0 18px", letterSpacing:"-0.022em", lineHeight:1.1 }}>Hemägare är inte din kund —<br/>hemägare är din distribution.</h2>
+                <p style={{ fontSize:14, color:"var(--fg-muted)", lineHeight:1.6, margin:"0 0 14px" }}>
+                  Privatpersoner gör 1–2 renoveringar på 5 år. LTV är låg, churn brutal. Byggare däremot använder appen dagligen och betalar gladeligen 549 kr/mån (motsvarar 2–3 ROT-timmar).
+                </p>
+                <p style={{ fontSize:14, color:"var(--fg-muted)", lineHeight:1.6, margin:0 }}>
+                  Hemägar-vyn ska <strong style={{ color:"var(--fg)" }}>imponera</strong>, inte vara funktionsrik. Kunden visar sin granne. Grannen frågar sin byggare. Du har en ny kund.
+                </p>
+              </div>
+              <div>
+                <div className="mono" style={{ fontSize:10, textTransform:"uppercase", letterSpacing:"0.1em", color:"var(--fg-subtle)", marginBottom:14 }}>Tre hero-riktningar</div>
+                <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+                  {[
+                    ["Editorial","Anti-Excel-tonen, lugnt, Fraunces leder. För byggare som ser sig som hantverkare."],
+                    ["Direct","Siffror först. \"12 timmar mindre admin per projekt\". För nyttoköpare."],
+                    ["Showcase","Produkten är hjälten. För investerare/influencer-inriktade kunder."],
+                  ].map(([n,d])=>(
+                    <div key={n} style={{ padding:"12px 14px", border:"1px solid var(--hairline)", borderRadius:8, background:"var(--surface)" }}>
+                      <div style={{ fontSize:13, fontWeight:500, marginBottom:3 }}>{n}</div>
+                      <div style={{ fontSize:12, color:"var(--fg-muted)", lineHeight:1.5 }}>{d}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </Frame>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="hero" title="Hero · Editorial (vald riktning)" subtitle="Anti-Excel-tonen, Fraunces leder, byggare-först.">
+        <DCArtboard id="hero-a" label="Hero · 1280 × 620" width={1280} height={620}>
+          <Frame width={1280} height={620}>
+            <PublicNav/>
+            <HeroEditorial/>
+          </Frame>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="full-page" title="Komplett sida · Editorial" subtitle="Strategi: byggare-först (primary CTA, hierarkin), hemägare som distribution. Siffror är rättsatta börja-nivåer som vi växer in i.">
+        <DCArtboard id="full-a" label="Editorial · komplett sida" width={1280} height={4400}>
+          <Frame width={1280} height={4400}>
+            <LandingEditorial/>
+          </Frame>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="mobile" title="Mobil · Editorial" subtitle="Mobilversion av Editorial-riktningen (bedömer den som ledande). Bottom-nav saknas medvetet — publika sidor använder hamburgermeny.">
+        <DCArtboard id="mobile-full" label="Mobil · 390 × 4400 · scrollbar" width={390} height={4400}>
+          <Frame width={390} height={4400}>
+            <LandingMobile/>
+          </Frame>
+        </DCArtboard>
+      </DCSection>
+    </DesignCanvas>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>

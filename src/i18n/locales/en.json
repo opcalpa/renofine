@@ -7084,5 +7084,10 @@
     "photo": "Photo",
     "message": "Message",
     "empty": "No activity from {{name}} yet."
+  },
+  "clientPreview": {
+    "title": "Client view",
+    "seeWhatTheySee": "See exactly what {{name}} sees",
+    "hint": "Preview the masked client view — no internal prices or markup."
   }
 }
