@@ -13,6 +13,36 @@ Detaljplaner för många items bor i /Users/calpa/Developer/Renofine/.claude/mem
 - Behåll kärnan vass, ingen feature utan tydlig användarnytta
 
 ---
+id: minimal-push-ci
+status: todo
+priority: P3
+tags: [infra, ci, deploy, devex, intervju]
+created: 2026-08-14
+---
+## Minimal non-blocking CI på push→main (typecheck:strict + Playwright-smoke)
+
+Idag finns **noll** GitHub Actions (`.github/` har bara `.DS_Store`). Frontend-deploy
+till prod sker via Cloudflare Pages som **redan** auto-bygger på `push → main`
+(verifierat s42) — så deploy-vägen är redan enkel och rör vi INTE. Det som saknas är
+ett skyddsnät + en "jag satte upp CI/CD"-berättelse till intervjuer.
+
+**Scope (medvetet minimal — får INTE sakta ner loopen):**
+- EN GitHub Actions-workflow, trigger `push` till `main` (inte PR — Carl jobbar direkt
+  på main). Kör `npm run typecheck:strict` + Playwright-smoke.
+- **Non-blocking mot deploy:** CF bygger sin egen bundle frikopplat — denna Action kan
+  och ska INTE gata CF-deployen (det skulle kräva att man stänger av CF auto-build och
+  flyttar in deployen = tar bort dagens enkelhet). Actionen är ett skyddsnät som pingar
+  rött, inte en grind.
+- **Path-filtrera** (`paths:`/`paths-ignore:`) precis som Produlogs workflow så den bara
+  kör vid relevanta kodändringar (hoppa `evals/results/**`, `.claude/**`, `*.md`, minne).
+  Kopiera Produlogs mönster rakt av.
+- Håll mager: bara typecheck + smoke, ingen tung matris, ingen parallell browser-svit.
+
+**Värde:** modest praktiskt (Carl gate:ar redan `typecheck:strict + build + e2e` lokalt
+före varje push) men reell intervju-story (stänger CI/CD-gapet på Renofine). Bygg när
+det passar — inte brådskande. PA-agent-analys 2026-08-14.
+
+---
 id: scaffold-project-engine
 status: doing
 priority: P2
