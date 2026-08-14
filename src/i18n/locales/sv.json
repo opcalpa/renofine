@@ -3328,7 +3328,8 @@
     "noCategory": "Inte klassificerad",
     "noCaption": "Ingen beskrivning",
     "captionPlaceholder": "Lägg till en beskrivning...",
-    "linkedRoom": "Rum"
+    "linkedRoom": "Rum",
+    "quickPhoto": "Fota"
   },
   "photoSource": {
     "classify": "Vilken typ av bild är detta?",

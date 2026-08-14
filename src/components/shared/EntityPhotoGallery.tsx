@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from "react";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -54,9 +54,16 @@ interface EntityPhotoGalleryProps {
   onPhotoCount?: (count: number) => void;
 }
 
+/** Imperative handle so a parent (e.g. a top-of-sheet quick action) can open
+ *  the camera without duplicating the upload path. */
+export interface EntityPhotoGalleryHandle {
+  openCamera: () => void;
+}
+
 // compressImage imported from @/lib/compressImage
 
-export function EntityPhotoGallery({ entityId, entityType, projectId, storagePath, onPhotoCount }: EntityPhotoGalleryProps) {
+export const EntityPhotoGallery = forwardRef<EntityPhotoGalleryHandle, EntityPhotoGalleryProps>(
+  function EntityPhotoGallery({ entityId, entityType, projectId, storagePath, onPhotoCount }, ref) {
   const { t } = useTranslation();
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [loadingPhotos, setLoadingPhotos] = useState(false);
@@ -68,6 +75,8 @@ export function EntityPhotoGallery({ entityId, entityType, projectId, storagePat
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const sourceOptions = getSourceOptions(entityType);
+
+  useImperativeHandle(ref, () => ({ openCamera: () => cameraInputRef.current?.click() }), []);
 
   // Only fetch rooms when re-linking is meaningful (entity is itself a room)
   useEffect(() => {
@@ -512,7 +521,7 @@ export function EntityPhotoGallery({ entityId, entityType, projectId, storagePat
       />
     </div>
   );
-}
+});
 
 // ---------------------------------------------------------------------------
 // Photo thumbnail sub-component

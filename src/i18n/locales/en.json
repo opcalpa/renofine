@@ -2014,7 +2014,8 @@
     "noCategory": "Not classified",
     "noCaption": "No description",
     "captionPlaceholder": "Add a description...",
-    "linkedRoom": "Room"
+    "linkedRoom": "Room",
+    "quickPhoto": "Take photo"
   },
   "photoSource": {
     "classify": "What type of photo is this?",

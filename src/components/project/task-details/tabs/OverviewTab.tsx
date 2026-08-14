@@ -1,5 +1,6 @@
+import { useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Info, Clock } from "lucide-react";
+import { Info, Clock, Camera } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
@@ -10,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { MultiRoomSelect } from "@/components/shared/MultiRoomSelect";
-import { EntityPhotoGallery } from "@/components/shared/EntityPhotoGallery";
+import { EntityPhotoGallery, type EntityPhotoGalleryHandle } from "@/components/shared/EntityPhotoGallery";
 import { CommentsSection } from "@/components/comments/CommentsSection";
 import { TipList } from "@/components/ui/TipCard";
 import type { ContextualTip } from "@/lib/contextualTips";
@@ -61,6 +62,7 @@ export function OverviewTab({
 }: OverviewTabProps) {
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
+  const photoGalleryRef = useRef<EntityPhotoGalleryHandle>(null);
   const internalSupported = "internal_notes" in task;
   // Hidden fields stay visible while they hold content — nothing disappears silently
   const showField = (key: string, hasContent: boolean) => (fieldPrefs[key] ?? true) || hasContent;
@@ -204,7 +206,25 @@ export function OverviewTab({
   const photosSection = (
     <div>
       <span className="rf-section-label mb-2 block">{t("entityPhotos.photos", "Foton")}</span>
-      <EntityPhotoGallery entityId={task.id} entityType="task" projectId={projectId} />
+      <EntityPhotoGallery ref={photoGalleryRef} entityId={task.id} entityType="task" projectId={projectId} />
+    </div>
+  );
+
+  // Mobile quick action: "Fota" at the top of the sheet triggers the same
+  // camera upload as the photo gallery below — no scrolling to attach a photo
+  // (Carl 14 aug: "plottrigt att scrolla för snabb bild i ett arbete").
+  const mobileQuickActions = (
+    <div className="flex gap-2 md:hidden">
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="h-10 flex-1 gap-2"
+        onClick={() => photoGalleryRef.current?.openCamera()}
+      >
+        <Camera className="h-4 w-4" />
+        {t("entityPhotos.quickPhoto", "Fota")}
+      </Button>
     </div>
   );
 
@@ -216,6 +236,10 @@ export function OverviewTab({
 
   return (
     <div className="flex flex-col gap-5 px-6 py-5">
+      {/* Only when the gallery below is actually mounted — else the ref is null
+          and the quick button would no-op (gallery hidden via field prefs) */}
+      {showField("photos", photoCount > 0) && mobileQuickActions}
+
       {tips.length > 0 && <TipList tips={tips} onDismiss={dismissTip} maxTips={1} compact />}
 
       {descriptionSection}
