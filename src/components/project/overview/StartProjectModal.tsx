@@ -21,9 +21,9 @@ export function StartProjectModal({ open, onOpenChange, onStartSelf, onSendRfq }
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
-        <DialogHeader>
+        <DialogHeader className="px-6 sm:px-0">
           <DialogTitle>{t("startProject.title", "How do you want to proceed?")}</DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="max-w-[46ch] mx-auto sm:mx-0">
             {t("startProject.description", "Choose how to move forward with your renovation project.")}
           </DialogDescription>
         </DialogHeader>

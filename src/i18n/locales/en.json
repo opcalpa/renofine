@@ -225,7 +225,7 @@
     },
     "reviewerStep": {
       "title": "The reviewer gets read access",
-      "description": "The reviewer sees tasks, rooms, drawings, photos, files, inspections and the schedule — but no prices, budget or profit. Can leave remarks but cannot change anything."
+      "description": "The reviewer sees tasks, rooms, drawings, photos, files, inspections and the schedule — but no prices, budget or profit. Remarks are written as comments directly on tasks and rooms and collected in the project feed — the reviewer cannot change anything."
     }
   },
   "common": {
@@ -433,7 +433,7 @@
     "mobileNav": {
       "planning": "Planning",
       "overview": "Overview",
-      "plans": "Plans",
+      "plans": "Space",
       "tasks": "Tasks",
       "purchases": "Purchases",
       "more": "More",
@@ -900,7 +900,7 @@
     "floorPlan": "Floor Plan",
     "floorPlanDesc": "Design and plan your floor layout",
     "feedDesc": "Comments and activity feed",
-    "spacePlanner": "Area",
+    "spacePlanner": "Space",
     "tasks": "Tasks",
     "timeline": "Project Timeline",
     "timelineDays": "days",
@@ -4635,7 +4635,7 @@
     "totalTasks": "Total tasks",
     "totalRooms": "Total rooms",
     "describeStep": "Describe",
-    "fillManually": "Fill in myself",
+    "fillManually": "Fill in the steps myself",
     "startBlank": "Start with an empty project instead",
     "startBlankHint": "Skip planning for now — you can describe the renovation by voice inside the project and Renaida sets it up.",
     "createBlankProject": "Create empty project",

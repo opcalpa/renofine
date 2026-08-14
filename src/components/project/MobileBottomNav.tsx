@@ -1,7 +1,13 @@
 import { useMemo, useRef, useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { LayoutDashboard, PenTool, CheckSquare, ShoppingCart, FolderOpen, PiggyBank, Users, MessageSquare, ClipboardList, Share2 } from "lucide-react";
+import { LayoutDashboard, PenTool, CheckSquare, ShoppingCart, FolderOpen, PiggyBank, Users, MessageSquare, ClipboardList, Share2, Home } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface TabConfig {
   tab: string;
@@ -103,19 +109,46 @@ export function MobileBottomNav({ activeTab, onTabChange, isTabBlocked, userRole
           >
             {tabs.map(({ tab, icon: Icon, labelKey, subTab }) => {
               const active = activeTab === tab;
+              const btnClass = cn(
+                "flex flex-col items-center justify-center gap-0.5 min-w-[64px] px-3 flex-shrink-0 transition-colors",
+                active ? "text-primary" : "text-muted-foreground"
+              );
+              const inner = (
+                <>
+                  <Icon className="h-5 w-5" />
+                  <span className="text-[10px] font-medium whitespace-nowrap">{t(labelKey)}</span>
+                  {active && <div className="w-4 h-0.5 rounded-full bg-primary mt-0.5" />}
+                </>
+              );
+              // Yta/Space has two destinations (drawing + room description) —
+              // mirror desktop's submenu instead of hard-linking to the planner
+              if (tab === "spaceplanner") {
+                return (
+                  <DropdownMenu key={tab}>
+                    <DropdownMenuTrigger asChild>
+                      <button data-active={active} className={btnClass}>{inner}</button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent side="top" align="center" className="z-[60] min-w-[180px]">
+                      <DropdownMenuItem className="gap-2 py-2.5" onClick={() => onTabChange("spaceplanner", "floorplan")}>
+                        <PenTool className="h-4 w-4" />
+                        {t("projectDetail.floorPlan", "Ritning")}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="gap-2 py-2.5" onClick={() => onTabChange("spaceplanner", "rooms")}>
+                        <Home className="h-4 w-4" />
+                        {t("floormap.roomDescription", "Rumsbeskrivning")}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                );
+              }
               return (
                 <button
                   key={tab}
                   data-active={active}
                   onClick={() => onTabChange(tab, subTab || null)}
-                  className={cn(
-                    "flex flex-col items-center justify-center gap-0.5 min-w-[64px] px-3 flex-shrink-0 transition-colors",
-                    active ? "text-primary" : "text-muted-foreground"
-                  )}
+                  className={btnClass}
                 >
-                  <Icon className="h-5 w-5" />
-                  <span className="text-[10px] font-medium whitespace-nowrap">{t(labelKey)}</span>
-                  {active && <div className="w-4 h-0.5 rounded-full bg-primary mt-0.5" />}
+                  {inner}
                 </button>
               );
             })}

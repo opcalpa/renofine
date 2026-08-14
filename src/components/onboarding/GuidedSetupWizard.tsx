@@ -345,7 +345,7 @@ export function GuidedSetupWizard({
         {currentKey === "describe" ? (
           <div className="flex flex-wrap items-center justify-end gap-2 ml-auto">
             <Button variant="ghost" onClick={handleFillManually} disabled={analyzing}>
-              {t("guidedSetup.fillManually", "Fill in myself")}
+              {t("guidedSetup.fillManually", "Fill in the steps myself")}
             </Button>
             <Button onClick={handleDescribeNext} disabled={analyzing || (!analyzed && !canAnalyze)} className="gap-2">
               {analyzing ? (
