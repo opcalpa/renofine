@@ -2165,3 +2165,23 @@ created: 2026-08-14
 Carls screenshot 14 aug: "Låt användare klicka och redigera namn o värden i dessa Granska-lägen." = exakt Fas B inc3 ur [[renaida-projektfodelse-multimodal]]. Kartlagt: draft-state + fält finns (DraftRoom.name/areaSqm, DraftTask.customTitle via taskTitle()-härledning), MEN inga generiska setters i renaidaProjectFlow.ts (bara stegbunden applyAnswer) och inget edit-läge i TaskReviewList/rum-raderna (RenaidaProjectDialog.tsx:1234-1305, 1397-1448). FÄRDIG MALL: AIProjectImportModal.tsx:471-767 har exakt mönstret (editingIndex + updateRoom/updateTask + blyerts-toggle). OBS: titel-edit måste skriva customTitle (annars skrivs den över av workType-labeln). Rum-raden finns i BÅDE mobil- och desktop-grenen → bryt ut delad EditableRoomRow (single-source). Bonus: täcker automatiskt mapp-ingest + critic-flaggornas resultat (samma draft).
 
 **✅ LEVERERAT 2026-08-14 (`459962e`):** delad EditableRoomRow (rum namn+yta) + TaskReviewList edit-läge; rena helpers updateDraftRoom (döp om → task-roomName följer) + renameDraftTask (customTitle). Enhetstest + live-verifierad gäst-dialog. 20/20 flow + 39/39 renaida gröna.
+
+---
+id: worker-content-token-fk
+status: todo
+priority: P3
+tags: [worker, attribution, data-model, hårdning]
+created: 2026-08-14
+---
+## worker_token_id-FK på comments/photos (exakt per-arbetare-attribution)
+Idag attribueras arbetar-content (comments, photos) BARA via author_display_name = "{namn} (worker)" / caption = worker_name — created_by_user_id är ägarens (FK-integritet). Fungerar men är sköert: två arbetare med samma namn, eller ett ändrat namn, bryter kopplingen. worker-status-aggregate-panelen (`0680378`) scopar därför via namn-markör + task_id ∈ tilldelade (fungerar för distinkta namn). REN FIX: lägg nullable `worker_token_id uuid REFERENCES worker_access_tokens(id)` på comments (+ ev. photos), sätt i worker-send-message/worker-ask-question/worker-upload-photo (alla laddar redan tokenRecord = enrads-tillägg), byt aggregat-queryn + useNotifications 2c till `.eq("worker_token_id", id)`. Prejudikat finns: materials.submitted_by_worker_token_id, worker_instruction_overrides.worker_token_id, access_log.worker_token_id. Kräver 1 migration + 3 edge-deploys — vänta tills fler arbetare/namnkollisioner faktiskt uppstår (~1 aktiv arbetare nu = överbyggnad).
+
+---
+id: worker-status-aggregate
+status: done
+priority: P2
+tags: [worker, trust, team, screenshot-fynd]
+created: 2026-08-14
+---
+## Per-arbetare aktivitetspanel i Team-fliken
+**✅ LEVERERAT 2026-08-14 (`0680378`):** WorkerActivityPanel i expanderbara Team-raden — aktivitetsflöde (frågor/meddelanden/inlämnade foton m. lightbox), status-summering av tilldelade arbeten (antal + att granska + klara), "Se vad {namn} ser"-knapp (Dialog m. WorkerInstructionsView, återanvänder s68-preview). Lazy-mountad. Query RLS-linjerad (project_id ELLER task_id ∈ tilldelade). Attribution via namn-markör → FK-hårdning i [[worker-content-token-fk]]. Ej ögonkollad populerad (ingen läsbar worker-data i prod + auth-gejtad) → Cowork/on-device-verifiering vid ny aktivitet.
