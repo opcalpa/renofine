@@ -7072,5 +7072,16 @@
     "installBody": "Add it to your home screen for quick access and share straight into Renaida.",
     "installButton": "Install",
     "installDismiss": "Not now"
+  },
+  "workerActivity": {
+    "title": "Activity",
+    "seeWhatTheySee": "See what {{name}} sees",
+    "tasksAssigned": "{{count}} tasks",
+    "awaitingReview": "{{count}} to review",
+    "completed": "{{count}} done",
+    "question": "Question",
+    "photo": "Photo",
+    "message": "Message",
+    "empty": "No activity from {{name}} yet."
   }
 }

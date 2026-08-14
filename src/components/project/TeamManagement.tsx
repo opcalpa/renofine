@@ -1075,6 +1075,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
         <CardContent className="p-0">
           <TeamTable
             rows={teamRows}
+            projectId={projectId}
             currentProfileId={currentProfileId}
             canManageTeam={canManageTeam}
             isOwner={isOwner}

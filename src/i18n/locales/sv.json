@@ -7072,5 +7072,16 @@
     "installBody": "Lägg till på hemskärmen för snabb åtkomst och dela direkt till Renaida.",
     "installButton": "Installera",
     "installDismiss": "Inte nu"
+  },
+  "workerActivity": {
+    "title": "Aktivitet",
+    "seeWhatTheySee": "Se vad {{name}} ser",
+    "tasksAssigned": "{{count}} arbeten",
+    "awaitingReview": "{{count}} att granska",
+    "completed": "{{count}} klara",
+    "question": "Fråga",
+    "photo": "Foto",
+    "message": "Meddelande",
+    "empty": "Ingen aktivitet från {{name}} än."
   }
 }

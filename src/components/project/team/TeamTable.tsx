@@ -21,6 +21,7 @@ import {
 import { Info } from "lucide-react";
 import { FeatureAccessEditor } from "./FeatureAccessEditor";
 import type { FeatureAccess } from "./FeatureAccessEditor";
+import { WorkerActivityPanel } from "./WorkerActivityPanel";
 import { isTeamV2MaskingEnabled } from "@/lib/featureFlags";
 
 // ---------------------------------------------------------------------------
@@ -54,6 +55,7 @@ export interface TeamRow {
 
 interface TeamTableProps {
   rows: TeamRow[];
+  projectId: string;
   currentProfileId: string | null;
   canManageTeam: boolean;
   isOwner: boolean;
@@ -209,6 +211,7 @@ const STATUS_STYLES: Record<string, string> = {
 
 export function TeamTable({
   rows,
+  projectId,
   currentProfileId,
   canManageTeam,
   isOwner,
@@ -400,7 +403,7 @@ export function TeamTable({
 
                 {isExpanded && (
                   <div className="border-t px-3 py-3">
-                    <ExpandedRowContent row={row} t={t} />
+                    <ExpandedRowContent row={row} t={t} projectId={projectId} />
                   </div>
                 )}
               </div>
@@ -614,7 +617,7 @@ export function TeamTable({
                   {isExpanded && (
                     <TableRow key={`${row.id}-detail`} className="bg-muted/20 hover:bg-muted/20">
                       <TableCell colSpan={6} className="py-4">
-                        <ExpandedRowContent row={row} t={t} />
+                        <ExpandedRowContent row={row} t={t} projectId={projectId} />
                       </TableCell>
                     </TableRow>
                   )}
@@ -634,7 +637,7 @@ export function TeamTable({
 // Expanded row content
 // ---------------------------------------------------------------------------
 
-function ExpandedRowContent({ row, t }: { row: TeamRow; t: (key: string, fallback?: string) => string }) {
+function ExpandedRowContent({ row, t, projectId }: { row: TeamRow; t: (key: string, fallback?: string) => string; projectId: string }) {
   return (
     <div className="space-y-4 px-2">
       {/* Contact info (visible on mobile where column is hidden) */}
@@ -726,6 +729,12 @@ function ExpandedRowContent({ row, t }: { row: TeamRow; t: (key: string, fallbac
               ? new Date(row.lastAccessedAt).toLocaleString()
               : t("teamWorker.never", "Aldrig")}
           </p>
+          <WorkerActivityPanel
+            projectId={projectId}
+            workerToken={row.workerToken}
+            workerName={row.name}
+            assignedTaskIds={row.assignedTaskIds}
+          />
         </>
       )}
 
