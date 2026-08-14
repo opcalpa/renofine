@@ -1,6 +1,6 @@
 import { Fragment, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Crown, Pencil, X, Phone, Mail, ChevronDown, ChevronRight, Copy, MessageCircle, Send, Clock } from "lucide-react";
+import { Crown, Pencil, X, Phone, Mail, ChevronDown, ChevronRight, Copy, MessageCircle, Send, Clock, Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Table,
@@ -48,6 +48,8 @@ export interface TeamRow {
   workerLanguage: string | null;
   workerToken: string | null;
   personnummerLast4: string | null;
+  /** Read-receipt: when the worker last opened their link (null = never opened). */
+  lastAccessedAt?: string | null;
 }
 
 interface TeamTableProps {
@@ -95,6 +97,47 @@ function modePill(row: TeamRow): Pill | null {
   if (fa.purchases === "create" || fa.purchases === "edit")
     return { label: "Egna belopp", cls: "bg-emerald-50 text-emerald-700" };
   return { label: "Inga belopp", cls: "bg-muted text-muted-foreground" };
+}
+
+/**
+ * Read-receipt pill for worker rows — "Öppnad" / "Ej öppnad ännu" at a glance,
+ * with the exact last-access date on hover. Data already lives on the row
+ * (last_accessed_at is tracked by get-worker-data and protected from the
+ * preview-bump), it was just never surfaced.
+ */
+function ReadReceiptBadge({
+  lastAccessedAt,
+  t,
+}: {
+  lastAccessedAt: string | null | undefined;
+  t: (key: string, fallback?: string) => string;
+}) {
+  const opened = !!lastAccessedAt;
+  const badge = (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium",
+        opened
+          ? "bg-emerald-100 text-emerald-800"
+          : "bg-muted text-muted-foreground",
+      )}
+    >
+      {opened ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+      {opened
+        ? t("teamWorker.opened", "Öppnad")
+        : t("teamWorker.notOpenedYet", "Ej öppnad ännu")}
+    </span>
+  );
+  if (!opened) return badge;
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{badge}</TooltipTrigger>
+      <TooltipContent>
+        {t("teamWorker.lastAccessed", "Senast besökt")}:{" "}
+        {new Date(lastAccessedAt!).toLocaleString()}
+      </TooltipContent>
+    </Tooltip>
+  );
 }
 
 type SectionKey = "active" | "pending" | "inactive";
@@ -304,6 +347,9 @@ export function TeamTable({
                       <Badge variant="outline" className={cn("text-[10px] font-medium", STATUS_STYLES[row.status])}>
                         {t(`team.status.${row.status}`, row.status)}
                       </Badge>
+                      {row.type === "worker" && (
+                        <ReadReceiptBadge lastAccessedAt={row.lastAccessedAt} t={t} />
+                      )}
                     </div>
                   </div>
                   {isExpanded ? (
@@ -504,9 +550,14 @@ export function TeamTable({
 
                 {/* Status */}
                 <TableCell>
-                  <Badge variant="outline" className={cn("text-[10px] font-medium", STATUS_STYLES[row.status])}>
-                    {t(`team.status.${row.status}`, row.status)}
-                  </Badge>
+                  <div className="flex flex-col items-start gap-1">
+                    <Badge variant="outline" className={cn("text-[10px] font-medium", STATUS_STYLES[row.status])}>
+                      {t(`team.status.${row.status}`, row.status)}
+                    </Badge>
+                    {row.type === "worker" && (
+                      <ReadReceiptBadge lastAccessedAt={row.lastAccessedAt} t={t} />
+                    )}
+                  </div>
                 </TableCell>
 
                 {/* Added date */}
@@ -664,6 +715,17 @@ function ExpandedRowContent({ row, t }: { row: TeamRow; t: (key: string, fallbac
               {t("teamWorker.workerLanguage", "Language")}: {row.workerLanguage}
             </p>
           )}
+          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            {row.lastAccessedAt ? (
+              <Eye className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
+            ) : (
+              <EyeOff className="h-3.5 w-3.5 shrink-0" />
+            )}
+            {t("teamWorker.lastAccessed", "Senast besökt")}:{" "}
+            {row.lastAccessedAt
+              ? new Date(row.lastAccessedAt).toLocaleString()
+              : t("teamWorker.never", "Aldrig")}
+          </p>
         </>
       )}
 

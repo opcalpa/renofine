@@ -937,6 +937,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
         workerLanguage: wt.worker_language,
         workerToken: wt.token,
         personnummerLast4: null,
+        lastAccessedAt: wt.last_accessed_at,
       });
     }
 
