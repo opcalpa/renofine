@@ -2121,3 +2121,43 @@ created: 2026-08-13
 ---
 ## Back-translation-toggle: sv→uk laddar om (~1-2s), uk→sv omedelbar
 Cowork-fynd B1 (2026-08-13). Toggeln i WorkerInstructionsView är asymmetrisk: att växla till arbetarens språk kör runtime-översättnings-passet (spinner), medan svenska (källtext) är omedelbar. Fungerar men inkonsekvent. Ev. cacha bägge språkens payload vid första hämtning så toggeln blir omedelbar åt båda håll. Lågprio.
+
+---
+id: invite-persona-preview-client-reviewer
+status: todo
+priority: P2
+tags: [invite, trust, preview, kund, granskare, screenshot-fynd]
+created: 2026-08-14
+---
+## "Se exakt vad kunden/granskaren ser" — utöka worker-previewens mönster
+Carls screenshot 14 aug (invite-wizard steg 2): personabeskrivningen säger vad kunden/granskaren FÅR se, men ägaren kan inte verifiera det själv → önskan om preview + "testa UI"-kontroll. Worker-personan har redan hela mönstret (WorkerInstructionsView preview via get-worker-data preview+previewLang, "se exakt vad {namn} ser"). Bygg motsvarande för kund (maskad kundvy) och granskare (läs+anmärkningar-vyn): en "Förhandsgranska vyn"-knapp i wizard-steget + i Team-fliken per medlem. Trust-epicens naturliga fortsättning ([[worker-trust-owner-confidence]]) — samma princip: ägarens trygghet = att kunna SE vad motparten ser, inte lita på en beskrivning.
+
+---
+id: homeowner-time-surface-missing
+status: todo
+priority: P2
+tags: [hemägare, tid, renaida, modul-gating, produktval]
+created: 2026-08-14
+---
+## Hemägare saknar tidsyta — men Renaida loggar glatt tid åt dem
+Fynd under screenshot-svepet 14 aug (S2 "kan ej klicka för att verifiera"): `log_time` är tillgängligt för hemägare via Renaida (DIY-scenariot "målat fem timmar i barnrummet" är legitimt), datat landar i time_entries — men `timetracking`-fliken är modul-gatad av för hemägare (modules.ts homeowner:false) så posten går ALDRIG att se/redigera/radera i UI:t. Kvittolänken faller nu tillbaka på tasken (fix 4ec5c8d), men lösa loggar (utan task) är helt osynliga. Produktval: (a) enkel "Min tid"-yta för hemägare (DIY-timmar har ROT/underlags-värde), (b) slå på timetracking-modulen för hemägare, eller (c) gata bort log_time för hemägare utan task. Rekommendation: (a) light — visa loggade timmar per rum/arbete i Budget/arbetskortet.
+
+---
+id: task-sheet-mobile-quick-actions
+status: todo
+priority: P2
+tags: [mobil, arbetskort, ux, screenshot-fynd]
+created: 2026-08-14
+---
+## Task-sheetens mobila snabbåtgärder — foto direkt utan scroll
+Carls screenshot 14 aug: "plottrigt i mobil att scrolla för alla funktioner såsom att ladda upp snabb bild i ett arbete". Task-sheeten (Målning – Rum, Översikt-fliken) kräver scroll förbi slutdatum/framsteg för att nå FOTON-sektionen. Bygg en snabbåtgärds-rad överst på mobil (md:hidden): [📷 Fota] (triggar EntityPhotoGallerys kamera-input direkt) + ev. framsteg-stepper. Breddtänk: samma mönster för rumsdetalj-sheeten (fota rummet). Relaterat: mobil = Renaida-first capture-regeln ([[renaida-mobile-first-surface]]) — övervag om "Fota till detta arbete" ska gå via Renaida-capture med task-kontext istället för egen väg (EN mekanik, inte två).
+
+---
+id: renaida-review-inline-edit
+status: todo
+priority: P2
+tags: [renaida, projektfödelse, fas-b, granska, screenshot-fynd]
+created: 2026-08-14
+---
+## Fas B inc3: inline-edit i "Granska innan du skapar" (rumsnamn, yta, task-titlar)
+Carls screenshot 14 aug: "Låt användare klicka och redigera namn o värden i dessa Granska-lägen." = exakt Fas B inc3 ur [[renaida-projektfodelse-multimodal]]. Kartlagt: draft-state + fält finns (DraftRoom.name/areaSqm, DraftTask.customTitle via taskTitle()-härledning), MEN inga generiska setters i renaidaProjectFlow.ts (bara stegbunden applyAnswer) och inget edit-läge i TaskReviewList/rum-raderna (RenaidaProjectDialog.tsx:1234-1305, 1397-1448). FÄRDIG MALL: AIProjectImportModal.tsx:471-767 har exakt mönstret (editingIndex + updateRoom/updateTask + blyerts-toggle). OBS: titel-edit måste skriva customTitle (annars skrivs den över av workType-labeln). Rum-raden finns i BÅDE mobil- och desktop-grenen → bryt ut delad EditableRoomRow (single-source). Bonus: täcker automatiskt mapp-ingest + critic-flaggornas resultat (samma draft).
