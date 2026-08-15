@@ -2496,5 +2496,17 @@
     "title": "Kundenansicht",
     "seeWhatTheySee": "Genau sehen, was {{name}} sieht",
     "hint": "Vorschau der maskierten Kundenansicht — ohne interne Preise oder Aufschläge."
+  },
+  "roomDeleteDialog": {
+    "title": "{{label}} löschen?",
+    "description": "Der Raum kann gespeicherte Daten haben (Aufgaben, Budget, Objekte). Was möchtest du löschen?",
+    "nRooms": "{{count}} Räume",
+    "optionBoth": "Zeichnung + Raum löschen",
+    "optionBothHint": "Der Raum und alle gespeicherten Daten werden dauerhaft entfernt.",
+    "optionDrawingOnly": "Nur die Zeichnung löschen",
+    "optionDrawingOnlyHint": "Der Raum bleibt mit allen Daten in der Raumliste.",
+    "deletedBoth": "Raum und Zeichnung gelöscht",
+    "deletedDrawing": "Zeichnung gelöscht – der Raum bleibt in der Liste",
+    "couldNotDelete": "Raum konnte nicht gelöscht werden"
   }
 }

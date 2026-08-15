@@ -2496,5 +2496,17 @@
     "title": "Vista de cliente",
     "seeWhatTheySee": "Ver exactamente lo que ve {{name}}",
     "hint": "Previsualiza la vista de cliente enmascarada — sin precios internos ni márgenes."
+  },
+  "roomDeleteDialog": {
+    "title": "¿Eliminar {{label}}?",
+    "description": "La sala puede tener datos guardados (tareas, presupuesto, objetos). ¿Qué quieres eliminar?",
+    "nRooms": "{{count}} salas",
+    "optionBoth": "Eliminar el dibujo + la sala",
+    "optionBothHint": "La sala y todos sus datos guardados se eliminan permanentemente.",
+    "optionDrawingOnly": "Eliminar solo el dibujo",
+    "optionDrawingOnlyHint": "La sala permanece en la lista con todos sus datos.",
+    "deletedBoth": "Sala y dibujo eliminados",
+    "deletedDrawing": "Dibujo eliminado: la sala permanece en la lista",
+    "couldNotDelete": "No se pudo eliminar la sala"
   }
 }

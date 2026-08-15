@@ -56,6 +56,9 @@ export interface JunctionMoveParams {
 
 export interface ShapeDeleteParams {
   ids: string[];
+  /** Set once the room-deletion intent dialog has resolved, so the command
+   *  proceeds instead of re-opening the dialog. */
+  confirmed?: boolean;
 }
 
 export interface ShapeUpdateParams {
@@ -363,9 +366,22 @@ export const commands = {
   'shape.delete'(params: ShapeDeleteParams): void {
     const shapes = getShapes();
     const ids = new Set(params.ids);
-    const patches: Patch[] = shapes
-      .filter((s) => ids.has(s.id) && !s.locked)
-      .map((s) => ({ op: 'remove' as const, shape: s }));
+    const targeted = shapes.filter((s) => ids.has(s.id) && !s.locked);
+    // Room-linked shapes: don't silently orphan the room entity. Defer to the
+    // shared 3-choice dialog (drawing + room / drawing only / cancel) unless the
+    // dialog has already resolved (confirmed).
+    if (!params.confirmed) {
+      const roomShapes = targeted.filter((s) => s.type === 'room' && s.roomId);
+      if (roomShapes.length > 0) {
+        useFloorMapStore.getState().setPendingRoomShapeDeletion({
+          shapeIds: params.ids,
+          rooms: roomShapes.map((s) => ({ shapeId: s.id, roomId: s.roomId as string })),
+          via: 'v2',
+        });
+        return;
+      }
+    }
+    const patches: Patch[] = targeted.map((s) => ({ op: 'remove' as const, shape: s }));
     commit('Radera', patches);
     useFloorMapStore.getState().clearSelection();
   },

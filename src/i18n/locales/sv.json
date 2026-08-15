@@ -7089,5 +7089,17 @@
     "title": "Kundvy",
     "seeWhatTheySee": "Se exakt vad {{name}} ser",
     "hint": "Förhandsgranska den maskade kundvyn – utan interna priser eller påslag."
+  },
+  "roomDeleteDialog": {
+    "title": "Ta bort {{label}}?",
+    "description": "Rummet kan ha sparade uppgifter (arbeten, budget, objekt). Vad vill du ta bort?",
+    "nRooms": "{{count}} rum",
+    "optionBoth": "Ta bort ritningen + rummet",
+    "optionBothHint": "Rummet och all sparad data tas bort permanent.",
+    "optionDrawingOnly": "Ta bort bara ritningen",
+    "optionDrawingOnlyHint": "Rummet blir kvar i rumslistan med all data.",
+    "deletedBoth": "Rummet och ritningen togs bort",
+    "deletedDrawing": "Ritningen togs bort – rummet finns kvar i listan",
+    "couldNotDelete": "Kunde inte ta bort rummet"
   }
 }

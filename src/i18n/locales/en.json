@@ -7089,5 +7089,17 @@
     "title": "Client view",
     "seeWhatTheySee": "See exactly what {{name}} sees",
     "hint": "Preview the masked client view — no internal prices or markup."
+  },
+  "roomDeleteDialog": {
+    "title": "Delete {{label}}?",
+    "description": "The room may have saved data (tasks, budget, objects). What do you want to delete?",
+    "nRooms": "{{count}} rooms",
+    "optionBoth": "Delete the drawing + the room",
+    "optionBothHint": "The room and all its saved data are removed permanently.",
+    "optionDrawingOnly": "Delete only the drawing",
+    "optionDrawingOnlyHint": "The room stays in the room list with all its data.",
+    "deletedBoth": "Room and drawing deleted",
+    "deletedDrawing": "Drawing deleted – the room stays in the list",
+    "couldNotDelete": "Could not delete the room"
   }
 }

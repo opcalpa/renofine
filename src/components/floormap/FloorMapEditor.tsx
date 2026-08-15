@@ -10,6 +10,7 @@ import { useEditorUiStore } from "./editor/state/uiStore";
 import { supabase } from "@/integrations/supabase/client";
 import { RoomElevationView } from "./RoomElevationView";
 import { RoomDetailDialog } from "./RoomDetailDialog";
+import { RoomShapeDeletionDialog } from "./RoomShapeDeletionDialog";
 import { RoomPickerDialog } from "./RoomPickerDialog";
 import { SpacePlannerTopBar } from "./SpacePlannerTopBar";
 import { PropertyInsightsPanel } from "./PropertyInsightsPanel";
@@ -470,6 +471,10 @@ export const FloorMapEditor = ({ projectId, projectName, onBack, backLabel, isRe
         onRoomUpdated={handleRoomUpdated}
         onPlaceItemOnPlan={(args) => useFloorMapStore.getState().setPendingItemPlacement(args)}
       />
+
+      {/* Room-linked canvas delete → 3-choice intent dialog (drawing+room / drawing only / cancel).
+          Covers both editors; both v1 store deletes and the v2 shape.delete command defer here. */}
+      <RoomShapeDeletionDialog onRoomsChanged={handleRoomUpdated} />
 
       {/* Room Picker Dialog for elevation view */}
       <RoomPickerDialog

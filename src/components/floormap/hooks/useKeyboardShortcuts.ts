@@ -228,7 +228,20 @@ export function useKeyboardShortcuts({
       // Delete key (disabled in read-only mode)
       if ((e.key === 'Delete' || e.key === 'Backspace') && !isTyping && !isReadOnly && !isWallDrawingActive) {
         e.preventDefault();
-        if (selectedShapeIdsRef.current.length > 0) {
+        const selIds = selectedShapeIdsRef.current.length > 0
+          ? [...selectedShapeIdsRef.current]
+          : (selectedShapeIdRef.current ? [selectedShapeIdRef.current] : []);
+        const st = useFloorMapStore.getState();
+        const roomShapes = st.shapes.filter(s => selIds.includes(s.id) && s.type === 'room' && s.roomId);
+        if (roomShapes.length > 0) {
+          // Room-linked shapes: defer to the shared delete-intent dialog rather
+          // than silently orphaning the room entity (phantom in the rooms list).
+          st.setPendingRoomShapeDeletion({
+            shapeIds: selIds,
+            rooms: roomShapes.map(s => ({ shapeId: s.id, roomId: s.roomId as string })),
+            via: 'v1',
+          });
+        } else if (selectedShapeIdsRef.current.length > 0) {
           deleteShapesRef.current(selectedShapeIdsRef.current);
         } else if (selectedShapeIdRef.current) {
           deleteShapeRef.current(selectedShapeIdRef.current);

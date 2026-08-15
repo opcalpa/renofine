@@ -99,6 +99,15 @@ interface FloorMapStore {
   /** Unplaced room to pre-place on the canvas (room-details "place on plan"
    *  link): the v2 editor drops walls + room at view center for adjusting. */
   pendingPlaceRoom: { roomId: string; name: string; color?: string | null; areaSqm?: number | null } | null;
+  /** Room-linked canvas shapes pending a delete-intent choice. Set when a
+   *  delete (v1 store path or v2 command) targets a shape bound to a saved
+   *  room; a shared dialog then asks: remove drawing + room entity, or just
+   *  the drawing. Prevents silently orphaning the room (phantom in the list). */
+  pendingRoomShapeDeletion: {
+    shapeIds: string[];
+    rooms: { shapeId: string; roomId: string }[];
+    via: 'v1' | 'v2';
+  } | null;
 
   // History for Undo/Redo
   history: FloorMapShape[][];
@@ -158,6 +167,7 @@ interface FloorMapStore {
   setPendingItemPlacement: (link: { itemId: string; roomId: string; subtype: string } | null) => void;
   setPendingFocusRoomId: (roomId: string | null) => void;
   setPendingPlaceRoom: (room: { roomId: string; name: string; color?: string | null; areaSqm?: number | null } | null) => void;
+  setPendingRoomShapeDeletion: (v: { shapeIds: string[]; rooms: { shapeId: string; roomId: string }[]; via: 'v1' | 'v2' } | null) => void;
   centerOnRoom: (roomId: string) => void;
   
   // Actions - Drawing state
@@ -274,6 +284,7 @@ export const useFloorMapStore = create<FloorMapStore>((set, get) => ({
   pendingItemLink: null, // E3: room_items row to link to the next placed object
   pendingFocusRoomId: null,
   pendingPlaceRoom: null,
+  pendingRoomShapeDeletion: null,
   history: [[]],
   historyIndex: 0,
   isDrawing: false,
@@ -509,6 +520,7 @@ export const useFloorMapStore = create<FloorMapStore>((set, get) => ({
 
   setPendingFocusRoomId: (roomId) => set({ pendingFocusRoomId: roomId }),
   setPendingPlaceRoom: (room) => set({ pendingPlaceRoom: room }),
+  setPendingRoomShapeDeletion: (v) => set({ pendingRoomShapeDeletion: v }),
 
   // Center view on a specific room by roomId
   centerOnRoom: (roomId) => set((state) => {
