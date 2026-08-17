@@ -111,6 +111,12 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [draft, setDraft] = useState<ProjectDraft>(emptyDraft());
+  // #1: persist the in-progress draft so closing the dialog mid-flow doesn't
+  // lose everything (parity with the old PlanningWizard). Keyed per target.
+  const storageKey = `renaida-draft-v1-${existingProjectId ?? 'new'}`;
+  const clearSavedDraft = () => {
+    try { localStorage.removeItem(storageKey); } catch { /* ignore */ }
+  };
   const [turns, setTurns] = useState<Turn[]>([]);
   const [multiSel, setMultiSel] = useState<string[]>([]);
   const [fieldValue, setFieldValue] = useState('');
@@ -176,8 +182,24 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
 
   useEffect(() => {
     if (open) {
-      setDraft(emptyDraft());
-      setTurns([]);
+      // Restore an in-progress draft if one was saved (closed mid-flow); else
+      // start fresh. Only restore drafts with real content.
+      let restored = false;
+      try {
+        const raw = localStorage.getItem(storageKey);
+        if (raw) {
+          const saved = JSON.parse(raw) as { draft?: ProjectDraft; turns?: Turn[] };
+          if (saved?.draft && ((saved.draft.rooms?.length ?? 0) > 0 || (saved.draft.tasks?.length ?? 0) > 0)) {
+            setDraft(saved.draft);
+            setTurns(saved.turns ?? []);
+            restored = true;
+          }
+        }
+      } catch { /* ignore corrupt draft */ }
+      if (!restored) {
+        setDraft(emptyDraft());
+        setTurns([]);
+      }
       setMultiSel([]);
       setFieldValue('');
       setCreating(false);
@@ -216,6 +238,15 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
       tasks: draft.tasks.length,
     };
   });
+
+  // #1: persist the draft whenever it changes (until the project is created).
+  useEffect(() => {
+    if (!open || createdRef.current) return;
+    const hasContent = draft.rooms.length > 0 || draft.tasks.length > 0 || turns.length > 0;
+    if (hasContent) {
+      try { localStorage.setItem(storageKey, JSON.stringify({ draft, turns })); } catch { /* ignore quota */ }
+    }
+  }, [open, draft, turns, storageKey]);
 
   // Funnel: dialog opened → started; closed without creating → abandoned.
   useEffect(() => {
@@ -721,6 +752,7 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
           return;
         }
         createdRef.current = true;
+        clearSavedDraft();
         // Guests can't activate — keep them out of the activation funnel (no project_created).
         toast.success(t('renaidaFlow.err.created', 'Projektet är skapat! 🎉'));
         onOpenChange(false);
@@ -748,6 +780,7 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
       }
       const result = await scaffoldProject(toScaffoldInput(draft, labelFor, { existingProjectId }), profile.id);
       createdRef.current = true;
+      clearSavedDraft();
 
       // Inc 3: turn folder-dropped receipts into real purchase orders now that
       // the project exists. Best-effort per purchase — a failed order must not
