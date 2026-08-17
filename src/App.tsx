@@ -84,7 +84,17 @@ function AuthenticatedInstallBanner() {
   return <InstallPwaBanner />;
 }
 
-const queryClient = new QueryClient();
+// refetchOnWindowFocus defaults to true — every time the tab regained focus,
+// all active queries refetched, which read as a jarring "the page reloaded"
+// flash on return (Carl 2026-08-17). Turn it off: data still refetches on mount
+// and after mutations; users can navigate/pull to refresh for freshness.
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 // Consume ?editor=v2|v1 at app startup — ProjectDetail's tab-sync rewrites
 // the query string before the floor planner mounts, so the flag must be

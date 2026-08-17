@@ -73,7 +73,17 @@ export const AppHeader = ({ userName, userEmail, avatarUrl, onSignOut, children,
   const { isProfessional } = useIsProfessional();
 
   const isProjectMode = !!children;
-  const [profileDrawerOpen, setProfileDrawerOpen] = useState(false);
+  // Persist across remounts/reloads: switching apps and back could remount the
+  // header (or reload the tab), which reset this local flag and silently closed
+  // the profile drawer. sessionStorage survives both, so the drawer stays open
+  // until the user closes it themselves (Carl 2026-08-17). Cleared on close.
+  const [profileDrawerOpen, setProfileDrawerOpen] = useState(
+    () => sessionStorage.getItem("profileDrawerOpen") === "1",
+  );
+  useEffect(() => {
+    if (profileDrawerOpen) sessionStorage.setItem("profileDrawerOpen", "1");
+    else sessionStorage.removeItem("profileDrawerOpen");
+  }, [profileDrawerOpen]);
 
   const initials = userName
     ? userName
