@@ -40,6 +40,24 @@ fixade i commit `b6246d3`:
 **Kvar att verifiera:** Carl on-device (Pro-kontot testade ej alls än).
 
 ---
+id: renaida-cautious-estimate
+status: done
+priority: P2
+tags: [renaida, estimering, ux]
+created: 2026-08-17
+updated: 2026-08-17
+---
+## Renaida: försiktig valfri beräkning av arbetstid & materialmängd
+
+Hopfälld affordance i materialrutan (hemägare): ange yta + takhöjd per rum →
+Beräkna → redigerbar arbetstid skrivs på arbetena + mängder visas, INGA kronor.
+Insikt: motorn deriverar väggyta ur yta+takhöjd (kvadrat-antagande i
+draftRoomToRecipeRoom) → rena m² räcker; mått bara förfinar. Levererat `c04b321`.
+Onboarding-poäng: visa ATT Renaida kan detta, men "detaljerna justerar du sen
+inne i projektet". **Öppen förfining:** explicit bredd×djup-input för icke-
+kvadratiska rum (stänger rums-fotavtryck-parity-luckan helt).
+
+---
 id: renaida-draft-persistence
 status: done
 priority: P2
