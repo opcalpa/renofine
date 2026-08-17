@@ -1048,7 +1048,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2.5">
@@ -1353,16 +1353,16 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
       {/* Empty state */}
       {members.length === 0 && invitations.length === 0 && (
         <Card className="border-dashed">
-          <CardContent className="py-12 text-center">
-            <UserPlus className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium mb-2">
+          <CardContent className="py-6 md:py-8 text-center">
+            <UserPlus className="h-8 w-8 mx-auto text-muted-foreground mb-2.5" />
+            <h3 className="text-base font-medium mb-1">
               {t("roles.noMembers")}
             </h3>
-            <p className="text-muted-foreground mb-4">
+            <p className="text-sm text-muted-foreground mb-3">
               {t("roles.noMembersDescription")}
             </p>
             {canManageTeam && (
-              <Button onClick={openInviteAsMember}>
+              <Button size="sm" onClick={openInviteAsMember}>
                 <UserPlus className="h-4 w-4 mr-2" />
                 {t("roles.inviteButton")}
               </Button>
