@@ -10,6 +10,172 @@ export interface ChangelogEntry {
 export const DEMO_PROJECT_PATH = "/projects/demo";
 
 export const changelog: ChangelogEntry[] = [
+  // ── 2026-08-15 ──
+  {
+    date: "2026-08-15",
+    title: "Radera en rumsritning utan att tappa rummet",
+    description: "När du raderar en rumsform på ritningen frågar vi nu vad du menar: ta bort både ritningen och rummet, eller bara ritningen och behålla rummet med alla dess detaljer. Inga rum försvinner längre av misstag, och inga \"spökrum\" blir kvar i listan.",
+    tags: ["Canvas", "Planering", "Förbättring"],
+  },
+  {
+    date: "2026-08-15",
+    title: "Se exakt vad din kund ser",
+    description: "I Team-fliken kan du nu öppna \"Se exakt vad {namn} ser\" på en inbjuden kund och få upp den riktiga, maskade kundvyn. Ingen gissning om vad som delas — du ser precis samma sida som kunden, utan interna priser eller marginaler. Skönt att kunna dubbelkolla innan du bjuder in.",
+    tags: ["Team", "Delning", "Förbättring"],
+  },
+
+  // ── 2026-08-14 ──
+  {
+    date: "2026-08-14",
+    title: "Samlad aktivitet per arbetare i Team",
+    description: "Fäll ut en teammedlem för att se allt hen bidragit med på ett ställe: frågor, meddelanden, statusuppdateringar och uppladdade foton (med förhandsvisning i lightbox). Perfekt när du delegerar och vill följa vad som händer utan att jaga runt i projektet.",
+    tags: ["Team", "Förbättring"],
+  },
+  {
+    date: "2026-08-14",
+    title: "Öppnad eller inte — se om arbetaren tagit del av jobbet",
+    description: "En \"Öppnad / Ej öppnad\"-markering visas nu per arbetare i Team-fliken, så du vet om personen du skickat ett jobb till faktiskt har öppnat sin länk.",
+    tags: ["Team", "Förbättring"],
+  },
+  {
+    date: "2026-08-14",
+    title: "Rätta rum och arbeten direkt i granska-läget",
+    description: "När du granskar ett förslag från Renaida (eller en importerad mapp) kan du nu redigera rumsnamn, ytor och arbetstitlar på plats — utan att lämna granskningen. Döper du om ett rum följer arbetena med automatiskt.",
+    tags: ["Renaida", "Planering", "Förbättring"],
+  },
+  {
+    date: "2026-08-14",
+    title: "Loggad tid syns på arbetskortet",
+    description: "Som hemägare ser du nu hur mycket tid som lagts på ett arbete direkt på kortets översikt (\"X h av ~Y h\"), utan att öppna Tid-fliken.",
+    tags: ["Tid", "Hemägare", "Förbättring"],
+  },
+  {
+    date: "2026-08-14",
+    title: "Fota direkt från arbetskortet på mobilen",
+    description: "En \"Fota\"-knapp högst upp på arbetskortet öppnar kameran med ett tryck — smidigt när du står på plats och vill dokumentera.",
+    tags: ["Mobil", "Filer", "Förbättring"],
+  },
+
+  // ── 2026-08-13 ──
+  {
+    date: "2026-08-13",
+    title: "Renaida mitt i mobilmenyn — fånga allt på språng",
+    description: "På mobilen har Renaida flyttat till en upphöjd knapp mitt i nedre menyn. Öppna henne och välj direkt: fota kvitto, logga tid, snabbanteckning eller statusuppdatering. Ett handgrepp från var du än är i appen — gjord för dig som är ute på bygget.",
+    tags: ["Renaida", "Mobil", "Ny funktion"],
+  },
+  {
+    date: "2026-08-13",
+    title: "Installera Renofine som app — dela foton rakt in i Renaida",
+    description: "Lägg till Renofine på hemskärmen och kör den som en app. Du kan nu också dela ett foto eller en PDF från valfri app rakt in i Renaida, som direkt föreslår vad det ska bli — till exempel en inköpsorder från ett kvitto.",
+    tags: ["Mobil", "Renaida", "Ny funktion"],
+  },
+  {
+    date: "2026-08-13",
+    title: "Renaida säger till om något viktigt saknas",
+    description: "När Renaida hjälper dig skapa ett projekt gör hon en sista koll och flaggar kritiska arbeten som är lätta att glömma — som tätskikt, rivning eller ventilation — med förslag på vilket rum de hör till och varför. Du väljer själv vad som läggs till.",
+    tags: ["Renaida", "AI", "Förbättring"],
+  },
+  {
+    date: "2026-08-13",
+    title: "Arbetarens frågor och foton når din notisklocka",
+    description: "Nu får du en notis när en inbjuden arbetare ställer en fråga, laddar upp ett foto eller uppdaterar status — och klicket tar dig rakt till rätt uppgift eller ritning. Tidigare kunde arbetarens aktivitet passera obemärkt; nu missar du inget.",
+    tags: ["Team", "Notiser", "Förbättring"],
+  },
+  {
+    date: "2026-08-13",
+    title: "Se exakt vad din arbetare ser — på hens språk eller ditt",
+    description: "Öppna en förhandsvisning av precis den vy din inbjudna hantverkare får: väggvyer, objekt, noteringar och ytskikt, fullt översatt till hens språk. Växla med en knapp mellan att visa på arbetarens språk och att visa på svenska, så du förstår vad som faktiskt gått fram. Även texten på dina instruktionsbilder översätts nu.",
+    tags: ["Team", "i18n", "Förbättring"],
+  },
+
+  // ── 2026-08-12 ──
+  {
+    date: "2026-08-12",
+    title: "Snabboffert för byggare — från idé till offert på minuter",
+    description: "Som byggare kan du nu skapa en offert blixtsnabbt: beskriv jobbet för Renaida (skriv, prata eller fota), så föreslår hon rum, arbeten och en kalkyl med dina egna timpriser och påslag. Välj \"direkt till offert\" eller \"granska & justera kalkylen\" först. När kunden accepterar aktiveras projektet automatiskt.",
+    tags: ["Offert", "Renaida", "Ny funktion"],
+  },
+  {
+    date: "2026-08-12",
+    title: "Säg ditt timpris en gång — appen minns det",
+    description: "Säg eller skriv \"mitt timpris är 640\" så sparas det i din profil och används i alla kalkyler och offerter framåt (med Ångra om du ändrar dig). Kalkylens timcell visar dessutom en liten formel-tagg så du ser hur siffran räknades fram.",
+    tags: ["Offert", "Budget", "Förbättring"],
+  },
+  {
+    date: "2026-08-12",
+    title: "Planera med Renaida eller guiden — på nya och befintliga projekt",
+    description: "Du väljer själv verktyg: den snabba guiden eller ett samtal med Renaida. Båda fungerar nu både för att skapa ett helt nytt projekt och för att fylla på ett du redan har. Inget är låst till det ena eller andra.",
+    tags: ["Planering", "Renaida", "Förbättring"],
+  },
+  {
+    date: "2026-08-12",
+    title: "Renaida visar vägen till faktura och ÄTA",
+    description: "Be Renaida om en ny faktura eller en ÄTA så tar hon dig direkt till rätt ställe, förifyllt — i stället för att du ska leta i menyerna.",
+    tags: ["Renaida", "ÄTA", "Faktura"],
+  },
+
+  // ── 2026-08-11 ──
+  {
+    date: "2026-08-11",
+    title: "Släpp en hel mapp — Renaida bygger projektet",
+    description: "Har du redan foton, ritningar, offerter och kvitton i en mapp? Dra in hela mappen så sorterar Renaida innehållet automatiskt: foton och dokument läses, rum och arbeten föreslås, kvitton blir inköpsordrar. Hon frågar bara om det som saknas (\"vilket rum?\") och du bekräftar varje rad innan projektet föds.",
+    tags: ["Renaida", "Planering", "Ny funktion"],
+  },
+  {
+    date: "2026-08-11",
+    title: "Fota en planritning — få rum och en grovskiss",
+    description: "Ligger det en planritning bland dina filer känner Renaida igen den, läser ut rumsnamnen och lägger in en grovskiss i planritningen åt dig. Ett försprång i stället för en tom canvas.",
+    tags: ["Renaida", "Canvas", "AI"],
+  },
+  {
+    date: "2026-08-11",
+    title: "Renaida anpassar sig efter dig som byggare",
+    description: "Skapar du som proffs frågar Renaida om kunden (så offerten adresseras rätt) och om overhead — etablering, rivning & bortforsling, ställning, byggstädning och en ÄTA-buffert. När projektet är klart erbjuder hon sig att förbereda en offert till din kund direkt.",
+    tags: ["Renaida", "Offert", "Förbättring"],
+  },
+
+  // ── 2026-08-10 ──
+  {
+    date: "2026-08-10",
+    title: "Skapa projekt genom att prata med Renaida",
+    description: "Ett helt nytt sätt att starta: i stället för en tom sida för du ett kort samtal med Renaida och projektet växer fram framför dig, bit för bit. Hon frågar om rum och arbeten, föreslår tillval du kanske glömt (golvvärme, handdukstork, nisch) och fyller på budget — på svenska, engelska, tyska, franska eller spanska. Finns för både hemägare och proffs.",
+    tags: ["Renaida", "Onboarding", "Ny funktion"],
+  },
+  {
+    date: "2026-08-10",
+    title: "Prata, fota eller skriv — allt blir samma utkast",
+    description: "Renaida tar emot på det sätt som passar dig: prata in en beskrivning med rösten, fota ett rum eller en anteckning, eller skriv. Allt landar i samma utkast som du sedan finjusterar. Varje rad visar var den kom ifrån (röst, foto, text) och kan tas bort eller läggas tillbaka med ett klick.",
+    tags: ["Renaida", "AI", "Ny funktion"],
+  },
+
+  // ── 2026-08-09 ──
+  {
+    date: "2026-08-09",
+    title: "Ny ritningseditor — snabbare och mjukare, som Figma",
+    description: "Planritningen på desktop körs nu i en helt omarbetad editor: smidigare markering, dra-handtag för att skala former, lager och stil (fyllnad, kontur, text), väggtjocklek och -höjd med färdiga väggtyper, och en kalkerbild du kan lägga under och kalibrera för att rita av en befintlig planritning. Mobilen är oförändrad tills vidare, och du kan alltid växla tillbaka till den gamla vyn.",
+    tags: ["Canvas", "Design", "Ny funktion"],
+  },
+
+  // ── 2026-08-04 ──
+  {
+    date: "2026-08-04",
+    title: "Objekt på ritningen färgkodas och kopplas till arbeten",
+    description: "El, VVS, kök och ventilation får nu en tydlig färgton på ritningen — allt el syns i en blick. Placerar du ett objekt kan det kopplas automatiskt till rätt arbete, och du kan filtrera vad som visas per kategori. Arbetaren ser i sin tur bara det som rör hens uppgift.",
+    tags: ["Canvas", "Planering", "Förbättring"],
+  },
+  {
+    date: "2026-08-04",
+    title: "Fria former och gruppering på ritningen",
+    description: "Rita linjer, rektanglar och cirklar direkt på planritningen, och gruppera flera former till en enhet med eget namn och uppmätta mått — markera en så följer hela gruppen med, precis som i Figma.",
+    tags: ["Canvas", "Design", "Förbättring"],
+  },
+  {
+    date: "2026-08-04",
+    title: "Dina noteringar når arbetaren på hens språk",
+    description: "Väggnoteringar och objektens finish och kulör översätts nu automatiskt till arbetarens språk i samma steg som meddelanden — och NCS-färgkoder bevaras exakt.",
+    tags: ["i18n", "Team", "Förbättring"],
+  },
+
   // ── 2026-07-10 ──
   {
     date: "2026-07-10",
