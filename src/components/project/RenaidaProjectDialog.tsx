@@ -14,7 +14,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Sparkles, ArrowRight, Home, Hammer, Wallet, MapPin, Loader2, Check, Camera,
   MessageSquare, FileText, PenTool, X, RotateCcw, FolderUp, User, Calculator,
-  ShieldAlert, Pencil,
+  ShieldAlert, Pencil, Play, ClipboardList,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -26,6 +26,7 @@ import { createGuestProjectFromGuidedSetup, canCreateGuestProject } from '@/serv
 import { compressImage } from '@/lib/compressImage';
 import { analytics, AnalyticsEvents, ProjectCreationMethod } from '@/lib/analytics';
 import { scaffoldProject } from '@/services/scaffoldProject';
+import { activateProject } from '@/services/activateProject';
 import {
   parseProjectDescription,
   fetchAddonSuggestions,
@@ -127,6 +128,9 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
     customerName?: string;
   } | null>(null);
   const [quoteBusy, setQuoteBusy] = useState(false);
+  // Homeowner post-birth (#9): choose to keep planning or activate right away.
+  const [postCreateActivate, setPostCreateActivate] = useState<{ projectId: string } | null>(null);
+  const [activateBusy, setActivateBusy] = useState(false);
   const [addonOptions, setAddonOptions] = useState<
     Array<{ id: string; label: string; workTypes: WorkType[] }> | null
   >(null);
@@ -182,6 +186,8 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
       pendingSketchesRef.current = [];
       setPostCreate(null);
       setQuoteBusy(false);
+      setPostCreateActivate(null);
+      setActivateBusy(false);
       setAddonOptions(null);
       setAddonsLoading(false);
       setCriticOptions(null);
@@ -834,12 +840,35 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
         return;
       }
 
-      onOpenChange(false);
-      navigate(`/projects/${result.projectId}`);
+      // #9 homeowner fork: offer to keep planning or activate the project right
+      // away, instead of always landing in planning.
+      setPostCreateActivate({ projectId: result.projectId });
+      setCreating(false);
     } catch (err) {
       console.error('RenaidaProjectDialog: create failed', err);
       toast.error(t('renaidaFlow.err.failed', 'Kunde inte skapa projektet'));
       setCreating(false);
+    }
+  };
+
+  const onActivateChoice = async (choice: 'activate' | 'plan') => {
+    if (!postCreateActivate || activateBusy) return;
+    const { projectId } = postCreateActivate;
+    if (choice === 'plan') {
+      onOpenChange(false);
+      navigate(`/projects/${projectId}?tab=planning`);
+      return;
+    }
+    setActivateBusy(true);
+    try {
+      await activateProject(projectId);
+      toast.success(t('renaidaFlow.activate.done', 'Projektet är aktiverat! 🚀'));
+      onOpenChange(false);
+      navigate(`/projects/${projectId}`);
+    } catch (err) {
+      console.error('RenaidaProjectDialog: activate failed', err);
+      toast.error(t('renaidaFlow.activate.failed', 'Kunde inte aktivera projektet'));
+      setActivateBusy(false);
     }
   };
 
@@ -1220,7 +1249,25 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
                 </div>
               )}
 
-              {complete && !postCreate && (
+              {postCreateActivate && (
+                <div className="space-y-3 animate-in fade-in slide-in-from-bottom-1">
+                  <RenaidaBubble>
+                    {t('renaidaFlow.activateFork.message', 'Projektet är skapat! 🎉 Vill du fortsätta planera det, eller aktivera det direkt så arbetet kan börja?')}
+                  </RenaidaBubble>
+                  <div className="flex flex-col gap-2 pl-8 sm:flex-row sm:flex-wrap">
+                    <Button onClick={() => onActivateChoice('activate')} disabled={activateBusy}>
+                      {activateBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
+                      {t('renaidaFlow.activateFork.activate', 'Aktivera projektet direkt')}
+                    </Button>
+                    <Button variant="outline" onClick={() => onActivateChoice('plan')} disabled={activateBusy}>
+                      <ClipboardList className="mr-2 h-4 w-4" />
+                      {t('renaidaFlow.activateFork.plan', 'Fortsätt planera')}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {complete && !postCreate && !postCreateActivate && (
                 <div className="space-y-3 animate-in fade-in slide-in-from-bottom-1">
                   <RenaidaBubble>{t('renaidaFlow.complete')}</RenaidaBubble>
 

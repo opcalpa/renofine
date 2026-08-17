@@ -6918,6 +6918,15 @@
       "decline": "Open the project",
       "review": "Review & adjust the calculation"
     },
+    "activateFork": {
+      "message": "Your project is created! 🎉 Do you want to keep planning it, or activate it right away so work can start?",
+      "activate": "Activate the project now",
+      "plan": "Keep planning"
+    },
+    "activate": {
+      "done": "Project activated! 🚀",
+      "failed": "Couldn't activate the project"
+    },
     "complete": "Perfect — I have everything I need. Your project is ready to create. You can adjust anything afterwards.",
     "type": {
       "bathroom": "Bathroom",

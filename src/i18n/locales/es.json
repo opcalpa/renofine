@@ -2470,6 +2470,15 @@
       "accept": "Directo al presupuesto",
       "review": "Revisar y ajustar el cálculo"
     },
+    "activateFork": {
+      "message": "¡Tu proyecto está creado! 🎉 ¿Quieres seguir planificándolo o activarlo directamente para empezar el trabajo?",
+      "activate": "Activar el proyecto ahora",
+      "plan": "Seguir planificando"
+    },
+    "activate": {
+      "done": "¡Proyecto activado! 🚀",
+      "failed": "No se pudo activar el proyecto"
+    },
     "populated": "¡Listo! Lo he añadido a tu proyecto. 🎉",
     "critic": {
       "checking": "Renaida revisa el plan de nuevo…",

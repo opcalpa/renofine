@@ -2470,6 +2470,15 @@
       "accept": "Direkt zum Angebot",
       "review": "Kalkulation prüfen & anpassen"
     },
+    "activateFork": {
+      "message": "Dein Projekt ist erstellt! 🎉 Möchtest du es weiter planen oder direkt aktivieren, damit die Arbeit beginnen kann?",
+      "activate": "Projekt jetzt aktivieren",
+      "plan": "Weiter planen"
+    },
+    "activate": {
+      "done": "Projekt aktiviert! 🚀",
+      "failed": "Projekt konnte nicht aktiviert werden"
+    },
     "populated": "Fertig! Ich habe es zu deinem Projekt hinzugefügt. 🎉",
     "critic": {
       "checking": "Renaida prüft den Plan noch einmal…",

@@ -2470,6 +2470,15 @@
       "accept": "Directement au devis",
       "review": "Vérifier et ajuster le calcul"
     },
+    "activateFork": {
+      "message": "Votre projet est créé ! 🎉 Voulez-vous continuer à le planifier ou l'activer tout de suite pour démarrer les travaux ?",
+      "activate": "Activer le projet maintenant",
+      "plan": "Continuer la planification"
+    },
+    "activate": {
+      "done": "Projet activé ! 🚀",
+      "failed": "Impossible d'activer le projet"
+    },
     "populated": "Terminé ! Je l'ai ajouté à ton projet. 🎉",
     "critic": {
       "checking": "Renaida revérifie le plan…",

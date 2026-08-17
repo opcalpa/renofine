@@ -6918,6 +6918,15 @@
       "decline": "Öppna projektet",
       "review": "Granska & justera kalkylen"
     },
+    "activateFork": {
+      "message": "Projektet är skapat! 🎉 Vill du fortsätta planera det, eller aktivera det direkt så arbetet kan börja?",
+      "activate": "Aktivera projektet direkt",
+      "plan": "Fortsätt planera"
+    },
+    "activate": {
+      "done": "Projektet är aktiverat! 🚀",
+      "failed": "Kunde inte aktivera projektet"
+    },
     "complete": "Perfekt — då har jag allt jag behöver. Ditt projekt är redo att skapas. Du kan justera allt efteråt.",
     "type": {
       "bathroom": "Badrum",
