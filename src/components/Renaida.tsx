@@ -1077,7 +1077,18 @@ export function Renaida() {
           confidence: res.confidence,
           action: res.action,
         };
-        analytics.capture(AnalyticsEvents.RENAIDA_PROPOSED, { kind: "document", resolved: true, count: 1, actionTypes: ["import_purchase"] });
+        const matchedLines =
+          res.action.lineItems.filter((li) => li.sourceMaterialId).length +
+          (!res.action.lineItems.length && res.action.sourceMaterialId ? 1 : 0);
+        analytics.capture(AnalyticsEvents.RENAIDA_PROPOSED, {
+          kind: "document",
+          resolved: true,
+          count: 1,
+          actionTypes: ["import_purchase"],
+          docType: res.kind,
+          matchedLines,
+          lineCount: res.action.lineItems.length,
+        });
         setMessages((prev) => [...prev, { role: "assistant", content: "", proposals: [proposal], projectId, sourcePhrase: file.name }]);
       }
       flashRenaida("talk", 1400);

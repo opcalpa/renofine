@@ -22,6 +22,7 @@ import {
   PROPOSAL_AUTOSELECT_CONFIDENCE,
   TASK_MATCH_MIN_CONFIDENCE,
 } from "@/services/agent/types";
+import { MATCH_STRONG } from "@/services/agent/matchPlannedMaterials";
 
 interface ConfirmDiffProps {
   proposals: AgentProposal[];
@@ -167,6 +168,63 @@ export function ConfirmDiff({ proposals, applying = false, onConfirm, onDismiss 
   const [taskOverride, setTaskOverride] = useState<Record<string, string>>({});
   // Unknown proposals the user chose to turn into a new task
   const [asNewTask, setAsNewTask] = useState<Set<string>>(new Set());
+  // renaida-material-receipt-match: which receipt lines the user accepts as a
+  // match against a planned material (lineIndex; -1 = the bulk fallback row).
+  // Strong matches start accepted; weak ones are opt-in (money → confirm first).
+  const [matchAccept, setMatchAccept] = useState<Record<string, Set<number>>>(() => {
+    const out: Record<string, Set<number>> = {};
+    for (const p of proposals) {
+      if (p.action.type !== "import_purchase") continue;
+      const accepted = new Set<number>();
+      p.action.lineItems.forEach((li, i) => {
+        if (li.sourceMaterialId && (li.matchScore ?? 0) >= MATCH_STRONG) accepted.add(i);
+      });
+      if (!p.action.lineItems.length && p.action.sourceMaterialId && (p.action.matchScore ?? 0) >= MATCH_STRONG) {
+        accepted.add(-1);
+      }
+      if (accepted.size) out[p.id] = accepted;
+    }
+    return out;
+  });
+  // Orders the user booked as ÄTA (unmatched lines → exclude_from_budget=true).
+  const [ataOrders, setAtaOrders] = useState<Set<string>>(new Set());
+
+  const importMatches = (p: AgentProposal): { lineIndex: number; lineDesc: string; name: string; score: number }[] => {
+    if (p.action.type !== "import_purchase") return [];
+    const rows: { lineIndex: number; lineDesc: string; name: string; score: number }[] = [];
+    p.action.lineItems.forEach((li, i) => {
+      if (li.sourceMaterialId) rows.push({ lineIndex: i, lineDesc: li.description, name: li.sourceMaterialName ?? "", score: li.matchScore ?? 0 });
+    });
+    if (!p.action.lineItems.length && p.action.sourceMaterialId) {
+      rows.push({ lineIndex: -1, lineDesc: p.action.vendorName, name: p.action.sourceMaterialName ?? "", score: p.action.matchScore ?? 0 });
+    }
+    return rows;
+  };
+
+  const toggleMatch = (pid: string, lineIndex: number) =>
+    setMatchAccept((prev) => {
+      const set = new Set(prev[pid] ?? []);
+      set.has(lineIndex) ? set.delete(lineIndex) : set.add(lineIndex);
+      return { ...prev, [pid]: set };
+    });
+
+  const toggleAta = (pid: string) =>
+    setAtaOrders((prev) => {
+      const next = new Set(prev);
+      next.has(pid) ? next.delete(pid) : next.add(pid);
+      return next;
+    });
+
+  // Does the order still have any line NOT going to a planned material? (drives
+  // whether the ÄTA toggle is relevant — a fully-matched order has no extra.)
+  const hasUnmatched = (p: AgentProposal): boolean => {
+    if (p.action.type !== "import_purchase") return false;
+    const accepted = matchAccept[p.id] ?? new Set<number>();
+    if (p.action.lineItems.length) {
+      return p.action.lineItems.some((li, i) => !(li.sourceMaterialId && accepted.has(i)));
+    }
+    return !(p.action.sourceMaterialId && accepted.has(-1));
+  };
 
   const actionable = proposals.filter(isActionable);
   const unknowns = proposals.filter((p) => !isActionable(p));
@@ -198,6 +256,25 @@ export function ConfirmDiff({ proposals, applying = false, onConfirm, onDismiss 
       }
       let action = p.action;
       let summary = p.summary;
+      if (action.type === "import_purchase") {
+        // Strip the match off any line the user did NOT accept, and carry the
+        // ÄTA choice for the unmatched remainder.
+        const accepted = matchAccept[p.id] ?? new Set<number>();
+        const lineItems = action.lineItems.map((li, i) =>
+          li.sourceMaterialId && !accepted.has(i)
+            ? { ...li, sourceMaterialId: null, sourceMaterialName: null, taskId: null, matchScore: null }
+            : li,
+        );
+        const bulkRejected = !action.lineItems.length && !!action.sourceMaterialId && !accepted.has(-1);
+        action = {
+          ...action,
+          lineItems,
+          bookAsAta: ataOrders.has(p.id),
+          ...(bulkRejected ? { sourceMaterialId: null, sourceMaterialName: null, taskId: null, matchScore: null } : {}),
+        };
+        out.push({ ...p, action, summary });
+        continue;
+      }
       const override = taskOverride[p.id];
       if (override && isTaskAction(action)) {
         // The summary sentence embeds the router's original task pick — carry
@@ -260,6 +337,48 @@ export function ConfirmDiff({ proposals, applying = false, onConfirm, onDismiss 
                     <p className="mt-0.5 text-xs text-muted-foreground">{details.join("  ·  ")}</p>
                   ) : null;
                 })()}
+                {p.action.type === "import_purchase" && importMatches(p).length > 0 && (
+                  <div className="mt-1.5 space-y-1 rounded-md bg-muted/40 p-2">
+                    <p className="text-[11px] font-medium text-muted-foreground">
+                      {t("helpBot.agent.matchPlannedTitle", "Matcha mot planerat material")}
+                    </p>
+                    {importMatches(p).map((m) => {
+                      const on = (matchAccept[p.id] ?? new Set<number>()).has(m.lineIndex);
+                      const weak = m.score < MATCH_STRONG;
+                      return (
+                        <label key={m.lineIndex} className="flex cursor-pointer items-start gap-2 text-xs">
+                          <Checkbox
+                            checked={on}
+                            onCheckedChange={() => toggleMatch(p.id, m.lineIndex)}
+                            disabled={applying}
+                            className="mt-0.5 h-5 w-5 md:h-4 md:w-4"
+                          />
+                          <span className="leading-snug">
+                            <span className="text-muted-foreground">{m.lineDesc}</span>
+                            <span className="mx-1">→</span>
+                            <span className="font-medium text-primary">{m.name}</span>
+                            {weak && (
+                              <span className="ml-1 text-amber-600">
+                                {t("helpBot.agent.matchSuggested", "föreslagen — bekräfta")}
+                              </span>
+                            )}
+                          </span>
+                        </label>
+                      );
+                    })}
+                    {hasUnmatched(p) && (
+                      <label className="mt-1 flex cursor-pointer items-center gap-2 border-t border-border/50 pt-1.5 text-xs">
+                        <Checkbox
+                          checked={ataOrders.has(p.id)}
+                          onCheckedChange={() => toggleAta(p.id)}
+                          disabled={applying}
+                          className="h-5 w-5 md:h-4 md:w-4"
+                        />
+                        <span>{t("helpBot.agent.bookAsAta", "Boka övriga rader som ÄTA (extra, utanför budget)")}</span>
+                      </label>
+                    )}
+                  </div>
+                )}
                 {showPicker && (
                   <select
                     value={currentTaskId(p) ?? ""}

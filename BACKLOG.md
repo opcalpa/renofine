@@ -90,10 +90,11 @@ rums-fotavtryck (låg). Resten legacy/kompromissbart.
 
 ---
 id: renaida-material-receipt-match
-status: todo
+status: done
 priority: P2
 tags: [renaida, inkop, kvitto, budget]
 created: 2026-08-17
+updated: 2026-08-17
 ---
 ## Auto-matcha kvitto/faktura mot planerade materialinköp (nedströms-lager)
 
@@ -101,8 +102,23 @@ Renaida-materialsteget (#3, `176e6db`) skapar planerade material UTAN belopp.
 Nästa lager (Carls vision): när ett kvitto/faktura senare fotas/laddas upp →
 **auto-matcha** mot ett redan planerat material (eller skapa Nytt inköp) → fyll
 beloppet → avgör om det ska dras från **materialbudget** eller bokas som **ÄTA**.
-Bygger på D1-kvittoflödet (importPurchaseOrder). Kräver: matchnings-heuristik
-(namn/kategori), UI för "matcha mot planerat vs nytt", budget/ÄTA-routing.
+Bygger på D1-kvittoflödet (importPurchaseOrder).
+
+**LEVERERAT 2026-08-17:** Gäller ALLA dokument/bilder som feedas till Renaida
+(kvitto/faktura, foto/PDF) via live-panelens D1-flöde. Ny ren matchnings-motor
+`matchPlannedMaterials.ts` (token-Dice + substring för sammansatta svenska ord,
+MATCH_MIN/MATCH_STRONG-tier, varje planerat material claimas av max en rad, 5
+enhetstester). `captureDocument` hämtar planerade material + matchar → per-rad
+`sourceMaterialId`/`taskId`/`roomId`/`matchScore` på `import_purchase`-actionen
+(fail-open). `importPurchaseOrder` konsumerar: matchad rad → `source_material_id`
++ ärvd task/rum + `exclude_from_budget=false` (materialbudget, samma mekanik som
+manuella QuickReceiptCaptures applyBudget); omatchad rad → ny budgetrad, eller
+`exclude_from_budget=true` om ordern bokas som ÄTA. ConfirmDiff visar interaktiv
+"Matcha mot planerat"-sektion: stark match förvald, svag opt-in ("föreslagen —
+bekräfta"), + "Boka övriga rader som ÄTA"-växel. Aldrig tyst (rör pengar).
+Analytics: `matchedLines`/`lineCount` på RENAIDA_PROPOSED. i18n en+sv.
+**KVAR:** Carls on-device-verifiering (projekt m. planerade material → fota
+kvitto → matchnings-sektionen → Genomför → budget konsumerar planerat).
 
 ---
 id: tasks-kanban-default

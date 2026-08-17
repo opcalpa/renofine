@@ -71,14 +71,25 @@ export async function importPurchaseOrder(
     .single();
   if (poError || !po) throw new Error(poError?.message ?? "Kunde inte skapa inköpsorder");
 
-  // Invoice lines await payment (billed/0); receipt lines are already paid.
-  const matRows = (action.lineItems.length
+  // renaida-material-receipt-match: a line matched to a planned material carries
+  // source_material_id (consumes that planned budget line, same as the manual
+  // QuickReceiptCapture applyBudget path) + inherits its task/room. An unmatched
+  // line is a normal budget row, unless the user booked the order as ÄTA/extra
+  // (exclude_from_budget=true — how the budget separates ÄTA, BudgetDashboard).
+  const bookAsAta = !!action.bookAsAta;
+  const lineRows = action.lineItems.length
     ? action.lineItems.map((li) => ({
         name: li.description,
         quantity: li.quantity || 1,
         price_per_unit: li.unitPrice,
         price_total: li.total,
         paid_amount: isInvoice ? 0 : li.total ?? 0,
+        source_material_id: li.sourceMaterialId ?? null,
+        task_id: li.taskId ?? null,
+        // D3: capture-time room note takes precedence; otherwise inherit the
+        // matched planned material's room.
+        room_id: action.roomId ?? li.roomId ?? null,
+        exclude_from_budget: li.sourceMaterialId ? false : bookAsAta,
       }))
     : [{
         name: `${isInvoice ? "Faktura" : "Kvitto"} - ${action.vendorName}`,
@@ -86,17 +97,18 @@ export async function importPurchaseOrder(
         price_per_unit: action.total,
         price_total: action.total,
         paid_amount: isInvoice ? 0 : action.total,
-      }]
-  ).map((row) => ({
+        source_material_id: action.sourceMaterialId ?? null,
+        task_id: action.taskId ?? null,
+        room_id: action.roomId ?? null,
+        exclude_from_budget: action.sourceMaterialId ? false : bookAsAta,
+      }];
+  const matRows = lineRows.map((row) => ({
     ...row,
     project_id: projectId,
     purchase_order_id: po.id,
     vendor_name: action.vendorName,
     unit: "st",
     status: isInvoice ? "billed" : "paid",
-    // D3: room attribution from the user's capture-time words — same shape
-    // as the manual "allocate order to room" action (room lives on the lines).
-    room_id: action.roomId ?? null,
     created_by_user_id: profileId,
   }));
 

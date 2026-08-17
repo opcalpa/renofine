@@ -76,12 +76,37 @@ export type ProposalAction =
       invoiceNumber?: string | null;
       ocrNumber?: string | null;
       rotAmount?: number | null;
-      lineItems: { description: string; quantity: number; unitPrice: number | null; total: number | null }[];
+      /**
+       * renaida-material-receipt-match: a line matched to a PLANNED material
+       * carries that material's id (source_material_id → consumes its budget)
+       * plus the task/room it inherits. Populated by matchPlannedMaterials at
+       * capture time; the user confirms/rejects each in ConfirmDiff.
+       */
+      lineItems: {
+        description: string;
+        quantity: number;
+        unitPrice: number | null;
+        total: number | null;
+        sourceMaterialId?: string | null;
+        sourceMaterialName?: string | null;
+        taskId?: string | null;
+        roomId?: string | null;
+        /** 0..1 match confidence — drives strong (pre-accepted) vs weak (opt-in). */
+        matchScore?: number | null;
+      }[];
       attachmentKey?: string;
       /** D3: room attribution from the user's words at capture time
        *  ("här är kvittot, lägg det på badrummet") — allocates the order's lines. */
       roomId?: string | null;
       roomName?: string | null;
+      /** For the single bulk fallback row (no line items) — matched planned material. */
+      sourceMaterialId?: string | null;
+      sourceMaterialName?: string | null;
+      taskId?: string | null;
+      matchScore?: number | null;
+      /** Book UNMATCHED lines as ÄTA/extra (exclude_from_budget=true) instead of
+       *  a normal material-budget line. Off by default; user opt-in in ConfirmDiff. */
+      bookAsAta?: boolean;
     }
   /** Router could not confidently route the input — surface as a question, never apply. */
   | { type: "unknown"; rawText: string; reason: string };

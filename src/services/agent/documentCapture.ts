@@ -9,6 +9,27 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { ProposalAction } from "./types";
 import type { QuoteLine } from "../renaidaProjectFlow";
+import { matchDocumentToPlanned, type PlannedMaterial } from "./matchPlannedMaterials";
+
+/** Fetch the project's still-open planned materials (the shopping list). */
+async function fetchPlannedMaterials(projectId: string): Promise<PlannedMaterial[]> {
+  const { data, error } = await supabase
+    .from("materials")
+    .select("id, name, task_id, room_id, price_total")
+    .eq("project_id", projectId)
+    .eq("status", "planned")
+    .eq("exclude_from_budget", false);
+  if (error || !data) return [];
+  return data
+    .filter((m) => (m.name ?? "").trim().length > 0)
+    .map((m) => ({
+      id: m.id,
+      name: m.name as string,
+      taskId: (m.task_id as string | null) ?? null,
+      roomId: (m.room_id as string | null) ?? null,
+      plannedAmount: (m.price_total as number | null) ?? null,
+    }));
+}
 
 interface UnifiedReceiptSlice {
   vendor_name: string | null;
@@ -168,29 +189,70 @@ export async function captureDocument(
     ? await resolveRoomFromNote(opts.projectId, userNote).catch(() => null)
     : null;
 
+  const lineItems = (r.line_items ?? []).map((li) => ({
+    description: li.description,
+    quantity: li.quantity || 1,
+    unitPrice: li.unit_price ?? null,
+    total: li.total ?? null,
+    sourceMaterialId: null as string | null,
+    sourceMaterialName: null as string | null,
+    taskId: null as string | null,
+    roomId: null as string | null,
+  }));
+
+  const action: Extract<ProposalAction, { type: "import_purchase" }> = {
+    type: "import_purchase",
+    documentType,
+    vendorName: r.vendor_name || "Okänd leverantör",
+    total: r.total_amount ?? 0,
+    vatAmount: r.vat_amount,
+    documentDate: r.purchase_date,
+    dueDate: r.due_date,
+    invoiceNumber: r.invoice_number,
+    ocrNumber: r.ocr_number,
+    rotAmount: r.rot_amount,
+    lineItems,
+    attachmentKey,
+    roomId: room?.id ?? null,
+    roomName: room?.name ?? null,
+  };
+
+  // Auto-match against the planned shopping list so a real receipt consumes its
+  // planned budget line instead of double-counting. Fail-open: any error leaves
+  // the plain import untouched (today's behaviour). The user confirms/rejects
+  // every match in ConfirmDiff before anything is written.
+  if (opts?.projectId) {
+    try {
+      const planned = await fetchPlannedMaterials(opts.projectId);
+      const matches = matchDocumentToPlanned(
+        { vendorName: action.vendorName, lineItems: action.lineItems },
+        planned,
+      );
+      for (const m of matches) {
+        if (m.lineIndex === -1) {
+          action.sourceMaterialId = m.plannedId;
+          action.sourceMaterialName = m.plannedName;
+          action.taskId = m.taskId;
+          action.matchScore = m.score;
+        } else {
+          const li = action.lineItems[m.lineIndex];
+          if (li) {
+            li.sourceMaterialId = m.plannedId;
+            li.sourceMaterialName = m.plannedName;
+            li.taskId = m.taskId;
+            li.roomId = m.roomId;
+            li.matchScore = m.score;
+          }
+        }
+      }
+    } catch {
+      // matching is best-effort — never block a valid import on it
+    }
+  }
+
   return {
     kind: documentType,
     confidence: typeof r.confidence === "number" ? r.confidence : 0.8,
-    action: {
-      type: "import_purchase",
-      documentType,
-      vendorName: r.vendor_name || "Okänd leverantör",
-      total: r.total_amount ?? 0,
-      vatAmount: r.vat_amount,
-      documentDate: r.purchase_date,
-      dueDate: r.due_date,
-      invoiceNumber: r.invoice_number,
-      ocrNumber: r.ocr_number,
-      rotAmount: r.rot_amount,
-      lineItems: (r.line_items ?? []).map((li) => ({
-        description: li.description,
-        quantity: li.quantity || 1,
-        unitPrice: li.unit_price ?? null,
-        total: li.total ?? null,
-      })),
-      attachmentKey,
-      roomId: room?.id ?? null,
-      roomName: room?.name ?? null,
-    },
+    action,
   };
 }
