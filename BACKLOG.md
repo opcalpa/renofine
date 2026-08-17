@@ -13,6 +13,137 @@ Detaljplaner för många items bor i /Users/calpa/Developer/Renofine/.claude/mem
 - Behåll kärnan vass, ingen feature utan tydlig användarnytta
 
 ---
+id: renaida-screenshot-triage-2026-08-17
+status: done
+priority: P1
+tags: [bugfix, renaida, mobil, budget]
+created: 2026-08-17
+updated: 2026-08-17
+---
+## Renaida screenshot-triage 17 aug: budget-visning + 2 mobil-fixar
+
+Tre fynd från Carls on-device-screenshots (Skapa med Renaida, hemägare/mobil),
+fixade i commit `b6246d3`:
+
+- **#6/#8 budget syntes inte (P1):** ägarens Översikt visade "Ingen budget satt"
+  trots satt budget (manuellt el. via Renaida). Rot: `useOverviewData.ts:277` läste
+  BARA `project.contract_value` (= summan av accepterade offerter, NULL före första
+  offert), aldrig `total_budget`. Den maskade vyn läste redan `total_budget` → inbjudna
+  såg budgeten men inte ägaren. Fix: `contract_value ?? total_budget ?? null`.
+- **#3 dialog fel storlek "från start" på mobil:** `RenaidaProjectDialog.tsx:907` hade
+  `overflow-hidden`+`grid-rows-1 h-full` men ingen mobil-höjd → obestämd box vid öppning.
+  Fix: `h-[88vh]` på bottom-sheeten.
+- **#1 describe-knappar på mobil:** `GuidedSetupWizard.tsx:347` "Fyll i stegen själv" var
+  `variant=ghost` (såg ut som text) + tre knappar trängdes på 390px. Fix: link+underline,
+  primär `flex-1` på mobil, action-grupp egen full-breddsrad.
+
+**Kvar att verifiera:** Carl on-device (Pro-kontot testade ej alls än).
+
+---
+id: renaida-birth-activate-fork
+status: todo
+priority: P2
+tags: [renaida, activation, ux]
+created: 2026-08-17
+---
+## Renaida: låt sista dialogsteget välja "fortsätt planera" vs "aktivera direkt"
+
+Carl-fynd (#9): idag landar man efter Renaida-skapande i Planering med "Be om offert /
+Påbörja projekt" (`HomeownerPlanningView.tsx:700`). Valet borde erbjudas redan i sista
+Renaida-bubblan så man kan aktivera utan omväg. Kopplar direkt till aktiverings-
+flaskhalsen (första handlingen efter onboarding). Förslag: gaffel i sista steget i
+`renaidaProjectFlow.ts` finish-läget → knappar "Fortsätt planera" (dagens beteende) /
+"Aktivera projektet direkt" (kör `activateProject`-servicen, R3). Produktval — Carl OK innan bygge.
+
+---
+id: renaida-two-magic-buttons-unclear
+status: todo
+priority: P2
+tags: [renaida, ux, activation, entry]
+created: 2026-08-17
+---
+## Två omärkta "magi-knappar" bredvid Skapa — otydliga
+
+Carl-fynd (#2): på Mina projekt ligger två nakna ikonknappar (✨ Skapa med Renaida /
+🪄 Planera med guiden) intill "+ Skapa" — omöjligt att gissa skillnaden. Detta är en
+aktiverings-ingång och ska inte gissa-leka. Förslag (rekommenderas): ge text/label eller
+tooltip, ELLER slå ihop till EN "Skapa"-knapp med en liten meny (Renaida / Guide / Tomt).
+Ligger på Projects-sidan (projekt-lista headern). Produktval.
+
+---
+id: renaida-review-room-vs-task-distinction
+status: todo
+priority: P2
+tags: [renaida, ux, clarity]
+created: 2026-08-17
+---
+## Granska-listan: tydligare skilja RUM från ARBETE (+ fråga om inköp)
+
+Carl-fynd (#5): i "GRANSKA INNAN DU SKAPAR"-kortet ser rum (Badrum 6 m²) och arbeten
+(Kakel, VVS, Tätskikt) nästan likadana ut — samma radstil. Förslag: gruppera under
+rubriker "Rum" / "Arbeten" eller ge distinkt stil/ikon per typ. **Del 2 (produktval):**
+lägg ev. ett steg "ska något köpas in?" efter arbeten → material/PO. Bygg ihop med
+[[renaida-confirmation-show-objects]] (samma draft-data). Rendering i
+`RenaidaProjectDialog.tsx` granska-sektionen (~rad 1240–1320).
+
+---
+id: renaida-confirmation-show-objects
+status: todo
+priority: P3
+tags: [renaida, ux]
+created: 2026-08-17
+---
+## Visa de faktiska objekten i Renaidas bekräftelse-bubbla
+
+Carl-fynd (#4): nu står bara "la till 1 rum och 2 arbeten från din beskrivning". Önskan:
+rendera rummen/arbetena som klickbara chips inline i bubblan så man kan justera direkt.
+Överlappar [[renaida-review-room-vs-task-distinction]] (samma data) — bör byggas ihop.
+
+---
+id: renaida-mascot-overlaps-lists
+status: todo
+priority: P2
+tags: [mobil, ux, renaida]
+created: 2026-08-17
+---
+## Renaida-maskoten täcker sista raden/knappen i listor (mobil)
+
+Cross-cutting fynd (jag såg det i #5/#7/#10, Carl nämnde det ej): den flytande Renaida-
+avataren nere till höger ligger ovanpå sista tabellraden / "Lägg till"-knappen i
+planeringstabellen, Arbeten och Team. Förslag: ge scroll-listor botten-padding som gör
+plats för avataren (eller göm/fada den vid scroll-botten). Återkommande — värt en
+generell fix snarare än per-vy.
+
+---
+id: team-page-mobile-spacing
+status: todo
+priority: P3
+tags: [mobil, ux, team]
+created: 2026-08-17
+---
+## Team-sidan: dålig rytm mellan rutor/sektioner på mobil
+
+Carl-fynd (#10): stort tomrum mellan sektioner, och den tomma "lägg till medlem"-rutan
+längst ner ser trasig/för hög ut. Strama åt spacing + fixa tom-kortets höjd. Team-fliken
+(TeamManagement / medlemslistan).
+
+---
+id: planning-budget-target-surface
+status: todo
+priority: P3
+tags: [renaida, budget, planering, ux]
+created: 2026-08-17
+---
+## Visa planerad total-budget som "mål" i planeringsvyn
+
+Uppföljning på #8: Översiktens budget-kort visar nu `total_budget` (fixat), men
+planeringsvyns summering (`HomeownerPlanningView.tsx:520`) är bottom-up (summan av
+task-budgetar) och visar aldrig den top-down-budget (t.ex. 25 000) användaren gav Renaida.
+Förslag: visa den planerade budgeten som ett referens-/måltal i planerings-summeringen,
+skild från den uppbyggda estimeringen. Produktval (två budget-tal kan förvirra — designa
+tydligt: "Budget: 25 000 kr" vs "Estimat hittills: X kr").
+
+---
 id: minimal-push-ci
 status: todo
 priority: P3
