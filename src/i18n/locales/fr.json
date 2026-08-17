@@ -2480,6 +2480,24 @@
       "done": "Projet activé ! 🚀",
       "failed": "Impossible d'activer le projet"
     },
+    "material": {
+      "tiles": "Carrelage",
+      "adhesive": "Colle à carrelage",
+      "grout": "Joint",
+      "waterproofing": "Étanchéité",
+      "paint": "Peinture",
+      "primer": "Sous-couche",
+      "filler": "Enduit",
+      "floor": "Revêtement de sol",
+      "skirting": "Plinthe",
+      "underlay": "Sous-couche de sol"
+    },
+    "materials": {
+      "title": "Devons-nous planifier des achats de matériaux ?",
+      "hint": "Suggestions d'après les travaux — ajoutez ou retirez. Vous remplirez les montants plus tard, ou en photographiant le reçu.",
+      "add": "Ajouter",
+      "addPlaceholder": "Ajouter un matériau…"
+    },
     "populated": "Terminé ! Je l'ai ajouté à ton projet. 🎉",
     "critic": {
       "checking": "Renaida revérifie le plan…",

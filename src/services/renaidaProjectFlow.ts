@@ -96,6 +96,13 @@ export interface ProjectDraft {
   tasks: DraftTask[];
   totalBudget?: number | null;
   /**
+   * #3: planned material purchases (names only, no amounts). Renaida suggests
+   * them from the tasks' work types; the user edits/adds freely. Created as
+   * standalone "planned" materials at scaffold — a shopping list ready for a
+   * later receipt/invoice to match against.
+   */
+  plannedMaterials?: string[];
+  /**
    * E1 contractor calc level: 'suggest' = Renaida prefills hours/rates/material
    * from the estimation engine; 'self' = builder does the math himself (empty
    * cells). Never forced — chosen in the calc step.
@@ -751,6 +758,10 @@ export function toScaffoldInput(
           ? { source: 'renaida_calc', formula: t.calcNote, overridden: false }
           : null,
       })),
+    standaloneMaterials: (draft.plannedMaterials ?? [])
+      .map((n) => n.trim())
+      .filter(Boolean)
+      .map((name) => ({ name })),
     markOnboardingComplete: true,
   };
 }

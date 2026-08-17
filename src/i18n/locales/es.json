@@ -2480,6 +2480,24 @@
       "done": "¡Proyecto activado! 🚀",
       "failed": "No se pudo activar el proyecto"
     },
+    "material": {
+      "tiles": "Azulejos",
+      "adhesive": "Adhesivo para azulejos",
+      "grout": "Lechada",
+      "waterproofing": "Impermeabilización",
+      "paint": "Pintura",
+      "primer": "Imprimación",
+      "filler": "Masilla",
+      "floor": "Suelo",
+      "skirting": "Rodapié",
+      "underlay": "Base para suelo"
+    },
+    "materials": {
+      "title": "¿Planificamos algunas compras de material?",
+      "hint": "Sugerencias según los trabajos — añade o quita. Los importes los rellenas después, o al fotografiar el recibo.",
+      "add": "Añadir",
+      "addPlaceholder": "Añadir material…"
+    },
     "populated": "¡Listo! Lo he añadido a tu proyecto. 🎉",
     "critic": {
       "checking": "Renaida revisa el plan de nuevo…",

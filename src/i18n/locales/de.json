@@ -2480,6 +2480,24 @@
       "done": "Projekt aktiviert! 🚀",
       "failed": "Projekt konnte nicht aktiviert werden"
     },
+    "material": {
+      "tiles": "Fliesen",
+      "adhesive": "Fliesenkleber",
+      "grout": "Fugenmasse",
+      "waterproofing": "Abdichtung",
+      "paint": "Farbe",
+      "primer": "Grundierung",
+      "filler": "Spachtelmasse",
+      "floor": "Bodenbelag",
+      "skirting": "Sockelleiste",
+      "underlay": "Trittschalldämmung"
+    },
+    "materials": {
+      "title": "Sollen wir Materialeinkäufe planen?",
+      "hint": "Vorschläge aus den Arbeiten — hinzufügen oder entfernen. Beträge trägst du später ein oder wenn du den Beleg fotografierst.",
+      "add": "Hinzufügen",
+      "addPlaceholder": "Material hinzufügen…"
+    },
     "populated": "Fertig! Ich habe es zu deinem Projekt hinzugefügt. 🎉",
     "critic": {
       "checking": "Renaida prüft den Plan noch einmal…",

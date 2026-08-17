@@ -6929,6 +6929,24 @@
       "done": "Projektet är aktiverat! 🚀",
       "failed": "Kunde inte aktivera projektet"
     },
+    "material": {
+      "tiles": "Kakel/klinker",
+      "adhesive": "Fästmassa",
+      "grout": "Fog",
+      "waterproofing": "Tätskikt",
+      "paint": "Färg",
+      "primer": "Grundfärg",
+      "filler": "Spackel",
+      "floor": "Golvmaterial",
+      "skirting": "Golvlist",
+      "underlay": "Underlag"
+    },
+    "materials": {
+      "title": "Ska vi planera några materialinköp?",
+      "hint": "Förslag utifrån arbetena — lägg till eller ta bort. Belopp fyller du i senare, eller när du fotar kvittot.",
+      "add": "Lägg till",
+      "addPlaceholder": "Lägg till material…"
+    },
     "complete": "Perfekt — då har jag allt jag behöver. Ditt projekt är redo att skapas. Du kan justera allt efteråt.",
     "type": {
       "bathroom": "Badrum",

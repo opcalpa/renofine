@@ -6929,6 +6929,24 @@
       "done": "Project activated! 🚀",
       "failed": "Couldn't activate the project"
     },
+    "material": {
+      "tiles": "Tiles",
+      "adhesive": "Tile adhesive",
+      "grout": "Grout",
+      "waterproofing": "Waterproofing",
+      "paint": "Paint",
+      "primer": "Primer",
+      "filler": "Filler",
+      "floor": "Flooring",
+      "skirting": "Skirting",
+      "underlay": "Underlay"
+    },
+    "materials": {
+      "title": "Shall we plan any material purchases?",
+      "hint": "Suggested from the work — add or remove. You can fill in amounts later, or when you snap the receipt.",
+      "add": "Add",
+      "addPlaceholder": "Add material…"
+    },
     "complete": "Perfect — I have everything I need. Your project is ready to create. You can adjust anything afterwards.",
     "type": {
       "bathroom": "Bathroom",

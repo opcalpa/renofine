@@ -14,7 +14,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Sparkles, ArrowRight, Home, Hammer, Wallet, MapPin, Loader2, Check, Camera,
   MessageSquare, FileText, PenTool, X, RotateCcw, FolderUp, User, Calculator,
-  ShieldAlert, Pencil, Play, ClipboardList,
+  ShieldAlert, Pencil, Play, ClipboardList, ShoppingCart,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -107,6 +107,14 @@ interface Turn {
   chips?: { rooms: string[]; tasks: string[] };
 }
 
+// #3: curated material shopping-list suggestions per work type (names via i18n).
+// Only the consumer-buyable surface trades — the rest the user free-adds.
+const WORK_TYPE_MATERIAL_KEYS: Partial<Record<WorkType, string[]>> = {
+  kakel: ['renaidaFlow.material.tiles', 'renaidaFlow.material.adhesive', 'renaidaFlow.material.grout', 'renaidaFlow.material.waterproofing'],
+  malning: ['renaidaFlow.material.paint', 'renaidaFlow.material.primer', 'renaidaFlow.material.filler'],
+  golv: ['renaidaFlow.material.floor', 'renaidaFlow.material.skirting', 'renaidaFlow.material.underlay'],
+};
+
 export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner', isGuest = false, existingProjectId, onPopulated }: Props) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -140,6 +148,7 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
   // Homeowner post-birth (#9): choose to keep planning or activate right away.
   const [postCreateActivate, setPostCreateActivate] = useState<{ projectId: string } | null>(null);
   const [activateBusy, setActivateBusy] = useState(false);
+  const [materialInput, setMaterialInput] = useState('');
   const [addonOptions, setAddonOptions] = useState<
     Array<{ id: string; label: string; workTypes: WorkType[] }> | null
   >(null);
@@ -966,6 +975,33 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
     setDraft((d) => updateDraftRoom(d, index, updates));
   };
 
+  // #3: planned-material shopping list (names only). Suggest from the tasks'
+  // work types; the user edits/adds. Amounts come later (typed or from a receipt).
+  const suggestedMaterials = useMemo(() => {
+    const names = new Set<string>();
+    for (const task of draft.tasks) {
+      if (task.excluded) continue;
+      (WORK_TYPE_MATERIAL_KEYS[task.workType] ?? []).forEach((k) => names.add(t(k)));
+    }
+    return Array.from(names);
+  }, [draft.tasks, t]);
+
+  // Pre-fill the suggestions once, when the flow completes (undefined = untouched).
+  useEffect(() => {
+    if (complete && draft.plannedMaterials === undefined) {
+      setDraft((d) => ({ ...d, plannedMaterials: suggestedMaterials }));
+    }
+  }, [complete, draft.plannedMaterials, suggestedMaterials]);
+
+  const removeMaterial = (name: string) =>
+    setDraft((d) => ({ ...d, plannedMaterials: (d.plannedMaterials ?? []).filter((m) => m !== name) }));
+  const addMaterial = (name: string) => {
+    const n = name.trim();
+    if (!n) return;
+    setDraft((d) => ((d.plannedMaterials ?? []).includes(n) ? d : { ...d, plannedMaterials: [...(d.plannedMaterials ?? []), n] }));
+    setMaterialInput('');
+  };
+
   /** Inline-edit a task title during review — writes customTitle. */
   const editTaskTitle = (index: number, title: string) => {
     setDraft((d) => renameDraftTask(d, index, title));
@@ -1368,6 +1404,42 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
                         {draft.totalBudget.toLocaleString('sv-SE')} kr
                       </div>
                     ) : null}
+                  </div>
+
+                  {/* #3: optional planned material shopping list — suggested from
+                      the tasks, editable, no amounts. Visible on all viewports. */}
+                  <div className="space-y-2 rounded-lg border bg-muted/20 p-3">
+                    <div className="flex items-center gap-1.5 text-sm font-medium">
+                      <ShoppingCart className="h-4 w-4 text-primary shrink-0" />
+                      {t('renaidaFlow.materials.title', 'Ska vi planera några materialinköp?')}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {t('renaidaFlow.materials.hint', 'Förslag utifrån arbetena — lägg till eller ta bort. Belopp fyller du i senare, eller när du fotar kvittot.')}
+                    </p>
+                    {(draft.plannedMaterials?.length ?? 0) > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {draft.plannedMaterials!.map((name) => (
+                          <span key={name} className="inline-flex items-center gap-1 rounded-full border bg-background px-2 py-0.5 text-xs">
+                            {name}
+                            <button type="button" onClick={() => removeMaterial(name)} className="text-muted-foreground hover:text-foreground" aria-label={t('common.remove', 'Ta bort')}>
+                              <X className="h-3 w-3" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <Input
+                        value={materialInput}
+                        onChange={(e) => setMaterialInput(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addMaterial(materialInput); } }}
+                        placeholder={t('renaidaFlow.materials.addPlaceholder', 'Lägg till material…')}
+                        className="h-8 text-sm"
+                      />
+                      <Button type="button" variant="outline" size="sm" onClick={() => addMaterial(materialInput)} disabled={!materialInput.trim()}>
+                        {t('renaidaFlow.materials.add', 'Lägg till')}
+                      </Button>
+                    </div>
                   </div>
 
                   <Button className="w-full" onClick={handleCreate} disabled={creating}>
