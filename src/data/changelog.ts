@@ -10,6 +10,14 @@ export interface ChangelogEntry {
 export const DEMO_PROJECT_PATH = "/projects/demo";
 
 export const changelog: ChangelogEntry[] = [
+  // ── 2026-08-17 ──
+  {
+    date: "2026-08-17",
+    title: "Fota ett kvitto — Renaida matchar det mot din inköpslista",
+    description: "När du fotar eller laddar upp ett kvitto eller en faktura till Renaida känner hon nu igen vad du köpt och matchar det automatiskt mot de material du redan planerat. Du ser matchningen innan något sparas (\"Kakel Carrara → Kakel badrum\") och kan bekräfta, byta eller boka posten som en ÄTA utanför budgeten. Beloppet hamnar på rätt planerad rad istället för att dubbelräknas — så din materialbudget stämmer utan handpåläggning.",
+    tags: ["Renaida", "Inköp", "Budget", "Nyhet"],
+  },
+
   // ── 2026-08-15 ──
   {
     date: "2026-08-15",
