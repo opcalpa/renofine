@@ -921,9 +921,9 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
     }));
   };
 
-  /** Inline-edit the room name/area during review (Fas B inc3). */
-  const editRoom = (updates: { name?: string; areaSqm?: number | null }) => {
-    setDraft((d) => updateDraftRoom(d, 0, updates));
+  /** Inline-edit a room's name/area during review (Fas B inc3). */
+  const editRoom = (index: number, updates: { name?: string; areaSqm?: number | null }) => {
+    setDraft((d) => updateDraftRoom(d, index, updates));
   };
 
   /** Inline-edit a task title during review — writes customTitle. */
@@ -1291,9 +1291,23 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
                         </div>
                       )}
                     </div>
-                    {room && <EditableRoomRow room={room} onUpdate={editRoom} />}
+                    {draft.rooms.length > 0 && (
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                          <Home className="h-3 w-3" /> {t('renaidaFlow.ui.section.rooms')}
+                        </div>
+                        {draft.rooms.map((r, i) => (
+                          <EditableRoomRow key={`${r.name}-${i}`} room={r} onUpdate={(u) => editRoom(i, u)} />
+                        ))}
+                      </div>
+                    )}
                     {draft.tasks.length > 0 && (
-                      <TaskReviewList tasks={draft.tasks} labelFor={labelFor} onToggle={toggleTaskExcluded} onRename={editTaskTitle} />
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                          <Hammer className="h-3 w-3" /> {t('renaidaFlow.ui.section.tasks')} ({taskCount})
+                        </div>
+                        <TaskReviewList tasks={draft.tasks} labelFor={labelFor} onToggle={toggleTaskExcluded} onRename={editTaskTitle} />
+                      </div>
                     )}
                     {draft.totalBudget ? (
                       <div className="rounded-md bg-background px-2.5 py-1.5 text-sm">
@@ -1342,9 +1356,13 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
                 )}
               </div>
 
-              {room && (
+              {draft.rooms.length > 0 && (
                 <PreviewSection icon={<Home className="h-3.5 w-3.5" />} label={t('renaidaFlow.ui.section.rooms')}>
-                  <EditableRoomRow room={room} onUpdate={editRoom} />
+                  <div className="space-y-2">
+                    {draft.rooms.map((r, i) => (
+                      <EditableRoomRow key={`${r.name}-${i}`} room={r} onUpdate={(u) => editRoom(i, u)} />
+                    ))}
+                  </div>
                 </PreviewSection>
               )}
 
