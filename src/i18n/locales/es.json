@@ -1,4 +1,67 @@
 {
+  "landingV2": {
+    "hero": {
+      "pill": "Conoce a Renaida — tu colega con IA",
+      "h1": "La primera colega con IA para reformas.",
+      "body": "Describe el trabajo con palabras o una foto — Renaida crea el proyecto, lee tus recibos y controla el presupuesto. Presupuesto, calendario y vista de cliente incluidos, todo en un sitio.",
+      "bodyMobile": "Describe el trabajo — Renaida crea el proyecto, lee tus recibos y controla el presupuesto.",
+      "cta": "Empezar — gratis",
+      "ctaSecondary": "Ver demo",
+      "micro": "Sin cuenta · Describe tu proyecto en 2 minutos · Cancela cuando quieras"
+    },
+    "renaidaLive": {
+      "subtitle": "Colega con IA · responde al instante",
+      "live": "Demo en vivo",
+      "greeting": "¡Hola! Soy Renaida. Describe un trabajo — o elige abajo — y te muestro lo rápido que se crea un proyecto.",
+      "placeholder": "Describe un trabajo…",
+      "send": "Enviar",
+      "typing": "Renaida está escribiendo…",
+      "cta": "Crear mi proyecto — gratis",
+      "restart": "↺ Muéstrame otra cosa",
+      "fallback": "Así funciona de verdad — crea una cuenta gratis y construyo tu proyecto contigo. Prueba una de las sugerencias mientras tanto.",
+      "labelRooms": "Estancias",
+      "labelTasks": "Trabajos",
+      "labelBudget": "Presupuesto (orientativo, IVA incl.)",
+      "receiptTag": "Recibo leído",
+      "receiptTotal": "Imputado al presupuesto",
+      "chips": {
+        "bathroom": "Reformar el baño, aprox. 6 m²",
+        "receipt": "Tengo un recibo de Bauhaus",
+        "quote": "Recibí un presupuesto de un carpintero",
+        "capabilities": "¿En qué puedes ayudar?"
+      },
+      "bathroom": {
+        "r1": "¡Qué bien! Un baño de unos 6 m² — lo esbozo enseguida.",
+        "title": "Reforma de baño",
+        "room": "Baño · 6 m²",
+        "task1": "Demolición y retirada",
+        "task2": "Impermeabilización y alicatado",
+        "task3": "Fontanería — WC, ducha, grifo",
+        "task4": "Pintura del techo",
+        "r2": "Listo — así nació el proyecto en menos de un minuto. Todo se puede ajustar luego."
+      },
+      "receipt": {
+        "r1": "Haz una foto del recibo y lo leo por ti — proveedor, líneas e importes.",
+        "l1": "Azulejo Carrara 30×60",
+        "l2": "Adhesivo 20 kg",
+        "l3": "Junta gris 5 kg",
+        "match": "Coincide con lo planificado: azulejo de baño",
+        "r2": "El importe fue a la línea correcta del presupuesto — sin Excel, sin duplicar."
+      },
+      "quote": {
+        "r1": "Sube el presupuesto y extraigo estancias, trabajos e importes.",
+        "title": "Reforma de cocina (desde presupuesto)",
+        "room": "Cocina · 12 m²",
+        "task1": "Carpintería — muebles y encimera",
+        "task2": "Electricidad — iluminación y enchufes",
+        "task3": "Pintura de paredes y techo",
+        "r2": "Ahora el presupuesto es un proyecto que puedes seguir y comparar con la realidad."
+      },
+      "capabilities": {
+        "r1": "Creo proyectos a partir de una descripción, leo tus recibos y facturas directo al presupuesto, preparo presupuestos, sigo el calendario — y hablo tu idioma. Tú describes, yo propongo, tú confirmas."
+      }
+    }
+  },
   "access": {
     "noAccess": "Sin acceso",
     "noAccessDescription": "No tiene acceso a esta sección."

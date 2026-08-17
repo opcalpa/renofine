@@ -1,4 +1,67 @@
 {
+  "landingV2": {
+    "hero": {
+      "pill": "Rencontrez Renaida — votre collègue IA",
+      "h1": "La première collègue IA de la rénovation.",
+      "body": "Décrivez le chantier avec des mots ou une photo — Renaida crée le projet, lit vos reçus et garde le budget en main. Devis, planning et espace client inclus, le tout au même endroit.",
+      "bodyMobile": "Décrivez le chantier — Renaida crée le projet, lit vos reçus et garde le budget en main.",
+      "cta": "Commencer — gratuit",
+      "ctaSecondary": "Voir la démo",
+      "micro": "Sans compte · Décrivez votre projet en 2 minutes · Annulable à tout moment"
+    },
+    "renaidaLive": {
+      "subtitle": "Collègue IA · répond aussitôt",
+      "live": "Démo live",
+      "greeting": "Bonjour ! Je suis Renaida. Décrivez un chantier — ou choisissez ci-dessous — et je vous montre à quelle vitesse un projet se crée.",
+      "placeholder": "Décrivez un chantier…",
+      "send": "Envoyer",
+      "typing": "Renaida écrit…",
+      "cta": "Créer mon projet — gratuit",
+      "restart": "↺ Montrer autre chose",
+      "fallback": "Voilà comment ça marche pour de vrai — créez un compte gratuit et je construis votre projet avec vous. Essayez une suggestion en attendant.",
+      "labelRooms": "Pièces",
+      "labelTasks": "Travaux",
+      "labelBudget": "Budget (indicatif, TVA incluse)",
+      "receiptTag": "Reçu lu",
+      "receiptTotal": "Imputé au budget",
+      "chips": {
+        "bathroom": "Rénover la salle de bain, env. 6 m²",
+        "receipt": "J'ai un reçu de Bauhaus",
+        "quote": "J'ai reçu un devis d'un menuisier",
+        "capabilities": "En quoi peux-tu aider ?"
+      },
+      "bathroom": {
+        "r1": "Super ! Une salle de bain d'environ 6 m² — je la dessine tout de suite.",
+        "title": "Rénovation de salle de bain",
+        "room": "Salle de bain · 6 m²",
+        "task1": "Démolition & évacuation",
+        "task2": "Étanchéité & carrelage",
+        "task3": "Plomberie — WC, douche, robinet",
+        "task4": "Peinture plafond",
+        "r2": "Voilà — le projet est né en moins d'une minute. Tout est ajustable ensuite."
+      },
+      "receipt": {
+        "r1": "Photographiez le reçu et je le lis pour vous — fournisseur, lignes et montants.",
+        "l1": "Carrelage Carrara 30×60",
+        "l2": "Colle à carrelage 20 kg",
+        "l3": "Joint gris 5 kg",
+        "match": "Correspond au prévu : carrelage salle de bain",
+        "r2": "Le montant s'est placé sur la bonne ligne de budget — sans Excel, sans double comptage."
+      },
+      "quote": {
+        "r1": "Téléchargez le devis et j'en extrais pièces, travaux et montants.",
+        "title": "Rénovation de cuisine (depuis un devis)",
+        "room": "Cuisine · 12 m²",
+        "task1": "Menuiserie — caissons & plan de travail",
+        "task2": "Électricité — éclairage & prises",
+        "task3": "Peinture murs & plafond",
+        "r2": "Le devis devient un projet que vous pouvez suivre et comparer à la réalité."
+      },
+      "capabilities": {
+        "r1": "Je crée des projets à partir d'une description, je lis vos reçus et factures directement dans le budget, je prépare des devis, je suis le planning — et je parle votre langue. Vous décrivez, je propose, vous confirmez."
+      }
+    }
+  },
   "access": {
     "noAccess": "Aucun accès",
     "noAccessDescription": "Vous n'avez pas accès à cette section."

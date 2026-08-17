@@ -1,4 +1,67 @@
 {
+  "landingV2": {
+    "hero": {
+      "pill": "Triff Renaida — deine KI-Kollegin",
+      "h1": "Die erste KI-Kollegin fürs Renovieren.",
+      "body": "Beschreibe den Auftrag mit Worten oder einem Foto — Renaida erstellt das Projekt, liest deine Belege und behält das Budget im Blick. Angebot, Zeitplan und Kundenansicht inklusive, alles an einem Ort.",
+      "bodyMobile": "Beschreibe den Auftrag — Renaida erstellt das Projekt, liest deine Belege und behält das Budget im Blick.",
+      "cta": "Kostenlos starten",
+      "ctaSecondary": "Demo ansehen",
+      "micro": "Kein Konto nötig · Projekt in 2 Minuten beschreiben · Jederzeit kündbar"
+    },
+    "renaidaLive": {
+      "subtitle": "KI-Kollegin · antwortet sofort",
+      "live": "Live-Demo",
+      "greeting": "Hallo! Ich bin Renaida. Beschreibe einen Auftrag — oder wähle unten — und ich zeige dir, wie schnell ein Projekt entsteht.",
+      "placeholder": "Beschreibe einen Auftrag…",
+      "send": "Senden",
+      "typing": "Renaida schreibt…",
+      "cta": "Mein Projekt erstellen — kostenlos",
+      "restart": "↺ Etwas anderes zeigen",
+      "fallback": "So läuft es in echt — erstelle ein kostenloses Konto und ich baue dein Projekt mit dir. Probier solange gern einen der Vorschläge.",
+      "labelRooms": "Räume",
+      "labelTasks": "Arbeiten",
+      "labelBudget": "Budget (Richtwert, inkl. MwSt.)",
+      "receiptTag": "Beleg gelesen",
+      "receiptTotal": "Im Budget verbucht",
+      "chips": {
+        "bathroom": "Bad renovieren, ca. 6 m²",
+        "receipt": "Ich habe einen Beleg von Bauhaus",
+        "quote": "Ich habe ein Angebot vom Schreiner",
+        "capabilities": "Wobei kannst du helfen?"
+      },
+      "bathroom": {
+        "r1": "Wie schön! Ein Bad mit ca. 6 m² — ich skizziere es gleich.",
+        "title": "Badrenovierung",
+        "room": "Bad · 6 m²",
+        "task1": "Abbruch & Entsorgung",
+        "task2": "Abdichtung & Fliesen",
+        "task3": "Sanitär — WC, Dusche, Armatur",
+        "task4": "Deckenanstrich",
+        "r2": "Fertig — so ist das Projekt in unter einer Minute entstanden. Alles später anpassbar."
+      },
+      "receipt": {
+        "r1": "Fotografiere den Beleg und ich lese ihn für dich aus — Lieferant, Positionen und Beträge.",
+        "l1": "Carrara-Fliese 30×60",
+        "l2": "Fliesenkleber 20 kg",
+        "l3": "Fugenmasse grau 5 kg",
+        "match": "Passt zu geplant: Badfliesen",
+        "r2": "Der Betrag landete auf der richtigen Budgetzeile — kein Excel, keine Doppelbuchung."
+      },
+      "quote": {
+        "r1": "Lade das Angebot hoch und ich lese Räume, Arbeiten und Beträge aus.",
+        "title": "Küchenrenovierung (aus Angebot)",
+        "room": "Küche · 12 m²",
+        "task1": "Schreinerarbeiten — Korpusse & Arbeitsplatte",
+        "task2": "Elektrik — Beleuchtung & Steckdosen",
+        "task3": "Wände & Decke streichen",
+        "r2": "Jetzt ist das Angebot ein Projekt, das du verfolgen und mit der Realität vergleichen kannst."
+      },
+      "capabilities": {
+        "r1": "Ich erstelle Projekte aus einer Beschreibung, lese deine Belege und Rechnungen direkt ins Budget, bereite Angebote vor, behalte den Zeitplan im Blick — und ich spreche deine Sprache. Du beschreibst, ich schlage vor, du bestätigst."
+      }
+    }
+  },
   "access": {
     "noAccess": "Kein Zugriff",
     "noAccessDescription": "Sie haben keinen Zugriff auf diesen Bereich."

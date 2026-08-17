@@ -8,6 +8,13 @@ export function FAQSection() {
 
   const items = [
     {
+      q: t("landingV2.faq.q6", "Vad \u00e4r Renaida \u2014 m\u00e5ste jag kunna AI?"),
+      a: t(
+        "landingV2.faq.a6",
+        "Nej. Renaida \u00e4r en inbyggd assistent du pratar med p\u00e5 vanlig svenska. Du beskriver jobbet eller fotar ett kvitto, hon f\u00f6resl\u00e5r \u2014 du bekr\u00e4ftar. Inget att l\u00e4ra sig, inget kr\u00e5ngel. Hon finns med i hela appen och svarar p\u00e5 ditt spr\u00e5k.",
+      ),
+    },
+    {
       q: t("landingV2.faq.q1", "Hur l\u00e5ng \u00e4r onboarding-tiden?"),
       a: t(
         "landingV2.faq.a1",

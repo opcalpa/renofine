@@ -502,13 +502,65 @@
       "cta": "Kom igång — gratis"
     },
     "hero": {
-      "pill": "För renoveringsbranschen",
-      "h1": "Hela renoveringen i en app.",
-      "body": "Offerter, ROT, tidsplan, inköp och kund­kommunikation — i ett verktyg byggt för dig som faktiskt utför jobbet, inte för Excel-konsulten.",
-      "bodyMobile": "Offerter, ROT, tidsplan, inköp och kund­kommunikation — i ett verktyg byggt för dig som faktiskt utför jobbet.",
+      "pill": "Möt Renaida — din AI-kollega",
+      "h1": "Renoveringens första AI-kollega.",
+      "body": "Beskriv jobbet med ord eller ett foto — Renaida bygger projektet, läser dina kvitton och håller koll på budgeten. Offert, ROT, tidsplan och kundvy ingår, allt på ett ställe.",
+      "bodyMobile": "Beskriv jobbet — Renaida bygger projektet, läser dina kvitton och håller koll på budgeten. Offert, ROT och tidsplan ingår.",
       "cta": "Kom igång — gratis",
       "ctaSecondary": "Se demoprojekt",
-      "micro": "Inga kontokrav · Importera projekt på 2 minuter · Avsluta när du vill"
+      "micro": "Inga kontokrav · Beskriv ditt projekt på 2 minuter · Avsluta när du vill"
+    },
+    "renaidaLive": {
+      "subtitle": "AI-kollega · svarar direkt",
+      "live": "Live-demo",
+      "greeting": "Hej! Jag är Renaida. Beskriv ett jobb — eller välj nedan — så visar jag hur snabbt ett projekt kan bli till.",
+      "placeholder": "Beskriv ett jobb…",
+      "send": "Skicka",
+      "typing": "Renaida skriver…",
+      "cta": "Skapa mitt projekt — gratis",
+      "restart": "↺ Visa något annat",
+      "fallback": "Så här går det till på riktigt — skapa ett gratis konto så bygger jag ditt projekt med dig. Prova gärna ett av förslagen så länge.",
+      "labelRooms": "Rum",
+      "labelTasks": "Arbeten",
+      "labelBudget": "Budget (riktlinje, inkl. moms)",
+      "receiptTag": "Kvitto inläst",
+      "receiptTotal": "Bokfört på budgeten",
+      "chips": {
+        "bathroom": "Renovera badrummet, ca 6 m²",
+        "receipt": "Jag har ett kvitto från Bauhaus",
+        "quote": "Jag fick en offert från en snickare",
+        "capabilities": "Vad kan du hjälpa till med?"
+      },
+      "bathroom": {
+        "r1": "Vad kul! Ett badrum på ca 6 m² — jag skissar upp det direkt.",
+        "title": "Badrumsrenovering",
+        "room": "Badrum · 6 m²",
+        "task1": "Rivning & bortforsling",
+        "task2": "Tätskikt & kakel",
+        "task3": "VVS — WC, dusch, blandare",
+        "task4": "Målning tak",
+        "r2": "Klart — där föddes projektet, på under en minut. Allt går att justera efteråt."
+      },
+      "receipt": {
+        "r1": "Fota kvittot så läser jag av det åt dig — leverantör, rader och belopp.",
+        "l1": "Kakel Carrara 30×60",
+        "l2": "Fästmassa 20 kg",
+        "l3": "Fog grå 5 kg",
+        "match": "Matchar planerat: Kakel badrum",
+        "r2": "Beloppet la sig på rätt rad i budgeten — inget Excel, ingen dubbelräkning."
+      },
+      "quote": {
+        "r1": "Ladda upp offerten så tolkar jag rum, arbeten och belopp åt dig.",
+        "title": "Köksrenovering (från offert)",
+        "room": "Kök · 12 m²",
+        "task1": "Snickeri — stommar & bänkskiva",
+        "task2": "El — belysning & uttag",
+        "task3": "Målning väggar & tak",
+        "r2": "Nu ligger offerten som ett projekt du kan följa och jämföra mot verkligheten."
+      },
+      "capabilities": {
+        "r1": "Jag bygger projekt ur en beskrivning, läser dina kvitton och fakturor rakt in i budgeten, förbereder offerter, håller koll på ROT och tidsplan — och jag pratar ditt språk. Du beskriver, jag föreslår, du bekräftar."
+      }
     },
     "logos": {
       "label": "Byggt för alla som renoverar",
@@ -535,18 +587,21 @@
     },
     "features": {
       "pill": "Funktioner",
-      "h2": "Allt från första kundkontakt till slutbesiktning.",
-      "sub": "Inte ett verktyg som ”stödjer” ditt arbete. Verktyget som är ditt arbete.",
+      "h2": "Från ”beskriv jobbet” till slutbesiktning.",
+      "sub": "Renaida gör grovjobbet — du behåller kontrollen. Inte ett verktyg som ”stödjer” ditt arbete, utan ett som gör det med dig.",
       "readMore": "Läs mer",
+      "renaidaKicker": "Renaida · AI",
+      "renaidaTitle": "Beskriv jobbet — få ett färdigt projekt",
+      "renaidaDesc": "Berätta med ord, röst eller ett foto vad som ska göras. Renaida skissar rum, arbeten och en budget du kan justera — på minuter istället för en kväll i Excel.",
+      "receiptKicker": "Kvitto & budget",
+      "receiptTitle": "Fota kvittot — hon bokför det",
+      "receiptDesc": "Ta ett foto på kvittot eller fakturan. Renaida läser av det, matchar mot ditt planerade material och håller budgeten uppdaterad — utan Excel, utan dubbelräkning.",
       "quoteKicker": "Offert & avtal",
       "quoteTitle": "Skicka offert på 10 min",
       "quoteDesc": "Skapa offerter med inbyggd ROT-beräkning. Lägg till rader, se PDF-förhandsgranskning direkt, skicka till kund.",
       "timelineKicker": "Tidsplan",
       "timelineTitle": "Schema som faktiskt hänger med",
-      "timelineDesc": "Drag-and-drop Gantt med beroenden mellan arbeten. Flytta ett arbete så följer resten med automatiskt.",
-      "budgetKicker": "Inköp & ROT",
-      "budgetTitle": "En kassabok för bygget",
-      "budgetDesc": "Registrera inköp, koppla till arbeten, låt kunden godkänna i appen. Allt på ett ställe istället för i mejlen."
+      "timelineDesc": "Drag-and-drop Gantt med beroenden mellan arbeten. Flytta ett arbete så följer resten med automatiskt."
     },
     "homeowner": {
       "pill": "Kundvy",
@@ -566,8 +621,8 @@
     },
     "testimonial": {
       "kicker": "Från grundaren",
-      "quote": "“Jag byggde Renofine för att jag var trött på att jaga kvitton i mejlen och budgetar i Excel. Om du känner igen dig — välkommen, vi är inte många än, men verktyget finns här.”",
-      "quoteMobile": "“Jag byggde det här för att jag var trött på Excel och mejl. Välkommen — verktyget finns här.”",
+      "quote": "“Jag byggde Renofine för att jag var trött på att jaga kvitton i mejlen och budgetar i Excel. Nu fotar jag kvittot så bokför appen det åt mig — det är sån hjälp jag ville ha. Vi är inte många än, men verktyget finns här.”",
+      "quoteMobile": "“Jag var trött på att jaga kvitton och budgetar i Excel. Nu fotar jag kvittot så bokför appen det. Välkommen — verktyget finns här.”",
       "role": "Grundare · Renofine"
     },
     "pricing": {
@@ -588,6 +643,8 @@
     },
     "faq": {
       "h2": "Vanliga frågor",
+      "q6": "Vad är Renaida — måste jag kunna AI?",
+      "a6": "Nej. Renaida är en inbyggd assistent du pratar med på vanlig svenska. Du beskriver jobbet eller fotar ett kvitto, hon föreslår — du bekräftar. Inget att lära sig, inget krångel. Hon finns med i hela appen och svarar på ditt språk.",
       "q1": "Hur lång är onboarding-tiden?",
       "a1": "Mellan 30 minuter och 2 timmar, beroende på hur många pågående projekt du importerar. Vi har en mall för hur projekt struktureras som vi går igenom tillsammans i ett startmöte.",
       "q2": "Hanterar Renofine ROT-avdraget korrekt?",

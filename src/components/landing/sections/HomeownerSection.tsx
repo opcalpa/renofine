@@ -103,7 +103,7 @@ export function HomeownerSection() {
             </span>
           </div>
         </div>
-        <Shot src={null} alt="kundvy (kommer snart)" ratio="3/4" chrome={false} />
+        <Shot src="/screenshots/ClientView.png" alt="kundvy" ratio="4/3" chrome fit="cover" />
       </div>
 
       {/* Mobile: simplified, no shot */}

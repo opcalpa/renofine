@@ -1,8 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { ArrowRight, Eye } from "lucide-react";
 import { Pill } from "../Pill";
-import { Shot } from "../Shot";
-import { Anno } from "../Anno";
+import { RenaidaLive } from "../RenaidaLive";
 
 interface HeroSectionProps {
   onCta: () => void;
@@ -10,7 +9,7 @@ interface HeroSectionProps {
   onScreenshotClick: () => void;
 }
 
-export function HeroSection({ onCta, onDemo, onScreenshotClick }: HeroSectionProps) {
+export function HeroSection({ onCta, onDemo }: HeroSectionProps) {
   const { t } = useTranslation();
 
   return (
@@ -84,14 +83,7 @@ export function HeroSection({ onCta, onDemo, onScreenshotClick }: HeroSectionPro
             {t("landingV2.hero.micro", "Inga kontokrav \u00b7 Importera projekt p\u00e5 2 minuter \u00b7 Avsluta n\u00e4r du vill")}
           </div>
         </div>
-        <Shot src="/screenshots/Timeline.png" alt="Tidsplan" ratio="4/3" fit="cover" onClick={onScreenshotClick}>
-          <Anno pos="top-right" kicker="ROT 2026" dx={-20} dy={56}>
-            32 400 kr kvar
-          </Anno>
-          <Anno pos="bottom-left" kicker="Aktivt" dx={-24} dy={64}>
-            <span style={{ fontWeight: 500 }}>Kök bänkskivor</span> klart imorgon
-          </Anno>
-        </Shot>
+        <RenaidaLive onCta={onCta} />
       </div>
 
       {/* Mobile: stacked */}
@@ -152,11 +144,7 @@ export function HeroSection({ onCta, onDemo, onScreenshotClick }: HeroSectionPro
           </button>
         </div>
         <div className="mt-6">
-          <Shot src="/screenshots/Timeline.png" alt="tidsplan" ratio="4/3" chrome onClick={onScreenshotClick}>
-            <Anno pos="top-right" kicker="ROT" dx={14} dy={42}>
-              32 400 kr kvar
-            </Anno>
-          </Shot>
+          <RenaidaLive onCta={onCta} />
         </div>
       </div>
     </section>

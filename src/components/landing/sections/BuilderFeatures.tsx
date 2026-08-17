@@ -12,6 +12,22 @@ export function BuilderFeatures({ onDemoTab }: BuilderFeaturesProps) {
 
   const items = [
     {
+      kicker: t("landingV2.features.renaidaKicker", "Renaida \u00b7 AI"),
+      title: t("landingV2.features.renaidaTitle", "Beskriv jobbet \u2014 f\u00e5 ett f\u00e4rdigt projekt"),
+      desc: t("landingV2.features.renaidaDesc", "Ber\u00e4tta med ord, r\u00f6st eller ett foto vad som ska g\u00f6ras. Renaida skissar rum, arbeten och en budget du kan justera \u2014 p\u00e5 minuter ist\u00e4llet f\u00f6r en kv\u00e4ll i Excel."),
+      src: "/screenshots/Renaida.png",
+      alt: "Renaida",
+      tab: "overview",
+    },
+    {
+      kicker: t("landingV2.features.receiptKicker", "Kvitto & budget"),
+      title: t("landingV2.features.receiptTitle", "Fota kvittot \u2014 hon bokf\u00f6r det"),
+      desc: t("landingV2.features.receiptDesc", "Ta ett foto p\u00e5 kvittot eller fakturan. Renaida l\u00e4ser av det, matchar mot ditt planerade material och h\u00e5ller budgeten uppdaterad \u2014 utan Excel, utan dubbelr\u00e4kning."),
+      src: "/screenshots/Budget.png",
+      alt: "kvitto & budget",
+      tab: "budget",
+    },
+    {
       kicker: t("landingV2.features.quoteKicker", "Offert & avtal"),
       title: t("landingV2.features.quoteTitle", "Skicka offert p\u00e5 10 min"),
       desc: t("landingV2.features.quoteDesc", "Skapa offerter med inbyggd ROT-ber\u00e4kning. L\u00e4gg till rader, se PDF-f\u00f6rhandsgranskning direkt, skicka till kund."),
@@ -26,14 +42,6 @@ export function BuilderFeatures({ onDemoTab }: BuilderFeaturesProps) {
       src: "/screenshots/Timeline.png",
       alt: "tidsplan-vy",
       tab: "tasks",
-    },
-    {
-      kicker: t("landingV2.features.budgetKicker", "Ink\u00f6p & ROT"),
-      title: t("landingV2.features.budgetTitle", "En kassabok f\u00f6r bygget"),
-      desc: t("landingV2.features.budgetDesc", "Registrera ink\u00f6p, koppla till arbeten, l\u00e5t kunden godk\u00e4nna i appen. Allt p\u00e5 ett st\u00e4lle ist\u00e4llet f\u00f6r i mejlen."),
-      src: "/screenshots/Budget.png",
-      alt: "ink\u00f6p-vy",
-      tab: "budget",
     },
   ];
 

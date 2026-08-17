@@ -502,13 +502,65 @@
       "cta": "Get started — free"
     },
     "hero": {
-      "pill": "For the renovation industry",
-      "h1": "Your entire renovation in one app.",
-      "body": "Quotes, tax deductions, timelines, purchasing and client­communication — in one tool built for those who actually do the work, not for the Excel consultant.",
-      "bodyMobile": "Quotes, tax deductions, timelines, purchasing and client­communication — in one tool built for those who actually do the work.",
+      "pill": "Meet Renaida — your AI colleague",
+      "h1": "Renovation's first AI colleague.",
+      "body": "Describe the job in words or a photo — Renaida builds the project, reads your receipts and keeps the budget in check. Quotes, tax deductions, timeline and client view included, all in one place.",
+      "bodyMobile": "Describe the job — Renaida builds the project, reads your receipts and keeps the budget in check. Quotes, tax deductions and timeline included.",
       "cta": "Get started — free",
       "ctaSecondary": "See demo project",
-      "micro": "No account required · Import a project in 2 minutes · Cancel anytime"
+      "micro": "No account required · Describe your project in 2 minutes · Cancel anytime"
+    },
+    "renaidaLive": {
+      "subtitle": "AI colleague · replies instantly",
+      "live": "Live demo",
+      "greeting": "Hi! I'm Renaida. Describe a job — or pick one below — and I'll show you how fast a project comes together.",
+      "placeholder": "Describe a job…",
+      "send": "Send",
+      "typing": "Renaida is typing…",
+      "cta": "Create my project — free",
+      "restart": "↺ Show me something else",
+      "fallback": "This is how it works for real — create a free account and I'll build your project with you. Try one of the suggestions in the meantime.",
+      "labelRooms": "Rooms",
+      "labelTasks": "Tasks",
+      "labelBudget": "Budget (guideline, incl. VAT)",
+      "receiptTag": "Receipt read",
+      "receiptTotal": "Booked to the budget",
+      "chips": {
+        "bathroom": "Renovate the bathroom, approx. 6 m²",
+        "receipt": "I have a receipt from Bauhaus",
+        "quote": "I got a quote from a carpenter",
+        "capabilities": "What can you help with?"
+      },
+      "bathroom": {
+        "r1": "How exciting! A bathroom of about 6 m² — I'll sketch it out right away.",
+        "title": "Bathroom renovation",
+        "room": "Bathroom · 6 m²",
+        "task1": "Demolition & haul-away",
+        "task2": "Waterproofing & tiling",
+        "task3": "Plumbing — WC, shower, faucet",
+        "task4": "Ceiling painting",
+        "r2": "Done — that's a project born in under a minute. Everything's adjustable afterwards."
+      },
+      "receipt": {
+        "r1": "Snap the receipt and I'll read it for you — vendor, line items and amounts.",
+        "l1": "Carrara tile 30×60",
+        "l2": "Tile adhesive 20 kg",
+        "l3": "Grout grey 5 kg",
+        "match": "Matches planned: Bathroom tile",
+        "r2": "The amount landed on the right budget line — no Excel, no double counting."
+      },
+      "quote": {
+        "r1": "Upload the quote and I'll extract rooms, tasks and amounts for you.",
+        "title": "Kitchen renovation (from quote)",
+        "room": "Kitchen · 12 m²",
+        "task1": "Carpentry — cabinets & worktop",
+        "task2": "Electrical — lighting & outlets",
+        "task3": "Painting walls & ceiling",
+        "r2": "Now the quote is a project you can follow and compare against reality."
+      },
+      "capabilities": {
+        "r1": "I build projects from a description, read your receipts and invoices straight into the budget, prepare quotes, keep track of tax deductions and the timeline — and I speak your language. You describe, I suggest, you confirm."
+      }
     },
     "logos": {
       "label": "Built for everyone who renovates",
@@ -535,18 +587,21 @@
     },
     "features": {
       "pill": "Features",
-      "h2": "Everything from first client contact to final inspection.",
-      "sub": "Not a tool that \"supports\" your work. The tool that is your work.",
+      "h2": "From \"describe the job\" to final inspection.",
+      "sub": "Renaida does the grunt work — you stay in control. Not a tool that \"supports\" your work, but one that does it with you.",
       "readMore": "Read more",
+      "renaidaKicker": "Renaida · AI",
+      "renaidaTitle": "Describe the job — get a finished project",
+      "renaidaDesc": "Tell her in words, voice or a photo what needs doing. Renaida sketches rooms, tasks and a budget you can adjust — in minutes instead of an evening in Excel.",
+      "receiptKicker": "Receipts & budget",
+      "receiptTitle": "Snap the receipt — she books it",
+      "receiptDesc": "Take a photo of the receipt or invoice. Renaida reads it, matches it against your planned materials and keeps the budget up to date — no Excel, no double counting.",
       "quoteKicker": "Quote & contract",
       "quoteTitle": "Send a quote in 10 min",
       "quoteDesc": "Create quotes with built-in tax deduction calculations. Add line items, see the PDF preview instantly, send to client.",
       "timelineKicker": "Timeline",
       "timelineTitle": "A schedule that actually keeps up",
-      "timelineDesc": "Drag-and-drop Gantt with task dependencies. Move one task and the rest follows automatically.",
-      "budgetKicker": "Purchasing & tax deductions",
-      "budgetTitle": "One ledger for the build",
-      "budgetDesc": "Log purchases, link them to tasks, let the client approve in the app. Everything in one place instead of email."
+      "timelineDesc": "Drag-and-drop Gantt with task dependencies. Move one task and the rest follows automatically."
     },
     "homeowner": {
       "pill": "Client view",
@@ -566,8 +621,8 @@
     },
     "testimonial": {
       "kicker": "From the founder",
-      "quote": "“I built Renofine because I was tired of chasing receipts in email and budgets in Excel. If that sounds familiar — welcome, we're not many yet, but the tool is here.”",
-      "quoteMobile": "“I built this because I was tired of Excel and email. Welcome — the tool is here.”",
+      "quote": "“I built Renofine because I was tired of chasing receipts in email and budgets in Excel. Now I snap the receipt and the app books it for me — that's the help I wanted. We're not many yet, but the tool is here.”",
+      "quoteMobile": "“I was tired of chasing receipts and budgets in Excel. Now I snap the receipt and the app books it. Welcome — the tool is here.”",
       "role": "Founder · Renofine"
     },
     "pricing": {
@@ -588,6 +643,8 @@
     },
     "faq": {
       "h2": "Frequently asked questions",
+      "q6": "What is Renaida — do I need to know AI?",
+      "a6": "No. Renaida is a built-in assistant you talk to in plain language. You describe the job or snap a receipt, she suggests — you confirm. Nothing to learn, no hassle. She's there throughout the app and replies in your language.",
       "q1": "How long is the onboarding time?",
       "a1": "Between 30 minutes and 2 hours, depending on how many ongoing projects you import. We have a template for how projects are structured that we go through together in a start meeting.",
       "q2": "Does Renofine handle the tax deduction correctly?",
