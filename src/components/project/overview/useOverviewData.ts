@@ -273,8 +273,10 @@ export function useOverviewData(project: OverviewProject, skip?: boolean): Overv
 
       const spent = linkedSpend + unlinkedTaskBudget + unlinkedMaterialCost;
       // contract_value = SUM(accepted quotes) incl. ÄTAor (auto-synced by DB trigger).
-      // NULL until first quote is accepted — Kundvy/PulseCards hide budget UI in that state.
-      const totalBudget = project.contract_value ?? null;
+      // NULL until first quote is accepted. Before any quote exists, fall back to
+      // the planned total_budget the user set (manually or via Renaida) so the
+      // owner's budget card reflects it instead of reading "Ingen budget satt".
+      const totalBudget = project.contract_value ?? project.total_budget ?? null;
       const budgetPercentage = totalBudget && totalBudget > 0
         ? Math.round((spent / totalBudget) * 100)
         : 0;

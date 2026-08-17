@@ -343,11 +343,11 @@ export function GuidedSetupWizard({
         )}
 
         {currentKey === "describe" ? (
-          <div className="flex flex-wrap items-center justify-end gap-2 ml-auto">
-            <Button variant="ghost" onClick={handleFillManually} disabled={analyzing}>
+          <div className="flex w-full sm:w-auto flex-wrap items-center justify-end gap-2 sm:ml-auto">
+            <Button variant="link" onClick={handleFillManually} disabled={analyzing} className="h-auto px-1 underline underline-offset-4">
               {t("guidedSetup.fillManually", "Fill in the steps myself")}
             </Button>
-            <Button onClick={handleDescribeNext} disabled={analyzing || (!analyzed && !canAnalyze)} className="gap-2">
+            <Button onClick={handleDescribeNext} disabled={analyzing || (!analyzed && !canAnalyze)} className="gap-2 flex-1 sm:flex-none">
               {analyzing ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
