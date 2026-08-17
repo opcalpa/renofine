@@ -155,6 +155,12 @@ export const changelog: ChangelogEntry[] = [
     description: "Planritningen på desktop körs nu i en helt omarbetad editor: smidigare markering, dra-handtag för att skala former, lager och stil (fyllnad, kontur, text), väggtjocklek och -höjd med färdiga väggtyper, och en kalkerbild du kan lägga under och kalibrera för att rita av en befintlig planritning. Mobilen är oförändrad tills vidare, och du kan alltid växla tillbaka till den gamla vyn.",
     tags: ["Canvas", "Design", "Ny funktion"],
   },
+  {
+    date: "2026-08-09",
+    title: "Korrekt enhetskonvertering för ytor och volymer",
+    description: "För projekt som använder brittiska eller amerikanska enheter räknas ytor och volymer nu om på riktigt — inte bara etiketten. Tidigare kunde en yta visa \"sq ft\" på ett tal som egentligen fortfarande var i kvadratmeter; nu stämmer siffran med enheten i rumslistor och sammanställningar.",
+    tags: ["Internationellt", "Enheter", "Buggfix"],
+  },
 
   // ── 2026-08-04 ──
   {
