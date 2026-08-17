@@ -10,7 +10,7 @@ import { AppBottomNav } from "@/components/AppBottomNav";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Users, User, BookOpen, Trash2, Loader2, Sparkles, ChevronDown, LayoutGrid, List, Settings2, ShieldCheck, GanttChart, EyeOff, MoreHorizontal, Wand2 } from "lucide-react";
+import { Plus, Users, User, BookOpen, Trash2, Loader2, Sparkles, ChevronDown, LayoutGrid, List, Settings2, ShieldCheck, GanttChart, EyeOff, MoreHorizontal, Wand2, ClipboardList } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -637,37 +637,34 @@ const Projects = () => {
                   }
                 />
               )}
-              <Button
-                variant="outline"
-                className="border-primary/40 text-primary hover:bg-primary/5"
-                onClick={() => setRenaidaOpen(true)}
-                title={t('projects.createWithRenaida', 'Skapa med Renaida (beta)')}
-              >
-                <Sparkles className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">
-                  {t('projects.createWithRenaida', 'Skapa med Renaida')}
-                </span>
-              </Button>
-              {/* Co-existence: the step-by-step planner can also START a new
-                  project (not only fill an existing one). Homeowner-oriented. */}
-              {!isGuest && (isGuest ? guestRole : profile?.onboarding_user_type) !== 'contractor' && (
-                <Button
-                  variant="outline"
-                  className="border-primary/40 text-primary hover:bg-primary/5"
-                  onClick={() => setPlanWizardOpen(true)}
-                  title={t('projects.planWithWizard', 'Planera med guiden')}
-                >
-                  <Wand2 className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">{t('projects.planWithWizard', 'Planera med guiden')}</span>
-                </Button>
-              )}
-              <Button onClick={() => setShowGuidedSetup(true)}>
-                <Plus className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">
-                  {t('projects.newProject')}
-                </span>
-                <span className="sm:hidden">{t('common.create', 'Skapa')}</span>
-              </Button>
+              {/* One labelled "Create" menu instead of two cryptic icon-only
+                  buttons on mobile. All entry points preserved, each named. */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button>
+                    <Plus className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">{t('projects.newProject')}</span>
+                    <span className="sm:hidden">{t('common.create', 'Skapa')}</span>
+                    <ChevronDown className="ml-1 h-4 w-4 opacity-80" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem onClick={() => setRenaidaOpen(true)}>
+                    <Sparkles className="mr-2 h-4 w-4 text-primary" />
+                    {t('projects.createWithRenaida', 'Skapa med Renaida')}
+                  </DropdownMenuItem>
+                  {!isGuest && (isGuest ? guestRole : profile?.onboarding_user_type) !== 'contractor' && (
+                    <DropdownMenuItem onClick={() => setPlanWizardOpen(true)}>
+                      <Wand2 className="mr-2 h-4 w-4" />
+                      {t('projects.planWithWizard', 'Planera med guiden')}
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem onClick={() => setShowGuidedSetup(true)}>
+                    <ClipboardList className="mr-2 h-4 w-4" />
+                    {t('projects.guidedStartup', 'Guidad uppstart')}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <RenaidaProjectDialog
                 open={renaidaOpen}
                 onOpenChange={setRenaidaOpen}

@@ -1378,7 +1378,8 @@
       "plumbing": "Plomberie (tuyaux/eau)",
       "roof": "Toit"
     },
-    "planWithWizard": "Planifier avec le guide"
+    "planWithWizard": "Planifier avec le guide",
+    "guidedStartup": "Configuration guidée"
   },
   "propertyPanel": {
     "appearance": "Apparence",

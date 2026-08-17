@@ -777,7 +777,8 @@
     "adminOn": "Admin",
     "adminOff": "Admin",
     "createWithRenaida": "Create with Renaida",
-    "planWithWizard": "Plan with the guide"
+    "planWithWizard": "Plan with the guide",
+    "guidedStartup": "Guided setup"
   },
   "onboarding": {
     "welcome": "Welcome to Renofine!",
