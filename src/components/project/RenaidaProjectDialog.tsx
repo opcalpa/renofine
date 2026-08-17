@@ -14,7 +14,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Sparkles, ArrowRight, Home, Hammer, Wallet, MapPin, Loader2, Check, Camera,
   MessageSquare, FileText, PenTool, X, RotateCcw, FolderUp, User, Calculator,
-  ShieldAlert, Pencil, Play, ClipboardList, ShoppingCart,
+  ShieldAlert, Pencil, Play, ClipboardList, ShoppingCart, ChevronDown,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -149,6 +149,11 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
   const [postCreateActivate, setPostCreateActivate] = useState<{ projectId: string } | null>(null);
   const [activateBusy, setActivateBusy] = useState(false);
   const [materialInput, setMaterialInput] = useState('');
+  // Cautious, optional labor-time & material-quantity estimate (homeowner).
+  const [showEstimate, setShowEstimate] = useState(false);
+  const [estimating, setEstimating] = useState(false);
+  const [measures, setMeasures] = useState<Record<string, { area: string; ceiling: string }>>({});
+  const [estimateSummary, setEstimateSummary] = useState<string[] | null>(null);
   const [addonOptions, setAddonOptions] = useState<
     Array<{ id: string; label: string; workTypes: WorkType[] }> | null
   >(null);
@@ -1002,6 +1007,69 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
     setMaterialInput('');
   };
 
+  // Prefill measurement inputs from the draft rooms when the estimate opens.
+  useEffect(() => {
+    if (showEstimate && Object.keys(measures).length === 0 && draft.rooms.length > 0) {
+      const init: Record<string, { area: string; ceiling: string }> = {};
+      for (const r of draft.rooms) {
+        init[r.name] = {
+          area: r.areaSqm != null ? String(r.areaSqm) : '',
+          ceiling: r.ceilingHeightMm != null ? String(r.ceilingHeightMm / 1000) : '2.4',
+        };
+      }
+      setMeasures(init);
+    }
+  }, [showEstimate, draft.rooms, measures]);
+
+  // Cautious estimate: the engine derives wall area from area + ceiling (square
+  // assumption), so pure m² + ceiling is enough — dimensions just refine it.
+  // Homeowner-facing → keep labor time + quantities, drop kronor (no amounts).
+  const runHomeownerEstimate = async () => {
+    setEstimating(true);
+    let defaults: CalcProfileDefaults = { defaultHourlyRate: null, settings: {} };
+    try {
+      if (!isGuest) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: p } = await supabase
+            .from('profiles')
+            .select('default_hourly_rate, estimation_settings')
+            .eq('user_id', user.id)
+            .maybeSingle();
+          if (p) {
+            defaults = {
+              defaultHourlyRate: p.default_hourly_rate ?? null,
+              settings: parseEstimationSettings(p.estimation_settings as Record<string, unknown> | null),
+            };
+          }
+        }
+      }
+    } catch (e) {
+      console.error('RenaidaProjectDialog: estimate rates fetch failed', e);
+    }
+
+    const rooms = draft.rooms.map((r) => {
+      const m = measures[r.name];
+      if (!m) return r;
+      const area = parseFloat((m.area || '').replace(',', '.'));
+      const ceilingM = parseFloat((m.ceiling || '').replace(',', '.'));
+      return {
+        ...r,
+        areaSqm: Number.isFinite(area) && area > 0 ? area : r.areaSqm,
+        ceilingHeightMm: Number.isFinite(ceilingM) && ceilingM > 0 ? Math.round(ceilingM * 1000) : r.ceilingHeightMm,
+      };
+    });
+    const estimated = estimateDraftCalc({ ...draft, rooms }, defaults);
+    const tasks = estimated.tasks.map((t) => ({ ...t, materialEstimateSek: null, hourlyRateSek: null }));
+    setDraft({ ...estimated, rooms, tasks });
+    setEstimateSummary(
+      tasks
+        .filter((t) => t.estimatedHours && t.estimatedHours > 0)
+        .map((t) => `${taskTitle(t, labelFor)} · ≈ ${t.estimatedHours} h`)
+    );
+    setEstimating(false);
+  };
+
   /** Inline-edit a task title during review — writes customTitle. */
   const editTaskTitle = (index: number, title: string) => {
     setDraft((d) => renameDraftTask(d, index, title));
@@ -1441,6 +1509,69 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
                       </Button>
                     </div>
                   </div>
+
+                  {/* Cautious optional estimate (homeowner). The engine derives
+                      wall area from area + ceiling, so m² + ceiling suffices. */}
+                  {userType !== 'contractor' && (
+                    <div className="space-y-2 rounded-lg border bg-muted/20 p-3">
+                      <button
+                        type="button"
+                        onClick={() => setShowEstimate((v) => !v)}
+                        className="flex w-full items-center gap-1.5 text-left text-sm font-medium"
+                      >
+                        <Calculator className="h-4 w-4 shrink-0 text-primary" />
+                        {t('renaidaFlow.estimate.title', 'Vill du att jag räknar ut arbetstid & materialmängd?')}
+                        <ChevronDown className={`ml-auto h-4 w-4 shrink-0 transition-transform ${showEstimate ? 'rotate-180' : ''}`} />
+                      </button>
+                      {showEstimate && (
+                        <div className="space-y-2">
+                          <p className="text-xs text-muted-foreground">
+                            {t('renaidaFlow.estimate.hint', 'Ange yta och takhöjd per rum — helt frivilligt. Detaljerna finjusterar du sen inne i projektet.')}
+                          </p>
+                          {draft.rooms.map((r) => (
+                            <div key={r.name} className="flex items-center gap-1.5 text-sm">
+                              <span className="min-w-0 flex-1 truncate">{r.name}</span>
+                              <Input
+                                value={measures[r.name]?.area ?? ''}
+                                onChange={(e) => setMeasures((m) => ({ ...m, [r.name]: { area: e.target.value, ceiling: m[r.name]?.ceiling ?? '2.4' } }))}
+                                inputMode="decimal"
+                                className="h-8 w-16 text-sm"
+                                aria-label={t('renaidaFlow.estimate.area', 'Yta (m²)')}
+                              />
+                              <span className="text-xs text-muted-foreground">m²</span>
+                              <Input
+                                value={measures[r.name]?.ceiling ?? ''}
+                                onChange={(e) => setMeasures((m) => ({ ...m, [r.name]: { area: m[r.name]?.area ?? '', ceiling: e.target.value } }))}
+                                inputMode="decimal"
+                                className="h-8 w-16 text-sm"
+                                aria-label={t('renaidaFlow.estimate.ceiling', 'Takhöjd (m)')}
+                              />
+                              <span className="text-xs text-muted-foreground">{t('renaidaFlow.estimate.ceilingUnit', 'm tak')}</span>
+                            </div>
+                          ))}
+                          <Button type="button" size="sm" onClick={runHomeownerEstimate} disabled={estimating}>
+                            {estimating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Calculator className="mr-2 h-4 w-4" />}
+                            {t('renaidaFlow.estimate.run', 'Beräkna')}
+                          </Button>
+                          {estimateSummary && estimateSummary.length > 0 && (
+                            <div className="space-y-0.5 rounded-md bg-background p-2 text-xs">
+                              {estimateSummary.map((line, i) => (
+                                <div key={i}>{line}</div>
+                              ))}
+                              <div className="pt-1 text-muted-foreground">
+                                {t('renaidaFlow.estimate.adjustNote', 'Uppskattat — finjustera fritt inne i projektet.')}
+                              </div>
+                            </div>
+                          )}
+                          {estimateSummary && estimateSummary.length === 0 && (
+                            <div className="rounded-md bg-background p-2 text-xs text-muted-foreground">
+                              {t('renaidaFlow.estimate.none', 'Jag kunde inte uppskatta de här arbetena automatiskt — det gör du enkelt i projektet.')}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   <Button className="w-full" onClick={handleCreate} disabled={creating}>
                     {creating ? (

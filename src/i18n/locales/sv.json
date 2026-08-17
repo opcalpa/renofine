@@ -6947,6 +6947,16 @@
       "add": "Lägg till",
       "addPlaceholder": "Lägg till material…"
     },
+    "estimate": {
+      "title": "Vill du att jag räknar ut arbetstid & materialmängd?",
+      "hint": "Ange yta och takhöjd per rum — helt frivilligt. Detaljerna finjusterar du sen inne i projektet.",
+      "area": "Yta (m²)",
+      "ceiling": "Takhöjd (m)",
+      "ceilingUnit": "m tak",
+      "run": "Beräkna",
+      "adjustNote": "Uppskattat — finjustera fritt inne i projektet.",
+      "none": "Jag kunde inte uppskatta de här arbetena automatiskt — det gör du enkelt i projektet."
+    },
     "complete": "Perfekt — då har jag allt jag behöver. Ditt projekt är redo att skapas. Du kan justera allt efteråt.",
     "type": {
       "bathroom": "Badrum",

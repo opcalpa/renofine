@@ -6947,6 +6947,16 @@
       "add": "Add",
       "addPlaceholder": "Add material…"
     },
+    "estimate": {
+      "title": "Want me to work out labor time & material amounts?",
+      "hint": "Enter area and ceiling height per room — entirely optional. You fine-tune the details inside the project later.",
+      "area": "Area (m²)",
+      "ceiling": "Ceiling height (m)",
+      "ceilingUnit": "m ceiling",
+      "run": "Calculate",
+      "adjustNote": "Estimated — fine-tune freely inside the project.",
+      "none": "I couldn't estimate these works automatically — you can do it easily in the project."
+    },
     "complete": "Perfect — I have everything I need. Your project is ready to create. You can adjust anything afterwards.",
     "type": {
       "bathroom": "Bathroom",

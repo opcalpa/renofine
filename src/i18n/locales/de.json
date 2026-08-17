@@ -2498,6 +2498,16 @@
       "add": "Hinzufügen",
       "addPlaceholder": "Material hinzufügen…"
     },
+    "estimate": {
+      "title": "Soll ich Arbeitszeit & Materialmengen berechnen?",
+      "hint": "Gib Fläche und Deckenhöhe pro Raum an — ganz freiwillig. Die Details verfeinerst du später im Projekt.",
+      "area": "Fläche (m²)",
+      "ceiling": "Deckenhöhe (m)",
+      "ceilingUnit": "m Decke",
+      "run": "Berechnen",
+      "adjustNote": "Geschätzt — im Projekt frei anpassbar.",
+      "none": "Ich konnte diese Arbeiten nicht automatisch schätzen — im Projekt geht das leicht."
+    },
     "populated": "Fertig! Ich habe es zu deinem Projekt hinzugefügt. 🎉",
     "critic": {
       "checking": "Renaida prüft den Plan noch einmal…",

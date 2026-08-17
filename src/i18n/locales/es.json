@@ -2498,6 +2498,16 @@
       "add": "Añadir",
       "addPlaceholder": "Añadir material…"
     },
+    "estimate": {
+      "title": "¿Quieres que calcule el tiempo de trabajo y las cantidades de material?",
+      "hint": "Indica la superficie y la altura del techo por habitación — totalmente opcional. Los detalles los ajustas dentro del proyecto después.",
+      "area": "Superficie (m²)",
+      "ceiling": "Altura del techo (m)",
+      "ceilingUnit": "m techo",
+      "run": "Calcular",
+      "adjustNote": "Estimado — ajústalo libremente dentro del proyecto.",
+      "none": "No pude estimar estos trabajos automáticamente — lo harás fácilmente en el proyecto."
+    },
     "populated": "¡Listo! Lo he añadido a tu proyecto. 🎉",
     "critic": {
       "checking": "Renaida revisa el plan de nuevo…",

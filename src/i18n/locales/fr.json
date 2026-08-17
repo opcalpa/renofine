@@ -2498,6 +2498,16 @@
       "add": "Ajouter",
       "addPlaceholder": "Ajouter un matériau…"
     },
+    "estimate": {
+      "title": "Voulez-vous que je calcule le temps de travail et les quantités de matériaux ?",
+      "hint": "Indiquez la surface et la hauteur sous plafond par pièce — entièrement facultatif. Vous affinerez les détails dans le projet plus tard.",
+      "area": "Surface (m²)",
+      "ceiling": "Hauteur sous plafond (m)",
+      "ceilingUnit": "m plafond",
+      "run": "Calculer",
+      "adjustNote": "Estimé — à ajuster librement dans le projet.",
+      "none": "Je n'ai pas pu estimer ces travaux automatiquement — vous le ferez facilement dans le projet."
+    },
     "populated": "Terminé ! Je l'ai ajouté à ton projet. 🎉",
     "critic": {
       "checking": "Renaida revérifie le plan…",
