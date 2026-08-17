@@ -102,6 +102,9 @@ function fileToBase64(file: File | Blob): Promise<string> {
 interface Turn {
   message: string;
   answerLabel: string;
+  // #4: seeded objects shown as chips under the confirmation bubble so the
+  // user sees exactly what was added (fully editable in the review step).
+  chips?: { rooms: string[]; tasks: string[] };
 }
 
 export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner', isGuest = false, existingProjectId, onPopulated }: Props) {
@@ -384,6 +387,10 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
               tasks: seeded.tasks.length,
             }),
             answerLabel: '',
+            chips: {
+              rooms: seeded.rooms.map((r) => r.name),
+              tasks: seeded.tasks.map((tk) => taskTitle(tk, labelFor)),
+            },
           },
         ]);
         return;
@@ -951,6 +958,20 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
               {turns.map((turn, i) => (
                 <div key={i} className="space-y-2">
                   {turn.message && <RenaidaBubble>{turn.message}</RenaidaBubble>}
+                  {turn.chips && (turn.chips.rooms.length > 0 || turn.chips.tasks.length > 0) && (
+                    <div className="ml-8 flex flex-wrap gap-1.5">
+                      {turn.chips.rooms.map((name, ri) => (
+                        <span key={`r-${ri}`} className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
+                          <Home className="h-3 w-3" /> {name}
+                        </span>
+                      ))}
+                      {turn.chips.tasks.map((title, ti) => (
+                        <span key={`t-${ti}`} className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                          <Hammer className="h-3 w-3" /> {title}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                   {turn.answerLabel && (
                     <div className="flex justify-end">
                       <span className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-tr-sm bg-primary px-3 py-2 text-sm text-primary-foreground">
