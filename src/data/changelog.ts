@@ -17,6 +17,36 @@ export const changelog: ChangelogEntry[] = [
     description: "När du fotar eller laddar upp ett kvitto eller en faktura till Renaida känner hon nu igen vad du köpt och matchar det automatiskt mot de material du redan planerat. Du ser matchningen innan något sparas (\"Kakel Carrara → Kakel badrum\") och kan bekräfta, byta eller boka posten som en ÄTA utanför budgeten. Beloppet hamnar på rätt planerad rad istället för att dubbelräknas — så din materialbudget stämmer utan handpåläggning.",
     tags: ["Renaida", "Inköp", "Budget", "Nyhet"],
   },
+  {
+    date: "2026-08-17",
+    title: "Renaida är nu vägen in när du skapar ett projekt",
+    description: "Vi har samlat allt skapande under en enda knapp. Istället för flera olika guider möter du nu Renaida direkt — hon ställer frågorna, bygger upp rummen och arbetena åt dig och känns som att prata med någon som kan renovering. Enklare att komma igång, svårare att gå vilse.",
+    tags: ["Renaida", "Planering", "Förbättring"],
+  },
+  {
+    date: "2026-08-17",
+    title: "Ditt utkast finns kvar om du stänger mitt i",
+    description: "Blev du avbruten när du höll på att skapa ett projekt med Renaida? Nu sparas utkastet automatiskt. Öppnar du henne igen fortsätter du precis där du var — inga förlorade svar, inget om-från-början. När projektet väl skapas rensas utkastet.",
+    tags: ["Renaida", "Planering", "Förbättring"],
+  },
+  {
+    date: "2026-08-17",
+    title: "Renaida föreslår vilket material du kan behöva köpa",
+    description: "När du planerar ett projekt frågar Renaida numera \"Ska vi planera några materialinköp?\" och föreslår poster utifrån arbetena du valt — kakel, spackel, färg och så vidare. Du redigerar fritt och behöver inte skriva några belopp. Det blir en färdig inköpslista som senare fylls i automatiskt när du fotar kvittona.",
+    tags: ["Renaida", "Inköp", "Planering", "Nyhet"],
+  },
+  {
+    date: "2026-08-17",
+    title: "En försiktig uppskattning av tid och mängder — helt frivilligt",
+    description: "Berättar du ytan och takhöjden för ett rum kan Renaida ge en försiktig uppskattning av hur mycket arbetstid och material det kan handla om. Inga kronor och ören, bara en känsla för omfattningen så du vet ungefär vad som väntar. Vill du hoppa över det går det lika bra.",
+    tags: ["Renaida", "Hemägare", "Planering", "Nyhet"],
+  },
+  {
+    date: "2026-08-17",
+    title: "Välj själv: fortsätt planera eller sätt igång direkt",
+    description: "När Renaida är klar med ditt projekt får du välja på plats — vill du finslipa planeringen först, eller aktivera projektet och köra igång direkt? Ett steg mindre för dig som redan vet vad du vill.",
+    tags: ["Renaida", "Planering", "Förbättring"],
+  },
 
   // ── 2026-08-15 ──
   {
