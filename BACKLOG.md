@@ -40,6 +40,53 @@ fixade i commit `b6246d3`:
 **Kvar att verifiera:** Carl on-device (Pro-kontot testade ej alls än).
 
 ---
+id: renaida-draft-persistence
+status: done
+priority: P2
+tags: [renaida, ux, wizard-parity]
+created: 2026-08-17
+updated: 2026-08-17
+---
+## Renaida: persistera utkast mellan stängningar
+
+Wizard-parity-lucka: stängde man Renaida-dialogen mitt i flödet försvann allt
+(in-memory). Nu sparas draft+turns till localStorage (per mål), restaureras vid
+öppning om innehåll finns, rensas vid skapande. Levererat `fb6a40d`.
+
+---
+id: hide-legacy-wizards-ab
+status: done
+priority: P2
+tags: [renaida, ux, ab-test, cleanup]
+created: 2026-08-17
+updated: 2026-08-17
+---
+## Göm gamla create-wizardarna bakom A/B-flagga (Renaida = enda synliga)
+
+Beslut efter feature-parity-analys (Renaida vs GuidedSetupWizard vs PlanningWizard):
+Renaida är enda synliga skapa-vägen. De gamla behålls i kod men nås bara via
+`?setup=guided` / `?setup=planning` för framtida A/B mot externa användare.
+Levererat `2c14f2c`. **Öppen produktfråga:** de två gamla guide-flödena överlappar
+— bör ett begravas helt? Äkta parity-luckor kvar: bulk arbete×rum-matris (medel),
+rums-fotavtryck (låg). Resten legacy/kompromissbart.
+
+---
+id: renaida-material-receipt-match
+status: todo
+priority: P2
+tags: [renaida, inkop, kvitto, budget]
+created: 2026-08-17
+---
+## Auto-matcha kvitto/faktura mot planerade materialinköp (nedströms-lager)
+
+Renaida-materialsteget (#3, `176e6db`) skapar planerade material UTAN belopp.
+Nästa lager (Carls vision): när ett kvitto/faktura senare fotas/laddas upp →
+**auto-matcha** mot ett redan planerat material (eller skapa Nytt inköp) → fyll
+beloppet → avgör om det ska dras från **materialbudget** eller bokas som **ÄTA**.
+Bygger på D1-kvittoflödet (importPurchaseOrder). Kräver: matchnings-heuristik
+(namn/kategori), UI för "matcha mot planerat vs nytt", budget/ÄTA-routing.
+
+---
 id: tasks-kanban-default
 status: done
 priority: P3
