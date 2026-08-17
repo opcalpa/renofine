@@ -40,8 +40,24 @@ fixade i commit `b6246d3`:
 **Kvar att verifiera:** Carl on-device (Pro-kontot testade ej alls än).
 
 ---
+id: tasks-kanban-default
+status: done
+priority: P3
+tags: [tasks, ux, mobil]
+created: 2026-08-17
+updated: 2026-08-17
+---
+## Kanban som default-vy i Arbeten för nya projekt
+
+Carl-fynd #7. Desktop defaultade redan kanban; mobil defaultade table. Carl:
+kanban default för nya projekt på alla viewports, men användarens senaste val
+ska kvarstå vid återbesök. Vyn persisterades redan per projekt via
+usePersistedPreference (localStorage + konto) → enda ändringen var default-
+värdet. Levererat `4490093` (`TasksTab.tsx`).
+
+---
 id: renaida-birth-activate-fork
-status: todo
+status: done
 priority: P2
 tags: [renaida, activation, ux]
 created: 2026-08-17
@@ -57,7 +73,7 @@ flaskhalsen (första handlingen efter onboarding). Förslag: gaffel i sista steg
 
 ---
 id: renaida-two-magic-buttons-unclear
-status: todo
+status: done
 priority: P2
 tags: [renaida, ux, activation, entry]
 created: 2026-08-17
@@ -72,7 +88,7 @@ Ligger på Projects-sidan (projekt-lista headern). Produktval.
 
 ---
 id: renaida-review-room-vs-task-distinction
-status: todo
+status: done
 priority: P2
 tags: [renaida, ux, clarity]
 created: 2026-08-17
@@ -88,7 +104,7 @@ lägg ev. ett steg "ska något köpas in?" efter arbeten → material/PO. Bygg i
 
 ---
 id: renaida-confirmation-show-objects
-status: todo
+status: done
 priority: P3
 tags: [renaida, ux]
 created: 2026-08-17
@@ -101,7 +117,7 @@ rendera rummen/arbetena som klickbara chips inline i bubblan så man kan justera
 
 ---
 id: renaida-mascot-overlaps-lists
-status: todo
+status: done
 priority: P2
 tags: [mobil, ux, renaida]
 created: 2026-08-17
@@ -116,7 +132,7 @@ generell fix snarare än per-vy.
 
 ---
 id: team-page-mobile-spacing
-status: todo
+status: done
 priority: P3
 tags: [mobil, ux, team]
 created: 2026-08-17
@@ -129,7 +145,7 @@ längst ner ser trasig/för hög ut. Strama åt spacing + fixa tom-kortets höjd
 
 ---
 id: planning-budget-target-surface
-status: todo
+status: done
 priority: P3
 tags: [renaida, budget, planering, ux]
 created: 2026-08-17
