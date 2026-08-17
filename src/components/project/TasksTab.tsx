@@ -189,11 +189,14 @@ const TasksTab = ({ projectId, projectName, projectStatus, tasksScope = 'all', t
 
   // Detail view (bottom section): table or kanban
   type DetailView = 'table' | 'kanban';
-  // Kanban columns sit side-by-side — cramped on a phone. Default to the table
-  // (vertical list) on mobile; desktop keeps kanban. Stored preference wins.
+  // Default to kanban (status columns) for new projects on all viewports so the
+  // planned-work board is the first thing seen. The choice is persisted per
+  // project (localStorage + account), so a user's last pick wins on return
+  // visits — including switching to the table/list on a phone where kanban is
+  // tighter.
   const [detailView, setDetailView] = usePersistedPreference<string>(
     `tasks-detail-view-${projectId}`,
-    typeof window !== 'undefined' && window.innerWidth < 768 ? 'table' : 'kanban'
+    'kanban'
   );
   const safeDetailView = (detailView === 'table' ? 'table' : 'kanban') as DetailView;
 
