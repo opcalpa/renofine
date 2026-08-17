@@ -5739,6 +5739,7 @@
   },
   "homeownerPlanning": {
     "introTitle": "Plan your project",
+    "plannedBudget": "Your budget",
     "introDescription": "Add rooms, describe tasks and estimate costs. When you're ready, create a quote or activate the project.",
     "postWizardTipTitle": "Your plan is ready — here's how to take it further",
     "postWizardTipBody": "Click a row to add description, cost and room details. If a work type looks different in different rooms (e.g. different floor types), split into multiple rows — each can carry its own material and invoice.",

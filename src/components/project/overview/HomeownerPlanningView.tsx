@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Plus, Trash2, Send, ClipboardList, Info, Columns3, Play, Bell, X, Sparkles, ChevronDown, ChevronRight, Lock } from "lucide-react";
+import { Plus, Trash2, Send, ClipboardList, Info, Columns3, Play, Bell, X, Sparkles, ChevronDown, ChevronRight, Lock, Wallet } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   detectWorkType,
@@ -166,6 +166,9 @@ export function HomeownerPlanningView({
   const { isGuest } = useGuestMode();
   const [tasks, setTasks] = useState<HomeownerTask[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
+  // #8: the project's planned total budget (top-down), shown as a target in the
+  // intro card — distinct from the bottom-up estimate summed from task budgets.
+  const [plannedBudget, setPlannedBudget] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [activating, setActivating] = useState(false);
   const [loginPromptAction, setLoginPromptAction] = useState<"activate" | "share_rfq" | null>(null);
@@ -271,6 +274,14 @@ export function HomeownerPlanningView({
         }))
       );
     }
+
+    const { data: projData } = await supabase
+      .from("projects")
+      .select("total_budget")
+      .eq("id", projectId)
+      .single();
+    setPlannedBudget(projData?.total_budget ?? null);
+
     setLoading(false);
   }, [projectId]);
 
@@ -702,6 +713,13 @@ export function HomeownerPlanningView({
           <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
             {t("homeownerPlanning.introDescription", "Lägg till rum, beskriv arbetsuppgifter och uppskatta kostnader. När du är nöjd kan du skapa en offert eller aktivera projektet.")}
           </p>
+          {plannedBudget != null && plannedBudget > 0 && (
+            <div className="mt-2.5 inline-flex items-center gap-1.5 rounded-md bg-primary/5 px-2.5 py-1 text-sm">
+              <Wallet className="h-3.5 w-3.5 text-primary shrink-0" />
+              <span className="text-muted-foreground">{t("homeownerPlanning.plannedBudget", "Din budget")}:</span>
+              <span className="font-medium">{formatCurrency(plannedBudget, currency)}</span>
+            </div>
+          )}
         </div>
         {!contributorMode && totalTasks > 0 && (
           <div className="flex flex-wrap items-center gap-2 sm:flex-shrink-0">

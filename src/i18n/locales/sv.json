@@ -5739,6 +5739,7 @@
   },
   "homeownerPlanning": {
     "introTitle": "Planera ditt projekt",
+    "plannedBudget": "Din budget",
     "introDescription": "Lägg till rum, beskriv arbetsuppgifter och uppskatta kostnader. När du är nöjd kan du skapa en offert eller aktivera projektet.",
     "postWizardTipTitle": "Din plan är skapad — så här jobbar du vidare",
     "postWizardTipBody": "Klicka på en rad för att lägga till beskrivning, kostnad och rumsdetaljer. Om en arbetstyp ser olika ut i olika rum (t.ex. olika golvtyp), dela på flera rader — varje rad kan ha eget material och egen faktura.",
