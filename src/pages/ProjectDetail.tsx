@@ -1434,7 +1434,7 @@ const ProjectDetail = () => {
           {isTabBlocked("tasks") ? (
             <NoAccessPlaceholder />
           ) : (
-            <div className="container py-4 md:py-8">
+            <div className="container pt-4 md:pt-8 pb-24 md:pb-8">
               <TasksTab
                 projectId={project.id}
                 projectName={project.name}
@@ -1642,7 +1642,7 @@ const ProjectDetail = () => {
               <NoAccessPlaceholder />
             )
           ) : (
-            <div className="container py-4 md:py-8">
+            <div className="container pt-4 md:pt-8 pb-24 md:pb-8">
               {!permissions.isClient && (
                 <TeamSharingSwitcher
                   active="team"
