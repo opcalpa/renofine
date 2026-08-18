@@ -29,6 +29,7 @@ import {
   CheckSquare,
   Camera,
   Pencil,
+  ArrowRight,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -80,7 +81,6 @@ import { getStatusBadgeColor } from "@/lib/statusColors";
 import { ProjectLockBanner } from "./ProjectLockBanner";
 import { useProjectLock } from "@/hooks/useProjectLock";
 import { PUBLIC_DEMO_PROJECT_ID } from "@/constants/publicDemo";
-import { NewPurchaseFromBudgetDialog } from "./NewPurchaseFromBudgetDialog";
 import { EditPurchaseOrderDialog } from "./EditPurchaseOrderDialog";
 import { AddPurchaseLineDialog } from "./AddPurchaseLineDialog";
 import { NewPurchaseOrderDialog } from "./NewPurchaseOrderDialog";
@@ -156,9 +156,10 @@ interface PurchaseRequestsTabProps {
   openEntityId?: string | null;
   onEntityOpened?: () => void;
   currency?: string | null;
+  onNavigateTab?: (tab: string) => void;
 }
 
-const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency }: PurchaseRequestsTabProps) => {
+const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency, onNavigateTab }: PurchaseRequestsTabProps) => {
   const { t } = useTranslation();
   const { showTaxDeduction } = useTaxDeductionVisible();
   const [materials, setMaterials] = useState<Material[]>([]);
@@ -179,7 +180,7 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
   // New PO ("Skapa beställning") dialog
   const [newPODialogOpen, setNewPODialogOpen] = useState(false);
   // PO view mode: cards or flat table
-  const [poViewMode, setPoViewMode] = usePersistedPreference<'cards' | 'table'>(`po-view-mode-${projectId}`, 'cards');
+  const [poViewMode, setPoViewMode] = usePersistedPreference<'cards' | 'table'>(`po-view-mode-${projectId}`, 'table');
   const [showOnlyUnpaidInvoices, setShowOnlyUnpaidInvoices] = useState(false);
   const [receiptModalOpen, setReceiptModalOpen] = useState(false);
   const [addPlannedDialogOpen, setAddPlannedDialogOpen] = useState(false);
@@ -187,7 +188,6 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
   const [deletingPO, setDeletingPO] = useState(false);
   const [quoteReviewFile, setQuoteReviewFile] = useState<File | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [budgetPurchaseDialog, setBudgetPurchaseDialog] = useState<{ open: boolean; planned: Material | null; usedAmount: number }>({ open: false, planned: null, usedAmount: 0 });
   const [budgetExtraColsArr, setBudgetExtraColsArr] = usePersistedPreference<string[]>(`budget-cols-${projectId}`, []);
   const budgetExtraCols = new Set(budgetExtraColsArr);
   const toggleBudgetCol = (key: string) => {
@@ -1069,58 +1069,39 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
         )}
       </div>
 
-      {/* Material budget — unified strip with divide-x */}
+      {/* Material budget — compact summary. Per-line planning lives in the Budget tab. */}
       {plannedMaterials.length > 0 && (() => {
         const totalBudget = plannedMaterials.reduce((s, m) => s + (m.price_total || 0), 0);
         const totalOrdered = plannedMaterials.reduce((s, m) => s + (orderedByPlannedId.get(m.id) || 0), 0);
         const totalPaid = plannedMaterials.reduce((s, m) => s + (paidByPlannedId.get(m.id) || 0), 0);
+        const cells = [
+          { label: t("purchases.totalBudget", "Materialbudget"), value: totalBudget, cls: "" },
+          { label: t("purchases.ordered", "Beställt"), value: totalOrdered, cls: "text-amber-600" },
+          { label: t("purchases.paid", "Betalt"), value: totalPaid, cls: "text-emerald-600" },
+          { label: t("purchases.remaining", "Kvar"), value: totalBudget - totalPaid, cls: "font-medium" },
+        ];
         return (
           <div className="rounded-xl border bg-card overflow-hidden">
-            <div className="grid divide-x divide-border overflow-x-auto" style={{ gridTemplateColumns: `repeat(${plannedMaterials.length + 1}, minmax(150px, 1fr))` }}>
-              {plannedMaterials.map((m) => {
-                const budget = m.price_total || 0;
-                const ordered = orderedByPlannedId.get(m.id) || 0;
-                const paid = paidByPlannedId.get(m.id) || 0;
-                const spent = paid + ordered;
-                const pct = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0;
-                const overBudget = spent > budget;
-                return (
-                  <button
-                    key={m.id}
-                    type="button"
-                    className="text-left p-4 hover:bg-accent/50 transition-colors cursor-pointer"
-                    onClick={() => setBudgetPurchaseDialog({ open: true, planned: m, usedAmount: paid })}
-                  >
-                    <span className="kicker truncate block">{m.name}</span>
-                    <p className={cn("text-2xl font-display font-normal tnum mt-1", !maskEconomy && overBudget && "text-destructive")}>
-                      {maskEconomy ? "—" : formatCurrency(budget, currency)}
-                    </p>
-                    {!maskEconomy && (
-                      <div className="h-[3px] mt-2 rounded-full bg-muted overflow-hidden">
-                        <div
-                          className={cn("h-full rounded-full transition-all", overBudget ? "bg-destructive" : pct >= 80 ? "bg-amber-500" : "bg-emerald-500")}
-                          style={{ width: `${Math.min(pct, 100)}%` }}
-                        />
-                      </div>
-                    )}
-                    <p className="text-[11px] text-muted-foreground mt-1.5 tnum">
-                      {t("purchases.ordered", "Beställt")}: {maskEconomy ? "—" : formatCurrency(ordered, currency)}
-                    </p>
-                  </button>
-                );
-              })}
-              {/* Totals cell */}
-              <div className="p-4">
-                <span className="kicker">{t("purchases.totalBudget", "Totalbudget")}</span>
-                <p className="text-2xl font-display font-normal tnum mt-1">
-                  {maskEconomy ? "—" : formatCurrency(totalBudget, currency)}
-                </p>
-                <div className="flex flex-col gap-0.5 mt-2 text-[11px] tnum">
-                  <span className="text-amber-600">{t("purchases.ordered", "Beställt")}: {maskEconomy ? "—" : formatCurrency(totalOrdered, currency)}</span>
-                  <span className="text-emerald-600">{t("purchases.paid", "Betalt")}: {maskEconomy ? "—" : formatCurrency(totalPaid, currency)}</span>
-                  <span className="font-medium">{t("purchases.remaining", "Kvar")}: {maskEconomy ? "—" : formatCurrency(totalBudget - totalPaid, currency)}</span>
+            <div className="flex items-center justify-between gap-2 px-4 pt-3">
+              <span className="kicker">{t("purchases.materialBudget", "Materialbudget")}</span>
+              <button
+                type="button"
+                onClick={() => onNavigateTab?.("budget")}
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {t("purchases.plannedCount", "Planerat")} ({plannedMaterials.length})
+                <ArrowRight className="h-3 w-3" />
+              </button>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-border mt-3">
+              {cells.map((c) => (
+                <div key={c.label} className="bg-card p-4">
+                  <span className="kicker truncate block">{c.label}</span>
+                  <p className={cn("text-2xl font-display font-normal tnum mt-1", c.cls)}>
+                    {maskEconomy ? "—" : formatCurrency(c.value, currency)}
+                  </p>
                 </div>
-              </div>
+              ))}
             </div>
           </div>
         );
@@ -1253,10 +1234,10 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
         );
       })()}
 
-      {/* Purchase orders section */}
-      <Card>
-        <CardContent className="pt-4">
-          {materials.length === 0 && purchaseOrders.length === 0 ? (
+      {/* Empty state — only when nothing exists at all */}
+      {materials.length === 0 && purchaseOrders.length === 0 && (
+        <Card>
+          <CardContent className="pt-4">
             <div className="text-center py-12">
               <ShoppingCart className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium mb-2">{t('purchases.noPurchaseOrders')}</h3>
@@ -1266,13 +1247,9 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
                 {t('purchases.emptyStateTip', 'Tip: Link purchases to tasks to track costs per work item')}
               </p>
             </div>
-          ) : (
-            <p className="text-xs text-muted-foreground text-center py-6 italic">
-              {t('purchases.allOrdersAreGrouped', 'Alla inköp visas grupperade ovanför.')}
-            </p>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
@@ -1541,16 +1518,6 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
           )}
         </DialogContent>
       </Dialog>
-      <NewPurchaseFromBudgetDialog
-        open={budgetPurchaseDialog.open}
-        onOpenChange={(open) => setBudgetPurchaseDialog((prev) => ({ ...prev, open }))}
-        planned={budgetPurchaseDialog.planned}
-        projectId={projectId}
-        currentProfileId={currentProfileId}
-        currency={currency}
-        usedAmount={budgetPurchaseDialog.usedAmount}
-        onCreated={fetchMaterials}
-      />
       <QuoteReviewDialog
         projectId={projectId}
         open={quoteReviewFile !== null}

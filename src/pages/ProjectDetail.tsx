@@ -1463,7 +1463,7 @@ const ProjectDetail = () => {
             <NoAccessPlaceholder />
           ) : (
             <div className="container py-4 md:py-8">
-              <PurchaseRequestsTab projectId={project.id} openEntityId={activeTab === "purchases" ? openEntityId : null} onEntityOpened={() => setOpenEntityId(null)} currency={project?.currency} />
+              <PurchaseRequestsTab projectId={project.id} openEntityId={activeTab === "purchases" ? openEntityId : null} onEntityOpened={() => setOpenEntityId(null)} currency={project?.currency} onNavigateTab={(tab) => navigateToTab(tab)} />
             </div>
           )}
           </ErrorBoundary>
