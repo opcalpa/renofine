@@ -1,8 +1,8 @@
 import React from "react";
 import { Group, Rect, Line, Text as KonvaText } from "react-konva";
 import { addDays, parseISO, format } from "date-fns";
-import { sv } from "date-fns/locale";
 import { useTranslation } from "react-i18next";
+import { getDateLocale } from "@/lib/dateFnsLocale";
 import { dateToX, isWeekend, isSameDay } from "./utils";
 
 interface TimelineGridProps {
@@ -34,6 +34,8 @@ const TimelineGridComponent: React.FC<TimelineGridProps> = ({
   projectStartDate,
   projectFinishDate,
 }) => {
+  const { t, i18n } = useTranslation();
+  const locale = getDateLocale(i18n.language);
   const today = new Date();
   const elements: React.ReactNode[] = [];
 
@@ -139,7 +141,7 @@ const TimelineGridComponent: React.FC<TimelineGridProps> = ({
           key="proj-start-label"
           x={x + 3}
           y={4}
-          text={`Start ${format(parseISO(projectStartDate), "d MMM", { locale: sv })}`}
+          text={`${t("timeline.startDate")} ${format(parseISO(projectStartDate), "d MMM", { locale })}`}
           fontSize={10}
           fontStyle="bold"
           fill={PROJECT_START_COLOR}
@@ -170,7 +172,7 @@ const TimelineGridComponent: React.FC<TimelineGridProps> = ({
           key="proj-finish-label"
           x={x + 3}
           y={4}
-          text={`Mål ${format(parseISO(projectFinishDate), "d MMM", { locale: sv })}`}
+          text={`${t("timeline.goal")} ${format(parseISO(projectFinishDate), "d MMM", { locale })}`}
           fontSize={10}
           fontStyle="bold"
           fill={PROJECT_FINISH_COLOR}

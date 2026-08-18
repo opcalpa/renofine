@@ -1,7 +1,8 @@
 import React, { useMemo, useRef, useState, useEffect } from "react";
 import { Stage, Layer, Rect, Line, Text as KonvaText, Group } from "react-konva";
 import { addDays, format, getISOWeek, getDay } from "date-fns";
-import { sv } from "date-fns/locale";
+import { useTranslation } from "react-i18next";
+import { getDateLocale } from "@/lib/dateFnsLocale";
 import { dateToX, RULER_HEIGHT, isWeekend } from "./utils";
 
 interface TimelineDateRulerProps {
@@ -24,8 +25,6 @@ const WEEK_BG_ODD = "#ffffff";
 const DAY_TEXT_COLOR = "#64748b";
 const WEEKEND_TEXT_COLOR = "#94a3b8";
 
-const DAY_ABBR = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
 const TimelineDateRulerComponent: React.FC<TimelineDateRulerProps> = ({
   originDate,
   pixelsPerDay,
@@ -33,6 +32,8 @@ const TimelineDateRulerComponent: React.FC<TimelineDateRulerProps> = ({
   stageWidth,
   daysToRender,
 }) => {
+  const { t, i18n } = useTranslation();
+  const locale = getDateLocale(i18n.language);
   // Render only visible days — extends infinitely in both directions
   const firstVisibleDay = Math.floor(-panX / pixelsPerDay) - 2;
   const lastVisibleDay = Math.ceil((Math.max(stageWidth, 2000) - panX) / pixelsPerDay) + 2;
@@ -54,8 +55,8 @@ const TimelineDateRulerComponent: React.FC<TimelineDateRulerProps> = ({
       const monthKey = `${date.getFullYear()}-${date.getMonth()}`;
       if (!renderedMonths.has(monthKey)) {
         renderedMonths.add(monthKey);
-        const fullLabel = format(date, "MMMM yyyy", { locale: sv }).toUpperCase();
-        const shortLabel = format(date, "MMM yy", { locale: sv }).toUpperCase();
+        const fullLabel = format(date, "MMMM yyyy", { locale }).toUpperCase();
+        const shortLabel = format(date, "MMM yy", { locale }).toUpperCase();
         const monthStartX = x + 6;
         // Calculate where next month starts to prevent overlap
         const nextMonthDate = new Date(date.getFullYear(), date.getMonth() + 1, 1);
@@ -113,7 +114,7 @@ const TimelineDateRulerComponent: React.FC<TimelineDateRulerProps> = ({
             key={`w-${weekKey}`}
             x={x + 4}
             y={MONTH_ROW_H + 3}
-            text={`V${weekNum}`}
+            text={`${t("timeline.weekShort")}${weekNum}`}
             fontSize={11}
             fontStyle="bold"
             fill={WEEK_TEXT_COLOR}
@@ -126,7 +127,7 @@ const TimelineDateRulerComponent: React.FC<TimelineDateRulerProps> = ({
       if (pixelsPerDay >= 28) {
         const dayLabel =
           pixelsPerDay >= 50
-            ? `${date.getDate()} ${DAY_ABBR[dayOfWeek]}`
+            ? `${date.getDate()} ${format(date, "EEE", { locale })}`
             : `${date.getDate()}`;
         items.push(
           <KonvaText
@@ -169,7 +170,7 @@ const TimelineDateRulerComponent: React.FC<TimelineDateRulerProps> = ({
     }
 
     return items;
-  }, [startDay, endDay, originDate, pixelsPerDay, panX]);
+  }, [startDay, endDay, originDate, pixelsPerDay, panX, locale, t]);
 
   // Use own ResizeObserver for accurate width (parent may not re-render with updated width)
   const wrapperRef = useRef<HTMLDivElement>(null);

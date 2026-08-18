@@ -38,7 +38,7 @@ function persistPrefs(projectId: string, isMobile: boolean, prefs: TablePrefs) {
 }
 
 export function useTasksTableView(projectId: string) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const ALL_COLUMNS: TaskColumnDef[] = useMemo(
     () => [
@@ -68,7 +68,8 @@ export function useTasksTableView(projectId: string) {
       { key: "supplier", label: t("budget.supplier", "Leverantör"), width: "w-[150px]", extra: true, editType: "none" },
       { key: "actions", label: t("common.actions"), width: "w-[60px]", editType: "none" },
     ],
-    [t]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [t, i18n.language]
   );
 
   // Restore saved prefs or use defaults (separate key for mobile vs desktop)
@@ -87,6 +88,23 @@ export function useTasksTableView(projectId: string) {
     }
     return ALL_COLUMNS;
   });
+
+  // Column labels are frozen into state at mount; re-sync them (preserving the
+  // user's order) whenever the language changes so headers follow the UI locale.
+  useEffect(() => {
+    setColumns((prev) => {
+      let changed = false;
+      const next = prev.map((c) => {
+        const fresh = ALL_COLUMNS.find((a) => a.key === c.key);
+        if (fresh && fresh.label !== c.label) {
+          changed = true;
+          return { ...c, label: fresh.label };
+        }
+        return c;
+      });
+      return changed ? next : prev;
+    });
+  }, [ALL_COLUMNS]);
 
   const [visibleExtras, setVisibleExtras] = useState<Set<TaskColumnKey>>(
     () => saved.current?.visibleExtras
