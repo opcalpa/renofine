@@ -2605,3 +2605,41 @@ translate-comments (den är för meddelanden). Fix-approach: översätt worker�
 vid write-time i edge-fn (spara översatt + behåll original, som task_translations-
 mönstret) ELLER vid display när worker-submitted material surfacas för ägaren.
 Kräver edge-fn-ändring + deploy → gör med Carl närvarande (ej autonomt i fält).
+
+---
+id: renaida-floorplan-live-capture
+status: todo
+priority: P2
+tags: [renaida, floorplanner, spaceplanner]
+created: 2026-08-18
+---
+## SP1: Ritnings-foto i LIVE-Renaida (befintligt projekt) → grovskiss i Space Planner
+Nuläge (verifierat 2026-08-18): foto→plan-pipelinen FINNS deployad
+(`process-floorplan` extraherar väggar+dörrar m. slagriktning+rums-polygoner;
+`analyzeFloorPlan`/`floorPlanResultToShapes` materialiserar grovskiss m. antagen
+skala) — men nås BARA via projektfödelsens mapp-ingest (`ingestProjectFolder.ts:147`).
+Live-panelens `documentCapture` känner bara kvitto/faktura/offert → skiss-foto
+i befintligt projekt studsar. Bygget: klassa ritnings-foto i documentCapture →
+förslag "Ska jag rita in den i Space Planner?" → bekräfta (ConfirmDiff-mekaniken)
+→ `createPlanInDB`+`saveShapesForPlan` (återanvänd födelse-vägen ordagrant =
+single-source). Förlåtande grovskiss-först = befintlig designfilosofi. Carls
+vision 2026-08-18: handritad ELLER CAD-utskrift, användaren förfinar sen.
+
+---
+id: renaida-demo-plan-walls-doors
+status: todo
+priority: P2
+tags: [renaida, spaceplanner, demo]
+created: 2026-08-18
+---
+## SP2: Renaidas första ritövning — härled väggar+dörrar ur demots rumspolygoner
+Carls testcase-idé 2026-08-18 (justerad): demot har redan 5 rum MED
+polygon-koordinater (sammanhängande layout: Vardagsrum 5×4m osv) men bara
+'room'-shapes → Space-fliken visar 5 platta rektanglar, inga väggar/dörrar
+(demot undersäljer plannern — samma mönster som osynliga PO:erna). Övningen:
+härled väggar ur polygonerna (delade kanter=innervägg, perimeter=yttervägg,
+tjocklekar via v2-presets) + placera dörrar rimligt mellan angränsande rum
+(Hall som nav) → in i `seed_demo_content` (single-source, s72-läxan) så alla
+demos får riktig planritning. Perfekt första övning: facit finns (polygonerna),
+resultatet inspekterbart i plannern. Bygger musklerna för SP3 (layout-syntes
+från rumslista utan geometri — har-inget-personan; eget kort när SP1+SP2 satt sig).
