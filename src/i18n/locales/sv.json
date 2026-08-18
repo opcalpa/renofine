@@ -67,7 +67,8 @@
       "canLogLabel": "Kan logga utförda inköp",
       "canLogDescription": "Workern registrerar och bifogar kvitto direkt — kringgår godkännande.",
       "requirePhoto": "Kräv foto",
-      "requirePhotoTitle": "Kräv ett slutligt foto innan denna uppgift kan accepteras"
+      "requirePhotoTitle": "Kräv ett slutligt foto innan denna uppgift kan accepteras",
+      "selectedCount": "{{count}} valda"
     },
     "memberStep": {
       "title": "Vilken nivå av åtkomst?",
@@ -128,7 +129,9 @@
       "sendEmail": "Skicka e-post",
       "smsSent": "SMS skickat",
       "emailSent": "E-post skickat",
-      "sendWhatsApp": "Dela via WhatsApp"
+      "sendWhatsApp": "Dela via WhatsApp",
+      "openMessages": "Öppna Meddelanden",
+      "openMail": "Öppna e-post"
     },
     "clientStep": {
       "title": "Kunden får en kundvy",
@@ -307,7 +310,35 @@
     "selectAll": "Välj alla",
     "hasAttachment": "{{count}} underlag",
     "attachment": "Underlag",
-    "clear": "Rensa"
+    "clear": "Rensa",
+    "ok": "OK",
+    "swipeToNavigate": "Svep för att navigera",
+    "openLink": "Öppna länk",
+    "unknown": "Okänd",
+    "previous": "Föregående",
+    "more": "Mer",
+    "none": "Ingen",
+    "project": "Projekt",
+    "opening": "Öppnar...",
+    "reset": "Återställ",
+    "copied": "Kopierat till urklipp",
+    "copy": "Kopiera",
+    "collapse": "Minimera",
+    "fileTooLarge": "Filen är för stor (max 10 MB)",
+    "doubleClickToEdit": "Dubbelklicka för att redigera",
+    "tasks": "uppgifter",
+    "saved": "Sparat",
+    "completed": "slutfört",
+    "saveFailed": "Kunde inte spara",
+    "unnamed": "Namnlöst rum",
+    "photo": "Foto",
+    "undo": "Ångra",
+    "redo": "Gör om",
+    "creating": "Skapar...",
+    "continue": "Fortsätt",
+    "zoomOut": "Zooma ut",
+    "zoomIn": "Zooma in",
+    "notFound": "Fakturan hittades inte"
   },
   "beta": {
     "title": "Publik beta",
@@ -448,7 +479,8 @@
       "clientView": "Mitt projekt",
       "customerView": "Mitt projekt",
       "sharing": "Delning"
-    }
+    },
+    "purchases": "Inköp"
   },
   "landing": {
     "heroTitle": "Vinn fler jobb,",
@@ -733,7 +765,9 @@
     "signUpWithGoogle": "Skapa konto med Google",
     "name": "Namn",
     "creatingAccount": "Skapar konto...",
-    "createAccount": "Skapa konto"
+    "createAccount": "Skapa konto",
+    "loginFailed": "Inloggningen misslyckades",
+    "tryAgain": "Försök igen eller logga in med e-post."
   },
   "projects": {
     "title": "Mina projekt",
@@ -836,7 +870,15 @@
     "adminOff": "Admin",
     "createWithRenaida": "Skapa med Renaida",
     "planWithWizard": "Planera med guiden",
-    "guidedStartup": "Guidad uppstart"
+    "guidedStartup": "Guidad uppstart",
+    "goalDate": "Måldatum",
+    "colTasks": "Arbeten",
+    "colProgress": "Framsteg",
+    "filterAll": "Alla",
+    "filterActive": "Pågående",
+    "filterCompleted": "Avslutade",
+    "hideDemo": "Dölj demoprojekt",
+    "notFound": "Projektet hittades inte"
   },
   "onboarding": {
     "welcome": "Välkommen till Renofine!",
@@ -907,7 +949,9 @@
     "invitedWelcome": {
       "title": "Välkommen till ditt projekt!",
       "description": "Här kan du följa framstegen, se bilder och kommunicera med ditt projektteam."
-    }
+    },
+    "measurementTitle": "Måttsystem",
+    "measurementDesc": "Hur mäter du?"
   },
   "invitation": {
     "youreInvited": "Du är inbjuden!",
@@ -999,7 +1043,8 @@
     "leadAccepted": "Offert godkänd!",
     "leadAcceptedDescription": "Kunden har godkänt offerten. Arbeten har skapats från offertposterna.",
     "expandProject": "Expandera projektet",
-    "expandProjectHint": "Lägg till rum och planlösning för att komma igång."
+    "expandProjectHint": "Lägg till rum och planlösning för att komma igång.",
+    "planning": "Planering"
   },
   "tasks": {
     "title": "Arbeten",
@@ -1132,7 +1177,11 @@
     "filter": "Filter",
     "overdue": "försenade",
     "kanbanColumns": "Kanban-kolumner",
-    "visibleColumns": "Synliga kolumner"
+    "visibleColumns": "Synliga kolumner",
+    "unassigned": "Ej tilldelad",
+    "materialBudget": "Materialbudget",
+    "task": "Arbete",
+    "photos": "Foton"
   },
   "tasksTable": {
     "columns": "Kolumner",
@@ -1420,7 +1469,86 @@
     "viewTable": "Tabell",
     "searchPlaceholderV2": "Sök rum, anteckningar, material…",
     "photoCover": "Bild",
-    "openRoom": "Öppna rumsdetaljer"
+    "openRoom": "Öppna rumsdetaljer",
+    "noAssignedRooms": "Inga rum med tilldelade uppgifter",
+    "roomsLabel": "rum",
+    "referenceImages": "Förebilder",
+    "materials": "Material",
+    "progressPhotos": "Progressbilder",
+    "completedPhotos": "Slutförda bilder",
+    "sharePhoto": "Dela foto",
+    "shareStatusQ": "Hur går arbetet?",
+    "shareInProgress": "Pågående",
+    "shareDone": "Klart",
+    "shareProgressQ": "Hur långt är arbetet?",
+    "failedToCreate": "Kunde inte skapa rum",
+    "created": "Rum skapat",
+    "selectPriority": "Välj prioritet",
+    "missingDimensions": "Saknar mått",
+    "calcWallPaint": "Väggfärg",
+    "saveCoatsAsDefault": "Spara",
+    "asDefault": "som standard?",
+    "saveCoverageAsDefault": "Spara",
+    "calcCeilingPaint": "Takfärg",
+    "calcFloorMaterial": "Golvmaterial (inkl. spill)",
+    "calcSkirting": "Golvlist (löpmeter)",
+    "taskAlreadyLinked": "Uppgiften är redan kopplad till detta rum",
+    "taskLinked": "Uppgift kopplad till rum",
+    "failedToLinkTask": "Kunde inte koppla uppgift",
+    "linkExisting": "Koppla",
+    "linkExistingTask": "Koppla befintlig uppgift",
+    "allTasksLinked": "Alla uppgifter är redan kopplade",
+    "loadingRoomData": "Laddar rumsdata",
+    "fillInNewRoomDetails": "Fyll i detaljer för det nya rummet",
+    "editRoomInfoAndComments": "Redigera ruminformation",
+    "waitingForRoomData": "Väntar",
+    "couldNotLoadPhotos": "Kunde inte ladda foton",
+    "mustBeLoggedInToUpload": "Du måste vara inloggad för att ladda upp foton",
+    "profileNotFound": "Profil hittades inte",
+    "notAnImage": "{{name}} är inte en bild",
+    "fileTooLarge": "{{name}} är för stor (max 10MB)",
+    "couldNotUpload": "Kunde inte ladda upp {{name}}",
+    "couldNotSave": "Kunde inte spara {{name}}",
+    "photosUploaded": "Foton uppladdade!",
+    "couldNotUploadPhotos": "Kunde inte ladda upp foton",
+    "confirmDeletePhoto": "Är du säker på att du vill radera detta foto?",
+    "photoDeleted": "Foto raderat",
+    "couldNotDeletePhoto": "Kunde inte radera foto",
+    "couldNotSavePinterestBoard": "Kunde inte spara Pinterest-board",
+    "pinterestBoardRemoved": "Pinterest-board borttagen",
+    "invalidPinterestBoardUrl": "Ogiltig URL för Pinterest-board. Använd formatet: pinterest.com/user/board-name",
+    "pinterestBoardAdded": "Pinterest-board tillagd!",
+    "confirmRemovePinterestBoard": "Är du säker på att du vill ta bort Pinterest-boarden?",
+    "enterPinterestPinUrl": "Ange en URL till en Pinterest-pin",
+    "invalidPinterestPinUrl": "Ogiltig URL för Pinterest-pin. Använd formatet: pinterest.com/pin/123456789/",
+    "mustBeLoggedIn": "Du måste vara inloggad",
+    "pinImported": "Pin importerad!",
+    "couldNotImportPin": "Kunde inte importera pin",
+    "uploading": "Laddar upp...",
+    "addPhoto": "Lägg till foto",
+    "takePhoto": "Ta foto",
+    "uploadFile": "Välj fil",
+    "importPin": "Importera pin",
+    "changeBoard": "Byt board",
+    "linkBoard": "Länka board",
+    "importPinterestPin": "Importera Pinterest-pin",
+    "pastePinterestPinLink": "Klistra in länken till en Pinterest-pin för att importera bilden till detta rum.",
+    "openPinAndCopyUrl": "Öppna en pin på Pinterest och kopiera URL:en från webbläsaren.",
+    "importing": "Importerar...",
+    "import": "Importera",
+    "openBoardAndCopyUrl": "Öppna din Pinterest-board och kopiera URL:en från webbläsaren.",
+    "removeBoard": "Ta bort board",
+    "roomPhoto": "Rumsfoto",
+    "deletePhoto": "Radera foto",
+    "noPhotosUploaded": "Inga foton uppladdade än",
+    "couldNotMovePhoto": "Kunde inte flytta foto",
+    "photoMoved": "Foto flyttat",
+    "viewMoodboard": "Visa i moodboard →",
+    "clickToRename": "Klicka för att byta namn",
+    "instructions": "Instruktioner",
+    "materialCalculation": "Materialkalkyl",
+    "comments": "Kommentarer",
+    "useComputedArea": "Använd beräknad yta"
   },
   "profile": {
     "title": "Profilinställningar",
@@ -1806,7 +1934,13 @@
     "selectRole": "Välj en roll",
     "moreInfo": "Mer info",
     "customizeAccess": "Anpassa behörigheter",
-    "permissions": "Behörigheter"
+    "permissions": "Behörigheter",
+    "addRotPerson": "Lägg till ROT-person",
+    "noTeamMembers": "Inga teammedlemmar än.",
+    "company": "Företag",
+    "personnummer": "Personnummer",
+    "homeowner": "Hemägare",
+    "contractor": "Entreprenör"
   },
   "timeline": {
     "unscheduledTasks": "{{count}} oschemalagda arbeten",
@@ -1878,7 +2012,9 @@
     "week": "Vecka",
     "month": "Månad",
     "day": "dag",
-    "of": "av"
+    "of": "av",
+    "projectStart": "Projekt",
+    "tasks": "Uppgifter"
   },
   "statuses": {
     "ideas": "Idéer",
@@ -1898,7 +2034,11 @@
     "pending": "Väntar på svar",
     "submitted": "Inskickad",
     "converted": "Konverterad",
-    "expired": "Utgången"
+    "expired": "Utgången",
+    "unknown": "Okänd",
+    "planning": "Planering",
+    "active": "Pågående",
+    "delayed": "Försenad"
   },
   "materialStatuses": {
     "planned": "Planerad",
@@ -1911,7 +2051,8 @@
   },
   "paymentStatuses": {
     "notPaid": "Ej betald",
-    "partiallyPaid": "Delvis betald"
+    "partiallyPaid": "Delvis betald",
+    "paid": "Betalt"
   },
   "roomStatuses": {
     "existing": "Oförändrat",
@@ -2013,7 +2154,16 @@
       "line": "Linje",
       "rectangle": "Rektangel",
       "circle": "Cirkel",
-      "shapes": "Former (linje, rektangel, cirkel)"
+      "shapes": "Former (linje, rektangel, cirkel)",
+      "opening": "Öppning",
+      "door": "Dörr",
+      "window": "Fönster",
+      "passage": "Passage",
+      "objects": "Objekt",
+      "connector": "Koppling",
+      "stickyNote": "Post-it-lapp",
+      "wall": "Vägg",
+      "underlay": "Underlag & import"
     },
     "hoverInfo": {
       "wall": "Vägg",
@@ -2133,7 +2283,34 @@
       "window": "Fönster",
       "sliding": "Skjutdörr",
       "passage": "Passage"
-    }
+    },
+    "measureDistance": "Mät avstånd",
+    "keyboardShortcuts": "Kortkommandon",
+    "keyboardShortcutsDescription": "Snabbreferens för planritaren",
+    "nameRequired": "Namn krävs",
+    "enterPlanName": "Ange ett namn för den nya planen",
+    "couldNotCreatePlan": "Kunde inte skapa plan",
+    "newPlanCreated": "Ny plan skapad!",
+    "errorCreating": "Fel vid skapande av plan",
+    "cannotDelete": "Kan inte ta bort",
+    "mustHaveOnePlan": "Du måste ha minst en plan. Skapa en ny innan du tar bort denna.",
+    "couldNotDeletePlan": "Kunde inte ta bort plan från databasen",
+    "planDeleted": "Plan borttagen",
+    "errorDeleting": "Fel vid borttagning av plan",
+    "couldNotRenamePlan": "Kunde inte byta namn på plan",
+    "errorRenaming": "Kunde inte byta namn på planen",
+    "selectPlan": "Välj plan",
+    "floorPlans": "Planritningar",
+    "noPlansCreated": "Inga planer skapade än",
+    "createNewPlanDescription": "Skapa en ny tom plan eller importera från en ritning",
+    "planName": "Planens namn",
+    "planNamePlaceholder": "t.ex. Våning 1, Källare, Alternativ A",
+    "planDescriptionPlaceholder": "t.ex. Huvudplan med alla rum",
+    "deleteFloorPlan": "Radera planritning?",
+    "cannotBeUndone": "Detta kan inte ångras.",
+    "allObjectsDeleted": "Alla väggar, rum och objekt i denna plan raderas permanent.",
+    "uploadTraceImage": "Ladda upp ritning (kalkera)",
+    "aiImport": "AI-tolka planritning"
   },
   "canvas": {
     "settings": "Ritinställningar",
@@ -2337,7 +2514,34 @@
     "unlinkFile": "Koppla bort fil",
     "fileUnlinked": "Fil bortkopplad",
     "deleteFileConfirmation": "Är du säker på att du vill ta bort ”{{name}}”? Det går inte att ångra.",
-    "category": "Filkategori"
+    "category": "Filkategori",
+    "attachments": "Bilagor",
+    "noAttachments": "Inga bilagor",
+    "dropToUpload": "Släpp filer här",
+    "dropHint": "Filer och mappar analyseras automatiskt",
+    "upload": "Ladda upp",
+    "regularUpload": "Vanlig uppladdning",
+    "takePhoto": "Ta foto",
+    "search": "Sök filer...",
+    "uploaded": "Fil bifogad",
+    "uploadError": "Kunde inte ladda upp",
+    "openError": "Kunde inte öppna filen",
+    "unlink": "Ta bort koppling",
+    "pdfDocument": "PDF-dokument",
+    "image": "Bild",
+    "file": "Fil",
+    "batchUploadTitle": "Smart uppladdning",
+    "filesCount": "filer",
+    "classifying": "Analyserar",
+    "fileName": "Fil",
+    "autoLink": "Koppling",
+    "size": "Storlek",
+    "confirmUpload": "Ladda upp alla",
+    "invoiceDate": "Fakturadatum",
+    "invoiceAmount": "Belopp",
+    "downloadError": "Nedladdningsfel",
+    "error": "Fel",
+    "noPreviewAvailable": "Förhandsgranskning ej tillgänglig för denna filtyp"
   },
   "fileStats": {
     "quote": "Offerter",
@@ -2604,7 +2808,45 @@
     "excludedFromBudget": "Tillägg (utanför ursprunglig offert)",
     "connections": "Kopplingar",
     "photos": "Bilder",
-    "comments": "Kommentarer"
+    "comments": "Kommentarer",
+    "updateOrderFailed": "Kunde inte uppdatera",
+    "requestSubmitted": "Förfrågan skickad",
+    "requestSubmittedDescription": "Din inköpsförfrågan har skickats för godkännande.",
+    "requestPending": "Förfrågan väntar",
+    "requestPurchase": "Begär inköp",
+    "requestPurchaseApproval": "Begär godkännande för inköp",
+    "submitRequestFor": "Skicka en inköpsförfrågan för:",
+    "addInfoPlaceholder": "Lägg till ytterligare information om denna inköpsförfrågan...",
+    "explainWhy": "Förklara varför detta material behövs eller eventuella specifika krav.",
+    "submitting": "Skickar...",
+    "submitRequest": "Skicka förfrågan",
+    "linkedToRoom": "Rum",
+    "hasAttachment": "Underlag bifogat",
+    "attachmentShort": "Bilaga",
+    "noLines": "Inga rader",
+    "moreSuffix": "till",
+    "moreAttachments": "Fler bilagor",
+    "attachFile": "Bifoga fil",
+    "noExtraAttachments": "Inga ytterligare bilagor",
+    "invoiceNumberShort": "Faktura",
+    "paidOn": "Betald {{date}}",
+    "overdueLabel": "Förfallen {{date}}",
+    "dueOn": "Förfaller {{date}}",
+    "attachment": "Underlag",
+    "allocateAll": "Tilldela alla rader",
+    "purchaseOrder": "Inköpsorder",
+    "detailSheetDescription": "Redigera order, rader och tilldelning",
+    "linkToBudgetPost": "Koppla till budgetpost",
+    "orderAdded": "Inköpsorder tillagd",
+    "failedToAdd": "Kunde inte lägga till inköpsorder",
+    "orderUpdated": "Inköpsorder uppdaterad",
+    "failedToUpdate": "Kunde inte uppdatera inköpsorder",
+    "receipt": "Kvitto / faktura",
+    "photoReceipt": "Fota kvitto",
+    "uploadReceipt": "Ladda upp",
+    "receiptOptionalHint": "Du kan även bifoga kvitto senare via filfliken.",
+    "saveCompleted": "Registrera köp",
+    "saveOrder": "Skapa beställning"
   },
   "overview": {
     "messagesHeading": "Meddelanden",
@@ -2723,7 +2965,12 @@
       "title": "Senaste bilderna",
       "viewAll": "Visa alla bilder",
       "noPhotos": "Inga bilder ännu. Bilder som laddas upp av teamet visas här.",
-      "photoUploaded": "Bild uppladdad"
+      "photoUploaded": "Bild uppladdad",
+      "sourceRoom": "Rum",
+      "sourceTask": "Arbete",
+      "sourceMaterial": "Inköp",
+      "sourceComment": "Kommentar",
+      "sourceFile": "Fil"
     },
     "documents": "Dokument",
     "noDocuments": "Inga offerter eller fakturor ännu",
@@ -2733,7 +2980,17 @@
       "description": "Skriv ett meddelande till ditt projektteam"
     },
     "planningReference": "Planeringsunderlag",
-    "timeline": "Tidslinje"
+    "timeline": "Tidslinje",
+    "quickInvoice": "Faktura",
+    "quickQuote": "Offert",
+    "quickNewQuote": "Ny offert",
+    "quickPurchase": "Inköp",
+    "quickPayment": "Inbetalning",
+    "coverUpload": "Ladda upp bild",
+    "coverUrl": "Klistra länk",
+    "coverExisting": "Välj bland bilder",
+    "coverPickExisting": "Välj omslagsbild",
+    "noExistingImages": "Inga bilder hittades"
   },
   "receipt": {
     "title": "Snabb Kvittofångst",
@@ -2768,7 +3025,12 @@
     "unsupportedFile": "Filtypen stöds inte. Använd bilder eller PDF.",
     "fileTooLarge": "Filen är för stor (max 10MB)",
     "convertingImage": "Konverterar bild...",
-    "conversionFailed": "Kunde inte konvertera bilden. Försök med en annan fil."
+    "conversionFailed": "Kunde inte konvertera bilden. Försök med en annan fil.",
+    "pdfNeedsQuoteFlow": "PDF-format hanteras via offert-importen (rad-för-rad extraktion).",
+    "openQuoteImport": "Öppna offert-import",
+    "vendorName": "Butik / leverantör",
+    "amount": "Belopp",
+    "room": "Rum"
   },
   "document": {
     "title": "Skanna dokument",
@@ -2999,7 +3261,13 @@
       "viewQuote": "Visa offert",
       "viewInvoice": "Visa faktura",
       "outstanding": "Utestående"
-    }
+    },
+    "createNewSupplier": "skapa ny",
+    "attachments": "Bilagor",
+    "collapse": "Kollapsa",
+    "expand": "Expandera",
+    "materialBudget": "Materialbudget",
+    "subcontractor": "UE"
   },
   "budgetCharts": {
     "title": "Diagram",
@@ -3044,7 +3312,9 @@
     "afterRot": "Efter ROT",
     "deduction": "avdrag",
     "paidBadge": "Betald",
-    "ataShort": "Tillägg"
+    "ataShort": "Tillägg",
+    "privateCap": "Min privata gräns",
+    "privateOnly": "Endast du ser detta"
   },
   "budgetDashboard": {
     "failedToLoadPayments": "Kunde inte ladda betalningsdetaljer",
@@ -3212,7 +3482,15 @@
     "depth": "Djup/Höjd",
     "category": "Kategori",
     "invalidWidth": "Ogiltig bredd. Ange ett positivt tal.",
-    "groupDimensionsUpdated": "Gruppen har ändrat storlek!"
+    "groupDimensionsUpdated": "Gruppen har ändrat storlek!",
+    "elevationFromFloor": "Höjd från golv",
+    "invalidDepth": "Ogiltigt djup",
+    "objectDimensionsUpdated": "Objektmått uppdaterade",
+    "objectDimensions": "Objektmått",
+    "editDimensions": "Ändra mått",
+    "depthMm": "Djup (mm)",
+    "objectDimensionsHint": "Ändrar bara detta placerade objekt, inte originalmallen",
+    "applyChanges": "Spara ändringar"
   },
   "saveTemplateDialog": {
     "title": "Spara som Mall",
@@ -3412,7 +3690,9 @@
     "noCaption": "Ingen beskrivning",
     "captionPlaceholder": "Lägg till en beskrivning...",
     "linkedRoom": "Rum",
-    "quickPhoto": "Fota"
+    "quickPhoto": "Fota",
+    "moveError": "Kunde inte flytta foto",
+    "photoMoved": "Foto flyttat"
   },
   "photoSource": {
     "classify": "Vilken typ av bild är detta?",
@@ -3458,7 +3738,8 @@
     "resolvedHint": "Tråden är markerad som klar. Klicka \"Öppna igen\" för att fortsätta diskutera.",
     "reply": "Svara",
     "replyingTo": "Svarar {{name}}",
-    "showReplies": "Visa {{count}} fler svar"
+    "showReplies": "Visa {{count}} fler svar",
+    "chooseFiles": "Välj filer"
   },
   "roomContextMenu": {
     "assignToRoom": "Tilldela till rum",
@@ -3581,7 +3862,11 @@
     "createNewRoom": "Skapa nytt rum...",
     "createNewTask": "Skapa nytt arbete...",
     "createNewPurchase": "Skapa nytt inköp...",
-    "documentPreview": "Dokumentförhandsvisning"
+    "documentPreview": "Dokumentförhandsvisning",
+    "linkFile": "Koppla filen till:",
+    "linkToTask": "Koppla till arbete",
+    "linkToPurchase": "Koppla till inköp",
+    "linkToRoom": "Koppla till rum"
   },
   "quoteImport": {
     "exVat": "Ex. moms",
@@ -3624,7 +3909,20 @@
       "homeownerAddDesignation": "Lägg till fastighetsbeteckning i projektinställningar",
       "builderAskClient": "Be kunden fylla i de saknade uppgifterna",
       "builderInviteClient": "Bjud in hemägaren till projektet för att samla ROT-uppgifter"
-    }
+    },
+    "namePlaceholder": "Namn",
+    "pnrPlaceholder": "Personnummer",
+    "addError": "Kunde inte lägga till",
+    "summary": "ROT-avdrag",
+    "person": "person",
+    "persons": "personer",
+    "addPerson": "Lägg till",
+    "overLimit": "Överstiger ROT-tak med {{amount}} kr",
+    "plannedTotal": "Planerat ROT-avdrag",
+    "actualTotal": "Faktiskt ROT-avdrag",
+    "missingInvoices": "{{count}} ROT-uppgift(er) saknar verifierad faktura",
+    "plannedShort": "plan",
+    "noInvoicesYet": "Inga fakturor betalda ännu — planerat avdrag visas"
   },
   "rotRules": {
     "title": "Så beräknar vi ROT",
@@ -3702,7 +4000,17 @@
     "wallSurfaceTitle": "Väggens ytskikt (arbetsinstruktion)",
     "wallMaterial": "Material",
     "wallTreatment": "Behandling",
-    "wallColorCode": "Färgkod"
+    "wallColorCode": "Färgkod",
+    "confirmDelete": "Är du säker på att du vill ta bort detta objekt?",
+    "dimensions": "Dimensioner",
+    "width": "Bredd",
+    "height": "Höjd",
+    "fromFloor": "Från golv",
+    "fromWallEdge": "Från väggkant",
+    "selectRoom": "Välj rum för väggvy",
+    "selectRoomDescription": "Välj vilket rum du vill se väggvy för",
+    "noRoomsFound": "Inga rum hittades. Rita rum i planlösningen först.",
+    "suggestedRoom": "Angränsande rum"
   },
   "quickComment": {
     "addComment": "Lägg till kommentar",
@@ -3748,7 +4056,8 @@
     "writeReply": "Skriv ett svar...",
     "sendReply": "Svara",
     "searchPlaceholder": "Sök i meddelanden...",
-    "emojiSearch": "Sök emoji..."
+    "emojiSearch": "Sök emoji...",
+    "comments": "Kommentarer"
   },
   "activity": {
     "created": "skapade",
@@ -3794,7 +4103,13 @@
     "quoteViewed": "öppnade din offert",
     "quoteComment": "kommenterade på offert",
     "quoteAccepted": "Offert godkänd!",
-    "quoteRejected": "Offert nekad"
+    "quoteRejected": "Offert nekad",
+    "newDm": "Privat meddelande",
+    "kicker": "Aviseringar",
+    "unreadTitle": "{{count}} olästa",
+    "tabAll": "Alla",
+    "tabMentions": "Nämnda",
+    "tabWarnings": "Varningar"
   },
   "elevationShapeDialog": {
     "wallLabel": "Vägg",
@@ -4542,7 +4857,33 @@
     "revisedAs": "Reviderad som {{number}}",
     "creatingRevision": "Skapar revision...",
     "createInvoice": "Skapa faktura",
-    "invoiceCreated": "Faktura skapad från offert"
+    "invoiceCreated": "Faktura skapad från offert",
+    "objectLabel": "Objekt",
+    "untitled": "Namnlös offert",
+    "objectDescription": "Objekt",
+    "objectPlaceholder": "t.ex. Lägenhet 80 kvm på Kungsholmen",
+    "previewSubtitle": "Så här ser offerten ut för kund",
+    "totalIncVat": "Totalt",
+    "afterRotHint": "Att betala efter avdrag",
+    "statusLabel": "Status",
+    "revisionChain": "Revisionskedja",
+    "revisedFrom": "Revision av",
+    "activity": "Aktivitet",
+    "sentToCustomer": "Skickad till kund",
+    "openedByCustomer": "Öppnad av kund",
+    "notSentYet": "Inte skickad än",
+    "pending": "Väntar",
+    "byCustomer": "Av kund",
+    "linkedProject": "Koppling",
+    "openProject": "Öppna projekt",
+    "dateLabel": "Datum",
+    "chatWithCustomer": "Chatt med kund",
+    "chatWithSeller": "Chatta",
+    "decline": "Avböj",
+    "accept": "Acceptera",
+    "viewProject": "Visa projekt",
+    "youDeclined": "Du avböjde offerten",
+    "confirmDeleteQuote": "Är du säker? Det går inte att ångra."
   },
   "invoices": {
     "title": "Fakturor",
@@ -4640,7 +4981,9 @@
     "confirmDeleteHint": "Det går inte att ångra.",
     "changeOrderInvoiceTitle": "Tilläggsfaktura",
     "editInvoice": "Redigera faktura",
-    "ataMode": "ÄTA — utanför ursprunglig offert"
+    "ataMode": "ÄTA — utanför ursprunglig offert",
+    "untitled": "Namnlös",
+    "atLeastOneItem": "Lägg till minst en rad"
   },
   "welcome": {
     "chooseLanguage": "Välj ditt språk",
@@ -4829,7 +5172,10 @@
     "wallCoverage": "vägg",
     "noEdgeForDirection": "Ingen rumskant för denna riktning",
     "backToFloorPlan": "Planritning",
-    "wallCounter": "Vägg {{n}} av {{total}}"
+    "wallCounter": "Vägg {{n}} av {{total}}",
+    "noWallDrawn": "Ingen vägg ritad",
+    "object": "Objekt",
+    "segmentTooSmall": "Segmentet är för litet för att visas"
   },
   "wallElevation": {
     "title": "Väggvy",
@@ -5289,7 +5635,16 @@
     "calcSuggested": "Renaidas förslag. Redigera cellen för att göra siffran till din egen.",
     "saveRateAsDefault": "Spara {{rate}} kr/h som ditt standardtimpris? Det förifyller framtida kalkyler.",
     "saveRateAction": "Spara som standard",
-    "rateSaved": "Standardtimpris uppdaterat: {{rate}} kr/h"
+    "rateSaved": "Standardtimpris uppdaterat: {{rate}} kr/h",
+    "noLaborTasksForRot": "Inga arbetsrader med timmar att applicera ROT på",
+    "rotRemovedAll": "ROT-avdrag borttaget från alla arbeten",
+    "rotAppliedAll": "ROT-avdrag applicerat på {{count}} arbeten",
+    "rotApplyAllTooltip": "Klicka för att applicera/ta bort ROT på alla arbetsrader",
+    "markupOnMatAndUe": "Påslag på material och UE",
+    "markupOnMat": "Påslag på material",
+    "markupOnUe": "Påslag på UE",
+    "removeRot": "Ta bort ROT",
+    "applyRot": "Lägg till ROT"
   },
   "planningSmartImport": {
     "title": "Smart import",
@@ -5374,7 +5729,10 @@
     "budget": "Budget",
     "homeownerBudgetHint": "Din uppskattade budget eller offertbelopp för detta arbetsmoment",
     "estimatedMaterialCost": "Beräknad materialkostnad",
-    "useAsbudget": "Använd som budget"
+    "useAsbudget": "Använd som budget",
+    "costType": "Kostnadstyp",
+    "total": "Totalt",
+    "material": "Material"
   },
   "costCenters": {
     "demolition": "Rivning",
@@ -5388,7 +5746,14 @@
     "windowsDoors": "Fönster & dörrar",
     "inspection": "Besiktning",
     "cleanup": "Städ & avfall",
-    "design": "Design & planering"
+    "design": "Design & planering",
+    "electrical": "El",
+    "tiling": "Kakel",
+    "painting": "Målning",
+    "flooring": "Golv",
+    "kitchen": "Kök",
+    "bathroom": "Badrum",
+    "other": "Övrigt"
   },
   "projectStatus": {
     "planning": "Planering",
@@ -5516,7 +5881,15 @@
     "previewShowingSource": "Visar din svenska källtext.",
     "previewShowingWorker": "Visar exakt vad {{name}} ser ({{lang}}).",
     "previewSeeWorkerLang": "Se på {{lang}}",
-    "previewSeeSwedish": "Visa på svenska"
+    "previewSeeSwedish": "Visa på svenska",
+    "kundvy": {
+      "unnamed": "Namnlös",
+      "title": "Inbjudna med kundvy",
+      "invite": "Bjud in",
+      "statusPending": "Väntar",
+      "statusActive": "Aktiv",
+      "hint": "Förhandsvyn nedan visar exakt det dessa personer ser."
+    }
   },
   "team": {
     "table": {
@@ -6122,7 +6495,8 @@
     "noResults": "Inga resultat hittades",
     "navigate": "navigera",
     "open": "öppna",
-    "close": "stäng"
+    "close": "stäng",
+    "title": "Sök"
   },
   "analysis": {
     "title": "Rotavdrag",
@@ -6231,7 +6605,9 @@
     "saveError": "Kunde inte spara",
     "saving": "Sparar...",
     "linkButton": "Koppla dokument",
-    "canvasAdded": "Ritningen har lagts till på canvas-ytan."
+    "canvasAdded": "Ritningen har lagts till på canvas-ytan.",
+    "newRotPerson": "Nytt personnummer hittat",
+    "addAsRotPerson": "läggs till som ROT-person automatiskt"
   },
   "quoteReview": {
     "title": "Granska offert",
@@ -6408,7 +6784,10 @@
     "showOriginal": "Visa original",
     "showTranslated": "Visa översatt",
     "completeTaskWithPhoto": "Markera klart + foto",
-    "photoRequiredHint": "Foto krävs för att markera klart"
+    "photoRequiredHint": "Foto krävs för att markera klart",
+    "roomEyebrow": "RUM",
+    "taskEyebrow": "UPPGIFT",
+    "taskCount": "{{count}} uppgifter"
   },
   "teamWorker": {
     "workers": "Arbetare",
@@ -6517,7 +6896,40 @@
     "purchasesTooltipNone": "Inga väntande beställningar.",
     "budget": "Budget",
     "budgetTooltip": "Spenderat vs. budget per projekt:",
-    "tasksComplete": "arbeten"
+    "tasksComplete": "arbeten",
+    "portfolio": {
+      "kicker": "Projekt",
+      "activeProjects": "aktiva projekt.",
+      "noAddress": "Ingen adress"
+    },
+    "daySummary": {
+      "kicker": "Idag",
+      "activeJobs": "Aktiva projekt",
+      "tasksThisWeek": "arbeten denna vecka",
+      "approvals": "Att godkänna",
+      "purchaseApprovals": "inköp väntar",
+      "overdue": "Försenade",
+      "budget": "Budget",
+      "budgetOf": "av {{total}}k kr"
+    },
+    "ops": {
+      "progress": "Framsteg"
+    },
+    "noProjects": "Inga projekt",
+    "viewEditorial": "Redaktionell",
+    "viewOps": "Tabell",
+    "viewPortfolio": "Kort",
+    "classicView": "Klassisk vy",
+    "empty": {
+      "step1Title": "Skapa ditt första projekt",
+      "step1Desc": "Ange adress, typ av renovering och ungefärlig budget. Klart på 2 minuter.",
+      "step2Title": "Lägg till arbeten",
+      "step2Desc": "Definiera vad som ska göras — rivning, målning, plattsättning. Koppla till rum.",
+      "step3Title": "Bjud in teamet",
+      "step3Desc": "Dela med kund, underentreprenörer eller projektledare. Alla ser sin del.",
+      "title": "Välkommen till Renofine",
+      "cta": "Nytt projekt"
+    }
   },
   "inspiration": {
     "title": "Inspiration",
@@ -6555,7 +6967,19 @@
     "uploadPhoto": "Välj bild",
     "photoAdded": "Bild tillagd",
     "fullscreen": "Helskärm",
-    "moodboard": "Moodboard"
+    "moodboard": "Moodboard",
+    "gallery": "Galleri",
+    "compareView": "Jämför före/efter",
+    "background": "Bakgrund",
+    "withGap": "Med mellanrum",
+    "captionPlaceholder": "Beskriv din inspiration...",
+    "newRoom": "Nytt rum...",
+    "caption": "Beskrivning",
+    "addCaption": "Lägg till beskrivning...",
+    "details": "Detaljer",
+    "room": "Rum",
+    "noRoom": "Ej kopplat",
+    "source": "Källa"
   },
   "evidence": {
     "verified": "Verifierad",
@@ -6566,7 +6990,10 @@
     "summaryTooltip": "Visar hur många poster som har underlag (faktura/kvitto) kopplat. Klicka för lista över saknade.",
     "tooltipVerified": "Har stödjande dokument (faktura/kvitto)",
     "tooltipRegistered": "Belopp registrerat men inget dokument länkat",
-    "tooltipMissing": "Slutfört men ingen kostnad eller dokument"
+    "tooltipMissing": "Slutfört men ingen kostnad eller dokument",
+    "popoverTitle": "Verifieringsstatus",
+    "popoverMissing": "{{count}} poster saknar underlag",
+    "popoverAllGood": "Alla poster har underlag"
   },
   "planningWizard": {
     "title": "Planera din renovering",
@@ -6647,7 +7074,9 @@
     "matrixFooter": "Skapar {{tasks}} {{taskWord}} över {{rooms}} {{roomWord}}. Typ, material och kostnad väljer du per uppgift i nästa steg.",
     "matrixFooterEmpty": "Bocka i en cell för att skapa en uppgift. Du kan också fortsätta utan att välja något och bygga planen från grunden.",
     "matrixRoomNote": "Anteckning om {{room}}",
-    "matrixRoomNotePlaceholder": "T.ex. Stengolv i entré, slipa befintligt parkett i resten…"
+    "matrixRoomNotePlaceholder": "T.ex. Stengolv i entré, slipa befintligt parkett i resten…",
+    "micDenied": "Mikrofonen är blockerad — kolla webbläsarens behörighet.",
+    "micFailed": "Rösten kunde inte tolkas — prova igen eller skriv."
   },
   "resourcePlanning": {
     "title": "Resursplanering",
@@ -7225,5 +7654,25 @@
     "deletedBoth": "Rummet och ritningen togs bort",
     "deletedDrawing": "Ritningen togs bort – rummet finns kvar i listan",
     "couldNotDelete": "Kunde inte ta bort rummet"
+  },
+  "payments": {
+    "error": "Kunde inte registrera betalning",
+    "fullyPaid": "Faktura markerad som betald",
+    "partiallyPaid": "Delbetalning registrerad",
+    "title": "Registrera inbetalning",
+    "description": "Välj en faktura och ange betalat belopp.",
+    "noInvoices": "Inga obetalda fakturor",
+    "overdue": "Förfallen",
+    "due": "Förfaller",
+    "of": "av",
+    "amount": "Belopp",
+    "partialNote": "Delbetalning — {{remaining}} kvar efter",
+    "date": "Betalningsdatum",
+    "register": "Registrera"
+  },
+  "priorities": {
+    "low": "Låg",
+    "medium": "Medel",
+    "high": "Hög"
   }
 }

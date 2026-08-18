@@ -61,7 +61,35 @@
     "add": "Dodaj",
     "success": "Sukces",
     "error": "Wystąpił błąd",
-    "dismiss": "Zamknij"
+    "dismiss": "Zamknij",
+    "ok": "OK",
+    "swipeToNavigate": "Przesuń, aby nawigować",
+    "openLink": "Otwórz link",
+    "unknown": "Nieznany",
+    "previous": "Poprzedni",
+    "more": "Więcej",
+    "none": "Brak",
+    "project": "Projekt",
+    "opening": "Otwieranie...",
+    "reset": "Resetuj",
+    "copied": "Skopiowano do schowka",
+    "copy": "Kopiuj",
+    "collapse": "Zwiń",
+    "fileTooLarge": "Plik jest za duży (maks. 10 MB)",
+    "doubleClickToEdit": "Kliknij dwukrotnie, aby edytować",
+    "tasks": "zadania",
+    "saved": "Zapisano",
+    "completed": "ukończone",
+    "saveFailed": "Nie udało się zapisać",
+    "unnamed": "Pomieszczenie bez nazwy",
+    "photo": "Zdjęcie",
+    "undo": "Cofnij",
+    "redo": "Ponów",
+    "creating": "Tworzenie...",
+    "continue": "Kontynuuj",
+    "zoomOut": "Pomniejsz",
+    "zoomIn": "Powiększ",
+    "notFound": "Nie znaleziono faktury"
   },
   "beta": {
     "title": "Publiczna beta",
@@ -118,7 +146,8 @@
       "planning": "Planowanie",
       "clientView": "Mój projekt",
       "customerView": "Mój projekt"
-    }
+    },
+    "purchases": "Zakupy"
   },
   "landing": {
     "heroTitle": "Przejmij kontrolę nad",
@@ -172,7 +201,9 @@
     "signingIn": "Logowanie...",
     "signingUp": "Rejestracja...",
     "signInSuccess": "Witaj ponownie!",
-    "signUpSuccess": "Konto utworzone pomyślnie!"
+    "signUpSuccess": "Konto utworzone pomyślnie!",
+    "loginFailed": "Logowanie nie powiodło się",
+    "tryAgain": "Spróbuj ponownie lub zaloguj się za pomocą e-maila."
   },
   "projects": {
     "title": "Moje projekty",
@@ -228,7 +259,15 @@
     },
     "adminToggle": "Pokaż wszystkie projekty (admin)",
     "adminOn": "Admin",
-    "adminOff": "Admin"
+    "adminOff": "Admin",
+    "goalDate": "Data docelowa",
+    "colTasks": "Zadania",
+    "colProgress": "Postęp",
+    "filterAll": "Wszystkie",
+    "filterActive": "W trakcie",
+    "filterCompleted": "Zakończone",
+    "hideDemo": "Ukryj projekt demonstracyjny",
+    "notFound": "Nie znaleziono projektu"
   },
   "projectDetail": {
     "overview": "Przegląd",
@@ -277,7 +316,8 @@
     "leadAccepted": "Oferta zaakceptowana!",
     "leadAcceptedDescription": "Klient zaakceptował ofertę. Zadania zostały utworzone z pozycji oferty.",
     "expandProject": "Rozwiń projekt",
-    "expandProjectHint": "Dodaj pokoje i plan piętra, aby rozpocząć."
+    "expandProjectHint": "Dodaj pokoje i plan piętra, aby rozpocząć.",
+    "planning": "Planowanie"
   },
   "tasks": {
     "title": "Zadania",
@@ -319,7 +359,11 @@
     "notPaid": "Nieopłacone",
     "billed": "Zafakturowane",
     "partiallyPaid": "Częściowo opłacone",
-    "dropTasksHere": "Upuść zadania tutaj"
+    "dropTasksHere": "Upuść zadania tutaj",
+    "unassigned": "Nieprzypisane",
+    "materialBudget": "Budżet materiałowy",
+    "task": "Zadanie",
+    "photos": "Zdjęcia"
   },
   "rooms": {
     "title": "Pokoje",
@@ -461,9 +505,85 @@
     "noSpecsYet": "Brak specyfikacji",
     "electricalShort": "Elektryka",
     "heatingShort": "Ogrzewanie",
-    "floorLabel": "Podłoga",
-    "ceiling": "Sufit",
-    "walls": "Ściany"
+    "noAssignedRooms": "Brak pomieszczeń z przypisanymi zadaniami",
+    "roomsLabel": "pomieszczenia",
+    "referenceImages": "Zdjęcia referencyjne",
+    "materials": "Materiały",
+    "progressPhotos": "Zdjęcia postępu",
+    "completedPhotos": "Zdjęcia ukończenia",
+    "sharePhoto": "Udostępnij zdjęcie",
+    "shareStatusQ": "Jak idzie praca?",
+    "shareInProgress": "W trakcie",
+    "shareDone": "Gotowe",
+    "shareProgressQ": "Jak daleko posunęła się praca?",
+    "failedToCreate": "Nie udało się utworzyć pomieszczenia",
+    "created": "Pokój utworzony",
+    "selectPriority": "Wybierz priorytet",
+    "missingDimensions": "Brak wymiarów",
+    "calcWallPaint": "Farba do ścian",
+    "saveCoatsAsDefault": "Zapisz",
+    "asDefault": "jako domyślne?",
+    "saveCoverageAsDefault": "Zapisz",
+    "calcCeilingPaint": "Farba do sufitu",
+    "calcFloorMaterial": "Materiał podłogowy (wraz z odpadem)",
+    "calcSkirting": "Listwa przypodłogowa (metry bieżące)",
+    "taskAlreadyLinked": "Zadanie jest już powiązane z tym pomieszczeniem",
+    "taskLinked": "Zadanie powiązano z pomieszczeniem",
+    "failedToLinkTask": "Nie udało się powiązać zadania",
+    "linkExisting": "Połącz",
+    "linkExistingTask": "Połącz istniejące zadanie",
+    "allTasksLinked": "Wszystkie zadania są już powiązane",
+    "loadingRoomData": "Ładowanie danych pomieszczenia",
+    "fillInNewRoomDetails": "Uzupełnij szczegóły nowego pomieszczenia",
+    "editRoomInfoAndComments": "Edytuj informacje o pomieszczeniu",
+    "waitingForRoomData": "Oczekiwanie",
+    "couldNotLoadPhotos": "Nie udało się załadować zdjęć",
+    "mustBeLoggedInToUpload": "Musisz być zalogowany, aby przesyłać zdjęcia",
+    "profileNotFound": "Nie znaleziono profilu",
+    "notAnImage": "{{name}} nie jest obrazem",
+    "fileTooLarge": "{{name}} jest za duży (maks. 10MB)",
+    "couldNotUpload": "Nie udało się przesłać {{name}}",
+    "couldNotSave": "Nie udało się zapisać {{name}}",
+    "photosUploaded": "Zdjęcia przesłane!",
+    "couldNotUploadPhotos": "Nie udało się przesłać zdjęć",
+    "confirmDeletePhoto": "Czy na pewno chcesz usunąć to zdjęcie?",
+    "photoDeleted": "Zdjęcie usunięte",
+    "couldNotDeletePhoto": "Nie udało się usunąć zdjęcia",
+    "couldNotSavePinterestBoard": "Nie udało się zapisać tablicy Pinterest",
+    "pinterestBoardRemoved": "Tablica Pinterest usunięta",
+    "invalidPinterestBoardUrl": "Nieprawidłowy adres URL tablicy Pinterest. Użyj formatu: pinterest.com/user/board-name",
+    "pinterestBoardAdded": "Tablica Pinterest dodana!",
+    "confirmRemovePinterestBoard": "Czy na pewno chcesz usunąć tablicę Pinterest?",
+    "enterPinterestPinUrl": "Wprowadź adres URL pinezki Pinterest",
+    "invalidPinterestPinUrl": "Nieprawidłowy adres URL pinezki Pinterest. Użyj formatu: pinterest.com/pin/123456789/",
+    "mustBeLoggedIn": "Musisz być zalogowany",
+    "pinImported": "Pinezka zaimportowana!",
+    "couldNotImportPin": "Nie udało się zaimportować pinezki",
+    "uploading": "Przesyłanie...",
+    "addPhoto": "Dodaj zdjęcie",
+    "takePhoto": "Zrób zdjęcie",
+    "uploadFile": "Wybierz plik",
+    "importPin": "Importuj pinezkę",
+    "changeBoard": "Zmień tablicę",
+    "linkBoard": "Połącz tablicę",
+    "importPinterestPin": "Importuj pinezkę Pinterest",
+    "pastePinterestPinLink": "Wklej link do pinezki Pinterest, aby zaimportować obraz do tego pomieszczenia.",
+    "openPinAndCopyUrl": "Otwórz pinezkę na Pinterest i skopiuj adres URL z przeglądarki.",
+    "importing": "Importowanie...",
+    "import": "Importuj",
+    "openBoardAndCopyUrl": "Otwórz swoją tablicę Pinterest i skopiuj adres URL z przeglądarki.",
+    "removeBoard": "Usuń tablicę",
+    "roomPhoto": "Zdjęcie pomieszczenia",
+    "deletePhoto": "Usuń zdjęcie",
+    "noPhotosUploaded": "Nie przesłano jeszcze żadnych zdjęć",
+    "couldNotMovePhoto": "Nie udało się przenieść zdjęcia",
+    "photoMoved": "Zdjęcie przeniesione",
+    "viewMoodboard": "Zobacz w moodboardzie →",
+    "clickToRename": "Kliknij, aby zmienić nazwę",
+    "instructions": "Instrukcje",
+    "materialCalculation": "Kalkulacja materiałów",
+    "comments": "Komentarze",
+    "useComputedArea": "Użyj obliczonej powierzchni"
   },
   "spacePlanner": {
     "title": "Rysunek",
@@ -492,59 +612,13 @@
     "multiPlanProjects": "Projekty wieloplanowe: Utwórz oddzielne plany dla różnych pięter lub alternatywnych projektów"
   },
   "profile": {
-    "title": "Ustawienia profilu",
-    "description": "Zarządzaj ustawieniami konta i preferencjami",
-    "profileInfo": "Informacje o profilu",
-    "profileInfoDescription": "Zaktualizuj swoje dane osobowe",
-    "emailNotChangeable": "E-mail nie może być zmieniony",
-    "defaultLanguage": "Domyślny język",
-    "saveChanges": "Zapisz zmiany",
-    "saving": "Zapisywanie...",
-    "profileUpdated": "Profil zaktualizowany",
-    "profileUpdatedDescription": "Twój profil został pomyślnie zapisany.",
-    "changePassword": "Zmień hasło",
-    "changePasswordDescription": "Zaktualizuj hasło, aby zabezpieczyć swoje konto",
-    "newPassword": "Nowe hasło",
-    "newPasswordPlaceholder": "Wprowadź nowe hasło",
-    "confirmPassword": "Potwierdź hasło",
-    "confirmPasswordPlaceholder": "Potwierdź nowe hasło",
-    "changingPassword": "Zmiana hasła...",
-    "passwordChanged": "Hasło zmienione",
-    "passwordChangedDescription": "Twoje hasło zostało pomyślnie zaktualizowane.",
-    "passwordsDoNotMatch": "Hasła nie pasują do siebie",
-    "passwordTooShort": "Hasło musi mieć co najmniej 6 znaków",
-    "professionalProfile": "Widoczność w Znajdź Fachowca",
-    "professionalProfileDescription": "Określa, czy Twoja firma pojawia się w wyszukiwarce 'Znajdź Fachowca', gdzie właściciele domów szukają wykonawców",
-    "enableProfessional": "Pokaż mnie w Znajdź Fachowca",
-    "enableProfessionalDescription": "Po włączeniu klienci mogą Cię znaleźć przez stronę wyszukiwania. Wymaga danych firmy poniżej.",
-    "companyName": "Nazwa firmy",
-    "companyNamePlaceholder": "np. Budowa i Remonty Sp. z o.o.",
-    "professionalCategory": "Kategoria zawodowa",
-    "selectCategory": "Wybierz kategorię",
-    "categoryBuilder": "Budowniczy / Wykonawca",
-    "categoryElectrician": "Elektryk",
-    "categoryPlumber": "Hydraulik",
-    "categoryPainter": "Malarz",
-    "categoryTiler": "Glazurnik",
-    "categoryCarpenter": "Stolarz",
-    "categoryArchitect": "Architekt / Projektant",
-    "categoryRoofer": "Dekarz",
-    "categoryLandscaper": "Ogrodnik krajobrazowy",
-    "categoryOther": "Inny",
-    "companyAddress": "Adres firmy",
-    "companyAddressPlaceholder": "Adres ulicy",
-    "companyCity": "Miasto",
-    "companyCityPlaceholder": "np. Warszawa",
-    "companyPostalCode": "Kod pocztowy",
-    "companyPostalCodePlaceholder": "np. 00-001",
-    "companyDescription": "Opis",
-    "companyDescriptionPlaceholder": "Opisz swoje usługi, doświadczenie i specjalizacje...",
-    "companyWebsite": "Strona internetowa",
-    "companyWebsitePlaceholder": "np. https://www.example.com",
-    "proBadge": "PRO",
-    "orgNumber": "Numer NIP",
-    "orgNumberPlaceholder": "np. 123-456-78-90",
-    "proFieldsRequired": "Uzupełnij nazwę firmy i kategorię, aby aktywować profil profesjonalny"
+    "bankgiro": "Bankgiro",
+    "bankAccountNumber": "Numer konta",
+    "bankgiroHint": "Automatycznie wypełniane na nowych fakturach",
+    "defaultPaymentTerms": "Domyślne warunki płatności",
+    "defaultPaymentTermsHint": "Automatycznie wypełniane na nowych fakturach",
+    "paymentFieldsHint": "Bankgiro i numer konta są automatycznie wypełniane na nowych fakturach",
+    "days": "dni"
   },
   "languages": {
     "en": "Angielski",
@@ -747,7 +821,13 @@
       "viewer": {
         "description": "Dostęp tylko do odczytu harmonogramu, zadań i przeglądu"
       }
-    }
+    },
+    "addRotPerson": "Dodaj osobę ROT",
+    "noTeamMembers": "Brak członków zespołu.",
+    "company": "Firma",
+    "personnummer": "Numer osobisty",
+    "homeowner": "Właściciel domu",
+    "contractor": "Wykonawca"
   },
   "propertyPanel": {
     "objectDetails": "Szczegóły obiektu",
@@ -820,7 +900,15 @@
     "depth": "Głębokość/Wysokość",
     "category": "Kategoria",
     "invalidWidth": "Nieprawidłowa szerokość. Wprowadź liczbę dodatnią.",
-    "groupDimensionsUpdated": "Grupa przeskalowana pomyślnie!"
+    "groupDimensionsUpdated": "Grupa przeskalowana pomyślnie!",
+    "elevationFromFloor": "Wysokość od podłogi",
+    "invalidDepth": "Nieprawidłowa głębokość",
+    "objectDimensionsUpdated": "Wymiary obiektu zaktualizowane",
+    "objectDimensions": "Wymiary obiektu",
+    "editDimensions": "Edytuj wymiary",
+    "depthMm": "Głębokość (mm)",
+    "objectDimensionsHint": "Zmienia tylko ten umieszczony obiekt, nie oryginalny szablon",
+    "applyChanges": "Zapisz zmiany"
   },
   "saveTemplateDialog": {
     "title": "Zapisz jako szablon",
@@ -942,7 +1030,9 @@
     "confirmDelete": "Czy na pewno chcesz usunąć to zdjęcie?",
     "photoDeleted": "Zdjęcie usunięte",
     "deleteError": "Nie można usunąć zdjęcia",
-    "removePhoto": "Usuń zdjęcie"
+    "removePhoto": "Usuń zdjęcie",
+    "moveError": "Nie udało się przenieść zdjęcia",
+    "photoMoved": "Zdjęcie przeniesione"
   },
   "comments": {
     "title": "Komentarze",
@@ -972,7 +1062,8 @@
     "resolved": "Rozwiązane",
     "markDone": "Oznacz jako rozwiązane",
     "reopen": "Otwórz ponownie",
-    "resolvedHint": "Ten wątek jest oznaczony jako rozwiązany. Kliknij \"Otwórz ponownie\", aby kontynuować dyskusję."
+    "resolvedHint": "Ten wątek jest oznaczony jako rozwiązany. Kliknij \"Otwórz ponownie\", aby kontynuować dyskusję.",
+    "chooseFiles": "Wybierz pliki"
   },
   "roomContextMenu": {
     "assignToRoom": "Przypisz do pokoju",
@@ -1067,7 +1158,11 @@
     "importDone": "Import zakończony!",
     "importResult": "Zaimportowano {{rooms}} pokoi i {{tasks}} zadań",
     "importError": "Błąd importu",
-    "couldNotImport": "Nie można zaimportować danych"
+    "couldNotImport": "Nie można zaimportować danych",
+    "linkFile": "Powiąż plik z:",
+    "linkToTask": "Powiąż z zadaniem",
+    "linkToPurchase": "Powiąż z zakupem",
+    "linkToRoom": "Powiąż z pomieszczeniem"
   },
   "elevation": {
     "noWalls": "Brak ścian do wyświetlenia",
@@ -1106,7 +1201,17 @@
     "toDeselect": "aby anulować",
     "objectDeleted": "Obiekt usunięty",
     "objectCopied": "Obiekt skopiowany",
-    "objectPasted": "Obiekt wklejony"
+    "objectPasted": "Obiekt wklejony",
+    "confirmDelete": "Czy na pewno chcesz usunąć ten obiekt?",
+    "dimensions": "Wymiary",
+    "width": "Szerokość",
+    "height": "Wysokość",
+    "fromFloor": "Od podłogi",
+    "fromWallEdge": "Od krawędzi ściany",
+    "selectRoom": "Wybierz pomieszczenie dla widoku ściany",
+    "selectRoomDescription": "Wybierz, dla którego pomieszczenia chcesz zobaczyć widok ściany",
+    "noRoomsFound": "Nie znaleziono pomieszczeń. Najpierw narysuj pomieszczenia na planie.",
+    "suggestedRoom": "Sąsiednie pomieszczenie"
   },
   "quickComment": {
     "addComment": "Dodaj komentarz",
@@ -1130,7 +1235,11 @@
     "scrapped": "Odrzucone",
     "planned": "Zaplanowane",
     "waiting": "Oczekujące",
-    "cancelled": "Anulowane"
+    "cancelled": "Anulowane",
+    "unknown": "Nieznany",
+    "planning": "Planowanie",
+    "active": "W trakcie",
+    "delayed": "Opóźniony"
   },
   "materialStatuses": {
     "submitted": "Wysłane",
@@ -1142,7 +1251,8 @@
   },
   "paymentStatuses": {
     "notPaid": "Nieopłacone",
-    "partiallyPaid": "Częściowo opłacone"
+    "partiallyPaid": "Częściowo opłacone",
+    "paid": "Opłacone"
   },
   "roomStatuses": {
     "existing": "Istniejące",
@@ -1234,7 +1344,45 @@
       "width": "S",
       "height": "W",
       "area": "Pow."
-    }
+    },
+    "measureDistance": "Zmierz odległość",
+    "tools": {
+      "opening": "Otwór",
+      "door": "Drzwi",
+      "window": "Okno",
+      "passage": "Przejście",
+      "objects": "Obiekty",
+      "connector": "Połączenie",
+      "stickyNote": "Karteczka samoprzylepna",
+      "wall": "Ściana",
+      "underlay": "Podkład i import"
+    },
+    "keyboardShortcuts": "Skróty klawiszowe",
+    "keyboardShortcutsDescription": "Szybki przewodnik dla planera przestrzeni",
+    "nameRequired": "Wymagana nazwa",
+    "enterPlanName": "Wprowadź nazwę nowego planu",
+    "couldNotCreatePlan": "Nie udało się utworzyć planu",
+    "newPlanCreated": "Utworzono nowy plan!",
+    "errorCreating": "Błąd podczas tworzenia planu",
+    "cannotDelete": "Nie można usunąć",
+    "mustHaveOnePlan": "Musisz mieć co najmniej jeden plan. Utwórz nowy, zanim usuniesz ten.",
+    "couldNotDeletePlan": "Nie udało się usunąć planu z bazy danych",
+    "planDeleted": "Plan usunięty",
+    "errorDeleting": "Błąd podczas usuwania planu",
+    "couldNotRenamePlan": "Nie udało się zmienić nazwy planu",
+    "errorRenaming": "Błąd podczas zmiany nazwy planu",
+    "selectPlan": "Wybierz plan",
+    "floorPlans": "Rzuty pięter",
+    "noPlansCreated": "Nie utworzono jeszcze żadnych planów",
+    "createNewPlanDescription": "Utwórz nowy pusty plan lub zaimportuj z rysunku",
+    "planName": "Nazwa planu",
+    "planNamePlaceholder": "np. Piętro 1, Piwnica, Wariant A",
+    "planDescriptionPlaceholder": "np. Główny plan ze wszystkimi pomieszczeniami",
+    "deleteFloorPlan": "Usunąć rzut piętra?",
+    "cannotBeUndone": "Tej operacji nie można cofnąć.",
+    "allObjectsDeleted": "Wszystkie ściany, pomieszczenia i obiekty w tym planie zostaną trwale usunięte.",
+    "uploadTraceImage": "Prześlij rysunek (kalkowanie)",
+    "aiImport": "Interpretacja rzutu przez AI"
   },
   "files": {
     "title": "Pliki projektu",
@@ -1296,7 +1444,34 @@
     "linkedFiles": "Powiązane pliki",
     "noLinkedFiles": "Brak powiązanych plików",
     "unlinkFile": "Odwiąż plik",
-    "fileUnlinked": "Plik odwiązany"
+    "fileUnlinked": "Plik odwiązany",
+    "attachments": "Załączniki",
+    "noAttachments": "Brak załączników",
+    "dropToUpload": "Upuść pliki tutaj",
+    "dropHint": "Pliki i foldery są analizowane automatycznie",
+    "upload": "Prześlij",
+    "regularUpload": "Zwykłe przesyłanie",
+    "takePhoto": "Zrób zdjęcie",
+    "search": "Szukaj plików...",
+    "uploaded": "Plik załączony",
+    "uploadError": "Nie udało się przesłać",
+    "openError": "Nie udało się otworzyć pliku",
+    "unlink": "Usuń powiązanie",
+    "pdfDocument": "Dokument PDF",
+    "image": "Obraz",
+    "file": "Plik",
+    "batchUploadTitle": "Inteligentne przesyłanie",
+    "filesCount": "pliki",
+    "classifying": "Analizowanie",
+    "fileName": "Plik",
+    "autoLink": "Powiązanie",
+    "size": "Rozmiar",
+    "confirmUpload": "Prześlij wszystkie",
+    "invoiceDate": "Data faktury",
+    "invoiceAmount": "Kwota",
+    "downloadError": "Błąd pobierania",
+    "error": "Błąd",
+    "noPreviewAvailable": "Podgląd niedostępny dla tego typu pliku"
   },
   "purchases": {
     "title": "Zamówienia zakupowe",
@@ -1355,7 +1530,45 @@
     "vendor": "Dostawca",
     "task": "Zadanie",
     "assignedTo": "Przypisane do",
-    "statusChangedTo": "Status zmieniony na {{status}}"
+    "statusChangedTo": "Status zmieniony na {{status}}",
+    "updateOrderFailed": "Nie udało się zaktualizować",
+    "requestSubmitted": "Wniosek złożony",
+    "requestSubmittedDescription": "Twój wniosek zakupowy został przesłany do zatwierdzenia.",
+    "requestPending": "Wniosek oczekuje",
+    "requestPurchase": "Poproś o zakup",
+    "requestPurchaseApproval": "Poproś o zatwierdzenie zakupu",
+    "submitRequestFor": "Wyślij wniosek zakupowy dla:",
+    "addInfoPlaceholder": "Dodaj dodatkowe informacje o tym wniosku zakupowym...",
+    "explainWhy": "Wyjaśnij, dlaczego ten materiał jest potrzebny, lub podaj konkretne wymagania.",
+    "submitting": "Wysyłanie...",
+    "submitRequest": "Wyślij wniosek",
+    "linkedToRoom": "Pokój",
+    "hasAttachment": "Załączono dokumentację",
+    "attachmentShort": "Załącznik",
+    "noLines": "Brak pozycji",
+    "moreSuffix": "więcej",
+    "moreAttachments": "Więcej załączników",
+    "attachFile": "Załącz plik",
+    "noExtraAttachments": "Brak dodatkowych załączników",
+    "invoiceNumberShort": "Faktura",
+    "paidOn": "Opłacono {{date}}",
+    "overdueLabel": "Przeterminowane {{date}}",
+    "dueOn": "Termin {{date}}",
+    "attachment": "Dokumentacja",
+    "allocateAll": "Przypisz wszystkie pozycje",
+    "purchaseOrder": "Zamówienie zakupu",
+    "detailSheetDescription": "Edytuj zamówienie, pozycje i przypisanie",
+    "linkToBudgetPost": "Powiąż z pozycją budżetu",
+    "orderAdded": "Zamówienie zakupu zostało dodane",
+    "failedToAdd": "Nie udało się dodać zamówienia zakupu",
+    "orderUpdated": "Zamówienie zakupu zostało zaktualizowane",
+    "failedToUpdate": "Nie udało się zaktualizować zamówienia zakupu",
+    "receipt": "Paragon / faktura",
+    "photoReceipt": "Sfotografuj paragon",
+    "uploadReceipt": "Prześlij",
+    "receiptOptionalHint": "Możesz też dodać paragon później w zakładce Pliki.",
+    "saveCompleted": "Zarejestruj zakup",
+    "saveOrder": "Utwórz zamówienie"
   },
   "overview": {
     "projectOverview": "Przegląd projektu",
@@ -1448,7 +1661,24 @@
       "saved": "Ustawienia zaktualizowane",
       "savedDescription": "Ustawienia projektu zostały zapisane."
     },
-    "planningReference": "Dokumentacja planowania"
+    "planningReference": "Dokumentacja planowania",
+    "quickInvoice": "Faktura",
+    "quickQuote": "Oferta",
+    "quickNewQuote": "Nowa oferta",
+    "quickPurchase": "Zakup",
+    "quickPayment": "Wpłata",
+    "coverUpload": "Prześlij zdjęcie",
+    "coverUrl": "Wklej link",
+    "coverExisting": "Wybierz spośród zdjęć",
+    "coverPickExisting": "Wybierz zdjęcie okładki",
+    "noExistingImages": "Nie znaleziono zdjęć",
+    "recentPhotos": {
+      "sourceRoom": "Pomieszczenie",
+      "sourceTask": "Zadanie",
+      "sourceMaterial": "Zakup",
+      "sourceComment": "Komentarz",
+      "sourceFile": "Plik"
+    }
   },
   "receipt": {
     "title": "Szybkie zdjęcie paragonu",
@@ -1482,7 +1712,12 @@
     "notAnImage": "Wybrany plik nie jest obrazem",
     "fileTooLarge": "Plik jest za duży (maks. 10MB)",
     "convertingImage": "Konwertowanie obrazu...",
-    "conversionFailed": "Nie udało się przekonwertować obrazu. Spróbuj innego pliku."
+    "conversionFailed": "Nie udało się przekonwertować obrazu. Spróbuj innego pliku.",
+    "pdfNeedsQuoteFlow": "Format PDF jest obsługiwany przez import oferty (ekstrakcja wiersz po wierszu).",
+    "openQuoteImport": "Otwórz import oferty",
+    "vendorName": "Sklep / dostawca",
+    "amount": "Kwota",
+    "room": "Pokój"
   },
   "budget": {
     "title": "Budżet",
@@ -1552,7 +1787,13 @@
     "detailVendor": "Dostawca",
     "detailVendorLink": "Link do dostawcy",
     "detailExcludeFromBudget": "Wyklucz z budżetu",
-    "detailCreated": "Utworzono"
+    "detailCreated": "Utworzono",
+    "createNewSupplier": "utwórz nowy",
+    "attachments": "Załączniki",
+    "collapse": "Zwiń",
+    "expand": "Rozwiń",
+    "materialBudget": "Budżet materiałowy",
+    "subcontractor": "Podwykonawca"
   },
   "taskPanel": {
     "title": "Szczegóły zadania",
@@ -1629,7 +1870,8 @@
     "writeReply": "Napisz odpowiedź...",
     "sendReply": "Odpowiedz",
     "searchPlaceholder": "Szukaj w wiadomościach...",
-    "emojiSearch": "Szukaj emoji..."
+    "emojiSearch": "Szukaj emoji...",
+    "comments": "Komentarze"
   },
   "notifications": {
     "title": "Powiadomienia",
@@ -1640,7 +1882,13 @@
     "newTask": "Przypisano nowe zadanie",
     "newPurchaseOrder": "Nowe zamówienie zakupowe",
     "inProject": "w {{project}}",
-    "quoteAccepted": "Oferta zaakceptowana!"
+    "quoteAccepted": "Oferta zaakceptowana!",
+    "newDm": "Wiadomość prywatna",
+    "kicker": "Powiadomienia",
+    "unreadTitle": "{{count}} nieprzeczytanych",
+    "tabAll": "Wszystkie",
+    "tabMentions": "Wzmianki",
+    "tabWarnings": "Ostrzeżenia"
   },
   "elevationShapeDialog": {
     "wallLabel": "Ściana",
@@ -1744,7 +1992,9 @@
         "label": "Uzupełnij swój profil zawodowy",
         "instruction": "Dodaj dane swojej firmy i informacje zawodowe, aby przyciągnąć klientów."
       }
-    }
+    },
+    "measurementTitle": "System miar",
+    "measurementDesc": "Jak mierzysz?"
   },
   "canvasSettings": {
     "title": "Ustawienia rysunku",
@@ -1803,7 +2053,9 @@
     "groupByAssignee": "Przypisany",
     "groupByPriority": "Priorytet",
     "dependenciesCascaded": "Przeniesiono również {{count}} zależnych zadań",
-    "weekShort": "T"
+    "weekShort": "T",
+    "projectStart": "Projekt",
+    "tasks": "Zadania"
   },
   "canvas": {
     "settings": "Ustawienia rysunku",
@@ -2423,7 +2675,33 @@
     "groupedByRoom": "Pogrupowane według pokoju",
     "noRoom": "Brak pokoju",
     "acceptedTotal": "Zaakceptowana wartość",
-    "backToProject": "Wróć do projektu"
+    "backToProject": "Wróć do projektu",
+    "objectLabel": "Obiekt",
+    "untitled": "Oferta bez tytułu",
+    "objectDescription": "Obiekt",
+    "objectPlaceholder": "np. Mieszkanie 80 m² na Kungsholmen",
+    "previewSubtitle": "Tak wygląda oferta dla klienta",
+    "totalIncVat": "Razem",
+    "afterRotHint": "Do zapłaty po odliczeniu",
+    "statusLabel": "Status",
+    "revisionChain": "Łańcuch wersji",
+    "revisedFrom": "Wersja na podstawie",
+    "activity": "Aktywność",
+    "sentToCustomer": "Wysłano do klienta",
+    "openedByCustomer": "Otwarto przez klienta",
+    "notSentYet": "Jeszcze nie wysłano",
+    "pending": "Oczekuje",
+    "byCustomer": "Przez klienta",
+    "linkedProject": "Powiązanie",
+    "openProject": "Otwórz projekt",
+    "dateLabel": "Data",
+    "chatWithCustomer": "Czat z klientem",
+    "chatWithSeller": "Czat",
+    "decline": "Odrzuć",
+    "accept": "Zaakceptuj",
+    "viewProject": "Zobacz projekt",
+    "youDeclined": "Odrzuciłeś ofertę",
+    "confirmDeleteQuote": "Czy na pewno? Tej operacji nie można cofnąć."
   },
   "welcome": {
     "chooseLanguage": "Wybierz swój język",
@@ -2442,7 +2720,8 @@
     "importFromDocument": "Importuj z dokumentu",
     "importFromDocumentDesc": "Prześlij PDF lub plik tekstowy, a AI utworzy pokoje i zadania",
     "exploreFirst": "Najpierw poznaj",
-    "exploreFirstDesc": "Sprawdź przykładowy projekt, aby zobaczyć jak to działa"
+    "exploreFirstDesc": "Sprawdź przykładowy projekt, aby zobaczyć jak to działa",
+    "chooseLanguageDesc": "Możesz to zmienić później w ustawieniach"
   },
   "demoProject": {
     "badge": "Przykładowy projekt",
@@ -2541,47 +2820,44 @@
     "roomNeedsPoints": "Pokój wymaga co najmniej 3 punktów, aby wyświetlić widok elewacji.",
     "noWall": "Brak narysowanej ściany",
     "wallCoverage": "ściana",
-    "noEdgeForDirection": "Brak krawędzi pokoju dla tego kierunku"
+    "noEdgeForDirection": "Brak krawędzi pokoju dla tego kierunku",
+    "noWallDrawn": "Nie narysowano ściany",
+    "object": "Obiekt",
+    "segmentTooSmall": "Segment jest zbyt mały, aby go wyświetlić"
   },
   "intake": {
     "title": "Opowiedz nam o swoim projekcie",
     "subtitle": "Wypełnij poniższy formularz, abyśmy mogli zrozumieć Twoje potrzeby remontowe",
     "poweredBy": "Obsługiwane przez Renofine",
-
     "step1Title": "Twoje dane",
     "step2Title": "Nieruchomość",
     "step3Title": "Pokoje i życzenia",
     "step4Title": "Podsumowanie",
     "stepOf": "Krok {{current}} z {{total}}",
-
     "name": "Imię i nazwisko",
     "namePlaceholder": "Twoje pełne imię i nazwisko",
     "email": "E-mail",
     "emailPlaceholder": "twoj@email.pl",
     "phone": "Telefon",
     "phonePlaceholder": "123-456-789",
-
     "address": "Adres",
     "addressPlaceholder": "Ulica i numer",
     "postalCode": "Kod pocztowy",
     "postalCodePlaceholder": "00-000",
     "city": "Miasto",
     "cityPlaceholder": "Miasto",
-
     "propertyType": "Typ nieruchomości",
     "villa": "Dom jednorodzinny",
     "lagenhet": "Mieszkanie",
     "radhus": "Szeregowiec",
     "fritidshus": "Dom letniskowy",
     "annat": "Inny",
-
     "selectRooms": "Które pokoje chcesz wyremontować?",
     "selectRoomsDescription": "Kliknij na pokoje, które chcesz uwzględnić",
     "addCustomRoom": "Dodaj niestandardowy pokój",
     "customRoomName": "Nazwa pokoju",
     "noRoomsSelected": "Nie wybrano jeszcze pokoi",
     "roomsSelected": "Wybrano {{count}} pokój(e/i)",
-
     "roomDescription": "Opisz, co chcesz zrobić",
     "roomDescriptionPlaceholder": "Np. Kompleksowy remont z nowymi płytkami, armaturą i oświetleniem...",
     "workTypes": "Jakie prace są potrzebne?",
@@ -2596,7 +2872,6 @@
     "editRoom": "Edytuj",
     "removeRoom": "Usuń",
     "saveRoom": "Zapisz pokój",
-
     "workType": {
       "rivning": "Rozbiórka",
       "el": "Elektryka",
@@ -2613,7 +2888,6 @@
       "tradgard": "Ogród",
       "annat": "Inne"
     },
-
     "summary": "Sprawdź swoje zgłoszenie",
     "summaryDescription": "Upewnij się, że wszystko jest poprawne przed wysłaniem",
     "yourDetails": "Twoje dane",
@@ -2622,23 +2896,19 @@
     "additionalComments": "Dodatkowe uwagi",
     "additionalCommentsPlaceholder": "Czy jest coś jeszcze, o czym powinniśmy wiedzieć?",
     "images": "{{count}} zdjęcie/zdjęć",
-
     "submit": "Wyślij zgłoszenie",
     "submitting": "Wysyłanie...",
     "submitted": "Dziękujemy!",
     "submittedTitle": "Twoje zgłoszenie zostało wysłane",
     "submittedDescription": "{{company}} przejrzy Twoje zgłoszenie i skontaktuje się z ofertą.",
     "submittedNote": "Otrzymasz e-mail z potwierdzeniem na adres {{email}}",
-
     "back": "Wstecz",
     "next": "Dalej",
     "required": "Wymagane",
-
     "expired": "To zgłoszenie wygasło",
     "expiredDescription": "Skontaktuj się z wykonawcą, aby uzyskać nowy link",
     "notFound": "Nie znaleziono zgłoszenia",
     "notFoundDescription": "Link może być nieprawidłowy lub wygasły",
-
     "requests": "Zgłoszenia klientów",
     "newRequest": "Nowe zgłoszenie",
     "createRequest": "Utwórz zgłoszenie",
@@ -2651,7 +2921,6 @@
     "greetingLabel": "Osobiste powitanie",
     "greetingPlaceholder": "Cześć! Dziękuję za zainteresowanie naszymi usługami. Proszę wypełnić formularz, a skontaktuję się z ofertą.",
     "greetingHint": "Twoje powitanie będzie widoczne dla klienta po otwarciu formularza.",
-
     "preview": {
       "title": "Podgląd formularza",
       "description": "Tak wygląda formularz dla Twojego klienta.",
@@ -2667,28 +2936,23 @@
       "next": "Następny",
       "infoText": "Formularz jest dostosowany do urządzeń mobilnych i zajmuje około 3-5 minut."
     },
-
     "statusPending": "Oczekuje na odpowiedź",
     "statusSubmitted": "Wysłane",
     "statusConverted": "Przekształcone w ofertę",
     "statusExpired": "Wygasłe",
     "statusCancelled": "Anulowane",
-
     "viewDetails": "Zobacz szczegóły",
     "createQuote": "Utwórz ofertę",
     "sendReminder": "Wyślij przypomnienie",
     "cancel": "Anuluj zgłoszenie",
     "cancelConfirm": "Czy na pewno chcesz anulować to zgłoszenie?",
-
     "noRequests": "Brak zgłoszeń klientów",
     "noRequestsDescription": "Utwórz zgłoszenie, aby rozpocząć",
-
     "convertToQuote": "Przekształć w ofertę",
     "convertToQuoteDescription": "Utwórz pokoje, zadania i ofertę z tego zgłoszenia",
     "converting": "Przekształcanie...",
     "converted": "Zgłoszenie przekształcone",
     "convertedDescription": "Pokoje i zadania zostały utworzone. Możesz teraz edytować ofertę.",
-
     "sendCustomerForm": "Wyślij formularz klienta",
     "sendCustomerFormDescription": "Wyślij formularz do klienta, aby zebrać informacje o projekcie {{project}}",
     "emailRequired": "E-mail jest wymagany",
@@ -2710,7 +2974,6 @@
     },
     "sending": "Wysyłanie...",
     "sendForm": "Wyślij formularz",
-
     "takePhoto": "Zrób zdjęcie",
     "chooseFile": "Wybierz plik",
     "chooseFiles": "Wybierz pliki",
@@ -2722,11 +2985,9 @@
     "noFilesYet": "Nie przesłano jeszcze plików",
     "filesCount": "{{count}} z {{max}} plików",
     "optional": "opcjonalne",
-
     "roomPhotos": "Zdjęcia pokoju",
     "roomPhotosDescription": "Zrób lub wybierz zdjęcia pokazujące obecny stan",
     "photosAttached": "Dołączono {{count}} zdjęć",
-
     "attachments": "Dołącz pliki",
     "attachmentsDescription": "Prześlij plany, certyfikaty, zdjęcia lub inne dokumenty",
     "uploadedRoomPhotos": "Przesłane zdjęcia pokoi"
@@ -2862,16 +3123,9 @@
     "projectLabel": "Projekt",
     "invoiceNumberLabel": "Nr faktury",
     "recipient": "Odbiorca",
-    "bankAccountNumber": "Numer konta"
-  },
-  "profile": {
-    "bankgiro": "Bankgiro",
     "bankAccountNumber": "Numer konta",
-    "bankgiroHint": "Automatycznie wypełniane na nowych fakturach",
-    "defaultPaymentTerms": "Domyślne warunki płatności",
-    "defaultPaymentTermsHint": "Automatycznie wypełniane na nowych fakturach",
-    "paymentFieldsHint": "Bankgiro i numer konta są automatycznie wypełniane na nowych fakturach",
-    "days": "dni"
+    "untitled": "Bez tytułu",
+    "atLeastOneItem": "Dodaj co najmniej jedną pozycję"
   },
   "materialRecipes": {
     "wallPaint": "Farba ścienna",
@@ -3112,5 +3366,158 @@
       "title": "Sprawdź swoje ubezpieczenie",
       "body": "Przed rozpoczęciem remontu sprawdź, czy Twoje ubezpieczenie domu pokrywa szkody budowlane i czy Twój wykonawca ma ubezpieczenie OC. Poproś o potwierdzenie."
     }
+  },
+  "worker": {
+    "roomEyebrow": "POMIESZCZENIE",
+    "taskEyebrow": "ZADANIE",
+    "taskCount": "{{count}} zadań"
+  },
+  "planningWizard": {
+    "micDenied": "Mikrofon jest zablokowany — sprawdź uprawnienia przeglądarki.",
+    "micFailed": "Nie udało się rozpoznać głosu — spróbuj ponownie lub wpisz tekst."
+  },
+  "inspiration": {
+    "gallery": "Galeria",
+    "compareView": "Porównaj przed/po",
+    "background": "Tło",
+    "withGap": "Z odstępem",
+    "captionPlaceholder": "Opisz swoją inspirację...",
+    "newRoom": "Nowy pokój...",
+    "caption": "Podpis",
+    "addCaption": "Dodaj podpis...",
+    "details": "Szczegóły",
+    "room": "Pokój",
+    "noRoom": "Niepowiązane",
+    "source": "Źródło"
+  },
+  "sharing": {
+    "kundvy": {
+      "unnamed": "Bez nazwy",
+      "title": "Zaproszeni z widokiem klienta",
+      "invite": "Zaproś",
+      "statusPending": "Oczekuje",
+      "statusActive": "Aktywny",
+      "hint": "Podgląd poniżej pokazuje dokładnie to, co widzą te osoby."
+    }
+  },
+  "taskCost": {
+    "costType": "Typ kosztu",
+    "total": "Razem",
+    "material": "Materiał"
+  },
+  "linkPurchase": {
+    "newRotPerson": "Znaleziono nowy numer identyfikacyjny",
+    "addAsRotPerson": "zostanie automatycznie dodana jako osoba ROT"
+  },
+  "payments": {
+    "error": "Nie udało się zarejestrować płatności",
+    "fullyPaid": "Fakturę oznaczono jako opłaconą",
+    "partiallyPaid": "Zarejestrowano płatność częściową",
+    "title": "Zarejestruj wpłatę",
+    "description": "Wybierz fakturę i podaj wpłaconą kwotę.",
+    "noInvoices": "Brak nieopłaconych faktur",
+    "overdue": "Zaległa",
+    "due": "Termin płatności",
+    "of": "z",
+    "amount": "Kwota",
+    "partialNote": "Płatność częściowa — {{remaining}} pozostało po",
+    "date": "Data płatności",
+    "register": "Zarejestruj"
+  },
+  "rot": {
+    "namePlaceholder": "Imię i nazwisko",
+    "pnrPlaceholder": "Numer osobowy (personnummer)",
+    "addError": "Nie udało się dodać",
+    "summary": "Odliczenie ROT",
+    "person": "osoba",
+    "persons": "osoby",
+    "addPerson": "Dodaj",
+    "overLimit": "Przekracza limit ROT o {{amount}} kr",
+    "plannedTotal": "Planowane odliczenie ROT",
+    "actualTotal": "Rzeczywiste odliczenie ROT",
+    "missingInvoices": "{{count}} element(y) ROT bez zweryfikowanej faktury",
+    "plannedShort": "plan",
+    "noInvoicesYet": "Żadna faktura nie została jeszcze opłacona — pokazano planowane odliczenie"
+  },
+  "inviteWizard": {
+    "workerStep": {
+      "selectedCount": "Wybrano: {{count}}"
+    },
+    "success": {
+      "openMessages": "Otwórz wiadomości",
+      "openMail": "Otwórz pocztę"
+    }
+  },
+  "planningTasks": {
+    "noLaborTasksForRot": "Brak wierszy roboczych z godzinami do zastosowania odliczenia ROT",
+    "rotRemovedAll": "Odliczenie ROT usunięte ze wszystkich zadań",
+    "rotAppliedAll": "Odliczenie ROT zastosowano do {{count}} zadań",
+    "rotApplyAllTooltip": "Kliknij, aby zastosować/usunąć ROT na wszystkich wierszach roboczych",
+    "markupOnMatAndUe": "Marża na materiały i podwykonawców",
+    "markupOnMat": "Narzut na materiał",
+    "markupOnUe": "Narzut na podwykonawcę",
+    "removeRot": "Usuń ROT",
+    "applyRot": "Zastosuj ROT"
+  },
+  "evidence": {
+    "popoverTitle": "Status weryfikacji",
+    "popoverMissing": "{{count}} pozycji bez dokumentacji",
+    "popoverAllGood": "Wszystkie pozycje mają dokumentację"
+  },
+  "costCenters": {
+    "electrical": "Elektryka",
+    "tiling": "Płytki",
+    "painting": "Malowanie",
+    "flooring": "Podłogi",
+    "kitchen": "Kuchnia",
+    "bathroom": "Łazienka",
+    "other": "Inne"
+  },
+  "homeownerBudget": {
+    "privateCap": "Mój prywatny limit",
+    "privateOnly": "Tylko Ty to widzisz"
+  },
+  "dashboard": {
+    "portfolio": {
+      "kicker": "Projekty",
+      "activeProjects": "aktywnych projektów.",
+      "noAddress": "Brak adresu"
+    },
+    "daySummary": {
+      "kicker": "Dziś",
+      "activeJobs": "Aktywne projekty",
+      "tasksThisWeek": "prac w tym tygodniu",
+      "approvals": "Do zatwierdzenia",
+      "purchaseApprovals": "zakupów oczekuje",
+      "overdue": "Zaległe",
+      "budget": "Budżet",
+      "budgetOf": "z {{total}} tys. kr"
+    },
+    "ops": {
+      "progress": "Postęp"
+    },
+    "noProjects": "Brak projektów",
+    "viewEditorial": "Redakcyjny",
+    "viewOps": "Tabela",
+    "viewPortfolio": "Karty",
+    "classicView": "Widok klasyczny",
+    "empty": {
+      "step1Title": "Utwórz swój pierwszy projekt",
+      "step1Desc": "Podaj adres, rodzaj remontu i przybliżony budżet. Gotowe w 2 minuty.",
+      "step2Title": "Dodaj prace",
+      "step2Desc": "Określ, co należy zrobić — wyburzenia, malowanie, płytki. Powiąż z pomieszczeniami.",
+      "step3Title": "Zaproś zespół",
+      "step3Desc": "Udostępnij klientowi, podwykonawcom lub kierownikowi projektu. Każdy widzi swoją część.",
+      "title": "Witamy w Renofine",
+      "cta": "Nowy projekt"
+    }
+  },
+  "priorities": {
+    "low": "Niski",
+    "medium": "Średni",
+    "high": "Wysoki"
+  },
+  "globalSearch": {
+    "title": "Szukaj"
   }
 }

@@ -67,7 +67,8 @@
       "canLogLabel": "Can log completed purchases",
       "canLogDescription": "Worker records and attaches receipt directly — bypasses approval.",
       "requirePhoto": "Require photo",
-      "requirePhotoTitle": "Require a final photo before this task can be accepted"
+      "requirePhotoTitle": "Require a final photo before this task can be accepted",
+      "selectedCount": "{{count}} selected"
     },
     "memberStep": {
       "title": "Which level of access?",
@@ -128,7 +129,9 @@
       "sendEmail": "Send email",
       "smsSent": "SMS sent",
       "emailSent": "Email sent",
-      "sendWhatsApp": "Share via WhatsApp"
+      "sendWhatsApp": "Share via WhatsApp",
+      "openMessages": "Open Messages",
+      "openMail": "Open email"
     },
     "clientStep": {
       "title": "The client gets a client view",
@@ -307,7 +310,35 @@
     "selectAll": "Select all",
     "hasAttachment": "{{count}} attachment(s)",
     "attachment": "Attachment",
-    "clear": "Clear"
+    "clear": "Clear",
+    "ok": "OK",
+    "swipeToNavigate": "Swipe to navigate",
+    "openLink": "Open link",
+    "unknown": "Unknown",
+    "previous": "Previous",
+    "more": "More",
+    "none": "None",
+    "project": "Project",
+    "opening": "Opening...",
+    "reset": "Reset",
+    "copied": "Copied to clipboard",
+    "copy": "Copy",
+    "collapse": "Collapse",
+    "fileTooLarge": "File too large (max 10 MB)",
+    "doubleClickToEdit": "Double-click to edit",
+    "tasks": "tasks",
+    "saved": "Saved",
+    "completed": "completed",
+    "saveFailed": "Could not save",
+    "unnamed": "Unnamed room",
+    "photo": "Photo",
+    "undo": "Undo",
+    "redo": "Redo",
+    "creating": "Creating...",
+    "continue": "Continue",
+    "zoomOut": "Zoom out",
+    "zoomIn": "Zoom in",
+    "notFound": "Invoice not found"
   },
   "beta": {
     "title": "Public Beta",
@@ -448,7 +479,8 @@
       "clientView": "My Project",
       "customerView": "My Project",
       "sharing": "Sharing"
-    }
+    },
+    "purchases": "Purchases"
   },
   "landing": {
     "heroTitle": "Win More Jobs,",
@@ -733,7 +765,9 @@
     "signUpWithGoogle": "Sign up with Google",
     "name": "Name",
     "creatingAccount": "Creating account...",
-    "createAccount": "Create Account"
+    "createAccount": "Create Account",
+    "loginFailed": "Sign in failed",
+    "tryAgain": "Please try again or use email sign in."
   },
   "projects": {
     "title": "My Projects",
@@ -836,7 +870,15 @@
     "adminOff": "Admin",
     "createWithRenaida": "Create with Renaida",
     "planWithWizard": "Plan with the guide",
-    "guidedStartup": "Guided setup"
+    "guidedStartup": "Guided setup",
+    "goalDate": "Goal date",
+    "colTasks": "Tasks",
+    "colProgress": "Progress",
+    "filterAll": "All",
+    "filterActive": "Ongoing",
+    "filterCompleted": "Completed",
+    "hideDemo": "Hide demo project",
+    "notFound": "Project not found"
   },
   "onboarding": {
     "welcome": "Welcome to Renofine!",
@@ -907,7 +949,9 @@
     "invitedWelcome": {
       "title": "Welcome to your project!",
       "description": "Here you can follow the progress, view photos, and communicate with your project team."
-    }
+    },
+    "measurementTitle": "Measurement system",
+    "measurementDesc": "How do you measure?"
   },
   "invitation": {
     "youreInvited": "You're invited!",
@@ -999,7 +1043,8 @@
     "leadAccepted": "Quote accepted!",
     "leadAcceptedDescription": "Customer approved the quote. Tasks have been created from quote items.",
     "expandProject": "Expand project",
-    "expandProjectHint": "Add rooms and floor plan to get started."
+    "expandProjectHint": "Add rooms and floor plan to get started.",
+    "planning": "Planning"
   },
   "tasks": {
     "title": "Tasks",
@@ -1132,7 +1177,11 @@
     "filter": "Filter",
     "overdue": "overdue",
     "kanbanColumns": "Kanban columns",
-    "visibleColumns": "Visible columns"
+    "visibleColumns": "Visible columns",
+    "unassigned": "Unassigned",
+    "materialBudget": "Material budget",
+    "task": "Task",
+    "photos": "Photos"
   },
   "tasksTable": {
     "columns": "Columns",
@@ -1420,7 +1469,86 @@
     "viewTable": "Table",
     "searchPlaceholderV2": "Search rooms, notes, materials…",
     "photoCover": "Photo",
-    "openRoom": "Open room details"
+    "openRoom": "Open room details",
+    "noAssignedRooms": "No rooms with assigned tasks",
+    "roomsLabel": "rooms",
+    "referenceImages": "Reference images",
+    "materials": "Materials",
+    "progressPhotos": "Progress photos",
+    "completedPhotos": "Completed photos",
+    "sharePhoto": "Share photo",
+    "shareStatusQ": "How is the work going?",
+    "shareInProgress": "In progress",
+    "shareDone": "Done",
+    "shareProgressQ": "How far along is the work?",
+    "failedToCreate": "Failed to create room",
+    "created": "Room created",
+    "selectPriority": "Select priority",
+    "missingDimensions": "Missing dimensions",
+    "calcWallPaint": "Wall paint",
+    "saveCoatsAsDefault": "Save",
+    "asDefault": "as default?",
+    "saveCoverageAsDefault": "Save",
+    "calcCeilingPaint": "Ceiling paint",
+    "calcFloorMaterial": "Flooring material (incl. waste)",
+    "calcSkirting": "Skirting board (running meters)",
+    "taskAlreadyLinked": "Task is already linked to this room",
+    "taskLinked": "Task linked to room",
+    "failedToLinkTask": "Could not link task",
+    "linkExisting": "Link",
+    "linkExistingTask": "Link existing task",
+    "allTasksLinked": "All tasks are already linked",
+    "loadingRoomData": "Loading room data",
+    "fillInNewRoomDetails": "Fill in details for the new room",
+    "editRoomInfoAndComments": "Edit room information",
+    "waitingForRoomData": "Waiting",
+    "couldNotLoadPhotos": "Could not load photos",
+    "mustBeLoggedInToUpload": "You must be logged in to upload photos",
+    "profileNotFound": "Profile not found",
+    "notAnImage": "{{name}} is not an image",
+    "fileTooLarge": "{{name}} is too large (max 10MB)",
+    "couldNotUpload": "Could not upload {{name}}",
+    "couldNotSave": "Could not save {{name}}",
+    "photosUploaded": "Photos uploaded!",
+    "couldNotUploadPhotos": "Could not upload photos",
+    "confirmDeletePhoto": "Are you sure you want to delete this photo?",
+    "photoDeleted": "Photo deleted",
+    "couldNotDeletePhoto": "Could not delete photo",
+    "couldNotSavePinterestBoard": "Could not save Pinterest board",
+    "pinterestBoardRemoved": "Pinterest board removed",
+    "invalidPinterestBoardUrl": "Invalid Pinterest board URL. Use format: pinterest.com/user/board-name",
+    "pinterestBoardAdded": "Pinterest board added!",
+    "confirmRemovePinterestBoard": "Are you sure you want to remove Pinterest board?",
+    "enterPinterestPinUrl": "Enter a Pinterest pin URL",
+    "invalidPinterestPinUrl": "Invalid Pinterest pin URL. Use format: pinterest.com/pin/123456789/",
+    "mustBeLoggedIn": "You must be logged in",
+    "pinImported": "Pin imported!",
+    "couldNotImportPin": "Could not import pin",
+    "uploading": "Uploading...",
+    "addPhoto": "Add photo",
+    "takePhoto": "Take photo",
+    "uploadFile": "Choose file",
+    "importPin": "Import pin",
+    "changeBoard": "Change board",
+    "linkBoard": "Link board",
+    "importPinterestPin": "Import Pinterest Pin",
+    "pastePinterestPinLink": "Paste the link to a Pinterest pin to import the image to this room.",
+    "openPinAndCopyUrl": "Open a pin on Pinterest and copy the URL from the browser.",
+    "importing": "Importing...",
+    "import": "Import",
+    "openBoardAndCopyUrl": "Open your Pinterest board and copy the URL from the browser.",
+    "removeBoard": "Remove board",
+    "roomPhoto": "Room photo",
+    "deletePhoto": "Delete photo",
+    "noPhotosUploaded": "No photos uploaded yet",
+    "couldNotMovePhoto": "Could not move photo",
+    "photoMoved": "Photo moved",
+    "viewMoodboard": "View in moodboard →",
+    "clickToRename": "Click to rename",
+    "instructions": "Instructions",
+    "materialCalculation": "Material calculation",
+    "comments": "Comments",
+    "useComputedArea": "Use calculated area"
   },
   "spacePlanner": {
     "title": "Area",
@@ -1806,7 +1934,13 @@
     "selectRole": "Select a role",
     "moreInfo": "More info",
     "customizeAccess": "Customize permissions",
-    "permissions": "Permissions"
+    "permissions": "Permissions",
+    "addRotPerson": "Add ROT person",
+    "noTeamMembers": "No team members yet.",
+    "company": "Company",
+    "personnummer": "Personal number",
+    "homeowner": "Homeowner",
+    "contractor": "Contractor"
   },
   "propertyPanel": {
     "objectDetails": "Object Details",
@@ -1879,7 +2013,15 @@
     "depth": "Depth/Height",
     "category": "Category",
     "invalidWidth": "Invalid width. Enter a positive number.",
-    "groupDimensionsUpdated": "Group resized successfully!"
+    "groupDimensionsUpdated": "Group resized successfully!",
+    "elevationFromFloor": "Height from floor",
+    "invalidDepth": "Invalid depth",
+    "objectDimensionsUpdated": "Object dimensions updated",
+    "objectDimensions": "Object dimensions",
+    "editDimensions": "Edit dimensions",
+    "depthMm": "Depth (mm)",
+    "objectDimensionsHint": "Only changes this placed object, not the original template",
+    "applyChanges": "Save changes"
   },
   "saveTemplateDialog": {
     "title": "Save as Template",
@@ -2079,7 +2221,9 @@
     "noCaption": "No description",
     "captionPlaceholder": "Add a description...",
     "linkedRoom": "Room",
-    "quickPhoto": "Take photo"
+    "quickPhoto": "Take photo",
+    "moveError": "Couldn't move photo",
+    "photoMoved": "Photo moved"
   },
   "photoSource": {
     "classify": "What type of photo is this?",
@@ -2126,7 +2270,8 @@
     "resolvedHint": "This thread is marked as resolved. Click \"Reopen\" to continue the discussion.",
     "reply": "Reply",
     "replyingTo": "Replying to {{name}}",
-    "showReplies": "Show {{count}} more replies"
+    "showReplies": "Show {{count}} more replies",
+    "chooseFiles": "Choose files"
   },
   "roomContextMenu": {
     "assignToRoom": "Assign to Room",
@@ -2249,7 +2394,11 @@
     "createNewRoom": "Create new room...",
     "createNewTask": "Create new task...",
     "createNewPurchase": "Create new purchase...",
-    "documentPreview": "Document preview"
+    "documentPreview": "Document preview",
+    "linkFile": "Link the file to:",
+    "linkToTask": "Link to task",
+    "linkToPurchase": "Link to purchase",
+    "linkToRoom": "Link to room"
   },
   "quoteImport": {
     "exVat": "Ex. VAT",
@@ -2292,7 +2441,20 @@
       "homeownerAddDesignation": "Add property designation in project settings",
       "builderAskClient": "Ask your customer to fill in the missing details",
       "builderInviteClient": "Invite the homeowner to the project to collect ROT details"
-    }
+    },
+    "namePlaceholder": "Name",
+    "pnrPlaceholder": "Personal ID number",
+    "addError": "Could not add",
+    "summary": "ROT deduction",
+    "person": "person",
+    "persons": "persons",
+    "addPerson": "Add",
+    "overLimit": "Exceeds ROT cap by {{amount}} kr",
+    "plannedTotal": "Planned ROT deduction",
+    "actualTotal": "Actual ROT deduction",
+    "missingInvoices": "{{count}} ROT item(s) missing verified invoice",
+    "plannedShort": "planned",
+    "noInvoicesYet": "No invoices paid yet — planned deduction shown"
   },
   "rotRules": {
     "title": "How we calculate ROT",
@@ -2370,7 +2532,17 @@
     "wallSurfaceTitle": "Wall finish (work instruction)",
     "wallMaterial": "Material",
     "wallTreatment": "Treatment",
-    "wallColorCode": "Color code"
+    "wallColorCode": "Color code",
+    "confirmDelete": "Are you sure you want to delete this object?",
+    "dimensions": "Dimensions",
+    "width": "Width",
+    "height": "Height",
+    "fromFloor": "From floor",
+    "fromWallEdge": "From wall edge",
+    "selectRoom": "Select room for wall view",
+    "selectRoomDescription": "Select which room you want to see the wall view for",
+    "noRoomsFound": "No rooms found. Draw rooms in the floor plan first.",
+    "suggestedRoom": "Adjacent room"
   },
   "quickComment": {
     "addComment": "Add comment",
@@ -2451,7 +2623,9 @@
     "week": "Week",
     "month": "Month",
     "day": "day",
-    "of": "of"
+    "of": "of",
+    "projectStart": "Project",
+    "tasks": "Tasks"
   },
   "statuses": {
     "ideas": "Ideas",
@@ -2471,7 +2645,11 @@
     "pending": "Pending",
     "submitted": "Submitted",
     "converted": "Converted",
-    "expired": "Expired"
+    "expired": "Expired",
+    "unknown": "Unknown",
+    "planning": "Planning",
+    "active": "In progress",
+    "delayed": "Delayed"
   },
   "materialStatuses": {
     "planned": "Planned",
@@ -2484,7 +2662,8 @@
   },
   "paymentStatuses": {
     "notPaid": "Not Paid",
-    "partiallyPaid": "Partially Paid"
+    "partiallyPaid": "Partially Paid",
+    "paid": "Paid"
   },
   "roomStatuses": {
     "existing": "Unchanged",
@@ -2586,7 +2765,16 @@
       "line": "Line",
       "rectangle": "Rectangle",
       "circle": "Circle",
-      "shapes": "Shapes (line, rectangle, circle)"
+      "shapes": "Shapes (line, rectangle, circle)",
+      "opening": "Opening",
+      "door": "Door",
+      "window": "Window",
+      "passage": "Passage",
+      "objects": "Objects",
+      "connector": "Connector",
+      "stickyNote": "Sticky note",
+      "wall": "Wall",
+      "underlay": "Base layer & import"
     },
     "hoverInfo": {
       "wall": "Wall",
@@ -2706,7 +2894,34 @@
       "window": "Window",
       "sliding": "Sliding door",
       "passage": "Passage"
-    }
+    },
+    "measureDistance": "Measure distance",
+    "keyboardShortcuts": "Keyboard Shortcuts",
+    "keyboardShortcutsDescription": "Quick reference for Space Planner",
+    "nameRequired": "Name required",
+    "enterPlanName": "Enter a name for the new plan",
+    "couldNotCreatePlan": "Could not create plan",
+    "newPlanCreated": "New plan created!",
+    "errorCreating": "Error creating plan",
+    "cannotDelete": "Cannot delete",
+    "mustHaveOnePlan": "You must have at least one plan. Create a new one before deleting this.",
+    "couldNotDeletePlan": "Could not delete plan from database",
+    "planDeleted": "Plan deleted",
+    "errorDeleting": "Error deleting plan",
+    "couldNotRenamePlan": "Could not rename plan",
+    "errorRenaming": "Error renaming plan",
+    "selectPlan": "Select plan",
+    "floorPlans": "Floor Plans",
+    "noPlansCreated": "No plans created yet",
+    "createNewPlanDescription": "Create a new empty plan or import from a drawing",
+    "planName": "Plan name",
+    "planNamePlaceholder": "e.g. Floor 1, Basement, Alternative A",
+    "planDescriptionPlaceholder": "e.g. Main plan with all rooms",
+    "deleteFloorPlan": "Delete Floor Plan?",
+    "cannotBeUndone": "This cannot be undone.",
+    "allObjectsDeleted": "All walls, rooms, and objects in this plan will be permanently deleted.",
+    "uploadTraceImage": "Upload drawing (trace)",
+    "aiImport": "AI-interpret floor plan"
   },
   "canvas": {
     "settings": "Drawing Settings",
@@ -2910,7 +3125,34 @@
     "unlinkFile": "Unlink file",
     "fileUnlinked": "File unlinked",
     "deleteFileConfirmation": "Are you sure you want to delete “{{name}}”? This cannot be undone.",
-    "category": "File category"
+    "category": "File category",
+    "attachments": "Attachments",
+    "noAttachments": "No attachments",
+    "dropToUpload": "Drop files here",
+    "dropHint": "Files and folders are analyzed automatically",
+    "upload": "Upload",
+    "regularUpload": "Regular upload",
+    "takePhoto": "Take photo",
+    "search": "Search files...",
+    "uploaded": "File attached",
+    "uploadError": "Could not upload",
+    "openError": "Could not open the file",
+    "unlink": "Remove link",
+    "pdfDocument": "PDF document",
+    "image": "Image",
+    "file": "File",
+    "batchUploadTitle": "Smart upload",
+    "filesCount": "files",
+    "classifying": "Analyzing",
+    "fileName": "File",
+    "autoLink": "Link",
+    "size": "Size",
+    "confirmUpload": "Upload all",
+    "invoiceDate": "Invoice date",
+    "invoiceAmount": "Amount",
+    "downloadError": "Download error",
+    "error": "Error",
+    "noPreviewAvailable": "Preview not available for this file type"
   },
   "fileStats": {
     "quote": "Quotes",
@@ -3177,7 +3419,45 @@
     "excludedFromBudget": "Addition (outside original quote)",
     "connections": "Connections",
     "photos": "Photos",
-    "comments": "Comments"
+    "comments": "Comments",
+    "updateOrderFailed": "Couldn't update",
+    "requestSubmitted": "Request Submitted",
+    "requestSubmittedDescription": "Your purchase request has been submitted for approval.",
+    "requestPending": "Request Pending",
+    "requestPurchase": "Request Purchase",
+    "requestPurchaseApproval": "Request Purchase Approval",
+    "submitRequestFor": "Submit a purchase request for:",
+    "addInfoPlaceholder": "Add any additional information about this purchase request...",
+    "explainWhy": "Explain why this material is needed or any specific requirements.",
+    "submitting": "Submitting...",
+    "submitRequest": "Submit Request",
+    "linkedToRoom": "Room",
+    "hasAttachment": "Documentation attached",
+    "attachmentShort": "Attachment",
+    "noLines": "No lines",
+    "moreSuffix": "more",
+    "moreAttachments": "More attachments",
+    "attachFile": "Attach file",
+    "noExtraAttachments": "No additional attachments",
+    "invoiceNumberShort": "Invoice",
+    "paidOn": "Paid {{date}}",
+    "overdueLabel": "Overdue {{date}}",
+    "dueOn": "Due {{date}}",
+    "attachment": "Documentation",
+    "allocateAll": "Allocate all lines",
+    "purchaseOrder": "Purchase order",
+    "detailSheetDescription": "Edit order, lines and allocation",
+    "linkToBudgetPost": "Link to budget item",
+    "orderAdded": "Purchase order added successfully",
+    "failedToAdd": "Failed to add purchase order",
+    "orderUpdated": "Purchase order updated successfully",
+    "failedToUpdate": "Failed to update purchase order",
+    "receipt": "Receipt / invoice",
+    "photoReceipt": "Photograph receipt",
+    "uploadReceipt": "Upload",
+    "receiptOptionalHint": "You can also attach a receipt later via the files tab.",
+    "saveCompleted": "Register purchase",
+    "saveOrder": "Create order"
   },
   "overview": {
     "messagesHeading": "Messages",
@@ -3296,7 +3576,12 @@
       "title": "Latest photos",
       "viewAll": "View all photos",
       "noPhotos": "No photos yet. Photos uploaded by the team will appear here.",
-      "photoUploaded": "Photo uploaded"
+      "photoUploaded": "Photo uploaded",
+      "sourceRoom": "Room",
+      "sourceTask": "Task",
+      "sourceMaterial": "Purchase",
+      "sourceComment": "Comment",
+      "sourceFile": "File"
     },
     "documents": "Documents",
     "noDocuments": "No quotes or invoices yet",
@@ -3306,7 +3591,17 @@
       "description": "Write a message to your project team"
     },
     "planningReference": "Planning reference",
-    "timeline": "Timeline"
+    "timeline": "Timeline",
+    "quickInvoice": "Invoice",
+    "quickQuote": "Quote",
+    "quickNewQuote": "New quote",
+    "quickPurchase": "Purchase",
+    "quickPayment": "Payment",
+    "coverUpload": "Upload image",
+    "coverUrl": "Paste link",
+    "coverExisting": "Choose from images",
+    "coverPickExisting": "Choose cover image",
+    "noExistingImages": "No images found"
   },
   "receipt": {
     "title": "Quick Receipt Capture",
@@ -3341,7 +3636,12 @@
     "unsupportedFile": "Unsupported file type. Use images or PDF.",
     "fileTooLarge": "File is too large (max 10MB)",
     "convertingImage": "Converting image...",
-    "conversionFailed": "Failed to convert image. Please try a different file."
+    "conversionFailed": "Failed to convert image. Please try a different file.",
+    "pdfNeedsQuoteFlow": "PDF format is handled via the quote import (line-by-line extraction).",
+    "openQuoteImport": "Open quote import",
+    "vendorName": "Store / vendor",
+    "amount": "Amount",
+    "room": "Room"
   },
   "document": {
     "title": "Scan Document",
@@ -3572,7 +3872,13 @@
       "viewQuote": "View quote",
       "viewInvoice": "View invoice",
       "outstanding": "Outstanding"
-    }
+    },
+    "createNewSupplier": "create new",
+    "attachments": "Attachments",
+    "collapse": "Collapse",
+    "expand": "Expand",
+    "materialBudget": "Material budget",
+    "subcontractor": "Sub"
   },
   "budgetCharts": {
     "title": "Charts",
@@ -3617,7 +3923,9 @@
     "afterRot": "After ROT",
     "deduction": "deduction",
     "paidBadge": "Paid",
-    "ataShort": "ATA"
+    "ataShort": "ATA",
+    "privateCap": "My private limit",
+    "privateOnly": "Only you see this"
   },
   "budgetDashboard": {
     "failedToLoadPayments": "Failed to load payment details",
@@ -3749,7 +4057,8 @@
     "writeReply": "Write a reply...",
     "sendReply": "Reply",
     "searchPlaceholder": "Search messages...",
-    "emojiSearch": "Search emoji..."
+    "emojiSearch": "Search emoji...",
+    "comments": "Comments"
   },
   "activity": {
     "created": "created",
@@ -3795,7 +4104,13 @@
     "quoteViewed": "opened your quote",
     "quoteComment": "commented on quote",
     "quoteAccepted": "Quote accepted!",
-    "quoteRejected": "Quote declined"
+    "quoteRejected": "Quote declined",
+    "newDm": "Private message",
+    "kicker": "Notifications",
+    "unreadTitle": "{{count}} unread",
+    "tabAll": "All",
+    "tabMentions": "Mentions",
+    "tabWarnings": "Warnings"
   },
   "elevationShapeDialog": {
     "wallLabel": "Wall",
@@ -4543,7 +4858,33 @@
     "revisedAs": "Revised as {{number}}",
     "creatingRevision": "Creating revision...",
     "createInvoice": "Create invoice",
-    "invoiceCreated": "Invoice created from quote"
+    "invoiceCreated": "Invoice created from quote",
+    "objectLabel": "Object",
+    "untitled": "Untitled quote",
+    "objectDescription": "Object",
+    "objectPlaceholder": "e.g. Apartment 80 sqm in Kungsholmen",
+    "previewSubtitle": "This is how the quote looks to the customer",
+    "totalIncVat": "Total",
+    "afterRotHint": "To pay after deduction",
+    "statusLabel": "Status",
+    "revisionChain": "Revision chain",
+    "revisedFrom": "Revision of",
+    "activity": "Activity",
+    "sentToCustomer": "Sent to customer",
+    "openedByCustomer": "Opened by customer",
+    "notSentYet": "Not sent yet",
+    "pending": "Pending",
+    "byCustomer": "By customer",
+    "linkedProject": "Link",
+    "openProject": "Open project",
+    "dateLabel": "Date",
+    "chatWithCustomer": "Chat with customer",
+    "chatWithSeller": "Chat",
+    "decline": "Decline",
+    "accept": "Accept",
+    "viewProject": "View project",
+    "youDeclined": "You declined the quote",
+    "confirmDeleteQuote": "Are you sure? This cannot be undone."
   },
   "invoices": {
     "title": "Invoices",
@@ -4641,7 +4982,9 @@
     "confirmDeleteHint": "This cannot be undone.",
     "changeOrderInvoiceTitle": "Change-order invoice",
     "editInvoice": "Edit invoice",
-    "ataMode": "ÄTA — outside the original quote"
+    "ataMode": "ÄTA — outside the original quote",
+    "untitled": "Untitled",
+    "atLeastOneItem": "Add at least one item"
   },
   "welcome": {
     "chooseLanguage": "Choose your language",
@@ -4670,7 +5013,8 @@
     "blankProjectLink": "or start with an empty project",
     "exploreDemo": "Explore first",
     "exploreDemoDesc": "See how it works with a demo project",
-    "recommended": "Recommended"
+    "recommended": "Recommended",
+    "chooseLanguageDesc": "You can change this later in settings"
   },
   "guidedSetup": {
     "title": "Tell us about your renovation",
@@ -4829,7 +5173,10 @@
     "wallCoverage": "wall",
     "noEdgeForDirection": "No room edge for this direction",
     "backToFloorPlan": "Floor plan",
-    "wallCounter": "Wall {{n}} of {{total}}"
+    "wallCounter": "Wall {{n}} of {{total}}",
+    "noWallDrawn": "No wall drawn",
+    "object": "Object",
+    "segmentTooSmall": "Segment is too small to display"
   },
   "wallElevation": {
     "title": "Wall Elevation View",
@@ -5289,7 +5636,16 @@
     "calcSuggested": "Renaida's suggestion. Edit the cell to make the number your own.",
     "saveRateAsDefault": "Save {{rate}} kr/h as your default hourly rate? It prefills future calculations.",
     "saveRateAction": "Save as default",
-    "rateSaved": "Default hourly rate updated: {{rate}} kr/h"
+    "rateSaved": "Default hourly rate updated: {{rate}} kr/h",
+    "noLaborTasksForRot": "No labor rows with hours to apply ROT deduction to",
+    "rotRemovedAll": "ROT deduction removed from all tasks",
+    "rotAppliedAll": "ROT deduction applied to {{count}} tasks",
+    "rotApplyAllTooltip": "Click to apply/remove ROT on all labor rows",
+    "markupOnMatAndUe": "Markup on material and subcontractors",
+    "markupOnMat": "Markup on material",
+    "markupOnUe": "Markup on subcontractor",
+    "removeRot": "Remove ROT",
+    "applyRot": "Apply ROT"
   },
   "planningSmartImport": {
     "title": "Smart Import",
@@ -5374,7 +5730,10 @@
     "budget": "Budget",
     "homeownerBudgetHint": "Your estimated budget or quote amount for this task",
     "estimatedMaterialCost": "Estimated material cost",
-    "useAsbudget": "Use as budget"
+    "useAsbudget": "Use as budget",
+    "costType": "Cost type",
+    "total": "Total",
+    "material": "Material"
   },
   "costCenters": {
     "demolition": "Demolition",
@@ -5388,7 +5747,14 @@
     "windowsDoors": "Windows & Doors",
     "inspection": "Inspection",
     "cleanup": "Cleanup & Waste",
-    "design": "Design & Planning"
+    "design": "Design & Planning",
+    "electrical": "Electrical",
+    "tiling": "Tiling",
+    "painting": "Painting",
+    "flooring": "Flooring",
+    "kitchen": "Kitchen",
+    "bathroom": "Bathroom",
+    "other": "Other"
   },
   "projectStatus": {
     "planning": "Planning",
@@ -5516,7 +5882,15 @@
     "previewShowingSource": "Showing your Swedish source text.",
     "previewShowingWorker": "Showing exactly what {{name}} sees ({{lang}}).",
     "previewSeeWorkerLang": "See in {{lang}}",
-    "previewSeeSwedish": "Show in Swedish"
+    "previewSeeSwedish": "Show in Swedish",
+    "kundvy": {
+      "unnamed": "Unnamed",
+      "title": "Invited with customer view",
+      "invite": "Invite",
+      "statusPending": "Pending",
+      "statusActive": "Active",
+      "hint": "The preview below shows exactly what these people see."
+    }
   },
   "team": {
     "table": {
@@ -6122,7 +6496,8 @@
     "noResults": "No results found",
     "navigate": "navigate",
     "open": "open",
-    "close": "close"
+    "close": "close",
+    "title": "Search"
   },
   "analysis": {
     "title": "ROT deduction",
@@ -6231,7 +6606,9 @@
     "saveError": "Could not save",
     "saving": "Saving...",
     "linkButton": "Link document",
-    "canvasAdded": "The drawing has been added to the canvas."
+    "canvasAdded": "The drawing has been added to the canvas.",
+    "newRotPerson": "New personal ID number found",
+    "addAsRotPerson": "is automatically added as a ROT person"
   },
   "quoteReview": {
     "title": "Review quote",
@@ -6408,7 +6785,10 @@
     "showOriginal": "Show original",
     "showTranslated": "Show translation",
     "completeTaskWithPhoto": "Mark complete + photo",
-    "photoRequiredHint": "Photo required to finish"
+    "photoRequiredHint": "Photo required to finish",
+    "roomEyebrow": "ROOM",
+    "taskEyebrow": "TASK",
+    "taskCount": "{{count}} tasks"
   },
   "teamWorker": {
     "workers": "Workers",
@@ -6517,7 +6897,40 @@
     "purchasesTooltipNone": "No pending purchase orders.",
     "budget": "Budget",
     "budgetTooltip": "Spent vs. budget per project:",
-    "tasksComplete": "tasks"
+    "tasksComplete": "tasks",
+    "portfolio": {
+      "kicker": "Projects",
+      "activeProjects": "active projects.",
+      "noAddress": "No address"
+    },
+    "daySummary": {
+      "kicker": "Today",
+      "activeJobs": "Active projects",
+      "tasksThisWeek": "jobs this week",
+      "approvals": "To approve",
+      "purchaseApprovals": "purchases pending",
+      "overdue": "Overdue",
+      "budget": "Budget",
+      "budgetOf": "of {{total}}k kr"
+    },
+    "ops": {
+      "progress": "Progress"
+    },
+    "noProjects": "No projects",
+    "viewEditorial": "Editorial",
+    "viewOps": "Table",
+    "viewPortfolio": "Cards",
+    "classicView": "Classic view",
+    "empty": {
+      "step1Title": "Create your first project",
+      "step1Desc": "Enter the address, renovation type and approximate budget. Done in 2 minutes.",
+      "step2Title": "Add jobs",
+      "step2Desc": "Define what needs to be done — demolition, painting, tiling. Link to rooms.",
+      "step3Title": "Invite the team",
+      "step3Desc": "Share with the client, subcontractors or project manager. Everyone sees their part.",
+      "title": "Welcome to Renofine",
+      "cta": "New project"
+    }
   },
   "inspiration": {
     "title": "Inspiration",
@@ -6555,7 +6968,19 @@
     "uploadPhoto": "Choose photo",
     "photoAdded": "Photo added",
     "fullscreen": "Fullscreen",
-    "moodboard": "Moodboard"
+    "moodboard": "Moodboard",
+    "gallery": "Gallery",
+    "compareView": "Compare before/after",
+    "background": "Background",
+    "withGap": "With gap",
+    "captionPlaceholder": "Describe your inspiration...",
+    "newRoom": "New room...",
+    "caption": "Caption",
+    "addCaption": "Add caption...",
+    "details": "Details",
+    "room": "Room",
+    "noRoom": "Not linked",
+    "source": "Source"
   },
   "evidence": {
     "verified": "Verified",
@@ -6566,7 +6991,10 @@
     "summaryTooltip": "How many items have supporting documents (invoice/receipt) linked. Click for list of missing.",
     "tooltipVerified": "Has supporting document (invoice/receipt)",
     "tooltipRegistered": "Amount recorded but no document linked",
-    "tooltipMissing": "Completed but no cost or document found"
+    "tooltipMissing": "Completed but no cost or document found",
+    "popoverTitle": "Verification status",
+    "popoverMissing": "{{count}} items missing documentation",
+    "popoverAllGood": "All items have documentation"
   },
   "planningWizard": {
     "title": "Plan your renovation",
@@ -6647,7 +7075,9 @@
     "matrixFooter": "Will create {{tasks}} {{taskWord}} across {{rooms}} {{roomWord}}. Type, material and cost are chosen per task on the next page.",
     "matrixFooterEmpty": "Tick a cell to create a task. You can also continue with nothing selected and build the plan from scratch.",
     "matrixRoomNote": "Note about {{room}}",
-    "matrixRoomNotePlaceholder": "e.g. Stone floor in entry, sand existing parquet in the rest…"
+    "matrixRoomNotePlaceholder": "e.g. Stone floor in entry, sand existing parquet in the rest…",
+    "micDenied": "The microphone is blocked — check your browser permissions.",
+    "micFailed": "Couldn't understand the voice — try again or type instead."
   },
   "resourcePlanning": {
     "title": "Resource planning",
@@ -7225,5 +7655,25 @@
     "deletedBoth": "Room and drawing deleted",
     "deletedDrawing": "Drawing deleted – the room stays in the list",
     "couldNotDelete": "Could not delete the room"
+  },
+  "payments": {
+    "error": "Could not register payment",
+    "fullyPaid": "Invoice marked as paid",
+    "partiallyPaid": "Partial payment registered",
+    "title": "Register payment",
+    "description": "Select an invoice and enter the amount paid.",
+    "noInvoices": "No unpaid invoices",
+    "overdue": "Overdue",
+    "due": "Due",
+    "of": "of",
+    "amount": "Amount",
+    "partialNote": "Partial payment — {{remaining}} remaining after",
+    "date": "Payment date",
+    "register": "Register"
+  },
+  "priorities": {
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High"
   }
 }

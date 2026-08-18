@@ -78,7 +78,35 @@
     "selectAll": "Вибрати все",
     "hasAttachment": "Вкладень: {{count}}",
     "attachment": "Вкладення",
-    "clear": "Очистити"
+    "clear": "Очистити",
+    "ok": "OK",
+    "swipeToNavigate": "Проведіть пальцем, щоб перейти",
+    "openLink": "Відкрити посилання",
+    "unknown": "Невідомо",
+    "previous": "Попередній",
+    "more": "Більше",
+    "none": "Немає",
+    "project": "Проєкт",
+    "opening": "Відкриваємо...",
+    "reset": "Скинути",
+    "copied": "Скопійовано в буфер обміну",
+    "copy": "Копіювати",
+    "collapse": "Згорнути",
+    "fileTooLarge": "Файл завеликий (макс. 10 МБ)",
+    "doubleClickToEdit": "Двічі клацніть, щоб редагувати",
+    "tasks": "завдання",
+    "saved": "Збережено",
+    "completed": "завершено",
+    "saveFailed": "Не вдалося зберегти",
+    "unnamed": "Кімната без назви",
+    "photo": "Фото",
+    "undo": "Скасувати",
+    "redo": "Повторити",
+    "creating": "Створення...",
+    "continue": "Продовжити",
+    "zoomOut": "Зменшити масштаб",
+    "zoomIn": "Збільшити масштаб",
+    "notFound": "Рахунок не знайдено"
   },
   "beta": {
     "title": "Публічна бета",
@@ -116,7 +144,8 @@
     "myQuotes": "Мої пропозиції",
     "quotes": "Пропозиції",
     "changelog": "Що нового",
-    "declaration": "Податковий звіт"
+    "declaration": "Податковий звіт",
+    "purchases": "Закупівлі"
   },
   "landing": {
     "heroTitle": "Візьміть під контроль свій",
@@ -208,7 +237,9 @@
     "signUpWithGoogle": "Зареєструватися через Google",
     "name": "Ім'я",
     "creatingAccount": "Створення акаунту...",
-    "createAccount": "Створити акаунт"
+    "createAccount": "Створити акаунт",
+    "loginFailed": "Не вдалося увійти",
+    "tryAgain": "Спробуйте ще раз або увійдіть за допомогою електронної пошти."
   },
   "projects": {
     "title": "Мої проєкти",
@@ -312,7 +343,15 @@
     "adminOff": "Адмін",
     "createWithRenaida": "Створити з Ренаідою",
     "planWithWizard": "Планувати з майстром",
-    "guidedStartup": "Покрокове налаштування"
+    "guidedStartup": "Покрокове налаштування",
+    "goalDate": "Цільова дата",
+    "colTasks": "Завдання",
+    "colProgress": "Прогрес",
+    "filterAll": "Усі",
+    "filterActive": "Активні",
+    "filterCompleted": "Завершені",
+    "hideDemo": "Приховати демо-проєкт",
+    "notFound": "Проєкт не знайдено"
   },
   "projectDetail": {
     "overview": "Огляд",
@@ -362,7 +401,8 @@
     "leadAccepted": "Кошторис прийнято!",
     "leadAcceptedDescription": "Клієнт затвердив кошторис. Завдання створено на основі позицій кошторису.",
     "expandProject": "Розширити проєкт",
-    "expandProjectHint": "Додайте приміщення та план поверху, щоб почати."
+    "expandProjectHint": "Додайте приміщення та план поверху, щоб почати.",
+    "planning": "Планування"
   },
   "tasks": {
     "title": "Завдання",
@@ -495,7 +535,11 @@
     "filter": "Фільтр",
     "overdue": "прострочені",
     "kanbanColumns": "Колонки канбан",
-    "visibleColumns": "Видимі колонки"
+    "visibleColumns": "Видимі колонки",
+    "unassigned": "Не призначено",
+    "materialBudget": "Бюджет на матеріали",
+    "task": "Завдання",
+    "photos": "Фото"
   },
   "rooms": {
     "title": "Кімнати",
@@ -719,7 +763,81 @@
     "viewTable": "Таблиця",
     "searchPlaceholderV2": "Пошук приміщень, нотаток, матеріалів…",
     "photoCover": "Фото",
-    "openRoom": "Відкрити деталі приміщення"
+    "openRoom": "Відкрити деталі приміщення",
+    "noAssignedRooms": "Немає кімнат із призначеними завданнями",
+    "sharePhoto": "Поділитися фото",
+    "shareStatusQ": "Як просувається робота?",
+    "shareInProgress": "В процесі",
+    "shareDone": "Готово",
+    "shareProgressQ": "Наскільки просунулась робота?",
+    "failedToCreate": "Не вдалося створити кімнату",
+    "created": "Кімнату створено",
+    "selectPriority": "Виберіть пріоритет",
+    "missingDimensions": "Відсутні розміри",
+    "calcWallPaint": "Фарба для стін",
+    "saveCoatsAsDefault": "Зберегти",
+    "asDefault": "як стандартне значення?",
+    "saveCoverageAsDefault": "Зберегти",
+    "calcCeilingPaint": "Фарба для стелі",
+    "calcFloorMaterial": "Матеріал для підлоги (з урахуванням відходів)",
+    "calcSkirting": "Плінтус (погонні метри)",
+    "taskAlreadyLinked": "Завдання вже пов'язане з цією кімнатою",
+    "taskLinked": "Завдання пов'язано з кімнатою",
+    "failedToLinkTask": "Не вдалося пов'язати завдання",
+    "linkExisting": "Пов'язати",
+    "linkExistingTask": "Пов'язати наявне завдання",
+    "allTasksLinked": "Усі завдання вже пов'язані",
+    "loadingRoomData": "Завантаження даних кімнати",
+    "fillInNewRoomDetails": "Заповніть деталі для нової кімнати",
+    "editRoomInfoAndComments": "Редагувати інформацію про кімнату",
+    "waitingForRoomData": "Очікування",
+    "couldNotLoadPhotos": "Не вдалося завантажити фотографії",
+    "mustBeLoggedInToUpload": "Ви маєте бути авторизовані, щоб завантажувати фотографії",
+    "profileNotFound": "Профіль не знайдено",
+    "notAnImage": "{{name}} не є зображенням",
+    "fileTooLarge": "{{name}} завеликий (макс. 10МБ)",
+    "couldNotUpload": "Не вдалося завантажити {{name}}",
+    "couldNotSave": "Не вдалося зберегти {{name}}",
+    "photosUploaded": "Фотографії завантажено!",
+    "couldNotUploadPhotos": "Не вдалося завантажити фотографії",
+    "confirmDeletePhoto": "Ви впевнені, що хочете видалити це фото?",
+    "photoDeleted": "Фото видалено",
+    "couldNotDeletePhoto": "Не вдалося видалити фото",
+    "couldNotSavePinterestBoard": "Не вдалося зберегти дошку Pinterest",
+    "pinterestBoardRemoved": "Дошку Pinterest видалено",
+    "invalidPinterestBoardUrl": "Недійсний URL дошки Pinterest. Використовуйте формат: pinterest.com/user/board-name",
+    "pinterestBoardAdded": "Дошку Pinterest додано!",
+    "confirmRemovePinterestBoard": "Ви впевнені, що хочете видалити дошку Pinterest?",
+    "enterPinterestPinUrl": "Введіть URL піна Pinterest",
+    "invalidPinterestPinUrl": "Недійсний URL піна Pinterest. Використовуйте формат: pinterest.com/pin/123456789/",
+    "mustBeLoggedIn": "Ви маєте бути авторизовані",
+    "pinImported": "Пін імпортовано!",
+    "couldNotImportPin": "Не вдалося імпортувати пін",
+    "uploading": "Завантаження...",
+    "addPhoto": "Додати фото",
+    "takePhoto": "Зробити фото",
+    "uploadFile": "Виберіть файл",
+    "importPin": "Імпортувати пін",
+    "changeBoard": "Змінити дошку",
+    "linkBoard": "Прив'язати дошку",
+    "importPinterestPin": "Імпортувати пін Pinterest",
+    "pastePinterestPinLink": "Вставте посилання на пін Pinterest, щоб імпортувати зображення в цю кімнату.",
+    "openPinAndCopyUrl": "Відкрийте пін у Pinterest і скопіюйте URL із браузера.",
+    "importing": "Імпортування...",
+    "import": "Імпортувати",
+    "openBoardAndCopyUrl": "Відкрийте вашу дошку Pinterest і скопіюйте URL із браузера.",
+    "removeBoard": "Видалити дошку",
+    "roomPhoto": "Фото кімнати",
+    "deletePhoto": "Видалити фото",
+    "noPhotosUploaded": "Ще не завантажено жодного фото",
+    "couldNotMovePhoto": "Не вдалося перемістити фото",
+    "photoMoved": "Фото переміщено",
+    "viewMoodboard": "Переглянути в мудборді →",
+    "clickToRename": "Натисніть, щоб перейменувати",
+    "instructions": "Інструкції",
+    "materialCalculation": "Розрахунок матеріалів",
+    "comments": "Коментарі",
+    "useComputedArea": "Використати розраховану площу"
   },
   "spacePlanner": {
     "title": "Креслення",
@@ -1108,7 +1226,13 @@
     "displayNamePlaceholder": "Наприклад, ім'я",
     "displayNameHint": "Показується у списку команди замість електронної адреси. Залиште порожнім, щоб показати email.",
     "accessExpires": "Обмежений у часі доступ – закінчується",
-    "permissions": "Дозволи"
+    "permissions": "Дозволи",
+    "addRotPerson": "Додати особу ROT",
+    "noTeamMembers": "Поки немає учасників команди.",
+    "company": "Компанія",
+    "personnummer": "Особистий номер",
+    "homeowner": "Власник житла",
+    "contractor": "Підрядник"
   },
   "propertyPanel": {
     "objectDetails": "Деталі об'єкта",
@@ -1181,7 +1305,15 @@
     "depth": "Глибина/Висота",
     "category": "Категорія",
     "invalidWidth": "Невірна ширина. Введіть додатне число.",
-    "groupDimensionsUpdated": "Розмір групи успішно змінено!"
+    "groupDimensionsUpdated": "Розмір групи успішно змінено!",
+    "elevationFromFloor": "Висота від підлоги",
+    "invalidDepth": "Недійсна глибина",
+    "objectDimensionsUpdated": "Розміри об'єкта оновлено",
+    "objectDimensions": "Розміри об'єкта",
+    "editDimensions": "Змінити розміри",
+    "depthMm": "Глибина (мм)",
+    "objectDimensionsHint": "Змінює лише цей розміщений об'єкт, а не оригінальний шаблон",
+    "applyChanges": "Зберегти зміни"
   },
   "saveTemplateDialog": {
     "title": "Зберегти як шаблон",
@@ -1344,7 +1476,9 @@
     "noCaption": "Немає опису",
     "captionPlaceholder": "Додайте опис...",
     "linkedRoom": "Кімната",
-    "quickPhoto": "Зробити фото"
+    "quickPhoto": "Зробити фото",
+    "moveError": "Не вдалося перемістити фото",
+    "photoMoved": "Фото переміщено"
   },
   "comments": {
     "title": "Коментарі",
@@ -1381,7 +1515,8 @@
     "internalHint": "Внутрішні коментарі приховані від клієнтів і запрошених користувачів",
     "reply": "Відповісти",
     "replyingTo": "Відповідь для {{name}}",
-    "showReplies": "Показати ще {{count}} відповідей"
+    "showReplies": "Показати ще {{count}} відповідей",
+    "chooseFiles": "Вибрати файли"
   },
   "roomContextMenu": {
     "assignToRoom": "Призначити до кімнати",
@@ -1488,7 +1623,11 @@
     "createNewRoom": "Створити нову кімнату...",
     "createNewTask": "Створити нове завдання...",
     "createNewPurchase": "Створити нову закупівлю...",
-    "documentPreview": "Попередній перегляд документа"
+    "documentPreview": "Попередній перегляд документа",
+    "linkFile": "Прив'язати файл до:",
+    "linkToTask": "Прив'язати до завдання",
+    "linkToPurchase": "Прив'язати до закупівлі",
+    "linkToRoom": "Прив'язати до кімнати"
   },
   "elevation": {
     "noWalls": "Немає стін для відображення",
@@ -1537,7 +1676,17 @@
     "wallSurfaceTitle": "Оздоблення стіни (інструкція для роботи)",
     "wallMaterial": "Матеріал",
     "wallTreatment": "Обробка",
-    "wallColorCode": "Код кольору"
+    "wallColorCode": "Код кольору",
+    "confirmDelete": "Ви впевнені, що хочете видалити цей об'єкт?",
+    "dimensions": "Розміри",
+    "width": "Ширина",
+    "height": "Висота",
+    "fromFloor": "Від підлоги",
+    "fromWallEdge": "Від краю стіни",
+    "selectRoom": "Виберіть кімнату для перегляду стіни",
+    "selectRoomDescription": "Виберіть, для якої кімнати ви хочете переглянути стіну",
+    "noRoomsFound": "Кімнат не знайдено. Спочатку намалюйте кімнати на плані поверху.",
+    "suggestedRoom": "Суміжна кімната"
   },
   "statuses": {
     "ideas": "Ідеї",
@@ -1557,7 +1706,11 @@
     "pending": "Очікує",
     "submitted": "Подано",
     "converted": "Перетворено",
-    "expired": "Прострочено"
+    "expired": "Прострочено",
+    "unknown": "Невідомо",
+    "planning": "Планування",
+    "active": "Триває",
+    "delayed": "Затримано"
   },
   "materialStatuses": {
     "submitted": "Подано",
@@ -1570,7 +1723,8 @@
   },
   "paymentStatuses": {
     "notPaid": "Не оплачено",
-    "partiallyPaid": "Частково оплачено"
+    "partiallyPaid": "Частково оплачено",
+    "paid": "Оплачено"
   },
   "roomStatuses": {
     "existing": "Існуюча",
@@ -1706,7 +1860,16 @@
       "line": "Лінія",
       "rectangle": "Прямокутник",
       "circle": "Коло",
-      "shapes": "Фігури (лінія, прямокутник, коло)"
+      "shapes": "Фігури (лінія, прямокутник, коло)",
+      "opening": "Отвір",
+      "door": "Двері",
+      "window": "Вікно",
+      "passage": "Прохід",
+      "objects": "Об'єкти",
+      "connector": "З'єднання",
+      "stickyNote": "Стікер",
+      "wall": "Стіна",
+      "underlay": "Підкладка та імпорт"
     },
     "image": {
       "notAnImage": "Будь ласка, виберіть файл зображення",
@@ -1792,7 +1955,34 @@
       "window": "Вікно",
       "sliding": "Розсувні двері",
       "passage": "Прохід"
-    }
+    },
+    "measureDistance": "Виміряти відстань",
+    "keyboardShortcuts": "Клавіатурні скорочення",
+    "keyboardShortcutsDescription": "Швидкий довідник для планувальника приміщень",
+    "nameRequired": "Потрібна назва",
+    "enterPlanName": "Введіть назву для нового плану",
+    "couldNotCreatePlan": "Не вдалося створити план",
+    "newPlanCreated": "Новий план створено!",
+    "errorCreating": "Помилка створення плану",
+    "cannotDelete": "Неможливо видалити",
+    "mustHaveOnePlan": "Ви повинні мати принаймні один план. Створіть новий, перш ніж видалити цей.",
+    "couldNotDeletePlan": "Не вдалося видалити план з бази даних",
+    "planDeleted": "План видалено",
+    "errorDeleting": "Помилка видалення плану",
+    "couldNotRenamePlan": "Не вдалося перейменувати план",
+    "errorRenaming": "Помилка перейменування плану",
+    "selectPlan": "Виберіть план",
+    "floorPlans": "Плани поверхів",
+    "noPlansCreated": "Ще не створено жодного плану",
+    "createNewPlanDescription": "Створіть новий порожній план або імпортуйте з креслення",
+    "planName": "Назва плану",
+    "planNamePlaceholder": "напр. Поверх 1, Підвал, Варіант A",
+    "planDescriptionPlaceholder": "напр. Основний план з усіма кімнатами",
+    "deleteFloorPlan": "Видалити план поверху?",
+    "cannotBeUndone": "Цю дію неможливо скасувати.",
+    "allObjectsDeleted": "Усі стіни, кімнати та об'єкти в цьому плані буде остаточно видалено.",
+    "uploadTraceImage": "Завантажити креслення (трасування)",
+    "aiImport": "AI-розпізнавання плану поверху"
   },
   "files": {
     "title": "Файли проєкту",
@@ -1880,7 +2070,34 @@
     "moveError": "Не вдалося перемістити файл",
     "moveFolderNotSupported": "Переміщення папок поки не підтримується",
     "deleteFileConfirmation": "Ви впевнені, що хочете видалити «{{name}}»? Це неможливо скасувати.",
-    "category": "Категорія файлу"
+    "category": "Категорія файлу",
+    "attachments": "Вкладення",
+    "noAttachments": "Немає вкладень",
+    "dropToUpload": "Перетягніть файли сюди",
+    "dropHint": "Файли та папки аналізуються автоматично",
+    "upload": "Завантажити",
+    "regularUpload": "Звичайне завантаження",
+    "takePhoto": "Зробити фото",
+    "search": "Пошук файлів...",
+    "uploaded": "Файл додано",
+    "uploadError": "Не вдалося завантажити",
+    "openError": "Не вдалося відкрити файл",
+    "unlink": "Видалити зв'язок",
+    "pdfDocument": "PDF-документ",
+    "image": "Зображення",
+    "file": "Файл",
+    "batchUploadTitle": "Розумне завантаження",
+    "filesCount": "файлів",
+    "classifying": "Аналізуємо",
+    "fileName": "Файл",
+    "autoLink": "Зв'язок",
+    "size": "Розмір",
+    "confirmUpload": "Завантажити всі",
+    "invoiceDate": "Дата рахунку",
+    "invoiceAmount": "Сума",
+    "downloadError": "Помилка завантаження",
+    "error": "Помилка",
+    "noPreviewAvailable": "Попередній перегляд недоступний для цього типу файлу"
   },
   "purchases": {
     "title": "Замовлення на закупівлю",
@@ -2121,7 +2338,45 @@
     "ataTooltip": "Витрати, додані понад початкову пропозицію. Відстежуються окремо в бюджеті.",
     "connections": "Зв'язки",
     "photos": "Фото",
-    "comments": "Коментарі"
+    "comments": "Коментарі",
+    "updateOrderFailed": "Не вдалося оновити",
+    "requestSubmitted": "Запит надіслано",
+    "requestSubmittedDescription": "Ваш запит на купівлю надіслано на затвердження.",
+    "requestPending": "Запит очікує",
+    "requestPurchase": "Запит на купівлю",
+    "requestPurchaseApproval": "Запит на затвердження купівлі",
+    "submitRequestFor": "Надіслати запит на купівлю для:",
+    "addInfoPlaceholder": "Додайте додаткову інформацію про цей запит на купівлю...",
+    "explainWhy": "Поясніть, чому цей матеріал потрібен, або вкажіть особливі вимоги.",
+    "submitting": "Надсилання...",
+    "submitRequest": "Надіслати запит",
+    "linkedToRoom": "Кімната",
+    "hasAttachment": "Документи додано",
+    "attachmentShort": "Вкладення",
+    "noLines": "Немає рядків",
+    "moreSuffix": "ще",
+    "moreAttachments": "Більше вкладень",
+    "attachFile": "Додати файл",
+    "noExtraAttachments": "Немає інших вкладень",
+    "invoiceNumberShort": "Рахунок",
+    "paidOn": "Оплачено {{date}}",
+    "overdueLabel": "Прострочено {{date}}",
+    "dueOn": "Термін оплати {{date}}",
+    "attachment": "Документація",
+    "allocateAll": "Розподілити всі рядки",
+    "purchaseOrder": "Замовлення на закупівлю",
+    "detailSheetDescription": "Редагувати замовлення, рядки та розподіл",
+    "linkToBudgetPost": "Прив'язати до бюджетної статті",
+    "orderAdded": "Замовлення на закупівлю успішно додано",
+    "failedToAdd": "Не вдалося додати замовлення на закупівлю",
+    "orderUpdated": "Замовлення на закупівлю успішно оновлено",
+    "failedToUpdate": "Не вдалося оновити замовлення на закупівлю",
+    "receipt": "Квитанція / рахунок",
+    "photoReceipt": "Сфотографувати квитанцію",
+    "uploadReceipt": "Завантажити",
+    "receiptOptionalHint": "Ви також можете додати квитанцію пізніше на вкладці «Файли».",
+    "saveCompleted": "Зареєструвати покупку",
+    "saveOrder": "Створити замовлення"
   },
   "overview": {
     "projectOverview": "Огляд проєкту",
@@ -2240,7 +2495,12 @@
       "title": "Останні фото",
       "viewAll": "Переглянути всі фото",
       "noPhotos": "Поки немає фото. Фото, завантажені командою, з'являться тут.",
-      "photoUploaded": "Фото завантажено"
+      "photoUploaded": "Фото завантажено",
+      "sourceRoom": "Кімната",
+      "sourceTask": "Завдання",
+      "sourceMaterial": "Закупівля",
+      "sourceComment": "Коментар",
+      "sourceFile": "Файл"
     },
     "documents": "Документи",
     "noDocuments": "Поки немає комерційних пропозицій чи рахунків",
@@ -2250,7 +2510,17 @@
       "description": "Напишіть повідомлення команді проєкту"
     },
     "planningReference": "Довідка з планування",
-    "timeline": "Часова шкала"
+    "timeline": "Часова шкала",
+    "quickInvoice": "Рахунок-фактура",
+    "quickQuote": "Комерційна пропозиція",
+    "quickNewQuote": "Нова комерційна пропозиція",
+    "quickPurchase": "Закупівля",
+    "quickPayment": "Платіж",
+    "coverUpload": "Завантажити зображення",
+    "coverUrl": "Вставити посилання",
+    "coverExisting": "Вибрати із зображень",
+    "coverPickExisting": "Вибрати обкладинку",
+    "noExistingImages": "Зображень не знайдено"
   },
   "receipt": {
     "title": "Швидке сканування чека",
@@ -2285,7 +2555,12 @@
     "fileTooLarge": "Файл занадто великий (макс. 10МБ)",
     "convertingImage": "Конвертація зображення...",
     "conversionFailed": "Не вдалося конвертувати зображення. Спробуйте інший файл.",
-    "unsupportedFile": "Непідтримуваний тип файлу. Використовуйте зображення або PDF."
+    "unsupportedFile": "Непідтримуваний тип файлу. Використовуйте зображення або PDF.",
+    "pdfNeedsQuoteFlow": "PDF-формат обробляється через імпорт кошторису (рядок за рядком).",
+    "openQuoteImport": "Відкрити імпорт кошторису",
+    "vendorName": "Магазин / постачальник",
+    "amount": "Сума",
+    "room": "Кімната"
   },
   "budget": {
     "title": "Бюджет",
@@ -2478,7 +2753,13 @@
       "viewQuote": "Переглянути пропозицію",
       "viewInvoice": "Переглянути рахунок",
       "outstanding": "Заборговано"
-    }
+    },
+    "createNewSupplier": "створити новий",
+    "attachments": "Вкладення",
+    "collapse": "Згорнути",
+    "expand": "Розгорнути",
+    "materialBudget": "Бюджет на матеріали",
+    "subcontractor": "Підрядник"
   },
   "taskPanel": {
     "title": "Деталі завдання",
@@ -2562,7 +2843,8 @@
     "writeReply": "Напишіть відповідь...",
     "sendReply": "Відповісти",
     "searchPlaceholder": "Пошук повідомлень...",
-    "emojiSearch": "Пошук емодзі..."
+    "emojiSearch": "Пошук емодзі...",
+    "comments": "Коментарі"
   },
   "notifications": {
     "title": "Сповіщення",
@@ -2576,7 +2858,13 @@
     "quoteAccepted": "Кошторис прийнято!",
     "quoteViewed": "переглянув(ла) вашу пропозицію",
     "quoteComment": "прокоментував(ла) пропозицію",
-    "quoteRejected": "Пропозицію відхилено"
+    "quoteRejected": "Пропозицію відхилено",
+    "newDm": "Особисте повідомлення",
+    "kicker": "Сповіщення",
+    "unreadTitle": "{{count}} непрочитаних",
+    "tabAll": "Усі",
+    "tabMentions": "Згадки",
+    "tabWarnings": "Попередження"
   },
   "elevationShapeDialog": {
     "wallLabel": "Стіна",
@@ -2700,7 +2988,9 @@
     "invitedWelcome": {
       "title": "Ласкаво просимо до вашого проєкту!",
       "description": "Тут ви можете стежити за прогресом, переглядати фото та спілкуватися з командою проєкту."
-    }
+    },
+    "measurementTitle": "Система вимірювання",
+    "measurementDesc": "Як ви вимірюєте?"
   },
   "canvasSettings": {
     "title": "Налаштування креслення",
@@ -2803,7 +3093,9 @@
     "week": "Тиждень",
     "month": "Місяць",
     "day": "день",
-    "of": "з"
+    "of": "з",
+    "projectStart": "Проєкт",
+    "tasks": "Завдання"
   },
   "canvas": {
     "settings": "Налаштування креслення",
@@ -3698,7 +3990,33 @@
     "revisedAs": "Переглянуто як {{number}}",
     "creatingRevision": "Створення редакції...",
     "createInvoice": "Створити рахунок",
-    "invoiceCreated": "Рахунок створено з кошторису"
+    "invoiceCreated": "Рахунок створено з кошторису",
+    "objectLabel": "Об'єкт",
+    "untitled": "Комерційна пропозиція без назви",
+    "objectDescription": "Об'єкт",
+    "objectPlaceholder": "напр., Квартира 80 м² на Кунгсхольмені",
+    "previewSubtitle": "Ось як пропозиція виглядає для клієнта",
+    "totalIncVat": "Всього",
+    "afterRotHint": "До сплати після відрахування",
+    "statusLabel": "Статус",
+    "revisionChain": "Ланцюжок редакцій",
+    "revisedFrom": "Редакція від",
+    "activity": "Активність",
+    "sentToCustomer": "Надіслано клієнту",
+    "openedByCustomer": "Відкрито клієнтом",
+    "notSentYet": "Ще не надіслано",
+    "pending": "Очікується",
+    "byCustomer": "Клієнтом",
+    "linkedProject": "Зв'язок",
+    "openProject": "Відкрити проєкт",
+    "dateLabel": "Дата",
+    "chatWithCustomer": "Чат із клієнтом",
+    "chatWithSeller": "Чат",
+    "decline": "Відхилити",
+    "accept": "Прийняти",
+    "viewProject": "Переглянути проєкт",
+    "youDeclined": "Ви відхилили пропозицію",
+    "confirmDeleteQuote": "Ви впевнені? Цю дію не можна скасувати."
   },
   "welcome": {
     "chooseLanguage": "Оберіть свою мову",
@@ -3727,7 +4045,8 @@
     "blankProjectLink": "або почніть із порожнього проєкту",
     "exploreDemo": "Спочатку ознайомитися",
     "exploreDemoDesc": "Подивіться, як це працює, на демо-проєкті",
-    "recommended": "Рекомендовано"
+    "recommended": "Рекомендовано",
+    "chooseLanguageDesc": "Ви можете змінити це пізніше в налаштуваннях"
   },
   "demoProject": {
     "badge": "Приклад проєкту",
@@ -3828,7 +4147,10 @@
     "wallCoverage": "стіна",
     "noEdgeForDirection": "Немає краю кімнати для цього напрямку",
     "backToFloorPlan": "План поверху",
-    "wallCounter": "Стіна {{n}} з {{total}}"
+    "wallCounter": "Стіна {{n}} з {{total}}",
+    "noWallDrawn": "Стіну не намальовано",
+    "object": "Об'єкт",
+    "segmentTooSmall": "Сегмент занадто малий для відображення"
   },
   "wallElevation": {
     "title": "Вигляд фасаду стіни",
@@ -4309,7 +4631,9 @@
     "confirmDeleteHint": "Цю дію неможливо скасувати.",
     "changeOrderInvoiceTitle": "Рахунок за додаткові роботи",
     "editInvoice": "Редагувати рахунок",
-    "ataMode": "ÄTA — поза початковим кошторисом"
+    "ataMode": "ÄTA — поза початковим кошторисом",
+    "untitled": "Без назви",
+    "atLeastOneItem": "Додайте щонайменше один рядок"
   },
   "worker": {
     "title": "Робочі інструкції",
@@ -4394,7 +4718,9 @@
       "nameRequired": "Опишіть, що ви купили / що потрібно"
     },
     "taskCount_one": "{{count}} завдання",
-    "taskCount_other": "{{count}} завдань"
+    "taskCount_other": "{{count}} завдань",
+    "roomEyebrow": "КІМНАТА",
+    "taskEyebrow": "ЗАВДАННЯ"
   },
   "teamWorker": {
     "workers": "Працівники",
@@ -4517,7 +4843,8 @@
       "canLogLabel": "Може фіксувати завершені закупівлі",
       "canLogDescription": "Робітник реєструє покупку та додає чек напряму — без затвердження.",
       "requirePhoto": "Вимагати фото",
-      "requirePhotoTitle": "Вимагати підсумкове фото перед прийняттям цього завдання"
+      "requirePhotoTitle": "Вимагати підсумкове фото перед прийняттям цього завдання",
+      "selectedCount": "Вибрано: {{count}}"
     },
     "memberStep": {
       "title": "Який рівень доступу?",
@@ -4578,7 +4905,9 @@
       "sendEmail": "Надіслати лист",
       "smsSent": "SMS надіслано",
       "emailSent": "Лист надіслано",
-      "sendWhatsApp": "Поділитися через WhatsApp"
+      "sendWhatsApp": "Поділитися через WhatsApp",
+      "openMessages": "Відкрити повідомлення",
+      "openMail": "Відкрити пошту"
     },
     "clientStep": {
       "title": "Замовник отримує клієнтський перегляд",
@@ -5168,7 +5497,20 @@
       "homeownerAddDesignation": "Додайте кадастрове позначення в налаштуваннях проєкту",
       "builderAskClient": "Попросіть клієнта заповнити відсутні дані",
       "builderInviteClient": "Запросіть власника до проєкту, щоб зібрати дані для ROT"
-    }
+    },
+    "namePlaceholder": "Ім'я",
+    "pnrPlaceholder": "Персональний номер (personnummer)",
+    "addError": "Не вдалося додати",
+    "summary": "Відрахування ROT",
+    "person": "особа",
+    "persons": "осіб",
+    "addPerson": "Додати",
+    "overLimit": "Перевищує ліміт ROT на {{amount}} kr",
+    "plannedTotal": "Заплановане відрахування ROT",
+    "actualTotal": "Фактичне відрахування ROT",
+    "missingInvoices": "{{count}} елемент(и) ROT без підтвердженого рахунку",
+    "plannedShort": "план",
+    "noInvoicesYet": "Жодного рахунку ще не оплачено — показано заплановане відрахування"
   },
   "rotRules": {
     "title": "Як ми розраховуємо ROT",
@@ -5306,7 +5648,9 @@
     "afterRot": "Після ROT",
     "deduction": "відрахування",
     "paidBadge": "Сплачено",
-    "ataShort": "ÄTA"
+    "ataShort": "ÄTA",
+    "privateCap": "Мій приватний ліміт",
+    "privateOnly": "Тільки ви це бачите"
   },
   "guidedSetup": {
     "title": "Розкажіть про свій ремонт",
@@ -5496,7 +5840,16 @@
     "calcSuggested": "Пропозиція Renaida. Відредагуйте клітинку, щоб зробити значення власним.",
     "saveRateAsDefault": "Зберегти {{rate}} крон/год як вашу типову погодинну ставку? Вона буде підставлятися в майбутні розрахунки.",
     "saveRateAction": "Зберегти як типову",
-    "rateSaved": "Типову погодинну ставку оновлено: {{rate}} крон/год"
+    "rateSaved": "Типову погодинну ставку оновлено: {{rate}} крон/год",
+    "noLaborTasksForRot": "Немає рядків робіт із годинами для застосування відрахування ROT",
+    "rotRemovedAll": "Відрахування ROT видалено з усіх завдань",
+    "rotAppliedAll": "Відрахування ROT застосовано до {{count}} завдань",
+    "rotApplyAllTooltip": "Натисніть, щоб застосувати/зняти ROT на всіх рядках робіт",
+    "markupOnMatAndUe": "Націнка на матеріали та субпідрядників",
+    "markupOnMat": "Націнка на матеріал",
+    "markupOnUe": "Націнка на підрядника",
+    "removeRot": "Видалити ROT",
+    "applyRot": "Застосувати ROT"
   },
   "planningSmartImport": {
     "title": "Розумний імпорт",
@@ -5581,7 +5934,10 @@
     "budget": "Бюджет",
     "homeownerBudgetHint": "Ваш орієнтовний бюджет або сума кошторису для цього завдання",
     "estimatedMaterialCost": "Орієнтовна вартість матеріалів",
-    "useAsbudget": "Використати як бюджет"
+    "useAsbudget": "Використати як бюджет",
+    "costType": "Тип витрат",
+    "total": "Всього",
+    "material": "Матеріал"
   },
   "costCenters": {
     "demolition": "Демонтаж",
@@ -5595,7 +5951,14 @@
     "windowsDoors": "Вікна та двері",
     "inspection": "Огляд",
     "cleanup": "Прибирання та вивіз сміття",
-    "design": "Дизайн і планування"
+    "design": "Дизайн і планування",
+    "electrical": "Електрика",
+    "tiling": "Плитка",
+    "painting": "Фарбування",
+    "flooring": "Підлога",
+    "kitchen": "Кухня",
+    "bathroom": "Ванна кімната",
+    "other": "Інше"
   },
   "projectStatus": {
     "planning": "Планування",
@@ -5723,7 +6086,15 @@
     "previewShowingSource": "Показано ваш шведський вихідний текст.",
     "previewShowingWorker": "Показано саме те, що бачить {{name}} ({{lang}}).",
     "previewSeeWorkerLang": "Переглянути {{lang}}",
-    "previewSeeSwedish": "Показати шведською"
+    "previewSeeSwedish": "Показати шведською",
+    "kundvy": {
+      "unnamed": "Без імені",
+      "title": "Запрошені з клієнтським переглядом",
+      "invite": "Запросити",
+      "statusPending": "Очікує",
+      "statusActive": "Активний",
+      "hint": "Попередній перегляд нижче показує саме те, що бачать ці люди."
+    }
   },
   "team": {
     "table": {
@@ -6282,7 +6653,8 @@
     "noResults": "Результатів не знайдено",
     "navigate": "перейти",
     "open": "відкрити",
-    "close": "закрити"
+    "close": "закрити",
+    "title": "Пошук"
   },
   "analysis": {
     "title": "Відрахування ROT",
@@ -6391,7 +6763,9 @@
     "saveError": "Не вдалося зберегти",
     "saving": "Збереження...",
     "linkButton": "Пов'язати документ",
-    "canvasAdded": "Креслення додано на полотно."
+    "canvasAdded": "Креслення додано на полотно.",
+    "newRotPerson": "Знайдено новий особистий ідентифікаційний номер",
+    "addAsRotPerson": "автоматично додається як особа ROT"
   },
   "quoteReview": {
     "title": "Перегляд пропозиції",
@@ -6540,7 +6914,40 @@
     "purchasesTooltipNone": "Немає замовлень на очікуванні.",
     "budget": "Бюджет",
     "budgetTooltip": "Витрачено проти бюджету по кожному проєкту:",
-    "tasksComplete": "завдань"
+    "tasksComplete": "завдань",
+    "portfolio": {
+      "kicker": "Проєкти",
+      "activeProjects": "активних проєктів.",
+      "noAddress": "Немає адреси"
+    },
+    "daySummary": {
+      "kicker": "Сьогодні",
+      "activeJobs": "Активні проєкти",
+      "tasksThisWeek": "робіт цього тижня",
+      "approvals": "На затвердження",
+      "purchaseApprovals": "закупівель очікує",
+      "overdue": "Прострочені",
+      "budget": "Бюджет",
+      "budgetOf": "з {{total}} тис. крон"
+    },
+    "ops": {
+      "progress": "Прогрес"
+    },
+    "noProjects": "Немає проєктів",
+    "viewEditorial": "Редакційний",
+    "viewOps": "Таблиця",
+    "viewPortfolio": "Картки",
+    "classicView": "Класичний вигляд",
+    "empty": {
+      "step1Title": "Створіть свій перший проєкт",
+      "step1Desc": "Вкажіть адресу, тип ремонту та приблизний бюджет. Готово за 2 хвилини.",
+      "step2Title": "Додайте роботи",
+      "step2Desc": "Визначте, що потрібно зробити — демонтаж, фарбування, укладання плитки. Прив'яжіть до кімнат.",
+      "step3Title": "Запросіть команду",
+      "step3Desc": "Поділіться з клієнтом, субпідрядниками або керівником проєкту. Кожен бачить свою частину.",
+      "title": "Ласкаво просимо до Renofine",
+      "cta": "Новий проєкт"
+    }
   },
   "inspiration": {
     "title": "Натхнення",
@@ -6578,7 +6985,19 @@
     "uploadPhoto": "Вибрати фото",
     "photoAdded": "Фото додано",
     "fullscreen": "На весь екран",
-    "moodboard": "Дошка настрою"
+    "moodboard": "Дошка настрою",
+    "gallery": "Галерея",
+    "compareView": "Порівняти до/після",
+    "background": "Фон",
+    "withGap": "З проміжком",
+    "captionPlaceholder": "Опишіть своє натхнення...",
+    "newRoom": "Нова кімната...",
+    "caption": "Підпис",
+    "addCaption": "Додати підпис...",
+    "details": "Деталі",
+    "room": "Кімната",
+    "noRoom": "Не пов'язано",
+    "source": "Джерело"
   },
   "evidence": {
     "verified": "Підтверджено",
@@ -6589,7 +7008,10 @@
     "summaryTooltip": "Скільки позицій мають підтвердні документи (рахунок/квитанція). Натисніть, щоб побачити список відсутніх.",
     "tooltipVerified": "Є підтвердний документ (рахунок/квитанція)",
     "tooltipRegistered": "Сума зафіксована, але документ не прив'язано",
-    "tooltipMissing": "Завершено, але не знайдено ані вартості, ані документа"
+    "tooltipMissing": "Завершено, але не знайдено ані вартості, ані документа",
+    "popoverTitle": "Статус перевірки",
+    "popoverMissing": "{{count}} позицій без підтвердних документів",
+    "popoverAllGood": "Усі позиції мають підтвердні документи"
   },
   "planningWizard": {
     "title": "Плануйте свій ремонт",
@@ -6670,7 +7092,9 @@
     "matrixFooter": "Буде створено {{tasks}} {{taskWord}} у {{rooms}} {{roomWord}}. Тип, матеріал і вартість вибираються для кожного завдання на наступній сторінці.",
     "matrixFooterEmpty": "Позначте клітинку, щоб створити завдання. Також можна продовжити без вибору й побудувати план з нуля.",
     "matrixRoomNote": "Нотатка про {{room}}",
-    "matrixRoomNotePlaceholder": "напр. Кам'яна підлога в передпокої, шліфування наявного паркету в решті приміщень…"
+    "matrixRoomNotePlaceholder": "напр. Кам'яна підлога в передпокої, шліфування наявного паркету в решті приміщень…",
+    "micDenied": "Мікрофон заблоковано — перевірте дозволи браузера.",
+    "micFailed": "Не вдалося розпізнати голос — спробуйте ще раз або введіть текст."
   },
   "resourcePlanning": {
     "title": "Планування ресурсів",
@@ -7248,5 +7672,25 @@
     "deletedBoth": "Кімнату та креслення видалено",
     "deletedDrawing": "Креслення видалено – кімната залишається у списку",
     "couldNotDelete": "Не вдалося видалити кімнату"
+  },
+  "payments": {
+    "error": "Не вдалося зареєструвати платіж",
+    "fullyPaid": "Рахунок позначено як оплачений",
+    "partiallyPaid": "Часткову оплату зареєстровано",
+    "title": "Зареєструвати платіж",
+    "description": "Виберіть рахунок і вкажіть сплачену суму.",
+    "noInvoices": "Немає неоплачених рахунків",
+    "overdue": "Прострочено",
+    "due": "Термін оплати",
+    "of": "з",
+    "amount": "Сума",
+    "partialNote": "Часткова оплата — {{remaining}} залишок після",
+    "date": "Дата платежу",
+    "register": "Зареєструвати"
+  },
+  "priorities": {
+    "low": "Низький",
+    "medium": "Середній",
+    "high": "Високий"
   }
 }
