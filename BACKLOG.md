@@ -2502,19 +2502,25 @@ i UI som anon + regel-påminnelse: nya tabeller som demo-seedas MÅSTE få demo-
 
 ---
 id: purchase-dialog-po-invariant-violation
-status: todo
+status: doing
 priority: P2
 tags: [bugfix, inkop]
 created: 2026-08-18
+updated: 2026-08-18
 ---
-## NewPurchaseFromBudgetDialog bryter PO-invarianten — trolig aktiv krasch
-Budget-radens "+Inköp"-dialog (`NewPurchaseFromBudgetDialog.tsx:122-140`) insertar
-material `status='paid'/'to_order'` UTAN `purchase_order_id`. DB-CHECK:en
-(`20260513110000`: `(status='planned') = (purchase_order_id IS NULL)`) förbjuder
-det → antingen constraint-krasch i prod eller (om CHECK saknas remote) osynliga
-orphan-rader som inte renderas någonstans. Båda utfallen buggiga. Verifiera i UI
-FÖRST (feedback_verify_before_code), fixa genom att routa via PO-skapande
-(`createRequestPurchase`-mönstret / QuickReceiptCaptureModals PO-först-flöde).
+## NewPurchaseFromBudgetDialog bröt PO-invarianten — köp från budgetrad failade alltid
+**FIXAD (kod), väntar on-device-verify.** `NewPurchaseFromBudgetDialog.handleSave`
+insertade material `status='paid'/'to_order'` UTAN `purchase_order_id` → bröt
+DB-CHECK:en (`20260513110000`: `(status='planned') = (purchase_order_id IS NULL)`,
+bekräftat applicerad remote) → insert returnerade error → toast "Kunde inte skapa
+inköp" VARJE gång. Verifierat live-nåbar från TVÅ ytor: Budget-fliken
+(`BudgetTabCore.tsx:1002` +Inköp på budgetrad) OCH Inköp-fliken
+(`PurchaseRequestsTab.tsx:1092` klick på planerat kort). Syskon-vägen
+`createOrderFromPlanned:917` var redan korrekt (via `createRequestPurchase`).
+Fix: routa handleSave genom `createRequestPurchase` (single-source PO-skapande);
+utökade helpern med `poStatus` (utfört köp→'delivered', beställning→'requested')
++ `paid_amount`. typecheck:strict + build gröna. **Kvar:** Carl/Cowork inloggad —
+öppna budgetrad → Registrera utfört köp → verifiera att det sparas + syns i Inköp.
 
 ---
 id: purchase-approve-self-loophole

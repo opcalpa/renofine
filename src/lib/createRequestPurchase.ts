@@ -14,12 +14,18 @@ export interface RequestPurchaseMaterial {
   exclude_from_budget?: boolean | null;
   source_material_id?: string | null;
   status?: string;
+  paid_amount?: number | null;
 }
 
 export interface CreateRequestPurchaseInput {
   projectId: string;
   createdByUserId: string;
   material: RequestPurchaseMaterial;
+  /** PO status. Default 'requested' (a wish/order awaiting fulfilment).
+   *  Use 'delivered' when logging an already-completed purchase. */
+  poStatus?: string;
+  /** PO source tag. Default 'manual'. */
+  poSource?: string;
 }
 
 export interface CreateRequestPurchaseResult {
@@ -49,8 +55,8 @@ export async function createRequestPurchase(
       project_id: projectId,
       vendor_name: vendor,
       total,
-      status: "requested",
-      source: "manual",
+      status: input.poStatus ?? "requested",
+      source: input.poSource ?? "manual",
       created_by_user_id: createdByUserId,
     })
     .select("id")
@@ -80,6 +86,7 @@ export async function createRequestPurchase(
       exclude_from_budget: material.exclude_from_budget ?? false,
       source_material_id: material.source_material_id ?? null,
       status: materialStatus,
+      paid_amount: material.paid_amount ?? null,
       created_by_user_id: createdByUserId,
     })
     .select("id")

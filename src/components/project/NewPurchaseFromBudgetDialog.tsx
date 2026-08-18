@@ -15,6 +15,7 @@ import {
 import { toast } from "sonner";
 import { Receipt, ShoppingCart, ArrowLeft, Camera, Upload, X, Loader2 } from "lucide-react";
 import { formatCurrency } from "@/lib/currency";
+import { createRequestPurchase } from "@/lib/createRequestPurchase";
 
 interface BudgetMaterial {
   id: string;
@@ -119,37 +120,41 @@ export function NewPurchaseFromBudgetDialog({
 
     const isCompleted = step === "completed";
     const parsedAmount = amount ? parseFloat(amount) : null;
-    const status = isCompleted ? "paid" : "to_order";
 
-    const { data, error } = await supabase
-      .from("materials")
-      .insert({
-        project_id: projectId,
-        task_id: planned.task_id,
-        room_id: planned.room_id,
-        name: planned.name,
-        description: description || null,
-        quantity: parsedAmount ? 1 : planned.quantity || 1,
-        unit: planned.unit || "st",
-        price_per_unit: parsedAmount,
-        price_total: parsedAmount,
-        paid_amount: isCompleted ? parsedAmount : null,
-        status,
-        source_material_id: planned.id,
-        created_by_user_id: currentProfileId,
-      })
-      .select("id")
-      .single();
-
-    if (error) {
+    // Route through the request-PO helper: every non-planned material MUST hang
+    // off a purchase_order (DB CHECK enforces (status='planned') = (po_id IS NULL)).
+    // A raw material insert here violated that invariant → hard-failed every save.
+    let materialId: string;
+    try {
+      const result = await createRequestPurchase({
+        projectId,
+        createdByUserId: currentProfileId,
+        // Completed purchase → a delivered PO; an order/wish → the default request PO.
+        poStatus: isCompleted ? "delivered" : "requested",
+        material: {
+          task_id: planned.task_id,
+          room_id: planned.room_id,
+          name: planned.name,
+          description: description || null,
+          quantity: parsedAmount ? 1 : planned.quantity || 1,
+          unit: planned.unit || "st",
+          price_per_unit: parsedAmount,
+          price_total: parsedAmount ?? 0,
+          paid_amount: isCompleted ? parsedAmount : null,
+          status: isCompleted ? "paid" : "to_order",
+          source_material_id: planned.id,
+        },
+      });
+      materialId = result.materialId;
+    } catch {
       setSaving(false);
       toast.error(t("purchases.createOrderFailed", "Kunde inte skapa inköp"));
       return;
     }
 
     // Upload receipt file if provided
-    if (receiptFile && data?.id) {
-      await uploadReceipt(data.id);
+    if (receiptFile && materialId) {
+      await uploadReceipt(materialId);
     }
 
     setSaving(false);
