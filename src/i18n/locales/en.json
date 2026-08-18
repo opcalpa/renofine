@@ -306,7 +306,8 @@
     "dismiss": "Dismiss",
     "selectAll": "Select all",
     "hasAttachment": "{{count}} attachment(s)",
-    "attachment": "Attachment"
+    "attachment": "Attachment",
+    "clear": "Clear"
   },
   "beta": {
     "title": "Public Beta",
@@ -1127,7 +1128,11 @@
     "fieldHasContent": "Has content — always shown",
     "fieldSettingsHint": "Fields with content are always shown. Applies only to you, on this device.",
     "loggedTime": "Logged time",
-    "ofEstimatedHours": "of ~{{hours}} h"
+    "ofEstimatedHours": "of ~{{hours}} h",
+    "filter": "Filter",
+    "overdue": "overdue",
+    "kanbanColumns": "Kanban columns",
+    "visibleColumns": "Visible columns"
   },
   "tasksTable": {
     "columns": "Columns",
@@ -1176,7 +1181,8 @@
     "bulkClearSelection": "Deselect",
     "bulkConfirmTitle": "Update {{count}} tasks?",
     "bulkConfirmDesc": "Set {{field}} to \"{{value}}\" for {{count}} tasks?",
-    "bulkConfirmApply": "Apply"
+    "bulkConfirmApply": "Apply",
+    "attachment": "Attachments"
   },
   "purchasesTable": {
     "columns": "Columns",
@@ -2441,7 +2447,11 @@
     "milestones": "Milestones",
     "noMilestones": "No milestones yet",
     "milestoneTitle": "Title...",
-    "pickDate": "Pick date..."
+    "pickDate": "Pick date...",
+    "week": "Week",
+    "month": "Month",
+    "day": "day",
+    "of": "of"
   },
   "statuses": {
     "ideas": "Ideas",
@@ -2899,7 +2909,8 @@
     "noLinkedFiles": "No linked files",
     "unlinkFile": "Unlink file",
     "fileUnlinked": "File unlinked",
-    "deleteFileConfirmation": "Are you sure you want to delete “{{name}}”? This cannot be undone."
+    "deleteFileConfirmation": "Are you sure you want to delete “{{name}}”? This cannot be undone.",
+    "category": "File category"
   },
   "fileStats": {
     "quote": "Quotes",
@@ -3294,7 +3305,8 @@
       "title": "Chat",
       "description": "Write a message to your project team"
     },
-    "planningReference": "Planning reference"
+    "planningReference": "Planning reference",
+    "timeline": "Timeline"
   },
   "receipt": {
     "title": "Quick Receipt Capture",

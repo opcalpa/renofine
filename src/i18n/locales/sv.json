@@ -306,7 +306,8 @@
     "dismiss": "Stäng",
     "selectAll": "Välj alla",
     "hasAttachment": "{{count}} underlag",
-    "attachment": "Underlag"
+    "attachment": "Underlag",
+    "clear": "Rensa"
   },
   "beta": {
     "title": "Publik beta",
@@ -1127,7 +1128,11 @@
     "fieldHasContent": "Har innehåll — visas alltid",
     "fieldSettingsHint": "Fält med innehåll visas alltid. Gäller bara dig, på den här enheten.",
     "loggedTime": "Loggad tid",
-    "ofEstimatedHours": "av ~{{hours}} h"
+    "ofEstimatedHours": "av ~{{hours}} h",
+    "filter": "Filter",
+    "overdue": "försenade",
+    "kanbanColumns": "Kanban-kolumner",
+    "visibleColumns": "Synliga kolumner"
   },
   "tasksTable": {
     "columns": "Kolumner",
@@ -1176,7 +1181,8 @@
     "bulkClearSelection": "Avmarkera",
     "bulkConfirmTitle": "Uppdatera {{count}} arbeten?",
     "bulkConfirmDesc": "Ändra {{field}} till \"{{value}}\" för {{count}} arbeten?",
-    "bulkConfirmApply": "Tillämpa"
+    "bulkConfirmApply": "Tillämpa",
+    "attachment": "Bilagor"
   },
   "purchasesTable": {
     "columns": "Kolumner",
@@ -1868,7 +1874,11 @@
     "milestones": "Milstolpar",
     "noMilestones": "Inga milstolpar ännu",
     "milestoneTitle": "Titel...",
-    "pickDate": "Välj datum..."
+    "pickDate": "Välj datum...",
+    "week": "Vecka",
+    "month": "Månad",
+    "day": "dag",
+    "of": "av"
   },
   "statuses": {
     "ideas": "Idéer",
@@ -2326,7 +2336,8 @@
     "noLinkedFiles": "Inga kopplade filer",
     "unlinkFile": "Koppla bort fil",
     "fileUnlinked": "Fil bortkopplad",
-    "deleteFileConfirmation": "Är du säker på att du vill ta bort ”{{name}}”? Det går inte att ångra."
+    "deleteFileConfirmation": "Är du säker på att du vill ta bort ”{{name}}”? Det går inte att ångra.",
+    "category": "Filkategori"
   },
   "fileStats": {
     "quote": "Offerter",
@@ -2721,7 +2732,8 @@
       "title": "Chatt",
       "description": "Skriv ett meddelande till ditt projektteam"
     },
-    "planningReference": "Planeringsunderlag"
+    "planningReference": "Planeringsunderlag",
+    "timeline": "Tidslinje"
   },
   "receipt": {
     "title": "Snabb Kvittofångst",
