@@ -31,6 +31,9 @@ interface NewPurchaseOrderDialogProps {
   tasks: { id: string; title: string }[];
   rooms: { id: string; name: string }[];
   onCreated: () => void;
+  /** When true (member without direct-register rights), the order is created as
+   *  a pending request (PO 'requested' + material 'submitted') awaiting approval. */
+  asRequest?: boolean;
 }
 
 interface DraftLine {
@@ -59,6 +62,7 @@ export const NewPurchaseOrderDialog = ({
   tasks,
   rooms,
   onCreated,
+  asRequest = false,
 }: NewPurchaseOrderDialogProps) => {
   const { t } = useTranslation();
   const { toast } = useToast();
@@ -134,6 +138,11 @@ export const NewPurchaseOrderDialog = ({
         .eq("user_id", user.id)
         .single();
 
+      // A request (create-level, no direct-register right) lands as a pending
+      // approval; direct registration keeps the chosen order status.
+      const effectivePoStatus = asRequest ? "requested" : poStatus;
+      const effectiveMaterialStatus = asRequest ? "submitted" : materialStatus;
+
       // 1. Create the PO
       const { data: po, error: poErr } = await supabase
         .from("purchase_orders")
@@ -141,9 +150,9 @@ export const NewPurchaseOrderDialog = ({
           project_id: projectId,
           vendor_name: vendor.trim(),
           total: totalPreview,
-          status: poStatus,
-          ordered_at: poStatus !== "pending" ? orderedAt : null,
-          delivered_at: poStatus === "delivered" ? orderedAt : null,
+          status: effectivePoStatus,
+          ordered_at: !asRequest && poStatus !== "pending" ? orderedAt : null,
+          delivered_at: !asRequest && poStatus === "delivered" ? orderedAt : null,
           source: "manual",
           notes: notes.trim() || null,
           created_by_user_id: profile?.id ?? null,
@@ -165,7 +174,7 @@ export const NewPurchaseOrderDialog = ({
           price_per_unit: p,
           vendor_name: vendor.trim(),
           vendor_link: l.url.trim() || null,
-          status: materialStatus,
+          status: effectiveMaterialStatus,
           task_id: taskId !== "none" ? taskId : null,
           room_id: roomId !== "none" ? roomId : null,
           created_by_user_id: profile?.id ?? null,
@@ -176,7 +185,9 @@ export const NewPurchaseOrderDialog = ({
       if (lineErr) throw lineErr;
 
       toast({
-        description: t("purchases.orderCreated", "Beställning skapad ({{count}} rader)", { count: validLines.length }),
+        description: asRequest
+          ? t("purchases.requestSent", "Skickat till projektägaren för godkännande")
+          : t("purchases.orderCreated", "Beställning skapad ({{count}} rader)", { count: validLines.length }),
       });
       onCreated();
       handleOpenChange(false);
@@ -192,9 +203,15 @@ export const NewPurchaseOrderDialog = ({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-3xl">
         <DialogHeader>
-          <DialogTitle>{t("purchases.createOrder", "Skapa beställning")}</DialogTitle>
+          <DialogTitle>
+            {asRequest
+              ? t("purchases.proposePurchase", "Föreslå inköp")
+              : t("purchases.createOrder", "Skapa beställning")}
+          </DialogTitle>
           <DialogDescription>
-            {t("purchases.createOrderDesc", "Lägg in en beställning som ska göras eller redan är beställd. Pris är valfritt — antalet räcker.")}
+            {asRequest
+              ? t("purchases.proposePurchaseDesc", "Skickas till projektägaren för godkännande innan det bokförs. Pris är valfritt.")
+              : t("purchases.createOrderDesc", "Lägg in en beställning som ska göras eller redan är beställd. Pris är valfritt — antalet räcker.")}
           </DialogDescription>
         </DialogHeader>
 
@@ -221,19 +238,21 @@ export const NewPurchaseOrderDialog = ({
                     onChange={(e) => setOrderedAt(e.target.value)}
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="po-status">{t("common.status", "Status")}</Label>
-                  <Select value={poStatus} onValueChange={(v) => setPoStatus(v as "pending" | "ordered" | "delivered")}>
-                    <SelectTrigger id="po-status">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending">{t("purchaseOrderStatus.pending", "Att beställa")}</SelectItem>
-                      <SelectItem value="ordered">{t("purchaseOrderStatus.ordered", "Beställd")}</SelectItem>
-                      <SelectItem value="delivered">{t("purchaseOrderStatus.delivered", "Levererad")}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                {!asRequest && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="po-status">{t("common.status", "Status")}</Label>
+                    <Select value={poStatus} onValueChange={(v) => setPoStatus(v as "pending" | "ordered" | "delivered")}>
+                      <SelectTrigger id="po-status">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">{t("purchaseOrderStatus.pending", "Att beställa")}</SelectItem>
+                        <SelectItem value="ordered">{t("purchaseOrderStatus.ordered", "Beställd")}</SelectItem>
+                        <SelectItem value="delivered">{t("purchaseOrderStatus.delivered", "Levererad")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -374,7 +393,9 @@ export const NewPurchaseOrderDialog = ({
           </Button>
           <Button onClick={handleSave} disabled={saving || !vendor.trim() || validLines.length === 0}>
             {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-            {t("purchases.createOrder", "Skapa beställning")}
+            {asRequest
+              ? t("purchases.sendForApproval", "Skicka för godkännande")
+              : t("purchases.createOrder", "Skapa beställning")}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1021,6 +1021,10 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
     );
   }
 
+  // Owner/edit register purchases directly; create-level members propose them
+  // (→ 'submitted'/'requested' request, surfaced in the approval queue).
+  const canRegisterDirectly = isProjectOwner || userPurchasesAccess === 'edit';
+
   return (
     <div className="space-y-6">
       <ProjectLockBanner lockStatus={lockStatus} />
@@ -1044,18 +1048,29 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-64">
-                <DropdownMenuItem onClick={() => setReceiptModalOpen(true)}>
-                  <Camera className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <div className="flex flex-col">
-                    <span>{t('purchases.scanReceiptQuote', 'Skanna kvitto/offert')}</span>
-                    <span className="text-[10px] text-muted-foreground">{t('purchases.scanReceiptQuoteHint', 'AI extraherar rader och belopp')}</span>
-                  </div>
-                </DropdownMenuItem>
+                {/* Scanning a receipt logs a *completed* purchase → register right. */}
+                {canRegisterDirectly && (
+                  <DropdownMenuItem onClick={() => setReceiptModalOpen(true)}>
+                    <Camera className="h-4 w-4 mr-2 text-muted-foreground" />
+                    <div className="flex flex-col">
+                      <span>{t('purchases.scanReceiptQuote', 'Skanna kvitto/offert')}</span>
+                      <span className="text-[10px] text-muted-foreground">{t('purchases.scanReceiptQuoteHint', 'AI extraherar rader och belopp')}</span>
+                    </div>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={() => setNewPODialogOpen(true)}>
                   <Pencil className="h-4 w-4 mr-2 text-muted-foreground" />
                   <div className="flex flex-col">
-                    <span>{t('purchases.createOrderManual', 'Skapa beställning manuellt')}</span>
-                    <span className="text-[10px] text-muted-foreground">{t('purchases.createOrderManualHint', 'Antal-först, pris valfritt')}</span>
+                    <span>
+                      {canRegisterDirectly
+                        ? t('purchases.createOrderManual', 'Skapa beställning manuellt')
+                        : t('purchases.proposePurchase', 'Föreslå inköp')}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {canRegisterDirectly
+                        ? t('purchases.createOrderManualHint', 'Antal-först, pris valfritt')
+                        : t('purchases.proposePurchaseHint', 'Skickas till projektägaren för godkännande')}
+                    </span>
                   </div>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
@@ -1660,6 +1675,7 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
         currency={currency}
         tasks={tasks}
         rooms={rooms}
+        asRequest={!canRegisterDirectly}
         onCreated={() => { fetchPurchaseOrders(); fetchMaterials(); }}
       />
       <AlertDialog open={poToDelete !== null} onOpenChange={(o) => !o && setPOToDelete(null)}>
