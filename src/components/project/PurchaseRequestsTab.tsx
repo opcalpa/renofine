@@ -30,6 +30,9 @@ import {
   Camera,
   Pencil,
   ArrowRight,
+  Check,
+  X,
+  Clock,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -939,6 +942,21 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
     }
   }, [currentProfileId, projectId, fetchMaterials, t]);
 
+  // Approve / decline a pending purchase request (status 'submitted').
+  const handleApproval = useCallback(async (materialId: string, decision: 'approved' | 'declined') => {
+    const { error } = await supabase.from("materials").update({ status: decision }).eq("id", materialId);
+    if (error) {
+      toast({ variant: "destructive", description: t("purchases.updateOrderFailed", "Kunde inte uppdatera") });
+      return;
+    }
+    toast({
+      description: decision === 'approved'
+        ? t("purchases.requestApproved", "Inköp godkänt")
+        : t("purchases.requestDeclined", "Inköp avböjt"),
+    });
+    fetchMaterials();
+  }, [projectId, fetchMaterials, t]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const openEditDialog = useCallback((material: Material) => {
     setEditingMaterial({
       ...material,
@@ -1068,6 +1086,61 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
           </div>
         )}
       </div>
+
+      {/* Approval queue — pending requests surfaced for approvers (owner/edit). */}
+      {(isProjectOwner || userPurchasesAccess === 'edit') && (() => {
+        const pending = materials.filter((m) => m.status === 'submitted');
+        if (pending.length === 0) return null;
+        return (
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 overflow-hidden">
+            <div className="flex items-center gap-2 px-4 py-2.5 border-b border-amber-500/20">
+              <Clock className="h-4 w-4 text-amber-600" />
+              <span className="text-sm font-medium">{t("purchases.awaitingApproval", "Väntar godkännande")}</span>
+              <span className="rf-num text-xs text-amber-600">{pending.length}</span>
+            </div>
+            <ul className="divide-y divide-amber-500/15">
+              {pending.map((m) => {
+                const room = rooms.find((r) => r.id === m.room_id);
+                return (
+                  <li key={m.id} className="flex items-center gap-3 px-4 py-2.5">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm truncate">{m.name}</p>
+                      {(room?.name || m.vendor_name) && (
+                        <p className="text-[11px] text-muted-foreground truncate">
+                          {[room?.name, m.vendor_name].filter(Boolean).join(" · ")}
+                        </p>
+                      )}
+                    </div>
+                    <span className="text-sm tnum shrink-0">
+                      {maskEconomy ? "—" : formatCurrency(m.price_total || 0, currency)}
+                    </span>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 gap-1 border-emerald-500/40 text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-400"
+                        onClick={() => handleApproval(m.id, 'approved')}
+                      >
+                        <Check className="h-3.5 w-3.5" />
+                        {t("purchases.approve", "Godkänn")}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 gap-1 text-destructive hover:bg-destructive/10"
+                        onClick={() => handleApproval(m.id, 'declined')}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                        {t("purchases.decline", "Avböj")}
+                      </Button>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        );
+      })()}
 
       {/* Purchase summary — actual spend buckets + a budget reference line.
           Cash reality (Beställt/Betalt) comes from the real POs; the budget
