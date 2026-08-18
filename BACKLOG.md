@@ -2554,10 +2554,12 @@ updated: 2026-08-18
 död box bort). Skiva 2a ✅ (`2f13d6a`: summering=faktisk spend, Beställt/Betalt/
 Totalt + Kvar-mot-budget ±, löste 0/0-buggen). Skiva 2b ✅ (`9dbbf6d`: godkännande-
 kö överst m. inline Godkänn/Avböj, gejtad owner/edit → stänger även
-[[purchase-approve-self-loophole]] på UI-nivå). KVAR: Skiva 3 (inköpsknappen
-misslyckas aldrig — create-nivå→request), Skiva 4 (filter/gruppering leverantör/
-status/rum ur döda purchases/-mappen, sen radera den). On-device-verify: klicka
-Godkänn/Avböj på riktig förfrågan; köp-från-budgetrad round-trip.
+[[purchase-approve-self-loophole]] på UI-nivå). Skiva 3 ✅ (`dc01ed6`: create-nivå
+föreslår inköp→'submitted'/'requested'→godkännande-kön; owner/edit registrerar
+direkt; kvitto-skanning gejtad edit+; kopplar [[purchase-access-upgrade-suggestion]]
++ pensel-visionen). KVAR: Skiva 4 (filter/gruppering leverantör/status/rum ur döda
+purchases/-mappen, sen radera den). On-device-verify: klicka Godkänn/Avböj på
+riktig förfrågan; create-konto föreslår inköp→landar i kön; köp-från-budgetrad round-trip.
 
 ## Inköp-fliken "verklighets-först": platt lista, summeringsrad, godkännande-kö
 Carls granskning + 3-agents-kartläggning 2026-08-18. Beslut tagna i diskussion:
