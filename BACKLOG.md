@@ -2524,18 +2524,23 @@ utökade helpern med `poStatus` (utfört köp→'delivered', beställning→'req
 
 ---
 id: purchase-approve-self-loophole
-status: todo
+status: done
 priority: P2
 tags: [bugfix, inkop, roller]
 created: 2026-08-18
+updated: 2026-08-18
 ---
-## Godkännande-gejtning: create-nivå kan godkänna sitt eget inköpsförslag
-`canEditMaterial` ger create-nivå-medlem redigering på egna/tilldelade rader →
-hen kan sätta sin egen `submitted`-rad till `approved` (via redigeringsdialogens
-status-select, `PurchaseRequestsTab.tsx:1307-1312`). Godkänn/avböj ska kräva
-ägare eller `edit`-nivå. OBS: inline-godkänn-knapparna ligger i DÖD komponent
-(`purchases/PurchasesTableView.tsx` — aldrig monterad); levande vägen är begravd
-i redigeringsdialogen → fixas ihop med [[inkop-reality-first-redesign]] (godkännande-kön).
+## Godkännande-gejtning: självgodkännande — VERIFIERAT ICKE-BUGG i live-appen
+Agent-fynd 2026-08-18 om att create-nivå kan godkänna sitt eget förslag =
+DÖD-KOD-LÄCKAGE (s70-läxan). Verifierade ALLA live status-skriv-vägar: (1)
+redigeringsdialogens status-select är `disabled` om inte edit/owner
+(`PurchaseRequestsTab.tsx:1301`); (2) PO-detaljarkets bulk-status (inkl.
+'approved') ligger bakom `canEdit = isProjectOwner || purchasesAccess==='edit'`
+(create-nivå kommer aldrig in i select-läget). De lösa approve/avböj-knapparna
+gejtade bara på `canEditMaterial` finns ENBART i döda `purchases/PurchasesTableView.tsx`
+(monteras ingenstans). Ingen live-fix behövd. **Kvar-not till [[inkop-reality-first-redesign]]:**
+när tabellvyn/godkännande-kön väcks, gejta approve/decline på `canEdit` (owner/edit),
+INTE `canEditMaterial`.
 
 ---
 id: inkop-reality-first-redesign
@@ -2590,5 +2595,13 @@ created: 2026-08-18
 ## Pensel-caset: inköpsönskemål med foto/röst → rätt produkt
 Målaren fotar penseln som tagit slut → AI extraherar produkt → önskemålet bär
 rätt artikel ("rätt sort"). Byggstenar finns (Renaida D1-extraktion, arbetar-röst,
-WorkerPurchaseRequestDialog). + VERIFIERA att önskemålets fritext går genom
-översättnings-pipelinen (polska → svenska hos ägaren) — troligen inte kopplad idag.
+WorkerPurchaseRequestDialog).
+
+**VERIFIERAT 2026-08-18 — översättnings-luckan är ÄKTA:** `worker-create-purchase`
+(`supabase/functions/worker-create-purchase/index.ts:202-208`) sparar önskemålets
+`name`/`description`/`notes` RÅTT (som arbetaren skrev, t.ex. polska) → ingen
+translate-call → ägaren ser oöversatt. Material-namn körs inte genom
+translate-comments (den är för meddelanden). Fix-approach: översätt worker→ägare
+vid write-time i edge-fn (spara översatt + behåll original, som task_translations-
+mönstret) ELLER vid display när worker-submitted material surfacas för ägaren.
+Kräver edge-fn-ändring + deploy → gör med Carl närvarande (ej autonomt i fält).
