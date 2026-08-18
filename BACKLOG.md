@@ -2483,3 +2483,106 @@ created: 2026-08-14
 ---
 ## Per-arbetare aktivitetspanel i Team-fliken
 **✅ LEVERERAT 2026-08-14 (`0680378`):** WorkerActivityPanel i expanderbara Team-raden — aktivitetsflöde (frågor/meddelanden/inlämnade foton m. lightbox), status-summering av tilldelade arbeten (antal + att granska + klara), "Se vad {namn} ser"-knapp (Dialog m. WorkerInstructionsView, återanvänder s68-preview). Lazy-mountad. Query RLS-linjerad (project_id ELLER task_id ∈ tilldelade). Attribution via namn-markör → FK-hårdning i [[worker-content-token-fk]]. Ej ögonkollad populerad (ingen läsbar worker-data i prod + auth-gejtad) → Cowork/on-device-verifiering vid ny aktivitet.
+
+---
+id: demo-purchase-orders-invisible-rls
+status: done
+priority: P1
+tags: [bugfix, demo, rls, inkop]
+created: 2026-08-18
+---
+## Demots 13 inköp osynliga för besökare — purchase_orders saknade demo-RLS
+Carls fynd 2026-08-18: demo-Inköp visar "13 inköp · 6 Betald" i rubriken men noll
+inköp under. Rot: `purchase_orders` skapades 2026-05-11, demo-policy-svepet kördes
+2026-02-15 → tabellen fick aldrig anon-SELECT-policyn. PO-sektionen (kort/tabell-
+toggle!) gate:as på synliga ordrar → renderades aldrig i demot. Systematisk diff
+(seedade tabeller vs policyer) visade EXAKT en lucka. Fix: migration
+`20260818090000_public_demo_purchase_orders_rls.sql` (applicerad). Kvar: verifiera
+i UI som anon + regel-påminnelse: nya tabeller som demo-seedas MÅSTE få demo-policy.
+
+---
+id: purchase-dialog-po-invariant-violation
+status: todo
+priority: P2
+tags: [bugfix, inkop]
+created: 2026-08-18
+---
+## NewPurchaseFromBudgetDialog bryter PO-invarianten — trolig aktiv krasch
+Budget-radens "+Inköp"-dialog (`NewPurchaseFromBudgetDialog.tsx:122-140`) insertar
+material `status='paid'/'to_order'` UTAN `purchase_order_id`. DB-CHECK:en
+(`20260513110000`: `(status='planned') = (purchase_order_id IS NULL)`) förbjuder
+det → antingen constraint-krasch i prod eller (om CHECK saknas remote) osynliga
+orphan-rader som inte renderas någonstans. Båda utfallen buggiga. Verifiera i UI
+FÖRST (feedback_verify_before_code), fixa genom att routa via PO-skapande
+(`createRequestPurchase`-mönstret / QuickReceiptCaptureModals PO-först-flöde).
+
+---
+id: purchase-approve-self-loophole
+status: todo
+priority: P2
+tags: [bugfix, inkop, roller]
+created: 2026-08-18
+---
+## Godkännande-gejtning: create-nivå kan godkänna sitt eget inköpsförslag
+`canEditMaterial` ger create-nivå-medlem redigering på egna/tilldelade rader →
+hen kan sätta sin egen `submitted`-rad till `approved` (via redigeringsdialogens
+status-select, `PurchaseRequestsTab.tsx:1307-1312`). Godkänn/avböj ska kräva
+ägare eller `edit`-nivå. OBS: inline-godkänn-knapparna ligger i DÖD komponent
+(`purchases/PurchasesTableView.tsx` — aldrig monterad); levande vägen är begravd
+i redigeringsdialogen → fixas ihop med [[inkop-reality-first-redesign]] (godkännande-kön).
+
+---
+id: inkop-reality-first-redesign
+status: todo
+priority: P2
+tags: [inkop, ux, refactor]
+created: 2026-08-18
+---
+## Inköp-fliken "verklighets-först": platt lista, summeringsrad, godkännande-kö
+Carls granskning + 3-agents-kartläggning 2026-08-18. Beslut tagna i diskussion:
+1. **Platt registerlista** — en rad per inköp/PO (`Bauhaus · 3 930 kr · 4 artiklar ·
+   Betald · av Ілля`), expanderbar för artiklar. Sort datum, gruppera/filtrera
+   leverantör/status/rum. Skalar 50+. Återbruk: död `purchases/`-mapp
+   (PurchasesTableView/Kanban/usePurchasesTableView har grupperings-logiken,
+   aldrig monterad) — väck eller radera, inte behåll död.
+2. **Planerade-kort-strippen BORT** → EN summeringsrad (Budget · Beställt · Betalt ·
+   Kvar). Planering bor i Budget-fliken; kvitto-matchen (s72) sköter konsumtion.
+   Städa även platshållar-boxen "Alla inköp visas grupperade ovanför" (död rest).
+3. **Godkännande-kö överst** för behöriga ("Väntar godkännande (N)" m. godkänn/avböj
+   på raden) — idag begravd i redigeringsdialog. Fixar även [[purchase-approve-self-loophole]].
+4. **"Inköpsknappen misslyckas aldrig"** — alla medlemmar ser alltid Nytt inköp;
+   utan rättighet routas SAMMA flöde till `submitted`/`requested` ("Skickat till
+   {ägare} för godkännande") istället för fel/dold knapp. Plumbing finns
+   (`createRequestPurchase`, worker-flödets server-gejtning som förebild).
+5. **Beslut: moduler = osynliga, INTE gråa** m. access-request-knappar (integritet:
+   grå ekonomi-flik läcker att ekonomi finns; kund-personan har purchases:none
+   avsiktligt; komplexitet). Nudge-kanal = meddelanden + [[purchase-access-upgrade-suggestion]].
+6. Kategori/produktgrupp-fält finns EJ — ev. senare, AI-satt vid kvitto-extraktion. Ej nu.
+Mobil: samma lista; Renaida-kvitto primär registreringsväg. Desktop vs mobil-audit ingår.
+
+---
+id: purchase-access-upgrade-suggestion
+status: todo
+priority: P3
+tags: [inkop, roller, idea]
+created: 2026-08-18
+---
+## Behörighets-uppgradering som förslag i godkännande-ögonblicket
+Istället för att medlemmar requestar access: när ägaren godkänner förfrågningar,
+föreslå uppgradering med bevisen framme — "Ілля har fått 3 inköp godkända — ge
+hen rätt att logga direkt? [Ja] [Inte nu]". Ett klick → sätter `can_log_receipts`
+resp. `purchases_access='edit'`. Löser "för hårda defaults" organiskt utan
+access-request-infrastruktur. Design: visa bara efter ≥2-3 godkända utan avslag.
+
+---
+id: worker-request-product-photo
+status: todo
+priority: P3
+tags: [inkop, worker, renaida]
+created: 2026-08-18
+---
+## Pensel-caset: inköpsönskemål med foto/röst → rätt produkt
+Målaren fotar penseln som tagit slut → AI extraherar produkt → önskemålet bär
+rätt artikel ("rätt sort"). Byggstenar finns (Renaida D1-extraktion, arbetar-röst,
+WorkerPurchaseRequestDialog). + VERIFIERA att önskemålets fritext går genom
+översättnings-pipelinen (polska → svenska hos ägaren) — troligen inte kopplad idag.
