@@ -2367,6 +2367,8 @@
     "filterUnpaidInvoicesTitle": "Visa endast obetalda fakturor",
     "materialBudget": "Materialbudget",
     "plannedCount": "Planerat",
+    "totalPurchased": "Totalt inköpt",
+    "remainingVsBudget": "Kvar mot budget",
     "consumed": "Använt",
     "remaining": "Kvar",
     "addFromOrder": "Från befintlig order",

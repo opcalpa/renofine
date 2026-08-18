@@ -2940,6 +2940,8 @@
     "filterUnpaidInvoicesTitle": "Show only unpaid invoices",
     "materialBudget": "Material budget",
     "plannedCount": "Planned",
+    "totalPurchased": "Total purchased",
+    "remainingVsBudget": "Remaining vs budget",
     "consumed": "Used",
     "remaining": "Remaining",
     "addFromOrder": "From existing order",

@@ -1069,31 +1069,49 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
         )}
       </div>
 
-      {/* Material budget — compact summary. Per-line planning lives in the Budget tab. */}
-      {plannedMaterials.length > 0 && (() => {
+      {/* Purchase summary — actual spend buckets + a budget reference line.
+          Cash reality (Beställt/Betalt) comes from the real POs; the budget
+          "remaining" is only what's actually consumed against planned rows. */}
+      {(plannedMaterials.length > 0 || purchaseOrders.length > 0) && (() => {
+        // Actual spend from real purchase orders (independent of budget linkage).
+        const paidTotal = purchaseOrders
+          .filter((po) => po.paid_at)
+          .reduce((s, po) => s + (po.total || 0), 0);
+        // Committed but not yet paid — incl. delivered-but-unpaid (invoice terms).
+        const committedTotal = purchaseOrders
+          .filter((po) => !po.paid_at && ['ordered', 'delivered', 'pending'].includes(po.status))
+          .reduce((s, po) => s + (po.total || 0), 0);
+        const spentTotal = paidTotal + committedTotal;
+        // Budget reference — consumption = spend linked back to a planned row.
         const totalBudget = plannedMaterials.reduce((s, m) => s + (m.price_total || 0), 0);
-        const totalOrdered = plannedMaterials.reduce((s, m) => s + (orderedByPlannedId.get(m.id) || 0), 0);
-        const totalPaid = plannedMaterials.reduce((s, m) => s + (paidByPlannedId.get(m.id) || 0), 0);
+        const consumed = plannedMaterials.reduce(
+          (s, m) => s + (orderedByPlannedId.get(m.id) || 0) + (paidByPlannedId.get(m.id) || 0),
+          0,
+        );
+        const remaining = totalBudget - consumed;
         const cells = [
-          { label: t("purchases.totalBudget", "Materialbudget"), value: totalBudget, cls: "" },
-          { label: t("purchases.ordered", "Beställt"), value: totalOrdered, cls: "text-amber-600" },
-          { label: t("purchases.paid", "Betalt"), value: totalPaid, cls: "text-emerald-600" },
-          { label: t("purchases.remaining", "Kvar"), value: totalBudget - totalPaid, cls: "font-medium" },
+          { label: t("purchases.ordered", "Beställt"), value: committedTotal, cls: "text-amber-600" },
+          { label: t("purchases.paid", "Betalt"), value: paidTotal, cls: "text-emerald-600" },
+          { label: t("purchases.totalPurchased", "Totalt inköpt"), value: spentTotal, cls: "" },
         ];
         return (
           <div className="rounded-xl border bg-card overflow-hidden">
-            <div className="flex items-center justify-between gap-2 px-4 pt-3">
-              <span className="kicker">{t("purchases.materialBudget", "Materialbudget")}</span>
-              <button
-                type="button"
-                onClick={() => onNavigateTab?.("budget")}
-                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {t("purchases.plannedCount", "Planerat")} ({plannedMaterials.length})
-                <ArrowRight className="h-3 w-3" />
-              </button>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-border mt-3">
+            {totalBudget > 0 && (
+              <div className="flex items-center justify-between gap-2 px-4 pt-3">
+                <span className="kicker">
+                  {t("purchases.materialBudget", "Materialbudget")} · {maskEconomy ? "—" : formatCurrency(totalBudget, currency)}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onNavigateTab?.("budget")}
+                  className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {t("purchases.plannedCount", "Planerat")} ({plannedMaterials.length})
+                  <ArrowRight className="h-3 w-3" />
+                </button>
+              </div>
+            )}
+            <div className={cn("grid grid-cols-3 gap-px bg-border", totalBudget > 0 && "mt-3")}>
               {cells.map((c) => (
                 <div key={c.label} className="bg-card p-4">
                   <span className="kicker truncate block">{c.label}</span>
@@ -1103,6 +1121,14 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
                 </div>
               ))}
             </div>
+            {totalBudget > 0 && (
+              <div className="flex items-center justify-between gap-2 px-4 py-2.5 border-t border-border text-xs">
+                <span className="text-muted-foreground">{t("purchases.remainingVsBudget", "Kvar mot budget")}</span>
+                <span className={cn("tnum font-medium", remaining < 0 ? "text-destructive" : "text-emerald-600")}>
+                  {maskEconomy ? "—" : `${remaining >= 0 ? "+" : ""}${formatCurrency(remaining, currency)}`}
+                </span>
+              </div>
+            )}
           </div>
         );
       })()}
