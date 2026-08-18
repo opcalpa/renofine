@@ -2544,7 +2544,7 @@ INTE `canEditMaterial`.
 
 ---
 id: inkop-reality-first-redesign
-status: doing
+status: done
 priority: P2
 tags: [inkop, ux, refactor]
 created: 2026-08-18
@@ -2558,8 +2558,11 @@ kö överst m. inline Godkänn/Avböj, gejtad owner/edit → stänger även
 föreslår inköp→'submitted'/'requested'→godkännande-kön; owner/edit registrerar
 direkt; kvitto-skanning gejtad edit+; kopplar [[purchase-access-upgrade-suggestion]]
 + pensel-visionen). KVAR: Skiva 4 (filter/gruppering leverantör/status/rum ur döda
-purchases/-mappen, sen radera den). On-device-verify: klicka Godkänn/Avböj på
-riktig förfrågan; create-konto föreslår inköp→landar i kön; köp-från-budgetrad round-trip.
+purchases/-mappen, sen radera den). Skiva 4 ✅ (`49f200e`: filter status+leverantör
+på PO-listan, persisterat, skalar 50+; raderade hela döda purchases/-mappen [6 filer,
+1655 rader] + oanvänd import). HELA REDESIGNEN BYGGD + demo-live-verifierad.
+KVAR = bara on-device (roll-konton): klicka Godkänn/Avböj på riktig förfrågan;
+create-konto föreslår inköp→landar i kön; köp-från-budgetrad round-trip.
 
 ## Inköp-fliken "verklighets-först": platt lista, summeringsrad, godkännande-kö
 Carls granskning + 3-agents-kartläggning 2026-08-18. Beslut tagna i diskussion:
