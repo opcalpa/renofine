@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useConfirm } from "@/hooks/useConfirm";
 import { useTranslation } from "react-i18next";
 import { useMeasurement } from "@/contexts/MeasurementContext";
 import { RoomsTableView } from "./rooms-table/RoomsTableView";
@@ -39,6 +40,7 @@ interface RoomsListProps {
 
 export const RoomsList = ({ projectId, rooms: externalRooms, onRoomClick, onAddRoom, onDeleteRoom, onNavigateToRoom, onPlaceRoom, onRoomUpdated }: RoomsListProps) => {
   const { t, i18n } = useTranslation();
+  const { confirm, confirmDialog } = useConfirm();
   const ms = useMeasurement();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(!externalRooms);
@@ -193,7 +195,11 @@ export const RoomsList = ({ projectId, rooms: externalRooms, onRoomClick, onAddR
   const handleBulkDelete = useCallback(async () => {
     if (selectedRoomIds.size === 0) return;
     const count = selectedRoomIds.size;
-    if (!window.confirm(t('rooms.confirmBulkDelete', { count }))) return;
+    if (!(await confirm({
+      title: t('rooms.confirmBulkDelete', { count }),
+      destructive: true,
+      confirmLabel: t('common.delete', 'Ta bort'),
+    }))) return;
     setIsDeleting(true);
     try {
       for (const roomId of selectedRoomIds) {
@@ -207,7 +213,7 @@ export const RoomsList = ({ projectId, rooms: externalRooms, onRoomClick, onAddR
     } finally {
       setIsDeleting(false);
     }
-  }, [selectedRoomIds, onDeleteRoom, clearSelection, t]);
+  }, [selectedRoomIds, onDeleteRoom, clearSelection, confirm, t]);
 
   const getStatusLabel = (status: string | null | undefined) => {
     if (!status) return '—';
@@ -578,6 +584,7 @@ export const RoomsList = ({ projectId, rooms: externalRooms, onRoomClick, onAddR
           ))}
         </div>
       )}
+      {confirmDialog}
     </div>
   );
 };

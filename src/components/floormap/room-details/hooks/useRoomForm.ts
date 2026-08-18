@@ -263,15 +263,10 @@ export function useRoomForm({ room, projectId, onRoomUpdated, onClose }: UseRoom
     }
   }, [room, isNewRoom, projectId, formData, updateShape, onRoomUpdated, onClose, t]);
 
-  // Delete handler
+  // Delete handler. Confirmation is owned by the consumer (RoomDetailDialog)
+  // via useConfirm/AlertDialog — never native confirm() (blocks the renderer).
   const handleDelete = useCallback(async () => {
     if (!room) return;
-
-    if (
-      !confirm(t('roomForm.confirmDelete', 'Are you sure you want to delete this room? This action cannot be undone.'))
-    ) {
-      return;
-    }
 
     setSaving(true);
     try {

@@ -28,6 +28,7 @@ import { Loader2, Save, X, Trash2, Plus, Eye } from "lucide-react";
 import { RoomDetailForm } from "./RoomDetailForm";
 import { RoomDetailFormV2 } from "./v2/RoomDetailFormV2";
 import { useRoomForm } from "./hooks/useRoomForm";
+import { useConfirm } from "@/hooks/useConfirm";
 import { useTranslation } from "react-i18next";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -71,6 +72,7 @@ export function RoomDetailDialog({
       }
     : undefined;
   const { t } = useTranslation();
+  const { confirm, confirmDialog } = useConfirm();
   const navigate = useNavigate();
 
   // "Visa på planritningen" / "Placera på planritningen": close, arm the
@@ -119,13 +121,21 @@ export function RoomDetailDialog({
           <Button
             variant="ghost"
             className="text-destructive hover:text-destructive hover:bg-destructive/10"
-            onClick={handleDelete}
+            onClick={async () => {
+              if (!(await confirm({
+                title: t("roomForm.confirmDelete", "Är du säker på att du vill ta bort det här rummet? Detta kan inte ångras."),
+                destructive: true,
+                confirmLabel: t("common.delete", "Ta bort"),
+              }))) return;
+              handleDelete();
+            }}
             disabled={saving}
           >
             <Trash2 className="h-4 w-4 sm:mr-2" />
             <span className="hidden sm:inline">{t("floormap.deleteRoom", "Ta bort rum")}</span>
           </Button>
         )}
+        {confirmDialog}
       </div>
       <div className="flex gap-2">
         <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>

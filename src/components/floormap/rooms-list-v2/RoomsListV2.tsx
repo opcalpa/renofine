@@ -14,6 +14,7 @@ import {
   Settings2,
 } from "lucide-react";
 import { ColumnToggle } from "@/components/shared/ColumnToggle";
+import { useConfirm } from "@/hooks/useConfirm";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,6 +70,7 @@ export function RoomsListV2({
   onShowAllOnPlan,
 }: RoomsListV2Props) {
   const { t, i18n } = useTranslation();
+  const { confirm, confirmDialog } = useConfirm();
 
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(!externalRooms);
@@ -234,7 +236,11 @@ export function RoomsListV2({
   const handleBulkDelete = useCallback(async () => {
     if (selectedRoomIds.size === 0) return;
     const count = selectedRoomIds.size;
-    if (!window.confirm(t("rooms.confirmBulkDelete", { count }))) return;
+    if (!(await confirm({
+      title: t("rooms.confirmBulkDelete", { count }),
+      destructive: true,
+      confirmLabel: t("common.delete", "Ta bort"),
+    }))) return;
     setIsDeleting(true);
     try {
       for (const id of selectedRoomIds) {
@@ -249,7 +255,7 @@ export function RoomsListV2({
     } finally {
       setIsDeleting(false);
     }
-  }, [selectedRoomIds, onDeleteRoom, clearSelection, t]);
+  }, [selectedRoomIds, onDeleteRoom, clearSelection, confirm, t]);
 
   const handleOptimisticUpdate = useCallback((roomId: string, updates: Partial<Room>) => {
     setRooms((prev) => prev.map((r) => (r.id === roomId ? { ...r, ...updates } : r)));
@@ -572,6 +578,7 @@ export function RoomsListV2({
           ))
         )}
       </div>
+      {confirmDialog}
     </div>
   );
 }
