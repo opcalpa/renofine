@@ -2368,6 +2368,8 @@
     "proposePurchaseHint": "Skickas till projektägaren för godkännande",
     "sendForApproval": "Skicka för godkännande",
     "requestSent": "Skickat till projektägaren för godkännande",
+    "allStatuses": "Alla status",
+    "allVendors": "Alla leverantörer",
     "markAsPaid": "Markera som betald",
     "markedAsPaid": "Markerad som betald",
     "markPaidError": "Kunde inte markera som betald",

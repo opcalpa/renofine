@@ -91,7 +91,6 @@ import { PurchaseOrdersTableView } from "./PurchaseOrdersTableView";
 import { PurchaseOrdersGridV2 } from "./po-list-v2/PurchaseOrdersGridV2";
 import type { PO, POMaterial } from "./po-list-v2/types";
 import { AddMaterialDialog } from "./overview/AddMaterialDialog";
-import { EXTRA_COLUMN_KEYS as PURCHASE_EXTRA_COLUMN_KEYS } from "./purchases/purchasesTypes";
 
 interface Material {
   id: string;
@@ -185,6 +184,8 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
   // PO view mode: cards or flat table
   const [poViewMode, setPoViewMode] = usePersistedPreference<'cards' | 'table'>(`po-view-mode-${projectId}`, 'table');
   const [showOnlyUnpaidInvoices, setShowOnlyUnpaidInvoices] = useState(false);
+  const [poStatusFilter, setPoStatusFilter] = usePersistedPreference<string>(`po-status-filter-${projectId}`, 'all');
+  const [poVendorFilter, setPoVendorFilter] = usePersistedPreference<string>(`po-vendor-filter-${projectId}`, 'all');
   const [receiptModalOpen, setReceiptModalOpen] = useState(false);
   const [addPlannedDialogOpen, setAddPlannedDialogOpen] = useState(false);
   const [poToDelete, setPOToDelete] = useState<PurchaseOrder | null>(null);
@@ -1226,12 +1227,18 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
         const unpaidInvoiceCount = purchaseOrders.filter(
           (po) => po.source === 'ai_invoice' && !po.paid_at,
         ).length;
-        const filteredPOs = showOnlyUnpaidInvoices
-          ? purchaseOrders.filter((po) => po.source === 'ai_invoice' && !po.paid_at)
-          : purchaseOrders;
+        const distinctStatuses = Array.from(new Set(purchaseOrders.map((po) => po.status).filter(Boolean)));
+        const distinctVendors = Array.from(new Set(purchaseOrders.map((po) => po.vendor_name).filter(Boolean))) as string[];
+        const filteredPOs = purchaseOrders.filter((po) => {
+          if (showOnlyUnpaidInvoices && !(po.source === 'ai_invoice' && !po.paid_at)) return false;
+          if (poStatusFilter !== 'all' && po.status !== poStatusFilter) return false;
+          if (poVendorFilter !== 'all' && (po.vendor_name || '') !== poVendorFilter) return false;
+          return true;
+        });
+        const isFiltered = showOnlyUnpaidInvoices || poStatusFilter !== 'all' || poVendorFilter !== 'all';
         return (
         <div className="space-y-3">
-          {/* Section heading + view toggle */}
+          {/* Section heading + filters + view toggle */}
           <div className="flex items-baseline justify-between gap-3 flex-wrap">
             <div className="flex items-baseline gap-2">
               <ShoppingCart className="h-4 w-4 self-center" style={{ color: 'var(--rf-fg-muted)' }} />
@@ -1239,10 +1246,38 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
                 {t('purchases.purchaseOrdersTitle', 'Inköpsorder')}
               </h3>
               <span className="rf-num text-xs" style={{ color: 'var(--rf-fg-muted)' }}>
-                {showOnlyUnpaidInvoices ? `${filteredPOs.length}/${purchaseOrders.length}` : purchaseOrders.length}
+                {isFiltered ? `${filteredPOs.length}/${purchaseOrders.length}` : purchaseOrders.length}
               </span>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
+              {purchaseOrders.length > 1 && (
+                <>
+                  <Select value={poStatusFilter} onValueChange={setPoStatusFilter}>
+                    <SelectTrigger className="h-7 w-auto min-w-[104px] text-xs gap-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t('purchases.allStatuses', 'Alla status')}</SelectItem>
+                      {distinctStatuses.map((s) => (
+                        <SelectItem key={s} value={s}>{t(`purchaseOrderStatus.${s}`, s)}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {distinctVendors.length > 1 && (
+                    <Select value={poVendorFilter} onValueChange={setPoVendorFilter}>
+                      <SelectTrigger className="h-7 w-auto min-w-[120px] max-w-[180px] text-xs gap-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t('purchases.allVendors', 'Alla leverantörer')}</SelectItem>
+                        {distinctVendors.map((v) => (
+                          <SelectItem key={v} value={v}>{v}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </>
+              )}
               {unpaidInvoiceCount > 0 && (
                 <button
                   type="button"

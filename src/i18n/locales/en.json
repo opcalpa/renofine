@@ -2941,6 +2941,8 @@
     "proposePurchaseHint": "Sent to the project owner for approval",
     "sendForApproval": "Send for approval",
     "requestSent": "Sent to the project owner for approval",
+    "allStatuses": "All statuses",
+    "allVendors": "All vendors",
     "markAsPaid": "Mark as paid",
     "markedAsPaid": "Marked as paid",
     "markPaidError": "Could not mark as paid",
