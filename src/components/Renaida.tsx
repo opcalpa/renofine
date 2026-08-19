@@ -84,6 +84,9 @@ interface Message {
   undo?: UndoOp[];
   /** Marks a proactively-surfaced suggestion message (Fas 3b) — shown once per open. */
   suggestion?: boolean;
+  /** Marks the single autonomy-mode confirmation line. Toggling replaces it in
+   *  place instead of stacking a new bubble on every click (mis-tap spam). */
+  autonomyStatus?: boolean;
   /** Project the proposals/undo in this message act on. Set when capture ran
    *  against a resolved fallback project (panel opened outside a project) —
    *  apply/undo must NOT fall back to the store's (null) projectId then. */
@@ -133,6 +136,16 @@ function stripAutonomyIntro(messages: Message[]): Message[] {
       ? { ...m, actions: undefined }
       : m,
   );
+}
+
+/** Switching autonomy mode confirms the choice with a single line. Replace any
+ * prior confirmation instead of appending, so rapid toggling can't spam the
+ * thread (and push messages past the quick-prompt threshold). */
+function withAutonomyStatus(messages: Message[], content: string): Message[] {
+  return [
+    ...stripAutonomyIntro(messages).filter((m) => !m.autonomyStatus),
+    { role: "assistant" as const, content, autonomyStatus: true },
+  ];
 }
 
 interface QuickPrompt {
@@ -428,12 +441,11 @@ export function Renaida() {
     analytics.capture(AnalyticsEvents.RENAIDA_AUTONOMY_CHANGED, { mode: next, source: "header" });
     flashRenaida(next === "autopilot" ? "happy" : "idle", 1500);
     // Confirm the switch in the thread (Cowork: the label alone was too subtle),
-    // and retire any first-run intro chips — the choice is made.
-    setMessages((prev) => [...stripAutonomyIntro(prev), {
-      role: "assistant",
-      content: t(next === "autopilot" ? "helpBot.autonomy.enabledAutopilot" : "helpBot.autonomy.enabledSuggest",
-        next === "autopilot" ? "Autopilot på — jag fixar säkra saker direkt, alltid med Ångra." : "Okej, jag frågar först innan jag ändrar något."),
-    }]);
+    // and retire any first-run intro chips — the choice is made. Replaces the
+    // prior status line so repeated toggling can't spam the thread.
+    setMessages((prev) => withAutonomyStatus(prev,
+      t(next === "autopilot" ? "helpBot.autonomy.enabledAutopilot" : "helpBot.autonomy.enabledSuggest",
+        next === "autopilot" ? "Autopilot på — jag fixar säkra saker direkt, alltid med Ångra." : "Okej, jag frågar först innan jag ändrar något.")));
   }, [flashRenaida, t]);
 
   // Fetch user type and name from profile
@@ -1221,11 +1233,9 @@ export function Renaida() {
     if (mode === "autopilot") lsSet(AUTOPILOT_NUDGED_KEY, "1"); // already on → no future nudge
     analytics.capture(AnalyticsEvents.RENAIDA_AUTONOMY_CHANGED, { mode, source });
     flashRenaida(mode === "autopilot" ? "happy" : "idle", 1500);
-    setMessages((prev) => [...stripAutonomyIntro(prev), {
-      role: "assistant",
-      content: t(mode === "autopilot" ? "helpBot.autonomy.enabledAutopilot" : "helpBot.autonomy.enabledSuggest",
-        mode === "autopilot" ? "Autopilot på — jag fixar säkra saker direkt, alltid med Ångra." : "Okej, jag frågar först innan jag ändrar något."),
-    }]);
+    setMessages((prev) => withAutonomyStatus(prev,
+      t(mode === "autopilot" ? "helpBot.autonomy.enabledAutopilot" : "helpBot.autonomy.enabledSuggest",
+        mode === "autopilot" ? "Autopilot på — jag fixar säkra saker direkt, alltid med Ångra." : "Okej, jag frågar först innan jag ändrar något.")));
   }, [t, flashRenaida]);
 
   const handleInlineAction = useCallback((action: string) => {
