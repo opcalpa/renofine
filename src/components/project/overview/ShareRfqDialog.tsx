@@ -234,9 +234,9 @@ ${rooms.length ? `
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="!max-w-[min(900px,92vw)] !max-h-[88vh] overflow-y-auto !p-0">
+      <DialogContent size="4xl" className="!max-h-[88vh] overflow-y-auto !p-0">
         {/* Header */}
-        <div className="px-8 pt-8 pb-0">
+        <div className="px-5 pt-6 pb-0 md:px-8 md:pt-8">
           <DialogTitle className="text-xl font-semibold">
             {t("homeownerPlanning.requestQuote", "Request quote")}
           </DialogTitle>
@@ -245,7 +245,7 @@ ${rooms.length ? `
           </DialogDescription>
         </div>
 
-        <div className="grid gap-8 md:grid-cols-[3fr,2fr] px-8 py-6">
+        <div className="grid gap-6 md:gap-8 md:grid-cols-[3fr,2fr] px-5 py-5 md:px-8 md:py-6">
           {/* ── Left: RFQ Preview ── */}
           <div className="rounded-xl border bg-muted/20 p-6 space-y-5 min-w-0">
             {/* Project header */}
