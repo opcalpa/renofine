@@ -4475,7 +4475,8 @@
       "document": "Fota underlag"
     },
     "capture": {
-      "pickPurpose": "Vad vill du logga?"
+      "pickPurpose": "Vad vill du logga?",
+      "voiceShort": "Berätta"
     }
   },
   "feedback": {

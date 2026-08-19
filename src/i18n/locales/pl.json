@@ -3655,7 +3655,8 @@
       "document": "Zrób zdjęcie dokumentu"
     },
     "capture": {
-      "pickPurpose": "Co chcesz zarejestrować?"
+      "pickPurpose": "Co chcesz zarejestrować?",
+      "voiceShort": "Opowiedz"
     }
   },
   "feedback": {

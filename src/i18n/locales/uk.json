@@ -3608,7 +3608,8 @@
       "document": "Сфотографувати документ"
     },
     "capture": {
-      "pickPurpose": "Що хочете зафіксувати?"
+      "pickPurpose": "Що хочете зафіксувати?",
+      "voiceShort": "Розкажіть"
     }
   },
   "feedback": {

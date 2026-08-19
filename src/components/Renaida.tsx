@@ -1576,40 +1576,6 @@ export function Renaida() {
             {/* Entry: voice hero + grouped chips + value-ranked reminders */}
             {showQuickPrompts && (
               <div className="space-y-2.5 pt-1">
-                {/* Voice hero — the primary way to drive Renaida */}
-                <button
-                  onClick={() => {
-                    // Recording/requesting → tap to stop. Idle → open the purpose
-                    // picker (step 2) instead of recording blind.
-                    if (recorder.state === "recording" || recorder.state === "requesting") startVoiceCapture();
-                    else setPurposeStep(true);
-                  }}
-                  disabled={recorder.state === "transcribing"}
-                  className={`w-full flex items-center gap-3 rounded-xl px-4 py-4 md:py-3 text-left text-primary-foreground shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40 ${
-                    recorder.state === "recording" ? "bg-red-600 hover:bg-red-600/90" : "bg-primary hover:bg-primary/90"
-                  }`}
-                >
-                  <span className={`flex h-10 w-10 md:h-8 md:w-8 shrink-0 items-center justify-center rounded-full bg-primary-foreground/15 ${recorder.state === "recording" ? "animate-pulse" : ""}`}>
-                    {recorder.state === "recording"
-                      ? <Square className="h-4 w-4 fill-current" />
-                      : recorder.state === "transcribing" || recorder.state === "requesting"
-                        ? <Loader2 className="h-4 w-4 animate-spin" />
-                        : <Mic className="h-5 w-5 md:h-4 md:w-4" />}
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block text-sm font-medium">
-                      {recorder.state === "recording"
-                        ? `${t("helpBot.agent.recording", "Spelar in — tryck för att stoppa")} · ${Math.floor(recorder.elapsedSec / 60)}:${String(recorder.elapsedSec % 60).padStart(2, "0")}`
-                        : recorder.state === "transcribing"
-                          ? t("helpBot.agent.transcribing", "Tolkar rösten…")
-                          : recorder.state === "requesting"
-                            ? t("helpBot.agent.micRequesting", "Väntar på mikrofonen…")
-                            : t("helpBot.agent.voiceHero", "Berätta vad som hänt")}
-                    </span>
-                    <span className="block text-xs text-primary-foreground/70">{t("helpBot.agent.voiceHeroHint", "Säg eller skriv — jag fixar det i projektet")}</span>
-                  </span>
-                </button>
-
                 {purposeStep && recorder.state === "idle" ? (
                   /* STEP 2: visible, intentional purpose bias. Each button arms an
                      intentHint then starts the same voice capture; "Övrigt" = no bias. */
@@ -1644,17 +1610,50 @@ export function Renaida() {
                       </button>
                     </div>
                   </div>
-                ) : recorder.state === "idle" ? (
-                  /* STEP 1: photograph a document (receipt/quote/invoice) — a distinct
-                     modality kept alongside the universal voice button. */
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="w-full inline-flex items-center gap-2 rounded-lg border bg-background px-3 py-2.5 md:py-2 text-xs font-medium transition-colors hover:border-primary hover:bg-primary/5"
-                  >
-                    <Camera className="h-4 w-4 shrink-0 text-primary" />
-                    {t("helpBot.quickAction.document", "Fota underlag")}
-                  </button>
-                ) : null}
+                ) : (
+                  /* STEP 1: two equal capture buttons on one row — voice (primary
+                     green) + photo (warm surface, green icon). Both are first-class
+                     ways to capture; tapping voice opens the purpose picker. */
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => {
+                        if (recorder.state === "recording" || recorder.state === "requesting") startVoiceCapture();
+                        else setPurposeStep(true);
+                      }}
+                      disabled={recorder.state === "transcribing"}
+                      className={`flex flex-col items-center justify-center gap-1.5 rounded-xl px-3 py-4 min-h-[92px] text-center text-primary-foreground shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-70 ${
+                        recorder.state === "recording" ? "bg-red-600 hover:bg-red-600/90" : "bg-primary hover:bg-primary/90"
+                      }`}
+                    >
+                      <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-foreground/15 ${recorder.state === "recording" ? "animate-pulse" : ""}`}>
+                        {recorder.state === "recording"
+                          ? <Square className="h-4 w-4 fill-current" />
+                          : recorder.state === "transcribing" || recorder.state === "requesting"
+                            ? <Loader2 className="h-4 w-4 animate-spin" />
+                            : <Mic className="h-5 w-5" />}
+                      </span>
+                      <span className="text-sm font-medium leading-tight">
+                        {recorder.state === "recording"
+                          ? `${Math.floor(recorder.elapsedSec / 60)}:${String(recorder.elapsedSec % 60).padStart(2, "0")}`
+                          : recorder.state === "transcribing"
+                            ? t("helpBot.agent.transcribing", "Tolkar rösten…")
+                            : recorder.state === "requesting"
+                              ? t("helpBot.agent.micRequesting", "Väntar på mikrofonen…")
+                              : t("helpBot.capture.voiceShort", "Berätta")}
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={recorder.state !== "idle"}
+                      className="flex flex-col items-center justify-center gap-1.5 rounded-xl border border-border bg-secondary px-3 py-4 min-h-[92px] text-center text-secondary-foreground shadow-sm transition-colors hover:border-primary hover:bg-primary/5 focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50"
+                    >
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                        <Camera className="h-5 w-5 text-primary" />
+                      </span>
+                      <span className="text-sm font-medium leading-tight">{t("helpBot.quickAction.document", "Fota underlag")}</span>
+                    </button>
+                  </div>
+                )}
 
                 {/* Help topics + a single feedback entry */}
                 <div className="flex flex-wrap gap-2">

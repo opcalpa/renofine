@@ -4476,7 +4476,8 @@
       "document": "Photograph document"
     },
     "capture": {
-      "pickPurpose": "What do you want to log?"
+      "pickPurpose": "What do you want to log?",
+      "voiceShort": "Tell me"
     }
   },
   "feedback": {

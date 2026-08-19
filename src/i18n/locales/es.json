@@ -1841,7 +1841,8 @@
       "ata": "🎉 {{who}} aceptó la orden de cambio {{title}} {{amount}} — el trabajo adicional ya forma parte del proyecto. Las tareas están en Tareas, y factura como de costumbre cuando llegue el momento."
     },
     "capture": {
-      "pickPurpose": "¿Qué quieres registrar?"
+      "pickPurpose": "¿Qué quieres registrar?",
+      "voiceShort": "Cuéntame"
     }
   },
   "hotspots": {

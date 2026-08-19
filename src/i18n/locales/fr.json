@@ -1841,7 +1841,8 @@
       "ata": "🎉 {{who}} a accepté l'avenant {{title}} {{amount}} — les travaux supplémentaires font maintenant partie du projet. Les tâches sont sous Tâches, et vous facturez comme d'habitude le moment venu."
     },
     "capture": {
-      "pickPurpose": "Que voulez-vous enregistrer ?"
+      "pickPurpose": "Que voulez-vous enregistrer ?",
+      "voiceShort": "Raconter"
     }
   },
   "hotspots": {

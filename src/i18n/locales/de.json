@@ -1841,7 +1841,8 @@
       "ata": "🎉 {{who}} hat den Nachtrag {{title}} {{amount}} angenommen — die Zusatzarbeiten sind jetzt Teil des Projekts. Die Aufgaben finden Sie unter Aufgaben, und Sie stellen wie gewohnt Rechnung, wenn es soweit ist."
     },
     "capture": {
-      "pickPurpose": "Was möchten Sie erfassen?"
+      "pickPurpose": "Was möchten Sie erfassen?",
+      "voiceShort": "Erzählen"
     }
   },
   "hotspots": {
