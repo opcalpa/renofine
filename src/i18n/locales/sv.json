@@ -4469,7 +4469,13 @@
       "receipt": "Fota kvitto",
       "time": "Logga tid",
       "note": "Snabbanteckning",
-      "status": "Statusuppdatering"
+      "status": "Statusuppdatering",
+      "purchase": "Beställ material",
+      "other": "Övrigt",
+      "document": "Fota underlag"
+    },
+    "capture": {
+      "pickPurpose": "Vad vill du logga?"
     }
   },
   "feedback": {

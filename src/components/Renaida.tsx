@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, type ReactNode } from "react";
-import { Send, X, Lightbulb, BookOpen, Wrench, FileText, ArrowLeft, Mic, Sparkles, ChevronDown, MessageCircle, Square, Loader2, Paperclip, Camera, Clock, StickyNote, ListChecks } from "lucide-react";
+import { Send, X, Lightbulb, BookOpen, Wrench, FileText, ArrowLeft, Mic, Sparkles, ChevronDown, MessageCircle, Square, Loader2, Paperclip, Camera, Clock, StickyNote, ListChecks, ShoppingCart, MoreHorizontal } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useVoiceRecorder, isRecorderSupported } from "@/hooks/useVoiceRecorder";
@@ -310,9 +310,12 @@ export function Renaida() {
       window.scrollTo(0, scrollY);
     };
   }, [open, isMobile]);
+  // Two-step capture: tapping the voice hero opens a purpose picker (visible,
+  // intentional bias) instead of immediately recording. Reset when panel closes.
+  const [purposeStep, setPurposeStep] = useState(false);
   // Closing the panel disarms any un-consumed quick-action chip.
   useEffect(() => {
-    if (!open) pendingIntentRef.current = null;
+    if (!open) { pendingIntentRef.current = null; setPurposeStep(false); }
   }, [open]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -1001,6 +1004,13 @@ export function Renaida() {
     startVoiceCapture();
   }, [startVoiceCapture]);
 
+  // Purpose picker (step 2): arm the chosen bias then record; null = no bias.
+  const pickPurpose = useCallback((intent: AgentIntentHint | null) => {
+    setPurposeStep(false);
+    if (intent) quickCapture(intent);
+    else startVoiceCapture();
+  }, [quickCapture, startVoiceCapture]);
+
   // --- Document capture (D1): photograph/upload a receipt or invoice → the same
   // propose→confirm→undo loop as voice. Renaida conducts the existing
   // process-document-v2 brain; heavy documents (quotes/scopes) are guided to
@@ -1568,7 +1578,12 @@ export function Renaida() {
               <div className="space-y-2.5 pt-1">
                 {/* Voice hero — the primary way to drive Renaida */}
                 <button
-                  onClick={startVoiceCapture}
+                  onClick={() => {
+                    // Recording/requesting → tap to stop. Idle → open the purpose
+                    // picker (step 2) instead of recording blind.
+                    if (recorder.state === "recording" || recorder.state === "requesting") startVoiceCapture();
+                    else setPurposeStep(true);
+                  }}
                   disabled={recorder.state === "transcribing"}
                   className={`w-full flex items-center gap-3 rounded-xl px-4 py-4 md:py-3 text-left text-primary-foreground shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40 ${
                     recorder.state === "recording" ? "bg-red-600 hover:bg-red-600/90" : "bg-primary hover:bg-primary/90"
@@ -1595,39 +1610,51 @@ export function Renaida() {
                   </span>
                 </button>
 
-                {/* Capture chips — context-scoped doors into the SAME
-                    capture→föreslå→bekräfta loop (mobile-first: the four
-                    quickest field actions, one tap from the entry). */}
-                <div className="grid grid-cols-2 gap-2">
+                {purposeStep && recorder.state === "idle" ? (
+                  /* STEP 2: visible, intentional purpose bias. Each button arms an
+                     intentHint then starts the same voice capture; "Övrigt" = no bias. */
+                  <div className="space-y-2">
+                    <button
+                      onClick={() => setPurposeStep(false)}
+                      className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <ArrowLeft className="h-3.5 w-3.5" />
+                      {t("helpBot.capture.pickPurpose", "What do you want to log?")}
+                    </button>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button onClick={() => pickPurpose("note")} className="inline-flex items-center gap-2 rounded-lg border bg-background px-3 py-3 text-sm font-medium transition-colors hover:border-primary hover:bg-primary/5">
+                        <StickyNote className="h-4 w-4 shrink-0 text-primary" />
+                        {t("helpBot.quickAction.note", "Snabbanteckning")}
+                      </button>
+                      <button onClick={() => pickPurpose("time")} className="inline-flex items-center gap-2 rounded-lg border bg-background px-3 py-3 text-sm font-medium transition-colors hover:border-primary hover:bg-primary/5">
+                        <Clock className="h-4 w-4 shrink-0 text-primary" />
+                        {t("helpBot.quickAction.time", "Logga tid")}
+                      </button>
+                      <button onClick={() => pickPurpose("status")} className="inline-flex items-center gap-2 rounded-lg border bg-background px-3 py-3 text-sm font-medium transition-colors hover:border-primary hover:bg-primary/5">
+                        <ListChecks className="h-4 w-4 shrink-0 text-primary" />
+                        {t("helpBot.quickAction.status", "Statusuppdatering")}
+                      </button>
+                      <button onClick={() => pickPurpose("purchase")} className="inline-flex items-center gap-2 rounded-lg border bg-background px-3 py-3 text-sm font-medium transition-colors hover:border-primary hover:bg-primary/5">
+                        <ShoppingCart className="h-4 w-4 shrink-0 text-primary" />
+                        {t("helpBot.quickAction.purchase", "Order material")}
+                      </button>
+                      <button onClick={() => pickPurpose(null)} className="col-span-2 inline-flex items-center justify-center gap-2 rounded-lg border border-dashed bg-background px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:border-primary hover:text-foreground">
+                        <MoreHorizontal className="h-4 w-4 shrink-0" />
+                        {t("helpBot.quickAction.other", "Something else")}
+                      </button>
+                    </div>
+                  </div>
+                ) : recorder.state === "idle" ? (
+                  /* STEP 1: photograph a document (receipt/quote/invoice) — a distinct
+                     modality kept alongside the universal voice button. */
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="inline-flex items-center gap-2 rounded-lg border bg-background px-3 py-2.5 md:py-2 text-xs font-medium transition-colors hover:border-primary hover:bg-primary/5"
+                    className="w-full inline-flex items-center gap-2 rounded-lg border bg-background px-3 py-2.5 md:py-2 text-xs font-medium transition-colors hover:border-primary hover:bg-primary/5"
                   >
                     <Camera className="h-4 w-4 shrink-0 text-primary" />
-                    {t("helpBot.quickAction.receipt", "Fota kvitto")}
+                    {t("helpBot.quickAction.document", "Fota underlag")}
                   </button>
-                  <button
-                    onClick={() => quickCapture("time")}
-                    className="inline-flex items-center gap-2 rounded-lg border bg-background px-3 py-2.5 md:py-2 text-xs font-medium transition-colors hover:border-primary hover:bg-primary/5"
-                  >
-                    <Clock className="h-4 w-4 shrink-0 text-primary" />
-                    {t("helpBot.quickAction.time", "Logga tid")}
-                  </button>
-                  <button
-                    onClick={() => quickCapture("note")}
-                    className="inline-flex items-center gap-2 rounded-lg border bg-background px-3 py-2.5 md:py-2 text-xs font-medium transition-colors hover:border-primary hover:bg-primary/5"
-                  >
-                    <StickyNote className="h-4 w-4 shrink-0 text-primary" />
-                    {t("helpBot.quickAction.note", "Snabbanteckning")}
-                  </button>
-                  <button
-                    onClick={() => quickCapture("status")}
-                    className="inline-flex items-center gap-2 rounded-lg border bg-background px-3 py-2.5 md:py-2 text-xs font-medium transition-colors hover:border-primary hover:bg-primary/5"
-                  >
-                    <ListChecks className="h-4 w-4 shrink-0 text-primary" />
-                    {t("helpBot.quickAction.status", "Statusuppdatering")}
-                  </button>
-                </div>
+                ) : null}
 
                 {/* Help topics + a single feedback entry */}
                 <div className="flex flex-wrap gap-2">

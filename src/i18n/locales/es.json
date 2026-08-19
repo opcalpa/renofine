@@ -1754,7 +1754,10 @@
       "receipt": "Fotografiar un recibo",
       "time": "Registrar horas",
       "note": "Nota rápida",
-      "status": "Actualización de estado"
+      "status": "Actualización de estado",
+      "purchase": "Pedir material",
+      "other": "Otra cosa",
+      "document": "Fotografiar documento"
     },
     "intro": "Soy Renaida, su compañera personal de reforma.",
     "giveFeedback": "Enviar comentarios",
@@ -1836,6 +1839,9 @@
       "customer": "su cliente",
       "quote": "🎉 {{who}} aceptó el presupuesto {{title}} {{amount}} — ¡el proyecto ya está activo! El siguiente paso habitual es planificar el inicio en Planificación o invitar a su equipo en Equipo. Solo dígame si quiere ayuda.",
       "ata": "🎉 {{who}} aceptó la orden de cambio {{title}} {{amount}} — el trabajo adicional ya forma parte del proyecto. Las tareas están en Tareas, y factura como de costumbre cuando llegue el momento."
+    },
+    "capture": {
+      "pickPurpose": "¿Qué quieres registrar?"
     }
   },
   "hotspots": {

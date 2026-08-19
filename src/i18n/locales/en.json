@@ -4470,7 +4470,13 @@
       "receipt": "Snap a receipt",
       "time": "Log hours",
       "note": "Quick note",
-      "status": "Status update"
+      "status": "Status update",
+      "purchase": "Order material",
+      "other": "Something else",
+      "document": "Photograph document"
+    },
+    "capture": {
+      "pickPurpose": "What do you want to log?"
     }
   },
   "feedback": {

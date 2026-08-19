@@ -1754,7 +1754,10 @@
       "receipt": "Photographier un reçu",
       "time": "Saisir des heures",
       "note": "Note rapide",
-      "status": "Point d'avancement"
+      "status": "Point d'avancement",
+      "purchase": "Commander du matériel",
+      "other": "Autre chose",
+      "document": "Photographier un justificatif"
     },
     "intro": "Je suis Renaida, votre assistante personnelle de rénovation.",
     "giveFeedback": "Donner un avis",
@@ -1836,6 +1839,9 @@
       "customer": "votre client",
       "quote": "🎉 {{who}} a accepté le devis {{title}} {{amount}} — le projet est maintenant actif ! La prochaine étape habituelle est de planifier le démarrage sous Planification ou d'inviter votre équipe sous Équipe. Dites-moi simplement si vous voulez de l'aide.",
       "ata": "🎉 {{who}} a accepté l'avenant {{title}} {{amount}} — les travaux supplémentaires font maintenant partie du projet. Les tâches sont sous Tâches, et vous facturez comme d'habitude le moment venu."
+    },
+    "capture": {
+      "pickPurpose": "Que voulez-vous enregistrer ?"
     }
   },
   "hotspots": {

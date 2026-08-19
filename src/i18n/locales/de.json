@@ -1754,7 +1754,10 @@
       "receipt": "Beleg fotografieren",
       "time": "Stunden erfassen",
       "note": "Schnellnotiz",
-      "status": "Status-Update"
+      "status": "Status-Update",
+      "purchase": "Material bestellen",
+      "other": "Sonstiges",
+      "document": "Beleg fotografieren"
     },
     "intro": "Ich bin Renaida, Ihre persönliche Renovierungsbegleiterin.",
     "giveFeedback": "Feedback geben",
@@ -1836,6 +1839,9 @@
       "customer": "Ihr Kunde",
       "quote": "🎉 {{who}} hat das Angebot {{title}} {{amount}} angenommen — das Projekt ist jetzt aktiv! Der übliche nächste Schritt ist, den Start unter Planung zu planen oder Ihr Team unter Team einzuladen. Sagen Sie einfach Bescheid, wenn Sie Hilfe brauchen.",
       "ata": "🎉 {{who}} hat den Nachtrag {{title}} {{amount}} angenommen — die Zusatzarbeiten sind jetzt Teil des Projekts. Die Aufgaben finden Sie unter Aufgaben, und Sie stellen wie gewohnt Rechnung, wenn es soweit ist."
+    },
+    "capture": {
+      "pickPurpose": "Was möchten Sie erfassen?"
     }
   },
   "hotspots": {
