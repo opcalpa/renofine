@@ -104,15 +104,37 @@ const TimelineCanvasComponent: React.FC<TimelineCanvasProps> = ({
     width: number;
   } | null>(null);
 
-  // Height must fit every row. Rows are placed at their absolute rowIndex and
-  // only the time (x) axis scrolls, so the canvas always spans all rows.
-  // (The old "count horizontally-visible rows" height clipped bottom rows whose
-  // bars happened to sit outside the current time window — the cut-off-on-mobile bug.)
-  const MIN_VISIBLE_ROWS = 4;
-  const stageHeight = useMemo(
-    () => Math.max(totalRows * ROW_HEIGHT + 20, MIN_VISIBLE_ROWS * ROW_HEIGHT + 20),
-    [totalRows],
+  // Adapt canvas height to the tasks actually visible in the current time
+  // window. Task lanes sit at absolute rowIndex spanning the whole project, so
+  // zooming into a short window (esp. on mobile) used to leave every far-off
+  // lane as dead vertical space below the visible bars ("why is this so tall?").
+  // We trim the height to the LAST lane whose bar intersects the viewport, so
+  // trailing empty lanes disappear. Bars keep their absolute rowIndex → never
+  // move vertically (no reflow jank on pan); a visible bar is always within
+  // height (the old count-based approach clipped visible bottom rows — this
+  // max-index approach can't). Zoomed out so every lane shows → full height, a
+  // no-op. Grouped mode keeps full height so headers + their lanes stay intact.
+  const MIN_HEIGHT_ROWS = 2;
+  const hasGroups = useMemo(
+    () => rows.some((r) => r.type === "group-header"),
+    [rows],
   );
+  const stageHeight = useMemo(() => {
+    if (hasGroups) return totalRows * ROW_HEIGHT + 20;
+    let lastVisibleRow = -1;
+    for (const row of rows) {
+      if (row.type !== "task" || !row.task?.start_date || !row.task?.finish_date)
+        continue;
+      const xStart = dateToX(parseISO(row.task.start_date), originDate, pixelsPerDay, panX);
+      const xEnd = dateToX(addDays(parseISO(row.task.finish_date), 1), originDate, pixelsPerDay, panX);
+      if (xEnd >= 0 && xStart <= stageWidth && row.rowIndex > lastVisibleRow) {
+        lastVisibleRow = row.rowIndex;
+      }
+    }
+    const visibleRowCount = lastVisibleRow >= 0 ? lastVisibleRow + 1 : 0;
+    const rowsForHeight = Math.max(Math.min(visibleRowCount, totalRows), MIN_HEIGHT_ROWS);
+    return rowsForHeight * ROW_HEIGHT + 20;
+  }, [rows, hasGroups, totalRows, originDate, pixelsPerDay, panX, stageWidth]);
 
   useEffect(() => {
     const el = containerRef.current;
