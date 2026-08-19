@@ -54,12 +54,17 @@ RFQ-invite-mejlmallen.
 
 ---
 id: renaida-capture-entry-rethink
-status: todo
+status: done
 priority: P3
 tags: [renaida, ux, mobil, idea]
 created: 2026-08-19
 ---
 ## Renaida capture-chips: 3 av 4 gör identisk röstinspelning
+
+**✅ LEVERERAT 2026-08-19 (commit `66c65ed`, tvåstegs-varianten):** steg 1 = universell
+mic + "Fota underlag" (kamera); steg 2 = "Vad vill du logga?" med Snabbanteckning · Logga
+tid · Statusuppdatering · Beställ material · Övrigt. Live-verifierad sv-demo. Kvar: Carls
+on-device mobil-verify + ev. finslip (ikoner/ordning, "Bara prata"-genväg om friktion känns).
 
 Carls observation (mobil-screenshots "Alla övre knappar är bara mikrofon-aktivering" +
 "Kan knapp-kategorier grupperas"): de fyra capture-chipsen känns lika trots olika namn.
