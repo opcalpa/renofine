@@ -1843,6 +1843,20 @@
     "capture": {
       "pickPurpose": "Was möchten Sie erfassen?",
       "voiceShort": "Erzählen"
+    },
+    "photoAsk": {
+      "title": "Was ist das?"
+    },
+    "photoKind": {
+      "progress": "Ausgeführte Arbeit",
+      "inspiration": "Gewünschtes Material",
+      "scope": "Auftragsbeschreibung",
+      "document": "Beleg/Rechnung/Angebot"
+    },
+    "photoSaved": {
+      "progress": "Als Fortschrittsfoto in Fotos gespeichert ✓",
+      "inspiration": "Als Inspiration in Fotos gespeichert ✓",
+      "error": "Foto konnte nicht gespeichert werden — bitte erneut versuchen."
     }
   },
   "hotspots": {

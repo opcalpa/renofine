@@ -4478,6 +4478,20 @@
     "capture": {
       "pickPurpose": "What do you want to log?",
       "voiceShort": "Tell me"
+    },
+    "photoAsk": {
+      "title": "What is this?"
+    },
+    "photoKind": {
+      "progress": "Completed work",
+      "inspiration": "Desired material",
+      "scope": "Job description",
+      "document": "Receipt/invoice/quote"
+    },
+    "photoSaved": {
+      "progress": "Saved as a progress photo in Photos ✓",
+      "inspiration": "Saved as inspiration in Photos ✓",
+      "error": "Couldn’t save the photo — try again."
     }
   },
   "feedback": {

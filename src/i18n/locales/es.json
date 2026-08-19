@@ -1843,6 +1843,20 @@
     "capture": {
       "pickPurpose": "¿Qué quieres registrar?",
       "voiceShort": "Cuéntame"
+    },
+    "photoAsk": {
+      "title": "¿Qué es esto?"
+    },
+    "photoKind": {
+      "progress": "Trabajo realizado",
+      "inspiration": "Material deseado",
+      "scope": "Descripción del trabajo",
+      "document": "Recibo/factura/presupuesto"
+    },
+    "photoSaved": {
+      "progress": "Guardado como foto de progreso en Fotos ✓",
+      "inspiration": "Guardado como inspiración en Fotos ✓",
+      "error": "No se pudo guardar la foto — inténtalo de nuevo."
     }
   },
   "hotspots": {

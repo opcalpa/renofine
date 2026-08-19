@@ -12,6 +12,8 @@ import { ConfirmDiff, actionDetails } from "@/components/agent/ConfirmDiff";
 import { RenaidaAvatar, type RenaidaState } from "@/components/renaida/RenaidaAvatar";
 import { routeAgentInput } from "@/services/agent/routeClient";
 import { captureDocument } from "@/services/agent/documentCapture";
+import { uploadRenaidaPhoto, type RenaidaPhotoKind } from "@/services/agent/uploadRenaidaPhoto";
+import { useCurrentProfileId } from "@/hooks/useCurrentProfileId";
 import { applyProposals, undoProposals, fetchLatestUndoable } from "@/services/agent/applyProposals";
 import { type AgentIntentHint, type AgentProposal, type UndoOp, TASK_MATCH_MIN_CONFIDENCE, isActionable } from "@/services/agent/types";
 import { recordCorrection, getAutonomyMode, setAutonomyMode } from "@/services/agent/renaidaMemory";
@@ -313,6 +315,9 @@ export function Renaida() {
   // Two-step capture: tapping the voice hero opens a purpose picker (visible,
   // intentional bias) instead of immediately recording. Reset when panel closes.
   const [purposeStep, setPurposeStep] = useState(false);
+  // A captured scene photo (not a document) awaiting the user's "what is this?" pick.
+  const [pendingPhoto, setPendingPhoto] = useState<{ file: File; projectId: string } | null>(null);
+  const profileId = useCurrentProfileId();
   // Closing the panel disarms any un-consumed quick-action chip.
   useEffect(() => {
     if (!open) { pendingIntentRef.current = null; setPurposeStep(false); }
@@ -1015,18 +1020,21 @@ export function Renaida() {
   // propose→confirm→undo loop as voice. Renaida conducts the existing
   // process-document-v2 brain; heavy documents (quotes/scopes) are guided to
   // their dedicated review surface instead of being mangled into an order.
-  const handleDocumentSelected = useCallback(async (file: File) => {
+  const handleDocumentSelected = useCallback(async (file: File, opts?: { forcedNote?: string; skipPicker?: boolean }) => {
     if (capturing || loading) return;
 
     // D3: words already typed when the file is picked travel WITH the document —
     // "här är kvittot från Bauhaus, lägg det på badrummet" guides extraction
-    // and can attribute the order to a room.
-    const userNote = input.trim();
-    if (userNote) setInput("");
-    setMessages((prev) => [...prev, {
-      role: "user",
-      content: userNote ? `📎 ${file.name} — ”${userNote}”` : `📎 ${file.name}`,
-    }]);
+    // and can attribute the order to a room. forcedNote = a re-run biased by the
+    // user's "what is this?" pick (no fresh user bubble then).
+    const userNote = opts?.forcedNote ?? input.trim();
+    if (!opts?.forcedNote) {
+      if (userNote) setInput("");
+      setMessages((prev) => [...prev, {
+        role: "user",
+        content: userNote ? `📎 ${file.name} — ”${userNote}”` : `📎 ${file.name}`,
+      }]);
+    }
 
     let projectId = useRenaidaStore.getState().projectId;
     if (!projectId) {
@@ -1080,10 +1088,26 @@ export function Renaida() {
         }
       } else if (res.kind === "unreadable") {
         analytics.capture(AnalyticsEvents.RENAIDA_PROPOSED, { kind: "document", resolved: false, docType: "unreadable" });
-        setMessages((prev) => [...prev, {
-          role: "assistant",
-          content: t("helpBot.agent.docUnreadable", "Jag kunde tyvärr inte läsa ut något ur dokumentet — prova ett skarpare foto rakt ovanifrån, en annan fil, eller registrera inköpet manuellt under Inköp."),
-        }]);
+        if (opts?.skipPicker) {
+          setMessages((prev) => [...prev, {
+            role: "assistant",
+            content: t("helpBot.agent.docUnreadable", "Jag kunde tyvärr inte läsa ut något ur dokumentet — prova ett skarpare foto rakt ovanifrån, en annan fil, eller registrera inköpet manuellt under Inköp."),
+          }]);
+        } else {
+          // Not a readable document → likely a scene photo. Ask what it is so it
+          // lands in the right place (progress / inspiration / scope / document).
+          setPendingPhoto({ file, projectId });
+          setMessages((prev) => [...prev, {
+            role: "assistant",
+            content: t("helpBot.photoAsk.title", "Vad är det här?"),
+            actions: [
+              { labelKey: "helpBot.photoKind.progress", fallback: "Utfört arbete", action: "photo_progress", icon: <ListChecks className="h-3 w-3" /> },
+              { labelKey: "helpBot.photoKind.inspiration", fallback: "Önskat material", action: "photo_inspiration", icon: <Sparkles className="h-3 w-3" /> },
+              { labelKey: "helpBot.photoKind.scope", fallback: "Uppdragsbeskrivning", action: "photo_scope", icon: <FileText className="h-3 w-3" /> },
+              { labelKey: "helpBot.photoKind.document", fallback: "Kvitto/faktura/offert", action: "photo_document", icon: <Camera className="h-3 w-3" /> },
+            ],
+          }]);
+        }
       } else {
         const proposal: AgentProposal = {
           id: crypto.randomUUID(),
@@ -1123,6 +1147,43 @@ export function Renaida() {
       setCapturing(false);
     }
   }, [capturing, loading, input, t, wakeRenaida, flashRenaida, setMessages]);
+
+  // "What is this?" resolution for a scene photo that wasn't a readable document.
+  const handlePhotoPurpose = useCallback(async (action: string) => {
+    const pending = pendingPhoto;
+    if (!pending) return;
+    setPendingPhoto(null);
+    // Retire the picker buttons so they can't be re-clicked.
+    setMessages((prev) => prev.map((m) =>
+      m.actions?.some((a) => a.action.startsWith("photo_")) ? { ...m, actions: undefined } : m));
+
+    // Scope / document → re-run the document brain biased by the user's answer.
+    if (action === "photo_scope" || action === "photo_document") {
+      const forcedNote = action === "photo_scope"
+        ? "Det här är en arbetsbeskrivning / uppdragsbeskrivning — tolka rum och arbeten."
+        : "Det här är ett kvitto, en faktura eller en offert.";
+      void handleDocumentSelected(pending.file, { forcedNote, skipPicker: true });
+      return;
+    }
+
+    // Progress / inspiration → attach the photo to the project's gallery.
+    const kind: RenaidaPhotoKind = action === "photo_inspiration" ? "inspiration" : "progress";
+    if (!profileId) {
+      setMessages((prev) => [...prev, { role: "assistant", content: t("helpBot.photoSaved.error", "Kunde inte spara bilden — prova igen.") }]);
+      return;
+    }
+    setCapturing(true);
+    const ok = await uploadRenaidaPhoto(pending.file, pending.projectId, profileId, kind);
+    setCapturing(false);
+    setMessages((prev) => [...prev, {
+      role: "assistant",
+      content: ok
+        ? t(kind === "inspiration" ? "helpBot.photoSaved.inspiration" : "helpBot.photoSaved.progress",
+            kind === "inspiration" ? "Sparat som inspiration i Bilder ✓" : "Sparat som förloppsfoto i Bilder ✓")
+        : t("helpBot.photoSaved.error", "Kunde inte spara bilden — prova igen."),
+    }]);
+    flashRenaida("happy", 1400);
+  }, [pendingPhoto, profileId, handleDocumentSelected, t, flashRenaida, setMessages]);
 
   // PWA share-target handover: files stashed by /capture are consumed the
   // moment the panel is open — the exact same D1 flow as the paperclip button.
@@ -1249,7 +1310,9 @@ export function Renaida() {
   }, [t, flashRenaida]);
 
   const handleInlineAction = useCallback((action: string) => {
-    if (action === "set_autonomy_suggest") {
+    if (action.startsWith("photo_")) {
+      void handlePhotoPurpose(action);
+    } else if (action === "set_autonomy_suggest") {
       setAutonomyChoice("suggest", "intro");
     } else if (action === "set_autonomy_autopilot") {
       setAutonomyChoice("autopilot", "intro");
@@ -1313,7 +1376,7 @@ export function Renaida() {
       navigate(action.replace("open:", ""));
       setOpen(false);
     }
-  }, [startFeedbackMode, t, buildGreeting, setAutonomyChoice, navigate]);
+  }, [startFeedbackMode, t, buildGreeting, setAutonomyChoice, navigate, handlePhotoPurpose]);
 
   const handleDismissReminder = useCallback((reminderId: string) => {
     // Dispatch event to OverviewTab to dismiss the reminder

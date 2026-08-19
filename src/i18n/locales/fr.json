@@ -1843,6 +1843,20 @@
     "capture": {
       "pickPurpose": "Que voulez-vous enregistrer ?",
       "voiceShort": "Raconter"
+    },
+    "photoAsk": {
+      "title": "Qu’est-ce que c’est ?"
+    },
+    "photoKind": {
+      "progress": "Travail réalisé",
+      "inspiration": "Matériau souhaité",
+      "scope": "Description des travaux",
+      "document": "Reçu/facture/devis"
+    },
+    "photoSaved": {
+      "progress": "Enregistré comme photo d’avancement dans Photos ✓",
+      "inspiration": "Enregistré comme inspiration dans Photos ✓",
+      "error": "Impossible d’enregistrer la photo — réessayez."
     }
   },
   "hotspots": {

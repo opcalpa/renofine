@@ -3657,6 +3657,20 @@
     "capture": {
       "pickPurpose": "Co chcesz zarejestrować?",
       "voiceShort": "Opowiedz"
+    },
+    "photoAsk": {
+      "title": "Co to jest?"
+    },
+    "photoKind": {
+      "progress": "Wykonana praca",
+      "inspiration": "Pożądany materiał",
+      "scope": "Opis zlecenia",
+      "document": "Paragon/faktura/oferta"
+    },
+    "photoSaved": {
+      "progress": "Zapisano jako zdjęcie postępu w Zdjęciach ✓",
+      "inspiration": "Zapisano jako inspiracja w Zdjęciach ✓",
+      "error": "Nie udało się zapisać zdjęcia — spróbuj ponownie."
     }
   },
   "feedback": {

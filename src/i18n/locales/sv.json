@@ -4477,6 +4477,20 @@
     "capture": {
       "pickPurpose": "Vad vill du logga?",
       "voiceShort": "Berätta"
+    },
+    "photoAsk": {
+      "title": "Vad är det här?"
+    },
+    "photoKind": {
+      "progress": "Utfört arbete",
+      "inspiration": "Önskat material",
+      "scope": "Uppdragsbeskrivning",
+      "document": "Kvitto/faktura/offert"
+    },
+    "photoSaved": {
+      "progress": "Sparat som förloppsfoto i Bilder ✓",
+      "inspiration": "Sparat som inspiration i Bilder ✓",
+      "error": "Kunde inte spara bilden — prova igen."
     }
   },
   "feedback": {
