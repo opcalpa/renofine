@@ -106,35 +106,49 @@ const TimelineCanvasComponent: React.FC<TimelineCanvasProps> = ({
 
   // Adapt canvas height to the tasks actually visible in the current time
   // window. Task lanes sit at absolute rowIndex spanning the whole project, so
-  // zooming into a short window (esp. on mobile) used to leave every far-off
-  // lane as dead vertical space below the visible bars ("why is this so tall?").
-  // We trim the height to the LAST lane whose bar intersects the viewport, so
-  // trailing empty lanes disappear. Bars keep their absolute rowIndex → never
-  // move vertically (no reflow jank on pan); a visible bar is always within
-  // height (the old count-based approach clipped visible bottom rows — this
-  // max-index approach can't). Zoomed out so every lane shows → full height, a
-  // no-op. Grouped mode keeps full height so headers + their lanes stay intact.
+  // zooming into a short window (esp. on mobile) used to leave every off-window
+  // lane as dead vertical space ("why is this so tall?"). We compute the band
+  // of lanes whose bars intersect the viewport [minVisibleRow..maxVisibleRow]
+  // and (a) size the canvas to just that band and (b) shift the row content up
+  // by `rowOffset = minVisibleRow` so the topmost visible task pins to the top —
+  // collapsing BOTH leading and trailing empty lanes. A single visible task
+  // then hugs to ~one row instead of floating in a tall empty canvas. Since
+  // lanes are date-ordered the visible band is contiguous, so panning slides
+  // the band coherently rather than jumping. Zoomed out so every lane shows →
+  // rowOffset 0, full height (no-op). Grouped mode keeps full height + no offset
+  // so headers stay aligned with their lanes.
   const MIN_HEIGHT_ROWS = 2;
   const hasGroups = useMemo(
     () => rows.some((r) => r.type === "group-header"),
     [rows],
   );
-  const stageHeight = useMemo(() => {
-    if (hasGroups) return totalRows * ROW_HEIGHT + 20;
-    let lastVisibleRow = -1;
+  const visibleRange = useMemo(() => {
+    if (hasGroups) return { rowOffset: 0, rowSpan: totalRows };
+    let minRow = Infinity;
+    let maxRow = -1;
     for (const row of rows) {
       if (row.type !== "task" || !row.task?.start_date || !row.task?.finish_date)
         continue;
       const xStart = dateToX(parseISO(row.task.start_date), originDate, pixelsPerDay, panX);
       const xEnd = dateToX(addDays(parseISO(row.task.finish_date), 1), originDate, pixelsPerDay, panX);
-      if (xEnd >= 0 && xStart <= stageWidth && row.rowIndex > lastVisibleRow) {
-        lastVisibleRow = row.rowIndex;
+      if (xEnd >= 0 && xStart <= stageWidth) {
+        if (row.rowIndex < minRow) minRow = row.rowIndex;
+        if (row.rowIndex > maxRow) maxRow = row.rowIndex;
       }
     }
-    const visibleRowCount = lastVisibleRow >= 0 ? lastVisibleRow + 1 : 0;
-    const rowsForHeight = Math.max(Math.min(visibleRowCount, totalRows), MIN_HEIGHT_ROWS);
-    return rowsForHeight * ROW_HEIGHT + 20;
+    if (maxRow < 0) return { rowOffset: 0, rowSpan: 0 };
+    return { rowOffset: minRow, rowSpan: maxRow - minRow + 1 };
   }, [rows, hasGroups, totalRows, originDate, pixelsPerDay, panX, stageWidth]);
+
+  const rowOffset = visibleRange.rowOffset;
+  const stageHeight = useMemo(() => {
+    // Fit exactly to the visible band of lanes; only fall back to a small floor
+    // when no task is in view (empty window), so a lone task doesn't get a spare
+    // empty row under it.
+    const rowsForHeight =
+      visibleRange.rowSpan > 0 ? visibleRange.rowSpan : MIN_HEIGHT_ROWS;
+    return rowsForHeight * ROW_HEIGHT + 20;
+  }, [visibleRange.rowSpan]);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -238,12 +252,12 @@ const TimelineCanvasComponent: React.FC<TimelineCanvasProps> = ({
       const xPos = dateToX(startDate, originDate, pixelsPerDay, panX);
       const days = Math.max(1, differenceInDays(endDate, startDate) + 1);
       const w = Math.max(MIN_BAR_WIDTH, days * pixelsPerDay);
-      const yPos = row.rowIndex * ROW_HEIGHT;
+      const yPos = (row.rowIndex - rowOffset) * ROW_HEIGHT;
 
       map.set(task.id, { x: xPos, y: yPos, width: w, taskId: task.id });
     }
     return map;
-  }, [rows, originDate, pixelsPerDay, panX]);
+  }, [rows, originDate, pixelsPerDay, panX, rowOffset]);
 
   // Drag handlers
   const handleDragStart = useCallback(
@@ -259,10 +273,10 @@ const TimelineCanvasComponent: React.FC<TimelineCanvasProps> = ({
       const node = evt.target;
       const row = rows.find((r) => r.task?.id === taskId);
       if (row) {
-        node.y(row.rowIndex * ROW_HEIGHT + 8);
+        node.y((row.rowIndex - rowOffset) * ROW_HEIGHT + 8);
       }
     },
-    [rows]
+    [rows, rowOffset]
   );
 
   // Save dates on drag end
@@ -576,7 +590,7 @@ const TimelineCanvasComponent: React.FC<TimelineCanvasProps> = ({
                 <Group key={`gh-${row.groupId}`} listening={false}>
                   <Rect
                     x={0}
-                    y={row.rowIndex * ROW_HEIGHT}
+                    y={(row.rowIndex - rowOffset) * ROW_HEIGHT}
                     width={stageWidth}
                     height={ROW_HEIGHT}
                     fill={GROUP_HEADER_BG}
@@ -584,7 +598,7 @@ const TimelineCanvasComponent: React.FC<TimelineCanvasProps> = ({
                   />
                   <KonvaText
                     x={12}
-                    y={row.rowIndex * ROW_HEIGHT + ROW_HEIGHT / 2 - 7}
+                    y={(row.rowIndex - rowOffset) * ROW_HEIGHT + ROW_HEIGHT / 2 - 7}
                     text={row.groupLabel}
                     fontSize={13}
                     fontStyle="bold"
