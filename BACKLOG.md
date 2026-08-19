@@ -72,13 +72,20 @@ router, not a separate flow."
 Carls poäng: den **universella** knappen finns redan (huvud-micen utan hint → routern
 härleder intent ur innehållet). Så de tre röst-chipsen tillför bara en liten bias.
 
-**Riktningar att väga (produktval, ej byggt):**
-1. **Distinkt modalitet per chip** — "Logga tid" → snabb tid-inmatning (siffra + task-val),
-   "Status" → status-picker, inte röst för allt. Varje chip → sin naturligaste snabbaste input.
-2. **Förtydliga huvudknappen som universell** ("Berätta vad som hänt" = prata ELLER skriv
-   vad som helst; routern fixar rätt) och demotera chipsen till valfria genvägar/hints.
-3. **Gruppera chipsen** i två grupper (snabbval/populärt + tips/guide) för mindre klotter.
-Öppen fråga till Carl: vilken riktning? (1 = mest jobb, störst särskiljning; 2/3 = lättare.)
+**LEDANDE RIKTNING (Carls förslag 2026-08-19) — tvåstegs syfte-picker:**
+Gör biasen SYNLIG i stället för osynlig. Flöde:
+1. Tryck på den stora universella mic-knappen (huvudingång)
+2. → 4 stora syfte-knappar: **Allmän notering · Logga tid · Statusuppdatering · [ev. 4:e] · Övrigt**
+3. Välj → inspelning startar med vald bias ("Övrigt" = ingen bias, ren router-tolkning)
+
+Fördel: syftet blir ett medvetet, synligt val; "Övrigt" = ingen återvändsgränd; stora
+knappar = mobilvänligt + mindre klotter än 8 småchips. Att tänka på:
+- **Friktion:** alltid 2 tryck före inspelning — överväg en "Bara prata →"-genväg för ren universell capture.
+- **Fota kvitto** är en annan modalitet (kamera) → egen ingång bredvid mic-knappen, inte ett syfte-val.
+- **"Övrigt"** ska kännas lika inbjudande som de andra, inte som en "inget passade"-knapp.
+
+Äldre riktningar (ersatta av ovan, kvar som referens): distinkt modalitet per chip;
+demotera chips till hints; gruppera i två grupper.
 
 ---
 id: renaida-screenshot-triage-2026-08-17
