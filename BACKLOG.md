@@ -13,6 +13,74 @@ Detaljplaner för många items bor i /Users/calpa/Developer/Renofine/.claude/mem
 - Behåll kärnan vass, ingen feature utan tydlig användarnytta
 
 ---
+id: share-rfq-dialog-mobile-size
+status: done
+priority: P3
+tags: [bugfix, mobil, dialog]
+created: 2026-08-19
+updated: 2026-08-19
+---
+## "Bjud in offert"-dialogen cramped på mobil
+
+Carls mobil-screenshot ("Bjud in offert inga bra mobil size ruta"): `ShareRfqDialog`
+använde `!max-w-[min(900px,92vw)]` i className → hårdtvingade en centrerad 92vw-ruta
+med sidomarginaler även på mobil, istället för basens fullbredds bottom-sheet
+(CLAUDE.md popup-för-smal-fällan). Fixat: `size="4xl"` + inre `px-8`→`px-5 md:px-8`.
+Se `src/components/project/overview/ShareRfqDialog.tsx`. Kvar: Carl on-device-verify.
+
+---
+id: rfq-invite-email-enrich
+status: todo
+priority: P2
+tags: [growth, offert, invite, idea]
+created: 2026-08-19
+---
+## Offertförfrågans mejl: lämna lockande info direkt (anti-spam-känsla)
+
+Carls fältobservation: när en **okänd byggare** får RFQ-mejlet ("du har fått det här,
+klicka") utan kontext kan det tolkas som spam/phishing — särskilt när avsändaren
+(Renofine) är okänd → hen klickar kanske inte. Vi tappar okända byggare i första steget.
+
+**Idé:** bädda in lite lockande info **direkt i mejlet** (det man ser i förhandsvisningen),
+inte bakom länken:
+- Projektets namn + objekt (t.ex. "Badrumsrenovering, Vasastan 3:a")
+- De **3 första raderna** av önskade arbetsuppgifter
+- Kort förklaringstext om vad förfrågan gäller / vad ett klick leder till
+
+Mål: sänk tröskeln att våga klicka en länk från en okänd avsändare. Gäller mejlet som
+skickas (edge-fn/e-postmall för RFQ-inbjudan), + ev. första steget efter länken.
+Källa: screenshot "Ingen info om offertförfrågan innehåll...". Se `ShareRfqDialog` +
+RFQ-invite-mejlmallen.
+
+---
+id: renaida-capture-entry-rethink
+status: todo
+priority: P3
+tags: [renaida, ux, mobil, idea]
+created: 2026-08-19
+---
+## Renaida capture-chips: 3 av 4 gör identisk röstinspelning
+
+Carls observation (mobil-screenshots "Alla övre knappar är bara mikrofon-aktivering" +
+"Kan knapp-kategorier grupperas"): de fyra capture-chipsen känns lika trots olika namn.
+**Verifierat i kod** (`Renaida.tsx:997` `quickCapture`): "Fota kvitto" öppnar kameran
+(kärnt distinkt), men **Logga tid / Snabbanteckning / Statusuppdatering startar alla exakt
+samma röstinspelning** — enda skillnaden är en osynlig `intentHint` som biasar routern.
+Kommentaren i koden säger det rakt ut: "EN agent, MÅNGA dörrar — the chip scopes the
+router, not a separate flow."
+
+Carls poäng: den **universella** knappen finns redan (huvud-micen utan hint → routern
+härleder intent ur innehållet). Så de tre röst-chipsen tillför bara en liten bias.
+
+**Riktningar att väga (produktval, ej byggt):**
+1. **Distinkt modalitet per chip** — "Logga tid" → snabb tid-inmatning (siffra + task-val),
+   "Status" → status-picker, inte röst för allt. Varje chip → sin naturligaste snabbaste input.
+2. **Förtydliga huvudknappen som universell** ("Berätta vad som hänt" = prata ELLER skriv
+   vad som helst; routern fixar rätt) och demotera chipsen till valfria genvägar/hints.
+3. **Gruppera chipsen** i två grupper (snabbval/populärt + tips/guide) för mindre klotter.
+Öppen fråga till Carl: vilken riktning? (1 = mest jobb, störst särskiljning; 2/3 = lättare.)
+
+---
 id: renaida-screenshot-triage-2026-08-17
 status: done
 priority: P1
