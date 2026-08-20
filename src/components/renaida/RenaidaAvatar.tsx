@@ -13,6 +13,26 @@ export type RenaidaLook =
 
 const RN_SKARA_PATH = "M32 6 a26 26 0 1 0 26 26 h-12 v-14 h-14 z";
 
+/**
+ * Map a pointer position to the nearest gaze direction, measured against an
+ * element's bounding box (usually the avatar or its stage). From the design
+ * handoff's gazeFrom() — use only in idle/hello; other states own their gaze.
+ */
+export function gazeFromPointer(
+  e: { clientX: number; clientY: number },
+  el: HTMLElement | null
+): RenaidaLook {
+  if (!el) return "center";
+  const r = el.getBoundingClientRect();
+  const dx = (e.clientX - (r.left + r.width / 2)) / (r.width / 2);
+  const dy = (e.clientY - (r.top + r.height / 2)) / (r.height / 2);
+  const h = dx < -0.25 ? "left" : dx > 0.25 ? "right" : "";
+  const v = dy < -0.25 ? "up" : dy > 0.25 ? "down" : "";
+  if (v === "up" && h) return ("up" + h) as RenaidaLook;
+  if (v === "down" && h === "right") return "downright";
+  return (v || h || "center") as RenaidaLook;
+}
+
 // Where the pupil sits for each gaze direction (socket centre ≈ 39,25)
 const RN_LOOK: Record<RenaidaLook, [number, number]> = {
   center: [39, 25],

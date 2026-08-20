@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { ConfirmDiff, actionDetails } from "@/components/agent/ConfirmDiff";
-import { RenaidaAvatar, type RenaidaState } from "@/components/renaida/RenaidaAvatar";
+import { RenaidaAvatar, gazeFromPointer, type RenaidaState, type RenaidaLook } from "@/components/renaida/RenaidaAvatar";
 import { routeAgentInput } from "@/services/agent/routeClient";
 import { captureDocument } from "@/services/agent/documentCapture";
 import { uploadRenaidaPhoto, type RenaidaPhotoKind } from "@/services/agent/uploadRenaidaPhoto";
@@ -355,6 +355,19 @@ export function Renaida() {
     : renaidaBusy
       ? "think"
       : (renaidaAsleep && !open) ? "sleep" : "idle";
+
+  // Curious gaze-follow (from the avatar handoff): in idle/hello the header
+  // avatar's pupil tracks the pointer across the panel; think glances up-left.
+  const [panelLook, setPanelLook] = useState<RenaidaLook>("center");
+  const headerAvatarRef = useRef<HTMLDivElement>(null);
+  const renaidaGaze: RenaidaLook =
+    renaidaState === "idle" || renaidaState === "hello"
+      ? panelLook
+      : renaidaState === "think" ? "upleft" : "center";
+  const handlePanelPointerMove = useCallback((e: React.PointerEvent) => {
+    const next = gazeFromPointer(e, headerAvatarRef.current);
+    setPanelLook((prev) => (prev === next ? prev : next));
+  }, []);
 
   // Start the inactivity clock on mount; clean timers on unmount.
   useEffect(() => {
@@ -1490,6 +1503,7 @@ export function Renaida() {
       {open && (
         <div
           ref={panelRef}
+          onPointerMove={handlePanelPointerMove}
           className="fixed inset-0 z-50 flex flex-col bg-background h-[100dvh] md:inset-auto md:bottom-6 md:right-6 md:h-[500px] md:w-[400px] md:max-w-[calc(100%-2rem)] md:rounded-xl md:border md:shadow-2xl"
           // iOS keyboard overlays fixed elements — size the panel to the visual
           // viewport while the keyboard is up so the input row stays reachable.
@@ -1498,7 +1512,9 @@ export function Renaida() {
           {/* Header */}
           <div className="flex items-center justify-between border-b px-4 py-3">
             <div className="flex items-center gap-2">
-              <RenaidaAvatar state={renaidaState} size={32} />
+              <div ref={headerAvatarRef}>
+                <RenaidaAvatar state={renaidaState} look={renaidaGaze} size={32} />
+              </div>
               <h3 className="font-semibold text-sm">
                 {t("helpBot.title", "Renaida")}
               </h3>

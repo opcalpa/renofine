@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowRight, ArrowUp, Sparkles } from "lucide-react";
+import {
+  RenaidaAvatar,
+  gazeFromPointer,
+  type RenaidaState,
+  type RenaidaLook,
+} from "@/components/renaida/RenaidaAvatar";
 
 /**
  * RenaidaLive — a scripted, zero-token public demo of Renaida on the landing
@@ -140,6 +146,65 @@ export function RenaidaLive({ onCta }: RenaidaLiveProps) {
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // ── Living avatar: mood flashes + curious gaze-follow + falls asleep ──
+  // Mirrors the in-app Renaida mechanics so the public demo shows the full
+  // spectrum from the avatar handoff (idle/hello/think/talk/happy/sleep).
+  const [avatarFlash, setAvatarFlash] = useState<RenaidaState | null>(null);
+  const [asleep, setAsleep] = useState(false);
+  const [look, setLook] = useState<RenaidaLook>("center");
+  const avatarRef = useRef<HTMLDivElement>(null);
+  const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sleepTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const wake = useCallback(() => {
+    setAsleep(false);
+    if (sleepTimer.current) clearTimeout(sleepTimer.current);
+    sleepTimer.current = setTimeout(() => setAsleep(true), 30000);
+  }, []);
+
+  const flash = useCallback(
+    (mood: RenaidaState, ms = 1500) => {
+      wake();
+      setAvatarFlash(mood);
+      if (flashTimer.current) clearTimeout(flashTimer.current);
+      flashTimer.current = setTimeout(() => setAvatarFlash(null), ms);
+    },
+    [wake],
+  );
+
+  useEffect(() => {
+    wake();
+    return () => {
+      if (flashTimer.current) clearTimeout(flashTimer.current);
+      if (sleepTimer.current) clearTimeout(sleepTimer.current);
+    };
+  }, [wake]);
+
+  const avatarState: RenaidaState = avatarFlash
+    ? avatarFlash
+    : typing
+      ? "think"
+      : asleep && !busy
+        ? "sleep"
+        : "idle";
+  // Idle/hello follow the visitor's pointer (the curious look); think glances
+  // up-left on its own, everything else holds center — per the handoff.
+  const gaze: RenaidaLook =
+    avatarState === "idle" || avatarState === "hello"
+      ? look
+      : avatarState === "think"
+        ? "upleft"
+        : "center";
+
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (asleep) wake();
+      const next = gazeFromPointer(e, avatarRef.current);
+      setLook((prev) => (prev === next ? prev : next));
+    },
+    [asleep, wake],
+  );
+
   useEffect(() => {
     return () => timers.current.forEach(clearTimeout);
   }, []);
@@ -160,26 +225,31 @@ export function RenaidaLive({ onCta }: RenaidaLiveProps) {
       if (busy) return;
       setBusy(true);
       setStarted(true);
+      flash("hello", 1100);
       setMessages((m) => [...m, { role: "user", text: userText ?? t(flow.chipKey) }]);
       for (const beat of flow.beats) {
         if (beat.t === "renaida") {
           setTyping(true);
           await wait(650);
           setTyping(false);
+          flash("talk", 1300);
           setMessages((m) => [...m, { role: "renaida", text: t(beat.key) }]);
           await wait(280);
         } else if (beat.t === "artifact") {
           await wait(360);
+          flash("happy", 2000);
           setMessages((m) => [...m, { role: "artifact", card: beat.card }]);
           await wait(280);
         } else {
           await wait(200);
+          flash("happy", 1600);
           setMessages((m) => [...m, { role: "cta" }]);
         }
       }
       setBusy(false);
+      wake();
     },
-    [busy, t],
+    [busy, t, flash, wake],
   );
 
   const handleSubmit = useCallback(() => {
@@ -198,6 +268,7 @@ export function RenaidaLive({ onCta }: RenaidaLiveProps) {
     let matched = FLOWS.find((f) => (kw[f.id] ?? []).some((k) => lower.includes(k)));
     if (!matched) {
       setStarted(true);
+      flash("talk", 1400);
       setMessages((m) => [
         ...m,
         { role: "user", text },
@@ -216,12 +287,16 @@ export function RenaidaLive({ onCta }: RenaidaLiveProps) {
     setStarted(false);
     setBusy(false);
     setTyping(false);
+    setAvatarFlash(null);
+    wake();
   };
 
   const activeChips = FLOWS.filter((f) => f.id !== "capabilities" || !started);
 
   return (
     <div
+      onPointerMove={handlePointerMove}
+      onPointerDown={wake}
       style={{
         background: "var(--lp-surface)",
         border: "1px solid var(--lp-hairline)",
@@ -237,23 +312,10 @@ export function RenaidaLive({ onCta }: RenaidaLiveProps) {
       {/* Header */}
       <div
         className="flex items-center gap-2.5"
-        style={{ padding: "14px 18px", borderBottom: "1px solid var(--lp-hairline)", background: "var(--lp-surface)" }}
+        style={{ padding: "10px 18px", borderBottom: "1px solid var(--lp-hairline)", background: "var(--lp-surface)" }}
       >
-        <div
-          className="grid place-items-center shrink-0"
-          style={{
-            width: 32,
-            height: 32,
-            borderRadius: 16,
-            background: "#DCE5DC",
-            color: "var(--lp-primary)",
-            fontFamily: '"Fraunces", ui-serif, Georgia, serif',
-            fontWeight: 500,
-            fontSize: 16,
-          }}
-          aria-hidden
-        >
-          R
+        <div ref={avatarRef} className="shrink-0" aria-hidden>
+          <RenaidaAvatar state={avatarState} look={gaze} size={40} aria-hidden />
         </div>
         <div className="flex-1">
           <div style={{ fontSize: 14, fontWeight: 500, color: "var(--lp-fg)", letterSpacing: "-0.005em" }}>Renaida</div>
