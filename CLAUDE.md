@@ -287,11 +287,19 @@ Filen innehåller:
 
 ---
 
-## Renofine handoff workflow
+## Design-filer & handoff workflow
 
-Designerns paket finns i `Design Test/handoff v2 2/` (semver-versionerat).
-Om en senare version finns (`handoff v3/`, etc.), använd den nyaste —
-kolla `find . -maxdepth 3 -type d -iname "handoff v*"`.
+**Design-master bor UTANFÖR repot:** `~/PA/Documents/Projects/Renofine/Design/`
+(delad hjärna — nås av både Code och Cowork; se dess README.md). Repot innehåller
+ENDAST det som shippas med appen (`public/brand/` = loggor/tokens som serveras;
+repot är MASTER för dessa och de speglas till `Design/Brand/`).
+
+- **All genererad grafik** (banners, sociala bilder, marknadsmaterial) sparas i
+  `Design/Marketing/` med källfil (.html/.svg) bredvid exporten — aldrig i repot.
+- **Designerns handoff-paket** ligger i `Design/Handoff/handoff v2 2/`
+  (semver-versionerat; flyttat från repots `Design Test/` 2026-08-20).
+  Om en senare version finns (`handoff v3/`, etc.), använd den nyaste —
+  kolla `find "$HOME/PA/Documents/Projects/Renofine/Design/Handoff" -maxdepth 2 -type d -iname "handoff v*"`.
 
 Innan implementation av en modul:
 
@@ -316,11 +324,11 @@ Versionssystem (semver):
 - MINOR — ny modul klar (en 🔴/🟡 → 🟢)
 - PATCH — justeringar inom en redan-klar modul
 
-Äldre paket i `Design Test/Tidigare/handoff/` och `Design Test/20260508/Handoff /`
-är **ersatta** av v2.0.0 och bör inte användas vidare.
+Äldre paket i `Design/Handoff/Tidigare/` och `Design/Handoff/2026/` är
+**ersatta** av v2.0.0 och bör inte användas vidare.
 
 ---
-*Last Updated: 2026-05-09*
+*Last Updated: 2026-08-20*
 
 ## Självförbättrings-loop (SIL)
 Renofine kör Calles portfölj-loop (full modell: ~/.claude/skills/starta-projekt/self-improvement-loop.md). Tre regler:
