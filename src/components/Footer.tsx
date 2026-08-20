@@ -1,6 +1,9 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 const Footer = () => {
+  const { t } = useTranslation();
+
   return (
     <footer className="bg-card border-t mt-16">
       <div className="container mx-auto px-4 py-12">
@@ -10,43 +13,42 @@ const Footer = () => {
               <img src="/brand/svg/lockup/lockup-horizontal-green.svg" alt="Renofine" className="h-7 w-auto" />
             </div>
             <p className="text-sm text-muted-foreground max-w-md">
-              A mobile-first platform that helps homeowners manage renovation projects,
-              collaborate with contractors, and track every detail from start to finish.
+              {t("landingV2.footer.tagline", "Projektkontoret som byggare faktiskt vill använda. Gjort i Stockholm.")}
             </p>
           </div>
 
           <div>
-            <h4 className="font-semibold mb-4">Company</h4>
+            <h4 className="font-semibold mb-4">{t("landingV2.footer.company", "Företag")}</h4>
             <ul className="space-y-2">
               <li>
                 <Link to="/about" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  About
+                  {t("landingV2.footer.about", "Om oss")}
                 </Link>
               </li>
               <li>
                 <Link to="/contact" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  Contact
+                  {t("landingV2.footer.contact", "Kontakt")}
                 </Link>
               </li>
               <li>
                 <Link to="/changelog" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  Changelog
+                  {t("landingV2.footer.whatsNew", "Vad är nytt")}
                 </Link>
               </li>
             </ul>
           </div>
 
           <div>
-            <h4 className="font-semibold mb-4">Legal</h4>
+            <h4 className="font-semibold mb-4">{t("landingV2.footer.legal", "Juridik")}</h4>
             <ul className="space-y-2">
               <li>
                 <Link to="/privacy" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  Privacy Policy
+                  {t("landingV2.footer.privacy", "Integritet")}
                 </Link>
               </li>
               <li>
                 <Link to="/terms" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  Terms of Service
+                  {t("landingV2.footer.terms", "Villkor")}
                 </Link>
               </li>
             </ul>
@@ -55,7 +57,7 @@ const Footer = () => {
 
         <div className="border-t mt-8 pt-8 text-center">
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} Renofine. All rights reserved.
+            © {new Date().getFullYear()} Renofine · Stockholm
           </p>
         </div>
       </div>

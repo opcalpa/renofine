@@ -1,15 +1,17 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Mail, CalendarClock } from "lucide-react";
 import Footer from "@/components/Footer";
 import { useToast } from "@/hooks/use-toast";
 
 const Contact = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -32,8 +34,8 @@ const Contact = () => {
     setTimeout(() => {
       setSending(false);
       toast({
-        title: "Email client opened",
-        description: "Please send the email from your email application.",
+        title: t("contactPage.toastTitle", "Ditt mejlprogram öppnas"),
+        description: t("contactPage.toastDesc", "Skicka mejlet därifrån så återkommer vi snabbt."),
       });
     }, 500);
   };
@@ -47,57 +49,71 @@ const Contact = () => {
           </div>
           <Button variant="ghost" onClick={() => navigate("/")}>
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
+            {t("contactPage.back", "Tillbaka")}
           </Button>
         </div>
       </header>
 
       <main className="flex-1 container mx-auto px-4 py-12">
         <div className="max-w-2xl mx-auto">
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold mb-4">Get in Touch</h1>
+          <div className="text-center mb-10">
+            <h1 className="text-4xl font-light tracking-tight mb-4" style={{ fontFamily: '"Fraunces", Georgia, serif' }}>{t("contactPage.h1", "Hör av dig.")}</h1>
             <p className="text-lg text-muted-foreground">
-              Have questions or feedback? We'd love to hear from you.
+              {t("contactPage.sub", "Frågor, feedback eller samarbete? Det är Carl, grundaren, som svarar — oftast samma dag.")}
             </p>
+          </div>
+
+          {/* Direct channels */}
+          <div className="flex flex-col sm:flex-row gap-3 mb-10 justify-center">
+            <Button variant="outline" asChild className="gap-2">
+              <a href="mailto:hello@renofine.com">
+                <Mail className="h-4 w-4" /> hello@renofine.com
+              </a>
+            </Button>
+            <Button variant="outline" asChild className="gap-2">
+              <a href="https://calendar.app.google/cpD1Z1Qb6VQBhSAL9" target="_blank" rel="noreferrer">
+                <CalendarClock className="h-4 w-4" /> {t("contactPage.bookDemo", "Boka 15 min demo")}
+              </a>
+            </Button>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6 bg-card p-8 rounded-lg border">
             <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
+              <Label htmlFor="name">{t("contactPage.formName", "Namn")}</Label>
               <Input
                 id="name"
-                placeholder="Your name"
+                placeholder={t("contactPage.formNamePh", "Ditt namn")}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t("contactPage.formEmail", "E-post")}</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="your@email.com"
+                placeholder={t("contactPage.formEmailPh", "din@mejl.se")}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="subject">Subject</Label>
+              <Label htmlFor="subject">{t("contactPage.formSubject", "Ämne")}</Label>
               <Input
                 id="subject"
-                placeholder="What's this about?"
+                placeholder={t("contactPage.formSubjectPh", "Vad gäller det?")}
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="message">Message</Label>
+              <Label htmlFor="message">{t("contactPage.formMessage", "Meddelande")}</Label>
               <Textarea
                 id="message"
-                placeholder="Tell us more..."
+                placeholder={t("contactPage.formMessagePh", "Berätta mer…")}
                 rows={6}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
@@ -108,10 +124,10 @@ const Contact = () => {
               {sending ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Opening...
+                  {t("contactPage.opening", "Öppnar…")}
                 </>
               ) : (
-                "Send Message"
+                t("contactPage.send", "Skicka meddelande")
               )}
             </Button>
           </form>

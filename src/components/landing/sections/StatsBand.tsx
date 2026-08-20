@@ -7,7 +7,7 @@ export function StatsBand() {
     { v: "1", l: t("landingV2.stats.oneAppLabel", "App istället för Excel, mejl och pärmar"), s: t("landingV2.stats.oneAppSource", "Allt på ett ställe") },
     { v: "0 kr", l: t("landingV2.stats.freeLabel", "Att testa under hela beta"), s: t("landingV2.stats.freeSource", "Inga kort, inga krångel") },
     { v: "47", l: t("landingV2.stats.featuresLabel", "Inbyggda funktioner"), s: t("landingV2.stats.featuresSource", "Och fler varje vecka") },
-    { v: "∞", l: t("landingV2.stats.coffeeLabel", "Kaffekoppar under utvecklingen"), s: t("landingV2.stats.coffeeSource", "Ungefärlig siffra") },
+    { v: "7", l: t("landingV2.stats.langLabel", "Språk — arbetaren får instruktioner på sitt"), s: t("landingV2.stats.langSource", "Översätts automatiskt i appen") },
   ];
 
   return (

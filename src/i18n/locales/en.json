@@ -615,8 +615,8 @@
       "freeSource": "No card, no hassle",
       "featuresLabel": "Built-in features",
       "featuresSource": "And more every week",
-      "coffeeLabel": "Cups of coffee during development",
-      "coffeeSource": "Approximate figure"
+      "langLabel": "Languages — workers get instructions in theirs",
+      "langSource": "Translated automatically in the app"
     },
     "features": {
       "pill": "Features",
@@ -7696,5 +7696,39 @@
     "low": "Low",
     "medium": "Medium",
     "high": "High"
+  },
+  "aboutPage": {
+    "back": "Back",
+    "eyebrow": "About Renofine",
+    "h1": "Built by someone who got tired of chasing receipts.",
+    "intro": "Renofine is a Swedish tool for renovation projects — with Renaida, an AI colleague who builds the project when you describe the job, reads your receipts and keeps the budget up to date. Quotes with ROT, timeline, purchasing and a dedicated view for your client. Everything in one place, in seven languages.",
+    "founderKicker": "Founder",
+    "founderRole": "Founder & product builder · Stockholm",
+    "story1": "I started Renofine after my own renovation: receipts in my inbox, the budget in Excel, the quote as a PDF and decisions in text threads. The industry's tools were built for the office — not for the person standing in the dust.",
+    "story2": "So I built what I wanted myself: photograph the receipt and it's booked, describe the job and the project exists, and the client sees how the build is going without calling. I ship fast together with the builders and homeowners using the tool — their everyday work decides what gets built next.",
+    "whereKicker": "Where we are",
+    "where1": "Renofine is in open beta — free to use in full while we build. We are a young product with a high delivery pace: new features every week, shaped directly by user feedback.",
+    "whereLink": "See what's new",
+    "contactKicker": "Contact",
+    "contactText": "Questions, feedback or partnership? Get in touch — it's me who answers.",
+    "bookDemo": "Book a 15 min demo"
+  },
+  "contactPage": {
+    "back": "Back",
+    "h1": "Get in touch.",
+    "sub": "Questions, feedback or partnership? Carl, the founder, answers — usually the same day.",
+    "bookDemo": "Book a 15 min demo",
+    "formName": "Name",
+    "formNamePh": "Your name",
+    "formEmail": "Email",
+    "formEmailPh": "your@email.com",
+    "formSubject": "Subject",
+    "formSubjectPh": "What's this about?",
+    "formMessage": "Message",
+    "formMessagePh": "Tell us more…",
+    "send": "Send message",
+    "opening": "Opening…",
+    "toastTitle": "Your email client is opening",
+    "toastDesc": "Send the email from there and we'll get back to you quickly."
   }
 }

@@ -615,8 +615,8 @@
       "freeSource": "Inga kort, inga krångel",
       "featuresLabel": "Inbyggda funktioner",
       "featuresSource": "Och fler varje vecka",
-      "coffeeLabel": "Kaffekoppar under utvecklingen",
-      "coffeeSource": "Ungefärlig siffra"
+      "langLabel": "Språk — arbetaren får instruktioner på sitt",
+      "langSource": "Översätts automatiskt i appen"
     },
     "features": {
       "pill": "Funktioner",
@@ -7695,5 +7695,39 @@
     "low": "Låg",
     "medium": "Medel",
     "high": "Hög"
+  },
+  "aboutPage": {
+    "back": "Tillbaka",
+    "eyebrow": "Om Renofine",
+    "h1": "Byggt av någon som tröttnade på att jaga kvitton.",
+    "intro": "Renofine är ett svenskt verktyg för renoveringsprojekt — med Renaida, en AI-kollega som bygger projektet när du beskriver jobbet, läser dina kvitton och håller budgeten uppdaterad. Offert med ROT, tidsplan, inköp och en egen vy för din kund. Allt på ett ställe, på sju språk.",
+    "founderKicker": "Grundare",
+    "founderRole": "Grundare & produktbyggare · Stockholm",
+    "story1": "Jag startade Renofine efter min egen renovering: kvitton i mejlen, budgeten i Excel, offerten som PDF och besluten i sms-trådar. Verktygen för branschen var byggda för kontoret — inte för den som står i dammet.",
+    "story2": "Så jag byggde det jag själv ville ha: fota kvittot så bokförs det, beskriv jobbet så finns projektet, och kunden ser hur bygget går utan att ringa. Jag bygger i snabb takt tillsammans med de byggare och hemägare som använder verktyget — deras vardag styr vad som byggs härnäst.",
+    "whereKicker": "Var vi är",
+    "where1": "Renofine är i öppen beta — gratis att använda fullt ut medan vi bygger. Vi är ett ungt bygge med hög leveranstakt: nya funktioner varje vecka, formade direkt av användarnas feedback.",
+    "whereLink": "Se vad som är nytt",
+    "contactKicker": "Kontakt",
+    "contactText": "Frågor, feedback eller samarbete? Hör av dig direkt — det är jag som svarar.",
+    "bookDemo": "Boka 15 min demo"
+  },
+  "contactPage": {
+    "back": "Tillbaka",
+    "h1": "Hör av dig.",
+    "sub": "Frågor, feedback eller samarbete? Det är Carl, grundaren, som svarar — oftast samma dag.",
+    "bookDemo": "Boka 15 min demo",
+    "formName": "Namn",
+    "formNamePh": "Ditt namn",
+    "formEmail": "E-post",
+    "formEmailPh": "din@mejl.se",
+    "formSubject": "Ämne",
+    "formSubjectPh": "Vad gäller det?",
+    "formMessage": "Meddelande",
+    "formMessagePh": "Berätta mer…",
+    "send": "Skicka meddelande",
+    "opening": "Öppnar…",
+    "toastTitle": "Ditt mejlprogram öppnas",
+    "toastDesc": "Skicka mejlet därifrån så återkommer vi snabbt."
   }
 }

@@ -88,8 +88,8 @@
       "freeSource": "Sans carte, sans tracas",
       "featuresLabel": "Fonctionnalités intégrées",
       "featuresSource": "Et plus chaque semaine",
-      "coffeeLabel": "Tasses de café pendant le développement",
-      "coffeeSource": "Chiffre approximatif"
+      "langLabel": "Langues — chaque ouvrier reçoit les consignes dans la sienne",
+      "langSource": "Traduit automatiquement dans l'appli"
     },
     "features": {
       "pill": "Fonctionnalités",
@@ -7706,5 +7706,39 @@
     "low": "Faible",
     "medium": "Moyenne",
     "high": "Élevée"
+  },
+  "aboutPage": {
+    "back": "Retour",
+    "eyebrow": "À propos de Renofine",
+    "h1": "Créé par quelqu'un qui en avait assez de courir après les reçus.",
+    "intro": "Renofine est un outil suédois pour les projets de rénovation — avec Renaida, une collègue IA qui construit le projet quand vous décrivez le travail, lit vos reçus et maintient le budget à jour. Devis, planning, achats et une vue dédiée pour votre client. Tout au même endroit, en sept langues.",
+    "founderKicker": "Fondateur",
+    "founderRole": "Fondateur & créateur du produit · Stockholm",
+    "story1": "J'ai lancé Renofine après ma propre rénovation : des reçus dans ma boîte mail, le budget dans Excel, le devis en PDF et les décisions par SMS. Les outils du secteur étaient conçus pour le bureau — pas pour celui qui est dans la poussière.",
+    "story2": "Alors j'ai construit ce que je voulais moi-même : photographiez le reçu et il est comptabilisé, décrivez le travail et le projet existe, et le client voit l'avancement sans appeler. J'avance vite, avec les artisans et propriétaires qui utilisent l'outil — leur quotidien décide de ce qui sera construit ensuite.",
+    "whereKicker": "Où nous en sommes",
+    "where1": "Renofine est en bêta ouverte — entièrement gratuit pendant que nous construisons. Nous sommes un produit jeune au rythme soutenu : de nouvelles fonctionnalités chaque semaine, façonnées directement par les retours des utilisateurs.",
+    "whereLink": "Voir les nouveautés",
+    "contactKicker": "Contact",
+    "contactText": "Questions, retours ou partenariat ? Écrivez-moi directement — c'est moi qui réponds.",
+    "bookDemo": "Réserver une démo de 15 min"
+  },
+  "contactPage": {
+    "back": "Retour",
+    "h1": "Contactez-nous.",
+    "sub": "Questions, retours ou partenariat ? Carl, le fondateur, répond — généralement le jour même.",
+    "bookDemo": "Réserver une démo de 15 min",
+    "formName": "Nom",
+    "formNamePh": "Votre nom",
+    "formEmail": "E-mail",
+    "formEmailPh": "votre@email.fr",
+    "formSubject": "Objet",
+    "formSubjectPh": "De quoi s'agit-il ?",
+    "formMessage": "Message",
+    "formMessagePh": "Dites-en plus…",
+    "send": "Envoyer le message",
+    "opening": "Ouverture…",
+    "toastTitle": "Votre client mail s'ouvre",
+    "toastDesc": "Envoyez l'e-mail depuis là et nous vous répondrons rapidement."
   }
 }

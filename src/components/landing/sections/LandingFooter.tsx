@@ -99,7 +99,7 @@ export function LandingFooter() {
           color: "var(--lp-fg-subtle)",
         }}
       >
-        <span>&copy; 2026 Renofine AB</span>
+        <span>&copy; {new Date().getFullYear()} Renofine &middot; Stockholm</span>
         <span
           style={{
             fontFamily: '"JetBrains Mono", monospace',

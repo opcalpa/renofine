@@ -88,8 +88,8 @@
       "freeSource": "Keine Karte, kein Aufwand",
       "featuresLabel": "Integrierte Funktionen",
       "featuresSource": "Und wöchentlich mehr",
-      "coffeeLabel": "Tassen Kaffee während der Entwicklung",
-      "coffeeSource": "Ungefähre Zahl"
+      "langLabel": "Sprachen — Arbeiter erhalten Anweisungen in ihrer",
+      "langSource": "Automatisch in der App übersetzt"
     },
     "features": {
       "pill": "Funktionen",
@@ -7706,5 +7706,39 @@
     "low": "Niedrig",
     "medium": "Mittel",
     "high": "Hoch"
+  },
+  "aboutPage": {
+    "back": "Zurück",
+    "eyebrow": "Über Renofine",
+    "h1": "Gebaut von jemandem, der es satt hatte, Belegen hinterherzujagen.",
+    "intro": "Renofine ist ein schwedisches Tool für Renovierungsprojekte — mit Renaida, einer KI-Kollegin, die das Projekt aufbaut, wenn du den Auftrag beschreibst, deine Belege liest und das Budget aktuell hält. Angebote, Zeitplan, Einkauf und eine eigene Ansicht für deinen Kunden. Alles an einem Ort, in sieben Sprachen.",
+    "founderKicker": "Gründer",
+    "founderRole": "Gründer & Produktentwickler · Stockholm",
+    "story1": "Ich habe Renofine nach meiner eigenen Renovierung gestartet: Belege im Posteingang, das Budget in Excel, das Angebot als PDF und Entscheidungen in SMS-Verläufen. Die Tools der Branche waren fürs Büro gebaut — nicht für die Person, die im Staub steht.",
+    "story2": "Also habe ich gebaut, was ich selbst wollte: Beleg fotografieren und er ist verbucht, Auftrag beschreiben und das Projekt existiert, und der Kunde sieht den Baufortschritt, ohne anzurufen. Ich liefere schnell, gemeinsam mit den Handwerkern und Eigentümern, die das Tool nutzen — ihr Alltag bestimmt, was als Nächstes gebaut wird.",
+    "whereKicker": "Wo wir stehen",
+    "where1": "Renofine ist in offener Beta — während wir bauen, komplett kostenlos nutzbar. Wir sind ein junges Produkt mit hohem Tempo: jede Woche neue Funktionen, direkt geformt vom Feedback der Nutzer.",
+    "whereLink": "Was ist neu",
+    "contactKicker": "Kontakt",
+    "contactText": "Fragen, Feedback oder Zusammenarbeit? Melde dich direkt — ich antworte persönlich.",
+    "bookDemo": "15-Min-Demo buchen"
+  },
+  "contactPage": {
+    "back": "Zurück",
+    "h1": "Melde dich.",
+    "sub": "Fragen, Feedback oder Zusammenarbeit? Carl, der Gründer, antwortet — meist noch am selben Tag.",
+    "bookDemo": "15-Min-Demo buchen",
+    "formName": "Name",
+    "formNamePh": "Dein Name",
+    "formEmail": "E-Mail",
+    "formEmailPh": "deine@mail.de",
+    "formSubject": "Betreff",
+    "formSubjectPh": "Worum geht es?",
+    "formMessage": "Nachricht",
+    "formMessagePh": "Erzähl mehr…",
+    "send": "Nachricht senden",
+    "opening": "Wird geöffnet…",
+    "toastTitle": "Dein E-Mail-Programm öffnet sich",
+    "toastDesc": "Sende die E-Mail von dort und wir melden uns schnell zurück."
   }
 }

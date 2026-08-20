@@ -88,8 +88,8 @@
       "freeSource": "Sin tarjeta, sin líos",
       "featuresLabel": "Funciones integradas",
       "featuresSource": "Y más cada semana",
-      "coffeeLabel": "Tazas de café durante el desarrollo",
-      "coffeeSource": "Cifra aproximada"
+      "langLabel": "Idiomas — cada trabajador recibe las instrucciones en el suyo",
+      "langSource": "Traducido automáticamente en la app"
     },
     "features": {
       "pill": "Funciones",
@@ -7706,5 +7706,39 @@
     "low": "Baja",
     "medium": "Media",
     "high": "Alta"
+  },
+  "aboutPage": {
+    "back": "Volver",
+    "eyebrow": "Sobre Renofine",
+    "h1": "Creado por alguien que se cansó de perseguir recibos.",
+    "intro": "Renofine es una herramienta sueca para proyectos de renovación — con Renaida, una colega de IA que construye el proyecto cuando describes el trabajo, lee tus recibos y mantiene el presupuesto al día. Presupuestos, cronograma, compras y una vista propia para tu cliente. Todo en un solo lugar, en siete idiomas.",
+    "founderKicker": "Fundador",
+    "founderRole": "Fundador y creador del producto · Estocolmo",
+    "story1": "Empecé Renofine tras mi propia reforma: recibos en el correo, el presupuesto en Excel, la oferta en PDF y las decisiones por SMS. Las herramientas del sector estaban hechas para la oficina — no para quien está entre el polvo.",
+    "story2": "Así que construí lo que yo mismo quería: fotografía el recibo y queda contabilizado, describe el trabajo y el proyecto existe, y el cliente ve cómo avanza la obra sin llamar. Avanzo rápido junto a los constructores y propietarios que usan la herramienta — su día a día decide qué se construye después.",
+    "whereKicker": "Dónde estamos",
+    "where1": "Renofine está en beta abierta — gratis por completo mientras construimos. Somos un producto joven con ritmo alto: nuevas funciones cada semana, moldeadas directamente por el feedback de los usuarios.",
+    "whereLink": "Ver novedades",
+    "contactKicker": "Contacto",
+    "contactText": "¿Preguntas, comentarios o colaboración? Escríbeme directamente — respondo yo.",
+    "bookDemo": "Reservar demo de 15 min"
+  },
+  "contactPage": {
+    "back": "Volver",
+    "h1": "Escríbenos.",
+    "sub": "¿Preguntas, comentarios o colaboración? Responde Carl, el fundador — normalmente el mismo día.",
+    "bookDemo": "Reservar demo de 15 min",
+    "formName": "Nombre",
+    "formNamePh": "Tu nombre",
+    "formEmail": "Correo",
+    "formEmailPh": "tu@correo.es",
+    "formSubject": "Asunto",
+    "formSubjectPh": "¿De qué se trata?",
+    "formMessage": "Mensaje",
+    "formMessagePh": "Cuéntanos más…",
+    "send": "Enviar mensaje",
+    "opening": "Abriendo…",
+    "toastTitle": "Se abre tu cliente de correo",
+    "toastDesc": "Envía el correo desde allí y te responderemos pronto."
   }
 }

@@ -38,20 +38,12 @@ export function TestimonialSection() {
             )}
           </blockquote>
           <div className="flex items-center justify-center gap-3.5">
-            <div
-              className="flex items-center justify-center rounded-full"
-              style={{
-                width: 48,
-                height: 48,
-                background: "var(--lp-accent)",
-                color: "var(--lp-bg)",
-                fontFamily: '"Fraunces", ui-serif, Georgia, serif',
-                fontSize: 18,
-                fontWeight: 500,
-              }}
-            >
-              C
-            </div>
+            <img
+              src="/images/carl-palmquist-bw.jpg"
+              alt="Carl Palmquist"
+              className="rounded-full object-cover"
+              style={{ width: 48, height: 48, filter: "grayscale(1)" }}
+            />
             <div className="text-left">
               <div style={{ fontSize: 14, fontWeight: 500 }}>Carl Palmquist</div>
               <div style={{ fontSize: 12, color: "var(--lp-fg-muted)" }}>{t("landingV2.testimonial.role", "Grundare · Renofine")}</div>
@@ -91,20 +83,12 @@ export function TestimonialSection() {
           {t("landingV2.testimonial.quoteMobile", "\u201cJag byggde det här för att jag var trött på Excel och mejl. Välkommen — verktyget finns här.\u201d")}
         </blockquote>
         <div className="flex items-center gap-2.5">
-          <div
-            className="flex items-center justify-center rounded-full shrink-0"
-            style={{
-              width: 40,
-              height: 40,
-              background: "var(--lp-accent)",
-              color: "var(--lp-bg)",
-              fontFamily: '"Fraunces", ui-serif, Georgia, serif',
-              fontSize: 16,
-              fontWeight: 500,
-            }}
-          >
-            C
-          </div>
+          <img
+            src="/images/carl-palmquist-bw.jpg"
+            alt="Carl Palmquist"
+            className="rounded-full object-cover shrink-0"
+            style={{ width: 40, height: 40, filter: "grayscale(1)" }}
+          />
           <div>
             <div style={{ fontSize: 13, fontWeight: 500 }}>Carl Palmquist</div>
             <div style={{ fontSize: 11, color: "var(--lp-fg-muted)" }}>{t("landingV2.testimonial.role", "Grundare · Renofine")}</div>

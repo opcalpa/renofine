@@ -6084,8 +6084,8 @@
       "freeSource": "Bez karty, bez zachodu",
       "featuresLabel": "Wbudowane funkcje",
       "featuresSource": "I więcej co tydzień",
-      "coffeeLabel": "Filiżanek kawy podczas tworzenia",
-      "coffeeSource": "Wartość przybliżona"
+      "langLabel": "Języków — pracownik dostaje instrukcje w swoim",
+      "langSource": "Tłumaczone automatycznie w aplikacji"
     },
     "features": {
       "pill": "Funkcje",
@@ -7743,5 +7743,39 @@
     "deletedBoth": "Pomieszczenie i rysunek zostały usunięte",
     "deletedDrawing": "Rysunek usunięty – pomieszczenie pozostaje na liście",
     "couldNotDelete": "Nie udało się usunąć pomieszczenia"
+  },
+  "aboutPage": {
+    "back": "Wstecz",
+    "eyebrow": "O Renofine",
+    "h1": "Stworzone przez kogoś, kto miał dość ganiania za paragonami.",
+    "intro": "Renofine to szwedzkie narzędzie do projektów remontowych — z Renaidą, koleżanką AI, która buduje projekt, gdy opisujesz robotę, odczytuje paragony i utrzymuje budżet na bieżąco. Oferty, harmonogram, zakupy i osobny widok dla Twojego klienta. Wszystko w jednym miejscu, w siedmiu językach.",
+    "founderKicker": "Założyciel",
+    "founderRole": "Założyciel i twórca produktu · Sztokholm",
+    "story1": "Założyłem Renofine po własnym remoncie: paragony w mailach, budżet w Excelu, oferta w PDF, a decyzje w SMS-ach. Narzędzia branży były zbudowane dla biura — nie dla tego, kto stoi w pyle.",
+    "story2": "Zbudowałem więc to, czego sam chciałem: sfotografuj paragon i jest zaksięgowany, opisz robotę i projekt istnieje, a klient widzi postęp budowy bez dzwonienia. Rozwijam produkt szybko, razem z wykonawcami i właścicielami, którzy z niego korzystają — ich codzienność decyduje, co powstanie dalej.",
+    "whereKicker": "Gdzie jesteśmy",
+    "where1": "Renofine jest w otwartej becie — w pełni za darmo, póki budujemy. Jesteśmy młodym produktem o wysokim tempie: nowe funkcje co tydzień, kształtowane bezpośrednio przez opinie użytkowników.",
+    "whereLink": "Zobacz nowości",
+    "contactKicker": "Kontakt",
+    "contactText": "Pytania, opinie lub współpraca? Napisz bezpośrednio — odpowiadam osobiście.",
+    "bookDemo": "Zarezerwuj 15-min demo"
+  },
+  "contactPage": {
+    "back": "Wstecz",
+    "h1": "Odezwij się.",
+    "sub": "Pytania, opinie lub współpraca? Odpowiada Carl, założyciel — zwykle tego samego dnia.",
+    "bookDemo": "Zarezerwuj 15-min demo",
+    "formName": "Imię i nazwisko",
+    "formNamePh": "Twoje imię",
+    "formEmail": "E-mail",
+    "formEmailPh": "twoj@email.pl",
+    "formSubject": "Temat",
+    "formSubjectPh": "Czego dotyczy?",
+    "formMessage": "Wiadomość",
+    "formMessagePh": "Opowiedz więcej…",
+    "send": "Wyślij wiadomość",
+    "opening": "Otwieranie…",
+    "toastTitle": "Otwiera się Twój program pocztowy",
+    "toastDesc": "Wyślij stamtąd e-mail, a szybko odpowiemy."
   }
 }
