@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import type {
+  PDFDocumentProxy,
+  PDFDocumentLoadingTask,
+  RenderTask,
+} from "pdfjs-dist";
 
 /**
  * PDF preview rendered to canvas via pdfjs (lazy-loaded chunk). Replaces the
@@ -10,7 +15,6 @@ import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
  */
 
 type PdfjsModule = typeof import("pdfjs-dist");
-type PdfDocument = Awaited<ReturnType<ReturnType<PdfjsModule["getDocument"]>["promise"]["then"]>>;
 
 let pdfjsPromise: Promise<PdfjsModule> | null = null;
 async function loadPdfjs(): Promise<PdfjsModule> {
@@ -36,8 +40,12 @@ export function PdfCanvasPreview({ url, zoom, fileName }: PdfCanvasPreviewProps)
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const docRef = useRef<PdfDocument | null>(null);
-  const renderTaskRef = useRef<{ cancel: () => void } | null>(null);
+  const docRef = useRef<PDFDocumentProxy | null>(null);
+  // The loading task owns teardown in pdfjs v6 — the resolved document proxy
+  // has no destroy(), only cleanup(). Destroying the task aborts the request
+  // AND tears down the document + worker port.
+  const taskRef = useRef<PDFDocumentLoadingTask | null>(null);
+  const renderTaskRef = useRef<RenderTask | null>(null);
   const [numPages, setNumPages] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -67,8 +75,10 @@ export function PdfCanvasPreview({ url, zoom, fileName }: PdfCanvasPreviewProps)
     (async () => {
       try {
         const pdfjs = await loadPdfjs();
-        const doc = await pdfjs.getDocument({ url }).promise;
-        if (cancelled) { doc.destroy(); return; }
+        const task = pdfjs.getDocument({ url });
+        taskRef.current = task;
+        const doc = await task.promise;
+        if (cancelled) { void task.destroy(); return; }
         docRef.current = doc;
         setNumPages(doc.numPages);
       } catch {
@@ -77,7 +87,9 @@ export function PdfCanvasPreview({ url, zoom, fileName }: PdfCanvasPreviewProps)
     })();
     return () => {
       cancelled = true;
-      docRef.current?.destroy();
+      // destroy() lives on the loading task, not the document proxy.
+      void taskRef.current?.destroy();
+      taskRef.current = null;
       docRef.current = null;
     };
   }, [url]);
