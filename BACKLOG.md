@@ -2728,7 +2728,7 @@ vision 2026-08-18: handritad ELLER CAD-utskrift, användaren förfinar sen.
 
 ---
 id: renaida-demo-plan-walls-doors
-status: todo
+status: done
 priority: P2
 tags: [renaida, spaceplanner, demo]
 created: 2026-08-18
