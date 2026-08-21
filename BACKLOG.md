@@ -2744,3 +2744,52 @@ tjocklekar via v2-presets) + placera dörrar rimligt mellan angränsande rum
 demos får riktig planritning. Perfekt första övning: facit finns (polygonerna),
 resultatet inspekterbart i plannern. Bygger musklerna för SP3 (layout-syntes
 från rumslista utan geometri — har-inget-personan; eget kort när SP1+SP2 satt sig).
+
+---
+id: calendar-mobile-horizons
+status: todo
+priority: P3
+tags: [mobile, calendar, tasks]
+created: 2026-08-21
+---
+## Kalender mobil: växla horisont månad / vecka / 3 dagar
+Carls screenshot 2026-08-21: månadsvyn funkar på mobil men han vill kunna
+smalna av horisonten till 1 vecka och 3 dagar (fältläge: "vad händer nu?").
+TasksCalendarView är månads-only idag. Bygg: segmentkontroll Månad|Vecka|3 dgr
+(persisterad per projekt som kanban/tabell-valet), vecko-/3-dagarsvyn får
+större ytor per dag → tasks som rader m. tid, inte bara staplar. Mobil-first
+men gör den även på desktop (samma komponent).
+
+---
+id: file-preview-fit-to-screen
+status: todo
+priority: P2
+tags: [mobile, files, ux]
+created: 2026-08-21
+---
+## Filförhandsvisning: auto-anpassa PDF/bild till skärmen, zooma därifrån
+Carls screenshot 2026-08-21: öppnad planritnings-PDF på mobil visar ett
+inzoomat HÖRN (viewporten beskär) — man måste panorera för att förstå vad man
+tittar på. Rätt beteende: initial vy = HELA dokumentet anpassat till skärmytan
+(fit-to-screen), sedan nyp-zoom/panorera därifrån. Gäller FilePreviewDialog
+(PDF + bilder). BONUSFIXAT INLINE 2026-08-21: `t("files.scrollToPan")` läckte
+rå nyckel i botten-baren (nyckeln fanns bara under floormap./elevation., anrop
+utan fallback) → `files.scrollToPan` tillagd i 7 locales. Kvar: själva
+fit-beräkningen + pinch-zoom-verifiering på mobil.
+
+---
+id: files-demo-realism-mobile-ui
+status: todo
+priority: P3
+tags: [demo, files, mobile, ux]
+created: 2026-08-21
+---
+## Filer: riktiga exempel-filer i demot + snyggare mobil filbiblioteks-UI
+Carls screenshot 2026-08-21: demots Filer-flik visar timestamp-filnamn
+("1771330372874-Furusund…", "1773321377834.jpeg") och tekniska mappar
+("comment-images") — undersäljer (samma mönster som tomma offerten/osynliga
+PO:erna: demot ska visa BÄSTA läget). Bygg: (a) seed:a demot m. typiska,
+välnamnade filer (Planritning.pdf, Offert Badrum.pdf, Före-foton osv) via
+seed_demo_content (single-source), döp om/göm tekniska mappar; (b) mobil-UI:
+tabellen är desktop-formad — kort-läge på mobil (ikon+namn+meta, utan
+kolumnlinjer). (b) kan skivas separat.

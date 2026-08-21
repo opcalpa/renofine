@@ -2541,7 +2541,8 @@
     "invoiceAmount": "Belopp",
     "downloadError": "Nedladdningsfel",
     "error": "Fel",
-    "noPreviewAvailable": "Förhandsgranskning ej tillgänglig för denna filtyp"
+    "noPreviewAvailable": "Förhandsgranskning ej tillgänglig för denna filtyp",
+    "scrollToPan": "Scrolla för att panorera, nyp eller Ctrl+scroll för att zooma"
   },
   "fileStats": {
     "quote": "Offerter",

@@ -1414,7 +1414,8 @@
     "invoiceAmount": "Importe",
     "downloadError": "Error de descarga",
     "error": "Error",
-    "noPreviewAvailable": "Vista previa no disponible para este tipo de archivo"
+    "noPreviewAvailable": "Vista previa no disponible para este tipo de archivo",
+    "scrollToPan": "Desplaza para mover, pellizca o Ctrl+rueda para hacer zoom"
   },
   "floormap": {
     "addText": "Agregar texto",

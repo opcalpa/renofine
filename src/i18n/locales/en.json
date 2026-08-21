@@ -3152,7 +3152,8 @@
     "invoiceAmount": "Amount",
     "downloadError": "Download error",
     "error": "Error",
-    "noPreviewAvailable": "Preview not available for this file type"
+    "noPreviewAvailable": "Preview not available for this file type",
+    "scrollToPan": "Scroll to pan, pinch or Ctrl+scroll to zoom"
   },
   "fileStats": {
     "quote": "Quotes",

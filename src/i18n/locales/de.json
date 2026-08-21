@@ -1414,7 +1414,8 @@
     "invoiceAmount": "Betrag",
     "downloadError": "Download-Fehler",
     "error": "Fehler",
-    "noPreviewAvailable": "Für diesen Dateityp ist keine Vorschau verfügbar"
+    "noPreviewAvailable": "Für diesen Dateityp ist keine Vorschau verfügbar",
+    "scrollToPan": "Scrollen zum Verschieben, Kneifen oder Strg+Scrollen zum Zoomen"
   },
   "floormap": {
     "addText": "Text hinzufügen",

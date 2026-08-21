@@ -2144,7 +2144,8 @@
     "noTask": "Brak zadania",
     "selectRoomOrTask": "Wybierz co najmniej jedno pomieszczenie lub zadanie, aby połączyć z nim plik.",
     "deleteFileConfirmation": "Czy na pewno chcesz usunąć „{{name}}”? Tej operacji nie można cofnąć.",
-    "category": "Kategoria pliku"
+    "category": "Kategoria pliku",
+    "scrollToPan": "Przewijaj, aby przesuwać; uszczypnij lub Ctrl+przewijanie, aby powiększyć"
   },
   "purchases": {
     "title": "Zamówienia zakupowe",

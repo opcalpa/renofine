@@ -1414,7 +1414,8 @@
     "invoiceAmount": "Montant",
     "downloadError": "Erreur de téléchargement",
     "error": "Erreur",
-    "noPreviewAvailable": "Aperçu non disponible pour ce type de fichier"
+    "noPreviewAvailable": "Aperçu non disponible pour ce type de fichier",
+    "scrollToPan": "Faites défiler pour déplacer, pincez ou Ctrl+molette pour zoomer"
   },
   "floormap": {
     "addText": "Ajouter du texte",
