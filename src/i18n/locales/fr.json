@@ -1852,12 +1852,23 @@
       "progress": "Travail réalisé",
       "inspiration": "Matériau souhaité",
       "scope": "Description des travaux",
-      "document": "Reçu/facture/devis"
+      "document": "Reçu/facture/devis",
+      "floorplan": "Plan d'étage"
     },
     "photoSaved": {
       "progress": "Enregistré comme photo d’avancement dans Photos ✓",
       "inspiration": "Enregistré comme inspiration dans Photos ✓",
       "error": "Impossible d’enregistrer la photo — réessayez."
+    },
+    "floorplan": {
+      "unreadable": "Je n'ai pas pu interpréter le dessin — essayez une photo plus nette prise à la verticale, idéalement avec tout le plan dans le cadre.",
+      "propose": "Je vois {{rooms}} pièces et {{walls}} murs dans le dessin. Dois-je le tracer comme esquisse dans Espace ? Vous pourrez ajuster murs et mesures ensuite.",
+      "confirm": "Tracer",
+      "cancel": "Passer",
+      "cancelled": "D'accord — je ne trace rien. La photo reste là si vous changez d'avis.",
+      "planName": "Esquisse – {{file}}",
+      "done": "C'est fait — l'esquisse est dans [Espace](open:/projects/{{projectId}}?tab=spaceplanner&subtab=floorplan). Ajustez-y murs et mesures quand vous voulez.",
+      "error": "Impossible de tracer l'esquisse — réessayez dans un instant, ou dessinez-la directement dans Espace."
     }
   },
   "hotspots": {

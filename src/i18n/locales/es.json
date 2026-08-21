@@ -1852,12 +1852,23 @@
       "progress": "Trabajo realizado",
       "inspiration": "Material deseado",
       "scope": "Descripción del trabajo",
-      "document": "Recibo/factura/presupuesto"
+      "document": "Recibo/factura/presupuesto",
+      "floorplan": "Plano"
     },
     "photoSaved": {
       "progress": "Guardado como foto de progreso en Fotos ✓",
       "inspiration": "Guardado como inspiración en Fotos ✓",
       "error": "No se pudo guardar la foto — inténtalo de nuevo."
+    },
+    "floorplan": {
+      "unreadable": "No pude interpretar el plano — prueba con una foto más nítida desde arriba, idealmente con todo el plano en la imagen.",
+      "propose": "Veo {{rooms}} habitaciones y {{walls}} paredes en el plano. ¿Lo dibujo como boceto en Espacio? Puedes ajustar paredes y medidas después.",
+      "confirm": "Dibujarlo",
+      "cancel": "Omitir",
+      "cancelled": "Vale — no dibujo nada. La foto sigue aquí si cambias de opinión.",
+      "planName": "Boceto – {{file}}",
+      "done": "Listo — el boceto está en [Espacio](open:/projects/{{projectId}}?tab=spaceplanner&subtab=floorplan). Ajusta paredes y medidas allí cuando quieras.",
+      "error": "No se pudo dibujar el boceto — inténtalo de nuevo en un momento o dibújalo directamente en Espacio."
     }
   },
   "hotspots": {

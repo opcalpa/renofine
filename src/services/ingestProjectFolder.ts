@@ -24,7 +24,7 @@ import { parseProjectDescription } from './renaidaProjectIntake';
 import { captureDocument, extractQuoteLines } from './agent/documentCapture';
 import type { ImportPurchaseAction } from './agent/importPurchaseOrder';
 import { classifyDocument } from './smartUploadService';
-import { analyzeFloorPlan, type AIConversionResult } from './aiVisionService';
+import { analyzeFloorPlanFile, type AIConversionResult } from './aiVisionService';
 import {
   mergeParseIntoDraft,
   mergeQuoteLinesIntoDraft,
@@ -37,13 +37,6 @@ import {
 const MAX_FILES = 40;
 /** How many files extract/classify/parse in parallel (rate-limit friendly). */
 const CONCURRENCY = 5;
-/**
- * Rough-sketch scale assumption (Fas D): with no calibration line at drop time
- * we assume the plan's longest image side spans ~10 m. Honest for a GROVSKISS —
- * the editor's calibration tools refine it afterwards.
- */
-const DEFAULT_SKETCH_SPAN_MM = 10000;
-
 const isImage = (f: File) =>
   (f.type || '').startsWith('image/') || /\.(jpe?g|png|heic|heif|webp|gif|bmp|tiff?)$/i.test(f.name);
 const isPdf = (f: File) =>
@@ -133,18 +126,9 @@ type Contribution =
  */
 async function processFloorPlanImage(file: File): Promise<Contribution> {
   try {
-    let width: number | undefined;
-    let height: number | undefined;
-    try {
-      const bmp = await createImageBitmap(file);
-      width = bmp.width;
-      height = bmp.height;
-      bmp.close();
-    } catch {
-      /* dims stay undefined — the edge fn copes */
-    }
-    const ratio = width && height ? DEFAULT_SKETCH_SPAN_MM / Math.max(width, height) : 10;
-    const result = await analyzeFloorPlan(file, ratio, width, height);
+    // Shared dims/ratio/analysis helper — single source with the live-panel
+    // floor-plan capture (SP1) in aiVisionService.
+    const result = await analyzeFloorPlanFile(file);
     const roomNames = (result.rooms ?? [])
       .map((r) => (r.name ?? '').trim())
       .filter((n) => n && !/^room$/i.test(n));

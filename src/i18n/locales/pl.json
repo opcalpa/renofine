@@ -3666,12 +3666,23 @@
       "progress": "Wykonana praca",
       "inspiration": "Pożądany materiał",
       "scope": "Opis zlecenia",
-      "document": "Paragon/faktura/oferta"
+      "document": "Paragon/faktura/oferta",
+      "floorplan": "Rzut mieszkania"
     },
     "photoSaved": {
       "progress": "Zapisano jako zdjęcie postępu w Zdjęciach ✓",
       "inspiration": "Zapisano jako inspiracja w Zdjęciach ✓",
       "error": "Nie udało się zapisać zdjęcia — spróbuj ponownie."
+    },
+    "floorplan": {
+      "unreadable": "Nie udało się odczytać rysunku — spróbuj ostrzejszego zdjęcia prosto z góry, najlepiej z całym planem w kadrze.",
+      "propose": "Widzę {{rooms}} pomieszczeń i {{walls}} ścian na rysunku. Narysować go jako szkic w Przestrzeni? Ściany i wymiary możesz poprawić później.",
+      "confirm": "Narysuj",
+      "cancel": "Pomiń",
+      "cancelled": "Dobrze — nic nie rysuję. Zdjęcie zostaje, gdybyś zmienił zdanie.",
+      "planName": "Szkic – {{file}}",
+      "done": "Gotowe — szkic jest w [Przestrzeni](open:/projects/{{projectId}}?tab=spaceplanner&subtab=floorplan). Popraw tam ściany i wymiary, kiedy chcesz.",
+      "error": "Nie udało się narysować szkicu — spróbuj za chwilę lub narysuj go bezpośrednio w Przestrzeni."
     }
   },
   "feedback": {

@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from "uuid";
 import { FloorMapShape } from "@/components/floormap/types";
 import { supabase } from "@/lib/supabaseClient";
 import { postProcessWalls } from "@/services/wallPostProcess";
+import { worldPerMm } from "@/components/floormap/editor/core/units";
 
 export interface AIConversionResult {
   walls: Array<{
@@ -79,7 +80,10 @@ async function callVisionAPI(
 }
 
 /**
- * Convert AI result to FloorMapShape objects
+ * Convert AI result to FloorMapShape objects.
+ * `ratio` scales the result's coordinate space into persisted world units
+ * (callers pass worldPerMm() for mm-space results). Real-mm fields
+ * (thicknessMM/heightMM) are NOT scaled.
  */
 function convertToFloorMapShapes(
   aiResult: AIConversionResult,
@@ -87,6 +91,7 @@ function convertToFloorMapShapes(
   planId: string
 ): FloorMapShape[] {
   const shapes: FloorMapShape[] = [];
+  const r = (v: number) => v * ratio;
 
   // Walls
   aiResult.walls?.forEach((wall) => {
@@ -94,7 +99,7 @@ function convertToFloorMapShapes(
       id: uuidv4(),
       planId,
       type: 'wall',
-      coordinates: { x1: wall.x1, y1: wall.y1, x2: wall.x2, y2: wall.y2 },
+      coordinates: { x1: r(wall.x1), y1: r(wall.y1), x2: r(wall.x2), y2: r(wall.y2) },
       thicknessMM: wall.thickness || 150,
       heightMM: 2400,
       strokeColor: '#2d3748',
@@ -111,8 +116,8 @@ function convertToFloorMapShapes(
       type: 'freehand',
       coordinates: {
         points: [
-          { x: door.x, y: door.y },
-          { x: door.x + 1, y: door.y + 1 },
+          { x: r(door.x), y: r(door.y) },
+          { x: r(door.x) + 1, y: r(door.y) + 1 },
         ],
       },
       strokeColor: '#000000',
@@ -122,8 +127,8 @@ function convertToFloorMapShapes(
       metadata: {
         isLibrarySymbol: true,
         symbolType,
-        placementX: door.x,
-        placementY: door.y,
+        placementX: r(door.x),
+        placementY: r(door.y),
         scale: 1,
         rotation: rotation,
       },
@@ -138,8 +143,8 @@ function convertToFloorMapShapes(
       type: 'freehand',
       coordinates: {
         points: [
-          { x: fixture.x, y: fixture.y },
-          { x: fixture.x + 1, y: fixture.y + 1 },
+          { x: r(fixture.x), y: r(fixture.y) },
+          { x: r(fixture.x) + 1, y: r(fixture.y) + 1 },
         ],
       },
       strokeColor: '#000000',
@@ -149,8 +154,8 @@ function convertToFloorMapShapes(
       metadata: {
         isLibrarySymbol: true,
         symbolType: fixture.symbolType,
-        placementX: fixture.x,
-        placementY: fixture.y,
+        placementX: r(fixture.x),
+        placementY: r(fixture.y),
         scale: 1,
         rotation: fixture.rotation || 0,
       },
@@ -168,7 +173,7 @@ function convertToFloorMapShapes(
       id: uuidv4(),
       planId,
       type: 'room',
-      coordinates: { points: room.points },
+      coordinates: { points: room.points.map((p) => ({ x: r(p.x), y: r(p.y) })) },
       name: room.name || 'Unnamed Room',
       color: 'rgba(59, 130, 246, 0.2)',
       fillOpacity: 0.1,
@@ -208,10 +213,38 @@ export async function analyzeFloorPlan(
   return aiResult;
 }
 
-/** Turn an analyzed (mm-space) result into placeable floor-map shapes. */
+/**
+ * Analyze a floor-plan IMAGE file end-to-end: measure its pixel dimensions,
+ * derive the px→mm ratio (longest side spans DEFAULT span), run the vision
+ * analysis. Single source for Renaida's folder ingest AND the live-panel
+ * floor-plan capture (SP1).
+ */
+export const DEFAULT_SKETCH_SPAN_MM = 10000;
+
+export async function analyzeFloorPlanFile(file: File): Promise<AIConversionResult> {
+  let width: number | undefined;
+  let height: number | undefined;
+  try {
+    const bmp = await createImageBitmap(file);
+    width = bmp.width;
+    height = bmp.height;
+    bmp.close();
+  } catch {
+    /* dims stay undefined — the edge fn copes */
+  }
+  const ratio = width && height ? DEFAULT_SKETCH_SPAN_MM / Math.max(width, height) : 10;
+  return analyzeFloorPlan(file, ratio, width, height);
+}
+
+/**
+ * Turn an analyzed (mm-space) result into placeable floor-map shapes.
+ * Persisted shapes are in WORLD UNITS (1 unit = 1/pixelsPerMm mm — see
+ * editor/core/units.ts), so mm coordinates are scaled by pixelsPerMm here.
+ * thicknessMM/heightMM stay in real mm (semantic mm fields).
+ */
 export function floorPlanResultToShapes(
   aiResult: AIConversionResult,
   planId: string
 ): FloorMapShape[] {
-  return convertToFloorMapShapes(aiResult, 1, planId);
+  return convertToFloorMapShapes(aiResult, worldPerMm(), planId);
 }

@@ -4486,12 +4486,23 @@
       "progress": "Utfört arbete",
       "inspiration": "Önskat material",
       "scope": "Uppdragsbeskrivning",
-      "document": "Kvitto/faktura/offert"
+      "document": "Kvitto/faktura/offert",
+      "floorplan": "Planritning"
     },
     "photoSaved": {
       "progress": "Sparat som förloppsfoto i Bilder ✓",
       "inspiration": "Sparat som inspiration i Bilder ✓",
       "error": "Kunde inte spara bilden — prova igen."
+    },
+    "floorplan": {
+      "unreadable": "Jag kunde inte tolka ritningen — prova ett skarpare foto rakt ovanifrån, gärna med hela planen i bild.",
+      "propose": "Jag ser {{rooms}} rum och {{walls}} väggar i ritningen. Ska jag rita in den som en grovskiss i Yta? Du kan justera väggar och mått efteråt.",
+      "confirm": "Rita in den",
+      "cancel": "Hoppa över",
+      "cancelled": "Okej — jag ritar inget. Fotot finns kvar om du ändrar dig.",
+      "planName": "Grovskiss – {{file}}",
+      "done": "Klart — grovskissen ligger i [Yta](open:/projects/{{projectId}}?tab=spaceplanner&subtab=floorplan). Justera väggar och mått där när du vill.",
+      "error": "Det gick inte att rita in skissen — prova igen om en stund, eller rita den direkt i Yta."
     }
   },
   "feedback": {

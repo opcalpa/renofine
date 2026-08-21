@@ -1852,12 +1852,23 @@
       "progress": "Ausgeführte Arbeit",
       "inspiration": "Gewünschtes Material",
       "scope": "Auftragsbeschreibung",
-      "document": "Beleg/Rechnung/Angebot"
+      "document": "Beleg/Rechnung/Angebot",
+      "floorplan": "Grundriss"
     },
     "photoSaved": {
       "progress": "Als Fortschrittsfoto in Fotos gespeichert ✓",
       "inspiration": "Als Inspiration in Fotos gespeichert ✓",
       "error": "Foto konnte nicht gespeichert werden — bitte erneut versuchen."
+    },
+    "floorplan": {
+      "unreadable": "Ich konnte die Zeichnung nicht deuten — versuche ein schärferes Foto direkt von oben, am besten mit dem ganzen Plan im Bild.",
+      "propose": "Ich sehe {{rooms}} Räume und {{walls}} Wände in der Zeichnung. Soll ich sie als grobe Skizze in Fläche einzeichnen? Wände und Maße kannst du danach anpassen.",
+      "confirm": "Einzeichnen",
+      "cancel": "Überspringen",
+      "cancelled": "Okay — ich zeichne nichts. Das Foto bleibt, falls du es dir anders überlegst.",
+      "planName": "Grobskizze – {{file}}",
+      "done": "Fertig — die Grobskizze liegt in [Fläche](open:/projects/{{projectId}}?tab=spaceplanner&subtab=floorplan). Passe Wände und Maße dort an, wann du willst.",
+      "error": "Die Skizze konnte nicht eingezeichnet werden — versuche es gleich noch einmal oder zeichne sie direkt in Fläche."
     }
   },
   "hotspots": {

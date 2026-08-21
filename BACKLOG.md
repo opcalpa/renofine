@@ -2709,7 +2709,7 @@ Kräver edge-fn-ändring + deploy → gör med Carl närvarande (ej autonomt i f
 
 ---
 id: renaida-floorplan-live-capture
-status: todo
+status: done
 priority: P2
 tags: [renaida, floorplanner, spaceplanner]
 created: 2026-08-18

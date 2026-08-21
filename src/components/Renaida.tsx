@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, type ReactNode } from "react";
-import { Send, X, Lightbulb, BookOpen, Wrench, FileText, ArrowLeft, Mic, Sparkles, ChevronDown, MessageCircle, Square, Loader2, Paperclip, Camera, Clock, StickyNote, ListChecks, ShoppingCart, MoreHorizontal } from "lucide-react";
+import { Send, X, Lightbulb, BookOpen, Wrench, FileText, ArrowLeft, Mic, Sparkles, ChevronDown, MessageCircle, Square, Loader2, Paperclip, Camera, Clock, StickyNote, ListChecks, ShoppingCart, MoreHorizontal, Map as MapIcon } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useVoiceRecorder, isRecorderSupported } from "@/hooks/useVoiceRecorder";
@@ -13,6 +13,8 @@ import { RenaidaAvatar, gazeFromPointer, type RenaidaState, type RenaidaLook } f
 import { routeAgentInput } from "@/services/agent/routeClient";
 import { captureDocument } from "@/services/agent/documentCapture";
 import { uploadRenaidaPhoto, type RenaidaPhotoKind } from "@/services/agent/uploadRenaidaPhoto";
+import { analyzeFloorPlanFile, floorPlanResultToShapes, type AIConversionResult } from "@/services/aiVisionService";
+import { createPlanInDB, saveShapesForPlan } from "@/components/floormap/utils/plans";
 import { useCurrentProfileId } from "@/hooks/useCurrentProfileId";
 import { applyProposals, undoProposals, fetchLatestUndoable } from "@/services/agent/applyProposals";
 import { type AgentIntentHint, type AgentProposal, type UndoOp, TASK_MATCH_MIN_CONFIDENCE, isActionable } from "@/services/agent/types";
@@ -317,6 +319,8 @@ export function Renaida() {
   const [purposeStep, setPurposeStep] = useState(false);
   // A captured scene photo (not a document) awaiting the user's "what is this?" pick.
   const [pendingPhoto, setPendingPhoto] = useState<{ file: File; projectId: string } | null>(null);
+  // SP1: an analyzed floor-plan photo awaiting the user's "draw it" confirmation.
+  const [pendingFloorPlan, setPendingFloorPlan] = useState<{ result: AIConversionResult; projectId: string; fileName: string } | null>(null);
   const profileId = useCurrentProfileId();
   // Closing the panel disarms any un-consumed quick-action chip.
   useEffect(() => {
@@ -1118,6 +1122,7 @@ export function Renaida() {
               { labelKey: "helpBot.photoKind.inspiration", fallback: "Önskat material", action: "photo_inspiration", icon: <Sparkles className="h-3 w-3" /> },
               { labelKey: "helpBot.photoKind.scope", fallback: "Uppdragsbeskrivning", action: "photo_scope", icon: <FileText className="h-3 w-3" /> },
               { labelKey: "helpBot.photoKind.document", fallback: "Kvitto/faktura/offert", action: "photo_document", icon: <Camera className="h-3 w-3" /> },
+              { labelKey: "helpBot.photoKind.floorplan", fallback: "Planritning", action: "photo_floorplan", icon: <MapIcon className="h-3 w-3" /> },
             ],
           }]);
         }
@@ -1179,6 +1184,39 @@ export function Renaida() {
       return;
     }
 
+    // SP1: floor plan → analyze geometry, then propose drawing it in Space
+    // Planner. Confirm-first — nothing is created until the user says draw.
+    if (action === "photo_floorplan") {
+      setCapturing(true);
+      flashRenaida("think", 2600);
+      const analyzed = await analyzeFloorPlanFile(pending.file).catch(() => null);
+      setCapturing(false);
+      const roomCount = analyzed?.rooms?.length ?? 0;
+      const wallCount = analyzed?.walls?.length ?? 0;
+      if (!analyzed || (roomCount === 0 && wallCount === 0)) {
+        setMessages((prev) => [...prev, {
+          role: "assistant",
+          content: t("helpBot.floorplan.unreadable", "Jag kunde inte tolka ritningen — prova ett skarpare foto rakt ovanifrån, gärna med hela planen i bild."),
+        }]);
+        return;
+      }
+      setPendingFloorPlan({ result: analyzed, projectId: pending.projectId, fileName: pending.file.name });
+      setMessages((prev) => [...prev, {
+        role: "assistant",
+        content: t("helpBot.floorplan.propose", {
+          defaultValue: "Jag ser {{rooms}} rum och {{walls}} väggar i ritningen. Ska jag rita in den som en grovskiss i Yta? Du kan justera väggar och mått efteråt.",
+          rooms: roomCount,
+          walls: wallCount,
+        }),
+        actions: [
+          { labelKey: "helpBot.floorplan.confirm", fallback: "Rita in den", action: "floorplan_confirm", icon: <MapIcon className="h-3 w-3" /> },
+          { labelKey: "helpBot.floorplan.cancel", fallback: "Hoppa över", action: "floorplan_cancel" },
+        ],
+      }]);
+      flashRenaida("talk", 1400);
+      return;
+    }
+
     // Progress / inspiration → attach the photo to the project's gallery.
     const kind: RenaidaPhotoKind = action === "photo_inspiration" ? "inspiration" : "progress";
     if (!profileId) {
@@ -1197,6 +1235,55 @@ export function Renaida() {
     }]);
     flashRenaida("happy", 1400);
   }, [pendingPhoto, profileId, handleDocumentSelected, t, flashRenaida, setMessages]);
+
+  // SP1: resolve the "draw it in Space Planner?" proposal for an analyzed
+  // floor-plan photo. Confirm → plan + shapes via the exact same helpers as
+  // the project-birth ingest (createPlanInDB + floorPlanResultToShapes +
+  // saveShapesForPlan — single source).
+  const handleFloorPlanDecision = useCallback(async (action: string) => {
+    const pending = pendingFloorPlan;
+    if (!pending) return;
+    setPendingFloorPlan(null);
+    // Retire the proposal buttons so they can't be re-clicked.
+    setMessages((prev) => prev.map((m) =>
+      m.actions?.some((a) => a.action.startsWith("floorplan_")) ? { ...m, actions: undefined } : m));
+
+    if (action === "floorplan_cancel") {
+      setMessages((prev) => [...prev, {
+        role: "assistant",
+        content: t("helpBot.floorplan.cancelled", "Okej — jag ritar inget. Fotot finns kvar om du ändrar dig."),
+      }]);
+      return;
+    }
+
+    setCapturing(true);
+    flashRenaida("think", 2000);
+    try {
+      const plan = await createPlanInDB(
+        pending.projectId,
+        t("helpBot.floorplan.planName", "Grovskiss – {{file}}", { file: pending.fileName }),
+      );
+      if (!plan) throw new Error("plan");
+      const shapes = floorPlanResultToShapes(pending.result, plan.id);
+      if (!shapes.length || !(await saveShapesForPlan(plan.id, shapes))) throw new Error("shapes");
+      analytics.capture(AnalyticsEvents.RENAIDA_APPLIED, { kind: "floorplan_sketch", count: shapes.length });
+      setMessages((prev) => [...prev, {
+        role: "assistant",
+        content: t("helpBot.floorplan.done", {
+          defaultValue: "Klart — grovskissen ligger i [Yta](open:/projects/{{projectId}}?tab=spaceplanner&subtab=floorplan). Justera väggar och mått där när du vill.",
+          projectId: pending.projectId,
+        }),
+      }]);
+      flashRenaida("happy", 2000);
+    } catch {
+      setMessages((prev) => [...prev, {
+        role: "assistant",
+        content: t("helpBot.floorplan.error", "Det gick inte att rita in skissen — prova igen om en stund, eller rita den direkt i Yta."),
+      }]);
+    } finally {
+      setCapturing(false);
+    }
+  }, [pendingFloorPlan, t, flashRenaida, setMessages]);
 
   // PWA share-target handover: files stashed by /capture are consumed the
   // moment the panel is open — the exact same D1 flow as the paperclip button.
@@ -1325,6 +1412,8 @@ export function Renaida() {
   const handleInlineAction = useCallback((action: string) => {
     if (action.startsWith("photo_")) {
       void handlePhotoPurpose(action);
+    } else if (action.startsWith("floorplan_")) {
+      void handleFloorPlanDecision(action);
     } else if (action === "set_autonomy_suggest") {
       setAutonomyChoice("suggest", "intro");
     } else if (action === "set_autonomy_autopilot") {
@@ -1389,7 +1478,7 @@ export function Renaida() {
       navigate(action.replace("open:", ""));
       setOpen(false);
     }
-  }, [startFeedbackMode, t, buildGreeting, setAutonomyChoice, navigate, handlePhotoPurpose]);
+  }, [startFeedbackMode, t, buildGreeting, setAutonomyChoice, navigate, handlePhotoPurpose, handleFloorPlanDecision]);
 
   const handleDismissReminder = useCallback((reminderId: string) => {
     // Dispatch event to OverviewTab to dismiss the reminder

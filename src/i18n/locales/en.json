@@ -4487,12 +4487,23 @@
       "progress": "Completed work",
       "inspiration": "Desired material",
       "scope": "Job description",
-      "document": "Receipt/invoice/quote"
+      "document": "Receipt/invoice/quote",
+      "floorplan": "Floor plan"
     },
     "photoSaved": {
       "progress": "Saved as a progress photo in Photos ✓",
       "inspiration": "Saved as inspiration in Photos ✓",
       "error": "Couldn’t save the photo — try again."
+    },
+    "floorplan": {
+      "unreadable": "I couldn't interpret the drawing — try a sharper photo straight from above, ideally with the whole plan in frame.",
+      "propose": "I can see {{rooms}} rooms and {{walls}} walls in the drawing. Should I draw it as a rough sketch in Space? You can adjust walls and measurements afterwards.",
+      "confirm": "Draw it",
+      "cancel": "Skip",
+      "cancelled": "Okay — I won't draw anything. The photo is still here if you change your mind.",
+      "planName": "Rough sketch – {{file}}",
+      "done": "Done — the rough sketch is in [Space](open:/projects/{{projectId}}?tab=spaceplanner&subtab=floorplan). Adjust walls and measurements there whenever you like.",
+      "error": "Couldn't draw the sketch — try again in a moment, or draw it directly in Space."
     }
   },
   "feedback": {
