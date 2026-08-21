@@ -1,3 +1,4 @@
+import { Suspense, lazy, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,8 +16,14 @@ import {
   ZoomOut,
   RotateCw,
   X,
+  Loader2,
 } from "lucide-react";
 import type { ProjectFile } from "./types";
+
+// pdfjs rides in its own lazy chunk — only loads when a PDF is previewed.
+const PdfCanvasPreview = lazy(() =>
+  import("./PdfCanvasPreview").then((m) => ({ default: m.PdfCanvasPreview }))
+);
 
 interface FilePreviewDialogProps {
   previewFile: ProjectFile | null;
@@ -56,6 +63,50 @@ export function FilePreviewDialog({
   formatFileSize,
 }: FilePreviewDialogProps) {
   const { t } = useTranslation();
+  const isPdf = !!previewFile?.type?.includes("pdf");
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  // Pinch-to-zoom (mobile): two-finger distance drives the shared zoom state.
+  // Non-passive listener so preventDefault stops the browser's page zoom.
+  const zoomRef = useRef(imageZoom);
+  zoomRef.current = imageZoom;
+  const setZoomRef = useRef(setImageZoom);
+  setZoomRef.current = setImageZoom;
+  useEffect(() => {
+    const el = contentRef.current;
+    if (!el) return;
+    let startDist = 0;
+    let startZoom = 100;
+    const dist = (e: TouchEvent) =>
+      Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY,
+      );
+    const onStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        startDist = dist(e);
+        startZoom = zoomRef.current;
+      }
+    };
+    const onMove = (e: TouchEvent) => {
+      if (e.touches.length === 2 && startDist > 0) {
+        e.preventDefault();
+        const next = Math.round(
+          Math.min(400, Math.max(25, (startZoom * dist(e)) / startDist)),
+        );
+        setZoomRef.current(next);
+      }
+    };
+    const onEnd = () => { startDist = 0; };
+    el.addEventListener("touchstart", onStart, { passive: true });
+    el.addEventListener("touchmove", onMove, { passive: false });
+    el.addEventListener("touchend", onEnd, { passive: true });
+    return () => {
+      el.removeEventListener("touchstart", onStart);
+      el.removeEventListener("touchmove", onMove);
+      el.removeEventListener("touchend", onEnd);
+    };
+  }, [previewFile?.id]);
 
   return (
     <Dialog open={!!previewFile} onOpenChange={onClose}>
@@ -67,62 +118,56 @@ export function FilePreviewDialog({
           {/* Header with controls */}
           <div className="absolute top-0 left-0 right-0 z-10 bg-background/95 backdrop-blur border-b px-4 py-2">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <ImageIcon className="h-5 w-5 text-primary" />
-                <div>
-                  <h3 className="font-semibold">{previewFile?.name}</h3>
+              <div className="flex items-center gap-3 min-w-0">
+                <ImageIcon className="h-5 w-5 text-primary shrink-0" />
+                <div className="min-w-0">
+                  <h3 className="font-semibold truncate">{previewFile?.name}</h3>
                   <p className="text-xs text-muted-foreground">
                     {previewFile && formatFileSize(previewFile.size)}
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                {previewFile && !previewFile.type?.includes("pdf") && (
-                  <>
-                    <div className="flex items-center gap-1 border rounded-md p-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          setImageZoom(Math.max(25, imageZoom - 25))
-                        }
-                        disabled={imageZoom <= 25}
-                      >
-                        <ZoomOut className="h-4 w-4" />
-                      </Button>
-                      <span className="text-sm font-medium min-w-[60px] text-center">
-                        {imageZoom}%
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          setImageZoom(Math.min(400, imageZoom + 25))
-                        }
-                        disabled={imageZoom >= 400}
-                      >
-                        <ZoomIn className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() =>
-                        setImageRotation((imageRotation + 90) % 360)
-                      }
-                      title={t("files.rotate")}
-                    >
-                      <RotateCw className="h-4 w-4" />
-                    </Button>
-                  </>
+              <div className="flex items-center gap-2 shrink-0">
+                {/* Zoom works for both images and PDFs; 100 % = fit to screen. */}
+                <div className="flex items-center gap-1 border rounded-md p-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setImageZoom(Math.max(25, imageZoom - 25))}
+                    disabled={imageZoom <= 25}
+                  >
+                    <ZoomOut className="h-4 w-4" />
+                  </Button>
+                  <span className="text-sm font-medium min-w-[52px] text-center tabular-nums">
+                    {imageZoom}%
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setImageZoom(Math.min(400, imageZoom + 25))}
+                    disabled={imageZoom >= 400}
+                  >
+                    <ZoomIn className="h-4 w-4" />
+                  </Button>
+                </div>
+                {!isPdf && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setImageRotation((imageRotation + 90) % 360)}
+                    title={t("files.rotate")}
+                  >
+                    <RotateCw className="h-4 w-4" />
+                  </Button>
                 )}
 
-                <div className="h-6 w-px bg-border mx-1" />
+                <div className="h-6 w-px bg-border mx-1 hidden sm:block" />
 
                 <Button
                   variant="ghost"
                   size="sm"
+                  className="hidden sm:inline-flex"
                   onClick={() => previewFile && onComments(previewFile)}
                   title={t("common.comments")}
                 >
@@ -172,30 +217,37 @@ export function FilePreviewDialog({
             </button>
           )}
 
-          {/* Content container */}
-          <div className="pt-16 pb-8 px-0 h-[calc(100vh-4rem)] overflow-auto bg-muted/30">
-            <div className="flex items-center justify-center min-h-full">
-              {previewUrl && previewFile?.type?.includes("pdf") ? (
-                <iframe
-                  src={`${previewUrl}#navpanes=0&scrollbar=1&view=FitH`}
-                  title={previewFile?.name}
-                  className="w-full h-full border-0 rounded"
-                  style={{ minHeight: "calc(100vh - 6rem)" }}
-                />
-              ) : (
-                previewUrl && (
+          {/* Content container — 100 % zoom fits the whole document on screen
+              (Carl's mobile finding: PDFs opened zoomed into a corner). */}
+          <div
+            ref={contentRef}
+            className="pt-16 pb-10 px-0 h-[calc(100vh-4rem)] overflow-auto bg-muted/30"
+          >
+            {previewUrl && isPdf ? (
+              <Suspense
+                fallback={
+                  <div className="flex items-center justify-center h-full">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                }
+              >
+                <PdfCanvasPreview url={previewUrl} zoom={imageZoom} fileName={previewFile?.name} />
+              </Suspense>
+            ) : (
+              previewUrl && (
+                <div className="flex items-center justify-center h-full w-full">
                   <img
                     src={previewUrl}
                     alt={previewFile?.name}
-                    className="max-w-full h-auto transition-all duration-200"
+                    className="max-w-full max-h-full object-contain transition-transform duration-150"
                     style={{
                       transform: `scale(${imageZoom / 100}) rotate(${imageRotation}deg)`,
                       transformOrigin: "center",
                     }}
                   />
-                )
-              )}
-            </div>
+                </div>
+              )
+            )}
           </div>
 
           {/* Footer with navigation info */}

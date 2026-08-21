@@ -3153,7 +3153,11 @@
     "downloadError": "Download error",
     "error": "Error",
     "noPreviewAvailable": "Preview not available for this file type",
-    "scrollToPan": "Scroll to pan, pinch or Ctrl+scroll to zoom"
+    "scrollToPan": "Scroll to pan, pinch or Ctrl+scroll to zoom",
+    "pageOf": "Page {{page}}/{{total}}",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
+    "pdfPreviewFailed": "Couldn't display the PDF — download it instead."
   },
   "fileStats": {
     "quote": "Quotes",

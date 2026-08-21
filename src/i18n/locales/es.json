@@ -1415,7 +1415,11 @@
     "downloadError": "Error de descarga",
     "error": "Error",
     "noPreviewAvailable": "Vista previa no disponible para este tipo de archivo",
-    "scrollToPan": "Desplaza para mover, pellizca o Ctrl+rueda para hacer zoom"
+    "scrollToPan": "Desplaza para mover, pellizca o Ctrl+rueda para hacer zoom",
+    "pageOf": "Página {{page}}/{{total}}",
+    "previousPage": "Página anterior",
+    "nextPage": "Página siguiente",
+    "pdfPreviewFailed": "No se pudo mostrar el PDF — descárgalo en su lugar."
   },
   "floormap": {
     "addText": "Agregar texto",

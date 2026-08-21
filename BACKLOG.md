@@ -2762,7 +2762,7 @@ men gör den även på desktop (samma komponent).
 
 ---
 id: file-preview-fit-to-screen
-status: todo
+status: done
 priority: P2
 tags: [mobile, files, ux]
 created: 2026-08-21

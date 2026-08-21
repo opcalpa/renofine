@@ -2542,7 +2542,11 @@
     "downloadError": "Nedladdningsfel",
     "error": "Fel",
     "noPreviewAvailable": "Förhandsgranskning ej tillgänglig för denna filtyp",
-    "scrollToPan": "Scrolla för att panorera, nyp eller Ctrl+scroll för att zooma"
+    "scrollToPan": "Scrolla för att panorera, nyp eller Ctrl+scroll för att zooma",
+    "pageOf": "Sida {{page}}/{{total}}",
+    "previousPage": "Föregående sida",
+    "nextPage": "Nästa sida",
+    "pdfPreviewFailed": "Kunde inte visa PDF:en — ladda ner den istället."
   },
   "fileStats": {
     "quote": "Offerter",

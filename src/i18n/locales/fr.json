@@ -1415,7 +1415,11 @@
     "downloadError": "Erreur de téléchargement",
     "error": "Erreur",
     "noPreviewAvailable": "Aperçu non disponible pour ce type de fichier",
-    "scrollToPan": "Faites défiler pour déplacer, pincez ou Ctrl+molette pour zoomer"
+    "scrollToPan": "Faites défiler pour déplacer, pincez ou Ctrl+molette pour zoomer",
+    "pageOf": "Page {{page}}/{{total}}",
+    "previousPage": "Page précédente",
+    "nextPage": "Page suivante",
+    "pdfPreviewFailed": "Impossible d'afficher le PDF — téléchargez-le à la place."
   },
   "floormap": {
     "addText": "Ajouter du texte",

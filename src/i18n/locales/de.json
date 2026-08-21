@@ -1415,7 +1415,11 @@
     "downloadError": "Download-Fehler",
     "error": "Fehler",
     "noPreviewAvailable": "Für diesen Dateityp ist keine Vorschau verfügbar",
-    "scrollToPan": "Scrollen zum Verschieben, Kneifen oder Strg+Scrollen zum Zoomen"
+    "scrollToPan": "Scrollen zum Verschieben, Kneifen oder Strg+Scrollen zum Zoomen",
+    "pageOf": "Seite {{page}}/{{total}}",
+    "previousPage": "Vorherige Seite",
+    "nextPage": "Nächste Seite",
+    "pdfPreviewFailed": "PDF konnte nicht angezeigt werden — lade sie stattdessen herunter."
   },
   "floormap": {
     "addText": "Text hinzufügen",

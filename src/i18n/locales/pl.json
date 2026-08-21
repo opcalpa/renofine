@@ -2145,7 +2145,11 @@
     "selectRoomOrTask": "Wybierz co najmniej jedno pomieszczenie lub zadanie, aby połączyć z nim plik.",
     "deleteFileConfirmation": "Czy na pewno chcesz usunąć „{{name}}”? Tej operacji nie można cofnąć.",
     "category": "Kategoria pliku",
-    "scrollToPan": "Przewijaj, aby przesuwać; uszczypnij lub Ctrl+przewijanie, aby powiększyć"
+    "scrollToPan": "Przewijaj, aby przesuwać; uszczypnij lub Ctrl+przewijanie, aby powiększyć",
+    "pageOf": "Strona {{page}}/{{total}}",
+    "previousPage": "Poprzednia strona",
+    "nextPage": "Następna strona",
+    "pdfPreviewFailed": "Nie udało się wyświetlić PDF — pobierz go zamiast tego."
   },
   "purchases": {
     "title": "Zamówienia zakupowe",
