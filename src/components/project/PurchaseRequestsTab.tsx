@@ -30,6 +30,7 @@ import {
   Camera,
   Pencil,
   ArrowRight,
+  Paperclip,
   Check,
   X,
   Clock,
@@ -177,6 +178,8 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
   const [editingPO, setEditingPO] = useState<PurchaseOrder | null>(null);
   // Detail drawer state (lifted from PurchaseOrdersGridV2 so deep-links can open it)
   const [openPOId, setOpenPOId] = useState<string | null>(null);
+  // Which summary bucket (Beställt/Betalt/Totalt) is expanded to show its POs.
+  const [openPoBucket, setOpenPoBucket] = useState<'ordered' | 'paid' | 'total' | null>(null);
   // Add-line dialog target (the PO we're adding a row to)
   const [addLinePO, setAddLinePO] = useState<PurchaseOrder | null>(null);
   // New PO ("Skapa beställning") dialog
@@ -1178,11 +1181,17 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
           0,
         );
         const remaining = totalBudget - consumed;
+        // POs behind each bucket, so tapping a total reveals what it's made of.
+        const orderedPOs = purchaseOrders.filter(
+          (po) => !po.paid_at && ['ordered', 'delivered', 'pending'].includes(po.status),
+        );
+        const paidPOs = purchaseOrders.filter((po) => po.paid_at);
         const cells = [
-          { label: t("purchases.ordered", "Beställt"), value: committedTotal, cls: "text-amber-600" },
-          { label: t("purchases.paid", "Betalt"), value: paidTotal, cls: "text-emerald-600" },
-          { label: t("purchases.totalPurchased", "Totalt inköpt"), value: spentTotal, cls: "" },
+          { bucket: 'ordered' as const, label: t("purchases.ordered", "Beställt"), value: committedTotal, cls: "text-amber-600", pos: orderedPOs },
+          { bucket: 'paid' as const, label: t("purchases.paid", "Betalt"), value: paidTotal, cls: "text-emerald-600", pos: paidPOs },
+          { bucket: 'total' as const, label: t("purchases.totalPurchased", "Totalt inköpt"), value: spentTotal, cls: "", pos: [...paidPOs, ...orderedPOs] },
         ];
+        const activeCell = openPoBucket ? cells.find((c) => c.bucket === openPoBucket) : null;
         return (
           <div className="rounded-xl border bg-card overflow-hidden">
             {totalBudget > 0 && (
@@ -1201,15 +1210,53 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
               </div>
             )}
             <div className={cn("grid grid-cols-3 gap-px bg-border", totalBudget > 0 && "mt-3")}>
-              {cells.map((c) => (
-                <div key={c.label} className="bg-card p-4">
-                  <span className="kicker truncate block">{c.label}</span>
-                  <p className={cn("text-2xl font-display font-normal tnum mt-1", c.cls)}>
-                    {maskEconomy ? "—" : formatCurrency(c.value, currency)}
-                  </p>
-                </div>
-              ))}
+              {cells.map((c) => {
+                const isOpen = openPoBucket === c.bucket;
+                const canExpand = c.pos.length > 0 && !maskEconomy;
+                return (
+                  <button
+                    key={c.bucket}
+                    type="button"
+                    disabled={!canExpand}
+                    onClick={() => setOpenPoBucket(isOpen ? null : c.bucket)}
+                    className={cn(
+                      "bg-card p-4 text-left transition-colors",
+                      canExpand && "hover:bg-accent/40 cursor-pointer",
+                      isOpen && "bg-accent/40",
+                    )}
+                  >
+                    <span className="kicker truncate block">{c.label}</span>
+                    <p className={cn("text-2xl font-display font-normal tnum mt-1", c.cls)}>
+                      {maskEconomy ? "—" : formatCurrency(c.value, currency)}
+                    </p>
+                    {canExpand && (
+                      <span className="mt-1 inline-flex items-center gap-0.5 text-[11px] text-muted-foreground">
+                        {c.pos.length} {t("purchases.orders", "inköp")}
+                        <ChevronDown className={cn("h-3 w-3 transition-transform", isOpen && "rotate-180")} />
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
+            {activeCell && activeCell.pos.length > 0 && (
+              <div className="border-t border-border divide-y divide-border/60 bg-muted/20">
+                {activeCell.pos.map((po) => (
+                  <div
+                    key={po.id}
+                    className="w-full flex items-center gap-2 px-4 py-2"
+                  >
+                    <span className="text-sm truncate flex-1">
+                      {po.vendor_name || t("purchases.unknownVendor", "Okänd leverantör")}
+                    </span>
+                    {po.receipt_file_path && (
+                      <Paperclip className="h-3 w-3 text-muted-foreground shrink-0" aria-label={t("purchases.attachment", "Underlag")} />
+                    )}
+                    <span className="text-sm tnum shrink-0">{formatCurrency(po.total || 0, currency)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
             {totalBudget > 0 && (
               <div className="flex items-center justify-between gap-2 px-4 py-2.5 border-t border-border text-xs">
                 <span className="text-muted-foreground">{t("purchases.remainingVsBudget", "Kvar mot budget")}</span>

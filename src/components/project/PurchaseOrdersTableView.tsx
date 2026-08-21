@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ColumnToggle } from "@/components/shared/ColumnToggle";
-import { ChevronDown, ShoppingCart, Trash2, Pencil, Plus } from "lucide-react";
+import { ChevronDown, ShoppingCart, Trash2, Pencil, Plus, Paperclip } from "lucide-react";
 import { usePersistedPreference } from "@/hooks/usePersistedPreference";
 
 interface PurchaseOrderRow {
@@ -17,6 +17,7 @@ interface PurchaseOrderRow {
   delivered_at: string | null;
   source: string | null;
   notes: string | null;
+  receipt_file_path?: string | null;
 }
 
 interface MaterialLine {
@@ -230,10 +231,18 @@ const Row = ({
         </td>
         {visibleCols.has("vendor") && (
           <td className="px-2 py-1.5">
-            <button type="button" onClick={onEditPO} className="font-medium hover:underline text-left flex items-center gap-1.5">
-              <ShoppingCart className="h-3 w-3 text-muted-foreground" />
-              {maskEconomy ? "—" : po.vendor_name}
-            </button>
+            <div className="flex items-center gap-1.5">
+              <button type="button" onClick={onEditPO} className="font-medium hover:underline text-left flex items-center gap-1.5">
+                <ShoppingCart className="h-3 w-3 text-muted-foreground" />
+                {maskEconomy ? "—" : po.vendor_name}
+              </button>
+              {po.receipt_file_path && (
+                <Paperclip
+                  className="h-3 w-3 text-muted-foreground shrink-0"
+                  aria-label={t("purchases.attachment", "Underlag")}
+                />
+              )}
+            </div>
           </td>
         )}
         {visibleCols.has("status") && (
