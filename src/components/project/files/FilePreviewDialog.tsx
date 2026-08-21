@@ -66,6 +66,23 @@ export function FilePreviewDialog({
   const isPdf = !!previewFile?.type?.includes("pdf");
   const contentRef = useRef<HTMLDivElement>(null);
 
+  // iOS/WebKit (Safari, Brave) zooms the whole PAGE on pinch via gesture*
+  // events — which our touchmove handler below can't intercept. Block them at
+  // the document level while the preview is open so pinch only drives the
+  // in-app zoom; touch events still fire, so the handler below keeps working.
+  useEffect(() => {
+    if (!previewFile) return;
+    const block = (e: Event) => e.preventDefault();
+    document.addEventListener("gesturestart", block, { passive: false });
+    document.addEventListener("gesturechange", block, { passive: false });
+    document.addEventListener("gestureend", block, { passive: false });
+    return () => {
+      document.removeEventListener("gesturestart", block);
+      document.removeEventListener("gesturechange", block);
+      document.removeEventListener("gestureend", block);
+    };
+  }, [previewFile]);
+
   // Pinch-to-zoom (mobile): two-finger distance drives the shared zoom state.
   // Non-passive listener so preventDefault stops the browser's page zoom.
   const zoomRef = useRef(imageZoom);
@@ -110,7 +127,7 @@ export function FilePreviewDialog({
 
   return (
     <Dialog open={!!previewFile} onOpenChange={onClose}>
-      <DialogContent className="!w-[calc(100%-2rem)] !max-w-[calc(100%-2rem)] !h-[calc(100vh-2rem)] !max-h-[calc(100vh-2rem)] !p-0 !rounded-xl">
+      <DialogContent className="!w-full !max-w-full !h-[calc(100dvh-1rem)] !max-h-[calc(100dvh-1rem)] !p-0 !rounded-t-2xl md:!w-[calc(100%-2rem)] md:!max-w-[calc(100%-2rem)] md:!h-[calc(100vh-2rem)] md:!max-h-[calc(100vh-2rem)] md:!rounded-xl">
         <DialogTitle className="sr-only">
           {previewFile?.name || t("files.imagePreview")}
         </DialogTitle>
@@ -221,7 +238,7 @@ export function FilePreviewDialog({
               (Carl's mobile finding: PDFs opened zoomed into a corner). */}
           <div
             ref={contentRef}
-            className="pt-16 pb-10 px-0 h-[calc(100vh-4rem)] overflow-auto bg-muted/30"
+            className="absolute inset-0 pt-16 pb-10 px-0 overflow-auto bg-muted/30"
           >
             {previewUrl && isPdf ? (
               <Suspense
