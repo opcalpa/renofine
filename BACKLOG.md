@@ -2963,3 +2963,119 @@ Två projekt i samma lägenhet vet inget om varandra.
 
 Ingen kod förrän 1–3 är besvarade — detta är ett arkitekturval som rör
 datamodellen brett (RLS, delning, planritningar).
+
+---
+id: floorplan-quality-epic
+status: todo
+priority: P1
+tags: [epic, renaida, spaceplanner, kvalitet, evals]
+created: 2026-08-23
+---
+## EPIC: Renaida ritar som ett proffs — mätbar kvalitet i Space Planner
+
+Carls fråga 2026-08-23: hur ökar vi sannolikheten att Renaida med tiden ritar
+planritningar i nivå med en utbildad inredningsarkitekt i branschstandardverktyg?
+
+**Nuläge verifierat 2026-08-23 (tre luckor, ingen av dem är "modellen"):**
+1. **Dörrar blir inte dörrar.** v2 har en nativ `opening`-typ i väggen
+   (`parentWallId` + `positionOnWall` + `openingKind: door|window|sliding|passage`,
+   används av SP2). AI-vägen (`convertToFloorMapShapes`) producerar
+   `freehand`-shapes m. `metadata.isLibrarySymbol` → löst klistermärke ovanpå
+   väggen: följer inte väggen, är inget hål, går inte att måtta.
+   **Fönster produceras inte alls** trots att `openingKind:'window'` finns.
+2. **Skalan är en gissning.** `DEFAULT_SKETCH_SPAN_MM = 10000` antar att längsta
+   måttet är 10 m. Måttkedjor/skalangivelser i bilden läses aldrig. Fel skala =
+   värdelöst för det planneraren finns till för (mata mått in i estimeringen,
+   se [[reference_floorplanner_strategy]]).
+3. **Ingen eval.** `evals/dataset/` täcker agent-route, checklist,
+   parse-renovation-description, translate — inget floorplan. Utan facit blir
+   promptändringar bara ANNORLUNDA, aldrig bevisat bättre.
+
+**Ordning (värde per krona). Gör 1+2 först — resten är gissningar utan dem.**
+Kort: `floorplan-eval-harness`, `floorplan-regularize`, `floorplan-scale-calibration`,
+`floorplan-native-openings`, `floorplan-correction-learning`.
+
+---
+id: floorplan-eval-harness
+status: todo
+priority: P1
+tags: [evals, spaceplanner, renaida, mätning]
+created: 2026-08-23
+---
+## 1. Eval för planritnings-tolkning (geometriska mått, ingen judge)
+
+~15–25 riktiga planritningar + facit i `evals/dataset/process-floorplan.json`
++ `evals/run-floorplan.mjs`. Mät GEOMETRISKT (gratis att köra, ingen LLM-judge):
+- rumsantal + namnträff
+- bildar ytterväggarna en sluten polygon?
+- andel väggar inom ±2° från 0/90°
+- areafel per rum (%)
+- andel dörrar som faktiskt sitter i en vägg
+Förutsättning för allt annat i [[floorplan-quality-epic]] — utan den vet vi inte
+om en ändring hjälpte eller stjälpte.
+
+---
+id: floorplan-regularize
+status: todo
+priority: P1
+tags: [spaceplanner, geometri, kvalitet]
+created: 2026-08-23
+---
+## 2. regularizePlan() — deterministisk uppstädning (störst lyft, noll AI)
+
+Skillnaden mot en proffsritning är inte förståelse utan PRECISION. En
+vision-modell ger ±3° och glapp i hörnen ALLTID, oavsett prompt. Nytt steg
+mellan AI-svaret och shapes:
+- snappa väggvinklar till 0/90/45° inom tolerans
+- slå ihop nästan-kolinjära segment
+- stäng hörn (väggändar inom X mm → samma punkt)
+- snappa tjocklekar till svenska standardstommar (ytter 200/250, inner 70/95/120)
+- räta rumspolygoner mot de städade väggarna
+Deterministiskt → testbart i [[floorplan-eval-harness]]. Noll extra modellkostnad.
+
+---
+id: floorplan-scale-calibration
+status: todo
+priority: P2
+tags: [spaceplanner, renaida, mått, estimering]
+created: 2026-08-23
+---
+## 3. Skalkalibrering ur bilden istället för gissning
+
+Be modellen läsa utskrivna mått/måttkedjor och skalangivelser ("1:100") ur
+ritningen och kalibrera därifrån; falla tillbaka på `DEFAULT_SKETCH_SPAN_MM`
+bara när inget finns. Utan detta är ALLA mått fel med en okänd faktor — dödligt
+för mått→estimering-kopplingen.
+
+---
+id: floorplan-native-openings
+status: todo
+priority: P2
+tags: [spaceplanner, renaida, datamodell]
+created: 2026-08-23
+---
+## 4. AI-dörrar/fönster blir nativa openings, inte lösa symboler
+
+Byt målformat i `convertToFloorMapShapes`: dörr → `type:'opening'` m.
+`parentWallId` + `positionOnWall` + `openingKind` (samma väg SP2 använder),
+inte `freehand` + `isLibrarySymbol`. Lägg till fönster i prompten +
+utdataschemat (`openingKind:'window'` finns redan i modellen, AI:n ber aldrig
+om dem). Kräver vägg-tillhörighet: matcha dörrens punkt mot närmaste väggsegment
+efter [[floorplan-regularize]].
+
+---
+id: floorplan-correction-learning
+status: todo
+priority: P2
+tags: [renaida, lärande, spaceplanner, wow-engine]
+created: 2026-08-23
+---
+## 5. Lärande ur användarens rättningar (svaret på "bättre med tiden")
+
+När ett AI-genererat plan redigeras inom N dagar: logga AGGREGERAT (ej
+råritningar) vad som rättades — vilka väggar flyttades och hur långt, vilka rum
+döptes om, vilka dörrar togs bort. Ger tre saker: regelförbättringar till
+[[floorplan-regularize]], few-shot-exempel till prompten, och en signal om VAR
+hon är dålig (idag helt osynligt). Hör hemma i [[project_renaida_wow_engine]]s
+mining-ritual. **Meningsfullt först när [[floorplan-eval-harness]] finns** —
+annars går det inte att se om lärandet lärde sig rätt sak.
