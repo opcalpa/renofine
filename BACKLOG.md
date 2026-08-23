@@ -2796,12 +2796,16 @@ kolumnlinjer). (b) kan skivas separat.
 
 ---
 id: folder-ingest-epic
-status: todo
+status: done
+updated: 2026-08-23
 priority: P1
 tags: [epic, renaida, ingest, aktivering, growth]
 created: 2026-08-23
 ---
 ## EPIC: "Släpp din mapp" — mapp-drop → projekt (nytt/befintligt/retro)
+**LEVERERAT 2026-08-23** (commits 27f8d27→2e11834, alla 5 skivor). Live-verifierat
+i Chrome + 48/48 e2e gröna. KVAR: Carls on-device-test med sin riktiga
+lägenhetsmapp (retro end-to-end på inloggat konto), + push/deploy.
 Carls vision 2026-08-23: dra hela lägenhets-/renoveringsmappen (inkl. undermappar:
 fakturor, offerter, kvitton, ritningar) till Renofine → Renaida frågar nytt/befintligt
 → allt klassas, extraheras och landar som rum/arbeten/inköp/planritning. Extra
@@ -2814,7 +2818,8 @@ verifierat mot kod, 5 skivor nedan, beslutspunkter §7). Byggs av Opus-session.
 
 ---
 id: folder-drop-router
-status: todo
+status: done
+updated: 2026-08-23
 priority: P1
 tags: [renaida, ingest, ux, desktop]
 created: 2026-08-23
@@ -2827,7 +2832,8 @@ RenaidaProjectDialog får `initialDroppedFiles`-prop som auto-kör befintlig
 
 ---
 id: folder-ingest-archive-originals
-status: todo
+status: done
+updated: 2026-08-23
 priority: P1
 tags: [renaida, ingest, files]
 created: 2026-08-23
@@ -2841,7 +2847,8 @@ gäster). Plan §Skiva 2. ~½ dag.
 
 ---
 id: retro-project-mode
-status: todo
+status: done
+updated: 2026-08-23
 priority: P1
 tags: [renaida, ingest, retro, rot, deklaration]
 created: 2026-08-23
@@ -2856,7 +2863,8 @@ delad helper. Plan §Skiva 3. ~1 dag. Inga migrationer.
 
 ---
 id: ingest-confirmdiff-existing
-status: todo
+status: done
+updated: 2026-08-23
 priority: P2
 tags: [renaida, ingest, agent, envelope]
 created: 2026-08-23
@@ -2870,7 +2878,8 @@ accept/reject + fil-provenance. Ersätter populate-existing för drops
 
 ---
 id: floorplan-pdf-and-progress
-status: todo
+status: done
+updated: 2026-08-23
 priority: P2
 tags: [renaida, ingest, pdf, spaceplanner]
 created: 2026-08-23
