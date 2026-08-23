@@ -415,6 +415,24 @@ const Projects = () => {
   // Homeowners should never see resource planning — clamp to list
   const effectiveViewMode = (!isContractor && viewMode === "resource") || (viewMode === "resource" && !isSectionEnabled("resource_planning")) ? "list" : viewMode;
 
+  const handleFolderDropped = useCallback((files: DroppedFile[]) => {
+    setDroppedFiles(files);
+    setDropRouterOpen(true);
+    analytics.capture(AnalyticsEvents.FOLDER_DROP_STARTED, { surface: 'projects', file_count: files.length });
+  }, []);
+
+  const handleDropRoute = useCallback((route: DropRoute) => {
+    analytics.capture(AnalyticsEvents.FOLDER_DROP_ROUTED, { surface: 'projects', choice: route.kind });
+    if (route.kind === 'new') {
+      setRenaidaFiles(droppedFiles.map((d) => d.file));
+      setRenaidaOpen(true);
+      return;
+    }
+    // Existing project: the files ride an in-memory stash across the navigation.
+    stashDroppedFolder(route.projectId, droppedFiles);
+    navigate(`/projects/${route.projectId}?ingest=folder`);
+  }, [droppedFiles, navigate]);
+
   // Show loading while auth or data is loading
   if (authLoading || loading) {
     return <PageLoadingSkeleton />;
@@ -447,24 +465,6 @@ const Projects = () => {
       </Suspense>
     );
   }
-
-  const handleFolderDropped = useCallback((files: DroppedFile[]) => {
-    setDroppedFiles(files);
-    setDropRouterOpen(true);
-    analytics.capture(AnalyticsEvents.FOLDER_DROP_STARTED, { surface: 'projects', file_count: files.length });
-  }, []);
-
-  const handleDropRoute = useCallback((route: DropRoute) => {
-    analytics.capture(AnalyticsEvents.FOLDER_DROP_ROUTED, { surface: 'projects', choice: route.kind });
-    if (route.kind === 'new') {
-      setRenaidaFiles(droppedFiles.map((d) => d.file));
-      setRenaidaOpen(true);
-      return;
-    }
-    // Existing project: the files ride an in-memory stash across the navigation.
-    stashDroppedFolder(route.projectId, droppedFiles);
-    navigate(`/projects/${route.projectId}?ingest=folder`);
-  }, [droppedFiles, navigate]);
 
   return (
     <FolderDropZone onDropped={handleFolderDropped}>

@@ -1641,8 +1641,11 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
                   </div>
 
                   {/* Skiva 3: retro projects. Asked, never inferred — a wrong
-                      guess would silently mark a live project finished. */}
-                  {folderIngested && (
+                      guess would silently mark a live project finished. Guests
+                      never see it: their create path is the local-storage one,
+                      which has no status/receipts, so the question would be
+                      a promise nothing keeps. */}
+                  {folderIngested && !isGuest && (
                     <div className="space-y-2 rounded-lg border bg-muted/20 p-3">
                       <div className="flex items-center gap-1.5 text-sm font-medium">
                         <CalendarCheck className="h-4 w-4 text-primary shrink-0" />

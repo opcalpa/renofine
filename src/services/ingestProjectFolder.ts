@@ -393,14 +393,24 @@ export async function ingestProjectFolder(
     ...docs.map((f) => () => processDocument(f, language, collectPurchases, isContractor)),
     ...texts.map((f) => () => processTextFile(f, language)),
   ];
-  // Progress counts the classify pass too — it is real waiting for the user.
-  const progressTotal = thunks.length + photos.length;
-  let progressDone = photos.length;
+  // Progress is counted in FILES, not thunks — "fil 3 av 12" has to match the
+  // folder the user dropped. The photo thunk covers a whole batch, so it
+  // contributes all of its images at once when it lands.
+  const weights = [
+    ocrImages.length, // the combined photo pass
+    ...planImages.map(() => 1),
+    ...pdfs.map(() => 1),
+    ...docs.map(() => 1),
+    ...texts.map(() => 1),
+  ];
+  const progressTotal = files.length;
+  let progressDone = ignoredUpfront.length;
   onProgress?.(progressDone, progressTotal);
   const settled = (
-    await mapLimit(thunks, CONCURRENCY, async (t) => {
+    await mapLimit(thunks.map((t, i) => ({ t, i })), CONCURRENCY, async ({ t, i }) => {
       const r = await t();
-      onProgress?.(++progressDone, progressTotal);
+      progressDone = Math.min(progressTotal, progressDone + weights[i]);
+      onProgress?.(progressDone, progressTotal);
       return r;
     })
   ).filter((c): c is Contribution => c != null);
