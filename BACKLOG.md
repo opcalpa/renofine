@@ -2889,3 +2889,77 @@ PDF klassad floor_plan → rasterisera sida 1 m. pdfjs (destroy() på loading-ta
 → befintliga process-floorplan-pipelinen. MAX_FILES 40→100 m. bekräftelse >40
 + uttalad trunkering; `onProgress`-callback → "Läser fil N/M…" i dialogen;
 skippa filer >20 MB (sägs i summeringen). Plan §Skiva 5. ~½ dag.
+
+---
+id: late-purchases-visibility
+status: todo
+priority: P2
+tags: [retro, inköp, översikt, deklaration]
+created: 2026-08-23
+---
+## Sena inköp syns i sammanställningen (istället för en efterhandsbucket)
+
+Carls fråga 2026-08-23: när man släpper fler kvitton/fakturor/offerter i ett
+AVSLUTAT projekt — ska de räknas med i kalkylerna, eller hamna i en separat
+efterhandshink?
+
+**Beslut: ingen bucket, ingen fråga vid inläggning — synlighet i efterhand.**
+Skiljelinjen som betyder något är inte "före/efter avslut" utan "hörde det här
+till projektet?", och den besvaras av dokumentets EGET datum (`documentDate`,
+extraheras redan; retro-läget daterar projektet från dem). Sent underlag för
+arbete som ingick hör till projektet — flyttas det till en egen hink blir
+totalsumman fel, och just totalsumman är hela poängen med retro-projektet
+(deklaration + försäljning). En separat hink ger dessutom projektet TVÅ
+sanningar om vad det kostade — samma fälla som `lib/purchaseTotals` städade bort
+(en motor, samma totaler på alla skärmar). För ROT gäller betalningsdatum, inte
+appens projektstadium.
+
+**Bygg (~½ dag):** rad i `CompletedProjectSummary`:
+"N inköp registrerade efter projektets slutdatum" — klickbar, listar dem
+(leverantör, belopp, datum). Ingen fråga, ingen bucket, bara synlighet.
+Jämför PO:ns `documentDate`/`paid_at` mot projektets `finish_goal_date`.
+
+**Först om det visar sig behövas (eget kort då):** exkludera-toggle i just den
+listan. `exclude_from_budget` FINNS redan på materials/purchase_orders
+(används av ÄTA-vägen) → återanvändning, inget nytt begrepp. Användaren
+exkluderar i rätt kontext, efter att ha sett helheten — inte 40 frågor vid
+mapp-droppen.
+
+Hänger ihop med [[folder-ingest-epic]] (Skiva 3 retro-läget).
+
+---
+id: property-entity-epic
+status: todo
+priority: P2
+tags: [epic, arkitektur, hemägare, retro, produktfråga]
+created: 2026-08-23
+---
+## EPIC-FRÅGA: bostaden/objektet som eget begrepp — flera projekt över tid
+
+Kom ur Carls efterhands-fråga 2026-08-23. Det verkliga behovet bakom
+"småprojekt som kvarstår i samma objekt" är INTE en efterhandshink i det gamla
+projektet — det är att en BOSTAD håller ihop flera projekt över tid.
+
+**Nuläge (verifierat 2026-08-23):** det finns ingen fastighets-/objekt-entitet.
+`projects.property_designation` är bara ett textfält som `RotDetailsDialog`
+skriver för ROT-ändamål; `address`/`city`/`postal_code` ligger löst per projekt.
+Två projekt i samma lägenhet vet inget om varandra.
+
+**Vad det skulle ge:**
+- Planritningen ärvs mellan projekt (rita detaljskisser — hyllor, platsbyggen —
+  på befintlig plan utan att rita om den; Carls konkreta case)
+- Projekthistorik per bostad ("vad gjordes 2025, vad kostade det")
+- Ackumulerat underlag inför FÖRSÄLJNING (alla renoveringar, alla kvitton)
+- ROT-historik per fastighet över år (idag per projekt)
+- Mapp-droppen kan routas till rätt bostad, inte bara rätt projekt
+
+**Öppna frågor till Carl (produktbeslut, ej byggbeslut ännu):**
+1. Gäller detta bara hemägare, eller vill proffs också gruppera per kund/objekt?
+   (En byggare har många objekt — då liknar det snarare kund/fastighet i CRM.)
+2. Migrationsväg för befintliga projekt: auto-gruppera på address-match, eller
+   låta användaren koppla ihop manuellt?
+3. Räcker en lättviktig variant (projekt kan peka på ett "objekt" som mest är
+   namn + adress + delad plan) eller är det en riktig entitet med egen vy?
+
+Ingen kod förrän 1–3 är besvarade — detta är ett arkitekturval som rör
+datamodellen brett (RLS, delning, planritningar).
