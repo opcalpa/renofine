@@ -7615,7 +7615,8 @@
       "sketchPlanName": "Grovskiss – {{file}}",
       "unreadable": "{{count}} filer kunde jag inte läsa.",
       "nothing": "Hittade inget att lägga in — skriv, prata eller fota istället.",
-      "failed": "Kunde inte läsa mappen"
+      "failed": "Kunde inte läsa mappen",
+      "filesArchived": "{{count}} filer sparade i Filer."
     },
     "source": {
       "answer": "Ditt svar",

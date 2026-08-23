@@ -4753,7 +4753,8 @@
       "sketchPlanName": "Boceto – {{file}}",
       "unreadable": "No pude leer {{count}} archivo(s).",
       "nothing": "No encontré nada que añadir — escriba, hable o tome una foto en su lugar.",
-      "failed": "No se pudo leer la carpeta"
+      "failed": "No se pudo leer la carpeta",
+      "filesArchived": "{{count}} archivos guardados en Archivos."
     },
     "source": {
       "answer": "Su respuesta",

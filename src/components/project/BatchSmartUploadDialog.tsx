@@ -37,6 +37,8 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import {
   classifyDocument,
+  ensureCategoryFolder,
+  uploadToCategoryFolder,
   type DocumentType,
   type ClassificationResult,
 } from '@/services/smartUploadService';
@@ -64,17 +66,6 @@ interface BatchSmartUploadDialogProps {
   currentFolder: string;
   onComplete: () => void;
 }
-
-const CATEGORY_FOLDERS: Record<DocumentType, string> = {
-  quote: '/Offerter',
-  invoice: '/Fakturor',
-  receipt: '/Kvitton',
-  floor_plan: '/Ritningar',
-  contract: '/Kontrakt',
-  specification: '/Specifikationer',
-  product_image: '/Bilder',
-  other: '',
-};
 
 const CATEGORY_LABELS: Record<DocumentType, string> = {
   quote: 'Offert',
@@ -169,28 +160,16 @@ export const BatchSmartUploadDialog: React.FC<BatchSmartUploadDialogProps> = ({
       // Ensure category folders exist
       const usedCategories = new Set(entries.map(getCategory));
       for (const cat of usedCategories) {
-        const folder = CATEGORY_FOLDERS[cat];
-        if (!folder) continue;
-        const placeholderPath = `projects/${projectId}${folder}/.emptyFolderPlaceholder`;
-        await supabase.storage
-          .from('project-files')
-          .upload(placeholderPath, new Blob(['']), { upsert: true });
+        await ensureCategoryFolder(projectId, cat);
       }
 
       // Upload each file
       for (const entry of entries) {
         if (entry.status === 'error') continue;
         const category = getCategory(entry);
-        const targetFolder = CATEGORY_FOLDERS[category] || currentFolder;
-        const timestamp = Date.now();
-        const safeName = entry.file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-        const filePath = `projects/${projectId}${targetFolder}/${timestamp}-${safeName}`;
+        const filePath = await uploadToCategoryFolder(projectId, entry.file, category, currentFolder);
 
-        const { error } = await supabase.storage
-          .from('project-files')
-          .upload(filePath, entry.file);
-
-        if (!error) {
+        if (filePath) {
           uploadedCount++;
 
           // Auto-link: match vendor_name against existing materials/tasks

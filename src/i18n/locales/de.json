@@ -4753,7 +4753,8 @@
       "sketchPlanName": "Grobskizze – {{file}}",
       "unreadable": "{{count}} Datei(en) konnten nicht gelesen werden.",
       "nothing": "Ich konnte nichts zum Hinzufügen finden — tippen, sprechen oder stattdessen ein Foto aufnehmen.",
-      "failed": "Der Ordner konnte nicht gelesen werden"
+      "failed": "Der Ordner konnte nicht gelesen werden",
+      "filesArchived": "{{count}} Dateien unter Dateien gespeichert."
     },
     "source": {
       "answer": "Ihre Antwort",

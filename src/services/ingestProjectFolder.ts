@@ -23,7 +23,7 @@ import type { AIParsedResult } from '@/components/project/overview/planning-wiza
 import { parseProjectDescription } from './renaidaProjectIntake';
 import { captureDocument, extractQuoteLines } from './agent/documentCapture';
 import type { ImportPurchaseAction } from './agent/importPurchaseOrder';
-import { classifyDocument } from './smartUploadService';
+import { classifyDocument, type DocumentType } from './smartUploadService';
 import { analyzeFloorPlanFile, type AIConversionResult } from './aiVisionService';
 import {
   mergeParseIntoDraft,
@@ -85,6 +85,16 @@ interface ClassifyResult {
   invoice_amount: number | null;
 }
 
+const DOCUMENT_TYPES: readonly DocumentType[] = [
+  'quote', 'invoice', 'receipt', 'floor_plan',
+  'contract', 'specification', 'product_image', 'other',
+];
+
+/** The classifier returns a bare string — narrow it before it becomes a path. */
+function asDocumentType(raw: string | undefined): DocumentType {
+  return DOCUMENT_TYPES.includes(raw as DocumentType) ? (raw as DocumentType) : 'other';
+}
+
 /** Classify already-extracted text (base64-free legacy path — no storage). */
 async function classifyText(text: string, fileName: string): Promise<ClassifyResult | null> {
   try {
@@ -108,8 +118,18 @@ export interface PendingSketch {
   result: AIConversionResult;
 }
 
+/**
+ * Skiva 2: one original to file into the project's archive after ingest, with
+ * the category the classifier already decided. Extraction and archiving are
+ * separate promises to the user — reading a receipt must not consume the file.
+ */
+export interface ArchiveEntry {
+  file: File;
+  category: DocumentType;
+}
+
 /** A single file's contribution, before the deterministic fold. */
-type Contribution =
+type ContributionKind =
   | { kind: 'scope'; parsed: AIParsedResult; sourceKind: ProvenanceKind; fileName?: string }
   | { kind: 'quoteLines'; lines: QuoteLine[]; fileName?: string }
   | { kind: 'receipt'; amount: number | null }
@@ -118,6 +138,15 @@ type Contribution =
   | { kind: 'floorplan' }
   | { kind: 'ignored' }
   | { kind: 'unreadable' };
+
+/**
+ * `archive` is set by the single-file processors (the classifier knows the
+ * category there). Photo buckets are archived by the caller, and fully
+ * extracted purchases carry NO archive — importPurchaseOrder already uploads
+ * the document as the order's receipt_file_path, and double-filing it would
+ * show the same receipt twice.
+ */
+type Contribution = ContributionKind & { archive?: ArchiveEntry };
 
 /**
  * Fas D: a floor-plan IMAGE → process-floorplan (walls/doors/rooms in mm with
@@ -148,7 +177,12 @@ async function processFloorPlanImage(file: File): Promise<Contribution> {
           summary: '',
         }
       : null;
-    return { kind: 'sketch', sketch: { fileName: file.name, result }, parsed };
+    return {
+      kind: 'sketch',
+      sketch: { fileName: file.name, result },
+      parsed,
+      archive: { file, category: 'floor_plan' },
+    };
   } catch {
     return { kind: 'unreadable' };
   }
@@ -162,9 +196,10 @@ async function processDocument(
   isContractor: boolean
 ): Promise<Contribution> {
   const text = await extractText(file);
-  if (!text) return { kind: 'unreadable' };
+  if (!text) return { kind: 'unreadable', archive: { file, category: 'other' } };
   const cls = await classifyText(text, file.name);
-  const type = cls?.type ?? 'other';
+  const type = asDocumentType(cls?.type);
+  const archive: ArchiveEntry = { file, category: type };
   if (type === 'receipt' || type === 'invoice') {
     // Inc 3: a logged-in birth fully extracts the receipt → a real PO at
     // creation. Guests can't own POs, so they just get the count (inc 1).
@@ -172,27 +207,28 @@ async function processDocument(
       try {
         const captured = await captureDocument(file);
         if (captured.kind === 'receipt' || captured.kind === 'invoice') {
+          // No archive stamp: the order owns this file (receipt_file_path).
           return { kind: 'purchase', action: captured.action };
         }
       } catch {
         /* fall through to a plain count */
       }
     }
-    return { kind: 'receipt', amount: cls?.invoice_amount ?? null };
+    return { kind: 'receipt', amount: cls?.invoice_amount ?? null, archive };
   }
-  if (type === 'floor_plan') return { kind: 'floorplan' };
-  if (type === 'product_image') return { kind: 'ignored' };
+  if (type === 'floor_plan') return { kind: 'floorplan', archive };
+  if (type === 'product_image') return { kind: 'ignored', archive };
   // K4: a contractor's OWN quote → priced line items so the post-birth quote
   // offer (K1) prefills their ACTUAL prices instead of a re-estimate. Homeowners
   // and price-less quotes fall through to the plain scope parse below.
   if (type === 'quote' && isContractor) {
     const lines = await extractQuoteLines(file);
-    if (lines.length > 0) return { kind: 'quoteLines', lines, fileName: file.name };
+    if (lines.length > 0) return { kind: 'quoteLines', lines, fileName: file.name, archive };
   }
   const parsed = await parseProjectDescription(text, language);
   return usable(parsed)
-    ? { kind: 'scope', parsed, sourceKind: 'document', fileName: file.name }
-    : { kind: 'unreadable' };
+    ? { kind: 'scope', parsed, sourceKind: 'document', fileName: file.name, archive }
+    : { kind: 'unreadable', archive };
 }
 
 /** A plain text/markdown file: read → parse as a project description. */
@@ -203,11 +239,12 @@ async function processTextFile(file: File, language: string): Promise<Contributi
   } catch {
     text = '';
   }
-  if (!text) return { kind: 'unreadable' };
+  const archive: ArchiveEntry = { file, category: 'other' };
+  if (!text) return { kind: 'unreadable', archive };
   const parsed = await parseProjectDescription(text, language);
   return usable(parsed)
-    ? { kind: 'scope', parsed, sourceKind: 'document', fileName: file.name }
-    : { kind: 'unreadable' };
+    ? { kind: 'scope', parsed, sourceKind: 'document', fileName: file.name, archive }
+    : { kind: 'unreadable', archive };
 }
 
 /** All photos in the drop: OCR each, parse the combined text once. */
@@ -253,6 +290,12 @@ export interface IngestOutcome {
   unreadableCount: number;
   /** True when the drop exceeded MAX_FILES and the tail was skipped. */
   truncated: boolean;
+  /**
+   * Skiva 2: every original to file into the project's archive, with the
+   * category it was classified as. Excludes fully extracted purchases (the
+   * order already owns that file). Best-effort at the call site.
+   */
+  archiveFiles: ArchiveEntry[];
 }
 
 /**
@@ -318,8 +361,15 @@ export async function ingestProjectFolder(
   let unreadableCount = 0;
   const pendingPurchases: ImportPurchaseAction[] = [];
   const pendingSketches: PendingSketch[] = [];
+  // Photos are archived by bucket (their category is known without a classify
+  // round-trip); documents carry their own stamp on the contribution.
+  const archiveFiles: ArchiveEntry[] = [
+    ...ocrImages.map((file) => ({ file, category: 'product_image' as DocumentType })),
+    ...ignoredUpfront.map((file) => ({ file, category: 'other' as DocumentType })),
+  ];
 
   for (const c of settled) {
+    if (c.archive) archiveFiles.push(c.archive);
     switch (c.kind) {
       case 'scope':
         draft = mergeParseIntoDraft(c.parsed, draft, { sourceKind: c.sourceKind, fileName: c.fileName });
@@ -367,5 +417,6 @@ export async function ingestProjectFolder(
     ignoredCount,
     unreadableCount,
     truncated,
+    archiveFiles,
   };
 }

@@ -245,3 +245,59 @@ export async function uploadToProjectStorage(
 
   return { path, publicUrl: urlData.publicUrl };
 }
+
+// --- Category filing (one engine for every "sort this into Files" path) ---
+
+/**
+ * Where each classified document type is filed in a project's file tree.
+ * Single source of truth — the batch upload dialog AND Renaida's folder ingest
+ * both file through here, so a document always lands in the same place.
+ */
+export const CATEGORY_FOLDERS: Record<DocumentType, string> = {
+  quote: "/Offerter",
+  invoice: "/Fakturor",
+  receipt: "/Kvitton",
+  floor_plan: "/Ritningar",
+  contract: "/Kontrakt",
+  specification: "/Specifikationer",
+  product_image: "/Bilder",
+  other: "",
+};
+
+/** Storage keeps no empty directories — a placeholder makes the folder appear. */
+export async function ensureCategoryFolder(
+  projectId: string,
+  category: DocumentType
+): Promise<void> {
+  const folder = CATEGORY_FOLDERS[category];
+  if (!folder) return;
+  await supabase.storage
+    .from("project-files")
+    .upload(`projects/${projectId}${folder}/.emptyFolderPlaceholder`, new Blob([""]), {
+      upsert: true,
+    });
+}
+
+/**
+ * File one document into its category folder. Returns the storage path, or
+ * null when the upload failed (callers treat archiving as best-effort — a
+ * failed file must never sink the surrounding operation).
+ */
+export async function uploadToCategoryFolder(
+  projectId: string,
+  file: File,
+  category: DocumentType,
+  fallbackFolder = ""
+): Promise<string | null> {
+  const targetFolder = CATEGORY_FOLDERS[category] || fallbackFolder;
+  const timestamp = Date.now();
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const path = `projects/${projectId}${targetFolder}/${timestamp}-${safeName}`;
+
+  const { error } = await supabase.storage.from("project-files").upload(path, file);
+  if (error) {
+    console.error("uploadToCategoryFolder failed", error);
+    return null;
+  }
+  return path;
+}

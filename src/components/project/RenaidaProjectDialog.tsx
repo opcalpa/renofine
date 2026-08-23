@@ -33,7 +33,8 @@ import {
   fetchCriticFlags,
   type CriticFlagSuggestion,
 } from '@/services/renaidaProjectIntake';
-import { ingestProjectFolder, type PendingSketch } from '@/services/ingestProjectFolder';
+import { ingestProjectFolder, type ArchiveEntry, type PendingSketch } from '@/services/ingestProjectFolder';
+import { uploadToCategoryFolder, ensureCategoryFolder } from '@/services/smartUploadService';
 import { importPurchaseOrder, type ImportPurchaseAction } from '@/services/agent/importPurchaseOrder';
 import { floorPlanResultToShapes } from '@/services/aiVisionService';
 import { findOrCreateClientByName } from '@/services/intakeService';
@@ -144,6 +145,8 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
   const pendingPurchasesRef = useRef<ImportPurchaseAction[]>([]);
   // Analyzed floor-plan images → sketches in the planner at creation (Fas D).
   const pendingSketchesRef = useRef<PendingSketch[]>([]);
+  // Skiva 2: the dropped originals, filed into the project's archive at creation.
+  const archiveFilesRef = useRef<ArchiveEntry[]>([]);
   // Contractor post-birth: offer to prefill a customer quote from the new tasks.
   const [postCreate, setPostCreate] = useState<{
     projectId: string;
@@ -233,6 +236,7 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
       setGapAddingRoom(false);
       pendingPurchasesRef.current = [];
       pendingSketchesRef.current = [];
+      archiveFilesRef.current = [];
       setPostCreate(null);
       setQuoteBusy(false);
       setPostCreateActivate(null);
@@ -548,6 +552,8 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
       });
       pendingPurchasesRef.current = outcome.pendingPurchases;
       pendingSketchesRef.current = isGuest ? [] : outcome.pendingSketches;
+      // Skiva 2: guests own no storage, so nothing is filed for them.
+      archiveFilesRef.current = isGuest ? [] : outcome.archiveFiles;
       describeUsedRef.current = true;
       analytics.capture(AnalyticsEvents.RENAIDA_PROJECT_DESCRIBE_USED, {
         user_type: userType,
@@ -866,6 +872,30 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
             t('renaidaFlow.folder.sketchesCreated', '{{count}} grovskiss(er) ritade i planritaren.', {
               count: drawn,
             })
+          );
+        }
+      }
+
+      // Skiva 2: file the dropped originals into the project's archive. The
+      // extraction consumed their CONTENT; the user still expects the FILES.
+      // Best-effort per file — a failed upload must not sink the project.
+      const archives = archiveFilesRef.current;
+      if (archives.length > 0) {
+        let filed = 0;
+        try {
+          for (const cat of new Set(archives.map((a) => a.category))) {
+            await ensureCategoryFolder(result.projectId, cat);
+          }
+          for (const entry of archives) {
+            const path = await uploadToCategoryFolder(result.projectId, entry.file, entry.category);
+            if (path) filed++;
+          }
+        } catch (e) {
+          console.error('RenaidaProjectDialog: archiving dropped files failed', e);
+        }
+        if (filed > 0) {
+          toast.success(
+            t('renaidaFlow.folder.filesArchived', '{{count}} filer sparade i Filer.', { count: filed })
           );
         }
       }

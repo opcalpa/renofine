@@ -4753,7 +4753,8 @@
       "sketchPlanName": "Esquisse – {{file}}",
       "unreadable": "Je n'ai pas pu lire {{count}} fichier(s).",
       "nothing": "Je n'ai rien trouvé à ajouter — écrivez, parlez ou prenez une photo à la place.",
-      "failed": "Impossible de lire le dossier"
+      "failed": "Impossible de lire le dossier",
+      "filesArchived": "{{count}} fichiers enregistrés dans Fichiers."
     },
     "source": {
       "answer": "Votre réponse",

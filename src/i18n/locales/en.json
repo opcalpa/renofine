@@ -7616,7 +7616,8 @@
       "sketchPlanName": "Rough sketch – {{file}}",
       "unreadable": "I couldn't read {{count}} file(s).",
       "nothing": "I couldn't find anything to add — type, speak, or take a photo instead.",
-      "failed": "Couldn't read the folder"
+      "failed": "Couldn't read the folder",
+      "filesArchived": "{{count}} files saved to Files."
     },
     "source": {
       "answer": "Your answer",
