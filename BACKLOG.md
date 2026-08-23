@@ -2793,3 +2793,90 @@ välnamnade filer (Planritning.pdf, Offert Badrum.pdf, Före-foton osv) via
 seed_demo_content (single-source), döp om/göm tekniska mappar; (b) mobil-UI:
 tabellen är desktop-formad — kort-läge på mobil (ikon+namn+meta, utan
 kolumnlinjer). (b) kan skivas separat.
+
+---
+id: folder-ingest-epic
+status: todo
+priority: P1
+tags: [epic, renaida, ingest, aktivering, growth]
+created: 2026-08-23
+---
+## EPIC: "Släpp din mapp" — mapp-drop → projekt (nytt/befintligt/retro)
+Carls vision 2026-08-23: dra hela lägenhets-/renoveringsmappen (inkl. undermappar:
+fakturor, offerter, kvitton, ritningar) till Renofine → Renaida frågar nytt/befintligt
+→ allt klassas, extraheras och landar som rum/arbeten/inköp/planritning. Extra
+målgrupp: RETRO-projekt (renovering klar → kvittosumma för deklaration/försäljning +
+detaljskisser på befintlig ritning) = förvärvs-wedge med noll koordinationskostnad,
+träffar aktiverings-flaskhalsen. Motorn finns till stor del redan
+(`ingestProjectFolder` + folder-drop i RenaidaProjectDialog + populate-existing).
+**Fullständig plan: `~/.claude/plans/mapp-ingest-slapp-din-mapp.md`** (nuläge
+verifierat mot kod, 5 skivor nedan, beslutspunkter §7). Byggs av Opus-session.
+
+---
+id: folder-drop-router
+status: todo
+priority: P1
+tags: [renaida, ingest, ux, desktop]
+created: 2026-08-23
+---
+## Skiva 1: Global dropyta + "Nytt / Befintligt"-router
+`FolderDropZone`-overlay på Projects.tsx + ProjectDetail.tsx (desktop-only) +
+`DropRouterDialog` (nytt projekt / project-picker för befintligt / avbryt).
+RenaidaProjectDialog får `initialDroppedFiles`-prop som auto-kör befintlig
+`runFolderIngest`. Filer-flikens egen drop orörd. Plan §Skiva 1. ~½ dag.
+
+---
+id: folder-ingest-archive-originals
+status: todo
+priority: P1
+tags: [renaida, ingest, files]
+created: 2026-08-23
+---
+## Skiva 2: Arkivera originalen i Filer vid ingest
+Idag försvinner original (utom kvitton→receipt_file_path) efter extraktion.
+Lyft kategori-uppladdningen ur BatchSmartUploadDialog till delad
+`uploadToCategoryFolder`-helper (en motor); `IngestOutcome.archiveFiles` →
+ladda upp allt vid födelse/populate (skippa redan-uppladdade kvitton, skippa
+gäster). Plan §Skiva 2. ~½ dag.
+
+---
+id: retro-project-mode
+status: todo
+priority: P1
+tags: [renaida, ingest, retro, rot, deklaration]
+created: 2026-08-23
+---
+## Skiva 3: Retro-läge — "renoveringen är redan gjord"
+Explicit fråga i födelseflödet (aldrig tyst inferens) → `retrospective`-flagga →
+scaffold som status=completed, tasks done/100%, datum ur dokumenten. Mjuka upp
+completed-flikarna (purchases/files/spacePlanner show; tasks readonly — BESLUT
+Carl, plan §7.1). Ny `CompletedProjectSummary` på Overview: totalt/betalt/ROT/
+per leverantör/per rum + print. Lyft hink-kalkylen ur PurchaseRequestsTab till
+delad helper. Plan §Skiva 3. ~1 dag. Inga migrationer.
+
+---
+id: ingest-confirmdiff-existing
+status: todo
+priority: P2
+tags: [renaida, ingest, agent, envelope]
+created: 2026-08-23
+---
+## Skiva 4: Ingest till befintligt projekt via ConfirmDiff
+`ingestOutcomeToProposals`: IngestOutcome → ProposalAction[] (create_room-dedup,
+create_task, import_purchase passthrough, NY action `create_plan_sketch` —
+BESLUT Carl, plan §7.2) → Renaida-panelens ConfirmDiff med per-post
+accept/reject + fil-provenance. Ersätter populate-existing för drops
+(wizard-ytan behåller gamla vägen tills städkort). Plan §Skiva 4. ~1 dag.
+
+---
+id: floorplan-pdf-and-progress
+status: todo
+priority: P2
+tags: [renaida, ingest, pdf, spaceplanner]
+created: 2026-08-23
+---
+## Skiva 5: Ritnings-PDF:er analyseras + filtak + progress
+PDF klassad floor_plan → rasterisera sida 1 m. pdfjs (destroy() på loading-task!)
+→ befintliga process-floorplan-pipelinen. MAX_FILES 40→100 m. bekräftelse >40
++ uttalad trunkering; `onProgress`-callback → "Läser fil N/M…" i dialogen;
+skippa filer >20 MB (sägs i summeringen). Plan §Skiva 5. ~½ dag.
