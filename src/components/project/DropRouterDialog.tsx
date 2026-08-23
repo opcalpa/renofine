@@ -20,7 +20,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { isDemoProject } from '@/services/demoProjectService';
-import { isProjectEditable, normalizeStatus } from '@/lib/projectStatus';
+import { normalizeStatus } from '@/lib/projectStatus';
 import type { DroppedFile } from '@/lib/dropTree';
 
 export type DropRoute =
@@ -86,7 +86,10 @@ export function DropRouterDialog({ open, onOpenChange, files, onRoute, isGuest =
       setProjects(
         data
           .filter((p) => !isDemoProject(p.project_type))
-          .filter((p) => isProjectEditable(normalizeStatus(p.status)))
+          // Completed projects stay in the picker on purpose (Skiva 3): late
+          // receipts, the archive and new detail sketches all land there.
+          // Only cancelled projects are a dead end.
+          .filter((p) => normalizeStatus(p.status) !== 'cancelled')
           .map((p) => ({ id: p.id, name: p.name }))
       );
     })();

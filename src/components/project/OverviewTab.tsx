@@ -36,6 +36,7 @@ import { GuestPlanningSection } from "./overview/GuestPlanningSection";
 import { ProjectHeader } from "./overview/ProjectHeader";
 import { HouseholdRotDialog } from "./overview/HouseholdRotDialog";
 import { useTaxDeductionVisible } from "@/hooks/useTaxDeduction";
+import { CompletedProjectSummary } from "./overview/CompletedProjectSummary";
 import { ReminderSection } from "./overview/ReminderSection";
 import { InspirationSection } from "./overview/InspirationSection";
 import { normalizeStatus, isQuotePhase } from "@/lib/projectStatus";
@@ -379,6 +380,17 @@ const OverviewTab = ({
   return (
     <div className="space-y-6">
       <ProjectHeader project={project} onOpenSettings={(isProjectOwner || overviewAccess === 'edit') ? () => setSettingsOpen(true) : undefined} onStatusChange={isProjectOwner ? handleStatusChange : undefined} actions={isPlanning ? planningActions : undefined} />
+
+      {/* Skiva 3: a finished project leads with what it cost and what can be
+          deducted — the reason a retro project exists at all. */}
+      {projectStatus === "completed" && !isGuest && (
+        <CompletedProjectSummary
+          projectId={project.id}
+          currency={project.currency}
+          isHomeowner={isHomeowner}
+          showTaxDeduction={showTaxDeduction}
+        />
+      )}
 
       {/* RFQ banner — builder working on a homeowner's quote request */}
       {isRfqProject && !isHomeowner && isPlanning && (

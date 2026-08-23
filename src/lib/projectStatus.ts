@@ -203,6 +203,11 @@ export function getStatusCTA(status: ProjectStatus): StatusCTA | null {
 // Tab visibility per status
 // ---------------------------------------------------------------------------
 
+/**
+ * NOTE (2026-08-23): getTabVisibility has no callers — ProjectDetail gates tabs
+ * on member permissions + enabled modules, not on status. Kept (and kept honest)
+ * as the declared intent, but changing it changes nothing on its own.
+ */
 type TabVisibility = "show" | "hide" | "readonly";
 
 export interface TabConfig {
@@ -246,12 +251,17 @@ export function getTabVisibility(status: ProjectStatus): TabConfig {
     case "on_hold":
       return FULL_ACCESS;
     case "completed":
+      // Skiva 3: a finished project is still a living archive. Receipts arrive
+      // late (declaration, sale), files keep being added, and the drawing is
+      // where the next small job gets sketched — shelves, benches, built-ins.
+      // Tasks stay read-only: new work means reopening the project or starting
+      // a new one, which keeps "completed" an honest statement.
       return {
         overview: "show",
         tasks: "readonly",
-        spacePlanner: "readonly",
-        files: "readonly",
-        purchases: "readonly",
+        spacePlanner: "show",
+        files: "show",
+        purchases: "show",
         budget: "show",
         teams: "readonly",
       };

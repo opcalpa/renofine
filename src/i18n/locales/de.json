@@ -943,7 +943,9 @@
     "continue": "Weiter",
     "zoomOut": "Verkleinern",
     "zoomIn": "Vergrößern",
-    "notFound": "Rechnung nicht gefunden"
+    "notFound": "Rechnung nicht gefunden",
+    "inclVat": "inkl. MwSt.",
+    "exclVat": "exkl. MwSt."
   },
   "controls": {
     "redo": "Wiederherstellen",
@@ -2327,7 +2329,17 @@
     "coverUrl": "Link einfügen",
     "coverExisting": "Aus Bildern wählen",
     "coverPickExisting": "Titelbild wählen",
-    "noExistingImages": "Keine Bilder gefunden"
+    "noExistingImages": "Keine Bilder gefunden",
+    "completed": {
+      "title": "Zusammenfassung",
+      "print": "Drucken",
+      "rot": "Grundlage Steuerabzug",
+      "byVendor": "Nach Lieferant",
+      "byRoom": "Nach Raum",
+      "unassigned": "Keinem Raum zugeordnet",
+      "unknownVendor": "Unbekannter Lieferant",
+      "receipts": "{{withReceipt}} von {{total}} Einkäufen haben Belege gespeichert."
+    }
   },
   "ownerStart": {
     "greetingAfternoon": "Guten Tag",
@@ -4764,6 +4776,14 @@
       "floorplan": "Aus einer Zeichnung",
       "suggestion": "Renaidas Vorschlag",
       "critic": "Renaidas Prüfung"
+    },
+    "retro": {
+      "ask": "Das sieht nach einer bereits abgeschlossenen Renovierung aus — stimmt das?",
+      "askNeutral": "Ist das ein laufendes Projekt?",
+      "hint": "Ein abgeschlossenes Projekt wird als beendet angelegt: die Arbeiten werden als erledigt eingetragen und du erhältst eine Übersicht über Belege und Steuerabzüge.",
+      "ongoing": "Laufendes Projekt",
+      "done": "Bereits abgeschlossen",
+      "dated": "Ich datiere das Projekt {{from}} – {{to}} anhand deiner Dokumente."
     }
   },
   "pipeline": {

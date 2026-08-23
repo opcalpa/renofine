@@ -338,7 +338,9 @@
     "continue": "Fortsätt",
     "zoomOut": "Zooma ut",
     "zoomIn": "Zooma in",
-    "notFound": "Fakturan hittades inte"
+    "notFound": "Fakturan hittades inte",
+    "inclVat": "inkl. moms",
+    "exclVat": "exkl. moms"
   },
   "beta": {
     "title": "Publik beta",
@@ -2995,7 +2997,17 @@
     "coverUrl": "Klistra länk",
     "coverExisting": "Välj bland bilder",
     "coverPickExisting": "Välj omslagsbild",
-    "noExistingImages": "Inga bilder hittades"
+    "noExistingImages": "Inga bilder hittades",
+    "completed": {
+      "title": "Sammanställning",
+      "print": "Skriv ut",
+      "rot": "ROT-underlag",
+      "byVendor": "Per leverantör",
+      "byRoom": "Per rum",
+      "unassigned": "Ej rumsatt",
+      "unknownVendor": "Okänd leverantör",
+      "receipts": "{{withReceipt}} av {{total}} inköp har underlag sparat."
+    }
   },
   "receipt": {
     "title": "Snabb Kvittofångst",
@@ -7657,6 +7669,14 @@
       "allGood": "Jag dubbelkollade planen mot liknande projekt — ser komplett ut. ✓",
       "add": "Lägg till",
       "looksGood": "Ser bra ut ändå"
+    },
+    "retro": {
+      "ask": "Det här ser ut som en renovering som redan är gjord — stämmer det?",
+      "askNeutral": "Är det här ett pågående projekt?",
+      "hint": "Ett genomfört projekt skapas som avslutat: arbetena läggs in som klara och du får en sammanställning av kvitton och ROT — bra inför deklaration eller försäljning.",
+      "ongoing": "Pågående projekt",
+      "done": "Redan genomfört",
+      "dated": "Jag daterar projektet {{from}} – {{to}} utifrån dina dokument."
     }
   },
   "pwa": {

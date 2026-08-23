@@ -14,7 +14,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Sparkles, ArrowRight, Home, Hammer, Wallet, MapPin, Loader2, Check, Camera,
   MessageSquare, FileText, PenTool, X, RotateCcw, FolderUp, User, Calculator,
-  ShieldAlert, Pencil, Play, ClipboardList, ShoppingCart, ChevronDown,
+  ShieldAlert, Pencil, Play, ClipboardList, ShoppingCart, ChevronDown, CalendarCheck,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -147,6 +147,11 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
   const pendingSketchesRef = useRef<PendingSketch[]>([]);
   // Skiva 2: the dropped originals, filed into the project's archive at creation.
   const archiveFilesRef = useRef<ArchiveEntry[]>([]);
+  // Skiva 3: a folder drop happened → offer the "already finished?" choice at
+  // the confirm step. `retroSuggested` only decides how the question is FRAMED;
+  // the flag itself is never set without an explicit answer.
+  const [folderIngested, setFolderIngested] = useState(false);
+  const [retroSuggested, setRetroSuggested] = useState(false);
   // Contractor post-birth: offer to prefill a customer quote from the new tasks.
   const [postCreate, setPostCreate] = useState<{
     projectId: string;
@@ -237,6 +242,8 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
       pendingPurchasesRef.current = [];
       pendingSketchesRef.current = [];
       archiveFilesRef.current = [];
+      setFolderIngested(false);
+      setRetroSuggested(false);
       setPostCreate(null);
       setQuoteBusy(false);
       setPostCreateActivate(null);
@@ -583,7 +590,29 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
 
       let next = outcome.draft;
       if (!next.projectName) next = { ...next, projectName: t('renaidaFlow.name.other') };
+
+      // Skiva 3: the documents date the project. Purely derived here — whether
+      // the project IS retro is decided by the user at the confirm step.
+      const docDates = outcome.pendingPurchases
+        .map((a) => a.documentDate)
+        .filter((d): d is string => !!d)
+        .sort();
+      if (docDates.length > 0) {
+        next = { ...next, retroStartDate: docDates[0], retroEndDate: docDates[docDates.length - 1] };
+      }
       setDraft(next);
+      setFolderIngested(true);
+
+      // Frames the question, never answers it: a receipt-heavy drop whose
+      // newest document is months old smells like a finished renovation.
+      const newest = docDates.length > 0 ? new Date(docDates[docDates.length - 1]) : null;
+      const monthsOld = newest
+        ? (Date.now() - newest.getTime()) / (1000 * 60 * 60 * 24 * 30)
+        : 0;
+      const taskCountNow = next.tasks.filter((tk) => !tk.excluded).length;
+      setRetroSuggested(
+        outcome.receiptCount > 0 && (monthsOld > 3 || outcome.receiptCount >= taskCountNow)
+      );
 
       const lines: string[] = [
         t('renaidaFlow.folder.summary', 'Jag läste {{files}} filer → {{rooms}} rum och {{tasks}} arbeten.', {
@@ -929,6 +958,15 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
         sketches_imported: pendingSketchesRef.current.length,
       });
       toast.success(t('renaidaFlow.err.created', 'Projektet är skapat! 🎉'));
+
+      // Skiva 3: a retro project is already finished — quoting it or activating
+      // it would be nonsense. Land the user straight in its summary instead.
+      if (draft.retrospective) {
+        onOpenChange(false);
+        navigate(`/projects/${result.projectId}`);
+        setCreating(false);
+        return;
+      }
 
       // Proactive contractor help (K1): the project was born with tasks — offer
       // to prefill a customer quote from them (same prepopulate deep-link as
@@ -1527,6 +1565,48 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
                       </div>
                     ) : null}
                   </div>
+
+                  {/* Skiva 3: retro projects. Asked, never inferred — a wrong
+                      guess would silently mark a live project finished. */}
+                  {folderIngested && (
+                    <div className="space-y-2 rounded-lg border bg-muted/20 p-3">
+                      <div className="flex items-center gap-1.5 text-sm font-medium">
+                        <CalendarCheck className="h-4 w-4 text-primary shrink-0" />
+                        {retroSuggested
+                          ? t('renaidaFlow.retro.ask', 'Det här ser ut som en renovering som redan är gjord — stämmer det?')
+                          : t('renaidaFlow.retro.askNeutral', 'Är det här ett pågående projekt?')}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {t('renaidaFlow.retro.hint', 'Ett genomfört projekt skapas som avslutat: arbetena läggs in som klara och du får en sammanställning av kvitton och ROT — bra inför deklaration eller försäljning.')}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={draft.retrospective ? 'outline' : 'default'}
+                          onClick={() => setDraft((d) => ({ ...d, retrospective: false }))}
+                        >
+                          {t('renaidaFlow.retro.ongoing', 'Pågående projekt')}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={draft.retrospective ? 'default' : 'outline'}
+                          onClick={() => setDraft((d) => ({ ...d, retrospective: true }))}
+                        >
+                          {t('renaidaFlow.retro.done', 'Redan genomfört')}
+                        </Button>
+                      </div>
+                      {draft.retrospective && draft.retroStartDate && (
+                        <p className="text-xs text-muted-foreground">
+                          {t('renaidaFlow.retro.dated', 'Jag daterar projektet {{from}} – {{to}} utifrån dina dokument.', {
+                            from: draft.retroStartDate,
+                            to: draft.retroEndDate ?? draft.retroStartDate,
+                          })}
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   {/* #3: optional planned material shopping list — suggested from
                       the tasks, editable, no amounts. Visible on all viewports. */}

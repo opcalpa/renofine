@@ -92,6 +92,7 @@ import { PurchaseOrdersTableView } from "./PurchaseOrdersTableView";
 import { PurchaseOrdersGridV2 } from "./po-list-v2/PurchaseOrdersGridV2";
 import type { PO, POMaterial } from "./po-list-v2/types";
 import { AddMaterialDialog } from "./overview/AddMaterialDialog";
+import { computePurchaseTotals } from "@/lib/purchaseTotals";
 
 interface Material {
   id: string;
@@ -1166,14 +1167,9 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
           "remaining" is only what's actually consumed against planned rows. */}
       {(plannedMaterials.length > 0 || purchaseOrders.length > 0) && (() => {
         // Actual spend from real purchase orders (independent of budget linkage).
-        const paidTotal = purchaseOrders
-          .filter((po) => po.paid_at)
-          .reduce((s, po) => s + (po.total || 0), 0);
-        // Committed but not yet paid — incl. delivered-but-unpaid (invoice terms).
-        const committedTotal = purchaseOrders
-          .filter((po) => !po.paid_at && ['ordered', 'delivered', 'pending'].includes(po.status))
-          .reduce((s, po) => s + (po.total || 0), 0);
-        const spentTotal = paidTotal + committedTotal;
+        // Shared engine — the completed-project summary reports the same numbers.
+        const { paidTotal, committedTotal, spentTotal, paidPOs, orderedPOs } =
+          computePurchaseTotals(purchaseOrders);
         // Budget reference — consumption = spend linked back to a planned row.
         const totalBudget = plannedMaterials.reduce((s, m) => s + (m.price_total || 0), 0);
         const consumed = plannedMaterials.reduce(
@@ -1182,10 +1178,6 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
         );
         const remaining = totalBudget - consumed;
         // POs behind each bucket, so tapping a total reveals what it's made of.
-        const orderedPOs = purchaseOrders.filter(
-          (po) => !po.paid_at && ['ordered', 'delivered', 'pending'].includes(po.status),
-        );
-        const paidPOs = purchaseOrders.filter((po) => po.paid_at);
         const cells = [
           { bucket: 'ordered' as const, label: t("purchases.ordered", "Beställt"), value: committedTotal, cls: "text-amber-600", pos: orderedPOs },
           { bucket: 'paid' as const, label: t("purchases.paid", "Betalt"), value: paidTotal, cls: "text-emerald-600", pos: paidPOs },

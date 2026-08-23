@@ -338,7 +338,9 @@
     "continue": "Continue",
     "zoomOut": "Zoom out",
     "zoomIn": "Zoom in",
-    "notFound": "Invoice not found"
+    "notFound": "Invoice not found",
+    "inclVat": "incl. VAT",
+    "exclVat": "excl. VAT"
   },
   "beta": {
     "title": "Public Beta",
@@ -3606,7 +3608,17 @@
     "coverUrl": "Paste link",
     "coverExisting": "Choose from images",
     "coverPickExisting": "Choose cover image",
-    "noExistingImages": "No images found"
+    "noExistingImages": "No images found",
+    "completed": {
+      "title": "Summary",
+      "print": "Print",
+      "rot": "Tax deduction basis",
+      "byVendor": "By supplier",
+      "byRoom": "By room",
+      "unassigned": "Not assigned to a room",
+      "unknownVendor": "Unknown supplier",
+      "receipts": "{{withReceipt}} of {{total}} purchases have documentation saved."
+    }
   },
   "receipt": {
     "title": "Quick Receipt Capture",
@@ -7658,6 +7670,14 @@
       "allGood": "I double-checked the plan against similar projects — looks complete. ✓",
       "add": "Add",
       "looksGood": "Looks good as is"
+    },
+    "retro": {
+      "ask": "This looks like a renovation that's already done — is that right?",
+      "askNeutral": "Is this an ongoing project?",
+      "hint": "A finished project is created as completed: the work is added as done and you get a summary of receipts and tax deductions — useful for your tax return or a sale.",
+      "ongoing": "Ongoing project",
+      "done": "Already completed",
+      "dated": "I'm dating the project {{from}} – {{to}} based on your documents."
     }
   },
   "pwa": {

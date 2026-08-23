@@ -943,7 +943,9 @@
     "continue": "Continuer",
     "zoomOut": "Zoom arrière",
     "zoomIn": "Zoom avant",
-    "notFound": "Facture introuvable"
+    "notFound": "Facture introuvable",
+    "inclVat": "TTC",
+    "exclVat": "HT"
   },
   "controls": {
     "redo": "Rétablir",
@@ -2327,7 +2329,17 @@
     "coverUrl": "Coller un lien",
     "coverExisting": "Choisir parmi les images",
     "coverPickExisting": "Choisir l'image de couverture",
-    "noExistingImages": "Aucune image trouvée"
+    "noExistingImages": "Aucune image trouvée",
+    "completed": {
+      "title": "Récapitulatif",
+      "print": "Imprimer",
+      "rot": "Base de déduction fiscale",
+      "byVendor": "Par fournisseur",
+      "byRoom": "Par pièce",
+      "unassigned": "Sans pièce attribuée",
+      "unknownVendor": "Fournisseur inconnu",
+      "receipts": "{{withReceipt}} achats sur {{total}} ont un justificatif enregistré."
+    }
   },
   "ownerStart": {
     "greetingAfternoon": "Bon après-midi",
@@ -4764,6 +4776,14 @@
       "floorplan": "À partir d'un plan",
       "suggestion": "Suggestion de Renaida",
       "critic": "Vérification de Renaida"
+    },
+    "retro": {
+      "ask": "On dirait une rénovation déjà terminée — c'est bien ça ?",
+      "askNeutral": "S'agit-il d'un projet en cours ?",
+      "hint": "Un projet terminé est créé comme achevé : les travaux sont ajoutés comme faits et vous obtenez un récapitulatif des reçus et des déductions fiscales.",
+      "ongoing": "Projet en cours",
+      "done": "Déjà terminé",
+      "dated": "Je date le projet du {{from}} au {{to}} d'après vos documents."
     }
   },
   "pipeline": {

@@ -49,6 +49,8 @@ export interface ScaffoldTaskInput {
   status?: string;
   /** Defaults to "medium". */
   priority?: string;
+  /** 0–100. Defaults to 0; retro (already-built) work lands at 100. */
+  progress?: number;
   costCenter?: string | null;
   taskCostType?: string | null;
   subcontractorCost?: number | null;
@@ -81,6 +83,9 @@ export interface ScaffoldProjectInput {
     /** Defaults to "planning". */
     status?: string;
     totalBudget?: number | null;
+    /** YYYY-MM-DD. Retro projects date themselves from their documents. */
+    startDate?: string | null;
+    finishGoalDate?: string | null;
   };
   /**
    * Populate an EXISTING project instead of creating one. When set, `project` is
@@ -160,6 +165,8 @@ export async function scaffoldProject(
         country: input.project.country ?? "SE",
         status: input.project.status ?? "planning",
         total_budget: input.project.totalBudget ?? null,
+        start_date: input.project.startDate ?? null,
+        finish_goal_date: input.project.finishGoalDate ?? null,
       })
       .select("id")
       .single();
@@ -213,6 +220,7 @@ export async function scaffoldProject(
         description: task.description ?? null,
         status: task.status ?? "planned",
         priority: task.priority ?? "medium",
+        progress: task.progress ?? 0,
         created_by_user_id: creatorProfileId,
         cost_center: task.costCenter ?? null,
         task_cost_type: task.taskCostType ?? null,

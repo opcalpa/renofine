@@ -943,7 +943,9 @@
     "continue": "Continuar",
     "zoomOut": "Alejar",
     "zoomIn": "Acercar",
-    "notFound": "Factura no encontrada"
+    "notFound": "Factura no encontrada",
+    "inclVat": "IVA incl.",
+    "exclVat": "IVA excl."
   },
   "controls": {
     "redo": "Rehacer",
@@ -2327,7 +2329,17 @@
     "coverUrl": "Pegar enlace",
     "coverExisting": "Elegir entre imágenes",
     "coverPickExisting": "Elegir imagen de portada",
-    "noExistingImages": "No se encontraron imágenes"
+    "noExistingImages": "No se encontraron imágenes",
+    "completed": {
+      "title": "Resumen",
+      "print": "Imprimir",
+      "rot": "Base de deducción fiscal",
+      "byVendor": "Por proveedor",
+      "byRoom": "Por estancia",
+      "unassigned": "Sin estancia asignada",
+      "unknownVendor": "Proveedor desconocido",
+      "receipts": "{{withReceipt}} de {{total}} compras tienen justificante guardado."
+    }
   },
   "ownerStart": {
     "greetingAfternoon": "Buenas tardes",
@@ -4764,6 +4776,14 @@
       "floorplan": "De un plano",
       "suggestion": "Sugerencia de Renaida",
       "critic": "Comprobación de Renaida"
+    },
+    "retro": {
+      "ask": "Esto parece una reforma que ya está hecha, ¿es así?",
+      "askNeutral": "¿Es este un proyecto en curso?",
+      "hint": "Un proyecto terminado se crea como completado: los trabajos se añaden como hechos y obtienes un resumen de recibos y deducciones fiscales.",
+      "ongoing": "Proyecto en curso",
+      "done": "Ya completado",
+      "dated": "Fecho el proyecto del {{from}} al {{to}} según tus documentos."
     }
   },
   "pipeline": {

@@ -108,6 +108,15 @@ export interface ProjectDraft {
    * cells). Never forced — chosen in the calc step.
    */
   calcLevel?: 'suggest' | 'self';
+  /**
+   * Skiva 3: the renovation ALREADY HAPPENED. Set only from an explicit answer
+   * (never inferred silently) — it flips the project to `completed`, marks the
+   * scaffolded work done, and dates the project from its own documents.
+   */
+  retrospective?: boolean;
+  /** YYYY-MM-DD span derived from the ingested documents (retro projects). */
+  retroStartDate?: string | null;
+  retroEndDate?: string | null;
   /** Step ids already answered (incl. skipped) — drives the conditional flow. */
   answered: string[];
 }
@@ -732,8 +741,12 @@ export function toScaffoldInput(
             name: draft.projectName?.trim() || 'Nytt projekt',
             address: draft.address ?? null,
             country: 'SE',
-            status: 'planning',
+            // Skiva 3: a retro project is born finished — it exists for the
+            // receipts, the archive and the drawings, not for a to-do list.
+            status: draft.retrospective ? 'completed' : 'planning',
             totalBudget: draft.totalBudget ?? null,
+            startDate: draft.retrospective ? draft.retroStartDate ?? null : null,
+            finishGoalDate: draft.retrospective ? draft.retroEndDate ?? null : null,
           },
         }),
     rooms: draft.rooms.map((r) => ({
@@ -748,6 +761,10 @@ export function toScaffoldInput(
         roomName: t.roomName,
         costCenter: t.costCenter,
         budget: t.budgetSek ?? null,
+        // Retro: the work is already built — it lands finished, not to-do.
+        // 'completed' is the canonical status ('done' is the legacy value the
+        // Kanban explicitly filters out).
+        ...(draft.retrospective ? { status: 'completed', progress: 100 } : {}),
         // E1: the suggested calc lands as prefilled editable cells in the
         // planning table; E2: the formula travels as structured provenance
         // (estimate_meta) — the table shows it and marks edits as overridden.
