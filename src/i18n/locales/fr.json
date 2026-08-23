@@ -7808,6 +7808,14 @@
       "renaidaHint": "Les reçus deviennent des achats, les devis des travaux, les plans vont dans le planificateur. Les fichiers sont aussi enregistrés.",
       "files": "Enregistrer seulement dans Fichiers",
       "filesHint": "Triés dans le bon dossier — rien n'est ajouté aux données du projet."
+    },
+    "nothingFound": "Je n'ai rien trouvé à ajouter — les fichiers sont enregistrés dans Fichiers.",
+    "proposal": {
+      "lead": "J'ai lu {{files}} fichiers du dossier. Voici comment je les ajouterais — cochez ce que vous voulez :",
+      "room": "Ajouter la pièce {{name}}",
+      "task": "Ajouter les travaux {{title}}",
+      "purchase": "Enregistrer l'achat chez {{vendor}} ({{total}} kr)",
+      "sketch": "Dessiner le plan {{file}} ({{count}} pièces)"
     }
   }
 }

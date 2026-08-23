@@ -7808,6 +7808,14 @@
       "renaidaHint": "Belege werden Einkäufe, Angebote werden Arbeiten, Zeichnungen landen im Planer. Die Dateien werden ebenfalls gespeichert.",
       "files": "Nur unter Dateien speichern",
       "filesHint": "In den richtigen Ordner sortiert — nichts wird zu den Projektdaten hinzugefügt."
+    },
+    "nothingFound": "Ich habe nichts zum Hinzufügen gefunden — die Dateien sind unter Dateien gespeichert.",
+    "proposal": {
+      "lead": "Ich habe {{files}} Dateien aus dem Ordner gelesen. So würde ich sie eintragen — hake ab, was du möchtest:",
+      "room": "Raum {{name}} hinzufügen",
+      "task": "Arbeit {{title}} hinzufügen",
+      "purchase": "Einkauf von {{vendor}} verbuchen ({{total}} kr)",
+      "sketch": "Zeichnung {{file}} einzeichnen ({{count}} Räume)"
     }
   }
 }

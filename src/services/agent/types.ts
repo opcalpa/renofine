@@ -108,6 +108,14 @@ export type ProposalAction =
        *  a normal material-budget line. Off by default; user opt-in in ConfirmDiff. */
       bookAsAta?: boolean;
     }
+  /**
+   * Skiva 4: an analyzed floor plan → a new plan in the Space Planner with the
+   * detected walls/rooms/doors drawn in. Built CLIENT-SIDE from the folder
+   * ingest (the router never emits it). The analysis result travels via the
+   * in-memory sketch registry keyed by sketchKey — like import_purchase's
+   * attachment, geometry blobs don't belong in a serializable action.
+   */
+  | { type: "create_plan_sketch"; planName: string; sketchKey: string; roomCount: number; wallCount: number }
   /** Router could not confidently route the input — surface as a question, never apply. */
   | { type: "unknown"; rawText: string; reason: string };
 
@@ -149,6 +157,8 @@ export type UndoOp =
   | { kind: "task_assignee"; taskId: string; before: { assigned_to_stakeholder_id: string | null } }
   /** Imported document purchase: N material rows + the PO + uploaded file/links. */
   | { kind: "delete_import_purchase"; purchaseOrderId: string; materialIds: string[]; filePath?: string | null }
+  /** Skiva 4: a plan drawn from an ingested drawing — undo deletes the plan. */
+  | { kind: "delete_plan"; planId: string }
   /** E3: a default-rate change on the profile — undo restores the old value. */
   | { kind: "profile_rate"; profileId: string; field: "default_hourly_rate" | "default_markup_percent" | "default_material_markup_percent"; before: number | null };
 

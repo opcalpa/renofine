@@ -11,6 +11,9 @@
 import { supabase } from "@/integrations/supabase/client";
 import { createRequestPurchase } from "@/lib/createRequestPurchase";
 import { importPurchaseOrder } from "./importPurchaseOrder";
+import { takeSketch } from "./sketchRegistry";
+import { floorPlanResultToShapes } from "@/services/aiVisionService";
+import { createPlanInDB, deletePlanFromDB, saveShapesForPlan } from "@/components/floormap/utils/plans";
 import type { ActionableProposal, AgentProposal, UndoOp } from "./types";
 import { isActionable } from "./types";
 
@@ -389,6 +392,30 @@ async function applyOne(
       logActivity(projectId, profileId, "renaida_set_rate", "profile", profileId, `${action.field}=${action.value}`, { field: action.field, value: action.value, before });
       return { kind: "profile_rate", profileId, field: column, before };
     }
+
+    case "create_plan_sketch": {
+      // Skiva 4: an ingested drawing becomes a real, editable plan — the same
+      // three helpers project birth uses (one engine, two doors).
+      const result = takeSketch(action.sketchKey);
+      if (!result) throw new Error("Ritningen finns inte kvar — släpp mappen igen");
+
+      const plan = await createPlanInDB(projectId, action.planName);
+      if (!plan) throw new Error("Kunde inte skapa planritningen");
+
+      const shapes = floorPlanResultToShapes(result, plan.id);
+      if (shapes.length === 0 || !(await saveShapesForPlan(plan.id, shapes))) {
+        // Don't leave an empty plan behind when the geometry didn't land.
+        await deletePlanFromDB(plan.id);
+        throw new Error("Kunde inte rita in ritningen");
+      }
+
+      logActivity(projectId, profileId, "renaida_plan_sketch", "project", projectId, action.planName, {
+        plan_id: plan.id,
+        rooms: action.roomCount,
+        walls: action.wallCount,
+      });
+      return { kind: "delete_plan", planId: plan.id };
+    }
   }
 }
 
@@ -566,6 +593,9 @@ export async function undoProposals(undo: UndoOp[], projectId?: string, undoStac
         case "delete_purchase":
           await supabase.from("materials").delete().eq("id", op.materialId);
           await supabase.from("purchase_orders").delete().eq("id", op.purchaseOrderId);
+          break;
+        case "delete_plan":
+          await deletePlanFromDB(op.planId);
           break;
         case "delete_import_purchase":
           if (op.materialIds.length) {

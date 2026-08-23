@@ -1299,6 +1299,27 @@ export function Renaida() {
     })();
   }, [open, pendingShareFiles, handleDocumentSelected]);
 
+  // Skiva 4: a folder dropped on the project page was read headlessly; its
+  // proposals arrive here and render as a normal ConfirmDiff batch — per-item
+  // accept/reject, provenance, undo. Nothing is applied without confirmation.
+  const pendingIngest = useRenaidaStore((s) => s.pendingIngest);
+  useEffect(() => {
+    if (!open || !pendingIngest || pendingIngest.proposals.length === 0) return;
+    useRenaidaStore.getState().setPendingIngest(null);
+    const projectId = useRenaidaStore.getState().projectId;
+    analytics.capture(AnalyticsEvents.FOLDER_INGEST_PROPOSED, {
+      count: pendingIngest.proposals.length,
+      kinds: pendingIngest.proposals.map((p) => p.action.type),
+    });
+    setMessages((prev) => [...prev, {
+      role: "assistant",
+      content: pendingIngest.summary,
+      proposals: pendingIngest.proposals,
+      ...(projectId ? { projectId } : {}),
+    }]);
+    flashRenaida("happy");
+  }, [open, pendingIngest, setMessages, flashRenaida]);
+
   // D2: the dedicated review dialog finished importing — acknowledge in the feed
   // so the conversation reflects what actually happened, and nudge data consumers.
   const handleDocHandoffComplete = useCallback(() => {

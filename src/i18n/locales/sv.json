@@ -7797,6 +7797,14 @@
       "renaidaHint": "Kvitton blir inköp, offerter blir arbeten, ritningar hamnar i planritaren. Filerna sparas också.",
       "files": "Bara spara i Filer",
       "filesHint": "Sorteras i rätt mapp — inget läggs till i projektets data."
+    },
+    "nothingFound": "Jag hittade inget att lägga till — filerna är sparade i Filer.",
+    "proposal": {
+      "lead": "Jag läste {{files}} filer ur mappen. Så här vill jag lägga in dem — bocka av det du vill ha:",
+      "room": "Lägg till rummet {{name}}",
+      "task": "Lägg till arbetet {{title}}",
+      "purchase": "Bokför inköp från {{vendor}} ({{total}} kr)",
+      "sketch": "Rita in ritningen {{file}} ({{count}} rum)"
     }
   }
 }

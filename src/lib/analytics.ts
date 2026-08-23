@@ -114,6 +114,7 @@ export const AnalyticsEvents = {
   // Folder ingest ("släpp din mapp") — the desktop migration wedge.
   FOLDER_DROP_STARTED: "folder_drop_started",
   FOLDER_DROP_ROUTED: "folder_drop_routed",
+  FOLDER_INGEST_PROPOSED: "folder_ingest_proposed",
 
   // Errors (supplement to Sentry)
   ERROR_BOUNDARY_TRIGGERED: "error_boundary_triggered",

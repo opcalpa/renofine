@@ -7798,6 +7798,14 @@
       "renaidaHint": "Receipts become purchases, quotes become work, drawings go to the planner. The files are saved too.",
       "files": "Just save them to Files",
       "filesHint": "Sorted into the right folder — nothing is added to the project's data."
+    },
+    "nothingFound": "I didn't find anything to add — the files are saved in Files.",
+    "proposal": {
+      "lead": "I read {{files}} files from the folder. Here's how I'd like to add them — tick what you want:",
+      "room": "Add the room {{name}}",
+      "task": "Add the work {{title}}",
+      "purchase": "Record purchase from {{vendor}} ({{total}} kr)",
+      "sketch": "Draw in the plan {{file}} ({{count}} rooms)"
     }
   }
 }

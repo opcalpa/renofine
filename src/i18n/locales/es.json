@@ -7808,6 +7808,14 @@
       "renaidaHint": "Los recibos se vuelven compras, los presupuestos trabajos, los planos van al planificador. Los archivos también se guardan.",
       "files": "Solo guardarlos en Archivos",
       "filesHint": "Ordenados en la carpeta correcta — no se añade nada a los datos del proyecto."
+    },
+    "nothingFound": "No encontré nada que añadir — los archivos están guardados en Archivos.",
+    "proposal": {
+      "lead": "Leí {{files}} archivos de la carpeta. Así los añadiría — marca lo que quieras:",
+      "room": "Añadir la estancia {{name}}",
+      "task": "Añadir el trabajo {{title}}",
+      "purchase": "Registrar compra de {{vendor}} ({{total}} kr)",
+      "sketch": "Dibujar el plano {{file}} ({{count}} estancias)"
     }
   }
 }

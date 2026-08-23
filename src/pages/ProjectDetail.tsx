@@ -2,11 +2,14 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { FolderDropZone } from "@/components/project/FolderDropZone";
 import { DropTargetChoiceDialog, type DropTargetChoice } from "@/components/project/DropTargetChoiceDialog";
-import { RenaidaProjectDialog } from "@/components/project/RenaidaProjectDialog";
 import { BatchSmartUploadDialog } from "@/components/project/BatchSmartUploadDialog";
 import { takeDroppedFolder } from "@/services/agent/droppedFolderHandoff";
 import type { DroppedFile } from "@/lib/dropTree";
 import { analytics, AnalyticsEvents } from "@/lib/analytics";
+import { ingestProjectFolder } from "@/services/ingestProjectFolder";
+import { ingestOutcomeToProposals } from "@/services/agent/ingestToProposals";
+import { emptyDraft } from "@/services/renaidaProjectFlow";
+import { ensureCategoryFolder, uploadToCategoryFolder } from "@/services/smartUploadService";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useRenaidaStore } from "@/stores/renaidaStore";
@@ -124,7 +127,7 @@ const ProjectDetail = () => {
   const [quoteDialogOpen, setQuoteDialogOpen] = useState(false);
   const [roomsVersion, setRoomsVersion] = useState(0);
   useProfileLanguage();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [market] = useMarket();
 
   // Menu configurations for hover dropdowns
@@ -147,8 +150,8 @@ const ProjectDetail = () => {
   // Skiva 1: folder-drop routing state.
   const [droppedFiles, setDroppedFiles] = useState<DroppedFile[]>([]);
   const [dropChoiceOpen, setDropChoiceOpen] = useState(false);
-  const [ingestDialogOpen, setIngestDialogOpen] = useState(false);
-  const [ingestFiles, setIngestFiles] = useState<File[] | undefined>(undefined);
+  // Skiva 4: headless ingest progress while the folder is being read.
+  const [ingestBusy, setIngestBusy] = useState<{ done: number; total: number } | null>(null);
   const [batchOpen, setBatchOpen] = useState(false);
   const [batchFiles, setBatchFiles] = useState<DroppedFile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -664,8 +667,8 @@ const ProjectDetail = () => {
       return next;
     }, { replace: true });
     if (!files || files.length === 0) return;
-    setIngestFiles(files.map((d) => d.file));
-    setIngestDialogOpen(true);
+    void runIngestIntoProject(files.map((d) => d.file));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project?.id, searchParams, setSearchParams]);
 
   const handleRoomUpdated = () => {
@@ -1059,11 +1062,94 @@ const ProjectDetail = () => {
       choice,
     });
     if (choice === 'renaida') {
-      setIngestFiles(droppedFiles.map((d) => d.file));
-      setIngestDialogOpen(true);
+      void runIngestIntoProject(droppedFiles.map((d) => d.file));
     } else {
       setBatchFiles(droppedFiles);
       setBatchOpen(true);
+    }
+  };
+
+  /**
+   * Skiva 4: read the folder headlessly, then hand the result to Renaida as a
+   * proposal batch. Nothing is written until the user confirms in ConfirmDiff —
+   * an existing project must never be mutated by a drag gesture alone.
+   */
+  const runIngestIntoProject = async (files: File[]) => {
+    if (!project?.id || files.length === 0) return;
+    setIngestBusy({ done: 0, total: files.length });
+    try {
+      const outcome = await ingestProjectFolder(files, emptyDraft(), i18n.language, {
+        collectPurchases: true,
+        isContractor: effectiveUserType === 'contractor',
+        onProgress: (done, total) => setIngestBusy({ done, total }),
+      });
+
+      const proposals = ingestOutcomeToProposals(
+        outcome,
+        { roomNames: roomsData.map((r: { name: string }) => r.name) },
+        {
+          labelFor: (wt) => t(`intake.workType.${wt}`, wt),
+          copy: {
+            room: (name) => t('folderDrop.proposal.room', 'Lägg till rummet {{name}}', { name }),
+            task: (title) => t('folderDrop.proposal.task', 'Lägg till arbetet {{title}}', { title }),
+            purchase: (vendor, total) =>
+              t('folderDrop.proposal.purchase', 'Bokför inköp från {{vendor}} ({{total}} kr)', {
+                vendor,
+                total: Math.round(total).toLocaleString('sv-SE'),
+              }),
+            sketch: (fileName, roomCount) =>
+              t('folderDrop.proposal.sketch', 'Rita in ritningen {{file}} ({{count}} rum)', {
+                file: fileName,
+                count: roomCount,
+              }),
+            planName: (fileName) =>
+              t('renaidaFlow.folder.sketchPlanName', 'Grovskiss – {{file}}', { file: fileName }),
+          },
+        },
+      );
+
+      // File the originals regardless of what the user accepts — the archive is
+      // a separate promise from the data extraction (Skiva 2).
+      if (outcome.archiveFiles.length > 0) {
+        try {
+          for (const cat of new Set(outcome.archiveFiles.map((a) => a.category))) {
+            await ensureCategoryFolder(project.id, cat);
+          }
+          await Promise.all(
+            outcome.archiveFiles.map((a) => uploadToCategoryFolder(project.id, a.file, a.category)),
+          );
+        } catch (e) {
+          console.error('ProjectDetail: archiving dropped files failed', e);
+        }
+      }
+
+      if (proposals.length === 0) {
+        toast({
+          title: t('folderDrop.nothingFound', 'Jag hittade inget att lägga till — filerna är sparade i Filer.'),
+        });
+        return;
+      }
+
+      analytics.capture(AnalyticsEvents.FOLDER_INGEST_PROPOSED, {
+        surface: 'project_detail',
+        count: proposals.length,
+      });
+      useRenaidaStore.getState().setPendingIngest({
+        proposals,
+        summary: t('folderDrop.proposal.lead', 'Jag läste {{files}} filer ur mappen. Så här vill jag lägga in dem — bocka av det du vill ha:', {
+          files: outcome.filesRead,
+        }),
+      });
+      useRenaidaStore.getState().setPanelOpen(true);
+    } catch (e) {
+      console.error('ProjectDetail: folder ingest failed', e);
+      toast({
+        title: t('renaidaFlow.folder.failed', 'Kunde inte läsa mappen'),
+        variant: "destructive",
+      });
+    } finally {
+      setIngestBusy(null);
+      setDroppedFiles([]);
     }
   };
 
@@ -1798,6 +1884,19 @@ const ProjectDetail = () => {
         }}
       />
 
+      {/* Skiva 4: reading a dropped folder blocks nothing, but it must not look
+          like nothing is happening — it can take minutes. */}
+      {ingestBusy && (
+        <div className="fixed inset-x-0 bottom-4 z-[60] flex justify-center px-4 print:hidden">
+          <div className="flex items-center gap-3 rounded-full border bg-card px-4 py-2 shadow-lg">
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+            <span className="text-sm">
+              {t('renaidaFlow.folder.progress', 'Läser fil {{done}} av {{total}} …', ingestBusy)}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Skiva 1: folder dropped on the project page → read it or file it. */}
       <DropTargetChoiceDialog
         open={dropChoiceOpen}
@@ -1805,16 +1904,6 @@ const ProjectDetail = () => {
         fileCount={droppedFiles.length}
         onChoose={handleDropChoice}
       />
-      {project?.id && (
-        <RenaidaProjectDialog
-          open={ingestDialogOpen}
-          onOpenChange={(o) => { setIngestDialogOpen(o); if (!o) { setIngestFiles(undefined); setDroppedFiles([]); } }}
-          userType={effectiveUserType === 'contractor' ? 'contractor' : 'homeowner'}
-          existingProjectId={project.id}
-          initialDroppedFiles={ingestFiles}
-          onPopulated={() => { (isGuest ? loadGuestData : loadData)(); void loadRoomsData(); }}
-        />
-      )}
       {project?.id && batchFiles.length > 0 && (
         <BatchSmartUploadDialog
           open={batchOpen}
