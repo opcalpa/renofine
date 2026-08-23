@@ -4766,7 +4766,13 @@
       "unreadable": "{{count}} Datei(en) konnten nicht gelesen werden.",
       "nothing": "Ich konnte nichts zum Hinzufügen finden — tippen, sprechen oder stattdessen ein Foto aufnehmen.",
       "failed": "Der Ordner konnte nicht gelesen werden",
-      "filesArchived": "{{count}} Dateien unter Dateien gespeichert."
+      "filesArchived": "{{count}} Dateien unter Dateien gespeichert.",
+      "progress": "Lese Datei {{done}} von {{total}} …",
+      "confirmLarge": "Der Ordner enthält {{count}} Dateien — alle zu lesen dauert eine Minute. Soll ich starten?",
+      "confirmLargeYes": "Ja, Ordner lesen",
+      "oversized": "{{count}} Dateien waren zu groß (über 20 MB) — die habe ich übersprungen.",
+      "truncated": "Der Ordner enthielt mehr Dateien als ich auf einmal lese — ich habe die ersten {{count}} genommen.",
+      "extraPlanPages": "Eine Zeichnung hatte mehrere Seiten — ich habe die erste gelesen ({{count}} Seiten ungelesen)."
     },
     "source": {
       "answer": "Ihre Antwort",

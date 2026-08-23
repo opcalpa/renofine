@@ -24,6 +24,7 @@ import { parseProjectDescription } from './renaidaProjectIntake';
 import { captureDocument, extractQuoteLines } from './agent/documentCapture';
 import type { ImportPurchaseAction } from './agent/importPurchaseOrder';
 import { classifyDocument, type DocumentType } from './smartUploadService';
+import { rasterizePdfFirstPage } from '@/lib/pdfRaster';
 import { analyzeFloorPlanFile, type AIConversionResult } from './aiVisionService';
 import {
   mergeParseIntoDraft,
@@ -33,8 +34,16 @@ import {
   type QuoteLine,
 } from './renaidaProjectFlow';
 
-/** A renovation folder, not a photo-library dump — bound the LLM cost. */
-const MAX_FILES = 40;
+/**
+ * A renovation folder, not a photo-library dump — bound the LLM cost. A whole
+ * year's renovation blows past 40, so the cap is 100 and the UI confirms
+ * anything over CONFIRM_ABOVE before spending the calls.
+ */
+const MAX_FILES = 100;
+/** Above this many files the caller asks before starting (cost guard). */
+export const CONFIRM_ABOVE = 40;
+/** Files larger than this are skipped outright (and said out loud). */
+const MAX_FILE_BYTES = 20 * 1024 * 1024;
 /** How many files extract/classify/parse in parallel (rate-limit friendly). */
 const CONCURRENCY = 5;
 const isImage = (f: File) =>
@@ -146,7 +155,11 @@ type ContributionKind =
  * the document as the order's receipt_file_path, and double-filing it would
  * show the same receipt twice.
  */
-type Contribution = ContributionKind & { archive?: ArchiveEntry };
+type Contribution = ContributionKind & {
+  archive?: ArchiveEntry;
+  /** Pages of a multi-page drawing PDF that were NOT read (never silent). */
+  extraPages?: number;
+};
 
 /**
  * Fas D: a floor-plan IMAGE → process-floorplan (walls/doors/rooms in mm with
@@ -216,7 +229,25 @@ async function processDocument(
     }
     return { kind: 'receipt', amount: cls?.invoice_amount ?? null, archive };
   }
-  if (type === 'floor_plan') return { kind: 'floorplan', archive };
+  if (type === 'floor_plan') {
+    // Skiva 5: a drawing is a drawing whether it arrives as a photo or a PDF.
+    // Rasterize page 1 and run the SAME analysis a photographed plan gets.
+    if (isPdf(file)) {
+      const raster = await rasterizePdfFirstPage(file);
+      if (raster) {
+        const analyzed = await processFloorPlanImage(raster.file);
+        if (analyzed.kind === 'sketch') {
+          return {
+            ...analyzed,
+            // Keep the ORIGINAL pdf in the archive, not the rendered png.
+            archive,
+            extraPages: raster.pageCount > 1 ? raster.pageCount - 1 : 0,
+          };
+        }
+      }
+    }
+    return { kind: 'floorplan', archive };
+  }
   if (type === 'product_image') return { kind: 'ignored', archive };
   // K4: a contractor's OWN quote → priced line items so the post-birth quote
   // offer (K1) prefills their ACTUAL prices instead of a re-estimate. Homeowners
@@ -274,8 +305,10 @@ async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promis
 export interface IngestOutcome {
   /** The draft with every scope contribution folded in (provenance-stamped). */
   draft: ProjectDraft;
-  /** How many files were dropped (before the MAX_FILES cap). */
+  /** How many files were dropped (before any cap). */
   filesSeen: number;
+  /** How many were actually read (after the size + MAX_FILES filters). */
+  filesRead: number;
   roomsAdded: number;
   tasksAdded: number;
   /** All receipts/invoices seen (whether counted or fully extracted). */
@@ -290,6 +323,10 @@ export interface IngestOutcome {
   unreadableCount: number;
   /** True when the drop exceeded MAX_FILES and the tail was skipped. */
   truncated: boolean;
+  /** How many files were skipped for being over the size limit. */
+  oversizedCount: number;
+  /** Unread pages of multi-page drawing PDFs (we read page 1). */
+  skippedPlanPages: number;
   /**
    * Skiva 2: every original to file into the project's archive, with the
    * category it was classified as. Excludes fully extracted purchases (the
@@ -308,12 +345,21 @@ export async function ingestProjectFolder(
   allFiles: File[],
   startDraft: ProjectDraft,
   language: string,
-  opts?: { collectPurchases?: boolean; isContractor?: boolean }
+  opts?: {
+    collectPurchases?: boolean;
+    isContractor?: boolean;
+    /** Called as each file finishes — the drop can take minutes. */
+    onProgress?: (done: number, total: number) => void;
+  }
 ): Promise<IngestOutcome> {
   const collectPurchases = opts?.collectPurchases ?? false;
   const isContractor = opts?.isContractor ?? false;
-  const files = allFiles.slice(0, MAX_FILES);
-  const truncated = allFiles.length > files.length;
+  const onProgress = opts?.onProgress;
+  // Oversized files never reach the LLM — a 30 MB scan is cost, not signal.
+  const sized = allFiles.filter((f) => f.size <= MAX_FILE_BYTES);
+  const oversizedCount = allFiles.length - sized.length;
+  const files = sized.slice(0, MAX_FILES);
+  const truncated = sized.length > files.length;
 
   const photos = files.filter(isImage);
   const rest = files.filter((f) => !isImage(f));
@@ -347,9 +393,17 @@ export async function ingestProjectFolder(
     ...docs.map((f) => () => processDocument(f, language, collectPurchases, isContractor)),
     ...texts.map((f) => () => processTextFile(f, language)),
   ];
-  const settled = (await mapLimit(thunks, CONCURRENCY, (t) => t())).filter(
-    (c): c is Contribution => c != null
-  );
+  // Progress counts the classify pass too — it is real waiting for the user.
+  const progressTotal = thunks.length + photos.length;
+  let progressDone = photos.length;
+  onProgress?.(progressDone, progressTotal);
+  const settled = (
+    await mapLimit(thunks, CONCURRENCY, async (t) => {
+      const r = await t();
+      onProgress?.(++progressDone, progressTotal);
+      return r;
+    })
+  ).filter((c): c is Contribution => c != null);
 
   // Phase 2 — deterministic fold into the draft.
   const roomsBefore = startDraft.rooms.length;
@@ -368,8 +422,10 @@ export async function ingestProjectFolder(
     ...ignoredUpfront.map((file) => ({ file, category: 'other' as DocumentType })),
   ];
 
+  let skippedPlanPages = 0;
   for (const c of settled) {
     if (c.archive) archiveFiles.push(c.archive);
+    if (c.extraPages) skippedPlanPages += c.extraPages;
     switch (c.kind) {
       case 'scope':
         draft = mergeParseIntoDraft(c.parsed, draft, { sourceKind: c.sourceKind, fileName: c.fileName });
@@ -408,6 +464,7 @@ export async function ingestProjectFolder(
   return {
     draft,
     filesSeen: allFiles.length,
+    filesRead: files.length,
     roomsAdded: draft.rooms.length - roomsBefore,
     tasksAdded: draft.tasks.length - tasksBefore,
     receiptCount,
@@ -417,6 +474,8 @@ export async function ingestProjectFolder(
     ignoredCount,
     unreadableCount,
     truncated,
+    oversizedCount,
+    skippedPlanPages,
     archiveFiles,
   };
 }

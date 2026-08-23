@@ -33,7 +33,7 @@ import {
   fetchCriticFlags,
   type CriticFlagSuggestion,
 } from '@/services/renaidaProjectIntake';
-import { ingestProjectFolder, type ArchiveEntry, type PendingSketch } from '@/services/ingestProjectFolder';
+import { ingestProjectFolder, CONFIRM_ABOVE, type ArchiveEntry, type PendingSketch } from '@/services/ingestProjectFolder';
 import { uploadToCategoryFolder, ensureCategoryFolder } from '@/services/smartUploadService';
 import { importPurchaseOrder, type ImportPurchaseAction } from '@/services/agent/importPurchaseOrder';
 import { floorPlanResultToShapes } from '@/services/aiVisionService';
@@ -152,6 +152,10 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
   // the flag itself is never set without an explicit answer.
   const [folderIngested, setFolderIngested] = useState(false);
   const [retroSuggested, setRetroSuggested] = useState(false);
+  // Skiva 5: a big drop takes minutes — say where we are, and ask before
+  // spending the calls when the folder is large.
+  const [ingestProgress, setIngestProgress] = useState<{ done: number; total: number } | null>(null);
+  const [confirmLarge, setConfirmLarge] = useState<{ step: Step; files: File[] } | null>(null);
   // Contractor post-birth: offer to prefill a customer quote from the new tasks.
   const [postCreate, setPostCreate] = useState<{
     projectId: string;
@@ -244,6 +248,8 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
       archiveFilesRef.current = [];
       setFolderIngested(false);
       setRetroSuggested(false);
+      setIngestProgress(null);
+      setConfirmLarge(null);
       setPostCreate(null);
       setQuoteBusy(false);
       setPostCreateActivate(null);
@@ -548,14 +554,22 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
    * counted and pointed at their proper flow. Desktop wedge — mobile keeps the
    * photo button. Guests use it too (the extract/parse endpoints pass anon-JWT).
    */
-  const runFolderIngest = async (s: Step, files: File[]) => {
+  const runFolderIngest = async (s: Step, files: File[], confirmed = false) => {
     if (files.length === 0 || ingesting || parsing) return;
+    // Cost guard: a large folder means many model calls — ask first.
+    if (!confirmed && files.length > CONFIRM_ABOVE) {
+      setConfirmLarge({ step: s, files });
+      return;
+    }
+    setConfirmLarge(null);
     setIngesting(true);
+    setIngestProgress({ done: 0, total: files.length });
     try {
       const base = applyAnswer(s, { kind: 'skip' }, draft); // marks 'describe' answered
       const outcome = await ingestProjectFolder(files, base, i18n.language, {
         collectPurchases: !isGuest,
         isContractor: userType === 'contractor',
+        onProgress: (done, total) => setIngestProgress({ done, total }),
       });
       pendingPurchasesRef.current = outcome.pendingPurchases;
       pendingSketchesRef.current = isGuest ? [] : outcome.pendingSketches;
@@ -616,7 +630,7 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
 
       const lines: string[] = [
         t('renaidaFlow.folder.summary', 'Jag läste {{files}} filer → {{rooms}} rum och {{tasks}} arbeten.', {
-          files: outcome.filesSeen,
+          files: outcome.filesRead,
           rooms: next.rooms.length,
           tasks: next.tasks.filter((tk) => !tk.excluded).length,
         }),
@@ -657,12 +671,35 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
           })
         );
       }
+      // Skiva 5: no silent caps — anything we chose not to read is said out loud.
+      if (outcome.oversizedCount > 0) {
+        lines.push(
+          t('renaidaFlow.folder.oversized', '{{count}} filer var för stora (över 20 MB) — de hoppade jag över.', {
+            count: outcome.oversizedCount,
+          })
+        );
+      }
+      if (outcome.truncated) {
+        lines.push(
+          t('renaidaFlow.folder.truncated', 'Mappen innehöll fler filer än jag läser åt gången — jag tog de första {{count}}.', {
+            count: outcome.filesRead,
+          })
+        );
+      }
+      if (outcome.skippedPlanPages > 0) {
+        lines.push(
+          t('renaidaFlow.folder.extraPlanPages', 'En ritning hade flera sidor — jag läste första sidan ({{count}} sidor olästa).', {
+            count: outcome.skippedPlanPages,
+          })
+        );
+      }
       setTurns((tn) => [...tn, { message: lines.join(' '), answerLabel: '' }]);
     } catch (err) {
       console.error('RenaidaProjectDialog: folder ingest failed', err);
       toast.error(t('renaidaFlow.folder.failed', 'Kunde inte läsa mappen'));
     } finally {
       setIngesting(false);
+      setIngestProgress(null);
     }
   };
 
@@ -1319,6 +1356,43 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
                             : t('renaidaFlow.skip.skip')}
                         </Button>
                       </div>
+                      {/* Skiva 5: a big folder takes minutes — show where we are. */}
+                      {ingesting && ingestProgress && ingestProgress.total > 0 && (
+                        <div className="space-y-1">
+                          <div className="h-1 overflow-hidden rounded-full bg-muted">
+                            <div
+                              className="h-full bg-primary transition-[width] duration-300"
+                              style={{ width: `${Math.round((ingestProgress.done / ingestProgress.total) * 100)}%` }}
+                            />
+                          </div>
+                          <p className="text-[11px] text-muted-foreground">
+                            {t('renaidaFlow.folder.progress', 'Läser fil {{done}} av {{total}} …', ingestProgress)}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Cost guard: many files = many model calls. Ask first. */}
+                      {confirmLarge && !ingesting && (
+                        <div className="space-y-2 rounded-lg border bg-muted/30 p-3">
+                          <p className="text-sm">
+                            {t('renaidaFlow.folder.confirmLarge', 'Mappen innehåller {{count}} filer — att läsa alla tar någon minut. Kör jag igång?', {
+                              count: confirmLarge.files.length,
+                            })}
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            <Button
+                              size="sm"
+                              onClick={() => void runFolderIngest(confirmLarge.step, confirmLarge.files, true)}
+                            >
+                              {t('renaidaFlow.folder.confirmLargeYes', 'Ja, läs mappen')}
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => setConfirmLarge(null)}>
+                              {t('common.cancel', 'Avbryt')}
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
                       <p className="hidden text-[11px] text-muted-foreground/70 sm:block">
                         {t('renaidaFlow.folder.hint', 'Har du redan underlag? Släpp hela projektmappen här (offerter, foton, anteckningar).')}
                       </p>

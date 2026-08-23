@@ -7629,7 +7629,13 @@
       "unreadable": "I couldn't read {{count}} file(s).",
       "nothing": "I couldn't find anything to add — type, speak, or take a photo instead.",
       "failed": "Couldn't read the folder",
-      "filesArchived": "{{count}} files saved to Files."
+      "filesArchived": "{{count}} files saved to Files.",
+      "progress": "Reading file {{done}} of {{total}} …",
+      "confirmLarge": "The folder has {{count}} files — reading them all takes a minute. Shall I go ahead?",
+      "confirmLargeYes": "Yes, read the folder",
+      "oversized": "{{count}} files were too large (over 20 MB) — I skipped those.",
+      "truncated": "The folder had more files than I read at once — I took the first {{count}}.",
+      "extraPlanPages": "A drawing had several pages — I read the first one ({{count}} pages unread)."
     },
     "source": {
       "answer": "Your answer",

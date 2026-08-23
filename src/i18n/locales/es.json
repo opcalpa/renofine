@@ -4766,7 +4766,13 @@
       "unreadable": "No pude leer {{count}} archivo(s).",
       "nothing": "No encontré nada que añadir — escriba, hable o tome una foto en su lugar.",
       "failed": "No se pudo leer la carpeta",
-      "filesArchived": "{{count}} archivos guardados en Archivos."
+      "filesArchived": "{{count}} archivos guardados en Archivos.",
+      "progress": "Leyendo archivo {{done}} de {{total}} …",
+      "confirmLarge": "La carpeta tiene {{count}} archivos — leerlos todos tarda un minuto. ¿Empiezo?",
+      "confirmLargeYes": "Sí, lee la carpeta",
+      "oversized": "{{count}} archivos eran demasiado grandes (más de 20 MB) — los omití.",
+      "truncated": "La carpeta tenía más archivos de los que leo de una vez — tomé los primeros {{count}}.",
+      "extraPlanPages": "Un plano tenía varias páginas — leí la primera ({{count}} páginas sin leer)."
     },
     "source": {
       "answer": "Su respuesta",

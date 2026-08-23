@@ -4766,7 +4766,13 @@
       "unreadable": "Je n'ai pas pu lire {{count}} fichier(s).",
       "nothing": "Je n'ai rien trouvé à ajouter — écrivez, parlez ou prenez une photo à la place.",
       "failed": "Impossible de lire le dossier",
-      "filesArchived": "{{count}} fichiers enregistrés dans Fichiers."
+      "filesArchived": "{{count}} fichiers enregistrés dans Fichiers.",
+      "progress": "Lecture du fichier {{done}} sur {{total}} …",
+      "confirmLarge": "Le dossier contient {{count}} fichiers — tout lire prend une minute. Je lance ?",
+      "confirmLargeYes": "Oui, lire le dossier",
+      "oversized": "{{count}} fichiers étaient trop volumineux (plus de 20 Mo) — je les ai ignorés.",
+      "truncated": "Le dossier contenait plus de fichiers que je n'en lis d'un coup — j'ai pris les {{count}} premiers.",
+      "extraPlanPages": "Un plan avait plusieurs pages — j'ai lu la première ({{count}} pages non lues)."
     },
     "source": {
       "answer": "Votre réponse",

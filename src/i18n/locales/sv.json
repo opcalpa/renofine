@@ -7628,7 +7628,13 @@
       "unreadable": "{{count}} filer kunde jag inte läsa.",
       "nothing": "Hittade inget att lägga in — skriv, prata eller fota istället.",
       "failed": "Kunde inte läsa mappen",
-      "filesArchived": "{{count}} filer sparade i Filer."
+      "filesArchived": "{{count}} filer sparade i Filer.",
+      "progress": "Läser fil {{done}} av {{total}} …",
+      "confirmLarge": "Mappen innehåller {{count}} filer — att läsa alla tar någon minut. Kör jag igång?",
+      "confirmLargeYes": "Ja, läs mappen",
+      "oversized": "{{count}} filer var för stora (över 20 MB) — de hoppade jag över.",
+      "truncated": "Mappen innehöll fler filer än jag läser åt gången — jag tog de första {{count}}.",
+      "extraPlanPages": "En ritning hade flera sidor — jag läste första sidan ({{count}} sidor olästa)."
     },
     "source": {
       "answer": "Ditt svar",
