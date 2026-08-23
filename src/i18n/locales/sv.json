@@ -7745,5 +7745,31 @@
     "opening": "Öppnar…",
     "toastTitle": "Ditt mejlprogram öppnas",
     "toastDesc": "Skicka mejlet därifrån så återkommer vi snabbt."
+  },
+  "folderDrop": {
+    "title": "Släpp din projektmapp här",
+    "subtitle": "Renaida läser kvitton, offerter och ritningar — undermappar också.",
+    "reading": "Läser mappen …",
+    "readingHint": "Går igenom undermapparna.",
+    "projectTitle": "Släpp filerna här",
+    "projectSubtitle": "Renaida läser dem — eller så sparar vi dem bara i Filer.",
+    "emptyStateHint": "💡 Har du redan en mapp med kvitton, offerter och ritningar? Släpp den här — Renaida läser in den åt dig.",
+    "router": {
+      "title": "{{count}} filer släppta",
+      "titleNamed": "\"{{folder}}\" — {{count}} filer",
+      "description": "Vad vill du att jag gör med dem?",
+      "newProject": "Skapa nytt projekt",
+      "newProjectHint": "Renaida läser filerna och föreslår rum, arbeten och inköp.",
+      "existingProject": "Lägg till i befintligt projekt",
+      "existingProjectHint": "Du får godkänna varje förslag innan något läggs till."
+    },
+    "target": {
+      "title": "{{count}} filer släppta",
+      "description": "Vad vill du att jag gör med dem?",
+      "renaida": "Läs in med Renaida",
+      "renaidaHint": "Kvitton blir inköp, offerter blir arbeten, ritningar hamnar i planritaren. Filerna sparas också.",
+      "files": "Bara spara i Filer",
+      "filesHint": "Sorteras i rätt mapp — inget läggs till i projektets data."
+    }
   }
 }

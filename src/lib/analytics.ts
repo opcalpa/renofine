@@ -111,6 +111,10 @@ export const AnalyticsEvents = {
   // (see VALUE_EVENTS). Turns "signed up" into a measurable "actually used it".
   ACTIVATION_REACHED: "activation_reached",
 
+  // Folder ingest ("släpp din mapp") — the desktop migration wedge.
+  FOLDER_DROP_STARTED: "folder_drop_started",
+  FOLDER_DROP_ROUTED: "folder_drop_routed",
+
   // Errors (supplement to Sentry)
   ERROR_BOUNDARY_TRIGGERED: "error_boundary_triggered",
 } as const;

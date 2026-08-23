@@ -7756,5 +7756,31 @@
     "opening": "Abriendo…",
     "toastTitle": "Se abre tu cliente de correo",
     "toastDesc": "Envía el correo desde allí y te responderemos pronto."
+  },
+  "folderDrop": {
+    "title": "Suelta aquí tu carpeta de proyecto",
+    "subtitle": "Renaida lee recibos, presupuestos y planos — también las subcarpetas.",
+    "reading": "Leyendo la carpeta …",
+    "readingHint": "Recorriendo las subcarpetas.",
+    "projectTitle": "Suelta los archivos aquí",
+    "projectSubtitle": "Renaida puede leerlos — o simplemente los guardamos en Archivos.",
+    "emptyStateHint": "💡 ¿Ya tienes una carpeta con recibos, presupuestos y planos? Suéltala aquí — Renaida la leerá por ti.",
+    "router": {
+      "title": "{{count}} archivos soltados",
+      "titleNamed": "\"{{folder}}\" — {{count}} archivos",
+      "description": "¿Qué quieres que haga con ellos?",
+      "newProject": "Crear un proyecto nuevo",
+      "newProjectHint": "Renaida lee los archivos y propone estancias, trabajos y compras.",
+      "existingProject": "Añadir a un proyecto existente",
+      "existingProjectHint": "Apruebas cada propuesta antes de que se añada nada."
+    },
+    "target": {
+      "title": "{{count}} archivos soltados",
+      "description": "¿Qué quieres que haga con ellos?",
+      "renaida": "Leerlos con Renaida",
+      "renaidaHint": "Los recibos se vuelven compras, los presupuestos trabajos, los planos van al planificador. Los archivos también se guardan.",
+      "files": "Solo guardarlos en Archivos",
+      "filesHint": "Ordenados en la carpeta correcta — no se añade nada a los datos del proyecto."
+    }
   }
 }

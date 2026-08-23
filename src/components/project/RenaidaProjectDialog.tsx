@@ -84,6 +84,13 @@ interface Props {
   existingProjectId?: string;
   /** Called after an existing project was populated (parent refreshes). */
   onPopulated?: () => void;
+  /**
+   * Skiva 1: a folder dropped OUTSIDE the dialog (page-level drop zone). The
+   * dialog opens straight into the folder ingest instead of asking the user to
+   * drop again — same engine, a different entry point. A fresh draft is forced
+   * so the drop never folds into a half-finished restored conversation.
+   */
+  initialDroppedFiles?: File[];
 }
 
 /** Read a file as base64 (data-URI prefix stripped) for edge-function upload. */
@@ -115,7 +122,7 @@ const WORK_TYPE_MATERIAL_KEYS: Partial<Record<WorkType, string[]>> = {
   golv: ['renaidaFlow.material.floor', 'renaidaFlow.material.skirting', 'renaidaFlow.material.underlay'],
 };
 
-export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner', isGuest = false, existingProjectId, onPopulated }: Props) {
+export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner', isGuest = false, existingProjectId, onPopulated, initialDroppedFiles }: Props) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [draft, setDraft] = useState<ProjectDraft>(emptyDraft());
@@ -177,6 +184,8 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
   const criticAcceptedRef = useRef(0);
   const createdRef = useRef(false);
   const prevOpenRef = useRef(false);
+  // Skiva 1: guards the one-shot auto-ingest of page-dropped files.
+  const autoIngestedRef = useRef(false);
   const completedFiredRef = useRef(false);
   const addonsShownFiredRef = useRef(false);
   const addonsFetchedRef = useRef(false);
@@ -197,10 +206,11 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
   useEffect(() => {
     if (open) {
       // Restore an in-progress draft if one was saved (closed mid-flow); else
-      // start fresh. Only restore drafts with real content.
+      // start fresh. Only restore drafts with real content. A page-level folder
+      // drop always starts fresh — it's a new intent, not a resumed one.
       let restored = false;
       try {
-        const raw = localStorage.getItem(storageKey);
+        const raw = (initialDroppedFiles?.length ?? 0) > 0 ? null : localStorage.getItem(storageKey);
         if (raw) {
           const saved = JSON.parse(raw) as { draft?: ProjectDraft; turns?: Turn[] };
           if (saved?.draft && ((saved.draft.rooms?.length ?? 0) > 0 || (saved.draft.tasks?.length ?? 0) > 0)) {
@@ -241,8 +251,22 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
       criticShownFiredRef.current = false;
       criticFetchedRef.current = false;
       snapshotRef.current = { stepId: 'type', rooms: 0, tasks: 0 };
+      autoIngestedRef.current = false;
     }
   }, [open]);
+
+  // Skiva 1: a folder dropped on the page opens the dialog straight into the
+  // ingest. Runs once per open, only from the first (describe) step so the
+  // engine's "mark describe answered" contract holds.
+  useEffect(() => {
+    if (!open || autoIngestedRef.current) return;
+    const files = initialDroppedFiles;
+    if (!files || files.length === 0) return;
+    if (step?.id !== 'describe' || ingesting || parsing) return;
+    autoIngestedRef.current = true;
+    void runFolderIngest(step, files);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, initialDroppedFiles, step?.id]);
 
   // Keep a fresh snapshot for the abandon event (runs every render, no deps).
   useEffect(() => {

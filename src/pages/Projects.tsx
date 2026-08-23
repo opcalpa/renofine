@@ -42,6 +42,10 @@ import { formatCurrency } from "@/lib/currency";
 import { LeadsPipelineSection } from "@/components/pipeline";
 import { FinancialAnalysisSection } from "@/components/project/FinancialAnalysisSection";
 import { AIProjectImportModal } from "@/components/project/AIProjectImportModal";
+import { FolderDropZone } from "@/components/project/FolderDropZone";
+import { DropRouterDialog, type DropRoute } from "@/components/project/DropRouterDialog";
+import type { DroppedFile } from "@/lib/dropTree";
+import { stashDroppedFolder } from "@/services/agent/droppedFolderHandoff";
 import { HomeownerYearlyAnalysis } from "@/components/project/HomeownerYearlyAnalysis";
 import { DashboardStrip } from "@/components/project/DashboardStrip";
 import { ProjectGridCard } from "@/components/project/ProjectGridCard";
@@ -127,6 +131,10 @@ const Projects = () => {
   const [planWizardOpen, setPlanWizardOpen] = useState(false);
   const [showAIImport, setShowAIImport] = useState(false);
   const [renaidaOpen, setRenaidaOpen] = useState(false);
+  // Skiva 1: a folder dropped on this page → route it (new / existing project).
+  const [droppedFiles, setDroppedFiles] = useState<DroppedFile[]>([]);
+  const [dropRouterOpen, setDropRouterOpen] = useState(false);
+  const [renaidaFiles, setRenaidaFiles] = useState<File[] | undefined>(undefined);
   const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteCounts, setDeleteCounts] = useState<{
@@ -440,7 +448,26 @@ const Projects = () => {
     );
   }
 
+  const handleFolderDropped = useCallback((files: DroppedFile[]) => {
+    setDroppedFiles(files);
+    setDropRouterOpen(true);
+    analytics.capture(AnalyticsEvents.FOLDER_DROP_STARTED, { surface: 'projects', file_count: files.length });
+  }, []);
+
+  const handleDropRoute = useCallback((route: DropRoute) => {
+    analytics.capture(AnalyticsEvents.FOLDER_DROP_ROUTED, { surface: 'projects', choice: route.kind });
+    if (route.kind === 'new') {
+      setRenaidaFiles(droppedFiles.map((d) => d.file));
+      setRenaidaOpen(true);
+      return;
+    }
+    // Existing project: the files ride an in-memory stash across the navigation.
+    stashDroppedFolder(route.projectId, droppedFiles);
+    navigate(`/projects/${route.projectId}?ingest=folder`);
+  }, [droppedFiles, navigate]);
+
   return (
+    <FolderDropZone onDropped={handleFolderDropped}>
     <div className="min-h-screen bg-background">
       <AppHeader
         userName={isGuest ? t('guest.guestUser', 'Guest') : profile?.name}
@@ -657,13 +684,14 @@ const Projects = () => {
               </Button>
               <RenaidaProjectDialog
                 open={renaidaOpen}
-                onOpenChange={setRenaidaOpen}
+                onOpenChange={(o) => { setRenaidaOpen(o); if (!o) setRenaidaFiles(undefined); }}
                 userType={
                   (isGuest ? guestRole : profile?.onboarding_user_type) === 'contractor'
                     ? 'contractor'
                     : 'homeowner'
                 }
                 isGuest={isGuest}
+                initialDroppedFiles={renaidaFiles}
               />
               <CreateProjectDialog
                 open={dialogOpen}
@@ -696,6 +724,10 @@ const Projects = () => {
               {/* "I have an invitation" button removed — it was permanently disabled
                   (looked broken). Invitations arrive via email links, not from here. */}
             </div>
+            {/* Skiva 1: the folder-drop wedge is invisible unless we say it exists. */}
+            <p className="hidden md:block text-sm text-muted-foreground border-t pt-6">
+              {t('folderDrop.emptyStateHint', '💡 Har du redan en mapp med kvitton, offerter och ritningar? Släpp den här — Renaida läser in den åt dig.')}
+            </p>
           </div>
         ) : effectiveViewMode === "timeline" ? (
           /* ---- Timeline view ---- */
@@ -1066,9 +1098,19 @@ const Projects = () => {
         variant="sheet"
       />
 
+      {/* Skiva 1: page-level folder drop → "nytt eller befintligt?" */}
+      <DropRouterDialog
+        open={dropRouterOpen}
+        onOpenChange={(o) => { setDropRouterOpen(o); if (!o) setDroppedFiles([]); }}
+        files={droppedFiles}
+        isGuest={isGuest}
+        onRoute={handleDropRoute}
+      />
+
       {/* Mobile bottom navigation */}
       <AppBottomNav />
     </div>
+    </FolderDropZone>
   );
 };
 

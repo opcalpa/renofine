@@ -7746,5 +7746,31 @@
     "opening": "Opening…",
     "toastTitle": "Your email client is opening",
     "toastDesc": "Send the email from there and we'll get back to you quickly."
+  },
+  "folderDrop": {
+    "title": "Drop your project folder here",
+    "subtitle": "Renaida reads receipts, quotes and drawings — subfolders too.",
+    "reading": "Reading the folder …",
+    "readingHint": "Going through the subfolders.",
+    "projectTitle": "Drop the files here",
+    "projectSubtitle": "Renaida can read them — or we just save them to Files.",
+    "emptyStateHint": "💡 Already have a folder of receipts, quotes and drawings? Drop it here — Renaida will read it for you.",
+    "router": {
+      "title": "{{count}} files dropped",
+      "titleNamed": "\"{{folder}}\" — {{count}} files",
+      "description": "What would you like me to do with them?",
+      "newProject": "Create a new project",
+      "newProjectHint": "Renaida reads the files and suggests rooms, work and purchases.",
+      "existingProject": "Add to an existing project",
+      "existingProjectHint": "You approve every suggestion before anything is added."
+    },
+    "target": {
+      "title": "{{count}} files dropped",
+      "description": "What would you like me to do with them?",
+      "renaida": "Read them with Renaida",
+      "renaidaHint": "Receipts become purchases, quotes become work, drawings go to the planner. The files are saved too.",
+      "files": "Just save them to Files",
+      "filesHint": "Sorted into the right folder — nothing is added to the project's data."
+    }
   }
 }

@@ -7756,5 +7756,31 @@
     "opening": "Wird geöffnet…",
     "toastTitle": "Dein E-Mail-Programm öffnet sich",
     "toastDesc": "Sende die E-Mail von dort und wir melden uns schnell zurück."
+  },
+  "folderDrop": {
+    "title": "Projektordner hier ablegen",
+    "subtitle": "Renaida liest Belege, Angebote und Zeichnungen — auch Unterordner.",
+    "reading": "Ordner wird gelesen …",
+    "readingHint": "Unterordner werden durchsucht.",
+    "projectTitle": "Dateien hier ablegen",
+    "projectSubtitle": "Renaida kann sie lesen — oder wir speichern sie nur unter Dateien.",
+    "emptyStateHint": "💡 Schon ein Ordner mit Belegen, Angeboten und Zeichnungen? Hier ablegen — Renaida liest ihn für dich.",
+    "router": {
+      "title": "{{count}} Dateien abgelegt",
+      "titleNamed": "\"{{folder}}\" — {{count}} Dateien",
+      "description": "Was soll ich damit machen?",
+      "newProject": "Neues Projekt erstellen",
+      "newProjectHint": "Renaida liest die Dateien und schlägt Räume, Arbeiten und Einkäufe vor.",
+      "existingProject": "Zu bestehendem Projekt hinzufügen",
+      "existingProjectHint": "Du bestätigst jeden Vorschlag, bevor etwas hinzugefügt wird."
+    },
+    "target": {
+      "title": "{{count}} Dateien abgelegt",
+      "description": "Was soll ich damit machen?",
+      "renaida": "Mit Renaida einlesen",
+      "renaidaHint": "Belege werden Einkäufe, Angebote werden Arbeiten, Zeichnungen landen im Planer. Die Dateien werden ebenfalls gespeichert.",
+      "files": "Nur unter Dateien speichern",
+      "filesHint": "In den richtigen Ordner sortiert — nichts wird zu den Projektdaten hinzugefügt."
+    }
   }
 }

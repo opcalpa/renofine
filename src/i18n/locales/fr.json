@@ -7756,5 +7756,31 @@
     "opening": "Ouverture…",
     "toastTitle": "Votre client mail s'ouvre",
     "toastDesc": "Envoyez l'e-mail depuis là et nous vous répondrons rapidement."
+  },
+  "folderDrop": {
+    "title": "Déposez votre dossier de projet ici",
+    "subtitle": "Renaida lit les reçus, les devis et les plans — les sous-dossiers aussi.",
+    "reading": "Lecture du dossier …",
+    "readingHint": "Parcours des sous-dossiers.",
+    "projectTitle": "Déposez les fichiers ici",
+    "projectSubtitle": "Renaida peut les lire — ou nous les enregistrons simplement dans Fichiers.",
+    "emptyStateHint": "💡 Vous avez déjà un dossier de reçus, devis et plans ? Déposez-le ici — Renaida le lira pour vous.",
+    "router": {
+      "title": "{{count}} fichiers déposés",
+      "titleNamed": "\"{{folder}}\" — {{count}} fichiers",
+      "description": "Que voulez-vous que j'en fasse ?",
+      "newProject": "Créer un nouveau projet",
+      "newProjectHint": "Renaida lit les fichiers et propose des pièces, des travaux et des achats.",
+      "existingProject": "Ajouter à un projet existant",
+      "existingProjectHint": "Vous approuvez chaque proposition avant tout ajout."
+    },
+    "target": {
+      "title": "{{count}} fichiers déposés",
+      "description": "Que voulez-vous que j'en fasse ?",
+      "renaida": "Lire avec Renaida",
+      "renaidaHint": "Les reçus deviennent des achats, les devis des travaux, les plans vont dans le planificateur. Les fichiers sont aussi enregistrés.",
+      "files": "Enregistrer seulement dans Fichiers",
+      "filesHint": "Triés dans le bon dossier — rien n'est ajouté aux données du projet."
+    }
   }
 }

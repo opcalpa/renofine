@@ -1,5 +1,12 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { FolderDropZone } from "@/components/project/FolderDropZone";
+import { DropTargetChoiceDialog, type DropTargetChoice } from "@/components/project/DropTargetChoiceDialog";
+import { RenaidaProjectDialog } from "@/components/project/RenaidaProjectDialog";
+import { BatchSmartUploadDialog } from "@/components/project/BatchSmartUploadDialog";
+import { takeDroppedFolder } from "@/services/agent/droppedFolderHandoff";
+import type { DroppedFile } from "@/lib/dropTree";
+import { analytics, AnalyticsEvents } from "@/lib/analytics";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useRenaidaStore } from "@/stores/renaidaStore";
@@ -137,6 +144,13 @@ const ProjectDetail = () => {
   const headerHidden = useScrollDirection();
   const [profile, setProfile] = useState<any>(null);
   const [project, setProject] = useState<Project | null>(null);
+  // Skiva 1: folder-drop routing state.
+  const [droppedFiles, setDroppedFiles] = useState<DroppedFile[]>([]);
+  const [dropChoiceOpen, setDropChoiceOpen] = useState(false);
+  const [ingestDialogOpen, setIngestDialogOpen] = useState(false);
+  const [ingestFiles, setIngestFiles] = useState<File[] | undefined>(undefined);
+  const [batchOpen, setBatchOpen] = useState(false);
+  const [batchFiles, setBatchFiles] = useState<DroppedFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [leadQuoteId, setLeadQuoteId] = useState<string | null>(null);
   const [guestRole, setGuestRole] = useState<string | null>(() =>
@@ -637,6 +651,23 @@ const ProjectDetail = () => {
     setShowCreateRoomDialog(true);
   };
 
+  // Skiva 1: a folder dropped on the project list and routed to THIS project —
+  // the files rode an in-memory stash across the navigation. Single-shot.
+  useEffect(() => {
+    if (!project?.id) return;
+    if (searchParams.get("ingest") !== "folder") return;
+    const files = takeDroppedFolder(project.id);
+    // Always drop the marker so a reload can't re-trigger an empty ingest.
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete("ingest");
+      return next;
+    }, { replace: true });
+    if (!files || files.length === 0) return;
+    setIngestFiles(files.map((d) => d.file));
+    setIngestDialogOpen(true);
+  }, [project?.id, searchParams, setSearchParams]);
+
   const handleRoomUpdated = () => {
     // Refresh data if needed
     loadData();
@@ -1008,6 +1039,34 @@ const ProjectDetail = () => {
   const isPersonalDemo = isDemo && !isPublicDemoProject;
   const projectStatus = normalizeStatus(effectiveProject?.status);
 
+  // ── Skiva 1: folder drop on the project page ──────────────────────────────
+  // Read-only surfaces (public demo, guests, view-only members) never offer it.
+  const canIngestFolder =
+    !!project?.id && !isPublicDemoProject && !isGuest && permissions.isOwner;
+
+  const handleFolderDropped = (files: DroppedFile[]) => {
+    setDroppedFiles(files);
+    setDropChoiceOpen(true);
+    analytics.capture(AnalyticsEvents.FOLDER_DROP_STARTED, {
+      surface: 'project_detail',
+      file_count: files.length,
+    });
+  };
+
+  const handleDropChoice = (choice: DropTargetChoice) => {
+    analytics.capture(AnalyticsEvents.FOLDER_DROP_ROUTED, {
+      surface: 'project_detail',
+      choice,
+    });
+    if (choice === 'renaida') {
+      setIngestFiles(droppedFiles.map((d) => d.file));
+      setIngestDialogOpen(true);
+    } else {
+      setBatchFiles(droppedFiles);
+      setBatchOpen(true);
+    }
+  };
+
   const demoBannerContent = isPersonalDemo ? (
     <>
       <BookOpen className="h-4 w-4" />
@@ -1023,6 +1082,12 @@ const ProjectDetail = () => {
   ) : null;
 
   return (
+    <FolderDropZone
+      onDropped={handleFolderDropped}
+      disabled={activeTab === "files" || !canIngestFolder}
+      title={t('folderDrop.projectTitle', 'Släpp filerna här')}
+      subtitle={t('folderDrop.projectSubtitle', 'Renaida läser dem — eller så sparar vi dem bara i Filer.')}
+    >
     <div className={cn("bg-background md:pb-0", isHeaderVisible ? "pb-[calc(4rem+env(safe-area-inset-bottom))]" : "pb-0")}>
       {/* Unified Header - Hidden in Floor Plan edit mode */}
       {isHeaderVisible && (
@@ -1732,7 +1797,36 @@ const ProjectDetail = () => {
           setShowDemoRoleModal(false);
         }}
       />
+
+      {/* Skiva 1: folder dropped on the project page → read it or file it. */}
+      <DropTargetChoiceDialog
+        open={dropChoiceOpen}
+        onOpenChange={(o) => { setDropChoiceOpen(o); if (!o) setDroppedFiles([]); }}
+        fileCount={droppedFiles.length}
+        onChoose={handleDropChoice}
+      />
+      {project?.id && (
+        <RenaidaProjectDialog
+          open={ingestDialogOpen}
+          onOpenChange={(o) => { setIngestDialogOpen(o); if (!o) { setIngestFiles(undefined); setDroppedFiles([]); } }}
+          userType={effectiveUserType === 'contractor' ? 'contractor' : 'homeowner'}
+          existingProjectId={project.id}
+          initialDroppedFiles={ingestFiles}
+          onPopulated={() => { (isGuest ? loadGuestData : loadData)(); void loadRoomsData(); }}
+        />
+      )}
+      {project?.id && batchFiles.length > 0 && (
+        <BatchSmartUploadDialog
+          open={batchOpen}
+          onOpenChange={(o) => { setBatchOpen(o); if (!o) { setBatchFiles([]); setDroppedFiles([]); } }}
+          files={batchFiles}
+          projectId={project.id}
+          currentFolder=""
+          onComplete={() => { setBatchOpen(false); setBatchFiles([]); }}
+        />
+      )}
     </div>
+    </FolderDropZone>
   );
 };
 
