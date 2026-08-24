@@ -87,6 +87,30 @@ test.describe('Addresses', () => {
     await expect(dialog).not.toBeVisible();
   });
 
+  test('the owner sees the sharing section with its scope warning', async ({ page }) => {
+    await login(page);
+    await page.goto('/tips');
+    await page.locator('header').getByText(/^Start$/i).first().click();
+    await expect(page).toHaveURL(/\/start/);
+    await page.waitForLoadState('networkidle');
+
+    const addressLinks = page.locator('a[href^="/addresses/"]');
+    if ((await addressLinks.count()) === 0) {
+      test.skip(true, 'No addresses with live projects on this account');
+      return;
+    }
+    await addressLinks.first().click();
+    await expect(
+      page.getByRole('heading', { name: /Vilka når den här adressen|Who reaches this address/i })
+    ).toBeVisible();
+
+    // The scope warning is the whole point of the copy — assert it is there.
+    await expect(
+      page.getByText(/ALLA projekt på den här adressen|ALL projects at this address/i)
+    ).toBeVisible();
+    await page.screenshot({ path: `${SHOTS}/05-members.png`, fullPage: true });
+  });
+
   test('an unknown address id shows the not-found state instead of crashing', async ({ page }) => {
     await login(page);
     await page.goto('/addresses/00000000-0000-0000-0000-0000000000ff');

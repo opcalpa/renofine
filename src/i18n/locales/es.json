@@ -7856,6 +7856,29 @@
       "nameHint": "Cómo se llama la vivienda en la app — p. ej. \"Casa\" o \"La cabaña\".",
       "saved": "Dirección guardada",
       "failed": "No se pudo guardar la dirección"
+    },
+    "members": {
+      "title": "Quién accede a esta dirección",
+      "inviteLabel": "Invitar por correo",
+      "roleLabel": "Rol",
+      "invite": "Invitar",
+      "optionAdmin": "Comparte la vivienda",
+      "optionViewer": "Solo consulta",
+      "roleAdmin": "Comparte la vivienda — puede ver y cambiar todo",
+      "roleViewer": "Consulta — puede ver, pero no cambiar",
+      "pending": "esperando respuesta",
+      "remove": "Quitar",
+      "scopeWarning": "Esta persona verá TODOS los proyectos de esta dirección — pasados y futuros. La invitación solo funciona para el correo que escribas.",
+      "linkHint": "Envíale el enlace:",
+      "inviteFailed": "No se pudo crear la invitación",
+      "removeFailed": "No se pudo quitar a la persona"
+    },
+    "accept": {
+      "working": "Conectándote con la dirección…",
+      "failedTitle": "No se pudo usar la invitación",
+      "wrongEmail": "Esta invitación es para otro correo. Inicia sesión con el correo invitado o pide una nueva invitación.",
+      "expired": "La invitación ha caducado. Pide una nueva.",
+      "generic": "La invitación ya no existe o ya se ha usado."
     }
   }
 }

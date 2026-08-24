@@ -7845,6 +7845,29 @@
       "nameHint": "Vad bostaden kallas i appen — t.ex. \"Hemma\" eller \"Sommarstugan\".",
       "saved": "Adressen är sparad",
       "failed": "Kunde inte spara adressen"
+    },
+    "members": {
+      "title": "Vilka når den här adressen",
+      "inviteLabel": "Bjud in med e-post",
+      "roleLabel": "Roll",
+      "invite": "Bjud in",
+      "optionAdmin": "Delar hemmet",
+      "optionViewer": "Bara insyn",
+      "roleAdmin": "Delar hemmet — kan se och ändra allt",
+      "roleViewer": "Insyn — kan se, men inte ändra",
+      "pending": "väntar på svar",
+      "remove": "Ta bort",
+      "scopeWarning": "Personen ser ALLA projekt på den här adressen — även tidigare och framtida. Inbjudan gäller bara den e-postadress du skriver in.",
+      "linkHint": "Skicka länken till personen:",
+      "inviteFailed": "Kunde inte skapa inbjudan",
+      "removeFailed": "Kunde inte ta bort personen"
+    },
+    "accept": {
+      "working": "Kopplar dig till adressen…",
+      "failedTitle": "Inbjudan kunde inte användas",
+      "wrongEmail": "Inbjudan gäller en annan e-postadress. Logga in med den adress inbjudan skickades till, eller be om en ny inbjudan.",
+      "expired": "Inbjudan har gått ut. Be om en ny.",
+      "generic": "Inbjudan finns inte längre, eller är redan använd."
     }
   }
 }

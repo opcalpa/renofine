@@ -7846,6 +7846,29 @@
       "nameHint": "What the home is called in the app — e.g. \"Home\" or \"The cabin\".",
       "saved": "Address saved",
       "failed": "Could not save the address"
+    },
+    "members": {
+      "title": "Who reaches this address",
+      "inviteLabel": "Invite by email",
+      "roleLabel": "Role",
+      "invite": "Invite",
+      "optionAdmin": "Shares the home",
+      "optionViewer": "View only",
+      "roleAdmin": "Shares the home — can see and change everything",
+      "roleViewer": "View only — can see, but not change",
+      "pending": "awaiting reply",
+      "remove": "Remove",
+      "scopeWarning": "This person will see ALL projects at this address — past and future. The invitation only works for the email address you enter.",
+      "linkHint": "Send the link to them:",
+      "inviteFailed": "Could not create the invitation",
+      "removeFailed": "Could not remove the person"
+    },
+    "accept": {
+      "working": "Connecting you to the address…",
+      "failedTitle": "The invitation could not be used",
+      "wrongEmail": "This invitation is for a different email address. Sign in with the address it was sent to, or ask for a new invitation.",
+      "expired": "The invitation has expired. Ask for a new one.",
+      "generic": "The invitation no longer exists, or has already been used."
     }
   }
 }

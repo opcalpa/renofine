@@ -7856,6 +7856,29 @@
       "nameHint": "Wie das Zuhause in der App heißt — z. B. \"Zuhause\" oder \"Ferienhaus\".",
       "saved": "Adresse gespeichert",
       "failed": "Adresse konnte nicht gespeichert werden"
+    },
+    "members": {
+      "title": "Wer diese Adresse erreicht",
+      "inviteLabel": "Per E-Mail einladen",
+      "roleLabel": "Rolle",
+      "invite": "Einladen",
+      "optionAdmin": "Teilt das Zuhause",
+      "optionViewer": "Nur Einsicht",
+      "roleAdmin": "Teilt das Zuhause — kann alles sehen und ändern",
+      "roleViewer": "Einsicht — kann sehen, aber nicht ändern",
+      "pending": "wartet auf Antwort",
+      "remove": "Entfernen",
+      "scopeWarning": "Diese Person sieht ALLE Projekte an dieser Adresse — auch frühere und künftige. Die Einladung gilt nur für die eingegebene E-Mail-Adresse.",
+      "linkHint": "Senden Sie ihr den Link:",
+      "inviteFailed": "Einladung konnte nicht erstellt werden",
+      "removeFailed": "Person konnte nicht entfernt werden"
+    },
+    "accept": {
+      "working": "Sie werden mit der Adresse verbunden…",
+      "failedTitle": "Die Einladung konnte nicht verwendet werden",
+      "wrongEmail": "Diese Einladung gilt für eine andere E-Mail-Adresse. Melden Sie sich mit der eingeladenen Adresse an oder bitten Sie um eine neue Einladung.",
+      "expired": "Die Einladung ist abgelaufen. Bitten Sie um eine neue.",
+      "generic": "Die Einladung existiert nicht mehr oder wurde bereits verwendet."
     }
   }
 }

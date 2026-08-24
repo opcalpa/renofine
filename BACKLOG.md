@@ -3028,7 +3028,12 @@ Kvar: Carls inloggade test av pickern.
 **S3 LEVERERAD 2026-08-24** — spendRollup (en motor, CompletedProjectSummary läser
 den nu också) + SpendSummaryPanel + `/addresses/:id` m. tidslinje + hemägare-gatad
 adresslista på /start + i18n×5. Bonus: playwright laddade aldrig .env.local → de 3
-inloggade e2e-testerna har ALLTID skippats; fixat. Nästa: S4 (delning).
+inloggade e2e-testerna har ALLTID skippats; fixat. **S4 LEVERERAD 2026-08-24** — hushålls-delning (admin/insyn) live. Fyravägstestet
+fångade ett HÅL I PLANEN: 10 policies i 7 tabeller inlinar sina checkar i stället
+för att anropa de centrala funktionerna, så medlemskapet kaskaderade inte dit.
+Alla lagade additivt. Rollmatris + DB-vakter verifierade som riktiga roller.
+e2e 54 passed. Kvar: inbjudan via e-post (Resend) + UI för rollbyte.
+Nästa: S5 (merge-förslag) / S6 (plan-arv).
 
 ---
 id: floorplan-quality-epic

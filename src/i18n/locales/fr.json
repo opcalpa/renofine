@@ -7856,6 +7856,29 @@
       "nameHint": "Le nom du logement dans l'application — par ex. \"Maison\" ou \"Le chalet\".",
       "saved": "Adresse enregistrée",
       "failed": "Impossible d'enregistrer l'adresse"
+    },
+    "members": {
+      "title": "Qui accède à cette adresse",
+      "inviteLabel": "Inviter par e-mail",
+      "roleLabel": "Rôle",
+      "invite": "Inviter",
+      "optionAdmin": "Partage le logement",
+      "optionViewer": "Consultation seule",
+      "roleAdmin": "Partage le logement — peut tout voir et modifier",
+      "roleViewer": "Consultation — peut voir, mais pas modifier",
+      "pending": "en attente de réponse",
+      "remove": "Retirer",
+      "scopeWarning": "Cette personne verra TOUS les projets à cette adresse — passés et futurs. L'invitation ne fonctionne que pour l'adresse e-mail saisie.",
+      "linkHint": "Envoyez-lui le lien :",
+      "inviteFailed": "Impossible de créer l'invitation",
+      "removeFailed": "Impossible de retirer la personne"
+    },
+    "accept": {
+      "working": "Connexion à l'adresse…",
+      "failedTitle": "L'invitation n'a pas pu être utilisée",
+      "wrongEmail": "Cette invitation concerne une autre adresse e-mail. Connectez-vous avec l'adresse invitée ou demandez une nouvelle invitation.",
+      "expired": "L'invitation a expiré. Demandez-en une nouvelle.",
+      "generic": "L'invitation n'existe plus ou a déjà été utilisée."
     }
   }
 }

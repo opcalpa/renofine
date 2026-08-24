@@ -25,6 +25,8 @@ import { useAuthSession } from '@/hooks/useAuthSession';
 import { useUserRole } from '@/hooks/useUserRole';
 import { propertyLabel, hasRealAddress, type PropertyRow } from '@/services/propertyService';
 import { EditPropertyDialog } from '@/components/property/EditPropertyDialog';
+import { PropertyMembersSection } from '@/components/property/PropertyMembersSection';
+import { isPropertyOwner } from '@/services/propertyMemberService';
 import { Button } from '@/components/ui/button';
 import { isDemoProject } from '@/services/demoProjectService';
 
@@ -54,6 +56,8 @@ export default function AddressDetail() {
   const [notFound, setNotFound] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  // Shapes the UI only — the database is the real guard (20260824100000).
+  const [canManage, setCanManage] = useState(false);
 
   useEffect(() => {
     if (!propertyId) return;
@@ -86,6 +90,9 @@ export default function AddressDetail() {
         return;
       }
       setProperty(prop);
+      isPropertyOwner(prop.id).then((owner) => {
+        if (!cancelled) setCanManage(owner);
+      });
 
       const { data: rows } = await supabase
         .from('projects')
@@ -234,6 +241,8 @@ export default function AddressDetail() {
             }
           />
         )}
+
+        <PropertyMembersSection propertyId={property.id} canManage={canManage} />
 
         <section className="rounded-xl border bg-card">
           <header className="flex items-center gap-2 border-b px-4 py-3">

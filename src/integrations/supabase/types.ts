@@ -4292,6 +4292,7 @@ export type Database = {
         Args: { p_mode: string; p_project_id: string; p_viewer: string }
         Returns: Json
       }
+      accept_property_invitation: { Args: { p_token: string }; Returns: string }
       derive_viewer_mode: { Args: { p_project_id: string }; Returns: string }
       get_intake_request_by_token: {
         Args: { p_token: string }
@@ -4433,6 +4434,10 @@ export type Database = {
       }
       user_owns_project: { Args: { project_id: string }; Returns: boolean }
       user_owns_property: { Args: { p_property_id: string }; Returns: boolean }
+      user_property_access_on_project: {
+        Args: { p_min_role?: string; p_project_id: string }
+        Returns: boolean
+      }
       user_purchases_scope: { Args: { p_project_id: string }; Returns: string }
       user_tasks_scope: { Args: { p_project_id: string }; Returns: string }
     }

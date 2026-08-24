@@ -78,6 +78,32 @@ const DEMO_VIEW_ONLY: Omit<ProjectPermissions, "loading" | "viewerMode"> = {
   timeTracking: "view",
 };
 
+/**
+ * Property viewer (S4): the trusted-builder case. Sees the project the way the
+ * customer does — every tab readable, nothing editable, and never the team's
+ * internal surfaces.
+ */
+const PROPERTY_VIEWER: Omit<ProjectPermissions, "loading" | "viewerMode"> = {
+  isOwner: false,
+  isSystemAdmin: false,
+  isDemoProject: false,
+  isClient: true,
+  isPlanningContributor: false,
+  roleType: "property_viewer",
+  customerView: "view",
+  overview: "view",
+  timeline: "view",
+  tasks: "view",
+  tasksScope: "all",
+  spacePlanner: "view",
+  purchases: "view",
+  purchasesScope: "all",
+  budget: "view",
+  files: "view",
+  teams: "none",
+  timeTracking: "none",
+};
+
 const ALL_NONE: Omit<ProjectPermissions, "loading" | "viewerMode"> = {
   isOwner: false,
   isSystemAdmin: false,
@@ -230,8 +256,29 @@ export function useProjectPermissions(projectId: string | undefined): ProjectPer
         // Demo project without invite - view only
         setPerms(DEMO_VIEW_ONLY);
       } else {
-        // Regular project without invite - no access
-        setPerms(ALL_NONE);
+        // S4: no project share — the user may still reach this project through
+        // its ADDRESS. RLS already lets them read it; without this branch the
+        // project would appear in their list and then open as a dead page.
+        const [{ data: viaAddressAdmin }, { data: viaAddressViewer }] = await Promise.all([
+          supabase.rpc("user_property_access_on_project", {
+            p_project_id: projectId,
+            p_min_role: "admin",
+          }),
+          supabase.rpc("user_property_access_on_project", {
+            p_project_id: projectId,
+            p_min_role: "viewer",
+          }),
+        ]);
+        if (cancelled) return;
+
+        if (viaAddressAdmin === true) {
+          setPerms({ ...ALL_EDIT, isSystemAdmin: false, isDemoProject: isDemo });
+        } else if (viaAddressViewer === true) {
+          setPerms({ ...PROPERTY_VIEWER, isDemoProject: isDemo });
+        } else {
+          // Regular project without invite - no access
+          setPerms(ALL_NONE);
+        }
       }
 
       setLoading(false);
