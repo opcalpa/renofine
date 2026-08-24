@@ -1146,21 +1146,36 @@ const ProjectDetail = () => {
 
       // File the originals regardless of what the user accepts — the archive is
       // a separate promise from the data extraction (Skiva 2).
+      //
+      // And a promise that quietly breaks is worse than one never made: this
+      // used to swallow every failure, so "the files are saved in Files" could
+      // be said about files that were not. Count what actually landed.
+      let archiveFailed = 0;
       if (outcome.archiveFiles.length > 0) {
         try {
           for (const cat of new Set(outcome.archiveFiles.map((a) => a.category))) {
             await ensureCategoryFolder(project.id, cat);
           }
-          await Promise.all(
+          const results = await Promise.all(
             outcome.archiveFiles.map((a) => uploadToCategoryFolder(project.id, a.file, a.category)),
           );
+          archiveFailed = results.filter((r) => !r).length;
         } catch (e) {
           console.error('ProjectDetail: archiving dropped files failed', e);
+          archiveFailed = outcome.archiveFiles.length;
         }
       }
 
       // Nothing silent: a file that changed nothing still gets named.
       const inertNotes: string[] = [];
+      if (archiveFailed > 0) {
+        inertNotes.push(
+          t('folderDrop.archiveFailed', {
+            count: archiveFailed,
+            defaultValue: '{{count}} filer kunde inte sparas i Filer — släpp dem igen eller ladda upp dem manuellt.',
+          }),
+        );
+      }
       if (outcome.notUnderstoodCount > 0) {
         inertNotes.push(
           t('folderDrop.notUnderstood', {
@@ -1180,8 +1195,12 @@ const ProjectDetail = () => {
 
       if (proposals.length === 0) {
         toast({
-          title: t('folderDrop.nothingFound', 'Jag hittade inget att lägga till — filerna är sparade i Filer.'),
+          title:
+            archiveFailed === outcome.archiveFiles.length && archiveFailed > 0
+              ? t('folderDrop.nothingFoundNothingSaved', 'Jag hittade inget att lägga till, och filerna kunde inte sparas heller.')
+              : t('folderDrop.nothingFound', 'Jag hittade inget att lägga till — filerna är sparade i Filer.'),
           description: inertNotes.length > 0 ? inertNotes.join(' ') : undefined,
+          variant: archiveFailed > 0 ? 'destructive' : undefined,
         });
         return;
       }

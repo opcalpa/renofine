@@ -1029,6 +1029,15 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
             t('renaidaFlow.folder.filesArchived', '{{count}} filer sparade i Filer.', { count: filed })
           );
         }
+        // Files that did not make it are named. Silence here would leave the
+        // person believing a folder is filed that is not.
+        if (filed < archives.length) {
+          toast.error(
+            t('renaidaFlow.folder.filesNotArchived', '{{count}} filer kunde inte sparas i Filer.', {
+              count: archives.length - filed,
+            })
+          );
+        }
       }
 
       // Populate-existing (co-existence): the project already existed, so this

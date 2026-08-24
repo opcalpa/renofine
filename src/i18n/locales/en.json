@@ -7660,7 +7660,9 @@
       "homePapers": "{{count}} files look like they belong to the home rather than the renovation — they are saved in Files without affecting the project, and can be moved to the address from there.",
       "notUnderstood": "{{count}} files I could not place — they are filed under Other and change nothing in the project.",
       "photosFiled": "{{count}} photos saved to Files without being interpreted.",
-      "onlyHomePapers": "{{count}} of the files look like they belong to the home — purchase papers and the like — not to a renovation. Drop the folder on \"To the home\" instead and they land on the address."
+      "onlyHomePapers": "{{count}} of the files look like they belong to the home — purchase papers and the like — not to a renovation. Drop the folder on \"To the home\" instead and they land on the address.",
+      "filesNotArchived_one": "{{count}} file could not be saved to Files.",
+      "filesNotArchived_other": "{{count}} files could not be saved to Files."
     },
     "source": {
       "answer": "Your answer",
@@ -7866,7 +7868,10 @@
     "notUnderstood_one": "{{count}} file I could not place — it is filed under Other and changes nothing in the project.",
     "notUnderstood_other": "{{count}} files I could not place — they are filed under Other and change nothing in the project.",
     "photosFiled_one": "{{count}} photo saved to Files without being interpreted.",
-    "photosFiled_other": "{{count}} photos saved to Files without being interpreted."
+    "photosFiled_other": "{{count}} photos saved to Files without being interpreted.",
+    "archiveFailed_one": "{{count}} file could not be saved to Files — drop it again or upload it manually.",
+    "archiveFailed_other": "{{count}} files could not be saved to Files — drop them again or upload them manually.",
+    "nothingFoundNothingSaved": "I didn't find anything to add, and the files could not be saved either."
   },
   "addresses": {
     "picker": {

@@ -7659,7 +7659,9 @@
       "homePapers": "{{count}} filer ser ut att höra till bostaden, inte till renoveringen — de sparas i Filer utan att påverka projektet, och kan flyttas till adressen därifrån.",
       "notUnderstood": "{{count}} filer visste jag inte vad de var — de ligger under Övrigt i Filer och rör inget i projektet.",
       "photosFiled": "{{count}} bilder sparade i Filer utan att tolkas.",
-      "onlyHomePapers": "{{count}} av filerna ser ut att höra till bostaden — köpehandlingar och liknande — inte till en renovering. Släpp mappen på \"Till bostaden\" i stället, så hamnar de på adressen."
+      "onlyHomePapers": "{{count}} av filerna ser ut att höra till bostaden — köpehandlingar och liknande — inte till en renovering. Släpp mappen på \"Till bostaden\" i stället, så hamnar de på adressen.",
+      "filesNotArchived_one": "{{count}} fil kunde inte sparas i Filer.",
+      "filesNotArchived_other": "{{count}} filer kunde inte sparas i Filer."
     },
     "source": {
       "answer": "Ditt svar",
@@ -7865,7 +7867,10 @@
     "notUnderstood_one": "{{count}} fil visste jag inte vad den var — den ligger under Övrigt och rör inget i projektet.",
     "notUnderstood_other": "{{count}} filer visste jag inte vad de var — de ligger under Övrigt och rör inget i projektet.",
     "photosFiled_one": "{{count}} bild sparad i Filer utan att tolkas.",
-    "photosFiled_other": "{{count}} bilder sparade i Filer utan att tolkas."
+    "photosFiled_other": "{{count}} bilder sparade i Filer utan att tolkas.",
+    "archiveFailed_one": "{{count}} fil kunde inte sparas i Filer — släpp den igen eller ladda upp den manuellt.",
+    "archiveFailed_other": "{{count}} filer kunde inte sparas i Filer — släpp dem igen eller ladda upp dem manuellt.",
+    "nothingFoundNothingSaved": "Jag hittade inget att lägga till, och filerna kunde inte sparas heller."
   },
   "addresses": {
     "picker": {
