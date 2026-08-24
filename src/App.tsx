@@ -52,6 +52,7 @@ const AtaApproval = lazy(() => import("./pages/AtaApproval"));
 const AttendanceCheckIn = lazy(() => import("./pages/AttendanceCheckIn"));
 const DocPlayground = lazy(() => import("./pages/_DocPlayground"));
 const Capture = lazy(() => import("./pages/Capture"));
+const AddressDetail = lazy(() => import("./pages/AddressDetail"));
 import { Renaida } from "./components/Renaida";
 import { InstallPwaBanner } from "./components/InstallPwaBanner";
 import { BetaBanner } from "./components/BetaBanner";
@@ -155,6 +156,7 @@ const App = () => (
               <Route path="/start" element={<RequireAuth><Projects /></RequireAuth>} />
               <Route path="/projects" element={<Navigate to="/start" replace />} />
               <Route path="/projects/:projectId" element={<RequireAuth><ProjectDetail /></RequireAuth>} />
+              <Route path="/addresses/:propertyId" element={<RequireAuth allowGuest={false}><Suspense fallback={null}><AddressDetail /></Suspense></RequireAuth>} />
               <Route path="/profile" element={<RequireAuth allowGuest={false}><Profile /></RequireAuth>} />
               <Route path="/quotes/:quoteId" element={USE_QUOTE_VIEW_V2 ? <ViewQuoteV2 /> : <ViewQuote />} />
               <Route path="/invoices/:invoiceId" element={USE_INVOICE_VIEW_V2 ? <ViewInvoiceV2 /> : <ViewInvoice />} />

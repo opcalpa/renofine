@@ -7827,6 +7827,21 @@
     },
     "card": {
       "sharedAddress": "· {{count}} projets ici"
+    },
+    "detail": {
+      "notFound": "Adresse introuvable.",
+      "backToProjects": "Retour aux projets",
+      "projectCount": "{{count}} rénovations à cette adresse",
+      "summaryTitle": "Tout ce qui a été investi ici",
+      "rotNote": "Ce total est une base issue de vos propres documents — les déductions sont calculées par personne et par an, pas par bien.",
+      "timeline": "Rénovations dans le temps",
+      "noProjects": "Aucun projet à cette adresse pour l'instant.",
+      "singleProjectHint": "Votre prochaine rénovation dans le même logement pourra être rattachée ici — tout sera alors additionné automatiquement."
+    },
+    "list": {
+      "title": "Vos adresses",
+      "subtitle": "Tout ce qui a été fait dans un logement",
+      "projectCount": "{{count}} projets"
     }
   }
 }

@@ -7816,6 +7816,21 @@
     },
     "card": {
       "sharedAddress": "· {{count}} projekt här"
+    },
+    "detail": {
+      "notFound": "Adressen hittades inte.",
+      "backToProjects": "Tillbaka till projekt",
+      "projectCount": "{{count}} renoveringar på den här adressen",
+      "summaryTitle": "Allt som lagts ner här",
+      "rotNote": "Summan är ett underlag från dina egna dokument — ROT räknas per person och år, inte per fastighet.",
+      "timeline": "Renoveringar över tid",
+      "noProjects": "Inga projekt på den här adressen ännu.",
+      "singleProjectHint": "Nästa renovering i samma bostad kan kopplas hit — då räknas allt ihop automatiskt."
+    },
+    "list": {
+      "title": "Dina adresser",
+      "subtitle": "Allt som gjorts i en bostad, samlat",
+      "projectCount": "{{count}} projekt"
     }
   }
 }

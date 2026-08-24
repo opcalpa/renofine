@@ -3024,7 +3024,11 @@ planen: REVOKE från roll tar inte bort PUBLIC-grant.
 **S2 LEVERERAD 2026-08-24** — propertyService (en motor) + delad PropertyPicker i
 skapa-projekt och projektinställningar + "N projekt här" på kortet + alla 6
 skapandevägar kopplade + i18n×5. typecheck 336 = baseline, e2e 48/0/3 = baseline.
-Kvar: Carls inloggade test av pickern. Nästa: S3 (adress-sidan m. roll-up).
+Kvar: Carls inloggade test av pickern.
+**S3 LEVERERAD 2026-08-24** — spendRollup (en motor, CompletedProjectSummary läser
+den nu också) + SpendSummaryPanel + `/addresses/:id` m. tidslinje + hemägare-gatad
+adresslista på /start + i18n×5. Bonus: playwright laddade aldrig .env.local → de 3
+inloggade e2e-testerna har ALLTID skippats; fixat. Nästa: S4 (delning).
 
 ---
 id: floorplan-quality-epic

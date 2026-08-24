@@ -7827,6 +7827,21 @@
     },
     "card": {
       "sharedAddress": "· {{count}} proyectos aquí"
+    },
+    "detail": {
+      "notFound": "Dirección no encontrada.",
+      "backToProjects": "Volver a proyectos",
+      "projectCount": "{{count}} reformas en esta dirección",
+      "summaryTitle": "Todo lo invertido aquí",
+      "rotNote": "Este total es una base extraída de tus propios documentos — las deducciones se calculan por persona y año, no por inmueble.",
+      "timeline": "Reformas a lo largo del tiempo",
+      "noProjects": "Aún no hay proyectos en esta dirección.",
+      "singleProjectHint": "Tu próxima reforma en la misma vivienda puede vincularse aquí — entonces todo se suma automáticamente."
+    },
+    "list": {
+      "title": "Tus direcciones",
+      "subtitle": "Todo lo hecho en una vivienda, junto",
+      "projectCount": "{{count}} proyectos"
     }
   }
 }

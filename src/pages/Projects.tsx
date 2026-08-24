@@ -49,6 +49,7 @@ import { stashDroppedFolder } from "@/services/agent/droppedFolderHandoff";
 import { HomeownerYearlyAnalysis } from "@/components/project/HomeownerYearlyAnalysis";
 import { DashboardStrip } from "@/components/project/DashboardStrip";
 import { ProjectGridCard } from "@/components/project/ProjectGridCard";
+import { AddressListSection } from "@/components/property/AddressListSection";
 import { GuestBanner, GuestMigrationDialog } from "@/components/guest";
 import { hasGuestProjectsToMigrate } from "@/services/guestMigrationService";
 import { CreateIntakeDialog } from "@/components/intake/CreateIntakeDialog";
@@ -964,6 +965,10 @@ const Projects = () => {
           </div>
         )}
         </section>
+
+        {/* Addresses - homeowners only. A builder's many customer sites are a
+            different concept and stay out of v1 (property epic). */}
+        {!isContractor && !isGuest && <AddressListSection />}
 
         {/* Financial Analysis - contractors only, at the bottom */}
         {isContractor && !isGuest && nonDemoProjects.length > 0 && isSectionEnabled("financial_analysis") && (

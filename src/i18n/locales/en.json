@@ -7817,6 +7817,21 @@
     },
     "card": {
       "sharedAddress": "· {{count}} projects here"
+    },
+    "detail": {
+      "notFound": "Address not found.",
+      "backToProjects": "Back to projects",
+      "projectCount": "{{count}} renovations at this address",
+      "summaryTitle": "Everything spent here",
+      "rotNote": "This total is a basis drawn from your own documents — ROT is calculated per person and year, not per property.",
+      "timeline": "Renovations over time",
+      "noProjects": "No projects at this address yet.",
+      "singleProjectHint": "Your next renovation in the same home can be linked here — then everything is added up automatically."
+    },
+    "list": {
+      "title": "Your addresses",
+      "subtitle": "Everything done in a home, together",
+      "projectCount": "{{count}} projects"
     }
   }
 }
