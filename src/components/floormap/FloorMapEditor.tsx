@@ -18,7 +18,7 @@ import { useFloorMapStore } from "./store";
 import { FloorMapShape } from "./types";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
-import { loadPlansFromDB, createPlanInDB } from "./utils/plans";
+import { ensurePlansForProject } from "./utils/plans";
 import { Box, Loader2 } from "lucide-react";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { CanvasHint } from "@/components/onboarding/CanvasHint";
@@ -200,20 +200,14 @@ export const FloorMapEditor = ({ projectId, projectName, onBack, backLabel, isRe
   }, [onboarding.currentStepKey]);
 
   const loadInitialData = async () => {
-    // Load all plans for this project
-    const loadedPlans = await loadPlansFromDB(projectId);
-    if (loadedPlans.length === 0) {
-      // Create a default plan if none exist
-      const defaultPlan = await createPlanInDB(projectId, t("Floor Plan 1"));
-      if (defaultPlan) {
-        setPlans([defaultPlan]);
-        setCurrentPlanId(defaultPlan.id);
-      }
-    } else {
-      setPlans(loadedPlans);
-      const defaultPlan = loadedPlans.find((p) => p.isDefault) || loadedPlans[0];
-      setCurrentPlanId(defaultPlan.id);
-    }
+    // Shared bootstrap: two mounts racing here used to create two identical
+    // "Floor Plan 1" rows (see ensurePlansForProject).
+    const loadedPlans = await ensurePlansForProject(projectId, t("Floor Plan 1"));
+    if (loadedPlans.length === 0) return;
+
+    setPlans(loadedPlans);
+    const defaultPlan = loadedPlans.find((p) => p.isDefault) || loadedPlans[0];
+    setCurrentPlanId(defaultPlan.id);
   };
 
   // Note: Auto-save is now handled by the canvas component itself

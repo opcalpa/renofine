@@ -2923,7 +2923,19 @@
     "cannotBeUndone": "This cannot be undone.",
     "allObjectsDeleted": "All walls, rooms, and objects in this plan will be permanently deleted.",
     "uploadTraceImage": "Upload drawing (trace)",
-    "aiImport": "AI-interpret floor plan"
+    "aiImport": "AI-interpret floor plan",
+    "inherit": {
+      "title": "Start from an earlier drawing",
+      "body": "Walls stay put between renovations. The copy becomes your own — the earlier drawing is not changed.",
+      "action": "Copy here",
+      "rooms_one": "{{count}} room",
+      "rooms_other": "{{count}} rooms",
+      "shapes_one": "{{count}} object",
+      "shapes_other": "{{count}} objects",
+      "failed": "The drawing could not be copied",
+      "copied": "The drawing is copied",
+      "copiedDescription": "\"{{name}}\" is now your own plan in this project"
+    }
   },
   "canvas": {
     "settings": "Drawing Settings",

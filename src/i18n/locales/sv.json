@@ -2312,7 +2312,19 @@
     "cannotBeUndone": "Detta kan inte ångras.",
     "allObjectsDeleted": "Alla väggar, rum och objekt i denna plan raderas permanent.",
     "uploadTraceImage": "Ladda upp ritning (kalkera)",
-    "aiImport": "AI-tolka planritning"
+    "aiImport": "AI-tolka planritning",
+    "inherit": {
+      "title": "Utgå från en tidigare ritning",
+      "body": "Väggarna står kvar mellan renoveringar. Kopian blir din egen — den tidigare ritningen ändras inte.",
+      "action": "Kopiera hit",
+      "rooms_one": "{{count}} rum",
+      "rooms_other": "{{count}} rum",
+      "shapes_one": "{{count}} objekt",
+      "shapes_other": "{{count}} objekt",
+      "failed": "Ritningen kunde inte kopieras",
+      "copied": "Ritningen är kopierad",
+      "copiedDescription": "\"{{name}}\" är nu din egen plan i det här projektet"
+    }
   },
   "canvas": {
     "settings": "Ritinställningar",

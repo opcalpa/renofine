@@ -44,6 +44,8 @@ import { useToast } from "@/hooks/use-toast";
 import { createPlanInDB, deletePlanFromDB, updatePlanInDB } from "./utils/plans";
 import { isEditorV2Enabled } from "./editor/flag";
 import { ViewSettingsPopover } from "./editor/ViewSettingsPopover";
+import { InheritPlanSection } from "./InheritPlanSection";
+import type { FloorMapPlan } from "./types";
 
 interface SpacePlannerTopBarProps {
   projectId: string;
@@ -129,6 +131,27 @@ export const SpacePlannerTopBar = ({ projectId, projectName, onBack, backLabel, 
         variant: "destructive",
       });
     }
+  };
+
+  /**
+   * A plan copied from an earlier renovation at this address (S6). The rows are
+   * already written, so this only has to put it in the store and switch to it —
+   * selecting the plan is what makes the canvas load its shapes.
+   */
+  const handleInheritedPlan = (plan: FloorMapPlan) => {
+    addPlan(plan);
+    setCurrentPlanId(plan.id);
+    setShowNewPlanDialog(false);
+    setNewPlanName("");
+    setNewPlanDescription("");
+
+    toast({
+      title: t('floormap.inherit.copied', 'Ritningen är kopierad'),
+      description: t('floormap.inherit.copiedDescription', {
+        name: plan.name,
+        defaultValue: `"${plan.name}" är nu din egen plan i det här projektet`,
+      }),
+    });
   };
 
   const handleDeletePlan = async (planId: string) => {
@@ -500,6 +523,17 @@ export const SpacePlannerTopBar = ({ projectId, projectName, onBack, backLabel, 
           </DialogHeader>
           
           <div className="space-y-4 py-4">
+            {/* Offered before the name field: when a drawing of this home
+                already exists, copying it is the better start, and typing a
+                name for an empty plan first would bury that. */}
+            <InheritPlanSection
+              projectId={projectId}
+              onInherited={handleInheritedPlan}
+              onError={(message) =>
+                toast({ title: message, variant: "destructive" })
+              }
+            />
+
             <div className="space-y-2">
               <Label htmlFor="plan-name">{t('floormap.planName', 'Plan name')} *</Label>
               <Input

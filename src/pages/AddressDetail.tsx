@@ -27,6 +27,8 @@ import { propertyLabel, hasRealAddress, type PropertyRow } from '@/services/prop
 import { EditPropertyDialog } from '@/components/property/EditPropertyDialog';
 import { PropertyMembersSection } from '@/components/property/PropertyMembersSection';
 import { MergeSuggestionCard } from '@/components/property/MergeSuggestionCard';
+import { PlanThumbnail } from '@/components/property/PlanThumbnail';
+import { fetchPlanPreviews, type PlanPreview } from '@/services/planInheritance';
 import { isPropertyOwner } from '@/services/propertyMemberService';
 import { Button } from '@/components/ui/button';
 import { isDemoProject } from '@/services/demoProjectService';
@@ -53,6 +55,7 @@ export default function AddressDetail() {
   const [property, setProperty] = useState<PropertyRow | null>(null);
   const [projects, setProjects] = useState<AddressProject[]>([]);
   const [rollup, setRollup] = useState<SpendRollup | null>(null);
+  const [planPreviews, setPlanPreviews] = useState<Map<string, PlanPreview>>(new Map());
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -114,6 +117,11 @@ export default function AddressDetail() {
       if (cancelled) return;
       setRollup(r);
       setLoading(false);
+
+      // Which renovations already carry a drawing of this home (S6).
+      fetchPlanPreviews(live.map((p) => p.id)).then((previews) => {
+        if (!cancelled) setPlanPreviews(previews);
+      });
     })();
 
     return () => {
@@ -278,15 +286,23 @@ export default function AddressDetail() {
                       to={`/projects/${p.id}`}
                       className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-muted/40"
                     >
-                      <div className="min-w-0">
-                        <div className="truncate text-sm font-medium">{p.name}</div>
-                        <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
-                          <span>{when}</span>
-                          <span
-                            className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium ${meta.color}`}
-                          >
-                            {t(meta.labelKey)}
-                          </span>
+                      <div className="flex min-w-0 items-center gap-3">
+                        {planPreviews.has(p.id) && (
+                          <PlanThumbnail
+                            plan={planPreviews.get(p.id) as PlanPreview}
+                            className="shrink-0 rounded border bg-background text-muted-foreground"
+                          />
+                        )}
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-medium">{p.name}</div>
+                          <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
+                            <span>{when}</span>
+                            <span
+                              className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium ${meta.color}`}
+                            >
+                              {t(meta.labelKey)}
+                            </span>
+                          </div>
                         </div>
                       </div>
                       {p.spend > 0 && (

@@ -99,6 +99,38 @@ export const createPlanInDB = async (
 };
 
 /**
+ * The plan list a project must have, creating the first one when it has none.
+ *
+ * Concurrency-safe on purpose. Two mounts landing together both saw "no plans"
+ * and both created one: a real project ended up with two identical
+ * "Floor Plan 1" rows 136 ms apart. Sharing the in-flight promise per project
+ * makes the second caller wait for the first one's answer instead of racing it.
+ */
+const planBootstraps = new Map<string, Promise<FloorMapPlan[]>>();
+
+export const ensurePlansForProject = async (
+  projectId: string,
+  defaultPlanName: string
+): Promise<FloorMapPlan[]> => {
+  const inFlight = planBootstraps.get(projectId);
+  if (inFlight) return inFlight;
+
+  const run = (async () => {
+    const loaded = await loadPlansFromDB(projectId);
+    if (loaded.length > 0) return loaded;
+    const created = await createPlanInDB(projectId, defaultPlanName);
+    return created ? [created] : [];
+  })();
+
+  planBootstraps.set(projectId, run);
+  try {
+    return await run;
+  } finally {
+    planBootstraps.delete(projectId);
+  }
+};
+
+/**
  * Update plan details
  */
 export const updatePlanInDB = async (
