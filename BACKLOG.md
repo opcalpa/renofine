@@ -2961,6 +2961,14 @@ Två projekt i samma lägenhet vet inget om varandra.
 3. Räcker en lättviktig variant (projekt kan peka på ett "objekt" som mest är
    namn + adress + delad plan) eller är det en riktig entitet med egen vy?
 
+**Carls riktning 2026-08-24 (delvis svar på fråga 3):** JA till riktig entitet
+med egen yta — "Adresser" som objekt med flera projekt kopplade, plus en
+sammanställningsyta per adress som summerar de väsentliga siffrorna (utgå
+från vad vi redan räknar per projekt: totalt/betalt/ROT/per leverantör/per
+rum). Kärncase: inför FÖRSÄLJNING sammanställa förbättringsutgifter från
+SAMTLIGA projekt på objektet (K5/K6-underlag). Fråga 1 (proffs/kund-objekt?)
+och 2 (migrationsväg) fortfarande öppna.
+
 Ingen kod förrän 1–3 är besvarade — detta är ett arkitekturval som rör
 datamodellen brett (RLS, delning, planritningar).
 
@@ -3079,3 +3087,31 @@ döptes om, vilka dörrar togs bort. Ger tre saker: regelförbättringar till
 hon är dålig (idag helt osynligt). Hör hemma i [[project_renaida_wow_engine]]s
 mining-ritual. **Meningsfullt först när [[floorplan-eval-harness]] finns** —
 annars går det inte att se om lärandet lärde sig rätt sak.
+
+---
+id: folder-drop-files-only-everywhere
+status: todo
+priority: P2
+tags: [ux, ingest, filer, hemägare]
+created: 2026-08-24
+---
+## "Bara spara i Filer" som val i ALLA mapp-drop-scenarion
+
+Carls fråga 2026-08-24: valet "bara spara filerna utan analys" finns idag BARA
+när mappen släpps inne på projektsidan (`DropTargetChoiceDialog`).
+
+**Verifierat gap:** släpps mappen på Projekt-sidan och användaren väljer
+"Lägg till i befintligt projekt" auto-körs Renaida-ingest vid framkomst
+(`?ingest=folder` → `runIngestIntoProject` i ProjectDetail) — inget Filer-val
+på den vägen.
+
+Åtgärd:
+1. Befintligt projekt via Projects-routern: visa samma Renaida/Filer-val som
+   on-page-droppen (enklast: låt `?ingest=folder` öppna
+   `DropTargetChoiceDialog` i stället för att auto-köra). En mekanism, två
+   vägar — samma fråga oavsett var droppen började.
+2. Nytt projekt: analysen ÄR poängen (utan projekt finns inget Filer-arkiv att
+   spara i). Ev. lättvariant "skapa tomt projekt + arkivera filerna" =
+   produktfråga till Carl innan bygge.
+
+Hänger ihop med [[folder-ingest-epic]].
