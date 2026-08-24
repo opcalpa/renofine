@@ -3264,3 +3264,44 @@ P5 "Läs ut uppgifter" (uttryckligt, utan personnummer).
 
 **Antaganden Carl kan veta:** admin-medlemmar ser pappren; AI-utvinning
 uttrycklig, inte automatisk; proffs ser inget i v1; samma bucket, nytt prefix.
+
+---
+id: project-files-public-bucket
+status: todo
+priority: P1
+tags: [säkerhet, storage, rls, prod]
+created: 2026-08-24
+---
+## 🔒 `project-files` är en PUBLIC bucket — varje uppladdad fil är läsbar utan inloggning
+
+**Verifierat 2026-08-24 mot prod:** `storage.buckets.public = true` för
+`project-files`. RLS-policyerna på `storage.objects` gatar det autentiserade
+API:et och listningen, men en public bucket serverar dessutom
+`/storage/v1/object/public/{bucket}/{path}` **helt utan autentisering**. En
+anonym `curl` mot en fil som laddats upp sekunder tidigare gav `200` och hela
+filen. Det gäller alltså varje kvitto, faktura, offert, ritning och foto som
+någon användare lagt in.
+
+Sökvägarna är UUID-baserade (`projects/{uuid}/Kategori/{namn}`), så det krävs
+att man känner till eller får URL:en — men URL:er läcker: de delas i chatt,
+hamnar i `Referer`, i loggar, i mejl, och appen genererar dem själv via
+`getPublicUrl` på 27 ställen.
+
+**Varför det inte fixades direkt:** att flippa bucketen till `public = false`
+är en engångsändring i DB, men **27 anropsställen använder `getPublicUrl`** och
+skulle alla sluta fungera samtidigt (filpreview, tumnaglar, nedladdning,
+kvittobilder, chattbilagor). Det kräver ett samlat byte till
+`createSignedUrl` + en delad hjälpare, och egen verifiering per yta. Det är
+ett eget jobb, inte en sidoeffekt av P3.
+
+**Vad som gjordes i P3 istället:** bostadens papper (köpekontrakt m.m., som
+innehåller säljarens personnummer) lades i en **egen, privat bucket**
+`property-documents` som inget annat rör och som bara nås via kortlivade
+signerade URL:er. Verifierat: anonymt `400` på alla tre endpoints.
+
+**Förslag till åtgärd (ordning):**
+1. En delad `getFileUrl(path)`-hjälpare som mintar signerad URL med cache.
+2. Byt de 27 anropsställena, yta för yta, med verifiering i Chrome per yta.
+3. Flippa `project-files` till `public = false`.
+4. Undantag att lösa först: `Anyone can view public demo files` (demot är
+   avsiktligt publikt) — demofilerna kan behöva ligga i egen public bucket.

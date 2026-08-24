@@ -29,6 +29,7 @@ import {
   listPropertyMembers,
   invitePropertyMember,
   removePropertyMember,
+  updateMemberRole,
   type PropertyMember,
   type PropertyRole,
 } from '@/services/propertyMemberService';
@@ -88,6 +89,27 @@ export function PropertyMembersSection({ propertyId, canManage }: Props) {
     }
   };
 
+  const handleRoleChange = async (member: PropertyMember, role: PropertyRole) => {
+    setMembers((current) =>
+      (current ?? []).map((m) => (m.id === member.id ? { ...m, role } : m))
+    );
+    const ok = await updateMemberRole(member.id, role);
+    if (!ok) {
+      toast({
+        title: t('addresses.members.roleFailed', 'Rollen kunde inte ändras'),
+        variant: 'destructive',
+      });
+      reload();
+      return;
+    }
+    toast({
+      title:
+        role === 'admin'
+          ? t('addresses.members.roleNowAdmin', 'Personen delar nu hemmet')
+          : t('addresses.members.roleNowViewer', 'Personen har nu bara insyn'),
+    });
+  };
+
   const handleRemove = async (member: PropertyMember) => {
     const ok = await removePropertyMember(member.id);
     if (!ok) {
@@ -136,15 +158,36 @@ export function PropertyMembersSection({ propertyId, canManage }: Props) {
                 </span>
               </span>
               {canManage && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="shrink-0 text-muted-foreground hover:text-destructive"
-                  onClick={() => handleRemove(m)}
-                  aria-label={t('addresses.members.remove', 'Ta bort')}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                <>
+                  {/* The line between the two roles now decides who reaches the
+                      home's papers, so it has to be changeable without
+                      removing and re-inviting the person. */}
+                  <Select
+                    value={m.role}
+                    onValueChange={(value) => handleRoleChange(m, value as PropertyRole)}
+                  >
+                    <SelectTrigger className="h-8 w-[150px] shrink-0 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="admin">
+                        {t('addresses.members.optionAdmin', 'Delar hemmet')}
+                      </SelectItem>
+                      <SelectItem value="viewer">
+                        {t('addresses.members.optionViewer', 'Bara insyn')}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="shrink-0 text-muted-foreground hover:text-destructive"
+                    onClick={() => handleRemove(m)}
+                    aria-label={t('addresses.members.remove', 'Ta bort')}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </>
               )}
             </li>
           ))}

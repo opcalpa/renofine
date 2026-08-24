@@ -7874,7 +7874,10 @@
       "scopeWarning": "Personen ser ALLA projekt på den här adressen — även tidigare och framtida. Inbjudan gäller bara den e-postadress du skriver in.",
       "linkHint": "Skicka länken till personen:",
       "inviteFailed": "Kunde inte skapa inbjudan",
-      "removeFailed": "Kunde inte ta bort personen"
+      "removeFailed": "Kunde inte ta bort personen",
+      "roleFailed": "Rollen kunde inte ändras",
+      "roleNowAdmin": "Personen delar nu hemmet",
+      "roleNowViewer": "Personen har nu bara insyn"
     },
     "accept": {
       "working": "Kopplar dig till adressen…",
@@ -7918,6 +7921,50 @@
       "optionFormer": "Tidigare bostad",
       "optionUnanswered": "Inte angivet",
       "hint": "Flera bostäder kan vara nuvarande samtidigt — hemmet och sommarstugan. Tidigare bostäder ligger kvar längst ner med allt sitt underlag."
+    },
+    "documents": {
+      "title": "Bostadens papper",
+      "count_one": "{{count}} dokument",
+      "count_other": "{{count}} dokument",
+      "add": "Lägg till dokument",
+      "empty": "Köpekontrakt, besiktningsprotokoll, frågelista, energideklaration — pappren om bostaden, inte om ett enskilt arbete. De ligger kvar här även när renoveringarna tar slut.",
+      "saved_one": "{{count}} dokument sparat",
+      "saved_other": "{{count}} dokument sparade",
+      "savedPartial_one": "{{count}} kunde inte sparas — försök igen.",
+      "savedPartial_other": "{{count}} kunde inte sparas — försök igen.",
+      "updateFailed": "Ändringen kunde inte sparas",
+      "openFailed": "Dokumentet kunde inte öppnas",
+      "deleteFailed": "Dokumentet kunde inte tas bort",
+      "deleted": "Dokumentet är borttaget",
+      "deleteTitle": "Ta bort dokumentet?",
+      "deleteBody": "\"{{name}}\" tas bort permanent. Underlag om en bostad kan behövas långt efter en försäljning.",
+      "rename": "Byt namn",
+      "open": "Öppna",
+      "category": {
+        "purchase_agreement": "Köpekontrakt och överlåtelse",
+        "settlement": "Likvidavräkning",
+        "deposit_agreement": "Handpenning och deposition",
+        "title_deed": "Lagfart och pantbrev",
+        "listing": "Objektsbeskrivning",
+        "seller_questionnaire": "Frågelista",
+        "inspection": "Besiktningsprotokoll",
+        "energy_declaration": "Energideklaration",
+        "association": "Bostadsrättsföreningen",
+        "tax_assessment": "Taxeringsbeslut",
+        "insurance": "Försäkring",
+        "other": "Övrigt"
+      },
+      "review": {
+        "title": "Stämmer det här?",
+        "guessed": "Jag gissade vad {{count}} av {{total}} dokument är utifrån filnamnen. Ändra det som blev fel — inget sparas förrän du säger till.",
+        "unknown": "Jag känner inte igen filnamnen, så välj själv vad dokumenten är. Inget sparas förrän du säger till.",
+        "guessedFromName": "Gissat utifrån filnamnet",
+        "nameLabel": "Namn",
+        "remove": "Ta bort ur listan",
+        "saving": "Sparar…",
+        "confirm_one": "Spara {{count}} dokument",
+        "confirm_other": "Spara {{count}} dokument"
+      }
     }
   }
 }

@@ -26,6 +26,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { propertyLabel, hasRealAddress, type PropertyRow, type ResidenceStatus } from '@/services/propertyService';
 import { EditPropertyDialog } from '@/components/property/EditPropertyDialog';
 import { PropertyMembersSection } from '@/components/property/PropertyMembersSection';
+import { PropertyDocumentsSection } from '@/components/property/PropertyDocumentsSection';
 import { MergeSuggestionCard } from '@/components/property/MergeSuggestionCard';
 import { PlanThumbnail } from '@/components/property/PlanThumbnail';
 import { ResidencePrompt, ResidenceStatusChip } from '@/components/property/ResidenceStatus';
@@ -66,6 +67,7 @@ export default function AddressDetail() {
   const [reloadKey, setReloadKey] = useState(0);
   // Shapes the UI only — the database is the real guard (20260824100000).
   const [canManage, setCanManage] = useState(false);
+  const [isDemo, setIsDemo] = useState(false);
 
   useEffect(() => {
     if (!propertyId) return;
@@ -119,6 +121,9 @@ export default function AddressDetail() {
       if (cancelled) return;
       const live = (rows ?? []).filter((p) => !isDemoProject(p.project_type));
       setProjects(live);
+      // A demo address never holds real papers — and must never invite anyone
+      // to put theirs there.
+      setIsDemo((rows ?? []).some((p) => isDemoProject(p.project_type)));
 
       const r = await fetchSpendRollup(live.map((p) => p.id));
       if (cancelled) return;
@@ -305,6 +310,12 @@ export default function AddressDetail() {
                 : undefined
             }
           />
+        )}
+
+        {/* The home's own papers sit above the sharing section: they are about
+            the home itself, while everything below is about the work in it. */}
+        {!isDemo && (
+          <PropertyDocumentsSection propertyId={property.id} canManage={canManage} />
         )}
 
         <PropertyMembersSection propertyId={property.id} canManage={canManage} />

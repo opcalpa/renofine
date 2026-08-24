@@ -7875,7 +7875,10 @@
       "scopeWarning": "This person will see ALL projects at this address — past and future. The invitation only works for the email address you enter.",
       "linkHint": "Send the link to them:",
       "inviteFailed": "Could not create the invitation",
-      "removeFailed": "Could not remove the person"
+      "removeFailed": "Could not remove the person",
+      "roleFailed": "The role could not be changed",
+      "roleNowAdmin": "They now share the home",
+      "roleNowViewer": "They now have view-only access"
     },
     "accept": {
       "working": "Connecting you to the address…",
@@ -7919,6 +7922,50 @@
       "optionFormer": "Former home",
       "optionUnanswered": "Not set",
       "hint": "Several homes can be current at once — the house and the summer place. Former homes stay at the bottom of the list with all their documentation."
+    },
+    "documents": {
+      "title": "The home's papers",
+      "count_one": "{{count}} document",
+      "count_other": "{{count}} documents",
+      "add": "Add documents",
+      "empty": "Purchase agreement, inspection report, seller's questionnaire, energy declaration — the papers about the home, not about a single job. They stay here long after the renovations end.",
+      "saved_one": "{{count}} document saved",
+      "saved_other": "{{count}} documents saved",
+      "savedPartial_one": "{{count}} could not be saved — try again.",
+      "savedPartial_other": "{{count}} could not be saved — try again.",
+      "updateFailed": "The change could not be saved",
+      "openFailed": "The document could not be opened",
+      "deleteFailed": "The document could not be removed",
+      "deleted": "The document is removed",
+      "deleteTitle": "Remove the document?",
+      "deleteBody": "\"{{name}}\" is removed permanently. Documentation about a home can be needed long after a sale.",
+      "rename": "Rename",
+      "open": "Open",
+      "category": {
+        "purchase_agreement": "Purchase agreement",
+        "settlement": "Settlement statement",
+        "deposit_agreement": "Deposit agreement",
+        "title_deed": "Title deed and mortgage deeds",
+        "listing": "Listing description",
+        "seller_questionnaire": "Seller's questionnaire",
+        "inspection": "Inspection report",
+        "energy_declaration": "Energy declaration",
+        "association": "Housing association",
+        "tax_assessment": "Tax assessment",
+        "insurance": "Insurance",
+        "other": "Other"
+      },
+      "review": {
+        "title": "Does this look right?",
+        "guessed": "I guessed what {{count}} of {{total}} documents are from their file names. Change anything that is wrong — nothing is saved until you say so.",
+        "unknown": "I don't recognise the file names, so pick what the documents are. Nothing is saved until you say so.",
+        "guessedFromName": "Guessed from the file name",
+        "nameLabel": "Name",
+        "remove": "Remove from the list",
+        "saving": "Saving…",
+        "confirm_one": "Save {{count}} document",
+        "confirm_other": "Save {{count}} documents"
+      }
     }
   }
 }

@@ -2575,6 +2575,54 @@ export type Database = {
           },
         ]
       }
+      property_documents: {
+        Row: {
+          category: string
+          created_at: string
+          document_date: string | null
+          extracted: Json | null
+          extraction_status: string
+          file_name: string
+          file_size: number | null
+          id: string
+          mime_type: string | null
+          property_id: string
+          storage_path: string
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          document_date?: string | null
+          extracted?: Json | null
+          extraction_status?: string
+          file_name: string
+          file_size?: number | null
+          id?: string
+          mime_type?: string | null
+          property_id: string
+          storage_path: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          document_date?: string | null
+          extracted?: Json | null
+          extraction_status?: string
+          file_name?: string
+          file_size?: number | null
+          id?: string
+          mime_type?: string | null
+          property_id?: string
+          storage_path?: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
       property_members: {
         Row: {
           accepted_at: string | null
