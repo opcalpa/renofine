@@ -92,6 +92,13 @@ export interface ProjectDraft {
   /** Contractor-only: the client this job is for (feeds the post-birth quote). */
   customerName?: string;
   address?: string;
+  /**
+   * P1: set only when the address came from a document (or an existing
+   * property) that knew them — a typed answer is just a street. Both feed the
+   * property lookup so the new project lands on the right home.
+   */
+  postalCode?: string | null;
+  city?: string | null;
   rooms: DraftRoom[];
   tasks: DraftTask[];
   totalBudget?: number | null;
@@ -740,6 +747,8 @@ export function toScaffoldInput(
           project: {
             name: draft.projectName?.trim() || 'Nytt projekt',
             address: draft.address ?? null,
+            postalCode: draft.postalCode ?? null,
+            city: draft.city ?? null,
             country: 'SE',
             // Skiva 3: a retro project is born finished — it exists for the
             // receipts, the archive and the drawings, not for a to-do list.

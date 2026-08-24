@@ -1,0 +1,70 @@
+{
+  "feature": "classify-document (P1: property_address)",
+  "source": "supabase/functions/classify-document/index.ts",
+  "description": "Does the classifier return the HOME's address — and only the home's? The failure that matters is not a missed address but a wrong one: the store on a receipt, the contractor on an invoice letterhead. Ten Bauhaus receipts must never turn a home into Sickla. Every case below carries a decoy address that belongs to the sender.",
+  "cases": [
+    {
+      "id": "kopekontrakt-object",
+      "note": "The purchase agreement names the object. Seller lives elsewhere (decoy).",
+      "input": {
+        "fileName": "Kopekontrakt.pdf",
+        "text": "KÖPEKONTRAKT\n\nSäljare: Anna Bergström, Vasagatan 12, 111 20 Stockholm\nKöpare: Erik Lund, Lindvägen 4, 182 32 Danderyd\n\nObjekt: Bostadsrätten till lägenhet nr 1203 i Brf Storgården, med adress Storgatan 5, 114 25 Stockholm.\n\nKöpeskilling: 4 250 000 kronor\nTillträdesdag: 2024-03-01\nBoarea: 72 kvm enligt föreningens uppgift.\n\nHandpenning om 425 000 kr erläggs senast 2024-01-15 till mäklarens klientmedelskonto."
+      },
+      "expect": { "street": "Storgatan 5", "source": "property_document", "forbid": ["Vasagatan", "Lindvägen"] }
+    },
+    {
+      "id": "faktura-arbetsplats",
+      "note": "Invoice: issuer's letterhead is a decoy; the work site is in an 'Arbetsplats' field.",
+      "input": {
+        "fileName": "Faktura 2041.pdf",
+        "text": "Byggfirma Nord AB\nIndustrivägen 3, 191 49 Sollentuna\nOrg.nr 556677-1234\n\nFAKTURA 2041\nFakturadatum: 2025-09-12\nFörfallodatum: 2025-10-12\n\nKund: Erik Lund\nArbetsplats: Furusundsgatan 14, 115 37 Stockholm\n\nRivning badrum 12 000 kr\nTätskikt och kakel 48 000 kr\nMoms 25 % 15 000 kr\nAtt betala: 75 000 kr\nBankgiro 123-4567"
+      },
+      "expect": { "street": "Furusundsgatan 14", "source": "site_field", "forbid": ["Industrivägen"] }
+    },
+    {
+      "id": "kvitto-bauhaus-null",
+      "note": "THE case: a receipt carries the store's address. Must be null.",
+      "input": {
+        "fileName": "kvitto_bauhaus.pdf",
+        "text": "BAUHAUS Sickla\nSmedjegatan 8, 131 54 Nacka\nTel 08-123 45 67\n\nKVITTO 2025-08-02 14:31\n\nGips 13mm 2 st 189,00\nSkruv 3,5x35 1 st 79,00\nSpackel 5 kg 1 st 129,00\n\nTotalt 397,00\nMoms 25 % 79,40\nBetalat kort ****1234\n\nTack för ditt köp!"
+      },
+      "expect": { "null": true, "type": "receipt" }
+    },
+    {
+      "id": "offert-objekt",
+      "note": "Quote: the painter's own address is the decoy; 'Objekt' names the site.",
+      "input": {
+        "fileName": "Offert måleri.pdf",
+        "text": "Måleri Söder AB\nStorgatan 99, 116 20 Stockholm\n\nOFFERT nr 88\nDatum: 2025-05-03\nGiltig till: 2025-06-03\n\nObjekt: Björkvägen 7, 187 30 Täby\nBeställare: Familjen Persson\n\nMålning av vardagsrum, väggar och tak, 2 strykningar: 18 500 kr\nSpackling och slipning: 4 200 kr\nSumma inkl. moms: 22 700 kr\nROT-avdrag är inte inräknat."
+      },
+      "expect": { "street": "Björkvägen 7", "source": "site_field", "forbid": ["Storgatan 99"] }
+    },
+    {
+      "id": "objektsbeskrivning",
+      "note": "Listing: the broker's office is the decoy.",
+      "input": {
+        "fileName": "Objektsbeskrivning.pdf",
+        "text": "Fastighetsbyrån Lidingö\nKungsgatan 1, 181 31 Lidingö\n\nOBJEKTSBESKRIVNING\n\nAdress: Lingonstigen 22, 181 43 Lidingö\nBoarea: 148 kvm\nTomtareal: 912 kvm\nByggår: 1962\nUtgångspris: 11 900 000 kr\nFastighetsbeteckning: Lidingö Lingonet 4\nVisning: söndag 14 sep kl 13-14"
+      },
+      "expect": { "street": "Lingonstigen 22", "source": "property_document", "forbid": ["Kungsgatan"] }
+    },
+    {
+      "id": "faktura-utan-arbetsplats-null",
+      "note": "Invoice with ONLY the issuer's address. The letterhead is not the object → null.",
+      "input": {
+        "fileName": "Faktura elinstallation.pdf",
+        "text": "Elektriker Sthlm AB\nHantverkargatan 20, 112 21 Stockholm\nOrg.nr 559012-3456\n\nFAKTURA 1157\nFakturadatum 2025-11-04\n\nInstallation av 4 st vägguttag, 2 h arbete\nMaterial 640 kr\nArbete 1 900 kr\nMoms 635 kr\nAtt betala: 3 175 kr\nOCR 115700123"
+      },
+      "expect": { "null": true }
+    },
+    {
+      "id": "besiktning-object",
+      "note": "Inspection report: the inspection company's box address is the decoy.",
+      "input": {
+        "fileName": "scan0007.pdf",
+        "text": "Anticimex AB\nBox 470, 182 15 Danderyd\n\nÖVERLÅTELSEBESIKTNING — PROTOKOLL\n\nUppdragsgivare: Erik Lund\nFastighet: Sollentuna Eken 12\nAdress: Ekvägen 3, 191 44 Sollentuna\nBesiktningsdag: 2024-02-10\n\nNoteringar:\n- Fukt i källarvägg mot norr, förhöjda värden.\n- Takpannor med sprickor, ca 10 st.\n- Badrum: tätskikt saknar dokumentation."
+      },
+      "expect": { "street": "Ekvägen 3", "source": "property_document", "forbid": ["Box 470"] }
+    }
+  ]
+}

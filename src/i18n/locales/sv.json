@@ -7710,6 +7710,12 @@
       "ongoing": "Pågående projekt",
       "done": "Redan genomfört",
       "dated": "Jag daterar projektet {{from}} – {{to}} utifrån dina dokument."
+    },
+    "addressSuggest": {
+      "seen": "Jag såg {{address}} i {{file}} — är det bostaden?",
+      "seenDisagree": "Jag såg {{address}} i {{file}} — är det bostaden? ({{count}} andra dokument angav en annan gata.)",
+      "yes": "Ja, {{address}}",
+      "other": "Annan adress"
     }
   },
   "pwa": {
@@ -8017,7 +8023,49 @@
         "saving": "Sparar…",
         "confirm_one": "Spara {{count}} dokument",
         "confirm_other": "Spara {{count}} dokument"
+      },
+      "extract": {
+        "action": "Läs ut uppgifter",
+        "actionAll": "Läs ut alla köpehandlingar",
+        "reading": "Läser…",
+        "done": "Uppgifter utlästa",
+        "failed": "Kunde inte läsas",
+        "consentTitle": "Läsa ut uppgifter ur dokumentet?",
+        "consentBody": "Dokumentet skickas till vår AI-tjänst för att läsa ut uppgifter om bostaden — köpeskilling, tillträde, boarea, förening. Personnummer och kontonummer sparas aldrig. Inget annat i appen ändras; du väljer efteråt vad som ska användas.",
+        "consentConfirm": "Läs ut",
+        "resultOk_one": "Uppgifter utlästa ur {{count}} dokument",
+        "resultOk_other": "Uppgifter utlästa ur {{count}} dokument",
+        "resultFailed_one": "{{count}} dokument kunde inte läsas.",
+        "resultFailed_other": "{{count}} dokument kunde inte läsas.",
+        "nothingToRead": "Inga köpehandlingar att läsa — lägg till köpekontrakt, objektsbeskrivning eller besiktningsprotokoll först."
       }
+    },
+    "facts": {
+      "title": "Uppgifter om bostaden",
+      "address": "Adress",
+      "purchase_price": "Köpeskilling",
+      "contract_date": "Kontrakt tecknat",
+      "possession_date": "Tillträde",
+      "living_area_sqm": "Boarea",
+      "build_year": "Byggår",
+      "tenure": "Upplåtelseform",
+      "property_designation": "Fastighetsbeteckning",
+      "brf_name": "Förening",
+      "brf_org_number": "Föreningens org.nr",
+      "apartment_number": "Lägenhetsnr",
+      "monthly_fee": "Månadsavgift",
+      "perMonth": "/mån",
+      "tenureValue": {
+        "bostadsratt": "Bostadsrätt",
+        "aganderatt": "Äganderätt",
+        "hyresratt": "Hyresrätt"
+      },
+      "from": "från {{file}}",
+      "use": "Använd",
+      "conflict": "Annat värde i: {{values}}",
+      "note": "Underlag från dina dokument — inte en vinstberäkning. Personnummer läses aldrig ut.",
+      "applied": "Sparat på adressen",
+      "applyFailed": "Kunde inte spara på adressen"
     }
   }
 }

@@ -1,0 +1,104 @@
+{
+  "ranAt": "2026-08-24T19:15:50.149Z",
+  "rows": [
+    {
+      "model": "gpt-4o-mini",
+      "pass": 7,
+      "total": 7,
+      "decoy": 0,
+      "errors": 0,
+      "details": [
+        {
+          "id": "kopekontrakt-object",
+          "ok": true,
+          "issues": [],
+          "got": {
+            "type": "contract",
+            "property_address": {
+              "street": "Storgatan 5",
+              "postal_code": "114 25",
+              "city": "Stockholm"
+            },
+            "address_source": "property_document"
+          }
+        },
+        {
+          "id": "faktura-arbetsplats",
+          "ok": true,
+          "issues": [],
+          "got": {
+            "type": "invoice",
+            "property_address": {
+              "street": "Furusundsgatan 14",
+              "postal_code": "115 37",
+              "city": "Stockholm"
+            },
+            "address_source": "site_field"
+          }
+        },
+        {
+          "id": "kvitto-bauhaus-null",
+          "ok": true,
+          "issues": [],
+          "got": {
+            "type": "receipt",
+            "property_address": null,
+            "address_source": null
+          }
+        },
+        {
+          "id": "offert-objekt",
+          "ok": true,
+          "issues": [],
+          "got": {
+            "type": "quote",
+            "property_address": {
+              "street": "Björkvägen 7",
+              "postal_code": "187 30",
+              "city": "Täby"
+            },
+            "address_source": "site_field"
+          }
+        },
+        {
+          "id": "objektsbeskrivning",
+          "ok": true,
+          "issues": [],
+          "got": {
+            "type": "other",
+            "property_address": {
+              "street": "Lingonstigen 22",
+              "postal_code": "181 43",
+              "city": "Lidingö"
+            },
+            "address_source": "property_document"
+          }
+        },
+        {
+          "id": "faktura-utan-arbetsplats-null",
+          "ok": true,
+          "issues": [],
+          "got": {
+            "type": "invoice",
+            "property_address": null,
+            "address_source": null
+          }
+        },
+        {
+          "id": "besiktning-object",
+          "ok": true,
+          "issues": [],
+          "got": {
+            "type": "other",
+            "property_address": {
+              "street": "Ekvägen 3",
+              "postal_code": "191 44",
+              "city": "Sollentuna"
+            },
+            "address_source": "property_document"
+          }
+        }
+      ]
+    }
+  ]
+}

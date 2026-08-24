@@ -18,6 +18,19 @@ export type SuggestedAction =
   | "import_to_canvas"
   | "store_only";
 
+/**
+ * P1: the address of the HOME a document is about — never the sender's.
+ * `source` says how much to trust it: a köpekontrakt names the object; a
+ * quote names the work site; a receipt names nothing (the store's address is
+ * not the home's).
+ */
+export interface DocumentPropertyAddress {
+  street: string;
+  postal_code: string | null;
+  city: string | null;
+}
+export type AddressSource = 'property_document' | 'site_field';
+
 export interface ClassificationResult {
   type: DocumentType;
   confidence: number;
@@ -26,6 +39,8 @@ export interface ClassificationResult {
   invoice_date: string | null;
   invoice_amount: number | null;
   suggested_action: SuggestedAction;
+  property_address?: DocumentPropertyAddress | null;
+  address_source?: AddressSource | null;
 }
 
 // --- Quote extraction types ---

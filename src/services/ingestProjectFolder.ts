@@ -37,7 +37,13 @@ import type { AIParsedResult } from '@/components/project/overview/planning-wiza
 import { parseProjectDescription } from './renaidaProjectIntake';
 import { captureDocument, extractQuoteLines } from './agent/documentCapture';
 import type { ImportPurchaseAction } from './agent/importPurchaseOrder';
-import { classifyDocument, type DocumentType } from './smartUploadService';
+import {
+  classifyDocument,
+  type DocumentType,
+  type DocumentPropertyAddress,
+  type AddressSource,
+} from './smartUploadService';
+import { parseAddress } from '@/lib/addressMatch';
 import {
   guessCategory,
   wasRecognised,
@@ -121,6 +127,24 @@ async function extractText(file: File): Promise<string> {
 interface ClassifyResult {
   type: string;
   invoice_amount: number | null;
+  property_address?: DocumentPropertyAddress | null;
+  address_source?: AddressSource | null;
+}
+
+/**
+ * P1: an address one document said the home has. Never applied — the birth
+ * flow turns the best one into a QUESTION ("Jag såg Storgatan 5 i
+ * Köpekontrakt.pdf — stämmer det?"). `fileName` is the provenance shown
+ * beside it, so the person can judge the source and not just the answer.
+ */
+export interface AddressCandidate {
+  street: string;
+  postalCode: string | null;
+  city: string | null;
+  source: AddressSource;
+  fileName: string;
+  /** Higher wins. Set from the source × document type table in rankAddress. */
+  rank: number;
 }
 
 const DOCUMENT_TYPES: readonly DocumentType[] = [
@@ -215,7 +239,74 @@ type Contribution = ContributionKind & {
   archive?: ArchiveEntry;
   /** Pages of a multi-page drawing PDF that were NOT read (never silent). */
   extraPages?: number;
+  /** P1: what this one document said the home's address is, if anything. */
+  address?: AddressCandidate;
 };
+
+/**
+ * How far to trust an address, by where it came from (plan §1.1).
+ *
+ *   köpekontrakt / objektsbeskrivning / besiktning → the OBJECT's address: 3
+ *   quote / contract / spec with an "Objekt:" field → the work site:        2
+ *   invoice with such a field                        → the work site:        2
+ *   receipt                                          → never (enforced twice:
+ *                                                      here and in the edge fn)
+ */
+function rankAddress(type: DocumentType, source: AddressSource): number {
+  if (type === 'receipt') return 0;
+  if (source === 'property_document') return 3;
+  return 2;
+}
+
+function toCandidate(
+  cls: ClassifyResult | null,
+  type: DocumentType,
+  fileName: string
+): AddressCandidate | undefined {
+  const addr = cls?.property_address;
+  const source = cls?.address_source;
+  if (!addr?.street || !source) return undefined;
+  const rank = rankAddress(type, source);
+  if (rank === 0) return undefined;
+  return {
+    street: addr.street,
+    postalCode: addr.postal_code ?? null,
+    city: addr.city ?? null,
+    source,
+    fileName,
+    rank,
+  };
+}
+
+/**
+ * Pick the address to ASK about. Highest rank wins; among equals, the street
+ * most documents agree on; among those, the first seen. The loser candidates
+ * are not discarded silently — the caller gets the count so the question can
+ * say "två dokument säger olika".
+ */
+export function chooseSuggestedAddress(
+  candidates: AddressCandidate[]
+): { best: AddressCandidate; agreeing: number; disagreeing: number } | null {
+  if (candidates.length === 0) return null;
+  const top = Math.max(...candidates.map((c) => c.rank));
+  const contenders = candidates.filter((c) => c.rank === top);
+  const votes = new Map<string, AddressCandidate[]>();
+  for (const c of contenders) {
+    const key = parseAddress(c.street).normalized;
+    votes.set(key, [...(votes.get(key) ?? []), c]);
+  }
+  let bestGroup: AddressCandidate[] = [];
+  for (const group of votes.values()) {
+    if (group.length > bestGroup.length) bestGroup = group;
+  }
+  // Prefer the member of the winning group that knows the most (postal/city).
+  const best = [...bestGroup].sort(
+    (a, b) => Number(!!b.postalCode) + Number(!!b.city) - (Number(!!a.postalCode) + Number(!!a.city))
+  )[0];
+  const agreeingKey = parseAddress(best.street).normalized;
+  const disagreeing = candidates.filter((c) => parseAddress(c.street).normalized !== agreeingKey).length;
+  return { best, agreeing: bestGroup.length, disagreeing };
+}
 
 /**
  * Fas D: a floor-plan IMAGE → process-floorplan (walls/doors/rooms in mm with
@@ -262,7 +353,8 @@ async function processDocument(
   file: File,
   language: string,
   collectPurchases: boolean,
-  isContractor: boolean
+  isContractor: boolean,
+  suggestAddress: boolean
 ): Promise<Contribution> {
   const text = await extractText(file);
   if (!text) return { kind: 'unreadable', archive: { file, category: 'other' } };
@@ -273,14 +365,22 @@ async function processDocument(
   // one of your rooms. Local check, and it saves the classify round-trip.
   const homePaper = guessCategory(file.name, text);
   if (wasRecognised(homePaper)) {
+    // P1: at a project's BIRTH the address is still unknown, and a köpekontrakt
+    // is the one document that states it with authority — worth the one call
+    // it costs. Into an existing project the address is known, so the promise
+    // of "no model call" holds there.
+    const address = suggestAddress
+      ? toCandidate(await classifyText(text, file.name), 'contract', file.name)
+      : undefined;
     // No `archive` stamp — a document belongs in one place, and this one's
     // place is the address (or the project's files, if the caller keeps it).
-    return { kind: 'propertyDoc', candidate: { file, category: homePaper } };
+    return { kind: 'propertyDoc', candidate: { file, category: homePaper }, address };
   }
 
   const cls = await classifyText(text, file.name);
   const type = asDocumentType(cls?.type);
   const archive: ArchiveEntry = { file, category: type };
+  const address = suggestAddress ? toCandidate(cls, type, file.name) : undefined;
   if (type === 'receipt' || type === 'invoice') {
     // Inc 3: a logged-in birth fully extracts the receipt → a real PO at
     // creation. Guests can't own POs, so they just get the count (inc 1).
@@ -289,13 +389,13 @@ async function processDocument(
         const captured = await captureDocument(file);
         if (captured.kind === 'receipt' || captured.kind === 'invoice') {
           // No archive stamp: the order owns this file (receipt_file_path).
-          return { kind: 'purchase', action: captured.action };
+          return { kind: 'purchase', action: captured.action, address };
         }
       } catch {
         /* fall through to a plain count */
       }
     }
-    return { kind: 'receipt', amount: cls?.invoice_amount ?? null, archive };
+    return { kind: 'receipt', amount: cls?.invoice_amount ?? null, archive, address };
   }
   if (type === 'floor_plan') {
     // Skiva 5: a drawing is a drawing whether it arrives as a photo or a PDF.
@@ -310,29 +410,30 @@ async function processDocument(
             // Keep the ORIGINAL pdf in the archive, not the rendered png.
             archive,
             extraPages: raster.pageCount > 1 ? raster.pageCount - 1 : 0,
+            address,
           };
         }
       }
     }
-    return { kind: 'floorplan', archive };
+    return { kind: 'floorplan', archive, address };
   }
-  if (type === 'product_image') return { kind: 'ignored', archive };
+  if (type === 'product_image') return { kind: 'ignored', archive, address };
   // Inert by default: everything the classifier could not place — the CV, the
   // bank statement, the manual for a fridge — is stored and left alone. It used
   // to be handed to the scope parser, which is a machine whose whole job is to
   // find rooms and work in whatever text you give it.
-  if (!SCOPE_BEARING.has(type)) return { kind: 'notUnderstood', archive };
+  if (!SCOPE_BEARING.has(type)) return { kind: 'notUnderstood', archive, address };
   // K4: a contractor's OWN quote → priced line items so the post-birth quote
   // offer (K1) prefills their ACTUAL prices instead of a re-estimate. Homeowners
   // and price-less quotes fall through to the plain scope parse below.
   if (type === 'quote' && isContractor) {
     const lines = await extractQuoteLines(file);
-    if (lines.length > 0) return { kind: 'quoteLines', lines, fileName: file.name, archive };
+    if (lines.length > 0) return { kind: 'quoteLines', lines, fileName: file.name, archive, address };
   }
   const parsed = await parseProjectDescription(text, language);
   return usable(parsed)
-    ? { kind: 'scope', parsed, sourceKind: 'document', fileName: file.name, archive }
-    : { kind: 'notUnderstood', archive };
+    ? { kind: 'scope', parsed, sourceKind: 'document', fileName: file.name, archive, address }
+    : { kind: 'notUnderstood', archive, address };
 }
 
 /** A plain text/markdown file: read → parse as a project description. */
@@ -427,6 +528,14 @@ export interface IngestOutcome {
    * order already owns that file). Best-effort at the call site.
    */
   archiveFiles: ArchiveEntry[];
+  /**
+   * P1: the address the documents suggest the home has — a QUESTION for the
+   * birth flow, never an answer. Null unless `suggestAddress` was on and at
+   * least one document named an object address.
+   */
+  suggestedAddress: AddressCandidate | null;
+  /** How many documents named a DIFFERENT street than the suggestion. */
+  addressDisagreement: number;
 }
 
 /**
@@ -444,10 +553,17 @@ export async function ingestProjectFolder(
     isContractor?: boolean;
     /** Called as each file finishes — the drop can take minutes. */
     onProgress?: (done: number, total: number) => void;
+    /**
+     * P1: collect object addresses from the documents (birth flow only — an
+     * existing project already knows where it is). Costs one classify call for
+     * each home paper that would otherwise be filed without a model call.
+     */
+    suggestAddress?: boolean;
   }
 ): Promise<IngestOutcome> {
   const collectPurchases = opts?.collectPurchases ?? false;
   const isContractor = opts?.isContractor ?? false;
+  const suggestAddress = opts?.suggestAddress ?? false;
   const onProgress = opts?.onProgress;
   // Oversized files never reach the LLM — a 30 MB scan is cost, not signal.
   const sized = allFiles.filter((f) => f.size <= MAX_FILE_BYTES);
@@ -491,8 +607,8 @@ export async function ingestProjectFolder(
   const thunks: Array<() => Promise<Contribution | null>> = [
     () => processPhotos(ocrImages, language),
     ...planImages.map((f) => () => processFloorPlanImage(f)),
-    ...pdfs.map((f) => () => processDocument(f, language, collectPurchases, isContractor)),
-    ...docs.map((f) => () => processDocument(f, language, collectPurchases, isContractor)),
+    ...pdfs.map((f) => () => processDocument(f, language, collectPurchases, isContractor, suggestAddress)),
+    ...docs.map((f) => () => processDocument(f, language, collectPurchases, isContractor, suggestAddress)),
     ...texts.map((f) => () => processTextFile(f, language)),
   ];
   // Progress is counted in FILES, not thunks — "fil 3 av 12" has to match the
@@ -536,11 +652,13 @@ export async function ingestProjectFolder(
   ];
   let notUnderstoodCount = 0;
   const propertyDocuments: PropertyDocCandidate[] = [];
+  const addressCandidates: AddressCandidate[] = [];
 
   let skippedPlanPages = 0;
   for (const c of settled) {
     if (c.archive) archiveFiles.push(c.archive);
     if (c.extraPages) skippedPlanPages += c.extraPages;
+    if (c.address) addressCandidates.push(c.address);
     switch (c.kind) {
       case 'scope':
         draft = mergeParseIntoDraft(c.parsed, draft, { sourceKind: c.sourceKind, fileName: c.fileName });
@@ -582,6 +700,8 @@ export async function ingestProjectFolder(
     }
   }
 
+  const chosen = chooseSuggestedAddress(addressCandidates);
+
   return {
     draft,
     filesSeen: allFiles.length,
@@ -597,6 +717,8 @@ export async function ingestProjectFolder(
     notUnderstoodCount,
     photosFiledCount: inertImages.length,
     propertyDocuments,
+    suggestedAddress: chosen?.best ?? null,
+    addressDisagreement: chosen?.disagreeing ?? 0,
     truncated,
     oversizedCount,
     skippedPlanPages,

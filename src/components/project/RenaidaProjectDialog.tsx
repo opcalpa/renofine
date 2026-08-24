@@ -39,7 +39,10 @@ import {
   type ArchiveEntry,
   type PendingSketch,
   type PropertyDocCandidate,
+  type AddressCandidate,
 } from '@/services/ingestProjectFolder';
+import { SimilarAddressHint } from '@/components/property/SimilarAddressHint';
+import { propertyLabel, type PropertyWithProjectCount } from '@/services/propertyService';
 import { uploadToCategoryFolder, ensureCategoryFolder } from '@/services/smartUploadService';
 import { importPurchaseOrder, type ImportPurchaseAction } from '@/services/agent/importPurchaseOrder';
 import { floorPlanResultToShapes } from '@/services/aiVisionService';
@@ -160,6 +163,16 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
    * way to put them where they belong once the address exists.
    */
   const propertyDocsRef = useRef<PropertyDocCandidate[]>([]);
+  /**
+   * P1: the address the dropped documents named. Shown at the address step as
+   * a question with the document beside it — "Jag såg Storgatan 5 i
+   * Köpekontrakt.pdf — stämmer det?" — never written into the draft on its
+   * own. Ten Bauhaus receipts would otherwise make a home in Sickla.
+   */
+  const [addressHint, setAddressHint] = useState<{
+    candidate: AddressCandidate;
+    disagreeing: number;
+  } | null>(null);
   // Skiva 3: a folder drop happened → offer the "already finished?" choice at
   // the confirm step. `retroSuggested` only decides how the question is FRAMED;
   // the flag itself is never set without an explicit answer.
@@ -260,6 +273,7 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
       pendingSketchesRef.current = [];
       archiveFilesRef.current = [];
       propertyDocsRef.current = [];
+      setAddressHint(null);
       setFolderIngested(false);
       setRetroSuggested(false);
       setIngestProgress(null);
@@ -584,8 +598,16 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
         collectPurchases: !isGuest,
         isContractor: userType === 'contractor',
         onProgress: (done, total) => setIngestProgress({ done, total }),
+        // Only where the address is still unknown: a fresh project. Folding
+        // into an existing one already knows its home.
+        suggestAddress: !existingProjectId && !base.address,
       });
       pendingPurchasesRef.current = outcome.pendingPurchases;
+      setAddressHint(
+        outcome.suggestedAddress
+          ? { candidate: outcome.suggestedAddress, disagreeing: outcome.addressDisagreement }
+          : null
+      );
       pendingSketchesRef.current = isGuest ? [] : outcome.pendingSketches;
       // Skiva 2: guests own no storage, so nothing is filed for them.
       archiveFilesRef.current = isGuest ? [] : outcome.archiveFiles;
@@ -887,6 +909,28 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
   const onSkip = (s: Step) => {
     const key = 'skipKey' in s.input ? s.input.skipKey : undefined;
     submit(s, { kind: 'skip' }, key ? t(key) : t('renaidaFlow.skip.skip'));
+  };
+
+  /**
+   * P1: "Ja, Storgatan 5." The street becomes the typed answer; postal code
+   * and city ride along on the draft so the property lookup at creation can
+   * match on more than the street.
+   */
+  const acceptSuggestedAddress = (s: Step) => {
+    if (!addressHint) return;
+    const c = addressHint.candidate;
+    submit(s, { kind: 'text', value: c.street }, c.street);
+    setDraft((d) => ({ ...d, postalCode: c.postalCode, city: c.city }));
+    setAddressHint(null);
+  };
+
+  /** The suggestion resembled an address the person already has — use THAT
+   *  one verbatim, so the new project lands on the existing home. */
+  const acceptExistingAddress = (s: Step, p: PropertyWithProjectCount) => {
+    const street = p.address?.trim() || propertyLabel(p);
+    submit(s, { kind: 'text', value: street }, propertyLabel(p));
+    setDraft((d) => ({ ...d, postalCode: p.postal_code, city: p.city }));
+    setAddressHint(null);
   };
 
   const handleCreate = async () => {
@@ -1607,17 +1651,64 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
                       </Button>
                     </div>
                   ) : (
-                    <StepInputView
-                      step={step}
-                      multiSel={multiSel}
-                      setMultiSel={setMultiSel}
-                      fieldValue={fieldValue}
-                      setFieldValue={setFieldValue}
-                      onChipSingle={onChipSingle}
-                      onMultiContinue={onMultiContinue}
-                      onFieldSubmit={onFieldSubmit}
-                      onSkip={onSkip}
-                    />
+                    <>
+                      {/* P1: the documents named an address — ask, with the
+                          source beside it. The plain input stays below. */}
+                      {step.id === 'address' && addressHint && (
+                        <div className="space-y-2 pl-8">
+                          <p className="text-sm text-muted-foreground">
+                            {addressHint.disagreeing > 0
+                              ? t('renaidaFlow.addressSuggest.seenDisagree', {
+                                  address: addressHint.candidate.street,
+                                  file: addressHint.candidate.fileName,
+                                  count: addressHint.disagreeing,
+                                })
+                              : t('renaidaFlow.addressSuggest.seen', {
+                                  address: addressHint.candidate.street,
+                                  file: addressHint.candidate.fileName,
+                                })}
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              onClick={() => acceptSuggestedAddress(step)}
+                              className="rounded-full border border-primary bg-primary/10 px-3.5 py-1.5 text-sm text-primary transition-colors hover:bg-primary/15"
+                            >
+                              {t('renaidaFlow.addressSuggest.yes', { address: addressHint.candidate.street })}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setAddressHint(null)}
+                              className="rounded-full border bg-background px-3.5 py-1.5 text-sm transition-colors hover:border-primary hover:bg-primary/5"
+                            >
+                              {t('renaidaFlow.addressSuggest.other')}
+                            </button>
+                          </div>
+                          {/* S5 rule: a near-match to an existing address is
+                              offered, never assumed — a wrong grouping lies
+                              with numbers. */}
+                          {!isGuest && (
+                            <SimilarAddressHint
+                              address={addressHint.candidate.street}
+                              postalCode={addressHint.candidate.postalCode ?? undefined}
+                              city={addressHint.candidate.city ?? undefined}
+                              onPick={(p) => acceptExistingAddress(step, p)}
+                            />
+                          )}
+                        </div>
+                      )}
+                      <StepInputView
+                        step={step}
+                        multiSel={multiSel}
+                        setMultiSel={setMultiSel}
+                        fieldValue={fieldValue}
+                        setFieldValue={setFieldValue}
+                        onChipSingle={onChipSingle}
+                        onMultiContinue={onMultiContinue}
+                        onFieldSubmit={onFieldSubmit}
+                        onSkip={onSkip}
+                      />
+                    </>
                   )}
                 </div>
               )}

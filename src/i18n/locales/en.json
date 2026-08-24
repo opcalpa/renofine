@@ -7711,6 +7711,12 @@
       "ongoing": "Ongoing project",
       "done": "Already completed",
       "dated": "I'm dating the project {{from}} – {{to}} based on your documents."
+    },
+    "addressSuggest": {
+      "seen": "I saw {{address}} in {{file}} — is that the home?",
+      "seenDisagree": "I saw {{address}} in {{file}} — is that the home? ({{count}} other documents named a different street.)",
+      "yes": "Yes, {{address}}",
+      "other": "Another address"
     }
   },
   "pwa": {
@@ -8018,7 +8024,49 @@
         "saving": "Saving…",
         "confirm_one": "Save {{count}} document",
         "confirm_other": "Save {{count}} documents"
+      },
+      "extract": {
+        "action": "Read out details",
+        "actionAll": "Read out all purchase papers",
+        "reading": "Reading…",
+        "done": "Details read",
+        "failed": "Could not read",
+        "consentTitle": "Read out details from the document?",
+        "consentBody": "The document is sent to our AI service to read out facts about the home — purchase price, possession date, living area, association. Personal numbers and account numbers are never saved. Nothing else in the app changes; you choose afterwards what to use.",
+        "consentConfirm": "Read out",
+        "resultOk_one": "Details read from {{count}} document",
+        "resultOk_other": "Details read from {{count}} documents",
+        "resultFailed_one": "{{count}} document could not be read.",
+        "resultFailed_other": "{{count}} documents could not be read.",
+        "nothingToRead": "No purchase papers to read — add a köpekontrakt, listing or inspection report first."
       }
+    },
+    "facts": {
+      "title": "About the home",
+      "address": "Address",
+      "purchase_price": "Purchase price",
+      "contract_date": "Contract signed",
+      "possession_date": "Possession",
+      "living_area_sqm": "Living area",
+      "build_year": "Built",
+      "tenure": "Tenure",
+      "property_designation": "Property designation",
+      "brf_name": "Association",
+      "brf_org_number": "Association org. no.",
+      "apartment_number": "Apartment no.",
+      "monthly_fee": "Monthly fee",
+      "perMonth": "/month",
+      "tenureValue": {
+        "bostadsratt": "Tenant-owned (bostadsrätt)",
+        "aganderatt": "Owned (äganderätt)",
+        "hyresratt": "Rental"
+      },
+      "from": "from {{file}}",
+      "use": "Use",
+      "conflict": "Different value in: {{values}}",
+      "note": "Source material from your documents — not a profit calculation. Personal numbers are never read out.",
+      "applied": "Saved to the address",
+      "applyFailed": "Could not save to the address"
     }
   }
 }
