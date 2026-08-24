@@ -12,6 +12,7 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
+import { groupSimilarAddresses, looksLikeSameAddress } from '@/lib/addressMatch';
 
 export interface PropertyRow {
   id: string;
@@ -263,4 +264,72 @@ export async function linkNewProjectToProperty(
   if (!propertyId) return null;
   const ok = await assignProjectToProperty(projectId, propertyId);
   return ok ? propertyId : null;
+}
+
+
+/**
+ * Addresses that look like the same home (S5).
+ *
+ * The trigger is deliberately narrow: BOTH sides must hold a live project.
+ * That is the only situation where the split actually lies — an address page
+ * showing part of what a home cost, with nothing on screen saying so. A
+ * duplicate whose every project is deleted shows no wrong number, so proposing
+ * a merge for it would be tidying dressed up as a warning.
+ *
+ * Nothing is ever merged automatically; this only produces the question.
+ */
+export async function findMergeSuggestions(): Promise<PropertyWithProjectCount[][]> {
+  const properties = await listMyPropertiesWithCounts();
+  const withProjects = properties.filter((p) => p.liveProjectCount > 0);
+  if (withProjects.length < 2) return [];
+  return groupSimilarAddresses(withProjects);
+}
+
+/** The group this address belongs to, or null when it looks unique. */
+export async function findMergeGroupFor(
+  propertyId: string
+): Promise<PropertyWithProjectCount[] | null> {
+  const groups = await findMergeSuggestions();
+  return groups.find((g) => g.some((p) => p.id === propertyId)) ?? null;
+}
+
+/**
+ * Existing addresses that look like the one being typed — used to offer the
+ * match BEFORE a duplicate is created, which is cheaper for everyone than
+ * merging afterwards.
+ */
+export function findSimilarProperties<T extends PropertyRow>(
+  candidates: T[],
+  draft: { address?: string | null; postalCode?: string | null; city?: string | null }
+): T[] {
+  const probe = {
+    address: draft.address ?? null,
+    name: null,
+    postal_code: draft.postalCode ?? null,
+    city: draft.city ?? null,
+  };
+  return candidates.filter((p) => looksLikeSameAddress(p, probe));
+}
+
+/**
+ * Fold one address into another: its projects and members move, then it is
+ * deleted. Runs as one database transaction (`merge_properties`) — half a merge
+ * would split a home's history again, only invisibly this time.
+ *
+ * Returns the number of projects that moved, or null when the merge failed.
+ */
+export async function mergeProperties(
+  sourceId: string,
+  targetId: string
+): Promise<number | null> {
+  const { data, error } = await supabase.rpc('merge_properties', {
+    p_source_id: sourceId,
+    p_target_id: targetId,
+  });
+
+  if (error) {
+    console.error('mergeProperties failed:', error);
+    return null;
+  }
+  return typeof data === 'number' ? data : 0;
 }

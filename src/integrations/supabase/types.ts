@@ -4293,6 +4293,10 @@ export type Database = {
         Returns: Json
       }
       accept_property_invitation: { Args: { p_token: string }; Returns: string }
+      merge_properties: {
+        Args: { p_source_id: string; p_target_id: string }
+        Returns: number
+      }
       derive_viewer_mode: { Args: { p_project_id: string }; Returns: string }
       get_intake_request_by_token: {
         Args: { p_token: string }

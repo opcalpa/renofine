@@ -33,6 +33,7 @@ import type { OverviewProject } from "./types";
 import { parseLocalDate, formatLocalDate } from "@/lib/dateUtils";
 import { updateGuestProject } from "@/services/guestStorageService";
 import { PropertyPicker } from "@/components/project/PropertyPicker";
+import { SimilarAddressHint } from "@/components/property/SimilarAddressHint";
 import { linkNewProjectToProperty, assignProjectToProperty } from "@/services/propertyService";
 
 const CURRENCY_OPTIONS = Object.entries(CURRENCIES).map(([code, config]) => ({
@@ -195,6 +196,15 @@ export function ProjectSettingsDialog({
               onChange={(e) => setProjectAddress(e.target.value)}
               placeholder={t("overview.settings.addressPlaceholder", "e.g. Storgatan 5, Stockholm")}
             />
+            {!isGuest && !propertyId && (
+              <SimilarAddressHint
+                address={projectAddress}
+                onPick={(property) => {
+                  setPropertyId(property.id);
+                  setProjectAddress(property.address ?? "");
+                }}
+              />
+            )}
           </div>
           <div className="space-y-2">
             <div className="flex items-center gap-1.5">

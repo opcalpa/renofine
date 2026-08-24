@@ -7869,6 +7869,24 @@
       "wrongEmail": "This invitation is for a different email address. Sign in with the address it was sent to, or ask for a new invitation.",
       "expired": "The invitation has expired. Ask for a new one.",
       "generic": "The invitation no longer exists, or has already been used."
+    },
+    "merge": {
+      "title": "These look like the same home",
+      "body": "The renovations sit on separate addresses, so neither page shows the full total for the home. Choose which address to keep — the projects move there.",
+      "thisPage": "the page you are on",
+      "action": "Merge into one address",
+      "merging": "Merging…",
+      "confirmTitle": "Merge the addresses?",
+      "confirmBody_one": "{{count}} project moves to {{name}}, and the other address is removed. The projects and their contents are untouched — but this cannot be undone with a button, only by moving the projects back from project settings.",
+      "confirmBody_other": "{{count}} projects move to {{name}}, and the other addresses are removed. The projects and their contents are untouched — but this cannot be undone with a button, only by moving the projects back from project settings.",
+      "done": "The addresses are merged",
+      "doneDetail_one": "{{count}} project is now on {{name}}.",
+      "doneDetail_other": "{{count}} projects are now on {{name}}.",
+      "failed": "The addresses could not be merged"
+    },
+    "similar": {
+      "prompt": "You already have an address like this one:",
+      "use": "Use {{name}}"
     }
   }
 }

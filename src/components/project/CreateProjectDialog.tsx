@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { analytics, AnalyticsEvents, ProjectCreationMethod } from "@/lib/analytics";
 import { linkNewProjectToProperty, assignProjectToProperty } from "@/services/propertyService";
 import { PropertyPicker } from "@/components/project/PropertyPicker";
+import { SimilarAddressHint } from "@/components/property/SimilarAddressHint";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -563,6 +564,19 @@ function FormFields({ name, setName, address, setAddress, postalCode, setPostalC
           <div className="space-y-2">
             <Label htmlFor="cp-address">{t("projects.address")}</Label>
             <Input id="cp-address" placeholder={t("projects.addressPlaceholder")} value={address} onChange={(e) => setAddress(e.target.value)} />
+            {!isGuest && (
+              <SimilarAddressHint
+                address={address}
+                postalCode={postalCode}
+                city={city}
+                onPick={(property) => {
+                  setPropertyId(property.id);
+                  setAddress(property.address ?? "");
+                  setPostalCode(property.postal_code ?? "");
+                  setCity(property.city ?? "");
+                }}
+              />
+            )}
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">

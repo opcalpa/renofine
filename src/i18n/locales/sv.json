@@ -7868,6 +7868,24 @@
       "wrongEmail": "Inbjudan gäller en annan e-postadress. Logga in med den adress inbjudan skickades till, eller be om en ny inbjudan.",
       "expired": "Inbjudan har gått ut. Be om en ny.",
       "generic": "Inbjudan finns inte längre, eller är redan använd."
+    },
+    "merge": {
+      "title": "Ser ut att vara samma bostad",
+      "body": "Renoveringarna ligger på var sin adress, så ingen av sidorna visar hela summan för bostaden. Välj vilken adress som ska behållas — projekten flyttas dit.",
+      "thisPage": "sidan du är på",
+      "action": "Slå ihop till en adress",
+      "merging": "Slår ihop…",
+      "confirmTitle": "Slå ihop adresserna?",
+      "confirmBody_one": "{{count}} projekt flyttas till {{name}}, och den andra adressen tas bort. Projekten och deras innehåll rörs inte — men det går inte att ångra med en knapp, utan genom att flytta tillbaka projekten i projektinställningarna.",
+      "confirmBody_other": "{{count}} projekt flyttas till {{name}}, och de andra adresserna tas bort. Projekten och deras innehåll rörs inte — men det går inte att ångra med en knapp, utan genom att flytta tillbaka projekten i projektinställningarna.",
+      "done": "Adresserna är ihopslagna",
+      "doneDetail_one": "{{count}} projekt ligger nu på {{name}}.",
+      "doneDetail_other": "{{count}} projekt ligger nu på {{name}}.",
+      "failed": "Adresserna kunde inte slås ihop"
+    },
+    "similar": {
+      "prompt": "Du har redan en adress som liknar den här:",
+      "use": "Använd {{name}}"
     }
   }
 }

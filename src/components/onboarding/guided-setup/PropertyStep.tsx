@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Check, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SimilarAddressHint } from "@/components/property/SimilarAddressHint";
 import type { StepProps } from "./types";
 
 export function PropertyStep({ formData, updateFormData }: StepProps) {
@@ -96,6 +97,21 @@ export function PropertyStep({ formData, updateFormData }: StepProps) {
               onChange={(e) => updateFormData({ address: e.target.value })}
               placeholder={t("projects.addressPlaceholder")}
               autoFocus
+            />
+            {/* Taking the suggestion rewrites the address to the existing
+                one's exact spelling, which is all it takes: the creation flow
+                groups on that key, so the project lands on the same home. */}
+            <SimilarAddressHint
+              address={formData.address}
+              postalCode={formData.postalCode}
+              city={formData.city}
+              onPick={(property) =>
+                updateFormData({
+                  address: property.address ?? "",
+                  postalCode: property.postal_code ?? "",
+                  city: property.city ?? "",
+                })
+              }
             />
             <div className="grid grid-cols-2 gap-3">
               <Input

@@ -26,6 +26,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { propertyLabel, hasRealAddress, type PropertyRow } from '@/services/propertyService';
 import { EditPropertyDialog } from '@/components/property/EditPropertyDialog';
 import { PropertyMembersSection } from '@/components/property/PropertyMembersSection';
+import { MergeSuggestionCard } from '@/components/property/MergeSuggestionCard';
 import { isPropertyOwner } from '@/services/propertyMemberService';
 import { Button } from '@/components/ui/button';
 import { isDemoProject } from '@/services/demoProjectService';
@@ -66,14 +67,18 @@ export default function AddressDetail() {
     (async () => {
       setLoading(true);
 
-      supabase
-        .from('profiles')
-        .select('name, email, avatar_url')
-        .eq('user_id', user?.id ?? '')
-        .maybeSingle()
-        .then(({ data }) => {
-          if (!cancelled) setProfile(data ?? null);
-        });
+      // Guarded: while auth is still resolving this ran as `user_id=eq.` and
+      // PostgREST answered 400 on every load of the page.
+      if (user?.id) {
+        supabase
+          .from('profiles')
+          .select('name, email, avatar_url')
+          .eq('user_id', user.id)
+          .maybeSingle()
+          .then(({ data }) => {
+            if (!cancelled) setProfile(data ?? null);
+          });
+      }
 
       // RLS decides visibility — no owner filter here, so a property shared to
       // the user (S4) opens the same way their own does.
@@ -221,6 +226,12 @@ export default function AddressDetail() {
           onOpenChange={setEditOpen}
           property={property}
           onSaved={() => setReloadKey((k) => k + 1)}
+        />
+
+        <MergeSuggestionCard
+          propertyId={property.id}
+          canMerge={canManage}
+          onMerged={() => setReloadKey((k) => k + 1)}
         />
 
         {rollup && rollup.poCount > 0 && (
