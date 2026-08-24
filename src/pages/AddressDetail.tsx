@@ -87,7 +87,7 @@ export default function AddressDetail() {
       // the user (S4) opens the same way their own does.
       const { data: prop } = await supabase
         .from('properties')
-        .select('id, name, address, postal_code, city, country, property_designation')
+        .select('id, owner_id, name, address, postal_code, city, country, property_designation')
         .eq('id', propertyId)
         .maybeSingle();
 

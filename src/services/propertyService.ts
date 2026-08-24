@@ -16,6 +16,7 @@ import { groupSimilarAddresses, looksLikeSameAddress } from '@/lib/addressMatch'
 
 export interface PropertyRow {
   id: string;
+  owner_id: string;
   name: string;
   address: string | null;
   postal_code: string | null;
@@ -84,7 +85,7 @@ export function hasRealAddress(p: Pick<PropertyRow, 'address'>): boolean {
 export async function listMyProperties(): Promise<PropertyRow[]> {
   const { data, error } = await supabase
     .from('properties')
-    .select('id, name, address, postal_code, city, country, property_designation')
+    .select('id, owner_id, name, address, postal_code, city, country, property_designation')
     .is('archived_at', null)
     .order('name');
 
@@ -279,10 +280,29 @@ export async function linkNewProjectToProperty(
  * Nothing is ever merged automatically; this only produces the question.
  */
 export async function findMergeSuggestions(): Promise<PropertyWithProjectCount[][]> {
-  const properties = await listMyPropertiesWithCounts();
-  const withProjects = properties.filter((p) => p.liveProjectCount > 0);
-  if (withProjects.length < 2) return [];
-  return groupSimilarAddresses(withProjects);
+  const [properties, profileId] = await Promise.all([
+    listMyPropertiesWithCounts(),
+    getMyProfileId(),
+  ]);
+  if (!profileId) return [];
+
+  // Own addresses only. An address shared to you as admin can be edited but
+  // never merged (`merge_properties` requires ownership of both), and offering
+  // a merge that the database will refuse is worse than not offering it.
+  const mine = properties.filter((p) => p.owner_id === profileId && p.liveProjectCount > 0);
+  if (mine.length < 2) return [];
+  return groupSimilarAddresses(mine);
+}
+
+async function getMyProfileId(): Promise<string | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('user_id', user.id)
+    .maybeSingle();
+  return data?.id ?? null;
 }
 
 /** The group this address belongs to, or null when it looks unique. */
