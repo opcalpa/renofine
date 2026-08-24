@@ -66,15 +66,14 @@ export function DropRouterDialog({ open, onOpenChange, files, onRoute, isGuest =
     }
     let cancelled = false;
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        if (!cancelled) setProjects([]);
-        return;
-      }
+      // No owner filter: `projects.owner_id` is a PROFILE id, and this compared
+      // it to the AUTH user id — two different uuids — so the list came back
+      // empty for everyone and the dialog silently skipped the question. RLS
+      // already scopes this to what the user may reach, which is also what
+      // brings in projects shared through an address (S4 admin).
       const { data, error } = await supabase
         .from('projects')
         .select('id, name, status, project_type')
-        .eq('owner_id', user.id)
         .is('deleted_at', null)
         .order('updated_at', { ascending: false })
         .limit(50);
