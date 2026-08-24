@@ -5,9 +5,17 @@ import "./index.css";
 import { supabase } from "./integrations/supabase/client";
 import { analytics } from "./lib/analytics";
 
-// Initialize Sentry for error tracking (only in production or when DSN is set)
+// Initialize Sentry for error tracking.
+//
+// Production only. The DSN lives in .env.local too, so before this gate every
+// transient HMR error during development mailed Carl and filled the production
+// project with `environment: development` noise that no one would ever act on.
+// Set VITE_SENTRY_DEV=true when you deliberately want to debug Sentry locally.
 const sentryDsn = import.meta.env.VITE_SENTRY_DSN;
-if (sentryDsn) {
+const sentryEnabled =
+  Boolean(sentryDsn) &&
+  (import.meta.env.PROD || import.meta.env.VITE_SENTRY_DEV === 'true');
+if (sentryEnabled) {
   Sentry.init({
     dsn: sentryDsn,
     environment: import.meta.env.MODE,
