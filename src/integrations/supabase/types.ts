@@ -2393,6 +2393,7 @@ export type Database = {
           postal_code: string | null
           project_type: string | null
           property_designation: string | null
+          property_id: string | null
           source_rfq_project_id: string | null
           spent_amount: number | null
           start_date: string | null
@@ -2427,6 +2428,7 @@ export type Database = {
           postal_code?: string | null
           project_type?: string | null
           property_designation?: string | null
+          property_id?: string | null
           source_rfq_project_id?: string | null
           spent_amount?: number | null
           start_date?: string | null
@@ -2461,6 +2463,7 @@ export type Database = {
           postal_code?: string | null
           project_type?: string | null
           property_designation?: string | null
+          property_id?: string | null
           source_rfq_project_id?: string | null
           spent_amount?: number | null
           start_date?: string | null
@@ -2500,10 +2503,149 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "projects_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "projects_source_rfq_project_id_fkey"
             columns: ["source_rfq_project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      properties: {
+        Row: {
+          address: string | null
+          archived_at: string | null
+          city: string | null
+          country: string | null
+          created_at: string
+          id: string
+          name: string
+          owner_id: string
+          postal_code: string | null
+          property_designation: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          archived_at?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          owner_id: string
+          postal_code?: string | null
+          property_designation?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          archived_at?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          owner_id?: string
+          postal_code?: string | null
+          property_designation?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "properties_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "professional_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "properties_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      property_members: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          invitation_token: string
+          invited_by: string | null
+          invited_email: string | null
+          member_profile_id: string | null
+          property_id: string
+          role: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          invitation_token?: string
+          invited_by?: string | null
+          invited_email?: string | null
+          member_profile_id?: string | null
+          property_id: string
+          role: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          invitation_token?: string
+          invited_by?: string | null
+          invited_email?: string | null
+          member_profile_id?: string | null
+          property_id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_members_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "professional_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_members_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_members_member_profile_id_fkey"
+            columns: ["member_profile_id"]
+            isOneToOne: false
+            referencedRelation: "professional_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_members_member_profile_id_fkey"
+            columns: ["member_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_members_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
             referencedColumns: ["id"]
           },
         ]
@@ -4199,12 +4341,20 @@ export type Database = {
         Returns: boolean
       }
       is_system_admin: { Args: never; Returns: boolean }
+      property_owner_profile_id: {
+        Args: { p_property_id: string }
+        Returns: string
+      }
       resolve_project_id_from_entity: {
         Args: { p_linked_to_id: string; p_linked_to_type: string }
         Returns: string
       }
       seed_demo_content: {
         Args: { p_language?: string; p_owner_id: string; p_project_id: string }
+        Returns: undefined
+      }
+      seed_demo_floor_plan: {
+        Args: { p_language?: string; p_project_id: string }
         Returns: undefined
       }
       seed_demo_project_for_user: {
@@ -4221,6 +4371,10 @@ export type Database = {
       }
       user_can_manage_project_files: {
         Args: { file_path: string }
+        Returns: boolean
+      }
+      user_can_manage_property: {
+        Args: { p_property_id: string }
         Returns: boolean
       }
       user_can_manage_team: { Args: { project_uuid: string }; Returns: boolean }
@@ -4273,7 +4427,12 @@ export type Database = {
         Args: { project_id: string }
         Returns: boolean
       }
+      user_is_property_member: {
+        Args: { p_min_role?: string; p_property_id: string }
+        Returns: boolean
+      }
       user_owns_project: { Args: { project_id: string }; Returns: boolean }
+      user_owns_property: { Args: { p_property_id: string }; Returns: boolean }
       user_purchases_scope: { Args: { p_project_id: string }; Returns: string }
       user_tasks_scope: { Args: { p_project_id: string }; Returns: string }
     }

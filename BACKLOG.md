@@ -3018,7 +3018,9 @@ bara irreversibla handlingar (radera property, ta bort ägaren, merge, ägarbyte
 ägar-exklusiva → rollmatris §4.1 + DB-vakter; (2) S3 lanseras direkt för alla
 hemägare, ingen flagga; (3) merge-förslag bara inom det inloggad redan ser —
 två-konton-fallet löses av den som är admin på båda, ingen cross-account-läsning.
-Nästa: bygge skiva för skiva S1→S6 (Opus-jobb).
+**S1 LEVERERAD 2026-08-24** — 4 migrationer applicerade, 65 properties, 66 projekt
+kopplade, 0 demo, RLS-testmatris grön, typecheck 336 = baseline. Läxa inskriven i
+planen: REVOKE från roll tar inte bort PUBLIC-grant. Nästa: S2 (koppla & välj).
 
 ---
 id: floorplan-quality-epic
