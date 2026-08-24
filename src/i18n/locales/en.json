@@ -7682,7 +7682,13 @@
       "photosFiled": "{{count}} photos saved to Files without being interpreted.",
       "onlyHomePapers": "{{count}} of the files look like they belong to the home — purchase papers and the like — not to a renovation. Drop the folder on \"To the home\" instead and they land on the address.",
       "filesNotArchived_one": "{{count}} file could not be saved to Files.",
-      "filesNotArchived_other": "{{count}} files could not be saved to Files."
+      "filesNotArchived_other": "{{count}} files could not be saved to Files.",
+      "phase": {
+        "classify": "Sorting the images…",
+        "read": "Reading file {{done}} of {{total}}…",
+        "archive": "Saving file {{done}} of {{total}} to Files…"
+      },
+      "slowHint": "With {{total}} files this takes a minute — you can leave the page open."
     },
     "source": {
       "answer": "Your answer",

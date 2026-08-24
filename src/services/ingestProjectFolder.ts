@@ -483,6 +483,27 @@ async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promis
   return results;
 }
 
+/**
+ * What the reader is doing right now. A 100-file folder spends real minutes
+ * here, and the phases cost very different amounts of time — leaving any of
+ * them silent is what made the drop look frozen.
+ */
+export type IngestPhase =
+  /** Cheap vision pass that sorts photos (floor plan? quote? neither?). */
+  | 'classify'
+  /** Extract + parse each document. The long one. */
+  | 'read'
+  /** Uploading the originals into Files. Runs AFTER the reading. */
+  | 'archive';
+
+export interface IngestProgress {
+  phase: IngestPhase;
+  done: number;
+  total: number;
+  /** The file being handled, when the phase works one at a time. */
+  fileName?: string;
+}
+
 export interface IngestOutcome {
   /** The draft with every scope contribution folded in (provenance-stamped). */
   draft: ProjectDraft;
@@ -552,7 +573,7 @@ export async function ingestProjectFolder(
     collectPurchases?: boolean;
     isContractor?: boolean;
     /** Called as each file finishes — the drop can take minutes. */
-    onProgress?: (done: number, total: number) => void;
+    onProgress?: (progress: IngestProgress) => void;
     /**
      * P1: collect object addresses from the documents (birth flow only — an
      * existing project already knows where it is). Costs one classify call for
@@ -589,11 +610,16 @@ export async function ingestProjectFolder(
   // could not place is exactly the noise that turns into invented rooms.
   let inertImages: File[] = photos;
   if (photos.length > 0) {
+    let classified = 0;
+    onProgress?.({ phase: 'classify', done: 0, total: photos.length });
     const kinds = await mapLimit(photos, CONCURRENCY, async (f) => {
       try {
         return asDocumentType((await classifyDocument(f)).type);
       } catch {
         return 'other' as DocumentType;
+      } finally {
+        classified += 1;
+        onProgress?.({ phase: 'classify', done: classified, total: photos.length, fileName: f.name });
       }
     });
     planImages = photos.filter((_, i) => kinds[i] === 'floor_plan');
@@ -623,12 +649,12 @@ export async function ingestProjectFolder(
   ];
   const progressTotal = files.length;
   let progressDone = ignoredUpfront.length + inertImages.length;
-  onProgress?.(progressDone, progressTotal);
+  onProgress?.({ phase: 'read', done: progressDone, total: progressTotal });
   const settled = (
     await mapLimit(thunks.map((t, i) => ({ t, i })), CONCURRENCY, async ({ t, i }) => {
       const r = await t();
       progressDone = Math.min(progressTotal, progressDone + weights[i]);
-      onProgress?.(progressDone, progressTotal);
+      onProgress?.({ phase: 'read', done: progressDone, total: progressTotal });
       return r;
     })
   ).filter((c): c is Contribution => c != null);

@@ -4772,7 +4772,13 @@
       "confirmLargeYes": "Ja, Ordner lesen",
       "oversized": "{{count}} Dateien waren zu groß (über 20 MB) — die habe ich übersprungen.",
       "truncated": "Der Ordner enthielt mehr Dateien als ich auf einmal lese — ich habe die ersten {{count}} genommen.",
-      "extraPlanPages": "Eine Zeichnung hatte mehrere Seiten — ich habe die erste gelesen ({{count}} Seiten ungelesen)."
+      "extraPlanPages": "Eine Zeichnung hatte mehrere Seiten — ich habe die erste gelesen ({{count}} Seiten ungelesen).",
+      "phase": {
+        "classify": "Bilder werden sortiert…",
+        "read": "Datei {{done}} von {{total}} wird gelesen…",
+        "archive": "Datei {{done}} von {{total}} wird in Dateien gespeichert…"
+      },
+      "slowHint": "Bei {{total}} Dateien dauert das eine Minute — die Seite kann offen bleiben."
     },
     "source": {
       "answer": "Ihre Antwort",

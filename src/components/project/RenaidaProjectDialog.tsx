@@ -78,6 +78,8 @@ import {
   type DraftRoom,
   type WorkTypeLabeller,
 } from '@/services/renaidaProjectFlow';
+import { IngestProgressPanel } from "@/components/project/IngestProgressPanel";
+import type { IngestProgress } from "@/services/ingestProjectFolder";
 
 interface Props {
   open: boolean;
@@ -180,7 +182,7 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
   const [retroSuggested, setRetroSuggested] = useState(false);
   // Skiva 5: a big drop takes minutes — say where we are, and ask before
   // spending the calls when the folder is large.
-  const [ingestProgress, setIngestProgress] = useState<{ done: number; total: number } | null>(null);
+  const [ingestProgress, setIngestProgress] = useState<IngestProgress | null>(null);
   const [confirmLarge, setConfirmLarge] = useState<{ step: Step; files: File[] } | null>(null);
   // Contractor post-birth: offer to prefill a customer quote from the new tasks.
   const [postCreate, setPostCreate] = useState<{
@@ -591,13 +593,13 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
     }
     setConfirmLarge(null);
     setIngesting(true);
-    setIngestProgress({ done: 0, total: files.length });
+    setIngestProgress({ phase: 'read', done: 0, total: files.length });
     try {
       const base = applyAnswer(s, { kind: 'skip' }, draft); // marks 'describe' answered
       const outcome = await ingestProjectFolder(files, base, i18n.language, {
         collectPurchases: !isGuest,
         isContractor: userType === 'contractor',
-        onProgress: (done, total) => setIngestProgress({ done, total }),
+        onProgress: (progress) => setIngestProgress(progress),
         // Only where the address is still unknown: a fresh project. Folding
         // into an existing one already knows its home.
         suggestAddress: !existingProjectId && !base.address,
@@ -1476,17 +1478,7 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
                       </div>
                       {/* Skiva 5: a big folder takes minutes — show where we are. */}
                       {ingesting && ingestProgress && ingestProgress.total > 0 && (
-                        <div className="space-y-1">
-                          <div className="h-1 overflow-hidden rounded-full bg-muted">
-                            <div
-                              className="h-full bg-primary transition-[width] duration-300"
-                              style={{ width: `${Math.round((ingestProgress.done / ingestProgress.total) * 100)}%` }}
-                            />
-                          </div>
-                          <p className="text-[11px] text-muted-foreground">
-                            {t('renaidaFlow.folder.progress', 'Läser fil {{done}} av {{total}} …', ingestProgress)}
-                          </p>
-                        </div>
+                        <IngestProgressPanel progress={ingestProgress} />
                       )}
 
                       {/* Cost guard: many files = many model calls. Ask first. */}

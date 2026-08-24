@@ -4772,7 +4772,13 @@
       "confirmLargeYes": "Sí, lee la carpeta",
       "oversized": "{{count}} archivos eran demasiado grandes (más de 20 MB) — los omití.",
       "truncated": "La carpeta tenía más archivos de los que leo de una vez — tomé los primeros {{count}}.",
-      "extraPlanPages": "Un plano tenía varias páginas — leí la primera ({{count}} páginas sin leer)."
+      "extraPlanPages": "Un plano tenía varias páginas — leí la primera ({{count}} páginas sin leer).",
+      "phase": {
+        "classify": "Ordenando las imágenes…",
+        "read": "Leyendo el archivo {{done}} de {{total}}…",
+        "archive": "Guardando el archivo {{done}} de {{total}} en Archivos…"
+      },
+      "slowHint": "Con {{total}} archivos esto tarda un minuto — puedes dejar la página abierta."
     },
     "source": {
       "answer": "Su respuesta",

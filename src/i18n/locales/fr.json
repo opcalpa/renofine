@@ -4772,7 +4772,13 @@
       "confirmLargeYes": "Oui, lire le dossier",
       "oversized": "{{count}} fichiers étaient trop volumineux (plus de 20 Mo) — je les ai ignorés.",
       "truncated": "Le dossier contenait plus de fichiers que je n'en lis d'un coup — j'ai pris les {{count}} premiers.",
-      "extraPlanPages": "Un plan avait plusieurs pages — j'ai lu la première ({{count}} pages non lues)."
+      "extraPlanPages": "Un plan avait plusieurs pages — j'ai lu la première ({{count}} pages non lues).",
+      "phase": {
+        "classify": "Tri des images…",
+        "read": "Lecture du fichier {{done}} sur {{total}}…",
+        "archive": "Enregistrement du fichier {{done}} sur {{total}} dans Fichiers…"
+      },
+      "slowHint": "Avec {{total}} fichiers, cela prend une minute — vous pouvez laisser la page ouverte."
     },
     "source": {
       "answer": "Votre réponse",

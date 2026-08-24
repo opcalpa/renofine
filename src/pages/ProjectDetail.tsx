@@ -86,6 +86,8 @@ import {
   deleteGuestTask,
 } from "@/services/guestStorageService";
 import type { GuestRoom, GuestTask } from "@/types/guest.types";
+import { IngestProgressPanel } from "@/components/project/IngestProgressPanel";
+import type { IngestProgress } from "@/services/ingestProjectFolder";
 
 interface Project {
   id: string;
@@ -154,7 +156,7 @@ const ProjectDetail = () => {
   const [droppedFiles, setDroppedFiles] = useState<DroppedFile[]>([]);
   const [dropChoiceOpen, setDropChoiceOpen] = useState(false);
   // Skiva 4: headless ingest progress while the folder is being read.
-  const [ingestBusy, setIngestBusy] = useState<{ done: number; total: number } | null>(null);
+  const [ingestBusy, setIngestBusy] = useState<IngestProgress | null>(null);
   /**
    * P4: home papers found in a mixed drop, waiting on the one question the
    * engine cannot answer — do they belong to the address or to this job? Never
@@ -1099,12 +1101,12 @@ const ProjectDetail = () => {
    */
   const runIngestIntoProject = async (files: File[]) => {
     if (!project?.id || files.length === 0) return;
-    setIngestBusy({ done: 0, total: files.length });
+    setIngestBusy({ phase: 'read', done: 0, total: files.length });
     try {
       const outcome = await ingestProjectFolder(files, emptyDraft(), i18n.language, {
         collectPurchases: true,
         isContractor: effectiveUserType === 'contractor',
-        onProgress: (done, total) => setIngestBusy({ done, total }),
+        onProgress: (progress) => setIngestBusy(progress),
       });
 
       const proposals = ingestOutcomeToProposals(
@@ -1156,8 +1158,19 @@ const ProjectDetail = () => {
           for (const cat of new Set(outcome.archiveFiles.map((a) => a.category))) {
             await ensureCategoryFolder(project.id, cat);
           }
+          // Uploading 100 originals is minutes of its own. It used to run
+          // silently after the reading finished, which is the gap that made
+          // the drop look frozen right before the summary appeared.
+          const total = outcome.archiveFiles.length;
+          let done = 0;
+          setIngestBusy({ phase: 'archive', done, total });
           const results = await Promise.all(
-            outcome.archiveFiles.map((a) => uploadToCategoryFolder(project.id, a.file, a.category)),
+            outcome.archiveFiles.map(async (a) => {
+              const path = await uploadToCategoryFolder(project.id, a.file, a.category);
+              done += 1;
+              setIngestBusy({ phase: 'archive', done, total, fileName: a.file.name });
+              return path;
+            }),
           );
           archiveFailed = results.filter((r) => !r).length;
         } catch (e) {
@@ -2028,16 +2041,7 @@ const ProjectDetail = () => {
 
       {/* Skiva 4: reading a dropped folder blocks nothing, but it must not look
           like nothing is happening — it can take minutes. */}
-      {ingestBusy && (
-        <div className="fixed inset-x-0 bottom-4 z-[60] flex justify-center px-4 print:hidden">
-          <div className="flex items-center gap-3 rounded-full border bg-card px-4 py-2 shadow-lg">
-            <Loader2 className="h-4 w-4 animate-spin text-primary" />
-            <span className="text-sm">
-              {t('renaidaFlow.folder.progress', 'Läser fil {{done}} av {{total}} …', ingestBusy)}
-            </span>
-          </div>
-        </div>
-      )}
+      {ingestBusy && <IngestProgressPanel progress={ingestBusy} variant="floating" />}
 
       {/* Skiva 1: folder dropped on the project page → read it or file it. */}
       {/* P4: mixed folder — the one question the engine cannot answer. */}
