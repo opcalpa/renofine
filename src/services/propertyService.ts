@@ -22,6 +22,19 @@ import { groupSimilarAddresses, looksLikeSameAddress } from '@/lib/addressMatch'
  */
 export type ResidenceStatus = 'current' | 'former';
 
+/**
+ * P2: how the home is HELD — not what it looks like.
+ *
+ * `AIPropertyType` (apartment/villa/townhouse/summerhouse) on a project draft
+ * is BUILDING form and says nothing about this: an ägarlägenhet is an
+ * apartment you own outright, a summer house is normally äganderätt. Never
+ * derive one from the other.
+ *
+ * NULL means "not answered". It decides which identifiers ROT asks for — and,
+ * for a hyresrätt, that ROT does not apply at all.
+ */
+export type Tenure = 'bostadsratt' | 'aganderatt' | 'hyresratt';
+
 export interface PropertyRow {
   id: string;
   owner_id: string;
@@ -33,7 +46,19 @@ export interface PropertyRow {
   city: string | null;
   country: string | null;
   property_designation: string | null;
+  tenure: Tenure | null;
+  brf_name: string | null;
+  brf_org_number: string | null;
+  apartment_number: string | null;
 }
+
+/**
+ * One column list, so a property looks the same wherever it is read. Two
+ * lists drift, and a page reading the short one silently loses a field the
+ * rest of the app is already writing.
+ */
+export const PROPERTY_COLUMNS =
+  'id, owner_id, residence_status, updated_at, name, address, postal_code, city, country, property_designation, tenure, brf_name, brf_org_number, apartment_number';
 
 export interface PropertyWithProjectCount extends PropertyRow {
   /** Projects on this address that are not soft-deleted. */
@@ -95,9 +120,7 @@ export function hasRealAddress(p: Pick<PropertyRow, 'address'>): boolean {
 export async function listMyProperties(): Promise<PropertyRow[]> {
   const { data, error } = await supabase
     .from('properties')
-    .select(
-      'id, owner_id, residence_status, updated_at, name, address, postal_code, city, country, property_designation'
-    )
+    .select(PROPERTY_COLUMNS)
     .is('archived_at', null)
     .order('name');
 
@@ -184,6 +207,11 @@ export interface UpdatePropertyInput {
   postalCode: string | null;
   city: string | null;
   propertyDesignation: string | null;
+  /** P2 — omit to leave unchanged; pass null to clear. */
+  tenure?: Tenure | null;
+  brfName?: string | null;
+  brfOrgNumber?: string | null;
+  apartmentNumber?: string | null;
 }
 
 /**
@@ -200,15 +228,23 @@ export async function updateProperty(
   propertyId: string,
   input: UpdatePropertyInput
 ): Promise<boolean> {
+  const patch: Record<string, unknown> = {
+    name: input.name.trim(),
+    address: input.address?.trim() || null,
+    postal_code: input.postalCode?.trim() || null,
+    city: input.city?.trim() || null,
+    property_designation: input.propertyDesignation?.trim() || null,
+  };
+  // P2 fields are optional on the input: a caller that does not know about
+  // tenure (the older create/settings paths) must not blank it out.
+  if ('tenure' in input) patch.tenure = input.tenure ?? null;
+  if ('brfName' in input) patch.brf_name = input.brfName?.trim() || null;
+  if ('brfOrgNumber' in input) patch.brf_org_number = input.brfOrgNumber?.trim() || null;
+  if ('apartmentNumber' in input) patch.apartment_number = input.apartmentNumber?.trim() || null;
+
   const { error } = await supabase
     .from('properties')
-    .update({
-      name: input.name.trim(),
-      address: input.address?.trim() || null,
-      postal_code: input.postalCode?.trim() || null,
-      city: input.city?.trim() || null,
-      property_designation: input.propertyDesignation?.trim() || null,
-    })
+    .update(patch)
     .eq('id', propertyId);
 
   if (error) {
@@ -438,6 +474,43 @@ export async function setResidenceStatus(
     return false;
   }
   return true;
+}
+
+/**
+ * The address a project sits on, with the fields ROT needs, plus the project's
+ * own legacy `property_designation` as a fallback.
+ *
+ * Read-only and unguarded on purpose: a builder on the project must SEE what
+ * the ROT claim still needs even though they may not edit the address. Writing
+ * is a separate question, answered by `getManageablePropertyForProject`.
+ */
+export async function getPropertyContextForProject(projectId: string): Promise<{
+  property: PropertyRow | null;
+  fallbackDesignation: string | null;
+  tracksRot: boolean;
+} | null> {
+  const { data: proj, error } = await supabase
+    .from('projects')
+    .select('property_id, property_designation, tracks_rot')
+    .eq('id', projectId)
+    .maybeSingle();
+  if (error || !proj) return null;
+
+  const row = proj as { property_id?: string | null; property_designation?: string | null; tracks_rot?: boolean | null };
+  let property: PropertyRow | null = null;
+  if (row.property_id) {
+    const { data } = await supabase
+      .from('properties')
+      .select(PROPERTY_COLUMNS)
+      .eq('id', row.property_id)
+      .maybeSingle();
+    property = (data as PropertyRow | null) ?? null;
+  }
+  return {
+    property,
+    fallbackDesignation: row.property_designation ?? null,
+    tracksRot: row.tracks_rot !== false,
+  };
 }
 
 /**

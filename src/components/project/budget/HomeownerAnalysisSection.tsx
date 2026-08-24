@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCurrency } from "@/lib/currency";
+import { RotIdentifiersBlock } from "../overview/RotIdentifiersBlock";
+import { useRotIdentifiers } from "@/hooks/useRotIdentifiers";
 import {
   BarChart3,
   ChevronDown,
@@ -99,6 +101,9 @@ interface ProjectInfo {
 
 export function HomeownerAnalysisSection({ projectId, currency }: AnalysisProps) {
   const { t } = useTranslation();
+  // P2: loaded once and shared with the block below, so the readiness check and
+  // the list it summarises can never say different things.
+  const rotIdentifiers = useRotIdentifiers(projectId);
 
   const [loading, setLoading] = useState(true);
   const [project, setProject] = useState<ProjectInfo | null>(null);
@@ -376,15 +381,22 @@ export function HomeownerAnalysisSection({ projectId, currency }: AnalysisProps)
   }, [rows]);
 
   const checks = useMemo(() => {
-    const hasDesignation = !!project?.property_designation;
+    // P2: this used to be `!!project.property_designation` — a check a
+    // bostadsrätt owner could never tick, because Skatteverket does not ask
+    // them for a fastighetsbeteckning at all. Now it asks what applies to THIS
+    // home: the association's org number and lägenhetsnummer for a bostadsrätt,
+    // the designation for a småhus, and nothing for a rental (where ROT does
+    // not apply, so the check is not a failure).
+    const { eligibility, complete } = rotIdentifiers.status;
+    const rotOk = eligibility === 'not_applicable' ? true : complete;
     const allPaid = invoices.length === 0 || invoices.every((i) => (i.paid_amount || 0) >= (i.total_amount || 0));
     const hasFiles = fileLinks.length > 0;
     return [
-      { key: "rot", label: t("analysis.checkRotDetails"), ok: hasDesignation },
+      { key: "rot", label: t("analysis.checkRotDetails"), ok: rotOk },
       { key: "paid", label: t("analysis.checkInvoicesPaid"), ok: allPaid },
       { key: "files", label: t("analysis.checkFilesAttached"), ok: hasFiles },
     ];
-  }, [project, invoices, fileLinks, t]);
+  }, [rotIdentifiers.status, invoices, fileLinks, t]);
 
   // --- Render ---
 
@@ -430,13 +442,27 @@ export function HomeownerAnalysisSection({ projectId, currency }: AnalysisProps)
               {project.address && (
                 <p className="text-xs text-muted-foreground pl-5">{project.address}</p>
               )}
-              {project.property_designation && (
+              {/* P2: show the identifier that actually applies here. The
+                  designation line stays for småhus and for projects with no
+                  address yet, where it is still the only thing we have. */}
+              {rotIdentifiers.status.required.map((identifier) =>
+                identifier.value ? (
+                  <p key={identifier.key} className="text-xs text-muted-foreground pl-5">
+                    {t(identifier.labelKey)}: {identifier.value}
+                  </p>
+                ) : null
+              )}
+              {rotIdentifiers.status.required.length === 0 && project.property_designation && (
                 <p className="text-xs text-muted-foreground pl-5">
                   {t("analysis.propertyDesignation", "Fastighetsbeteckning")}: {project.property_designation}
                 </p>
               )}
             </div>
           )}
+
+          {/* P2: which identifiers ROT needs depends on how the home is held —
+              ask that before showing fields that may not apply. */}
+          <RotIdentifiersBlock projectId={projectId} isHomeowner state={rotIdentifiers} />
 
           {/* === ROT Header === */}
           {(totals.rot > 0 || plannedRot > 0) && (

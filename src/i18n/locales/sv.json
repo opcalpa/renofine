@@ -3960,7 +3960,27 @@
     "actualTotal": "Faktiskt ROT-avdrag",
     "missingInvoices": "{{count}} ROT-uppgift(er) saknar verifierad faktura",
     "plannedShort": "plan",
-    "noInvoicesYet": "Inga fakturor betalda ännu — planerat avdrag visas"
+    "noInvoicesYet": "Inga fakturor betalda ännu — planerat avdrag visas",
+    "tenure": {
+      "label": "Upplåtelseform",
+      "bostadsratt": "Bostadsrätt",
+      "aganderatt": "Vi äger fastigheten",
+      "hyresratt": "Hyresrätt",
+      "question": "För ROT-underlaget: är bostaden en bostadsrätt eller äger ni fastigheten? Skatteverket ber om olika uppgifter beroende på vilket.",
+      "questionHint": "Går att ändra när som helst på adressen.",
+      "saveFailed": "Kunde inte spara",
+      "ready": "ROT-uppgifter om bostaden — kompletta",
+      "incomplete": "ROT-uppgifter om bostaden — saknas",
+      "changeAnswer": "Ändra svaret",
+      "rentalNotice": "Skatteverket kräver att man äger bostaden för ROT-avdrag, så det gäller inte en hyresrätt. Övriga kostnader räknas som vanligt.",
+      "brfName": "Bostadsrättsförening",
+      "brfNamePlaceholder": "t.ex. Brf Storgården",
+      "brfOrgNumber": "Föreningens org.nr",
+      "brfOrgNumberHint": "Skatteverket ber om det vid ROT i bostadsrätt. Står i föreningens årsredovisning.",
+      "apartmentNumber": "Lägenhetsnummer",
+      "apartmentNumberHint": "Vanligen fyra siffror. Står på lägenhetsdörren eller i föreningens papper.",
+      "designationHint": "Skatteverket ber om den vid ROT på småhus. Står på taxeringsbeslutet eller under Fastigheter på Mina sidor."
+    }
   },
   "rotRules": {
     "title": "Så beräknar vi ROT",

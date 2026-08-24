@@ -70,7 +70,7 @@ EXTRACT (null when absent — never guess):
 - property_designation: fastighetsbeteckning, e.g. "Lidingö Lingonet 4" (äganderätt only; null for bostadsrätt).
 - brf_name: the housing association's name, e.g. "Brf Storgården".
 - brf_org_number: the association's organisation number, e.g. "769612-3456". This is a COMPANY number (third digit ≥ 2) — it is not a personal number.
-- apartment_number: lägenhetsnummer as the association writes it, e.g. "1203". Not Lantmäteriet's 4-digit LGH number unless it is the only one.
+- apartment_number: the lägenhetsnummer the document states, usually four digits, e.g. "1203". Keep leading zeros. If the document gives two different apartment numbers, take the one presented as the lägenhetsnummer.
 - monthly_fee: månadsavgift in SEK as a number.
 - tenure: "bostadsratt" if the document concerns a bostadsrätt (överlåtelseavtal, upplåtelseavtal, förening, andel), "aganderatt" if it concerns a fastighet with a fastighetsbeteckning/lagfart, "hyresratt" for a rental, else null.
 

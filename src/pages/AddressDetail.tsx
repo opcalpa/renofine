@@ -23,8 +23,10 @@ import { normalizeStatus, STATUS_META } from '@/lib/projectStatus';
 import { useTaxDeductionVisible } from '@/hooks/useTaxDeduction';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { useUserRole } from '@/hooks/useUserRole';
-import { propertyLabel, hasRealAddress, type PropertyRow, type ResidenceStatus } from '@/services/propertyService';
+import { propertyLabel, hasRealAddress, PROPERTY_COLUMNS, type PropertyRow, type ResidenceStatus } from '@/services/propertyService';
 import { EditPropertyDialog } from '@/components/property/EditPropertyDialog';
+import { RotIdentifiersBlock } from '@/components/project/overview/RotIdentifiersBlock';
+import { rotIdentifierStatus } from '@/lib/rotIdentifiers';
 import { PropertyMembersSection } from '@/components/property/PropertyMembersSection';
 import { PropertyDocumentsSection } from '@/components/property/PropertyDocumentsSection';
 import { MergeSuggestionCard } from '@/components/property/MergeSuggestionCard';
@@ -93,7 +95,7 @@ export default function AddressDetail() {
       // the user (S4) opens the same way their own does.
       const { data: prop } = await supabase
         .from('properties')
-        .select('id, owner_id, residence_status, updated_at, name, address, postal_code, city, country, property_designation')
+        .select(PROPERTY_COLUMNS)
         .eq('id', propertyId)
         .maybeSingle();
 
@@ -286,6 +288,23 @@ export default function AddressDetail() {
           canManage={canManage}
           onAnswered={handleResidenceAnswered}
         />
+
+        {/* P2: which identifiers ROT asks for depends on how the home is held.
+            Asked here as well as on the ROT summary, because a household should
+            not have to wait for its first invoice to be able to answer. */}
+        {isHomeowner && !isDemo && (
+          <RotIdentifiersBlock
+            isHomeowner
+            state={{
+              loaded: true,
+              property,
+              canManage,
+              tracksRot: true,
+              status: rotIdentifierStatus(property),
+              reload: async () => setReloadKey((k) => k + 1),
+            }}
+          />
+        )}
 
         <MergeSuggestionCard
           propertyId={property.id}

@@ -2457,7 +2457,27 @@
     "actualTotal": "Actual ROT deduction",
     "missingInvoices": "{{count}} ROT item(s) missing verified invoice",
     "plannedShort": "planned",
-    "noInvoicesYet": "No invoices paid yet — planned deduction shown"
+    "noInvoicesYet": "No invoices paid yet — planned deduction shown",
+    "tenure": {
+      "label": "Tenure",
+      "bostadsratt": "Tenant-owned (bostadsrätt)",
+      "aganderatt": "We own the property",
+      "hyresratt": "Rental (hyresrätt)",
+      "question": "For the ROT paperwork: is the home a bostadsrätt, or do you own the property? Skatteverket asks for different details depending on which.",
+      "questionHint": "Can be changed at any time on the address.",
+      "saveFailed": "Could not save",
+      "ready": "ROT details about the home — complete",
+      "incomplete": "ROT details about the home — missing",
+      "changeAnswer": "Change the answer",
+      "rentalNotice": "Skatteverket requires that you own the home for rotavdrag, so it does not apply to a rental. Other costs are counted as usual.",
+      "brfName": "Housing association",
+      "brfNamePlaceholder": "e.g. Brf Storgården",
+      "brfOrgNumber": "Association's org. no.",
+      "brfOrgNumberHint": "Skatteverket asks for it for ROT in a bostadsrätt. Found in the association’s annual report.",
+      "apartmentNumber": "Apartment number",
+      "apartmentNumberHint": "Usually four digits. On the apartment door or in the association’s papers.",
+      "designationHint": "Skatteverket asks for it for ROT on a house. On your taxeringsbeslut, or under Fastigheter on Mina sidor."
+    }
   },
   "rotRules": {
     "title": "How we calculate ROT",

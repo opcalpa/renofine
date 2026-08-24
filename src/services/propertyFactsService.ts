@@ -185,11 +185,27 @@ export function aggregateFacts(documents: PropertyDocument[]): AggregatedFact[] 
 // ── "Använd" — the ONLY way a fact reaches the property's own fields ──────
 
 /** Fields on the property a fact may be written into, when they are empty. */
-export type ApplicableField = 'address' | 'property_designation';
+export type ApplicableField =
+  | 'address'
+  | 'property_designation'
+  | 'tenure'
+  | 'brf_name'
+  | 'brf_org_number'
+  | 'apartment_number';
 
+/**
+ * Only ever into a field that is EMPTY. A fact read out of a document is
+ * evidence, not an override: if the household already answered, the document
+ * does not get to argue with them.
+ */
 export function canApplyFact(property: PropertyRow, key: FactKey): ApplicableField | null {
   if (key === 'address' && !hasRealAddress(property)) return 'address';
   if (key === 'property_designation' && !property.property_designation?.trim()) return 'property_designation';
+  // P2 landed these columns, so the read-out values finally have somewhere to go.
+  if (key === 'tenure' && !property.tenure) return 'tenure';
+  if (key === 'brf_name' && !property.brf_name?.trim()) return 'brf_name';
+  if (key === 'brf_org_number' && !property.brf_org_number?.trim()) return 'brf_org_number';
+  if (key === 'apartment_number' && !property.apartment_number?.trim()) return 'apartment_number';
   return null;
 }
 
@@ -225,5 +241,13 @@ export async function applyFactToProperty(
   if (fact.key === 'property_designation') {
     return updateProperty(property.id, { ...base, propertyDesignation: String(fact.value) });
   }
+  if (fact.key === 'tenure') {
+    const value = fact.value;
+    if (value !== 'bostadsratt' && value !== 'aganderatt' && value !== 'hyresratt') return false;
+    return updateProperty(property.id, { ...base, tenure: value });
+  }
+  if (fact.key === 'brf_name') return updateProperty(property.id, { ...base, brfName: String(fact.value) });
+  if (fact.key === 'brf_org_number') return updateProperty(property.id, { ...base, brfOrgNumber: String(fact.value) });
+  if (fact.key === 'apartment_number') return updateProperty(property.id, { ...base, apartmentNumber: String(fact.value) });
   return false;
 }

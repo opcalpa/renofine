@@ -2521,7 +2521,10 @@ export type Database = {
       properties: {
         Row: {
           address: string | null
+          apartment_number: string | null
           archived_at: string | null
+          brf_name: string | null
+          brf_org_number: string | null
           city: string | null
           country: string | null
           created_at: string
@@ -2530,11 +2533,16 @@ export type Database = {
           owner_id: string
           postal_code: string | null
           property_designation: string | null
+          residence_status: string | null
+          tenure: string | null
           updated_at: string
         }
         Insert: {
           address?: string | null
+          apartment_number?: string | null
           archived_at?: string | null
+          brf_name?: string | null
+          brf_org_number?: string | null
           city?: string | null
           country?: string | null
           created_at?: string
@@ -2543,11 +2551,16 @@ export type Database = {
           owner_id: string
           postal_code?: string | null
           property_designation?: string | null
+          residence_status?: string | null
+          tenure?: string | null
           updated_at?: string
         }
         Update: {
           address?: string | null
+          apartment_number?: string | null
           archived_at?: string | null
+          brf_name?: string | null
+          brf_org_number?: string | null
           city?: string | null
           country?: string | null
           created_at?: string
@@ -2556,6 +2569,8 @@ export type Database = {
           owner_id?: string
           postal_code?: string | null
           property_designation?: string | null
+          residence_status?: string | null
+          tenure?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -2621,7 +2636,29 @@ export type Database = {
           updated_at?: string
           uploaded_by?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "property_documents_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_documents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "professional_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_documents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       property_members: {
         Row: {
@@ -4341,10 +4378,6 @@ export type Database = {
         Returns: Json
       }
       accept_property_invitation: { Args: { p_token: string }; Returns: string }
-      merge_properties: {
-        Args: { p_source_id: string; p_target_id: string }
-        Returns: number
-      }
       derive_viewer_mode: { Args: { p_project_id: string }; Returns: string }
       get_intake_request_by_token: {
         Args: { p_token: string }
@@ -4394,6 +4427,10 @@ export type Database = {
         Returns: boolean
       }
       is_system_admin: { Args: never; Returns: boolean }
+      merge_properties: {
+        Args: { p_source_id: string; p_target_id: string }
+        Returns: number
+      }
       property_owner_profile_id: {
         Args: { p_property_id: string }
         Returns: string
@@ -4413,6 +4450,10 @@ export type Database = {
       seed_demo_project_for_user: {
         Args: { p_language?: string; p_owner_id: string }
         Returns: string
+      }
+      user_can_access_property_file: {
+        Args: { file_path: string }
+        Returns: boolean
       }
       user_can_invite_to_project: {
         Args: { project_uuid: string }
