@@ -2961,16 +2961,35 @@ Två projekt i samma lägenhet vet inget om varandra.
 3. Räcker en lättviktig variant (projekt kan peka på ett "objekt" som mest är
    namn + adress + delad plan) eller är det en riktig entitet med egen vy?
 
-**Carls riktning 2026-08-24 (delvis svar på fråga 3):** JA till riktig entitet
-med egen yta — "Adresser" som objekt med flera projekt kopplade, plus en
-sammanställningsyta per adress som summerar de väsentliga siffrorna (utgå
-från vad vi redan räknar per projekt: totalt/betalt/ROT/per leverantör/per
-rum). Kärncase: inför FÖRSÄLJNING sammanställa förbättringsutgifter från
-SAMTLIGA projekt på objektet (K5/K6-underlag). Fråga 1 (proffs/kund-objekt?)
-och 2 (migrationsväg) fortfarande öppna.
+**ALLA 3 FRÅGOR BESVARADE av Carl 2026-08-24 — epicen är redo för
+arkitekturplan (Fable), därefter bygge:**
+1. **Hemägare först.** Proffs/kund-objekt = senare fråga.
+2. **Migrationsväg:** skapa `properties` i backend och koppla ALLA befintliga
+   (riktiga) projekt vid backfill så alla användare ser nya UI:t direkt +
+   befintlig adress kan snabbväljas vid nytt projekt. Accepterat: historiska
+   properties blir gles-ifyllda — minimum är ett NAMN. Snarlik input-data →
+   undersök ihopslagning; grundfunktion = FÖRESLÅ vid adress-match + manuell
+   koppling (aldrig tyst auto-merge av osäkra). Användaren MÅSTE i efterhand
+   kunna byta projektets property (till ny eller befintlig från lista) —
+   det gör felgruppering återställbar.
+3. **Riktig entitet med egen sammanställningsyta** (bekräftat): siffrorna vi
+   redan räknar per projekt rullas upp per adress; kärncase = försäljning
+   (K5/K6-underlag över innehavstiden).
 
-Ingen kod förrän 1–3 är besvarade — detta är ett arkitekturval som rör
-datamodellen brett (RLS, delning, planritningar).
+**Carls hårda krav:** noggrann analys av appens ALLA ytor innan implementation
+— får inte förstöra något för befintliga användare (back-compat/migrering är
+uttryckligen också ett lärande-case i AI engineering i live-miljö för Carl).
+
+**Space Planner-frågan (Carl 2026-08-24):** hur delas planritningar mellan
+projekt på samma adress? Multi-plan-modellen FINNS redan i koden
+(`floor_map_plans` + `floor_map_shapes.plan_id`, projekt-scopad). Carls idé:
+delad plan + nytt projekt i eget plan-lager, flippa mellan, kopiera objekt.
+Riktning att pröva i planen: skiva 1 = KOPIERA plan från tidigare projekt på
+samma adress (snapshot, ingen delad muterbar state); levande delat bas-lager
+= ev. v2.
+
+Nästa steg: Fable-arkitekturplan (ytor-analys + skivor + revert-SQL-krav).
+Ingen kod före planen.
 
 ---
 id: floorplan-quality-epic
