@@ -3265,6 +3265,30 @@ P5 "Läs ut uppgifter" (uttryckligt, utan personnummer).
 **Antaganden Carl kan veta:** admin-medlemmar ser pappren; AI-utvinning
 uttrycklig, inte automatisk; proffs ser inget i v1; samma bucket, nytt prefix.
 
+### Utfall
+
+**P3 LEVERERAD 2026-08-24** (`c903665`). Planens antagande "samma bucket, nytt
+prefix" var fel och farligt: `project-files` är PUBLIC (se
+[[project-files-public-bucket]]). Pappren ligger i egen privat bucket.
+
+**P4 LEVERERAD 2026-08-24** (`bf750e0`, `afefe07`, `e2102dc`, `b7c37be`,
+`ff64990`, `e0812f1`). Tredje dörren "Spara på bostaden", blandade mappar med
+frågan i befintliga projekt, "Flytta till bostaden" i Filer — och P4.0.
+
+P4.0 var inte en kantfalls-not: `processDocument` skickade varje dokument
+klassificeraren inte kunde placera rakt in i scope-parsern, så ett CV kunde ge
+projektet rum. Nu parsas bara klasser som bär arbetsomfattning; resten lagras
+som `other` och rör ingenting. Verifierat live: CV i projekt → 0 rum, 0 arbeten,
+0 inköp, och appen säger rakt ut att den inte visste vad filen var.
+
+Två äldre buggar hittades av live-körningen: filradering i projektets rotmapp
+har aldrig fungerat (dubbel snedstreck i sökvägen), och `storage.remove()`
+rapporterar framgång för en nyckel den aldrig matchade. Båda fixade.
+
+**Kvar i epicen:** P2 (upplåtelseform + BRF i ROT) → P1 (adress ur dokumenten)
+→ P5 (läs ut uppgifter). Plus: e2e-spec för de tre dörrarna, `document_date`
+saknar UI, inbjudan via e-post (Resend).
+
 ---
 id: project-files-public-bucket
 status: todo
