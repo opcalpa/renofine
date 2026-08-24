@@ -3295,9 +3295,22 @@ skiljer pnr från org.nr), `PropertyFactsCard` med provenance per fakta och
 verifierat: 11 fakta ur ett testkontrakt, noll pnr/konto/namn i lagrad JSON.
 `parties` medvetet utelämnat (dataminimering).
 
-**Kvar i epicen:** P2 (upplåtelseform + BRF i ROT — tenure/BRF läses redan ut,
-väntar på kolumner). Golden-eval för P5. e2e för dörrarna/förslaget/kortet.
-`document_date` saknar UI, inbjudan via e-post (Resend).
+**P2 LEVERERAD 2026-08-24 — EPICEN KLAR.** Migration `20260824200000`
+applicerad (tenure + BRF-fält). Verifierat mot skatteverket.se: ROT kräver att
+man äger bostaden (hyresrätt ⇒ inget avdrag); småhus ⇒ fastighetsbeteckning;
+bostadsrätt ⇒ föreningens org.nr + lägenhetsnummer. EN motor
+(`lib/rotIdentifiers.ts`) + delad hook, villkorade fält i EditPropertyDialog,
+fråga i S7-stil på adress-sidan och i ROT-sammanställningen.
+
+**🚩 Fynd: båda ytorna planen pekade ut är död kod** — `RotDetailsCard` har noll
+importörer, `RotSummaryCard` importeras men renderas aldrig. Den levande ytan är
+`HomeownerAnalysisSection`, och där satt buggen: ROT-checken var
+`!!property_designation`, en bock en bostadsrättsägare aldrig kan sätta. Fixad.
+
+**Kvar:** e2e för villkorade fält + dörrar + adressförslag (alla live-
+verifierade). Golden-eval för P5:s extraktion. `document_date` saknar UI.
+Inbjudan via e-post (Resend). Städa död kod: `RotDetailsCard`,
+`RotSummaryCard` + dess oanvända import i BudgetTabCore.
 
 ---
 id: project-files-public-bucket
