@@ -2988,6 +2988,26 @@ Riktning att pröva i planen: skiva 1 = KOPIERA plan från tidigare projekt på
 samma adress (snapshot, ingen delad muterbar state); levande delat bas-lager
 = ev. v2.
 
+**Delning av objekt (Carl 2026-08-24) — SKA med i planen, två roller:**
+- **Admin (hushåll):** vuxna i hushållet (primärt Carl + fru) delar full
+  admin/insyn på propertyn — följer ALLA projekt på adressen automatiskt,
+  nuvarande och framtida.
+- **Insyn (viewer):** särfall — t.ex. närstående betrodd byggare får på
+  ägarens EGET initiativ läs-insyn i objektet, inkl. tidigare projekt gjorda
+  av ANDRA byggare. Kräver explicit invite-copy ("ser alla projekt på
+  adressen, även historiska") + att insyn-nivån = kundvyn av projekten,
+  aldrig andra byggares interna material.
+- Arkitektur-hävstång verifierad 2026-08-24: åtkomst går redan genom centrala
+  SECURITY DEFINER-funktioner (`user_has_project_access` läs — används i 58
+  migrationsfiler — + `user_can_manage_project` skriv). Property-medlemskap
+  läggs som en OR-gren I FUNKTIONERNA → kaskaderar till alla tabeller utan
+  policy-svep. Ny tabell `property_members` (role: admin|viewer) + invite
+  via befintliga invite-mönster.
+- Öppet delfall: TVÅ ägare med egna konton på samma adress (frun har egna
+  projekt → egen property-rad vid backfill) → behöver "flytta projekt till
+  delad property" via re-assign-pickern (visa även properties delade-till-mig
+  som admin).
+
 Nästa steg: Fable-arkitekturplan (ytor-analys + skivor + revert-SQL-krav).
 Ingen kod före planen.
 
