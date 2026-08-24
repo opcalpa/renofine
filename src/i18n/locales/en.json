@@ -7845,7 +7845,7 @@
       "addAddressPrompt": "Add the street address and your next renovation will find its way here on its own."
     },
     "list": {
-      "title": "Your addresses",
+      "title": "My Addresses",
       "subtitle": "Everything done in a home, together",
       "projectCount_one": "{{count}} project",
       "projectCount_other": "{{count}} projects"

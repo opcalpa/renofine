@@ -36,9 +36,13 @@ export function AddressListSection() {
 
   return (
     <section className="mt-6 sm:mt-8">
-      <div className="mb-3 flex items-baseline justify-between gap-3">
-        <h2 className="text-lg font-semibold">{t('addresses.list.title', 'Dina adresser')}</h2>
-        <p className="text-xs text-muted-foreground">
+      {/* Same heading treatment as "Mina projekt" above it — two lists on one
+          page that are styled differently read as two different products. */}
+      <div className="mb-4">
+        <h2 className="text-2xl font-display font-normal tracking-tight">
+          {t('addresses.list.title', 'Mina adresser')}
+        </h2>
+        <p className="mt-1 text-sm text-muted-foreground">
           {t('addresses.list.subtitle', 'Allt som gjorts i en bostad, samlat')}
         </p>
       </div>

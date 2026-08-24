@@ -7844,7 +7844,7 @@
       "addAddressPrompt": "Lägg till gatuadressen så hittar nästa renovering hit av sig själv."
     },
     "list": {
-      "title": "Dina adresser",
+      "title": "Mina adresser",
       "subtitle": "Allt som gjorts i en bostad, samlat",
       "projectCount_one": "{{count}} projekt",
       "projectCount_other": "{{count}} projekt"
