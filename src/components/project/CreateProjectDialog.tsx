@@ -10,6 +10,8 @@ import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { analytics, AnalyticsEvents, ProjectCreationMethod } from "@/lib/analytics";
+import { linkNewProjectToProperty, assignProjectToProperty } from "@/services/propertyService";
+import { PropertyPicker } from "@/components/project/PropertyPicker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -69,6 +71,9 @@ export function CreateProjectDialog({
   const [address, setAddress] = useState("");
   const [postalCode, setPostalCode] = useState("");
   const [city, setCity] = useState("");
+  // Address (property) this project belongs to. null = create a new address —
+  // the default, which reproduces the previous free-text-only behaviour.
+  const [propertyId, setPropertyId] = useState<string | null>(null);
   const [projectType, setProjectType] = useState("");
   const [startDate, setStartDate] = useState("");
   const [finishDate, setFinishDate] = useState("");
@@ -142,6 +147,18 @@ export function CreateProjectDialog({
       }).select().single();
       if (error) throw error;
 
+      // Link to its address. Best effort: an unlinked project is a normal state
+      // the user can fix from project settings, never a reason to fail creation.
+      if (propertyId) {
+        await assignProjectToProperty(data.id, propertyId);
+      } else {
+        await linkNewProjectToProperty(data.id, {
+          ownerProfileId: profile.id,
+          address, postalCode, city,
+          fallbackName: name,
+        });
+      }
+
       // Initial budget entered at creation = homeowner's private cap (RLS owner-only)
       if (budget) {
         await supabase.from("project_private_budget").insert({
@@ -194,6 +211,10 @@ export function CreateProjectDialog({
           name: t("projects.defaultProjectName", "My renovation"), owner_id: profile.id, status: "planning",
         }).select("id").single();
         if (error) throw error;
+        await linkNewProjectToProperty(data.id, {
+          ownerProfileId: profile.id,
+          fallbackName: t("projects.defaultProjectName", "My renovation"),
+        });
         analytics.capture(AnalyticsEvents.PROJECT_CREATED, {
           creation_method: ProjectCreationMethod.QUICK_PLAN,
         });
@@ -457,7 +478,7 @@ export function CreateProjectDialog({
                             <X className="h-3 w-3" />
                           </Button>
                         </div>
-                        <FormFields name={name} setName={setName} address={address} setAddress={setAddress} postalCode={postalCode} setPostalCode={setPostalCode} city={city} setCity={setCity} description={description} setDescription={setDescription} t={t} />
+                        <FormFields name={name} setName={setName} address={address} setAddress={setAddress} postalCode={postalCode} setPostalCode={setPostalCode} city={city} setCity={setCity} description={description} setDescription={setDescription} propertyId={propertyId} setPropertyId={setPropertyId} isGuest={isGuest} t={t} />
                         <StepButtons onBack={() => setMethod("choose")} onNext={() => setStep(2)} canNext={!!name.trim()} creating={creating} t={t} />
                       </>
                     )}
@@ -465,7 +486,7 @@ export function CreateProjectDialog({
                 )}
                 {method === "manual" && (
                   <>
-                    <FormFields name={name} setName={setName} address={address} setAddress={setAddress} postalCode={postalCode} setPostalCode={setPostalCode} city={city} setCity={setCity} description={description} setDescription={setDescription} t={t} />
+                    <FormFields name={name} setName={setName} address={address} setAddress={setAddress} postalCode={postalCode} setPostalCode={setPostalCode} city={city} setCity={setCity} description={description} setDescription={setDescription} propertyId={propertyId} setPropertyId={setPropertyId} isGuest={isGuest} t={t} />
                     <StepButtons onBack={() => setMethod("choose")} onNext={() => setStep(2)} canNext={!!name.trim()} creating={creating} t={t} />
                   </>
                 )}
@@ -508,12 +529,14 @@ export function CreateProjectDialog({
 // Shared sub-components (avoid JSX duplication)
 // -------------------------------------------------------------------------
 
-function FormFields({ name, setName, address, setAddress, postalCode, setPostalCode, city, setCity, description, setDescription, t }: {
+function FormFields({ name, setName, address, setAddress, postalCode, setPostalCode, city, setCity, description, setDescription, propertyId, setPropertyId, isGuest, t }: {
   name: string; setName: (v: string) => void;
   address: string; setAddress: (v: string) => void;
   postalCode: string; setPostalCode: (v: string) => void;
   city: string; setCity: (v: string) => void;
   description: string; setDescription: (v: string) => void;
+  propertyId: string | null; setPropertyId: (v: string | null) => void;
+  isGuest: boolean;
   t: (key: string, fallback?: string) => string;
 }) {
   return (
@@ -522,20 +545,37 @@ function FormFields({ name, setName, address, setAddress, postalCode, setPostalC
         <Label htmlFor="cp-name">{t("projects.projectName")} *</Label>
         <Input id="cp-name" placeholder={t("projects.projectNamePlaceholder")} value={name} onChange={(e) => setName(e.target.value)} required />
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="cp-address">{t("projects.address")}</Label>
-        <Input id="cp-address" placeholder={t("projects.addressPlaceholder")} value={address} onChange={(e) => setAddress(e.target.value)} />
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-2">
-          <Label htmlFor="cp-postal">{t("projects.postalCode")}</Label>
-          <Input id="cp-postal" placeholder="123 45" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="cp-city">{t("projects.city")}</Label>
-          <Input id="cp-city" placeholder={t("projects.cityPlaceholder")} value={city} onChange={(e) => setCity(e.target.value)} />
-        </div>
-      </div>
+      {!isGuest && (
+        <PropertyPicker
+          value={propertyId}
+          onChange={(id, property) => {
+            setPropertyId(id);
+            // Write-through copy: the project keeps its own address fields, so
+            // every existing reader (ROT, quotes, RFQ clone) is untouched.
+            setAddress(property?.address ?? "");
+            setPostalCode(property?.postal_code ?? "");
+            setCity(property?.city ?? "");
+          }}
+        />
+      )}
+      {!propertyId && (
+        <>
+          <div className="space-y-2">
+            <Label htmlFor="cp-address">{t("projects.address")}</Label>
+            <Input id="cp-address" placeholder={t("projects.addressPlaceholder")} value={address} onChange={(e) => setAddress(e.target.value)} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="cp-postal">{t("projects.postalCode")}</Label>
+              <Input id="cp-postal" placeholder="123 45" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="cp-city">{t("projects.city")}</Label>
+              <Input id="cp-city" placeholder={t("projects.cityPlaceholder")} value={city} onChange={(e) => setCity(e.target.value)} />
+            </div>
+          </div>
+        </>
+      )}
       <div className="space-y-2">
         <Label htmlFor="cp-desc">{t("projects.projectDescription")}</Label>
         <Textarea id="cp-desc" placeholder={t("projects.projectDescriptionPlaceholder")} value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />

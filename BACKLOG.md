@@ -3020,7 +3020,11 @@ hemägare, ingen flagga; (3) merge-förslag bara inom det inloggad redan ser —
 två-konton-fallet löses av den som är admin på båda, ingen cross-account-läsning.
 **S1 LEVERERAD 2026-08-24** — 4 migrationer applicerade, 65 properties, 66 projekt
 kopplade, 0 demo, RLS-testmatris grön, typecheck 336 = baseline. Läxa inskriven i
-planen: REVOKE från roll tar inte bort PUBLIC-grant. Nästa: S2 (koppla & välj).
+planen: REVOKE från roll tar inte bort PUBLIC-grant.
+**S2 LEVERERAD 2026-08-24** — propertyService (en motor) + delad PropertyPicker i
+skapa-projekt och projektinställningar + "N projekt här" på kortet + alla 6
+skapandevägar kopplade + i18n×5. typecheck 336 = baseline, e2e 48/0/3 = baseline.
+Kvar: Carls inloggade test av pickern. Nästa: S3 (adress-sidan m. roll-up).
 
 ---
 id: floorplan-quality-epic

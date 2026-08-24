@@ -22,6 +22,7 @@ export interface ProjectItem {
   project_type?: string | null;
   owner_id?: string | null;
   cover_image_url?: string | null;
+  property_id?: string | null;
 }
 
 interface ProjectFinancials {

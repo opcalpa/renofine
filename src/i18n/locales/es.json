@@ -7817,5 +7817,16 @@
       "purchase": "Registrar compra de {{vendor}} ({{total}} kr)",
       "sketch": "Dibujar el plano {{file}} ({{count}} estancias)"
     }
+  },
+  "addresses": {
+    "picker": {
+      "label": "Dirección",
+      "newAddress": "Nueva dirección",
+      "projectCount": "{{count}} proyectos",
+      "belongsTo": "Pertenece a la dirección"
+    },
+    "card": {
+      "sharedAddress": "· {{count}} proyectos aquí"
+    }
   }
 }

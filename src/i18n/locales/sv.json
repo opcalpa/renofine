@@ -7806,5 +7806,16 @@
       "purchase": "Bokför inköp från {{vendor}} ({{total}} kr)",
       "sketch": "Rita in ritningen {{file}} ({{count}} rum)"
     }
+  },
+  "addresses": {
+    "picker": {
+      "label": "Adress",
+      "newAddress": "Ny adress",
+      "projectCount": "{{count}} projekt",
+      "belongsTo": "Tillhör adress"
+    },
+    "card": {
+      "sharedAddress": "· {{count}} projekt här"
+    }
   }
 }

@@ -231,6 +231,17 @@ const Projects = () => {
     return displayProjects.filter((p) => p.status === "completed");
   }, [displayProjects, statusFilter]);
 
+  // How many live projects share each address. Derived from the list we
+  // already hold, so the card hint costs no extra query.
+  const addressCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const p of visibleProjects) {
+      if (!p.property_id || isDemoProject(p.project_type)) continue;
+      counts.set(p.property_id, (counts.get(p.property_id) ?? 0) + 1);
+    }
+    return counts;
+  }, [visibleProjects]);
+
   // Exclude demo projects from financial/tax aggregations
   const nonDemoProjects = useMemo(
     () => visibleProjects.filter((p) => !isDemoProject(p.project_type)),
@@ -922,6 +933,9 @@ const Projects = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
             {filteredProjects.map((project) => {
               const isDemo = isDemoProject(project.project_type);
+              const addressProjectCount = project.property_id
+                ? addressCounts.get(project.property_id) ?? 0
+                : 0;
               const projectStatus = normalizeStatus(project.status);
               const statusMeta = STATUS_META[projectStatus];
               const fin = projectFinancials[project.id];
@@ -942,6 +956,7 @@ const Projects = () => {
                   isOwnProject={!!(isGuest || (profileId && project.owner_id === profileId))}
                   isContractor={isContractor}
                   currency={project.currency || "SEK"}
+                  addressProjectCount={addressProjectCount}
                   onDelete={() => setDeleteTarget(project)}
                 />
               );

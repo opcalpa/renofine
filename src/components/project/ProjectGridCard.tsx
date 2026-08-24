@@ -35,7 +35,10 @@ interface ProjectGridCardProps {
     cover_image_url: string | null;
     project_type: string | null;
     currency: string | null;
+    property_id?: string | null;
   };
+  /** Live projects sharing this project's address, including itself. */
+  addressProjectCount?: number;
   isDemo: boolean;
   statusLabel: string;
   statusColor: string;
@@ -60,6 +63,7 @@ export function ProjectGridCard({
   profit,
   currency,
   onDelete,
+  addressProjectCount,
 }: ProjectGridCardProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -143,7 +147,16 @@ export function ProjectGridCard({
           <div className="min-w-0">
             <CardTitle className="text-base font-semibold truncate">{project.name}</CardTitle>
             {address && (
-              <p className="text-xs text-muted-foreground mt-0.5 truncate">{address}</p>
+              <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                {address}
+                {(addressProjectCount ?? 0) > 1 && (
+                  <span className="ml-1.5 text-primary">
+                    {t("addresses.card.sharedAddress", "· {{count}} projekt här", {
+                      count: addressProjectCount,
+                    })}
+                  </span>
+                )}
+              </p>
             )}
           </div>
           <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium shrink-0 ${statusColor}`}>

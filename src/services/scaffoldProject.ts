@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { linkNewProjectToProperty } from "@/services/propertyService";
 
 /**
  * scaffoldProject — ONE documented engine for creating a whole project from
@@ -176,6 +177,17 @@ export async function scaffoldProject(
       throw new Error(projectError?.message || "Failed to create project");
     }
     projectId = project.id;
+
+    // Link the new project to its address (best effort — see propertyService).
+    await linkNewProjectToProperty(projectId, {
+      ownerProfileId: creatorProfileId,
+      address: input.project.address ?? null,
+      postalCode: input.project.postalCode ?? null,
+      city: input.project.city ?? null,
+      country: input.project.country ?? "SE",
+      fallbackName: input.project.name,
+    });
+
     decisions.push({ kind: "project", label: input.project.name });
   } else {
     throw new Error("scaffoldProject: either project or existingProjectId is required");

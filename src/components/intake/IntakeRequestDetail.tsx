@@ -42,6 +42,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { linkNewProjectToProperty } from "@/services/propertyService";
 import {
   cancelIntakeRequest,
   getIntakeFormUrl,
@@ -164,6 +165,14 @@ export function IntakeRequestDetail({
         .single();
 
       if (projectError) throw projectError;
+
+      await linkNewProjectToProperty(project.id, {
+        ownerProfileId: profile.id,
+        address: request.property_address,
+        postalCode: request.property_postal_code,
+        city: request.property_city,
+        fallbackName: projectName,
+      });
 
       // 4. Create rooms from intake data
       const roomMapping = await createRoomsFromIntake(

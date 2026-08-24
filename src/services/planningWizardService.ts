@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { linkNewProjectToProperty } from "@/services/propertyService";
 import { workTypeToCostCenter, getWorkTypeLabel } from "./workTypeUtils";
 import type { WorkType } from "./workTypeUtils";
 import type { PlanningWizardData } from "@/components/project/overview/planning-wizard/types";
@@ -61,6 +62,11 @@ export async function createProjectForWizard(
     .select("id")
     .single();
   if (error || !project) throw new Error(error?.message || "Failed to create project");
+  await linkNewProjectToProperty(project.id, {
+    ownerProfileId: creatorProfileId,
+    country: "SE",
+    fallbackName: name,
+  });
   return project.id;
 }
 

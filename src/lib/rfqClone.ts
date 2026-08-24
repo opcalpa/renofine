@@ -3,6 +3,7 @@
 // ---------------------------------------------------------------------------
 
 import { supabase } from "@/integrations/supabase/client";
+import { linkNewProjectToProperty } from "@/services/propertyService";
 
 interface CloneResult {
   projectId: string;
@@ -51,6 +52,17 @@ export async function cloneRfqForBuilder(
     .single();
 
   if (createErr || !newProject) throw new Error("Could not create project");
+
+  // The builder's clone is a project at the customer's address — give it its
+  // own property in the builder's account (best effort).
+  await linkNewProjectToProperty(newProject.id, {
+    ownerProfileId: builderProfileId,
+    address: source.address,
+    postalCode: source.postal_code,
+    city: source.city,
+    propertyDesignation: source.property_designation,
+    fallbackName: source.name,
+  });
   const newProjectId = newProject.id;
 
   // 3. Clone rooms — map old IDs to new IDs for task linking

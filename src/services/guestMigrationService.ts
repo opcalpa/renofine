@@ -4,6 +4,7 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
+import { linkNewProjectToProperty } from '@/services/propertyService';
 import {
   getAllGuestData,
   clearAllGuestData,
@@ -105,6 +106,16 @@ export async function migrateGuestProjects(
           result.errors.push(`Project "${guestProject.name}": ${error.message}`);
           continue;
         }
+
+        // A converting guest gets their address on the server for the first
+        // time — guest projects live only in local storage until now.
+        await linkNewProjectToProperty(newProject.id, {
+          ownerProfileId: profileId,
+          address: guestProject.address,
+          postalCode: guestProject.postal_code,
+          city: guestProject.city,
+          fallbackName: guestProject.name,
+        });
 
         projectIdMap.set(guestProject.id, newProject.id);
         result.newProjectIds.push(newProject.id);

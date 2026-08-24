@@ -7807,5 +7807,16 @@
       "purchase": "Record purchase from {{vendor}} ({{total}} kr)",
       "sketch": "Draw in the plan {{file}} ({{count}} rooms)"
     }
+  },
+  "addresses": {
+    "picker": {
+      "label": "Address",
+      "newAddress": "New address",
+      "projectCount": "{{count}} projects",
+      "belongsTo": "Belongs to address"
+    },
+    "card": {
+      "sharedAddress": "· {{count}} projects here"
+    }
   }
 }

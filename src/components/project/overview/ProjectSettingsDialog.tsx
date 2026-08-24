@@ -32,6 +32,8 @@ import {
 import type { OverviewProject } from "./types";
 import { parseLocalDate, formatLocalDate } from "@/lib/dateUtils";
 import { updateGuestProject } from "@/services/guestStorageService";
+import { PropertyPicker } from "@/components/project/PropertyPicker";
+import { linkNewProjectToProperty, assignProjectToProperty } from "@/services/propertyService";
 
 const CURRENCY_OPTIONS = Object.entries(CURRENCIES).map(([code, config]) => ({
   value: code,
@@ -65,6 +67,7 @@ export function ProjectSettingsDialog({
   const [projectStatusValue, setProjectStatusValue] = useState<ProjectStatus>(
     normalizeStatus(project.status)
   );
+  const [propertyId, setPropertyId] = useState<string | null>(project.property_id ?? null);
   const [saving, setSaving] = useState(false);
 
   const currentStatus = normalizeStatus(project.status);
@@ -80,6 +83,7 @@ export function ProjectSettingsDialog({
       setGoalDate(project.finish_goal_date || "");
       setCurrency(project.currency || "SEK");
       setProjectStatusValue(normalizeStatus(project.status));
+      setPropertyId(project.property_id ?? null);
     }
   }, [open, project]);
 
@@ -110,6 +114,26 @@ export function ProjectSettingsDialog({
           .eq("id", project.id);
 
         if (error) throw error;
+
+        // Move the project to another address, or (re)create one from the
+        // address fields when the user chose "new address".
+        if (propertyId && propertyId !== project.property_id) {
+          await assignProjectToProperty(project.id, propertyId);
+        } else if (!propertyId) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("id")
+            .eq("user_id", (await supabase.auth.getUser()).data.user?.id ?? "")
+            .maybeSingle();
+          if (profile) {
+            await linkNewProjectToProperty(project.id, {
+              ownerProfileId: profile.id,
+              address: projectAddress.trim() || null,
+              propertyDesignation: propertyDesignation.trim() || null,
+              fallbackName: projectName.trim(),
+            });
+          }
+        }
       }
 
       toast({
@@ -154,6 +178,16 @@ export function ProjectSettingsDialog({
               rows={2}
             />
           </div>
+          {!isGuest && (
+            <PropertyPicker
+              value={propertyId}
+              onChange={(id, property) => {
+                setPropertyId(id);
+                if (property) setProjectAddress(property.address ?? "");
+              }}
+              label={t("addresses.picker.belongsTo", "Tillhör adress")}
+            />
+          )}
           <div className="space-y-2">
             <Label>{t("overview.settings.address", "Address")}</Label>
             <Input

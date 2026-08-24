@@ -7817,5 +7817,16 @@
       "purchase": "Einkauf von {{vendor}} verbuchen ({{total}} kr)",
       "sketch": "Zeichnung {{file}} einzeichnen ({{count}} Räume)"
     }
+  },
+  "addresses": {
+    "picker": {
+      "label": "Adresse",
+      "newAddress": "Neue Adresse",
+      "projectCount": "{{count}} Projekte",
+      "belongsTo": "Gehört zu Adresse"
+    },
+    "card": {
+      "sharedAddress": "· {{count}} Projekte hier"
+    }
   }
 }
