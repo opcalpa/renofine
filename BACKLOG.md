@@ -3285,9 +3285,19 @@ Två äldre buggar hittades av live-körningen: filradering i projektets rotmapp
 har aldrig fungerat (dubbel snedstreck i sökvägen), och `storage.remove()`
 rapporterar framgång för en nyckel den aldrig matchade. Båda fixade.
 
-**Kvar i epicen:** P2 (upplåtelseform + BRF i ROT) → P1 (adress ur dokumenten)
-→ P5 (läs ut uppgifter). Plus: e2e-spec för de tre dörrarna, `document_date`
-saknar UI, inbjudan via e-post (Resend).
+**P1 + P5 LEVERERADE 2026-08-24** (Fable, s81). P1: `classify-document` ger
+`property_address` + `address_source`, regel i prompt OCH kod (kvitto ⇒ alltid
+null), rankning i ingest-motorn, förslag som FRÅGA vid adress-steget. Eval
+`evals/run-address.mjs`: 7/7, 0 felaktiga adresser. P5: `extract-property-
+document` (inloggad krävs, personnummer-tvätt server+klient, månads-siffror
+skiljer pnr från org.nr), `PropertyFactsCard` med provenance per fakta och
+"Använd" bara in i tomma fält, samtyckesrad före första anropet. Live-
+verifierat: 11 fakta ur ett testkontrakt, noll pnr/konto/namn i lagrad JSON.
+`parties` medvetet utelämnat (dataminimering).
+
+**Kvar i epicen:** P2 (upplåtelseform + BRF i ROT — tenure/BRF läses redan ut,
+väntar på kolumner). Golden-eval för P5. e2e för dörrarna/förslaget/kortet.
+`document_date` saknar UI, inbjudan via e-post (Resend).
 
 ---
 id: project-files-public-bucket
