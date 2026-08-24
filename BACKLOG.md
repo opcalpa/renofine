@@ -3314,7 +3314,7 @@ Inbjudan via e-post (Resend). Städa död kod: `RotDetailsCard`,
 
 ---
 id: project-files-public-bucket
-status: todo
+status: done
 priority: P1
 tags: [säkerhet, storage, rls, prod]
 created: 2026-08-24
@@ -3352,3 +3352,28 @@ signerade URL:er. Verifierat: anonymt `400` på alla tre endpoints.
 3. Flippa `project-files` till `public = false`.
 4. Undantag att lösa först: `Anyone can view public demo files` (demot är
    avsiktligt publikt) — demofilerna kan behöva ligga i egen public bucket.
+
+**LEVERERAD 2026-08-24** (`0a62d15`). Bucketen är privat; anonym curl mot
+`/object/public/` ger 400 för både nya filer och Carls gamla kvitton.
+
+Genomförandet blev större än kortets 27 anropsställen antydde. Skrivsidan var
+~50 ställen, men **läsSIDAN var 37 renderare** som satte `photo.url` rakt i en
+`<img>`. Signeringen lades därför i DATALAGRET (`signRows()` vid hämtningen,
+~25 ställen) i stället för i varje renderare — då kan ingen yta glömmas, och
+en ny yta ärver signeringen gratis.
+
+Två motorer: `src/lib/fileUrl.ts` (klient, med cache + dedup + förnyelse vid
+80 % av livslängden) och `supabase/functions/_shared/fileUrl.ts`
+(`signPayloadUrls` för edge functions, som signerar åt anropare utan egen
+session efter att deras token validerats).
+
+Lagrade referenser är nu sökvägar, inte URL:er — 33 rader migrerade i
+`20260824210000` (photos.url, projects.cover_image_url,
+floor_map_shapes.shape_data.imageUrl, comments.images). En signerad URL får
+aldrig sparas; den går ut.
+
+Punkt 4 visade sig inte behövas: demots anon-policy på `storage.objects` är
+precis vad `createSignedUrl` kontrollerar, så demot fungerar utan egen bucket.
+
+**Sidofynd:** `ViewQuoteV2` hämtade `photos.storage_path` — en kolumn som inte
+finns — så ÄTA-fotona på offerten var alltid tomma. Fixat.

@@ -44,3 +44,42 @@ entrypoint = "./functions/parse-renovation-description/index.ts"
 enabled = true
 verify_jwt = true
 entrypoint = "./functions/extract-property-document/index.ts"
+
+# --- Functions that sign storage URLs on a caller's behalf ---------------
+# The worker and intake functions answer callers who have no session at all:
+# they carry an invite token, which the function itself validates. They must
+# therefore run without JWT verification, and each one checks its token before
+# doing anything.
+
+[functions.get-worker-data]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/get-worker-data/index.ts"
+
+[functions.worker-upload-photo]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/worker-upload-photo/index.ts"
+
+[functions.worker-send-message]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/worker-send-message/index.ts"
+
+[functions.worker-create-purchase]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/worker-create-purchase/index.ts"
+
+[functions.intake-upload]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/intake-upload/index.ts"
+
+# proxy-image is only ever called from a signed-in session (the Pinterest
+# import), so it verifies the JWT — without it, anyone could push files into
+# any project's storage prefix.
+[functions.proxy-image]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/proxy-image/index.ts"
