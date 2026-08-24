@@ -7842,7 +7842,9 @@
       "projectCount_one": "{{count}} renovation at this address",
       "projectCount_other": "{{count}} renovations at this address",
       "noAddressYet": "No address set — the name comes from the project.",
-      "addAddressPrompt": "Add the street address and your next renovation will find its way here on its own."
+      "addAddressPrompt": "Add the street address and your next renovation will find its way here on its own.",
+      "print": "Print summary",
+      "printShort": "Print"
     },
     "list": {
       "title": "My Addresses",
@@ -7901,6 +7903,22 @@
     "similar": {
       "prompt": "You already have an address like this one:",
       "use": "Use {{name}}"
+    },
+    "residence": {
+      "current": "Current",
+      "former": "Former",
+      "question": "Do you live here?",
+      "answerCurrent": "Yes",
+      "answerFormer": "We used to",
+      "answerLater": "Not yet",
+      "savedCurrent": "Marked as a current home",
+      "savedFormer": "Marked as a former home",
+      "savedFormerHint": "It stays at the bottom of the list — everything documented here is kept.",
+      "label": "Do you live here?",
+      "optionCurrent": "Yes — current home",
+      "optionFormer": "Former home",
+      "optionUnanswered": "Not set",
+      "hint": "Several homes can be current at once — the house and the summer place. Former homes stay at the bottom of the list with all their documentation."
     }
   }
 }

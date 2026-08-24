@@ -15,8 +15,11 @@ import {
   listMyPropertiesWithCounts,
   propertyLabel,
   hasRealAddress,
+  compareByResidence,
   type PropertyWithProjectCount,
 } from '@/services/propertyService';
+import { ResidenceStatusChip } from './ResidenceStatus';
+import { normalizeAddressText } from '@/lib/addressMatch';
 
 export function AddressListSection() {
   const { t } = useTranslation();
@@ -25,7 +28,11 @@ export function AddressListSection() {
   useEffect(() => {
     let cancelled = false;
     listMyPropertiesWithCounts().then((rows) => {
-      if (!cancelled) setAddresses(rows.filter((p) => p.liveProjectCount > 0));
+      // Lived in, then unanswered, then left behind — one list, no heading per
+      // group. The label on the row carries the difference.
+      if (!cancelled) {
+        setAddresses(rows.filter((p) => p.liveProjectCount > 0).sort(compareByResidence));
+      }
     });
     return () => {
       cancelled = true;
@@ -48,7 +55,17 @@ export function AddressListSection() {
       </div>
 
       <ul className="divide-y rounded-xl border bg-card">
-        {addresses.map((a) => (
+        {addresses.map((a) => {
+          // What a person calls the home wins over its street address: "the
+          // summer place" is how they tell two homes apart, and hiding the name
+          // behind the address takes that away.
+          const named =
+            Boolean(a.name?.trim()) &&
+            normalizeAddressText(a.name) !== normalizeAddressText(a.address);
+          const title = named ? a.name : propertyLabel(a);
+          const place = named && hasRealAddress(a) ? propertyLabel(a) : null;
+
+          return (
           <li key={a.id}>
             <Link
               to={`/addresses/${a.id}`}
@@ -58,8 +75,12 @@ export function AddressListSection() {
                 <Home className="h-4 w-4 text-primary" />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-medium">{propertyLabel(a)}</span>
-                <span className="block text-xs text-muted-foreground">
+                <span className="flex items-center gap-2">
+                  <span className="truncate text-sm font-medium">{title}</span>
+                  <ResidenceStatusChip status={a.residence_status} />
+                </span>
+                <span className="block truncate text-xs text-muted-foreground">
+                  {place && <>{place} · </>}
                   {t('addresses.list.projectCount', { count: a.liveProjectCount })}
                   {!hasRealAddress(a) && (
                     <> · {t('addresses.noAddressSet', 'ingen adress angiven')}</>
@@ -69,7 +90,8 @@ export function AddressListSection() {
               <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
             </Link>
           </li>
-        ))}
+          );
+        })}
       </ul>
     </section>
   );

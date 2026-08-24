@@ -12,7 +12,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Home, MapPin, CalendarDays, Pencil } from 'lucide-react';
+import { ArrowLeft, Home, MapPin, CalendarDays, Pencil, Printer } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { AppHeader } from '@/components/AppHeader';
 import { PageLoadingSkeleton } from '@/components/ui/skeleton-screens';
@@ -23,14 +23,17 @@ import { normalizeStatus, STATUS_META } from '@/lib/projectStatus';
 import { useTaxDeductionVisible } from '@/hooks/useTaxDeduction';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { useUserRole } from '@/hooks/useUserRole';
-import { propertyLabel, hasRealAddress, type PropertyRow } from '@/services/propertyService';
+import { propertyLabel, hasRealAddress, type PropertyRow, type ResidenceStatus } from '@/services/propertyService';
 import { EditPropertyDialog } from '@/components/property/EditPropertyDialog';
 import { PropertyMembersSection } from '@/components/property/PropertyMembersSection';
 import { MergeSuggestionCard } from '@/components/property/MergeSuggestionCard';
 import { PlanThumbnail } from '@/components/property/PlanThumbnail';
+import { ResidencePrompt, ResidenceStatusChip } from '@/components/property/ResidenceStatus';
 import { fetchPlanPreviews, type PlanPreview } from '@/services/planInheritance';
 import { canManageProperty } from '@/services/propertyMemberService';
 import { Button } from '@/components/ui/button';
+import { ToastAction } from '@/components/ui/toast';
+import { useToast } from '@/hooks/use-toast';
 import { isDemoProject } from '@/services/demoProjectService';
 
 interface AddressProject {
@@ -49,6 +52,7 @@ export default function AddressDetail() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { user, loading: authLoading } = useAuthSession();
+  const { toast } = useToast();
   const { role } = useUserRole(user?.id);
 
   const [profile, setProfile] = useState<{ name: string | null; email: string | null; avatar_url: string | null } | null>(null);
@@ -87,7 +91,7 @@ export default function AddressDetail() {
       // the user (S4) opens the same way their own does.
       const { data: prop } = await supabase
         .from('properties')
-        .select('id, owner_id, name, address, postal_code, city, country, property_designation')
+        .select('id, owner_id, residence_status, updated_at, name, address, postal_code, city, country, property_designation')
         .eq('id', propertyId)
         .maybeSingle();
 
@@ -131,6 +135,32 @@ export default function AddressDetail() {
       cancelled = true;
     };
   }, [propertyId, user?.id, reloadKey]);
+
+  const handleResidenceAnswered = (status: ResidenceStatus) => {
+    setProperty((current) => (current ? { ...current, residence_status: status } : current));
+    toast({
+      title:
+        status === 'current'
+          ? t('addresses.residence.savedCurrent', 'Markerad som nuvarande bostad')
+          : t('addresses.residence.savedFormer', 'Markerad som tidigare bostad'),
+      description:
+        status === 'former'
+          ? t(
+              'addresses.residence.savedFormerHint',
+              'Den ligger kvar längst ner i listan — allt underlag finns kvar här.'
+            )
+          : undefined,
+      action:
+        status === 'former' ? (
+          <ToastAction
+            altText={t('addresses.detail.print', 'Skriv ut sammanställning')}
+            onClick={() => window.print()}
+          >
+            {t('addresses.detail.printShort', 'Skriv ut')}
+          </ToastAction>
+        ) : undefined,
+    });
+  };
 
   // Projects on one address are realistically in one currency; take it from the
   // newest rather than inventing a mixed-currency sum.
@@ -192,7 +222,10 @@ export default function AddressDetail() {
             <Home className="h-5 w-5 text-primary" />
           </span>
           <div className="min-w-0">
-            <h1 className="text-2xl font-semibold truncate">{property.name}</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-semibold truncate">{property.name}</h1>
+              <ResidenceStatusChip status={property.residence_status} />
+            </div>
             {hasRealAddress(property) || property.city ? (
               <p className="mt-0.5 flex items-center gap-1.5 text-sm text-muted-foreground">
                 <MapPin className="h-3.5 w-3.5 shrink-0" />
@@ -212,15 +245,18 @@ export default function AddressDetail() {
               {t('addresses.detail.projectCount', { count: projects.length })}
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="ml-auto shrink-0 print:hidden"
-            onClick={() => setEditOpen(true)}
-          >
-            <Pencil className="mr-1.5 h-3.5 w-3.5" />
-            {t('addresses.edit.title', 'Redigera adress')}
-          </Button>
+          <div className="ml-auto flex shrink-0 items-center gap-2 print:hidden">
+            {/* The page has always printed cleanly; nothing said so. Selling is
+                exactly when this history becomes a document someone needs. */}
+            <Button variant="outline" size="sm" onClick={() => window.print()}>
+              <Printer className="mr-1.5 h-3.5 w-3.5" />
+              {t('addresses.detail.print', 'Skriv ut sammanställning')}
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+              <Pencil className="mr-1.5 h-3.5 w-3.5" />
+              {t('addresses.edit.title', 'Redigera adress')}
+            </Button>
+          </div>
         </header>
 
         {!hasRealAddress(property) && (
@@ -237,6 +273,13 @@ export default function AddressDetail() {
           onOpenChange={setEditOpen}
           property={property}
           onSaved={() => setReloadKey((k) => k + 1)}
+        />
+
+        <ResidencePrompt
+          propertyId={property.id}
+          status={property.residence_status}
+          canManage={canManage}
+          onAnswered={handleResidenceAnswered}
         />
 
         <MergeSuggestionCard

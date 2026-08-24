@@ -7841,7 +7841,9 @@
       "projectCount_one": "{{count}} renovering på den här adressen",
       "projectCount_other": "{{count}} renoveringar på den här adressen",
       "noAddressYet": "Ingen adress angiven — namnet kommer från projektet.",
-      "addAddressPrompt": "Lägg till gatuadressen så hittar nästa renovering hit av sig själv."
+      "addAddressPrompt": "Lägg till gatuadressen så hittar nästa renovering hit av sig själv.",
+      "print": "Skriv ut sammanställning",
+      "printShort": "Skriv ut"
     },
     "list": {
       "title": "Mina adresser",
@@ -7900,6 +7902,22 @@
     "similar": {
       "prompt": "Du har redan en adress som liknar den här:",
       "use": "Använd {{name}}"
+    },
+    "residence": {
+      "current": "Nuvarande",
+      "former": "Tidigare",
+      "question": "Bor ni här?",
+      "answerCurrent": "Ja",
+      "answerFormer": "Vi har bott här",
+      "answerLater": "Inte än",
+      "savedCurrent": "Markerad som nuvarande bostad",
+      "savedFormer": "Markerad som tidigare bostad",
+      "savedFormerHint": "Den ligger kvar längst ner i listan — allt underlag finns kvar här.",
+      "label": "Bor ni här?",
+      "optionCurrent": "Ja — nuvarande bostad",
+      "optionFormer": "Tidigare bostad",
+      "optionUnanswered": "Inte angivet",
+      "hint": "Flera bostäder kan vara nuvarande samtidigt — hemmet och sommarstugan. Tidigare bostäder ligger kvar längst ner med allt sitt underlag."
     }
   }
 }

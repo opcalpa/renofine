@@ -20,8 +20,23 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { updateProperty, type PropertyRow } from '@/services/propertyService';
+import {
+  updateProperty,
+  setResidenceStatus,
+  type PropertyRow,
+  type ResidenceStatus,
+} from '@/services/propertyService';
+
+/** The dropdown needs a value for "no answer"; the column stores NULL. */
+const UNANSWERED = '__unanswered__';
 
 interface Props {
   open: boolean;
@@ -39,6 +54,7 @@ export function EditPropertyDialog({ open, onOpenChange, property, onSaved }: Pr
   const [postalCode, setPostalCode] = useState(property.postal_code ?? '');
   const [city, setCity] = useState(property.city ?? '');
   const [designation, setDesignation] = useState(property.property_designation ?? '');
+  const [residence, setResidence] = useState<string>(property.residence_status ?? UNANSWERED);
   // While the name is still the auto-generated one, let it follow the street
   // address the user types. Once they edit the name themselves, it stops.
   const [nameTouched, setNameTouched] = useState(false);
@@ -51,6 +67,7 @@ export function EditPropertyDialog({ open, onOpenChange, property, onSaved }: Pr
     setPostalCode(property.postal_code ?? '');
     setCity(property.city ?? '');
     setDesignation(property.property_designation ?? '');
+    setResidence(property.residence_status ?? UNANSWERED);
     setNameTouched(Boolean(property.address?.trim()));
   }, [open, property]);
 
@@ -69,6 +86,13 @@ export function EditPropertyDialog({ open, onOpenChange, property, onSaved }: Pr
       city,
       propertyDesignation: designation,
     });
+
+    // Always reversible: this is the durable way back from "Tidigare", and the
+    // only way to answer the question after waving the prompt away.
+    const nextStatus = residence === UNANSWERED ? null : (residence as ResidenceStatus);
+    if (nextStatus !== (property.residence_status ?? null)) {
+      await setResidenceStatus(property.id, nextStatus);
+    }
     setSaving(false);
 
     if (!ok) {
@@ -136,6 +160,32 @@ export function EditPropertyDialog({ open, onOpenChange, property, onSaved }: Pr
             />
             <p className="text-xs text-muted-foreground">
               {t('addresses.edit.nameHint', 'Vad bostaden kallas i appen — t.ex. "Hemma" eller "Sommarstugan".')}
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>{t('addresses.residence.label', 'Bor ni här?')}</Label>
+            <Select value={residence} onValueChange={setResidence}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="current">
+                  {t('addresses.residence.optionCurrent', 'Ja — nuvarande bostad')}
+                </SelectItem>
+                <SelectItem value="former">
+                  {t('addresses.residence.optionFormer', 'Tidigare bostad')}
+                </SelectItem>
+                <SelectItem value={UNANSWERED}>
+                  {t('addresses.residence.optionUnanswered', 'Inte angivet')}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              {t(
+                'addresses.residence.hint',
+                'Flera bostäder kan vara nuvarande samtidigt — hemmet och sommarstugan. Tidigare bostäder ligger kvar längst ner med allt sitt underlag.'
+              )}
             </p>
           </div>
 

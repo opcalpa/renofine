@@ -14,9 +14,18 @@
 import { supabase } from '@/integrations/supabase/client';
 import { groupSimilarAddresses, looksLikeSameAddress } from '@/lib/addressMatch';
 
+/**
+ * Three states, of which a person only ever picks two: NULL means "not answered
+ * yet", and it is the honest default for an address the app inferred rather
+ * than was told about.
+ */
+export type ResidenceStatus = 'current' | 'former';
+
 export interface PropertyRow {
   id: string;
   owner_id: string;
+  residence_status: ResidenceStatus | null;
+  updated_at: string;
   name: string;
   address: string | null;
   postal_code: string | null;
@@ -85,7 +94,9 @@ export function hasRealAddress(p: Pick<PropertyRow, 'address'>): boolean {
 export async function listMyProperties(): Promise<PropertyRow[]> {
   const { data, error } = await supabase
     .from('properties')
-    .select('id, owner_id, name, address, postal_code, city, country, property_designation')
+    .select(
+      'id, owner_id, residence_status, updated_at, name, address, postal_code, city, country, property_designation'
+    )
     .is('archived_at', null)
     .order('name');
 
@@ -387,4 +398,43 @@ export async function mergeProperties(
     return null;
   }
   return typeof data === 'number' ? data : 0;
+}
+
+
+/**
+ * The order addresses belong in: lived in, then unanswered, then left behind.
+ *
+ * Inside the unanswered middle the most recently touched comes first, so the
+ * throwaway addresses a new account creates while poking around sink on their
+ * own — without anyone having to label them.
+ */
+const STATUS_RANK: Record<string, number> = { current: 0, former: 2 };
+
+export function compareByResidence(a: PropertyRow, b: PropertyRow): number {
+  const rank = (p: PropertyRow) => STATUS_RANK[p.residence_status ?? ''] ?? 1;
+  const byStatus = rank(a) - rank(b);
+  if (byStatus !== 0) return byStatus;
+  return (b.updated_at ?? '').localeCompare(a.updated_at ?? '');
+}
+
+/**
+ * Record whether the household lives at this address.
+ *
+ * Always reversible — marking a home as left must never be a one-way door, and
+ * `null` puts it back to unanswered rather than inventing a third answer.
+ */
+export async function setResidenceStatus(
+  propertyId: string,
+  status: ResidenceStatus | null
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('properties')
+    .update({ residence_status: status })
+    .eq('id', propertyId);
+
+  if (error) {
+    console.error('setResidenceStatus failed:', error);
+    return false;
+  }
+  return true;
 }

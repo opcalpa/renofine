@@ -23,6 +23,7 @@ import {
 import {
   listMyPropertiesWithCounts,
   propertyLabel,
+  compareByResidence,
   type PropertyWithProjectCount,
 } from '@/services/propertyService';
 
@@ -62,7 +63,11 @@ export function PropertyPicker({
 
   if (properties === null) return null;
 
-  const selectable = properties.filter((p) => p.liveProjectCount > 0 || p.id === value);
+  // Where you live comes first and the home you sold comes last: without this
+  // a former address competes with the current one forever.
+  const selectable = properties
+    .filter((p) => p.liveProjectCount > 0 || p.id === value)
+    .sort(compareByResidence);
   if (selectable.length === 0 && hideWhenEmpty) return null;
 
   return (
