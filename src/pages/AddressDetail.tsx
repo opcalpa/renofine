@@ -315,7 +315,11 @@ export default function AddressDetail() {
         {/* The home's own papers sit above the sharing section: they are about
             the home itself, while everything below is about the work in it. */}
         {!isDemo && (
-          <PropertyDocumentsSection propertyId={property.id} canManage={canManage} />
+          <PropertyDocumentsSection
+            property={property}
+            canManage={canManage}
+            onPropertyUpdated={() => setReloadKey((k) => k + 1)}
+          />
         )}
 
         <PropertyMembersSection propertyId={property.id} canManage={canManage} />

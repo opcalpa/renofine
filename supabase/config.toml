@@ -39,3 +39,8 @@ entrypoint = "./functions/send-quote-email/index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/parse-renovation-description/index.ts"
+
+[functions.extract-property-document]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/extract-property-document/index.ts"

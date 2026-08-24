@@ -16,7 +16,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FolderLock, Upload, ExternalLink, Trash2, Pencil, Check, X } from 'lucide-react';
+import { FolderLock, Upload, ExternalLink, Trash2, Pencil, Check, X, Sparkles, Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -48,11 +48,21 @@ import {
   type PropertyDocumentCategory,
 } from '@/services/propertyDocumentService';
 import { ReviewDocumentsDialog, type ReviewedDocument } from './ReviewDocumentsDialog';
+import { PropertyFactsCard } from './PropertyFactsCard';
+import {
+  extractPropertyDocumentFacts,
+  applyFactToProperty,
+  EXTRACTABLE_CATEGORIES,
+  type AggregatedFact,
+} from '@/services/propertyFactsService';
+import type { PropertyRow } from '@/services/propertyService';
 
 interface Props {
-  propertyId: string;
+  property: PropertyRow;
   /** Owner or household admin. Viewers never see this section. */
   canManage: boolean;
+  /** A fact was written into the property ("Använd") — the page should reload it. */
+  onPropertyUpdated?: () => void;
 }
 
 function formatSize(bytes: number | null): string {
@@ -63,10 +73,21 @@ function formatSize(bytes: number | null): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function PropertyDocumentsSection({ propertyId, canManage }: Props) {
+export function PropertyDocumentsSection({ property, canManage, onPropertyUpdated }: Props) {
   const { t } = useTranslation();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const propertyId = property.id;
+
+  /**
+   * P5 state. `pendingExtract` holds what the person asked to read while the
+   * consent line is on screen — nothing is sent until they confirm. Consent is
+   * asked once per visit, not once per document.
+   */
+  const [pendingExtract, setPendingExtract] = useState<PropertyDocument[] | null>(null);
+  const [consented, setConsented] = useState(false);
+  const [extractingIds, setExtractingIds] = useState<Set<string>>(new Set());
+  const [applying, setApplying] = useState<string | null>(null);
 
   const [documents, setDocuments] = useState<PropertyDocument[] | null>(null);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
@@ -129,6 +150,65 @@ export function PropertyDocumentsSection({ propertyId, canManage }: Props) {
           : undefined,
       variant: failed > 0 ? 'destructive' : undefined,
     });
+  };
+
+  /** Run the read-out for the given documents, one at a time, and say what happened. */
+  const runExtraction = async (docs: PropertyDocument[]) => {
+    if (docs.length === 0) return;
+    setExtractingIds(new Set(docs.map((d) => d.id)));
+    let ok = 0;
+    for (const doc of docs) {
+      const result = await extractPropertyDocumentFacts(doc);
+      if (result.ok) ok += 1;
+      setExtractingIds((current) => {
+        const next = new Set(current);
+        next.delete(doc.id);
+        return next;
+      });
+      // Reload after each so the facts card grows as documents finish.
+      await reload();
+    }
+    const failed = docs.length - ok;
+    toast({
+      title: t('addresses.documents.extract.resultOk', { count: ok, defaultValue: 'Uppgifter utlästa ur {{count}} dokument' }),
+      description:
+        failed > 0
+          ? t('addresses.documents.extract.resultFailed', { count: failed, defaultValue: '{{count}} dokument kunde inte läsas.' })
+          : undefined,
+      variant: failed > 0 ? 'destructive' : undefined,
+    });
+  };
+
+  /** Ask first — every time until they have said yes once this visit. */
+  const requestExtraction = (docs: PropertyDocument[]) => {
+    if (docs.length === 0) {
+      toast({ title: t('addresses.documents.extract.nothingToRead', 'Inga köpehandlingar att läsa — lägg till köpekontrakt, objektsbeskrivning eller besiktningsprotokoll först.') });
+      return;
+    }
+    if (consented) {
+      void runExtraction(docs);
+      return;
+    }
+    setPendingExtract(docs);
+  };
+
+  const confirmExtraction = () => {
+    const docs = pendingExtract ?? [];
+    setPendingExtract(null);
+    setConsented(true);
+    void runExtraction(docs);
+  };
+
+  const handleApplyFact = async (fact: AggregatedFact) => {
+    setApplying(fact.key);
+    const ok = await applyFactToProperty(property, fact);
+    setApplying(null);
+    if (!ok) {
+      toast({ title: t('addresses.facts.applyFailed', 'Kunde inte spara på adressen'), variant: 'destructive' });
+      return;
+    }
+    toast({ title: t('addresses.facts.applied', 'Sparat på adressen') });
+    onPropertyUpdated?.();
   };
 
   const handleCategoryChange = async (doc: PropertyDocument, category: PropertyDocumentCategory) => {
@@ -198,15 +278,31 @@ export function PropertyDocumentsSection({ propertyId, canManage }: Props) {
             {t('addresses.documents.count', { count: documents.length })}
           </span>
         )}
-        <Button
-          size="sm"
-          variant="outline"
-          className="ml-auto"
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <Upload className="mr-1.5 h-3.5 w-3.5" />
-          {t('addresses.documents.add', 'Lägg till dokument')}
-        </Button>
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          {documents.some((d) => EXTRACTABLE_CATEGORIES.has(d.category) && d.extraction_status !== 'done') && (
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={extractingIds.size > 0}
+              onClick={() =>
+                requestExtraction(
+                  documents.filter((d) => EXTRACTABLE_CATEGORIES.has(d.category) && d.extraction_status !== 'done')
+                )
+              }
+            >
+              <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+              {t('addresses.documents.extract.actionAll', 'Läs ut alla köpehandlingar')}
+            </Button>
+          )}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Upload className="mr-1.5 h-3.5 w-3.5" />
+            {t('addresses.documents.add', 'Lägg till dokument')}
+          </Button>
+        </div>
         <input
           ref={fileInputRef}
           type="file"
@@ -215,6 +311,17 @@ export function PropertyDocumentsSection({ propertyId, canManage }: Props) {
           onChange={(e) => handleFilesPicked(e.target.files)}
         />
       </header>
+
+      {/* P5: what the papers say about the home, with a source on every line. */}
+      <div className="border-b p-3 empty:hidden">
+        <PropertyFactsCard
+          property={property}
+          documents={documents}
+          canManage={canManage}
+          onApply={handleApplyFact}
+          applying={applying}
+        />
+      </div>
 
       {documents.length === 0 ? (
         <p className="px-4 py-6 text-sm text-muted-foreground">
@@ -283,6 +390,35 @@ export function PropertyDocumentsSection({ propertyId, canManage }: Props) {
                             ))}
                           </SelectContent>
                         </Select>
+                        {/* P5: explicit per document. A chip once it is done,
+                            a spinner while it runs, a warning if it failed. */}
+                        {extractingIds.has(doc.id) || doc.extraction_status === 'pending' ? (
+                          <span className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            {t('addresses.documents.extract.reading', 'Läser…')}
+                          </span>
+                        ) : doc.extraction_status === 'done' ? (
+                          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] text-primary">
+                            <Check className="h-3 w-3" />
+                            {t('addresses.documents.extract.done', 'Uppgifter utlästa')}
+                          </span>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 shrink-0 px-2 text-xs"
+                            onClick={() => requestExtraction([doc])}
+                          >
+                            {doc.extraction_status === 'failed' ? (
+                              <AlertCircle className="mr-1 h-3.5 w-3.5 text-amber-600" />
+                            ) : (
+                              <Sparkles className="mr-1 h-3.5 w-3.5" />
+                            )}
+                            {doc.extraction_status === 'failed'
+                              ? t('addresses.documents.extract.failed', 'Kunde inte läsas')
+                              : t('addresses.documents.extract.action', 'Läs ut uppgifter')}
+                          </Button>
+                        )}
                         <Button
                           size="icon"
                           variant="ghost"
@@ -336,6 +472,31 @@ export function PropertyDocumentsSection({ propertyId, canManage }: Props) {
         onConfirm={handleConfirm}
         saving={saving}
       />
+
+      {/* The one place the app asks before it acts on a document: a
+          köpekontrakt names a third party, and the person deserves to know
+          where it goes and what is kept. */}
+      <AlertDialog open={!!pendingExtract} onOpenChange={(open) => !open && setPendingExtract(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('addresses.documents.extract.consentTitle', 'Läsa ut uppgifter ur dokumentet?')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t(
+                'addresses.documents.extract.consentBody',
+                'Dokumentet skickas till vår AI-tjänst för att läsa ut uppgifter om bostaden — köpeskilling, tillträde, boarea, förening. Personnummer och kontonummer sparas aldrig. Inget annat i appen ändras; du väljer efteråt vad som ska användas.'
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel', 'Avbryt')}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmExtraction}>
+              {t('addresses.documents.extract.consentConfirm', 'Läs ut')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={!!pendingDelete} onOpenChange={(open) => !open && setPendingDelete(null)}>
         <AlertDialogContent>

@@ -66,6 +66,30 @@ export const PROPERTY_DOC_CATEGORIES: {
   { value: 'other', labelKey: 'addresses.documents.category.other' },
 ];
 
+/**
+ * P5: the facts one document states about the home. Read out only on an
+ * explicit request, never at upload — and never containing a personal number
+ * (the model is told to omit them and the result is scrubbed twice, server and
+ * client). Shown as source material with the document's name beside each
+ * fact; nothing here is a profit calculation.
+ */
+export interface PropertyFacts {
+  address: { street: string; postal_code: string | null; city: string | null } | null;
+  purchase_price: number | null;
+  contract_date: string | null;
+  possession_date: string | null;
+  living_area_sqm: number | null;
+  build_year: number | null;
+  property_designation: string | null;
+  brf_name: string | null;
+  brf_org_number: string | null;
+  apartment_number: string | null;
+  monthly_fee: number | null;
+  tenure: 'bostadsratt' | 'aganderatt' | 'hyresratt' | null;
+}
+
+export type ExtractionStatus = 'none' | 'pending' | 'done' | 'failed';
+
 export interface PropertyDocument {
   id: string;
   property_id: string;
@@ -76,7 +100,13 @@ export interface PropertyDocument {
   category: PropertyDocumentCategory;
   document_date: string | null;
   created_at: string;
+  extracted: PropertyFacts | null;
+  extraction_status: ExtractionStatus;
 }
+
+/** One select string, so a row looks the same wherever it is read. */
+export const PROPERTY_DOCUMENT_COLUMNS =
+  'id, property_id, storage_path, file_name, mime_type, file_size, category, document_date, created_at, extracted, extraction_status';
 
 /**
  * Swedish keyword rules, most specific first. Deliberately local: guessing
@@ -164,7 +194,7 @@ export function wasRecognised(category: PropertyDocumentCategory): boolean {
 export async function listPropertyDocuments(propertyId: string): Promise<PropertyDocument[]> {
   const { data, error } = await supabase
     .from('property_documents')
-    .select('id, property_id, storage_path, file_name, mime_type, file_size, category, document_date, created_at')
+    .select(PROPERTY_DOCUMENT_COLUMNS)
     .eq('property_id', propertyId)
     .order('created_at', { ascending: false });
 
@@ -223,7 +253,7 @@ export async function uploadPropertyDocument(
       document_date: input.documentDate ?? null,
       uploaded_by: profile?.id ?? null,
     })
-    .select('id, property_id, storage_path, file_name, mime_type, file_size, category, document_date, created_at')
+    .select(PROPERTY_DOCUMENT_COLUMNS)
     .single();
 
   if (rowError || !row) {
@@ -287,6 +317,26 @@ export async function deletePropertyDocument(doc: PropertyDocument): Promise<boo
   const { error } = await supabase.from('property_documents').delete().eq('id', doc.id);
   if (error) {
     console.error('deletePropertyDocument: row delete failed', error);
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Record what a document said about the home (P5), or that reading it failed.
+ * `facts` is stored as given — the scrubbing happened before this is called.
+ */
+export async function saveExtractedFacts(
+  documentId: string,
+  facts: PropertyFacts | null,
+  status: ExtractionStatus
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('property_documents')
+    .update({ extracted: facts, extraction_status: status, updated_at: new Date().toISOString() })
+    .eq('id', documentId);
+  if (error) {
+    console.error('saveExtractedFacts failed:', error);
     return false;
   }
   return true;
