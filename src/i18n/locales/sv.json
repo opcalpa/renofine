@@ -7893,7 +7893,9 @@
       "done": "Adresserna är ihopslagna",
       "doneDetail_one": "{{count}} projekt ligger nu på {{name}}.",
       "doneDetail_other": "{{count}} projekt ligger nu på {{name}}.",
-      "failed": "Adresserna kunde inte slås ihop"
+      "failed": "Adresserna kunde inte slås ihop",
+      "intoHousehold": "Den adress du behåller tillhör hushållet — dina renoveringar flyttas dit, och adressen du äger tas bort.",
+      "cannotKeep": "kan inte behållas — då skulle en adress du inte äger tas bort"
     },
     "similar": {
       "prompt": "Du har redan en adress som liknar den här:",

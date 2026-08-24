@@ -279,22 +279,40 @@ export async function linkNewProjectToProperty(
  *
  * Nothing is ever merged automatically; this only produces the question.
  */
-export async function findMergeSuggestions(): Promise<PropertyWithProjectCount[][]> {
-  const [properties, profileId] = await Promise.all([
+export interface MergeSuggestion {
+  properties: PropertyWithProjectCount[];
+  /** Whose addresses these are — the card needs it to know what it may offer. */
+  myProfileId: string;
+  /** Addresses the user administers without owning them. */
+  adminPropertyIds: Set<string>;
+}
+
+export async function findMergeSuggestions(): Promise<MergeSuggestion[]> {
+  const [properties, profileId, adminPropertyIds] = await Promise.all([
     listMyPropertiesWithCounts(),
     getMyProfileId(),
+    listAdminPropertyIds(),
   ]);
   if (!profileId) return [];
 
-  // Own addresses only. An address shared to you as admin can be edited but
-  // never merged (`merge_properties` requires ownership of both), and offering
-  // a merge that the database will refuse is worse than not offering it.
-  const mine = properties.filter((p) => p.owner_id === profileId && p.liveProjectCount > 0);
-  if (mine.length < 2) return [];
-  return groupSimilarAddresses(mine);
+  // Owned OR administered — deliberately including the household case the plan
+  // calls the epic's most dangerous bug (§11.3): the partner who was invited as
+  // an admin is the only person who can SEE both halves of the split home, so
+  // she has to be the one who is offered the fix. Viewers are excluded: read
+  // access is not a mandate to reshape someone's address.
+  const manageable = properties.filter(
+    (p) => p.liveProjectCount > 0 && (p.owner_id === profileId || adminPropertyIds.has(p.id))
+  );
+  if (manageable.length < 2) return [];
+
+  return groupSimilarAddresses(manageable).map((group) => ({
+    properties: group,
+    myProfileId: profileId,
+    adminPropertyIds,
+  }));
 }
 
-async function getMyProfileId(): Promise<string | null> {
+export async function getMyProfileId(): Promise<string | null> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
   const { data } = await supabase
@@ -305,12 +323,29 @@ async function getMyProfileId(): Promise<string | null> {
   return data?.id ?? null;
 }
 
-/** The group this address belongs to, or null when it looks unique. */
-export async function findMergeGroupFor(
-  propertyId: string
-): Promise<PropertyWithProjectCount[] | null> {
+/** Addresses the signed-in user administers (accepted admin membership). */
+async function listAdminPropertyIds(): Promise<Set<string>> {
+  const profileId = await getMyProfileId();
+  if (!profileId) return new Set();
+
+  const { data, error } = await supabase
+    .from('property_members')
+    .select('property_id')
+    .eq('member_profile_id', profileId)
+    .eq('role', 'admin')
+    .not('accepted_at', 'is', null);
+
+  if (error) {
+    console.error('listAdminPropertyIds failed:', error);
+    return new Set();
+  }
+  return new Set((data ?? []).map((row) => row.property_id));
+}
+
+/** The suggestion this address belongs to, or null when it looks unique. */
+export async function findMergeGroupFor(propertyId: string): Promise<MergeSuggestion | null> {
   const groups = await findMergeSuggestions();
-  return groups.find((g) => g.some((p) => p.id === propertyId)) ?? null;
+  return groups.find((g) => g.properties.some((p) => p.id === propertyId)) ?? null;
 }
 
 /**

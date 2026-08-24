@@ -145,11 +145,20 @@ export async function acceptPropertyInvitation(
   return { ok: true, propertyId: data as string };
 }
 
-/** Is the signed-in user the owner of this property? Used only to shape the UI. */
-export async function isPropertyOwner(propertyId: string): Promise<boolean> {
-  const { data, error } = await supabase.rpc('user_owns_property', { p_property_id: propertyId });
+/**
+ * May the signed-in user act on this address — owner or household admin?
+ *
+ * The role matrix (plan §4.1) gives an admin full rights over the CONTENT,
+ * including inviting people; only the irreversible acts (delete the address,
+ * remove the owner) are owner-exclusive, and those are enforced in the
+ * database. Shapes the UI only.
+ */
+export async function canManageProperty(propertyId: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc('user_can_manage_property', {
+    p_property_id: propertyId,
+  });
   if (error) {
-    console.error('isPropertyOwner failed:', error);
+    console.error('canManageProperty failed:', error);
     return false;
   }
   return data === true;

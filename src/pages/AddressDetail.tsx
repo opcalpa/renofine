@@ -29,7 +29,7 @@ import { PropertyMembersSection } from '@/components/property/PropertyMembersSec
 import { MergeSuggestionCard } from '@/components/property/MergeSuggestionCard';
 import { PlanThumbnail } from '@/components/property/PlanThumbnail';
 import { fetchPlanPreviews, type PlanPreview } from '@/services/planInheritance';
-import { isPropertyOwner } from '@/services/propertyMemberService';
+import { canManageProperty } from '@/services/propertyMemberService';
 import { Button } from '@/components/ui/button';
 import { isDemoProject } from '@/services/demoProjectService';
 
@@ -98,8 +98,11 @@ export default function AddressDetail() {
         return;
       }
       setProperty(prop);
-      isPropertyOwner(prop.id).then((owner) => {
-        if (!cancelled) setCanManage(owner);
+      // Owner OR household admin: the plan's role matrix lets an admin invite
+      // and reshape content; only deleting the address is owner-exclusive, and
+      // the database is what enforces that.
+      canManageProperty(prop.id).then((allowed) => {
+        if (!cancelled) setCanManage(allowed);
       });
 
       const { data: rows } = await supabase

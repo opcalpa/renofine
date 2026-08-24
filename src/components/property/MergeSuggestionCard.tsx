@@ -35,12 +35,13 @@ import {
   mergeProperties,
   propertyLabel,
   hasRealAddress,
+  type MergeSuggestion,
   type PropertyWithProjectCount,
 } from '@/services/propertyService';
 
 interface Props {
   propertyId: string;
-  /** Owner-only: the database refuses a merge from anyone else. */
+  /** Owner or household admin — viewers never see this. */
   canMerge: boolean;
   onMerged: (survivingPropertyId: string) => void;
 }
@@ -56,12 +57,28 @@ function completeness(p: PropertyWithProjectCount): number {
 }
 
 /**
+ * Which addresses may survive a merge.
+ *
+ * Every address that does NOT survive is deleted, and deleting one is the
+ * owner's call alone (`merge_properties` enforces it). So an address the user
+ * only administers can be kept, never merged away — which is exactly the
+ * household case: the partner folds HER duplicate into the shared address.
+ */
+function keeperOptions(suggestion: MergeSuggestion): PropertyWithProjectCount[] {
+  const mine = (p: PropertyWithProjectCount) => p.owner_id === suggestion.myProfileId;
+  return suggestion.properties.filter((candidate) =>
+    suggestion.properties.every((other) => other.id === candidate.id || mine(other))
+  );
+}
+
+/**
  * Which address should survive by default: the most completely filled in one.
  * It is both the likelier spelling ("Storgatan 5" over "Storg. 5") and the one
  * that will collect future projects, since grouping reads the address fields.
  * Length breaks the last tie for the same reason — an abbreviation is short.
  */
-function defaultKeeper(group: PropertyWithProjectCount[]): string {
+function defaultKeeper(group: PropertyWithProjectCount[]): string | null {
+  if (group.length === 0) return null;
   const ranked = [...group].sort((a, b) => {
     const complete = completeness(b) - completeness(a);
     if (complete !== 0) return complete;
@@ -77,7 +94,7 @@ export function MergeSuggestionCard({ propertyId, canMerge, onMerged }: Props) {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const [group, setGroup] = useState<PropertyWithProjectCount[] | null>(null);
+  const [suggestion, setSuggestion] = useState<MergeSuggestion | null>(null);
   const [keeperId, setKeeperId] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [merging, setMerging] = useState(false);
@@ -87,19 +104,24 @@ export function MergeSuggestionCard({ propertyId, canMerge, onMerged }: Props) {
     let cancelled = false;
     findMergeGroupFor(propertyId).then((found) => {
       if (cancelled) return;
-      setGroup(found);
-      setKeeperId(found ? defaultKeeper(found) : null);
+      setSuggestion(found);
+      setKeeperId(found ? defaultKeeper(keeperOptions(found)) : null);
     });
     return () => {
       cancelled = true;
     };
   }, [propertyId, canMerge]);
 
-  if (!canMerge || !group || group.length < 2 || !keeperId) return null;
+  if (!canMerge || !suggestion || suggestion.properties.length < 2 || !keeperId) return null;
+
+  const group = suggestion.properties;
+  const options = keeperOptions(suggestion);
+  if (options.length === 0) return null;
 
   const keeper = group.find((p) => p.id === keeperId);
   const losers = group.filter((p) => p.id !== keeperId);
   const movingProjects = losers.reduce((sum, p) => sum + p.liveProjectCount, 0);
+  const keeperIsMine = keeper?.owner_id === suggestion.myProfileId;
 
   const handleMerge = async () => {
     if (!keeper) return;
@@ -150,6 +172,14 @@ export function MergeSuggestionCard({ propertyId, canMerge, onMerged }: Props) {
               'Renoveringarna ligger på var sin adress, så ingen av sidorna visar hela summan för bostaden. Välj vilken adress som ska behållas — projekten flyttas dit.'
             )}
           </p>
+          {!keeperIsMine && (
+            <p className="mt-1 text-sm text-muted-foreground">
+              {t(
+                'addresses.merge.intoHousehold',
+                'Den adress du behåller tillhör hushållet — dina renoveringar flyttas dit, och adressen du äger tas bort.'
+              )}
+            </p>
+          )}
         </div>
       </header>
 
@@ -158,22 +188,38 @@ export function MergeSuggestionCard({ propertyId, canMerge, onMerged }: Props) {
         onValueChange={setKeeperId}
         className="mt-3 space-y-1.5"
       >
-        {group.map((p) => (
-          <div key={p.id} className="flex items-center gap-2.5 rounded-lg bg-background/70 px-3 py-2">
-            <RadioGroupItem value={p.id} id={`keep-${p.id}`} />
-            <Label htmlFor={`keep-${p.id}`} className="min-w-0 flex-1 cursor-pointer font-normal">
-              <span className="flex items-center gap-1.5 truncate text-sm font-medium">
-                <MapPin className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                {propertyLabel(p)}
-              </span>
-              <span className="mt-0.5 block text-xs text-muted-foreground">
-                {t('addresses.list.projectCount', { count: p.liveProjectCount })}
-                {!hasRealAddress(p) && <> · {t('addresses.noAddressSet', 'ingen adress angiven')}</>}
-                {p.id === propertyId && <> · {t('addresses.merge.thisPage', 'sidan du är på')}</>}
-              </span>
-            </Label>
-          </div>
-        ))}
+        {group.map((p) => {
+          const selectable = options.some((o) => o.id === p.id);
+          return (
+            <div key={p.id} className="flex items-center gap-2.5 rounded-lg bg-background/70 px-3 py-2">
+              <RadioGroupItem value={p.id} id={`keep-${p.id}`} disabled={!selectable} />
+              <Label
+                htmlFor={`keep-${p.id}`}
+                className={`min-w-0 flex-1 font-normal ${selectable ? 'cursor-pointer' : 'cursor-not-allowed opacity-70'}`}
+              >
+                <span className="flex items-center gap-1.5 truncate text-sm font-medium">
+                  <MapPin className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  {propertyLabel(p)}
+                </span>
+                <span className="mt-0.5 block text-xs text-muted-foreground">
+                  {t('addresses.list.projectCount', { count: p.liveProjectCount })}
+                  {!hasRealAddress(p) && <> · {t('addresses.noAddressSet', 'ingen adress angiven')}</>}
+                  {p.id === propertyId && <> · {t('addresses.merge.thisPage', 'sidan du är på')}</>}
+                  {!selectable && (
+                    <>
+                      {' '}
+                      ·{' '}
+                      {t(
+                        'addresses.merge.cannotKeep',
+                        'kan inte behållas — då skulle en adress du inte äger tas bort'
+                      )}
+                    </>
+                  )}
+                </span>
+              </Label>
+            </div>
+          );
+        })}
       </RadioGroup>
 
       <div className="mt-3 flex items-center justify-end">

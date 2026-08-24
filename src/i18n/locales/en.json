@@ -7894,7 +7894,9 @@
       "done": "The addresses are merged",
       "doneDetail_one": "{{count}} project is now on {{name}}.",
       "doneDetail_other": "{{count}} projects are now on {{name}}.",
-      "failed": "The addresses could not be merged"
+      "failed": "The addresses could not be merged",
+      "intoHousehold": "The address you keep belongs to the household — your renovations move there, and the address you own is removed.",
+      "cannotKeep": "cannot be kept — that would remove an address you do not own"
     },
     "similar": {
       "prompt": "You already have an address like this one:",
