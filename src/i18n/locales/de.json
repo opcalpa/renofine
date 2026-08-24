@@ -7839,7 +7839,8 @@
       "singleProjectHint": "Die nächste Renovierung in derselben Wohnung kann hier verknüpft werden — dann wird alles automatisch zusammengerechnet.",
       "projectCount_one": "{{count}} Renovierung an dieser Adresse",
       "projectCount_other": "{{count}} Renovierungen an dieser Adresse",
-      "noAddressYet": "Keine Adresse angegeben — der Name stammt aus dem Projekt."
+      "noAddressYet": "Keine Adresse angegeben — der Name stammt aus dem Projekt.",
+      "addAddressPrompt": "Fügen Sie die Straßenadresse hinzu, dann findet die nächste Renovierung von selbst hierher."
     },
     "list": {
       "title": "Ihre Adressen",
@@ -7847,6 +7848,14 @@
       "projectCount_one": "{{count}} Projekt",
       "projectCount_other": "{{count}} Projekte"
     },
-    "noAddressSet": "keine Adresse angegeben"
+    "noAddressSet": "keine Adresse angegeben",
+    "edit": {
+      "title": "Adresse bearbeiten",
+      "description": "Diese Angaben halten alle Renovierungen dieses Zuhauses zusammen.",
+      "name": "Name",
+      "nameHint": "Wie das Zuhause in der App heißt — z. B. \"Zuhause\" oder \"Ferienhaus\".",
+      "saved": "Adresse gespeichert",
+      "failed": "Adresse konnte nicht gespeichert werden"
+    }
   }
 }

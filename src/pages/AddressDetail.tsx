@@ -12,7 +12,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Home, MapPin, CalendarDays } from 'lucide-react';
+import { ArrowLeft, Home, MapPin, CalendarDays, Pencil } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { AppHeader } from '@/components/AppHeader';
 import { PageLoadingSkeleton } from '@/components/ui/skeleton-screens';
@@ -24,6 +24,8 @@ import { useTaxDeductionVisible } from '@/hooks/useTaxDeduction';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { useUserRole } from '@/hooks/useUserRole';
 import { propertyLabel, hasRealAddress, type PropertyRow } from '@/services/propertyService';
+import { EditPropertyDialog } from '@/components/property/EditPropertyDialog';
+import { Button } from '@/components/ui/button';
 import { isDemoProject } from '@/services/demoProjectService';
 
 interface AddressProject {
@@ -50,6 +52,8 @@ export default function AddressDetail() {
   const [rollup, setRollup] = useState<SpendRollup | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     if (!propertyId) return;
@@ -103,7 +107,7 @@ export default function AddressDetail() {
     return () => {
       cancelled = true;
     };
-  }, [propertyId, user?.id]);
+  }, [propertyId, user?.id, reloadKey]);
 
   // Projects on one address are realistically in one currency; take it from the
   // newest rather than inventing a mixed-currency sum.
@@ -185,7 +189,32 @@ export default function AddressDetail() {
               {t('addresses.detail.projectCount', { count: projects.length })}
             </p>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="ml-auto shrink-0 print:hidden"
+            onClick={() => setEditOpen(true)}
+          >
+            <Pencil className="mr-1.5 h-3.5 w-3.5" />
+            {t('addresses.edit.title', 'Redigera adress')}
+          </Button>
         </header>
+
+        {!hasRealAddress(property) && (
+          <p className="rounded-lg border border-dashed px-4 py-3 text-sm text-muted-foreground print:hidden">
+            {t(
+              'addresses.detail.addAddressPrompt',
+              'Lägg till gatuadressen så hittar nästa renovering hit av sig själv.'
+            )}
+          </p>
+        )}
+
+        <EditPropertyDialog
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          property={property}
+          onSaved={() => setReloadKey((k) => k + 1)}
+        />
 
         {rollup && rollup.poCount > 0 && (
           <SpendSummaryPanel

@@ -7829,7 +7829,8 @@
       "singleProjectHint": "Your next renovation in the same home can be linked here — then everything is added up automatically.",
       "projectCount_one": "{{count}} renovation at this address",
       "projectCount_other": "{{count}} renovations at this address",
-      "noAddressYet": "No address set — the name comes from the project."
+      "noAddressYet": "No address set — the name comes from the project.",
+      "addAddressPrompt": "Add the street address and your next renovation will find its way here on its own."
     },
     "list": {
       "title": "Your addresses",
@@ -7837,6 +7838,14 @@
       "projectCount_one": "{{count}} project",
       "projectCount_other": "{{count}} projects"
     },
-    "noAddressSet": "no address set"
+    "noAddressSet": "no address set",
+    "edit": {
+      "title": "Edit address",
+      "description": "These details hold together every renovation in this home.",
+      "name": "Name",
+      "nameHint": "What the home is called in the app — e.g. \"Home\" or \"The cabin\".",
+      "saved": "Address saved",
+      "failed": "Could not save the address"
+    }
   }
 }

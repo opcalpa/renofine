@@ -7839,7 +7839,8 @@
       "singleProjectHint": "Votre prochaine rénovation dans le même logement pourra être rattachée ici — tout sera alors additionné automatiquement.",
       "projectCount_one": "{{count}} rénovation à cette adresse",
       "projectCount_other": "{{count}} rénovations à cette adresse",
-      "noAddressYet": "Aucune adresse indiquée — le nom provient du projet."
+      "noAddressYet": "Aucune adresse indiquée — le nom provient du projet.",
+      "addAddressPrompt": "Ajoutez l'adresse et votre prochaine rénovation viendra s'y rattacher automatiquement."
     },
     "list": {
       "title": "Vos adresses",
@@ -7847,6 +7848,14 @@
       "projectCount_one": "{{count}} projet",
       "projectCount_other": "{{count}} projets"
     },
-    "noAddressSet": "aucune adresse indiquée"
+    "noAddressSet": "aucune adresse indiquée",
+    "edit": {
+      "title": "Modifier l'adresse",
+      "description": "Ces informations relient toutes les rénovations de ce logement.",
+      "name": "Nom",
+      "nameHint": "Le nom du logement dans l'application — par ex. \"Maison\" ou \"Le chalet\".",
+      "saved": "Adresse enregistrée",
+      "failed": "Impossible d'enregistrer l'adresse"
+    }
   }
 }

@@ -164,6 +164,46 @@ export async function createProperty(
   return data.id;
 }
 
+export interface UpdatePropertyInput {
+  name: string;
+  address: string | null;
+  postalCode: string | null;
+  city: string | null;
+  propertyDesignation: string | null;
+}
+
+/**
+ * Edit an address's own details.
+ *
+ * Needed because the backfill named address-less properties after their
+ * project ("Kitchen!"), and until now nothing in the app could correct that.
+ * It matters beyond cosmetics: `propertyAddressKey` reads the PROPERTY's
+ * address, so an address left blank here can never group future projects.
+ *
+ * RLS decides who may write (owner or admin member) — no client-side check.
+ */
+export async function updateProperty(
+  propertyId: string,
+  input: UpdatePropertyInput
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('properties')
+    .update({
+      name: input.name.trim(),
+      address: input.address?.trim() || null,
+      postal_code: input.postalCode?.trim() || null,
+      city: input.city?.trim() || null,
+      property_designation: input.propertyDesignation?.trim() || null,
+    })
+    .eq('id', propertyId);
+
+  if (error) {
+    console.error('updateProperty failed:', error);
+    return false;
+  }
+  return true;
+}
+
 /**
  * Find the property this project belongs to, creating one when nothing matches.
  *

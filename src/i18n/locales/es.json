@@ -7839,7 +7839,8 @@
       "singleProjectHint": "Tu próxima reforma en la misma vivienda puede vincularse aquí — entonces todo se suma automáticamente.",
       "projectCount_one": "{{count}} reforma en esta dirección",
       "projectCount_other": "{{count}} reformas en esta dirección",
-      "noAddressYet": "Sin dirección — el nombre proviene del proyecto."
+      "noAddressYet": "Sin dirección — el nombre proviene del proyecto.",
+      "addAddressPrompt": "Añade la dirección y tu próxima reforma se vinculará aquí automáticamente."
     },
     "list": {
       "title": "Tus direcciones",
@@ -7847,6 +7848,14 @@
       "projectCount_one": "{{count}} proyecto",
       "projectCount_other": "{{count}} proyectos"
     },
-    "noAddressSet": "sin dirección"
+    "noAddressSet": "sin dirección",
+    "edit": {
+      "title": "Editar dirección",
+      "description": "Estos datos mantienen unidas todas las reformas de esta vivienda.",
+      "name": "Nombre",
+      "nameHint": "Cómo se llama la vivienda en la app — p. ej. \"Casa\" o \"La cabaña\".",
+      "saved": "Dirección guardada",
+      "failed": "No se pudo guardar la dirección"
+    }
   }
 }

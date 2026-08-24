@@ -57,6 +57,36 @@ test.describe('Addresses', () => {
     await expect(page).toHaveURL(/\/start/);
   });
 
+  test('the edit dialog opens prefilled and cancels without saving', async ({ page }) => {
+    await login(page);
+    await page.goto('/tips');
+    await page.locator('header').getByText(/^Start$/i).first().click();
+    await expect(page).toHaveURL(/\/start/);
+    await page.waitForLoadState('networkidle');
+
+    const addressLinks = page.locator('a[href^="/addresses/"]');
+    if ((await addressLinks.count()) === 0) {
+      test.skip(true, 'No addresses with live projects on this account');
+      return;
+    }
+    await addressLinks.first().click();
+    await expect(
+      page.getByRole('heading', { name: /Renoveringar över tid|Renovations over time/i })
+    ).toBeVisible();
+
+    await page.getByRole('button', { name: /Redigera adress|Edit address/i }).click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+
+    // The name field must carry the property's current name, not be blank.
+    await expect(dialog.locator('#prop-name')).not.toHaveValue('');
+    await page.screenshot({ path: `${SHOTS}/04-edit.png`, fullPage: true });
+
+    // Cancel only — this runs against a real account and must not mutate it.
+    await dialog.getByRole('button', { name: /Avbryt|Cancel/i }).click();
+    await expect(dialog).not.toBeVisible();
+  });
+
   test('an unknown address id shows the not-found state instead of crashing', async ({ page }) => {
     await login(page);
     await page.goto('/addresses/00000000-0000-0000-0000-0000000000ff');

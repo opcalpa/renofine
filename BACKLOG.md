@@ -3176,7 +3176,7 @@ Hänger ihop med [[folder-ingest-epic]].
 
 ---
 id: property-address-editing
-status: todo
+status: done
 priority: P2
 tags: [adresser, ux, uppfoljning-s3]
 created: 2026-08-24
@@ -3207,5 +3207,16 @@ Förslag (ej byggt, kräver Carls ok på omfattning):
 2. Ev. också: när ett projekt får en adress i projektinställningar och dess
    property saknar adress → erbjud "använd även som adressens uppgifter".
    Aldrig tyst — samma princip som retro-frågan.
+
+**LEVERERAT 2026-08-24:** förslag 1 byggt — `EditPropertyDialog` + "Redigera adress"
+på `/addresses/:id`, `updateProperty()` i propertyService. Namnet följer gatuadressen
+tills användaren rör namnfältet själv. Saknas adress visas en uppmaning som förklarar
+VARFÖR den spelar roll ("nästa renovering hittar hit av sig själv"). Skrivvägen
+RLS-verifierad som riktig ägarroll (rullad tillbaka). e2e: dialogen öppnas förifylld
+och avbryts utan att mutera kontot.
+
+Förslag 2 (projektadress → propertyns uppgifter) EJ byggt — write-through-beslutet i
+planens §6 säger att projektets adressfält är sanningen för ROT/offerter i v1, och
+adress-redigeringen täcker behovet. Tas upp igen om drift visar sig i praktiken.
 
 Hänger ihop med [[property-entity-epic]] (S2/S3-uppföljning).

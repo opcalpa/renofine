@@ -7828,7 +7828,8 @@
       "singleProjectHint": "Nästa renovering i samma bostad kan kopplas hit — då räknas allt ihop automatiskt.",
       "projectCount_one": "{{count}} renovering på den här adressen",
       "projectCount_other": "{{count}} renoveringar på den här adressen",
-      "noAddressYet": "Ingen adress angiven — namnet kommer från projektet."
+      "noAddressYet": "Ingen adress angiven — namnet kommer från projektet.",
+      "addAddressPrompt": "Lägg till gatuadressen så hittar nästa renovering hit av sig själv."
     },
     "list": {
       "title": "Dina adresser",
@@ -7836,6 +7837,14 @@
       "projectCount_one": "{{count}} projekt",
       "projectCount_other": "{{count}} projekt"
     },
-    "noAddressSet": "ingen adress angiven"
+    "noAddressSet": "ingen adress angiven",
+    "edit": {
+      "title": "Redigera adress",
+      "description": "Uppgifterna här håller ihop bostadens alla renoveringar.",
+      "name": "Namn",
+      "nameHint": "Vad bostaden kallas i appen — t.ex. \"Hemma\" eller \"Sommarstugan\".",
+      "saved": "Adressen är sparad",
+      "failed": "Kunde inte spara adressen"
+    }
   }
 }
