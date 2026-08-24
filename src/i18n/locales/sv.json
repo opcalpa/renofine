@@ -1551,7 +1551,10 @@
     "instructions": "Instruktioner",
     "materialCalculation": "Materialkalkyl",
     "comments": "Kommentarer",
-    "useComputedArea": "Använd beräknad yta"
+    "useComputedArea": "Använd beräknad yta",
+    "tasksColumn": "Arbeten",
+    "purchasesColumn": "Inköp",
+    "andMore": "+{{count}} till"
   },
   "profile": {
     "title": "Profilinställningar",

@@ -20,7 +20,9 @@ export type FieldKey =
   | "ceilingColor"
   | "trimColor"
   | "wallArea"
-  | "paintEstimate";
+  | "paintEstimate"
+  | "tasks"
+  | "purchases";
 
 // Fields that support inline editing
 export type EditableFieldKey =
@@ -65,6 +67,9 @@ export const FIELD_DEFINITIONS: FieldDefinition[] = [
   { key: "trimColor", labelKey: "rooms.trimColor", editable: true },
   { key: "wallArea", labelKey: "rooms.wallArea", editable: false },
   { key: "paintEstimate", labelKey: "rooms.paintEstimate", editable: false },
+  // Relations — read-only counts, so a room's actual use is visible from the list.
+  { key: "tasks", labelKey: "rooms.tasksColumn", editable: false },
+  { key: "purchases", labelKey: "rooms.purchasesColumn", editable: false },
 ];
 
 export const DEFAULT_VISIBLE_FIELDS: FieldKey[] = ["area", "status", "created"];

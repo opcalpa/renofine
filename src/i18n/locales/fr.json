@@ -3840,7 +3840,10 @@
     "instructions": "Instructions",
     "materialCalculation": "Calcul des matériaux",
     "comments": "Commentaires",
-    "useComputedArea": "Utiliser la surface calculée"
+    "useComputedArea": "Utiliser la surface calculée",
+    "tasksColumn": "Travaux",
+    "purchasesColumn": "Achats",
+    "andMore": "+{{count}} de plus"
   },
   "saveTemplateDialog": {
     "bathroom": "Salle de bain",

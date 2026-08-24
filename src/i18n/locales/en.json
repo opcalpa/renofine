@@ -1551,7 +1551,10 @@
     "instructions": "Instructions",
     "materialCalculation": "Material calculation",
     "comments": "Comments",
-    "useComputedArea": "Use calculated area"
+    "useComputedArea": "Use calculated area",
+    "tasksColumn": "Tasks",
+    "purchasesColumn": "Purchases",
+    "andMore": "+{{count}} more"
   },
   "spacePlanner": {
     "title": "Area",

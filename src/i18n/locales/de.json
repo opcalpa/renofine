@@ -3840,7 +3840,10 @@
     "instructions": "Anweisungen",
     "materialCalculation": "Materialberechnung",
     "comments": "Kommentare",
-    "useComputedArea": "Berechnete Fläche verwenden"
+    "useComputedArea": "Berechnete Fläche verwenden",
+    "tasksColumn": "Aufgaben",
+    "purchasesColumn": "Einkäufe",
+    "andMore": "+{{count}} weitere"
   },
   "saveTemplateDialog": {
     "bathroom": "Badezimmer",

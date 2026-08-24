@@ -524,6 +524,7 @@ export function RoomsListV2({
         ) : isDesktop && viewMode === "table" ? (
           <RoomsTableView
             rooms={filteredRooms}
+            projectId={projectId}
             visibleFields={Array.from(visibleFields)}
             fieldDefinitions={FIELD_DEFINITIONS}
             selectedRoomIds={selectedRoomIds}

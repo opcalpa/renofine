@@ -29,9 +29,12 @@ import type { CeilingSpec, JoinerySpec } from "../room-details/types";
 import { computeWallArea, computePaintEstimate } from "./computations";
 import { useRoomInlineEdit } from "./useRoomInlineEdit";
 import type { Room, FieldKey, EditableFieldKey, FieldDefinition } from "./types";
+import { useRoomRelations } from "./useRoomRelations";
 
 interface RoomsTableViewProps {
   rooms: Room[];
+  /** Enables the Arbeten/Inköp relation columns. */
+  projectId?: string;
   visibleFields: FieldKey[];
   fieldDefinitions: FieldDefinition[];
   selectedRoomIds: Set<string>;
@@ -49,6 +52,7 @@ interface RoomsTableViewProps {
 
 export function RoomsTableView({
   rooms,
+  projectId,
   visibleFields,
   fieldDefinitions,
   selectedRoomIds,
@@ -64,6 +68,7 @@ export function RoomsTableView({
 }: RoomsTableViewProps) {
   const { t } = useTranslation();
   const ms = useMeasurement();
+  const relations = useRoomRelations(projectId);
   const {
     editingCell,
     editValue,
@@ -316,6 +321,32 @@ export function RoomsTableView({
     );
   };
 
+  /**
+   * How many tasks / purchases hang off this room, with their names in the
+   * tooltip. A zero is shown as a dash, so an unused (often duplicated) room
+   * stands out at a glance.
+   */
+  const renderRelationCell = (room: Room, field: "tasks" | "purchases") => {
+    const entry = relations.get(room.id);
+    const count = field === "tasks" ? entry?.taskCount ?? 0 : entry?.purchaseCount ?? 0;
+    if (count === 0) return <span className="text-xs text-muted-foreground">{"\u2014"}</span>;
+
+    const names = field === "tasks" ? entry?.taskTitles ?? [] : entry?.purchaseNames ?? [];
+    const more = count - names.length;
+    const tooltip = [
+      ...names,
+      more > 0 ? t("rooms.andMore", "+{{count}} till", { count: more }) : null,
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    return (
+      <Badge variant="secondary" className="text-xs font-normal" title={tooltip || undefined}>
+        {count}
+      </Badge>
+    );
+  };
+
   const renderCell = (room: Room, field: FieldKey) => {
     // Select-based editable fields
     if (field === "status") {
@@ -332,6 +363,10 @@ export function RoomsTableView({
     const def = fieldDefinitions.find((d) => d.key === field);
     if (def?.editable) {
       return renderEditableTextCell(room, field as EditableFieldKey);
+    }
+
+    if (field === "tasks" || field === "purchases") {
+      return renderRelationCell(room, field);
     }
 
     // Read-only fields

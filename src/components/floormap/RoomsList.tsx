@@ -485,6 +485,7 @@ export const RoomsList = ({ projectId, rooms: externalRooms, onRoomClick, onAddR
       ) : isDesktop && viewMode === 'table' ? (
         <RoomsTableView
           rooms={filteredRooms}
+          projectId={projectId}
           visibleFields={visibleFieldsArray}
           fieldDefinitions={FIELD_DEFINITIONS}
           selectedRoomIds={selectedRoomIds}
