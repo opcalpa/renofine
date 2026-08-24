@@ -14,6 +14,7 @@ import { Home, ChevronRight } from 'lucide-react';
 import {
   listMyPropertiesWithCounts,
   propertyLabel,
+  hasRealAddress,
   type PropertyWithProjectCount,
 } from '@/services/propertyService';
 
@@ -55,9 +56,10 @@ export function AddressListSection() {
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-medium">{propertyLabel(a)}</span>
                 <span className="block text-xs text-muted-foreground">
-                  {t('addresses.list.projectCount', '{{count}} projekt', {
-                    count: a.liveProjectCount,
-                  })}
+                  {t('addresses.list.projectCount', { count: a.liveProjectCount })}
+                  {!hasRealAddress(a) && (
+                    <> · {t('addresses.noAddressSet', 'ingen adress angiven')}</>
+                  )}
                 </span>
               </span>
               <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />

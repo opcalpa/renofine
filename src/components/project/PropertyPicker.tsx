@@ -91,9 +91,7 @@ export function PropertyPicker({
               {propertyLabel(p)}
               {p.liveProjectCount > 1 && (
                 <span className="ml-2 text-xs text-muted-foreground">
-                  {t('addresses.picker.projectCount', '{{count}} projekt', {
-                    count: p.liveProjectCount,
-                  })}
+                  {t('addresses.picker.projectCount', { count: p.liveProjectCount })}
                 </span>
               )}
             </SelectItem>

@@ -3173,3 +3173,39 @@ på den vägen.
    produktfråga till Carl innan bygge.
 
 Hänger ihop med [[folder-ingest-epic]].
+
+---
+id: property-address-editing
+status: todo
+priority: P2
+tags: [adresser, ux, uppfoljning-s3]
+created: 2026-08-24
+---
+## En adress går inte att redigera — bara projektets adressfält
+
+Upptäckt vid live-verifiering av S3 2026-08-24 (inloggat Home-konto).
+
+**Symptom:** ett projekt utan adress fick vid backfillen en property namngiven
+efter PROJEKTET. På /start läser det därför "Dina adresser → Kitchen!", vilket
+ser trasigt ut. Åtgärdat kortsiktigt: UI:t säger nu ärligt "ingen adress
+angiven" i stället för att presentera ett projektnamn som en adress.
+
+**Den verkliga luckan:** `properties.address/postal_code/city/property_designation`
+kan inte redigeras någonstans i appen. Write-through går bara ENA vägen
+(property → projekt vid val i PropertyPicker). Skriver användaren en adress i
+projektinställningar hamnar den bara på `projects.address`; propertyn förblir
+namnlös-med-projektnamn för alltid.
+
+Följd: den som fyller i sin adress i efterhand får ingen adress-gruppering —
+nästa projekt matchar inte, eftersom `propertyAddressKey` läser propertyns
+adress.
+
+Förslag (ej byggt, kräver Carls ok på omfattning):
+1. Minsta fix: en "Redigera adress"-knapp på `/addresses/:id` (namn, gata,
+   postnr, ort, fastighetsbeteckning). Kräver bara UPDATE på properties —
+   RLS-policyn finns redan (owner + admin).
+2. Ev. också: när ett projekt får en adress i projektinställningar och dess
+   property saknar adress → erbjud "använd även som adressens uppgifter".
+   Aldrig tyst — samma princip som retro-frågan.
+
+Hänger ihop med [[property-entity-epic]] (S2/S3-uppföljning).

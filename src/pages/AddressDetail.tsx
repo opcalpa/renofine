@@ -23,7 +23,7 @@ import { normalizeStatus, STATUS_META } from '@/lib/projectStatus';
 import { useTaxDeductionVisible } from '@/hooks/useTaxDeduction';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { useUserRole } from '@/hooks/useUserRole';
-import { propertyLabel, type PropertyRow } from '@/services/propertyService';
+import { propertyLabel, hasRealAddress, type PropertyRow } from '@/services/propertyService';
 import { isDemoProject } from '@/services/demoProjectService';
 
 interface AddressProject {
@@ -166,17 +166,23 @@ export default function AddressDetail() {
           </span>
           <div className="min-w-0">
             <h1 className="text-2xl font-semibold truncate">{property.name}</h1>
-            {(property.address || property.city) && (
+            {hasRealAddress(property) || property.city ? (
               <p className="mt-0.5 flex items-center gap-1.5 text-sm text-muted-foreground">
                 <MapPin className="h-3.5 w-3.5 shrink-0" />
                 {propertyLabel(property)}
                 {property.postal_code && <span>· {property.postal_code}</span>}
               </p>
+            ) : (
+              <p className="mt-0.5 flex items-center gap-1.5 text-sm text-muted-foreground">
+                <MapPin className="h-3.5 w-3.5 shrink-0" />
+                {t(
+                  'addresses.detail.noAddressYet',
+                  'Ingen adress angiven — namnet kommer från projektet.'
+                )}
+              </p>
             )}
             <p className="mt-1 text-sm text-muted-foreground">
-              {t('addresses.detail.projectCount', '{{count}} renovering(ar) på den här adressen', {
-                count: projects.length,
-              })}
+              {t('addresses.detail.projectCount', { count: projects.length })}
             </p>
           </div>
         </header>

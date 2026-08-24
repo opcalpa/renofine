@@ -64,6 +64,18 @@ export function propertyLabel(p: Pick<PropertyRow, 'name' | 'address' | 'city'>)
 }
 
 /**
+ * True when the property actually carries a street address.
+ *
+ * The backfill named address-less properties after their project, so a home can
+ * legitimately be labelled "Kitchen!". That is honest about sparse data but
+ * reads as broken unless the UI says so — callers use this to add "no address
+ * set" rather than presenting a project name as if it were an address.
+ */
+export function hasRealAddress(p: Pick<PropertyRow, 'address'>): boolean {
+  return Boolean(p.address && p.address.trim());
+}
+
+/**
  * Every property the signed-in user may write to. RLS decides the set, so this
  * already includes properties shared to them once membership goes live (S4) —
  * no client-side owner filter on purpose.

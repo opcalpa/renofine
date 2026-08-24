@@ -7822,8 +7822,9 @@
     "picker": {
       "label": "Adresse",
       "newAddress": "Neue Adresse",
-      "projectCount": "{{count}} Projekte",
-      "belongsTo": "Gehört zu Adresse"
+      "belongsTo": "Gehört zu Adresse",
+      "projectCount_one": "{{count}} Projekt",
+      "projectCount_other": "{{count}} Projekte"
     },
     "card": {
       "sharedAddress": "· {{count}} Projekte hier"
@@ -7831,17 +7832,21 @@
     "detail": {
       "notFound": "Adresse nicht gefunden.",
       "backToProjects": "Zurück zu Projekten",
-      "projectCount": "{{count}} Renovierungen an dieser Adresse",
       "summaryTitle": "Alles, was hier investiert wurde",
       "rotNote": "Diese Summe ist eine Grundlage aus Ihren eigenen Dokumenten — Steuerabzüge gelten pro Person und Jahr, nicht pro Immobilie.",
       "timeline": "Renovierungen im Zeitverlauf",
       "noProjects": "Noch keine Projekte an dieser Adresse.",
-      "singleProjectHint": "Die nächste Renovierung in derselben Wohnung kann hier verknüpft werden — dann wird alles automatisch zusammengerechnet."
+      "singleProjectHint": "Die nächste Renovierung in derselben Wohnung kann hier verknüpft werden — dann wird alles automatisch zusammengerechnet.",
+      "projectCount_one": "{{count}} Renovierung an dieser Adresse",
+      "projectCount_other": "{{count}} Renovierungen an dieser Adresse",
+      "noAddressYet": "Keine Adresse angegeben — der Name stammt aus dem Projekt."
     },
     "list": {
       "title": "Ihre Adressen",
       "subtitle": "Alles, was in einem Zuhause gemacht wurde",
-      "projectCount": "{{count}} Projekte"
-    }
+      "projectCount_one": "{{count}} Projekt",
+      "projectCount_other": "{{count}} Projekte"
+    },
+    "noAddressSet": "keine Adresse angegeben"
   }
 }
