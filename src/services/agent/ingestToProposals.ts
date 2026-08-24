@@ -15,10 +15,14 @@ import type { IngestOutcome } from '../ingestProjectFolder';
 import type { ProjectDraft, WorkTypeLabeller } from '../renaidaProjectFlow';
 import { taskTitle } from '../renaidaProjectFlow';
 import { registerSketch } from './sketchRegistry';
+import { matchRoom } from '@/lib/roomMatch';
 
 export interface ExistingProjectContext {
-  /** Rooms already in the project — used to avoid proposing duplicates. */
-  roomNames: string[];
+  /**
+   * Rooms already in the project. Ids matter: an exact match means the draft's
+   * tasks point at the room that EXISTS instead of proposing a duplicate.
+   */
+  existingRooms: { id: string; name: string }[];
 }
 
 interface Options {
@@ -46,8 +50,6 @@ function proposalId(prefix: string, index: number): string {
   return `ingest-${prefix}-${index}`;
 }
 
-const norm = (s: string) => s.trim().toLowerCase();
-
 export function ingestOutcomeToProposals(
   outcome: IngestOutcome,
   context: ExistingProjectContext,
@@ -58,20 +60,39 @@ export function ingestOutcomeToProposals(
   const proposals: AgentProposal[] = [];
 
   // ── Rooms ──────────────────────────────────────────────────────────────
-  // Only rooms the project doesn't already have. Existing ones aren't a
-  // proposal at all — tasks below just reference them by name.
-  const existing = new Set(context.roomNames.map(norm));
-  const newRooms = draft.rooms.filter((r) => r.name.trim() && !existing.has(norm(r.name)));
+  // A room the project already has is not a proposal at all — matched through
+  // roomMatch, so `Badrum 1` folds into `Badrum` and `Gäst-WC` into `Gäst WC`
+  // instead of becoming duplicates of the home the person already described.
+  const existingRooms = context.existingRooms.filter((r) => r.name?.trim());
+  /** Draft room name → the existing room it resolved to (no proposal needed). */
+  const resolvedToExisting = new Map<string, string>();
 
-  newRooms.forEach((room, i) => {
-    const action: ProposalAction = { type: 'create_room', name: room.name.trim() };
-    proposals.push({
-      id: proposalId('room', i),
-      summary: copy.room(room.name.trim()),
-      confidence: room.source?.confidence ?? 0.8,
-      action,
+  let roomIndex = 0;
+  draft.rooms
+    .filter((r) => r.name.trim())
+    .forEach((room) => {
+      const name = room.name.trim();
+      const match = matchRoom(name, existingRooms);
+
+      if (match.exact) {
+        resolvedToExisting.set(name, match.exact.id);
+        return;
+      }
+
+      // Close but not certain (`WC` next to `Gäst WC`): still a new room, with
+      // the candidate carried along so the review page can pre-fill "= existing".
+      const action: ProposalAction = {
+        type: 'create_room',
+        name,
+        ...(match.similar.length === 1 ? { suggestedMergeRoomId: match.similar[0].id } : {}),
+      };
+      proposals.push({
+        id: proposalId('room', roomIndex++),
+        summary: copy.room(name),
+        confidence: room.source?.confidence ?? 0.8,
+        action,
+      });
     });
-  });
 
   // ── Tasks ──────────────────────────────────────────────────────────────
   // roomName is resolved at apply time against rooms created earlier in the
@@ -80,10 +101,14 @@ export function ingestOutcomeToProposals(
     .filter((t) => !t.excluded)
     .forEach((task, i) => {
       const title = taskTitle(task, labelFor);
+      // A task whose room already exists gets the real id here, so it lands on
+      // that room instead of waiting for a create_room that will never come.
+      const roomName = task.roomName?.trim();
+      const existingRoomId = roomName ? resolvedToExisting.get(roomName) : undefined;
       const action: ProposalAction = {
         type: 'create_task',
         title,
-        ...(task.roomName ? { roomName: task.roomName } : {}),
+        ...(existingRoomId ? { roomId: existingRoomId } : roomName ? { roomName } : {}),
       };
       proposals.push({
         id: proposalId('task', i),

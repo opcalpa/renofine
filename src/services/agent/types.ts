@@ -24,7 +24,21 @@ export type ProposalAction =
   | { type: "update_task"; taskId: string; changes: Partial<TaskWritableFields> }
   | { type: "set_progress"; taskId: string; progress: number; status?: string }
   /** Scaffold a room the user named but that doesn't exist yet (empty-project flow). */
-  | { type: "create_room"; name: string }
+  | {
+      type: "create_room";
+      name: string;
+      /**
+       * Import review: an existing room this one probably IS (`WC` next to
+       * `Gäst WC`). Only ever a pre-filled suggestion — set by roomMatch when
+       * it is close but not certain, and confirmed by the person.
+       */
+      suggestedMergeRoomId?: string;
+      /**
+       * Set when the person chose to merge: apply writes nothing and reports
+       * this id, so the batch's tasks land on the room that already exists.
+       */
+      mergeIntoRoomId?: string;
+    }
   /**
    * roomName: the room the task belongs to when it does NOT exist yet — resolved
    * at apply time against rooms created earlier in the same batch (create_room
@@ -147,6 +161,8 @@ export interface AgentProposal {
 
 /** A reversible record of one applied action, used for one-tap undo. */
 export type UndoOp =
+  /** Nothing was written (e.g. a room the person merged into an existing one). */
+  | { kind: "noop" }
   | { kind: "task_fields"; taskId: string; before: { status?: string | null; progress?: number | null; title?: string | null; description?: string | null; due_date?: string | null; start_date?: string | null; finish_date?: string | null; budget?: number | null; priority?: string | null } }
   | { kind: "delete_task"; taskId: string }
   | { kind: "delete_room"; roomId: string }

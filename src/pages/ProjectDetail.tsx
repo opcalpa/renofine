@@ -1109,7 +1109,7 @@ const ProjectDetail = () => {
 
       const proposals = ingestOutcomeToProposals(
         outcome,
-        { roomNames: roomsData.map((r: { name: string }) => r.name) },
+        { existingRooms: roomsData.map((r: { id: string; name: string }) => ({ id: r.id, name: r.name })) },
         {
           labelFor: (wt) => t(`intake.workType.${wt}`, wt),
           copy: {

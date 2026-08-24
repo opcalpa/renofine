@@ -16,6 +16,7 @@ import { floorPlanResultToShapes } from "@/services/aiVisionService";
 import { createPlanInDB, deletePlanFromDB, saveShapesForPlan } from "@/components/floormap/utils/plans";
 import type { ActionableProposal, AgentProposal, UndoOp } from "./types";
 import { isActionable } from "./types";
+import { fullRoomKey } from "@/lib/roomMatch";
 
 export interface CreatedRef {
   type: "task" | "purchase" | "room" | "time";
@@ -119,13 +120,20 @@ async function applyOne(
 
   switch (action.type) {
     case "create_room": {
+      // The person reviewed the import and said this room IS one the project
+      // already has. Write nothing — just make the batch's tasks find it.
+      if (action.mergeIntoRoomId) {
+        createdRoomsByName.set(fullRoomKey(action.name), action.mergeIntoRoomId);
+        return { kind: "noop" };
+      }
+
       const { data, error } = await supabase.from("rooms").insert({
         project_id: projectId,
         name: action.name,
       }).select("id").single();
       if (error || !data) throw new Error(error?.message ?? "Kunde inte skapa rum");
 
-      createdRoomsByName.set(action.name.trim().toLowerCase(), data.id);
+      createdRoomsByName.set(fullRoomKey(action.name), data.id);
       logActivity(projectId, profileId, "renaida_room_create", "room", data.id, action.name, { name: action.name });
       return { kind: "delete_room", roomId: data.id };
     }
@@ -179,8 +187,10 @@ async function applyOne(
     case "create_task": {
       // roomName: room named by the router that didn't exist at routing time —
       // resolve against rooms created earlier in this same batch.
+      // Rooms created (or merged into) earlier in this same batch are keyed by
+      // the roomMatch key, so `Badrum 1` on the task finds the `Badrum` row.
       const resolvedRoomId = action.roomId
-        ?? (action.roomName ? createdRoomsByName.get(action.roomName.trim().toLowerCase()) : undefined);
+        ?? (action.roomName ? createdRoomsByName.get(fullRoomKey(action.roomName)) : undefined);
       const { data, error } = await supabase.from("tasks").insert({
         project_id: projectId,
         room_id: resolvedRoomId ?? null,
@@ -581,6 +591,9 @@ export async function undoProposals(undo: UndoOp[], projectId?: string, undoStac
             budget: op.before.budget ?? null,
             priority: op.before.priority ?? null,
           }).eq("id", op.taskId);
+          break;
+        case "noop":
+          // A merged room wrote nothing, so there is nothing to undo.
           break;
         case "delete_task":
           await supabase.from("tasks").delete().eq("id", op.taskId);

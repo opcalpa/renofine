@@ -23,6 +23,7 @@ import {
   type RecipeEstimationSettings,
   type RecipeRoom,
 } from '@/lib/materialRecipes';
+import { findMergeTarget, matchRoom, preferredRoomName } from '@/lib/roomMatch';
 
 export type ProjectTypeId = 'bathroom' | 'kitchen' | 'laundry' | 'basement' | 'paint' | 'floor' | 'other';
 export type UserType = 'homeowner' | 'contractor';
@@ -866,22 +867,40 @@ export function mergeParseIntoDraft(
     answered: [...draft.answered],
   };
 
-  const roomKey = (name: string) => name.trim().toLowerCase();
-  // Map lowercased name → the canonical display name already in the draft, so a
-  // differently-cased room in a later file ("kök" vs "Kök") folds into the same
-  // room AND its tasks reference the name that actually exists in the room list.
-  const canonical = new Map<string, string>();
-  next.rooms.forEach((r) => canonical.set(roomKey(r.name), r.name));
+  // Folding many files into one draft is where invented rooms came from: an
+  // exact string compare made `Badrum 1` (drawing A), `Badrum 2` (drawing B)
+  // and `Badrum` (the contract) three bathrooms. findMergeTarget merges those
+  // — but never two rooms named by the SAME file, where `Sovrum 1`/`Sovrum 2`
+  // really are two bedrooms.
   const addRoom = (name: string) => {
     const trimmed = name.trim();
-    if (!trimmed || canonical.has(roomKey(trimmed))) return;
-    canonical.set(roomKey(trimmed), trimmed);
+    if (!trimmed) return;
+    const incoming = { name: trimmed, fileName: opts.fileName };
+    const target = findMergeTarget(
+      incoming,
+      next.rooms.map((r) => ({ name: r.name, fileName: r.source?.fileName }))
+    );
+    if (target !== null) {
+      // Keep the cleaner of the two names ("Badrum" over "Badrum 1").
+      const existing = next.rooms[target];
+      const preferred = preferredRoomName(existing.name, trimmed);
+      if (preferred !== existing.name) next.rooms[target] = { ...existing, name: preferred };
+      return;
+    }
     next.rooms.push({ name: trimmed, source });
   };
   parsed.rooms.forEach((r) => addRoom(r.name));
   (parsed.otherSpaces ?? []).forEach((r) => addRoom(r.name));
-  const canonRoom = (name: string | null): string | null =>
-    name == null ? null : canonical.get(roomKey(name)) ?? name.trim();
+  /** Point a task at the room name that actually ended up in the draft. */
+  const canonRoom = (name: string | null): string | null => {
+    if (name == null) return null;
+    const trimmed = name.trim();
+    const hit = matchRoom(
+      trimmed,
+      next.rooms.map((r, i) => ({ id: String(i), name: r.name }))
+    );
+    return hit.exact ? next.rooms[Number(hit.exact.id)].name : trimmed;
+  };
 
   const taskSeen = new Set(next.tasks.map((t) => `${t.workType}:${t.roomName ?? ''}`));
   const addTask = (wt: WorkType, roomName: string | null) => {
