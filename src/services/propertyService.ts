@@ -12,6 +12,7 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
+import { canManageProperty } from './propertyMemberService';
 import { groupSimilarAddresses, looksLikeSameAddress } from '@/lib/addressMatch';
 
 /**
@@ -437,4 +438,37 @@ export async function setResidenceStatus(
     return false;
   }
   return true;
+}
+
+/**
+ * The address this project sits on, IF the person may write to its papers.
+ *
+ * Returns null for a project without an address, and for anyone below
+ * owner/household-admin — the trusted-builder role (S4 insyn) can see a
+ * project's files but never the home's. One engine, so "may I move this
+ * document to the home?" is answered the same way wherever it is asked.
+ */
+export async function getManageablePropertyForProject(
+  projectId: string
+): Promise<{ id: string; name: string } | null> {
+  // Two plain reads rather than an embed: PostgREST returns an embedded parent
+  // as an object or an array depending on how it reads the relation, and this
+  // is not worth a shape guess.
+  const { data: proj, error: projError } = await supabase
+    .from('projects')
+    .select('property_id')
+    .eq('id', projectId)
+    .maybeSingle();
+  if (projError || !proj?.property_id) return null;
+
+  const { data: prop, error: propError } = await supabase
+    .from('properties')
+    .select('id, name, address, city')
+    .eq('id', proj.property_id)
+    .maybeSingle();
+  if (propError || !prop) return null;
+
+  if (!(await canManageProperty(prop.id))) return null;
+
+  return { id: prop.id, name: propertyLabel(prop) };
 }

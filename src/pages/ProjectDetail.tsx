@@ -6,7 +6,10 @@ import { BatchSmartUploadDialog } from "@/components/project/BatchSmartUploadDia
 import { takeDroppedFolder } from "@/services/agent/droppedFolderHandoff";
 import type { DroppedFile } from "@/lib/dropTree";
 import { analytics, AnalyticsEvents } from "@/lib/analytics";
-import { ingestProjectFolder } from "@/services/ingestProjectFolder";
+import { ingestProjectFolder, type PropertyDocCandidate } from "@/services/ingestProjectFolder";
+import { HomePapersFoundDialog } from "@/components/property/HomePapersFoundDialog";
+import { getManageablePropertyForProject } from "@/services/propertyService";
+import { uploadPropertyDocument } from "@/services/propertyDocumentService";
 import { ingestOutcomeToProposals } from "@/services/agent/ingestToProposals";
 import { emptyDraft } from "@/services/renaidaProjectFlow";
 import { ensureCategoryFolder, uploadToCategoryFolder } from "@/services/smartUploadService";
@@ -152,6 +155,14 @@ const ProjectDetail = () => {
   const [dropChoiceOpen, setDropChoiceOpen] = useState(false);
   // Skiva 4: headless ingest progress while the folder is being read.
   const [ingestBusy, setIngestBusy] = useState<{ done: number; total: number } | null>(null);
+  /**
+   * P4: home papers found in a mixed drop, waiting on the one question the
+   * engine cannot answer — do they belong to the address or to this job? Never
+   * folded into the project either way; only their filing place is at stake.
+   */
+  const [homePapers, setHomePapers] = useState<PropertyDocCandidate[]>([]);
+  const [homePapersSaving, setHomePapersSaving] = useState(false);
+  const [propertyTarget, setPropertyTarget] = useState<{ id: string; name: string } | null>(null);
   const [batchOpen, setBatchOpen] = useState(false);
   const [batchFiles, setBatchFiles] = useState<DroppedFile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -281,6 +292,18 @@ const ProjectDetail = () => {
     rememberLastProject(project.id); // auto-entry + Renaida fallback target
     return () => useRenaidaStore.getState().clearProject();
   }, [project?.id, project?.name, project?.country]);
+
+  // P4: where a home paper could go, if this project sits on an address the
+  // user may write to. Resolved once — the question is only worth asking when
+  // there is somewhere to say yes to.
+  useEffect(() => {
+    if (!project?.id) return;
+    let cancelled = false;
+    getManageablePropertyForProject(project.id).then((target) => {
+      if (!cancelled) setPropertyTarget(target);
+    });
+    return () => { cancelled = true; };
+  }, [project?.id]);
 
   // Pending scroll anchor (e.g. "chat" → scroll to #project-chat after tab renders)
   const [pendingSection, setPendingSection] = useState<string | null>(null);
@@ -1108,6 +1131,19 @@ const ProjectDetail = () => {
         },
       );
 
+      // P4: papers about the HOME never entered the draft. Where they get FILED
+      // is the one thing only the person can decide, so ask — but only when
+      // there is an address to say yes to. Without one they ride along into
+      // Files like everything else, and the toast says so.
+      const candidates = outcome.propertyDocuments;
+      if (candidates.length > 0 && propertyTarget) {
+        setHomePapers(candidates);
+      } else if (candidates.length > 0) {
+        outcome.archiveFiles.push(
+          ...candidates.map((c) => ({ file: c.file, category: 'other' as const })),
+        );
+      }
+
       // File the originals regardless of what the user accepts — the archive is
       // a separate promise from the data extraction (Skiva 2).
       if (outcome.archiveFiles.length > 0) {
@@ -1123,11 +1159,34 @@ const ProjectDetail = () => {
         }
       }
 
+      // Nothing silent: a file that changed nothing still gets named.
+      const inertNotes: string[] = [];
+      if (outcome.notUnderstoodCount > 0) {
+        inertNotes.push(
+          t('folderDrop.notUnderstood', {
+            count: outcome.notUnderstoodCount,
+            defaultValue: '{{count}} filer visste jag inte vad de var — de ligger under Övrigt och rör inget i projektet.',
+          }),
+        );
+      }
+      if (outcome.photosFiledCount > 0) {
+        inertNotes.push(
+          t('folderDrop.photosFiled', {
+            count: outcome.photosFiledCount,
+            defaultValue: '{{count}} bilder sparade i Filer utan att tolkas.',
+          }),
+        );
+      }
+
       if (proposals.length === 0) {
         toast({
           title: t('folderDrop.nothingFound', 'Jag hittade inget att lägga till — filerna är sparade i Filer.'),
+          description: inertNotes.length > 0 ? inertNotes.join(' ') : undefined,
         });
         return;
+      }
+      if (inertNotes.length > 0) {
+        toast({ title: inertNotes.join(' ') });
       }
 
       analytics.capture(AnalyticsEvents.FOLDER_INGEST_PROPOSED, {
@@ -1151,6 +1210,70 @@ const ProjectDetail = () => {
       setIngestBusy(null);
       setDroppedFiles([]);
     }
+  };
+
+  /**
+   * "Put them on the address." The documents move to the home and touch nothing
+   * else — no room, no task, no amount. Correctable there afterwards, like
+   * every other paper on that address.
+   */
+  const handleHomePapersToProperty = async () => {
+    if (!propertyTarget || homePapers.length === 0) return;
+    setHomePapersSaving(true);
+    let saved = 0;
+    for (const candidate of homePapers) {
+      const result = await uploadPropertyDocument({
+        propertyId: propertyTarget.id,
+        file: candidate.file,
+        category: candidate.category,
+      });
+      if (result) saved += 1;
+    }
+    const failed = homePapers.length - saved;
+    setHomePapersSaving(false);
+    setHomePapers([]);
+    toast({
+      title: t('folderDrop.homePapers.saved', {
+        count: saved,
+        address: propertyTarget.name,
+        defaultValue: '{{count}} dokument sparade på {{address}}',
+      }),
+      // A partial save is never left for the user to discover on their own.
+      description:
+        failed > 0
+          ? t('folderDrop.homePapers.savedPartial', {
+              count: failed,
+              defaultValue: '{{count}} kunde inte sparas — de ligger kvar där de var.',
+            })
+          : undefined,
+      variant: failed > 0 ? 'destructive' : undefined,
+    });
+  };
+
+  /** "Keep them here." Filed under Övrigt, still not part of the project. */
+  const handleHomePapersKeep = async () => {
+    if (!project?.id || homePapers.length === 0) {
+      setHomePapers([]);
+      return;
+    }
+    setHomePapersSaving(true);
+    try {
+      await ensureCategoryFolder(project.id, 'other');
+      await Promise.all(
+        homePapers.map((c) => uploadToCategoryFolder(project.id, c.file, 'other')),
+      );
+    } catch (e) {
+      console.error('ProjectDetail: filing home papers in the project failed', e);
+    }
+    const count = homePapers.length;
+    setHomePapersSaving(false);
+    setHomePapers([]);
+    toast({
+      title: t('folderDrop.homePapers.kept', {
+        count,
+        defaultValue: '{{count}} filer sparade i Filer under Övrigt.',
+      }),
+    });
   };
 
   const demoBannerContent = isPersonalDemo ? (
@@ -1898,6 +2021,17 @@ const ProjectDetail = () => {
       )}
 
       {/* Skiva 1: folder dropped on the project page → read it or file it. */}
+      {/* P4: mixed folder — the one question the engine cannot answer. */}
+      <HomePapersFoundDialog
+        candidates={homePapers}
+        propertyName={propertyTarget?.name ?? ''}
+        open={homePapers.length > 0}
+        onOpenChange={(open) => { if (!open && !homePapersSaving) void handleHomePapersKeep(); }}
+        onPutOnProperty={() => void handleHomePapersToProperty()}
+        onKeepInProject={() => void handleHomePapersKeep()}
+        saving={homePapersSaving}
+      />
+
       <DropTargetChoiceDialog
         open={dropChoiceOpen}
         onOpenChange={(o) => { setDropChoiceOpen(o); if (!o) setDroppedFiles([]); }}

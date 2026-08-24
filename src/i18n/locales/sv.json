@@ -7847,7 +7847,25 @@
       "notRead_other": "{{count}} dokument hann jag inte läsa igenom — de ligger under Övrigt.",
       "oversized_one": "{{count}} fil var för stor för att läsas — den är sparad ändå.",
       "oversized_other": "{{count}} filer var för stora för att läsas — de är sparade ändå."
-    }
+    },
+    "homePapers": {
+      "title_one": "{{count}} fil ser ut att höra till bostaden",
+      "title_other": "{{count}} filer ser ut att höra till bostaden",
+      "body": "De handlar om hemmet, inte om det här arbetet — sådana papper brukar behövas långt efter att renoveringen är klar. Vill du lägga dem på {{address}} i stället?",
+      "note": "Ingetdera svaret ändrar något i projektet — de här filerna har inte lagts till som rum, arbeten eller inköp.",
+      "keep": "Behåll i projektet",
+      "move": "Lägg på {{address}}",
+      "saved_one": "{{count}} dokument sparat på {{address}}",
+      "saved_other": "{{count}} dokument sparade på {{address}}",
+      "savedPartial_one": "{{count}} kunde inte sparas — det ligger kvar där det var.",
+      "savedPartial_other": "{{count}} kunde inte sparas — de ligger kvar där de var.",
+      "kept_one": "{{count}} fil sparad i Filer under Övrigt.",
+      "kept_other": "{{count}} filer sparade i Filer under Övrigt."
+    },
+    "notUnderstood_one": "{{count}} fil visste jag inte vad den var — den ligger under Övrigt och rör inget i projektet.",
+    "notUnderstood_other": "{{count}} filer visste jag inte vad de var — de ligger under Övrigt och rör inget i projektet.",
+    "photosFiled_one": "{{count}} bild sparad i Filer utan att tolkas.",
+    "photosFiled_other": "{{count}} bilder sparade i Filer utan att tolkas."
   },
   "addresses": {
     "picker": {

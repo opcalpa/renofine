@@ -97,8 +97,7 @@ import { BatchSmartTolkDialog } from "./batch-tolk";
 import { FilesGridView } from "./files/FilesGridView";
 import { FileActionMenu } from "./files/FileActionMenu";
 import { MoveFileToPropertyDialog, type MovableProjectFile } from "@/components/property/MoveFileToPropertyDialog";
-import { propertyLabel } from "@/services/propertyService";
-import { canManageProperty } from "@/services/propertyMemberService";
+import { getManageablePropertyForProject } from "@/services/propertyService";
 import { FileStatsStrip } from "./files/FileStatsStrip";
 import { FileColumnCell } from "./files/FileColumnCell";
 import { FilePreviewDialog } from "./files/FilePreviewDialog";
@@ -131,32 +130,9 @@ const ProjectFilesTab = ({ projectId, projectName, filesAccess = "view", onNavig
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      // Two plain reads rather than an embed: PostgREST returns an embedded
-      // parent as an object or an array depending on how it reads the relation,
-      // and this is not worth a shape guess.
-      const { data: proj } = await supabase
-        .from('projects')
-        .select('property_id')
-        .eq('id', projectId)
-        .maybeSingle();
-      const propertyId = (proj as { property_id?: string | null } | null)?.property_id;
-      if (cancelled || !propertyId) return;
-
-      const { data: prop } = await supabase
-        .from('properties')
-        .select('id, name, address, city')
-        .eq('id', propertyId)
-        .maybeSingle();
-      if (cancelled || !prop) return;
-
-      // Owner or household admin only. The trusted-builder role can see this
-      // project's files but must never write to the home's papers.
-      const allowed = await canManageProperty(prop.id);
-      if (!cancelled && allowed) {
-        setPropertyTarget({ id: prop.id, name: propertyLabel(prop) });
-      }
-    })();
+    getManageablePropertyForProject(projectId).then((target) => {
+      if (!cancelled) setPropertyTarget(target);
+    });
     return () => { cancelled = true; };
   }, [projectId]);
 

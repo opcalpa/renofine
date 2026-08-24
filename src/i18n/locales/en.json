@@ -7848,7 +7848,25 @@
       "notRead_other": "{{count}} documents I did not get to read through — they are filed under Other.",
       "oversized_one": "{{count}} file was too large to read — it is saved anyway.",
       "oversized_other": "{{count}} files were too large to read — they are saved anyway."
-    }
+    },
+    "homePapers": {
+      "title_one": "{{count}} file looks like it belongs to the home",
+      "title_other": "{{count}} files look like they belong to the home",
+      "body": "They are about the home, not about this job — papers like these are usually needed long after the renovation is done. Put them on {{address}} instead?",
+      "note": "Neither answer changes anything in the project — these files have not been added as rooms, work or purchases.",
+      "keep": "Keep in the project",
+      "move": "Put on {{address}}",
+      "saved_one": "{{count}} document saved to {{address}}",
+      "saved_other": "{{count}} documents saved to {{address}}",
+      "savedPartial_one": "{{count}} could not be saved — it is still where it was.",
+      "savedPartial_other": "{{count}} could not be saved — they are still where they were.",
+      "kept_one": "{{count}} file saved to Files under Other.",
+      "kept_other": "{{count}} files saved to Files under Other."
+    },
+    "notUnderstood_one": "{{count}} file I could not place — it is filed under Other and changes nothing in the project.",
+    "notUnderstood_other": "{{count}} files I could not place — they are filed under Other and change nothing in the project.",
+    "photosFiled_one": "{{count}} photo saved to Files without being interpreted.",
+    "photosFiled_other": "{{count}} photos saved to Files without being interpreted."
   },
   "addresses": {
     "picker": {
