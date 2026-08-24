@@ -1332,6 +1332,9 @@ Spelar just nu in Taulants skärm omaskad → 2 tredjeparter.
 - Money-applier (`applyProposals.ts`) + RLS (owner+shared) otestade. 12 test-briefs i minnesfilen.
 - `VITE_PINTEREST_CLIENT_SECRET` i browser-bundlen → flytta till edge-fn + rotera.
 - `.env.example` saknas. Ingen dev/prod-separation (lokal dev skriver mot prod-DB). README dokumenterar fel host.
+  - **MÄTT 2026-08-25** (efter Calles fråga "har Renofine verkligen två Supabase-projekt?"): nej — det finns **ETT** projekt, `pfyxywuchbakuphxhgec`. Ingen `.env.production` alls; prod-värdena bor i CF Pages dashboard, så `.env.local` ÄR prod-konfigurationen. Exponeringen är **större än Produlogs**: 307 migrationer i `supabase/migrations` (Produlog: 6) och Playwright-e2e som loggar in med riktiga konton (`E2E_USER_EMAIL`/`E2E_PRO_EMAIL` i `.env.local`) mot samma projekt. Varje lokal testkörning skriver alltså riktiga rader i den DB som servar användare.
+  - Motsvarande kort i Produlog: `readiness-dev-prod-db-split`. **Obs:** det kortet motiverades med "setupen bakom 3-dagars-avbrottet i juni" — den motiveringen var ett faktafel (avbrottet var en kodregression, inte databasen) och är rättad där. Rätt allvarlighetsgrad här är schemaslarv + smutsig produktionsdata, inte "kan slå ut prod". Ingen av Calles appar har en split; det är normalläget, inte en avvikelse.
+  - Billigaste riktiga vinsten är inte ett andra Supabase-projekt utan att få **e2e att sluta skriva i prod** (eget projekt bara för testkontona, eller en teardown som städar det testerna skapar).
 
 ### Data integrity (money)
 - Wrappa money-multi-writes i Postgres-RPC/transaktion. UNIQUE på invoice_number (dubbelimport-skydd).
