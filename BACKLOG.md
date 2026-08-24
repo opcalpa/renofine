@@ -3377,3 +3377,196 @@ precis vad `createSignedUrl` kontrollerar, så demot fungerar utan egen bucket.
 
 **Sidofynd:** `ViewQuoteV2` hämtade `photos.storage_path` — en kolumn som inte
 finns — så ÄTA-fotona på offerten var alltid tomma. Fixat.
+
+---
+id: import-reconciliation-epic
+status: done
+priority: P1
+tags: [epic, mapp-ingest, rum, renaida, ux]
+created: 2026-08-25
+---
+## Stäm av importen — avstämningssida, rum-matchning, ritningsval
+
+**LEVERERAD 2026-08-25** (`8d1f6d6`, `97c7d89`, `ffe97be`, `1b745a4`,
+`30178b7`). Plan: `~/.claude/plans/serene-snuggling-metcalfe.md`.
+
+Carls test: 100 filer in i ett befintligt projekt med två våtrum (Badrum,
+Gäst WC) → importen föreslog `Badrum 1`, `Badrum 2`, `WC`, `WC/Dusch` OCH
+`Gäst-WC` ovanpå dem, ritningarna blev tre rum utan likhet med lägenheten,
+och bekräftelsen kom efter tyst väntan.
+
+**Rotorsak till dubbletterna:** rum jämfördes med exakt gemen strängmatchning
+på två ställen. Ny motor `src/lib/roomMatch.ts` på alla tre ställena.
+Skiljetecken och ordningstal är stavning (slås ihop tyst); allt som kräver
+domänkunskap blir ett förslag i en dropdown. En stam-träff räknas som säker
+bara vid EXAKT EN kandidat, och två rum som namnges av SAMMA fil merge:as
+aldrig (Sovrum 1/Sovrum 2 är verkligen två).
+
+**Ny yta** `?tab=files&subtab=import`: filerna i fyra ärliga högar,
+förhandsvisning av originalet, och en redigerbar högerkolumn där rum kan slås
+ihop med befintliga, döpas om eller tas bort — med de befintliga rummen alltid
+synliga. Arbeten flyttas mellan rum så de följer med en hopslagning.
+
+**Ritningar** fick den fråga som saknades: rita av / lägg som lager / bara
+spara. Default lutar säkert (lager om projektet redan har en ritad plan).
+
+**Nya rum placeras ut** i rutnät bredvid befintligt innehåll på canvasen.
+
+**Väntegrafik** i alla tre faser — klassificering och arkivering rapporterade
+inget alls, och arkiveringen är luckan precis före sammanställningen.
+
+**Rumslistan** fick kolumnerna Arbeten och Inköp (två queries för hela
+projektet, aldrig en per rum).
+
+**Kvar:** Carls test med den riktiga mappen. Sessionen överlever inte en
+omladdning (filerna är arkiverade, så det kostar bara ett nytt släpp) —
+persistens är en uppföljning, inte del av epicen.
+
+---
+id: e2e-floorplanner-stale-selectors
+status: todo
+priority: P2
+tags: [e2e, teknisk-skuld, floorplanner]
+created: 2026-08-25
+---
+## 32 e2e-test är döda på gammal UI-drift i planritaren
+
+Upptäckt 2026-08-25: **38 av 118 test failade**, och hade gjort det sedan
+långt före den sessionen. Baseline-siffran "e2e 54/0" som stått i minnet var
+alltså missvisande — 54 var antalet som passerade, inte antalet som fanns.
+
+Halva orsaken är fixad (`30178b7`): `openDemoPlanner` väntade på ett
+nav-element med texten `"Planer"`, en etikett som inte finns någonstans i
+appen längre (den heter `"Ritning"` och ligger i `"Yta"`-dropdownen). Testen
+går nu direkt på URL:en. 7 test lever igen.
+
+**Kvar: 32 test** som failar djupare in i editorn — t.ex.
+`page.getByTestId('tool-shapes').click()` som timeoutar, alltså verktygsraden
+som byggts om utan att testen följt med. Plus `language-switching` och
+`pwa-share-target` som failar av egna skäl.
+
+Det här är farligt på samma sätt som en tyst fångad exception: en tredjedel av
+sviten kan inte fånga något, och den täcker planritaren. Gå igenom test för
+test, uppdatera selektorerna mot dagens UI, och lägg `data-testid` där de
+saknas i stället för att matcha på text.
+
+---
+id: worker-view-viral-cta
+status: todo
+priority: P1
+tags: [agent-proposed, growth, arbetarvy, integrations-strategi]
+created: 2026-08-25
+---
+## Arbetar-vyn: gör "Drivs av Renofine" till en faktisk väg in
+
+Från integrations-analysen (`docs/integrations-strategi-2026-08.md`, punkt 0):
+arbetar-token-länken är den billigaste förvärvsmekaniken som finns, eftersom
+varje SMS landar hos en hantverkare som är en framtida användare.
+
+**Antagandet i dokumentet var delvis fel, verifierat mot koden:** vyn har
+branding — `WorkerView.tsx:456` renderar "Drivs av Renofine". Men det är
+**ren text: ingen länk, ingen CTA, inget PostHog-event**. Slutsatsen (en
+kvälls jobb, störst hävstång på listan) står kvar; det är formuleringen
+"saknar branding" som ska rättas.
+
+Bygg: gör foten till en länk till landningssidan med en diskret rad i stil med
+"Jobbar du med renovering? Prova Renofine själv", och lägg
+`worker_cta_clicked` i PostHog så konverteringen går att mäta. Inget som
+stör arbetsytan — arbetaren är där för att jobba.
+
+---
+id: purchase-vat-capture
+status: todo
+priority: P2
+tags: [agent-proposed, ekonomi, inkop, forutsattning]
+created: 2026-08-25
+---
+## Spara moms och netto på inköp — förutsättning för SIE4
+
+`process-receipt` extraherar redan `vat_amount` ur kvittot, men **ingen tabell
+lagrar det**: `purchase_orders` har `total` och `receipt_total`, inga
+`vat_*`-kolumner, och `grep vat` i DB-typerna träffar bara `avatar_url`.
+Momsen läses alltså ut och kastas bort vid varje kvitto-import.
+
+Det är i sig ett tapp för proffs-användare (momsen är avdragsgill och syns
+ingenstans), och det blockerar SIE4-export helt: en verifikation kräver konto,
+netto och moms per rad.
+
+Bygg: kolumner för netto/moms/momssats på inköpsordern, fyll dem från
+kvitto-OCR:en vid import, och visa dem i PO-detaljen (ex/inkl moms enligt
+den befintliga regeln proffs=ex, hemägare=inkl).
+
+---
+id: sie4-export
+status: todo
+priority: P2
+tags: [agent-proposed, integrations-strategi, standarder, bokforing]
+blocked-by: purchase-vat-capture
+created: 2026-08-25
+---
+## SIE4-export — en standard i stället för fyra API:er
+
+Från integrations-analysen (punkt 2): SIE är den öppna svenska standarden som
+Fortnox, Visma, Bokio och Björn Lundén alla importerar. Ingen ansökan, ingen
+nyckel, ingen motpart — appen skriver en `.se`-fil, hantverkaren importerar i
+sitt eget program.
+
+**Dokumentets antagande att underlaget redan finns är fel** (verifierat mot
+koden): momsen sparas inte någonstans, se `purchase-vat-capture`. Det här är
+alltså inte "bara formatgenerering" — det förutsätter (1) att momsen fångas
+vid kvitto-import och (2) en kontoplan-mappning per kostnadsställe. Därför P2
+och blockerad, inte P1.
+
+---
+id: scrive-esign-quotes
+status: todo
+priority: P1
+tags: [agent-proposed, integrations-strategi, offert, fortroende]
+created: 2026-08-25
+---
+## Scrive eSign på offerter
+
+Från integrations-analysen (punkt 1). En osignerad offert är ett dokument, en
+signerad är ett åtagande — och BankID-identifiering är exakt det svenska
+privatpersoner litar på i en relation till en hantverkare de inte träffat.
+
+Gatekeeper: gratis självbetjänings-testbädd (`api-testbed.scrive.com`),
+REST/JSON. Produktion kräver betald licens — det är kostnadsflaggan, men hela
+bygget och en full demo går att göra gratis i testbädden.
+
+Flöde: skickad offert → "Signera med BankID" → status tillbaka på offerten
+(skickad/öppnad/signerad) → signerad PDF i Filer.
+
+**Obs:** punkten har ett andra syfte som ägs av PA-sessionen, inte av det här
+repot. Bygg den som en vanlig produktfeature — men säg till så snart det finns
+ett demobart flöde end-to-end mot testbädden.
+
+---
+id: fortnox-api
+status: todo
+priority: P3
+tags: [agent-proposed, integrations-strategi, bokforing]
+created: 2026-08-25
+---
+## Fortnox API — accepterad offert blir fakturautkast
+
+Från integrations-analysen (punkt 3). Self-service developer-registrering,
+OAuth utan Marketplace-listning; granskningen gäller bara publicering, som
+dessutom kräver 10 aktiva kunder. Sekvensen är alltså framtvingad: bygg
+opublicerat, samla kunder, ta listningen som kanal sedan.
+
+Efter SIE4 — API-spåret motiveras först när användare ber om tvåvägssynk.
+
+---
+id: ics-calendar-export
+status: todo
+priority: P3
+tags: [agent-proposed, integrations-strategi, standarder, tidplan]
+created: 2026-08-25
+---
+## ICS-export av projekttidplanen
+
+Från integrations-analysen (punkt 4). Tidplanen som prenumererbar ICS-URL,
+importerbar i Google/Apple/Outlook utan någon API-relation. Låg kostnad, och
+delnings-URL:en till kund och hantverkare är ännu en yta där Renofine syns
+hos icke-användare.

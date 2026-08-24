@@ -24,6 +24,27 @@ förstärka den loopen är billigare än varje ny integration på listan.
 | 6 | "Hitta byggare"-plattformar (Offerta, Servicefinder) | Distribution | STÄNGT (inga öppna API:er) | Hög om den fanns | N/A | Park, BD-spår |
 | 7 | Swish-betalning | Intag | Tung (bankavtal, cert) | Låg för growth | Hög | Park |
 
+## ⚠️ Rättelser efter kod-verifiering (Renofine-agenten, 2026-08-25)
+
+Dokumentets två uttalade antaganden prövades mot källkoden. Ett höll delvis,
+ett höll inte:
+
+- **Punkt 0, "arbetar-vyn saknar branding och CTA" — delvis fel.** Vyn HAR
+  branding: `WorkerView.tsx:456` renderar "Drivs av Renofine". Men det är ren
+  text — ingen länk, ingen CTA, inget PostHog-event. Slutsatsen (billigast,
+  störst hävstång, en kväll) står kvar; formuleringen ska vara "har branding
+  men ingen väg vidare". Kort: `worker-view-viral-cta` (P1).
+
+- **Punkt 2, "kvitto-OCR ger tillräcklig verifikationsdata för SIE4" — fel.**
+  `process-receipt` extraherar `vat_amount`, men INGEN tabell lagrar momsen:
+  `purchase_orders` har `total`/`receipt_total` och inga `vat_*`-kolumner.
+  Momsen läses ut och kastas bort. SIE4 kräver konto + netto + moms per rad,
+  så bygget är inte "bara formatgenerering" — det förutsätter att momsen
+  fångas först, plus en kontoplan-mappning. **SIE4 flyttas från P1 till P2 och
+  blockeras av `purchase-vat-capture`.**
+
+Rangordningen i tabellen ovan gäller i övrigt.
+
 ## Detalj per kandidat
 
 ### 0. Viral-loopen som redan finns (P0, ingen integration alls)

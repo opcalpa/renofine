@@ -328,7 +328,16 @@ Versionssystem (semver):
 **ersatta** av v2.0.0 och bör inte användas vidare.
 
 ---
-*Last Updated: 2026-08-20*
+
+## Kanoniska källor utanför koden
+
+- **Integrationsstrategi:** `docs/integrations-strategi-2026-08.md` — rangordning
+  av integrationer med growth som lins, gatekeeper-status per plattform, och
+  vilka dörrar som är stängda (byggvaruhus, hitta-byggare). Har en
+  rättelse-sektion från kod-verifiering 2026-08-25 — läs den före planering.
+
+---
+*Last Updated: 2026-08-25*
 
 ## Självförbättrings-loop (SIL)
 Renofine kör Calles portfölj-loop (full modell: ~/.claude/skills/starta-projekt/self-improvement-loop.md). Tre regler:
