@@ -157,6 +157,12 @@ export interface AgentProposal {
   matchConfidence?: number;
   /** Alternative tasks for manual re-pick when the match is uncertain. */
   candidates?: TaskCandidate[];
+  /**
+   * The file this came from, when it came from one. The import review page
+   * uses it to show WHICH document claimed a room exists — the difference
+   * between "the app invented a bathroom" and "your contract mentions one".
+   */
+  sourceFile?: string;
 }
 
 /** A reversible record of one applied action, used for one-tap undo. */

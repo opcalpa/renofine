@@ -4,7 +4,7 @@
  */
 import { create } from "zustand";
 import type { ProjectReminder } from "@/hooks/useProjectReminders";
-import type { AgentProposal } from "@/services/agent/types";
+import type { ImportSession } from "@/services/agent/importSession";
 
 /**
  * How much Renaida is allowed to do on her own (progressive trust, Fas 2).
@@ -37,13 +37,12 @@ interface RenaidaStoreState {
   pendingShareFiles: File[] | null;
   setPendingShareFiles: (files: File[] | null) => void;
   /**
-   * Skiva 4: a folder dropped on a project page is read headlessly, turned into
-   * proposals, and handed to the panel — which renders them as a normal
-   * ConfirmDiff batch. Same door as every other capture; only the source
-   * differs. Consumed once, then cleared.
+   * A whole folder dropped on an existing project. Too big a decision for the
+   * panel (is this `Badrum 1` the `Badrum` you already have?), so it is handed
+   * to the import review page instead. Lives until applied or cancelled.
    */
-  pendingIngest: { proposals: AgentProposal[]; summary: string } | null;
-  setPendingIngest: (batch: { proposals: AgentProposal[]; summary: string } | null) => void;
+  importSession: ImportSession | null;
+  setImportSession: (session: ImportSession | null) => void;
   /** Project identity — owned by ProjectDetail (lives for the whole project visit,
    *  across tab switches). Voice capture/apply/proactive all key off projectId. */
   setProject: (projectId: string, projectName?: string | null, projectCountry?: string | null) => void;
@@ -64,8 +63,8 @@ export const useRenaidaStore = create<RenaidaStoreState>((set) => ({
   setPanelOpen: (open) => set({ panelOpen: open }),
   pendingShareFiles: null,
   setPendingShareFiles: (files) => set({ pendingShareFiles: files }),
-  pendingIngest: null,
-  setPendingIngest: (batch) => set({ pendingIngest: batch }),
+  importSession: null,
+  setImportSession: (session) => set({ importSession: session }),
   setProject: (projectId, projectName, projectCountry) =>
     set({ projectId, projectName: projectName ?? null, projectCountry: projectCountry ?? null }),
   clearProject: () =>

@@ -46,20 +46,11 @@ async function openDemoPlanner(page: Page, opts: { flag?: 'v2' | 'v1' | 'none' }
   if (await ok.isVisible({ timeout: 5000 }).catch(() => false)) {
     await ok.click();
   }
-  // Navigate to the floor plan sub-view. The desktop nav labels it "Yta"
-  // (dropdown) while the mobile nav has a direct "Planer" item — JS-click the
-  // latter, which routes straight to the drawing view regardless of viewport.
-  await page.waitForFunction(() =>
-    [...document.querySelectorAll('nav a, nav button, header a, header button')].some(
-      (e) => e.textContent?.trim() === 'Planer'
-    )
-  );
-  await page.evaluate(() => {
-    const el = [...document.querySelectorAll('nav a, nav button, header a, header button')].find(
-      (e) => e.textContent?.trim() === 'Planer'
-    ) as HTMLElement | undefined;
-    el?.click();
-  });
+  // Route straight to the drawing view. This used to click a nav item labelled
+  // "Planer"; that label is now "Ritning" and lives inside the "Yta" dropdown,
+  // which silently killed 38 tests. The URL is the stable contract — these
+  // tests are about the editor, not about how the nav is worded.
+  await page.goto(`${new URL(page.url()).pathname}?tab=spaceplanner&subtab=floorplan`);
   const okPlanner = page.getByRole('button', { name: 'OK' });
   if (await okPlanner.isVisible({ timeout: 5000 }).catch(() => false)) {
     await okPlanner.click();

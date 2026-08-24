@@ -2328,7 +2328,8 @@
       "failed": "Ritningen kunde inte kopieras",
       "copied": "Ritningen är kopierad",
       "copiedDescription": "\"{{name}}\" är nu din egen plan i det här projektet"
-    }
+    },
+    "roomsPlacedFromImport": "{{count}} rum utplacerade bredvid ritningen — dra dem på plats"
   },
   "canvas": {
     "settings": "Ritinställningar",
@@ -8095,6 +8096,77 @@
       "note": "Underlag från dina dokument — inte en vinstberäkning. Personnummer läses aldrig ut.",
       "applied": "Sparat på adressen",
       "applyFailed": "Kunde inte spara på adressen"
+    }
+  },
+  "importReview": {
+    "title": "Stäm av importen",
+    "lead": "Jag läste {{files}} filer. Kolla att jag förstod dem rätt — särskilt rummen, som kan vara sådana du redan har.",
+    "apply": "Genomför ({{count}})",
+    "cancelled": "Importen avbröts — filerna ligger kvar i Filer.",
+    "failed": "Kunde inte genomföra importen",
+    "done": "{{count}} ändringar gjorda.",
+    "doneMerged": "{{count}} rum slogs ihop med rum du redan hade.",
+    "doneFailed": "{{count}} misslyckades.",
+    "filesSafe": "Filerna är redan sparade i Filer — avbryter du händer ingenting mer.",
+    "fromFile": "Från {{file}}",
+    "remove": "Ta bort",
+    "restore": "Ta med igen",
+    "tab": {
+      "review": "Blir i projektet",
+      "files": "Filer"
+    },
+    "preview": {
+      "empty": "Välj en fil för att se den som den ser ut.",
+      "notStored": "Filen kunde inte sparas i Filer, så den går inte att visa här.",
+      "openFile": "Öppna filen"
+    },
+    "files": {
+      "interpreted": "Gav projektet något",
+      "filed": "Bara sparade i Filer",
+      "homePapers": "Hör till bostaden",
+      "unreadable": "Kunde inte läsas",
+      "unreadableOnly": "{{count}} filer gick inte att läsa.",
+      "homePaperRow": "Handlar om bostaden",
+      "filedRow": "Sparad, rör inget i projektet",
+      "nRooms": "{{count}} rum",
+      "nTasks": "{{count}} arbeten",
+      "nPurchases": "{{count}} inköp",
+      "drawing": "Ritning",
+      "nothing": "Inget nytt"
+    },
+    "rooms": {
+      "title": "Rum",
+      "count": "{{count}} nya",
+      "existing": "Finns redan i projektet",
+      "none": "Inga nya rum — allt mappen nämnde finns redan.",
+      "nameLabel": "Rummets namn",
+      "asNew": "Skapa som nytt rum",
+      "mergeInto": "= {{name}} (finns redan)",
+      "willMerge": "Slås ihop med {{name}}",
+      "maybeSame": "Är det här {{name}}?"
+    },
+    "tasks": {
+      "title": "Arbeten",
+      "count": "{{count}} st",
+      "noRoom": "Inget rum",
+      "newRoomOption": "{{name}} (nytt)"
+    },
+    "purchases": {
+      "title": "Inköp"
+    },
+    "drawings": {
+      "title": "Ritningar",
+      "lead": "Ska jag rita av ritningen, eller lägga den som bakgrund så du ritar själv?",
+      "saw": "Jag tycker mig se: {{rooms}}",
+      "sawNothing": "Jag hittade inga rumsnamn i den.",
+      "layer": "Lägg som lager",
+      "layerHint": "Bilden hamnar under canvasen — du ritar rummen ovanpå själv.",
+      "trace": "Rita ut åt mig",
+      "traceHint": "Väggar och rum ritas automatiskt. Blir sällan exakt — bra på rena ritningar.",
+      "fileOnly": "Bara spara i Filer",
+      "fileOnlyHint": "Rör inte planritaren alls.",
+      "ontoPlan": "På {{name}}",
+      "newPlan": "På en ny planritning"
     }
   }
 }

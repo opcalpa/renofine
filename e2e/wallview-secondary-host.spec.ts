@@ -23,17 +23,11 @@ async function openDemoPlanner(page: Page) {
   await page.waitForURL(/\/projects\//);
   const ok = page.getByRole('button', { name: 'OK' });
   if (await ok.isVisible({ timeout: 5000 }).catch(() => false)) await ok.click();
-  await page.waitForFunction(() =>
-    [...document.querySelectorAll('nav a, nav button, header a, header button')].some(
-      (e) => e.textContent?.trim() === 'Planer'
-    )
-  );
-  await page.evaluate(() => {
-    const el = [...document.querySelectorAll('nav a, nav button, header a, header button')].find(
-      (e) => e.textContent?.trim() === 'Planer'
-    ) as HTMLElement | undefined;
-    el?.click();
-  });
+  // Route straight to the drawing view. This used to click a nav item labelled
+  // "Planer"; that label is now "Ritning" and lives inside the "Yta" dropdown,
+  // which silently killed 38 tests. The URL is the stable contract — these
+  // tests are about the editor, not about how the nav is worded.
+  await page.goto(`${new URL(page.url()).pathname}?tab=spaceplanner&subtab=floorplan`);
   const okPlanner = page.getByRole('button', { name: 'OK' });
   if (await okPlanner.isVisible({ timeout: 5000 }).catch(() => false)) await okPlanner.click();
   await expect(page.getByTestId('editor-v2-canvas')).toBeVisible({ timeout: 15000 });

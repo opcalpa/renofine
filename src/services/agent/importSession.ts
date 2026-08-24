@@ -1,0 +1,141 @@
+/**
+ * What a dropped folder wants to do to a project, laid out for review.
+ *
+ * Dropping 100 files on an existing project is not the same job as reading one
+ * receipt. It is a reconciliation: the folder describes a home the person
+ * already described once, and the two descriptions disagree. Renaida's panel
+ * can hold a checklist; it cannot hold "is this `Badrum 1` the `Badrum` you
+ * already have, and if so where do its tasks go?".
+ *
+ * So the drop produces this session, and the review page renders it. The files
+ * are already archived by the time it exists — cancelling costs nothing but the
+ * reading.
+ */
+
+import type { AgentProposal, ProposalAction } from './types';
+import type { IngestOutcome } from '../ingestProjectFolder';
+
+/** Which pile a file landed in, in the language of the review page. */
+export type ImportFileKind =
+  /** Gave the project something (rooms, tasks, a purchase, a drawing). */
+  | 'interpreted'
+  /** Read fine, recognised as nothing. Filed, touches nothing. */
+  | 'filed'
+  /** Belongs to the home, not the renovation. */
+  | 'homePaper'
+  /** Could not be read at all. */
+  | 'unreadable';
+
+export interface ImportFileRow {
+  id: string;
+  name: string;
+  kind: ImportFileKind;
+  /** Where it ended up in Files — the review page signs this for the preview. */
+  storagePath?: string;
+  mimeType?: string;
+  /** Proposal ids this file produced, so selecting a file highlights its rows. */
+  proposalIds: string[];
+}
+
+export interface ExistingRoom {
+  id: string;
+  name: string;
+  areaSqm?: number | null;
+}
+
+export interface ExistingPlan {
+  id: string;
+  name: string;
+  /** A plan that already holds geometry — drawing over it would collide. */
+  hasShapes: boolean;
+}
+
+/**
+ * What the person decided about one drawing.
+ *
+ * The app used to have exactly one answer — trace it — and Carl's drawings came
+ * back as three rooms that looked nothing like the flat. Laying the image on
+ * the canvas and drawing the rooms by hand is often the honest option, so it is
+ * offered rather than assumed.
+ */
+export type DrawingChoice = 'layer' | 'trace' | 'fileOnly';
+
+export interface ImportDrawing {
+  proposalId: string;
+  fileName: string;
+  /** Room names the vision pass thinks it saw. */
+  roomNames: string[];
+  wallCount: number;
+  /** Where the original image is in Files — needed to place it as a layer. */
+  storagePath?: string;
+  choice: DrawingChoice;
+  /** Which plan a layer goes on ('new' = a fresh plan named after the file). */
+  targetPlanId: string | 'new';
+}
+
+export interface ImportSession {
+  projectId: string;
+  /** Everything the reader produced — kept whole so nothing is lost in review. */
+  outcome: IngestOutcome;
+  proposals: AgentProposal[];
+  files: ImportFileRow[];
+  existingRooms: ExistingRoom[];
+  existingPlans: ExistingPlan[];
+  drawings: ImportDrawing[];
+  /** Proposal ids the person has switched off. */
+  rejected: Set<string>;
+}
+
+/** The room proposals in a session, in display order. */
+export function roomProposals(session: ImportSession): AgentProposal[] {
+  return session.proposals.filter((p) => p.action.type === 'create_room');
+}
+
+export function taskProposals(session: ImportSession): AgentProposal[] {
+  return session.proposals.filter((p) => p.action.type === 'create_task');
+}
+
+export function purchaseProposals(session: ImportSession): AgentProposal[] {
+  return session.proposals.filter((p) => p.action.type === 'import_purchase');
+}
+
+/**
+ * Rooms a task can be assigned to: the ones the project has, plus the ones this
+ * batch is about to create (minus any the person merged away or removed).
+ */
+export function assignableRooms(
+  session: ImportSession
+): Array<{ value: string; label: string; isNew: boolean }> {
+  const existing = session.existingRooms.map((r) => ({
+    value: `existing:${r.id}`,
+    label: r.name,
+    isNew: false,
+  }));
+
+  const incoming = roomProposals(session)
+    .filter((p) => !session.rejected.has(p.id))
+    .filter((p) => {
+      const action = p.action as Extract<ProposalAction, { type: 'create_room' }>;
+      // A room merged into an existing one is not a separate destination.
+      return !action.mergeIntoRoomId;
+    })
+    .map((p) => ({
+      value: `new:${p.id}`,
+      label: (p.action as Extract<ProposalAction, { type: 'create_room' }>).name,
+      isNew: true,
+    }));
+
+  return [...existing, ...incoming];
+}
+
+/** How many writes the session will actually perform, for the confirm button. */
+export function changeCount(session: ImportSession): number {
+  const active = session.proposals.filter((p) => !session.rejected.has(p.id)).length;
+  const drawings = session.drawings.filter((d) => d.choice !== 'fileOnly').length;
+  // Drawing proposals are counted through `drawings`, not twice.
+  const drawingProposalIds = new Set(session.drawings.map((d) => d.proposalId));
+  const nonDrawing = session.proposals.filter(
+    (p) => !session.rejected.has(p.id) && !drawingProposalIds.has(p.id)
+  ).length;
+  return active === nonDrawing ? active + drawings : nonDrawing + drawings;
+}

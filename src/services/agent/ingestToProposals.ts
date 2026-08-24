@@ -91,6 +91,7 @@ export function ingestOutcomeToProposals(
         summary: copy.room(name),
         confidence: room.source?.confidence ?? 0.8,
         action,
+        sourceFile: room.source?.fileName,
       });
     });
 
@@ -115,6 +116,7 @@ export function ingestOutcomeToProposals(
         summary: copy.task(title, task.roomName),
         confidence: task.source?.confidence ?? 0.8,
         action,
+        sourceFile: task.source?.fileName,
       });
     });
 
@@ -148,6 +150,7 @@ export function ingestOutcomeToProposals(
       summary: copy.sketch(sketch.fileName, roomCount),
       confidence: 0.7,
       action,
+      sourceFile: sketch.fileName,
     });
   });
 

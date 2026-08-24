@@ -1674,7 +1674,8 @@
     "cannotBeUndone": "Dies kann nicht rückgängig gemacht werden.",
     "allObjectsDeleted": "Alle Wände, Räume und Objekte in diesem Plan werden dauerhaft gelöscht.",
     "uploadTraceImage": "Zeichnung hochladen (Vorlage)",
-    "aiImport": "Grundriss per KI interpretieren"
+    "aiImport": "Grundriss per KI interpretieren",
+    "roomsPlacedFromImport": "{{count}} Räume neben der Zeichnung platziert — an die richtige Stelle ziehen"
   },
   "heating": {
     "convector": "Konvektor",
@@ -7888,6 +7889,77 @@
       "wrongEmail": "Diese Einladung gilt für eine andere E-Mail-Adresse. Melden Sie sich mit der eingeladenen Adresse an oder bitten Sie um eine neue Einladung.",
       "expired": "Die Einladung ist abgelaufen. Bitten Sie um eine neue.",
       "generic": "Die Einladung existiert nicht mehr oder wurde bereits verwendet."
+    }
+  },
+  "importReview": {
+    "title": "Check the import",
+    "lead": "I read {{files}} files. Check that I understood them — especially the rooms, which may be ones you already have.",
+    "apply": "Apply ({{count}})",
+    "cancelled": "Import cancelled — the files are still in Files.",
+    "failed": "Could not apply the import",
+    "done": "{{count}} changes made.",
+    "doneMerged": "{{count}} rooms were merged into rooms you already had.",
+    "doneFailed": "{{count}} failed.",
+    "filesSafe": "The files are already saved in Files — cancelling changes nothing else.",
+    "fromFile": "From {{file}}",
+    "remove": "Remove",
+    "restore": "Include again",
+    "tab": {
+      "review": "Goes into the project",
+      "files": "Files"
+    },
+    "preview": {
+      "empty": "Pick a file to see it as it is.",
+      "notStored": "This file could not be saved to Files, so it cannot be shown here.",
+      "openFile": "Open the file"
+    },
+    "files": {
+      "interpreted": "Gave the project something",
+      "filed": "Only saved to Files",
+      "homePapers": "Belongs to the home",
+      "unreadable": "Could not be read",
+      "unreadableOnly": "{{count}} files could not be read.",
+      "homePaperRow": "About the home",
+      "filedRow": "Saved, changes nothing",
+      "nRooms": "{{count}} rooms",
+      "nTasks": "{{count}} tasks",
+      "nPurchases": "{{count}} purchases",
+      "drawing": "Drawing",
+      "nothing": "Nothing new"
+    },
+    "rooms": {
+      "title": "Rooms",
+      "count": "{{count}} new",
+      "existing": "Already in the project",
+      "none": "No new rooms — everything the folder mentioned already exists.",
+      "nameLabel": "Room name",
+      "asNew": "Create as a new room",
+      "mergeInto": "= {{name}} (already exists)",
+      "willMerge": "Merged into {{name}}",
+      "maybeSame": "Is this {{name}}?"
+    },
+    "tasks": {
+      "title": "Tasks",
+      "count": "{{count}}",
+      "noRoom": "No room",
+      "newRoomOption": "{{name}} (new)"
+    },
+    "purchases": {
+      "title": "Purchases"
+    },
+    "drawings": {
+      "title": "Drawings",
+      "lead": "Should I trace the drawing, or place it as a background so you can draw it yourself?",
+      "saw": "I think I see: {{rooms}}",
+      "sawNothing": "I found no room names in it.",
+      "layer": "Place as a layer",
+      "layerHint": "The image goes under the canvas — you draw the rooms on top.",
+      "trace": "Trace it for me",
+      "traceHint": "Walls and rooms are drawn automatically. Rarely exact — good on clean drawings.",
+      "fileOnly": "Only save to Files",
+      "fileOnlyHint": "Doesn't touch the planner at all.",
+      "ontoPlan": "Onto {{name}}",
+      "newPlan": "Onto a new plan"
     }
   }
 }

@@ -43,6 +43,7 @@ import { migrateShapes } from './migration/migrateShapes';
 import { computeObjectPlacement, placeObjectWithLinkage } from './objects/placeObject';
 import { placeRoomOnPlan } from './placeRoomFromList';
 import { useEditorUiStore } from './state/uiStore';
+import { mmToWorld } from './core/units';
 
 const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 8;
@@ -229,6 +230,72 @@ export const EditorCanvas = ({ isReadOnly, roomDataVersion }: EditorCanvasProps)
       );
     }
   }, [pendingPlaceRoom, currentPlanId, isReadOnly, t]);
+
+  /**
+   * A batch of rooms from an import, laid out in a grid BESIDE whatever the
+   * plan already holds.
+   *
+   * An import that created rooms used to leave them nowhere: the room list grew
+   * but the canvas was unchanged, so there was no way to relate the new rooms to
+   * the drawing that produced them. They are dropped as adjustable rectangles
+   * next to the existing content — never on top of it — and dragged into place.
+   */
+  const pendingPlaceRooms = useFloorMapStore((s) => s.pendingPlaceRooms);
+  useEffect(() => {
+    if (!pendingPlaceRooms || pendingPlaceRooms.length === 0 || !currentPlanId || isReadOnly) return;
+    const store = useFloorMapStore.getState();
+    store.setPendingPlaceRooms(null);
+
+    const onThisPlan = store.shapes.filter((sh) => !sh.planId || sh.planId === currentPlanId);
+    const todo = pendingPlaceRooms.filter(
+      (room) => !onThisPlan.some((sh) => sh.type === 'room' && sh.roomId === room.roomId)
+    );
+    if (todo.length === 0) return;
+
+    // Start to the right of everything already drawn, so a traced plan or a
+    // background image stays untouched.
+    let startX = 0;
+    let startY = 0;
+    const xs: number[] = [];
+    const ys: number[] = [];
+    for (const shape of onThisPlan) {
+      const coords = shape.coordinates as { x?: number; y?: number; points?: Array<{ x: number; y: number }> };
+      if (Array.isArray(coords?.points)) {
+        for (const p of coords.points) {
+          xs.push(p.x);
+          ys.push(p.y);
+        }
+      } else if (typeof coords?.x === 'number' && typeof coords?.y === 'number') {
+        xs.push(coords.x);
+        ys.push(coords.y);
+      }
+    }
+    if (xs.length > 0) {
+      startX = Math.max(...xs) + mmToWorld(1500);
+      startY = Math.min(...ys);
+    }
+
+    const CELL = mmToWorld(5000);
+    const COLUMNS = 3;
+    let placedCount = 0;
+    todo.forEach((room, i) => {
+      const center = {
+        x: startX + (i % COLUMNS) * CELL + CELL / 2,
+        y: startY + Math.floor(i / COLUMNS) * CELL + CELL / 2,
+      };
+      if (placeRoomOnPlan(room, center)) placedCount += 1;
+    });
+
+    if (placedCount > 0) {
+      toast.success(
+        t(
+          'floormap.roomsPlacedFromImport',
+          '{{count}} rum utplacerade bredvid ritningen — dra dem på plats',
+          { count: placedCount }
+        )
+      );
+    }
+  }, [pendingPlaceRooms, currentPlanId, isReadOnly, t]);
 
   // Keep the controller in sync with the store tool
   useEffect(() => {

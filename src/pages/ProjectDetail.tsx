@@ -88,6 +88,11 @@ import {
 import type { GuestRoom, GuestTask } from "@/types/guest.types";
 import { IngestProgressPanel } from "@/components/project/IngestProgressPanel";
 import type { IngestProgress } from "@/services/ingestProjectFolder";
+import { buildImportSession } from "@/services/agent/buildImportSession";
+import { loadPlansFromDB, loadShapesForPlan } from "@/components/floormap/utils/plans";
+import { ImportReviewPage } from "@/components/project/import-review/ImportReviewPage";
+import { applyImportSession, mergedRoomCount } from "@/services/agent/applyImportSession";
+import type { ImportSession } from "@/services/agent/importSession";
 
 interface Project {
   id: string;
@@ -157,6 +162,8 @@ const ProjectDetail = () => {
   const [dropChoiceOpen, setDropChoiceOpen] = useState(false);
   // Skiva 4: headless ingest progress while the folder is being read.
   const [ingestBusy, setIngestBusy] = useState<IngestProgress | null>(null);
+  const importSession = useRenaidaStore((st) => st.importSession);
+  const [applyingImport, setApplyingImport] = useState(false);
   /**
    * P4: home papers found in a mixed drop, waiting on the one question the
    * engine cannot answer — do they belong to the address or to this job? Never
@@ -893,6 +900,74 @@ const ProjectDetail = () => {
   };
 
   // Handle using an image as canvas background
+  /**
+   * The import review was cancelled. The files are already in Files, so this
+   * only throws away the reading — nothing the person has to undo.
+   */
+  const handleCancelImport = () => {
+    useRenaidaStore.getState().setImportSession(null);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete('subtab');
+      return next;
+    });
+    toast({
+      title: t('importReview.cancelled', 'Importen avbröts — filerna ligger kvar i Filer.'),
+    });
+  };
+
+  /** Carry out the reviewed import, then offer to place the new rooms. */
+  const handleApplyImport = async (session: ImportSession) => {
+    setApplyingImport(true);
+    try {
+      const result = await applyImportSession(session);
+      const merged = mergedRoomCount(session);
+
+      useRenaidaStore.getState().setImportSession(null);
+      handleRoomUpdated();
+
+      const notes = [
+        t('importReview.done', '{{count}} ändringar gjorda.', { count: result.applied.length }),
+        merged > 0
+          ? t('importReview.doneMerged', '{{count}} rum slogs ihop med rum du redan hade.', { count: merged })
+          : null,
+        result.failed.length > 0
+          ? t('importReview.doneFailed', '{{count}} misslyckades.', { count: result.failed.length })
+          : null,
+      ].filter(Boolean);
+      toast({
+        title: notes.join(' '),
+        variant: result.failed.length > 0 ? 'destructive' : undefined,
+      });
+
+      // New rooms exist but sit nowhere. Queue them for the canvas so they can
+      // be dragged onto the drawing instead of being invisible on the plan.
+      if (result.placeableRooms.length > 0) {
+        useFloorMapStore.getState().setPendingPlaceRooms(result.placeableRooms);
+      }
+
+      const goToPlanner = result.placeableRooms.length > 0 || result.targetPlanId;
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        if (goToPlanner) {
+          next.set('tab', 'spaceplanner');
+          next.set('subtab', 'floorplan');
+        } else {
+          next.delete('subtab');
+        }
+        return next;
+      });
+    } catch (e) {
+      console.error('ProjectDetail: import apply failed', e);
+      toast({
+        title: t('importReview.failed', 'Kunde inte genomföra importen'),
+        variant: 'destructive',
+      });
+    } finally {
+      setApplyingImport(false);
+    }
+  };
+
   const handleUseAsBackground = (imageUrl: string, fileName: string) => {
     // Get currentPlanId from store
     const { addShape, currentPlanId } = useFloorMapStore.getState();
@@ -1153,6 +1228,8 @@ const ProjectDetail = () => {
       // used to swallow every failure, so "the files are saved in Files" could
       // be said about files that were not. Count what actually landed.
       let archiveFailed = 0;
+      /** file name → where it landed in Files, for the review preview. */
+      const archivedPaths = new Map<string, string>();
       if (outcome.archiveFiles.length > 0) {
         try {
           for (const cat of new Set(outcome.archiveFiles.map((a) => a.category))) {
@@ -1169,6 +1246,9 @@ const ProjectDetail = () => {
               const path = await uploadToCategoryFolder(project.id, a.file, a.category);
               done += 1;
               setIngestBusy({ phase: 'archive', done, total, fileName: a.file.name });
+              // Keep the path: the review page previews the ORIGINAL, which is
+              // the only way to check what the app thought it read.
+              if (path) archivedPaths.set(a.file.name, path);
               return path;
             }),
           );
@@ -1225,13 +1305,46 @@ const ProjectDetail = () => {
         surface: 'project_detail',
         count: proposals.length,
       });
-      useRenaidaStore.getState().setPendingIngest({
+      // A whole folder is a reconciliation, not a checklist: it needs the room
+      // it might duplicate, the file it came from, and somewhere to say "this
+      // is the Badrum I already have". That does not fit the panel.
+      const [plans, roomsForSession] = await Promise.all([
+        loadPlansFromDB(project.id),
+        supabase
+          .from('rooms')
+          .select('id, name, dimensions')
+          .eq('project_id', project.id)
+          .then(({ data }) => (data ?? []) as Array<{ id: string; name: string; dimensions: { area_sqm?: number } | null }>),
+      ]);
+
+      const planShapeCounts = await Promise.all(
+        plans.map(async (plan) => ({
+          id: plan.id,
+          name: plan.name,
+          hasShapes: (await loadShapesForPlan(plan.id)).length > 0,
+        })),
+      );
+
+      const session = buildImportSession({
+        projectId: project.id,
+        outcome,
         proposals,
-        summary: t('folderDrop.proposal.lead', 'Jag läste {{files}} filer ur mappen. Så här vill jag lägga in dem — bocka av det du vill ha:', {
-          files: outcome.filesRead,
-        }),
+        existingRooms: roomsForSession.map((r) => ({
+          id: r.id,
+          name: r.name,
+          areaSqm: r.dimensions?.area_sqm ?? null,
+        })),
+        existingPlans: planShapeCounts,
+        archivedPaths,
       });
-      useRenaidaStore.getState().setPanelOpen(true);
+
+      useRenaidaStore.getState().setImportSession(session);
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.set('tab', 'files');
+        next.set('subtab', 'import');
+        return next;
+      });
     } catch (e) {
       console.error('ProjectDetail: folder ingest failed', e);
       toast({
@@ -1718,6 +1831,16 @@ const ProjectDetail = () => {
           <ErrorBoundary>
           {isTabBlocked("files") ? (
             <NoAccessPlaceholder />
+          ) : importSession && activeSubTab === 'import' ? (
+            // A dropped folder is being reconciled — the review takes over the
+            // Files tab until it is applied or cancelled.
+            <ImportReviewPage
+              session={importSession}
+              applying={applyingImport}
+              onChange={(next) => useRenaidaStore.getState().setImportSession(next)}
+              onCancel={handleCancelImport}
+              onApply={handleApplyImport}
+            />
           ) : (
             <ProjectFilesTab
               projectId={project.id}
