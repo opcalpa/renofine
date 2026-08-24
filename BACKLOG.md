@@ -3008,8 +3008,13 @@ samma adress (snapshot, ingen delad muterbar state); levande delat bas-lager
   delad property" via re-assign-pickern (visa även properties delade-till-mig
   som admin).
 
-Nästa steg: Fable-arkitekturplan (ytor-analys + skivor + revert-SQL-krav).
-Ingen kod före planen.
+**ARKITEKTURPLAN KLAR 2026-08-24 (Fable):**
+`~/.claude/plans/adresser-property-entity.md` — verifierat nuläge (RLS-funktioner,
+6 skapandevägar, adressläsare, klient-perms-gapet), datamodell m. revert-SQL,
+backfill-design, write-through-copy-beslutet för adress-sanningen, yta-för-yta-
+tabell, 6 skivor S1–S6, fyravägs-RLS-testplan, riskmatris. 3 icke-blockerande
+frågor till Carl (S4-invite-rätt, S3-lansering, S5-merge över ägargräns).
+Nästa: Carl granskar planen → bygge skiva för skiva (Opus-jobb).
 
 ---
 id: floorplan-quality-epic
