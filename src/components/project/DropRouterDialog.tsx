@@ -186,11 +186,11 @@ export function DropRouterDialog({
           <div className="grid gap-3">
             <Button
               variant="outline"
-              className="h-auto justify-start gap-3 py-4 text-left"
+              className="h-auto w-full justify-start gap-3 whitespace-normal py-4 text-left"
               onClick={() => { onRoute({ kind: 'new' }); onOpenChange(false); }}
             >
               <FolderPlus className="h-5 w-5 shrink-0 text-primary" />
-              <span className="flex flex-col gap-0.5">
+              <span className="flex min-w-0 flex-col gap-0.5">
                 <span className="font-medium">{t('folderDrop.router.newProject', 'Skapa nytt projekt')}</span>
                 <span className="text-xs font-normal text-muted-foreground">
                   {t('folderDrop.router.newProjectHint', 'Renaida läser filerna och föreslår rum, arbeten och inköp.')}
@@ -200,11 +200,11 @@ export function DropRouterDialog({
             {(projects ?? []).length > 0 && (
               <Button
                 variant="outline"
-                className="h-auto justify-start gap-3 py-4 text-left"
+                className="h-auto w-full justify-start gap-3 whitespace-normal py-4 text-left"
                 onClick={() => setPicking('project')}
               >
                 <FolderSymlink className="h-5 w-5 shrink-0 text-primary" />
-                <span className="flex flex-col gap-0.5">
+                <span className="flex min-w-0 flex-col gap-0.5">
                   <span className="font-medium">{t('folderDrop.router.existingProject', 'Lägg till i befintligt projekt')}</span>
                   <span className="text-xs font-normal text-muted-foreground">
                     {t('folderDrop.router.existingProjectHint', 'Du får godkänna varje förslag innan något läggs till.')}
@@ -217,11 +217,11 @@ export function DropRouterDialog({
             {(properties ?? []).length > 0 && (
               <Button
                 variant="outline"
-                className="h-auto justify-start gap-3 py-4 text-left"
+                className="h-auto w-full justify-start gap-3 whitespace-normal py-4 text-left"
                 onClick={() => setPicking('property')}
               >
                 <House className="h-5 w-5 shrink-0 text-primary" />
-                <span className="flex flex-col gap-0.5">
+                <span className="flex min-w-0 flex-col gap-0.5">
                   <span className="font-medium">{t('folderDrop.router.property', 'Spara på bostaden')}</span>
                   <span className="text-xs font-normal text-muted-foreground">
                     {t('folderDrop.router.propertyHint', 'Köpehandlingar, besiktning, frågelista — pappren om hemmet. De rör inga projekt.')}

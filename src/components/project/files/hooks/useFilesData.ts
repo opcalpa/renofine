@@ -70,7 +70,12 @@ export function useFilesData(
 
   // ---- Fetch files in current folder ----
   const fetchFiles = useCallback(async () => {
-    const basePath = `projects/${projectId}/${currentFolder}`;
+    // `currentFolder` already carries its own leading slash ('' at the root),
+    // so a slash here made every row's path `projects/{id}//name`. Listing
+    // survived that — the storage API normalises a prefix — but DELETE did not:
+    // remove() matched no object, returned no error, and left the file in
+    // place. Anything that acts on `path` needs the real key.
+    const basePath = `projects/${projectId}${currentFolder}`;
     const { data, error } = await supabase.storage
       .from("project-files")
       .list(basePath, { sortBy: { column: "name", order: "asc" } });
@@ -116,7 +121,7 @@ export function useFilesData(
 
   // ---- Fetch folders ----
   const fetchFolders = useCallback(async () => {
-    const basePath = `projects/${projectId}/${currentFolder}`;
+    const basePath = `projects/${projectId}${currentFolder}`;
     const { data } = await supabase.storage
       .from("project-files")
       .list(basePath, { sortBy: { column: "name", order: "asc" } });

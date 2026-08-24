@@ -29,6 +29,11 @@ export interface MovableProjectFile {
   path: string;
 }
 
+/** Strip the upload timestamp the project's storage key prepends. */
+function displayNameOf(storageName: string): string {
+  return storageName.replace(/^\d{10,}-/, '') || storageName;
+}
+
 interface Props {
   file: MovableProjectFile | null;
   propertyId: string | null;
@@ -72,7 +77,10 @@ export function MoveFileToPropertyDialog({
         onOpenChange(false);
         return;
       }
-      setDownloaded([new File([data], file.name, { type: data.type || undefined })]);
+      // Files uploaded through the project carry a timestamp prefix in their
+      // storage key. That is plumbing, not the document's name — carrying it
+      // onto the address would make the home's papers read like a log.
+      setDownloaded([new File([data], displayNameOf(file.name), { type: data.type || undefined })]);
     })();
     return () => {
       cancelled = true;
@@ -104,15 +112,19 @@ export function MoveFileToPropertyDialog({
     }
 
     // The copy is safe; now the original goes. Only after, never before.
-    const { error: removeError } = await supabase.storage
+    //
+    // `remove()` reports success for a key it never matched — it returns the
+    // objects it actually deleted, and an empty list with no error. Trusting
+    // the error alone is how a "move" quietly becomes a copy.
+    const { data: removed, error: removeError } = await supabase.storage
       .from('project-files')
       .remove([file.path]);
     setSaving(false);
     onOpenChange(false);
     onMoved?.();
 
-    if (removeError) {
-      console.error('MoveFileToPropertyDialog: original not removed', removeError);
+    if (removeError || (removed ?? []).length === 0) {
+      console.error('MoveFileToPropertyDialog: original not removed', removeError, file.path);
       toast({
         title: t('files.moveToProperty.movedName', {
           address: propertyName,
