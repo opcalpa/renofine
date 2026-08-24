@@ -7646,7 +7646,11 @@
       "confirmLargeYes": "Ja, läs mappen",
       "oversized": "{{count}} filer var för stora (över 20 MB) — de hoppade jag över.",
       "truncated": "Mappen innehöll fler filer än jag läser åt gången — jag tog de första {{count}}.",
-      "extraPlanPages": "En ritning hade flera sidor — jag läste första sidan ({{count}} sidor olästa)."
+      "extraPlanPages": "En ritning hade flera sidor — jag läste första sidan ({{count}} sidor olästa).",
+      "homePapers": "{{count}} filer ser ut att höra till bostaden, inte till renoveringen — de sparas i Filer utan att påverka projektet, och kan flyttas till adressen därifrån.",
+      "notUnderstood": "{{count}} filer visste jag inte vad de var — de ligger under Övrigt i Filer och rör inget i projektet.",
+      "photosFiled": "{{count}} bilder sparade i Filer utan att tolkas.",
+      "onlyHomePapers": "{{count}} av filerna ser ut att höra till bostaden — köpehandlingar och liknande — inte till en renovering. Släpp mappen på \"Till bostaden\" i stället, så hamnar de på adressen."
     },
     "source": {
       "answer": "Ditt svar",

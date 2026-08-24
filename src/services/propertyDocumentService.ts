@@ -7,8 +7,10 @@
  * deleting that project takes them with it.
  *
  * THE CATEGORY IS ALWAYS A GUESS THE USER APPROVES. `guessCategory` runs
- * locally on the file name — no model, no network — and its answer is shown as
- * a pre-filled suggestion before anything is saved. Every field it guessed
+ * locally on the file name (and, for files whose name says nothing, on the
+ * opening of their text) — no model, no judgement call made out of sight — and
+ * its answer is shown as a pre-filled suggestion before anything is saved.
+ * Every field it guessed
  * stays editable afterwards: re-tag, rename, re-date. An assistant that files
  * things silently is one the user has to audit; one that proposes is one they
  * can trust.
@@ -82,18 +84,29 @@ export interface PropertyDocument {
  * whereas sending every dropped file to a model to be classified would be both
  * slower and a decision made somewhere they cannot see.
  */
-const CATEGORY_RULES: { category: PropertyDocumentCategory; patterns: RegExp }[] = [
-  { category: 'purchase_agreement', patterns: /kopekontrakt|kopebrev|overlatelseavtal|upplatelseavtal|purchase agreement|kontrakt.*bostad/ },
-  { category: 'settlement', patterns: /likvidavrakning|slutavrakning|settlement/ },
-  { category: 'deposit_agreement', patterns: /handpenning|deposition|depositionsavtal/ },
-  { category: 'title_deed', patterns: /lagfart|pantbrev|gravationsbevis|title deed/ },
-  { category: 'seller_questionnaire', patterns: /fragelista|saljarens fragelista|questionnaire/ },
-  { category: 'inspection', patterns: /besiktning|overlatelsebesiktning|besiktningsprotokoll|radon|fuktmatning|inspection/ },
-  { category: 'energy_declaration', patterns: /energideklaration|energiprestanda|energy declaration/ },
-  { category: 'tax_assessment', patterns: /taxering|taxeringsbeslut|fastighetsdeklaration|taxeringsvarde/ },
-  { category: 'association', patterns: /stadgar|arsredovisning|foreningen|brf|medlemskap|lagenhetsforteckning/ },
-  { category: 'insurance', patterns: /forsakring|forsakringsbrev|hemforsakring|villaforsakring|insurance/ },
-  { category: 'listing', patterns: /objektsbeskrivning|prospekt|maklarbild|listing/ },
+const CATEGORY_RULES: {
+  category: PropertyDocumentCategory;
+  patterns: RegExp;
+  /**
+   * The subset of words that identify the document when found in its TEXT.
+   * Deliberately narrower than the file-name patterns: a person who names a
+   * file "brf.pdf" means the association, but the word "brf" inside a
+   * renovation invoice is just the customer's address. Rules without one never
+   * match on text at all.
+   */
+  textPatterns?: RegExp;
+}[] = [
+  { category: 'purchase_agreement', patterns: /kopekontrakt|kopebrev|overlatelseavtal|upplatelseavtal|purchase agreement|kontrakt.*bostad/, textPatterns: /kopekontrakt|kopebrev|overlatelseavtal|upplatelseavtal/ },
+  { category: 'settlement', patterns: /likvidavrakning|slutavrakning|settlement/, textPatterns: /likvidavrakning|slutavrakning/ },
+  { category: 'deposit_agreement', patterns: /handpenning|deposition|depositionsavtal/, textPatterns: /handpenningsavtal|depositionsavtal/ },
+  { category: 'title_deed', patterns: /lagfart|pantbrev|gravationsbevis|title deed/, textPatterns: /lagfartsbevis|gravationsbevis|pantbrev/ },
+  { category: 'seller_questionnaire', patterns: /fragelista|saljarens fragelista|questionnaire/, textPatterns: /fragelista/ },
+  { category: 'inspection', patterns: /besiktning|overlatelsebesiktning|besiktningsprotokoll|radon|fuktmatning|inspection/, textPatterns: /besiktningsprotokoll|overlatelsebesiktning|besiktningsutlatande/ },
+  { category: 'energy_declaration', patterns: /energideklaration|energiprestanda|energy declaration/, textPatterns: /energideklaration/ },
+  { category: 'tax_assessment', patterns: /taxering|taxeringsbeslut|fastighetsdeklaration|taxeringsvarde/, textPatterns: /taxeringsbeslut|fastighetstaxering/ },
+  { category: 'association', patterns: /stadgar|arsredovisning|foreningen|brf|medlemskap|lagenhetsforteckning/, textPatterns: /arsredovisning|stadgar for|lagenhetsforteckning/ },
+  { category: 'insurance', patterns: /forsakring|forsakringsbrev|hemforsakring|villaforsakring|insurance/, textPatterns: /forsakringsbrev/ },
+  { category: 'listing', patterns: /objektsbeskrivning|prospekt|maklarbild|listing/, textPatterns: /objektsbeskrivning/ },
 ];
 
 /** Fold Swedish diacritics so "köpekontrakt" and "kopekontrakt" both match. */
@@ -107,13 +120,38 @@ function foldForMatch(value: string): string {
 }
 
 /**
+ * How much of a document's text counts as its "title area".
+ *
+ * A keyword in the heading of a scanned PDF identifies it; the same keyword
+ * three pages in is just a mention — a renovation quote that references
+ * "besiktning" is not a besiktningsprotokoll. Scans arrive as `scan0012.pdf`
+ * often enough that the file name alone cannot carry this, so the text is
+ * consulted — but only where a document says what it is.
+ */
+const TITLE_AREA_CHARS = 600;
+
+/**
  * A first guess at what this document is. Returns 'other' when nothing matches
  * — an honest shrug the user corrects, never a confident wrong answer.
+ *
+ * The file name is the strong signal and is tried first. `textSnippet` is the
+ * fallback for documents whose name says nothing, and only its opening is read
+ * (see TITLE_AREA_CHARS).
  */
-export function guessCategory(fileName: string): PropertyDocumentCategory {
-  const haystack = foldForMatch(fileName);
+export function guessCategory(
+  fileName: string,
+  textSnippet?: string | null
+): PropertyDocumentCategory {
+  const fromName = foldForMatch(fileName);
   for (const rule of CATEGORY_RULES) {
-    if (rule.patterns.test(haystack)) return rule.category;
+    if (rule.patterns.test(fromName)) return rule.category;
+  }
+
+  if (textSnippet) {
+    const fromText = foldForMatch(textSnippet.slice(0, TITLE_AREA_CHARS));
+    for (const rule of CATEGORY_RULES) {
+      if (rule.textPatterns?.test(fromText)) return rule.category;
+    }
   }
   return 'other';
 }

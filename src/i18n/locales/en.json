@@ -7647,7 +7647,11 @@
       "confirmLargeYes": "Yes, read the folder",
       "oversized": "{{count}} files were too large (over 20 MB) — I skipped those.",
       "truncated": "The folder had more files than I read at once — I took the first {{count}}.",
-      "extraPlanPages": "A drawing had several pages — I read the first one ({{count}} pages unread)."
+      "extraPlanPages": "A drawing had several pages — I read the first one ({{count}} pages unread).",
+      "homePapers": "{{count}} files look like they belong to the home rather than the renovation — they are saved in Files without affecting the project, and can be moved to the address from there.",
+      "notUnderstood": "{{count}} files I could not place — they are filed under Other and change nothing in the project.",
+      "photosFiled": "{{count}} photos saved to Files without being interpreted.",
+      "onlyHomePapers": "{{count}} of the files look like they belong to the home — purchase papers and the like — not to a renovation. Drop the folder on \"To the home\" instead and they land on the address."
     },
     "source": {
       "answer": "Your answer",

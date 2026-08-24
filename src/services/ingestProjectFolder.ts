@@ -15,6 +15,20 @@
  *
  * The deterministic fold into the draft is the pure mergeParseIntoDraft in
  * renaidaProjectFlow, so this file only owns the network + routing.
+ *
+ * INERT BY DEFAULT (P4).
+ * Unrelated documents are the normal case, not an edge case — a renovation
+ * folder holds a holiday photo, a CV, a bank statement, and the person dropping
+ * it does not sort first. So: a file this engine does not recognise WITH
+ * CONFIDENCE is stored and never acted on. It adds no room, no task, no
+ * purchase, no date, no status — it lands in the project's files as `other` and
+ * says so out loud. 'other' is an honest answer here, not a failure, and the
+ * summary always names what went unread rather than quietly dropping it.
+ *
+ * Only document classes that actually carry work scope (quote, contract,
+ * specification) are parsed into the draft. Everything else is filed.
+ * The home's own papers — köpekontrakt, besiktningsprotokoll — are recognised
+ * locally and kept out of the project entirely (see `propertyDocuments`).
  */
 
 import { supabase } from '@/integrations/supabase/client';
@@ -24,6 +38,11 @@ import { parseProjectDescription } from './renaidaProjectIntake';
 import { captureDocument, extractQuoteLines } from './agent/documentCapture';
 import type { ImportPurchaseAction } from './agent/importPurchaseOrder';
 import { classifyDocument, type DocumentType } from './smartUploadService';
+import {
+  guessCategory,
+  wasRecognised,
+  type PropertyDocumentCategory,
+} from './propertyDocumentService';
 import { rasterizePdfFirstPage } from '@/lib/pdfRaster';
 import { analyzeFloorPlanFile, type AIConversionResult } from './aiVisionService';
 import {
@@ -137,6 +156,30 @@ export interface ArchiveEntry {
   category: DocumentType;
 }
 
+/**
+ * A file that reads as one of the HOME's papers rather than the renovation's:
+ * a köpekontrakt, a besiktningsprotokoll, a frågelista. Recognised locally
+ * (file name, then the opening of its text — no model), and deliberately kept
+ * out of the project: it must add nothing to the draft, and it is filed once,
+ * never in two places.
+ */
+export interface PropertyDocCandidate {
+  file: File;
+  category: PropertyDocumentCategory;
+}
+
+/**
+ * Document classes that may shape the project.
+ *
+ * Anything outside this set is filed and left alone — the difference between
+ * "the app read my quote" and "the app invented three rooms out of my CV".
+ */
+const SCOPE_BEARING: ReadonlySet<DocumentType> = new Set<DocumentType>([
+  'quote',
+  'contract',
+  'specification',
+]);
+
 /** A single file's contribution, before the deterministic fold. */
 type ContributionKind =
   | { kind: 'scope'; parsed: AIParsedResult; sourceKind: ProvenanceKind; fileName?: string }
@@ -145,6 +188,9 @@ type ContributionKind =
   | { kind: 'purchase'; action: ImportPurchaseAction }
   | { kind: 'sketch'; sketch: PendingSketch; parsed: AIParsedResult | null }
   | { kind: 'floorplan' }
+  | { kind: 'propertyDoc'; candidate: PropertyDocCandidate }
+  /** Read fine, recognised as nothing. Stored, never acted on. */
+  | { kind: 'notUnderstood' }
   | { kind: 'ignored' }
   | { kind: 'unreadable' };
 
@@ -210,6 +256,18 @@ async function processDocument(
 ): Promise<Contribution> {
   const text = await extractText(file);
   if (!text) return { kind: 'unreadable', archive: { file, category: 'other' } };
+
+  // The home's own papers leave the project pipeline here, before a single
+  // model call: a köpekontrakt has nothing to say about a renovation, and
+  // running it through the scope parser is how the seller's kitchen becomes
+  // one of your rooms. Local check, and it saves the classify round-trip.
+  const homePaper = guessCategory(file.name, text);
+  if (wasRecognised(homePaper)) {
+    // No `archive` stamp — a document belongs in one place, and this one's
+    // place is the address (or the project's files, if the caller keeps it).
+    return { kind: 'propertyDoc', candidate: { file, category: homePaper } };
+  }
+
   const cls = await classifyText(text, file.name);
   const type = asDocumentType(cls?.type);
   const archive: ArchiveEntry = { file, category: type };
@@ -249,6 +307,11 @@ async function processDocument(
     return { kind: 'floorplan', archive };
   }
   if (type === 'product_image') return { kind: 'ignored', archive };
+  // Inert by default: everything the classifier could not place — the CV, the
+  // bank statement, the manual for a fridge — is stored and left alone. It used
+  // to be handed to the scope parser, which is a machine whose whole job is to
+  // find rooms and work in whatever text you give it.
+  if (!SCOPE_BEARING.has(type)) return { kind: 'notUnderstood', archive };
   // K4: a contractor's OWN quote → priced line items so the post-birth quote
   // offer (K1) prefills their ACTUAL prices instead of a re-estimate. Homeowners
   // and price-less quotes fall through to the plain scope parse below.
@@ -259,7 +322,7 @@ async function processDocument(
   const parsed = await parseProjectDescription(text, language);
   return usable(parsed)
     ? { kind: 'scope', parsed, sourceKind: 'document', fileName: file.name, archive }
-    : { kind: 'unreadable', archive };
+    : { kind: 'notUnderstood', archive };
 }
 
 /** A plain text/markdown file: read → parse as a project description. */
@@ -272,10 +335,17 @@ async function processTextFile(file: File, language: string): Promise<Contributi
   }
   const archive: ArchiveEntry = { file, category: 'other' };
   if (!text) return { kind: 'unreadable', archive };
+  const homePaper = guessCategory(file.name, text);
+  if (wasRecognised(homePaper)) {
+    return { kind: 'propertyDoc', candidate: { file, category: homePaper } };
+  }
+  // A text file is something a person wrote or exported on purpose, so it is
+  // still parsed — but a parse that finds nothing is "I did not understand
+  // this", not "I could not read it".
   const parsed = await parseProjectDescription(text, language);
   return usable(parsed)
     ? { kind: 'scope', parsed, sourceKind: 'document', fileName: file.name, archive }
-    : { kind: 'unreadable', archive };
+    : { kind: 'notUnderstood', archive };
 }
 
 /** All photos in the drop: OCR each, parse the combined text once. */
@@ -321,6 +391,20 @@ export interface IngestOutcome {
   floorplanCount: number;
   ignoredCount: number;
   unreadableCount: number;
+  /**
+   * Files that were read fine and recognised as nothing (P4). They are filed
+   * as `other` and touch nothing in the project — the count exists so the
+   * summary can say so instead of leaving the person to notice.
+   */
+  notUnderstoodCount: number;
+  /** Photos filed without being interpreted (no confident document class). */
+  photosFiledCount: number;
+  /**
+   * Files that read as the HOME's papers, not the renovation's. Never folded
+   * into the draft; the caller decides where they land (the address, or the
+   * project's files with a note that they can be moved).
+   */
+  propertyDocuments: PropertyDocCandidate[];
   /** True when the drop exceeded MAX_FILES and the tail was skipped. */
   truncated: boolean;
   /** How many files were skipped for being over the size limit. */
@@ -372,17 +456,25 @@ export async function ingestProjectFolder(
   // photos route to process-floorplan instead of being OCR-mangled as text.
   // Costs one mini-vision call per photo; fail-open to the OCR bucket.
   let planImages: File[] = [];
-  let ocrImages: File[] = photos;
+  // Photos whose class says they carry readable scope (a photographed quote).
+  let ocrImages: File[] = [];
+  // The rest of the pile — room snaps, the holiday album, a receipt photo of
+  // someone's lunch. Filed, never interpreted: OCR over a photo the classifier
+  // could not place is exactly the noise that turns into invented rooms.
+  let inertImages: File[] = photos;
   if (photos.length > 0) {
     const kinds = await mapLimit(photos, CONCURRENCY, async (f) => {
       try {
-        return (await classifyDocument(f)).type;
+        return asDocumentType((await classifyDocument(f)).type);
       } catch {
-        return 'other';
+        return 'other' as DocumentType;
       }
     });
     planImages = photos.filter((_, i) => kinds[i] === 'floor_plan');
-    ocrImages = photos.filter((_, i) => kinds[i] !== 'floor_plan');
+    ocrImages = photos.filter((_, i) => SCOPE_BEARING.has(kinds[i]));
+    inertImages = photos.filter(
+      (_, i) => kinds[i] !== 'floor_plan' && !SCOPE_BEARING.has(kinds[i])
+    );
   }
 
   // Phase 1 — extract/classify/parse (network-bound, independent, bounded).
@@ -404,7 +496,7 @@ export async function ingestProjectFolder(
     ...texts.map(() => 1),
   ];
   const progressTotal = files.length;
-  let progressDone = ignoredUpfront.length;
+  let progressDone = ignoredUpfront.length + inertImages.length;
   onProgress?.(progressDone, progressTotal);
   const settled = (
     await mapLimit(thunks.map((t, i) => ({ t, i })), CONCURRENCY, async ({ t, i }) => {
@@ -429,8 +521,11 @@ export async function ingestProjectFolder(
   // round-trip); documents carry their own stamp on the contribution.
   const archiveFiles: ArchiveEntry[] = [
     ...ocrImages.map((file) => ({ file, category: 'product_image' as DocumentType })),
+    ...inertImages.map((file) => ({ file, category: 'product_image' as DocumentType })),
     ...ignoredUpfront.map((file) => ({ file, category: 'other' as DocumentType })),
   ];
+  let notUnderstoodCount = 0;
+  const propertyDocuments: PropertyDocCandidate[] = [];
 
   let skippedPlanPages = 0;
   for (const c of settled) {
@@ -462,6 +557,12 @@ export async function ingestProjectFolder(
       case 'floorplan':
         floorplanCount++;
         break;
+      case 'propertyDoc':
+        propertyDocuments.push(c.candidate);
+        break;
+      case 'notUnderstood':
+        notUnderstoodCount++;
+        break;
       case 'ignored':
         ignoredCount++;
         break;
@@ -483,6 +584,9 @@ export async function ingestProjectFolder(
     floorplanCount,
     ignoredCount,
     unreadableCount,
+    notUnderstoodCount,
+    photosFiledCount: inertImages.length,
+    propertyDocuments,
     truncated,
     oversizedCount,
     skippedPlanPages,

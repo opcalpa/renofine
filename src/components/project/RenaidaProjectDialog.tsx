@@ -33,7 +33,13 @@ import {
   fetchCriticFlags,
   type CriticFlagSuggestion,
 } from '@/services/renaidaProjectIntake';
-import { ingestProjectFolder, CONFIRM_ABOVE, type ArchiveEntry, type PendingSketch } from '@/services/ingestProjectFolder';
+import {
+  ingestProjectFolder,
+  CONFIRM_ABOVE,
+  type ArchiveEntry,
+  type PendingSketch,
+  type PropertyDocCandidate,
+} from '@/services/ingestProjectFolder';
 import { uploadToCategoryFolder, ensureCategoryFolder } from '@/services/smartUploadService';
 import { importPurchaseOrder, type ImportPurchaseAction } from '@/services/agent/importPurchaseOrder';
 import { floorPlanResultToShapes } from '@/services/aiVisionService';
@@ -147,6 +153,13 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
   const pendingSketchesRef = useRef<PendingSketch[]>([]);
   // Skiva 2: the dropped originals, filed into the project's archive at creation.
   const archiveFilesRef = useRef<ArchiveEntry[]>([]);
+  /**
+   * Files from the drop that read as the HOME's papers (P4). They never touch
+   * the draft. At creation they are filed under Files like everything else, so
+   * nothing is lost — "Flytta till bostaden" in the file menu is the one-click
+   * way to put them where they belong once the address exists.
+   */
+  const propertyDocsRef = useRef<PropertyDocCandidate[]>([]);
   // Skiva 3: a folder drop happened → offer the "already finished?" choice at
   // the confirm step. `retroSuggested` only decides how the question is FRAMED;
   // the flag itself is never set without an explicit answer.
@@ -246,6 +259,7 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
       pendingPurchasesRef.current = [];
       pendingSketchesRef.current = [];
       archiveFilesRef.current = [];
+      propertyDocsRef.current = [];
       setFolderIngested(false);
       setRetroSuggested(false);
       setIngestProgress(null);
@@ -575,6 +589,7 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
       pendingSketchesRef.current = isGuest ? [] : outcome.pendingSketches;
       // Skiva 2: guests own no storage, so nothing is filed for them.
       archiveFilesRef.current = isGuest ? [] : outcome.archiveFiles;
+      propertyDocsRef.current = isGuest ? [] : outcome.propertyDocuments;
       describeUsedRef.current = true;
       analytics.capture(AnalyticsEvents.RENAIDA_PROJECT_DESCRIBE_USED, {
         user_type: userType,
@@ -595,9 +610,24 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
         outcome.floorplanCount > 0;
       if (!gotSomething) {
         setDraft(base);
+        // A folder of nothing but köpekontrakt and besiktningsprotokoll is not
+        // a failed read — it is a folder that belongs on the address. Say which
+        // one it is instead of the same blank shrug for both.
+        const onlyHomePapers =
+          outcome.propertyDocuments.length > 0 &&
+          outcome.propertyDocuments.length >= outcome.filesRead - outcome.ignoredCount;
         setTurns((tn) => [
           ...tn,
-          { message: t('renaidaFlow.folder.nothing', 'Hittade inget att lägga in — skriv, prata eller fota istället.'), answerLabel: '' },
+          {
+            message: onlyHomePapers
+              ? t(
+                  'renaidaFlow.folder.onlyHomePapers',
+                  '{{count}} av filerna ser ut att höra till bostaden — köpehandlingar och liknande — inte till en renovering. Släpp mappen på "Till bostaden" i stället, så hamnar de på adressen.',
+                  { count: outcome.propertyDocuments.length }
+                )
+              : t('renaidaFlow.folder.nothing', 'Hittade inget att lägga in — skriv, prata eller fota istället.'),
+            answerLabel: '',
+          },
         ]);
         return;
       }
@@ -662,6 +692,35 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
           t('renaidaFlow.folder.floorplans', '{{count}} ritning(ar) — öppna dem i planritaren efter att projektet skapats.', {
             count: countedPlans,
           })
+        );
+      }
+      if (outcome.propertyDocuments.length > 0) {
+        lines.push(
+          t(
+            'renaidaFlow.folder.homePapers',
+            '{{count}} filer ser ut att höra till bostaden, inte till renoveringen — de sparas i Filer utan att påverka projektet, och kan flyttas till adressen därifrån.',
+            { count: outcome.propertyDocuments.length }
+          )
+        );
+      }
+      // Inert by default (P4): a file we could not place changes nothing, and
+      // the person hears that from us rather than discovering it later.
+      if (outcome.notUnderstoodCount > 0) {
+        lines.push(
+          t(
+            'renaidaFlow.folder.notUnderstood',
+            '{{count}} filer visste jag inte vad de var — de ligger under Övrigt i Filer och rör inget i projektet.',
+            { count: outcome.notUnderstoodCount }
+          )
+        );
+      }
+      if (outcome.photosFiledCount > 0) {
+        lines.push(
+          t(
+            'renaidaFlow.folder.photosFiled',
+            '{{count}} bilder sparade i Filer utan att tolkas.',
+            { count: outcome.photosFiledCount }
+          )
         );
       }
       if (outcome.unreadableCount > 0) {
@@ -945,7 +1004,13 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
       // Skiva 2: file the dropped originals into the project's archive. The
       // extraction consumed their CONTENT; the user still expects the FILES.
       // Best-effort per file — a failed upload must not sink the project.
-      const archives = archiveFilesRef.current;
+      // Home papers ride along into Files as `other`: they added nothing to the
+      // project, but dropping them on the floor would be worse than filing them
+      // in the honest place. Moving them to the address is one click from there.
+      const archives = [
+        ...archiveFilesRef.current,
+        ...propertyDocsRef.current.map((c) => ({ file: c.file, category: 'other' as const })),
+      ];
       if (archives.length > 0) {
         let filed = 0;
         try {
