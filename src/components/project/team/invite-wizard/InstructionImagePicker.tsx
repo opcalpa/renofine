@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Upload, ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { InstructionImage } from "./types";
+import { signRows } from "@/lib/fileUrl";
 
 interface ProjectPhoto {
   id: string;
@@ -101,7 +102,7 @@ export function InstructionImagePicker({
         return;
       }
 
-      const resolved: ProjectPhoto[] = (data ?? []).map((p) => {
+      const resolved: ProjectPhoto[] = await signRows((data ?? []).map((p) => {
         const linkedType = p.linked_to_type;
         const linkedId = p.linked_to_id;
         let roomName: string | null = null;
@@ -125,7 +126,7 @@ export function InstructionImagePicker({
           roomName,
           taskName,
         };
-      });
+      }));
 
       setPhotos(resolved);
     } finally {

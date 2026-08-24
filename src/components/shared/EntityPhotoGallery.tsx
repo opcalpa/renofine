@@ -9,6 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { PhotoCarousel } from "@/components/ui/photo-carousel";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { signRows } from "@/lib/fileUrl";
 
 interface Photo {
   id: string;
@@ -100,7 +101,7 @@ export const EntityPhotoGallery = forwardRef<EntityPhotoGalleryHandle, EntityPho
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      const loaded = (data as Photo[]) || [];
+      const loaded = await signRows((data as Photo[]) || []);
       setPhotos(loaded);
       onPhotoCount?.(loaded.length);
     } catch (error) {
@@ -168,13 +169,12 @@ export const EntityPhotoGallery = forwardRef<EntityPhotoGalleryHandle, EntityPho
           continue;
         }
 
-        const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(fileName);
-
         const needsClassification = !!sourceOptions;
         const { data: insertedPhoto, error: dbError } = await supabase.from("photos").insert({
           linked_to_type: entityType,
           linked_to_id: entityId,
-          url: publicUrl,
+          // Store the storage path; readers sign it on demand.
+          url: fileName,
           caption: file.name,
           mime_type: file.type,
           uploaded_by_user_id: profile.id,

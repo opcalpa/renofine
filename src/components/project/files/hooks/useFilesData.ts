@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { ProjectFile, ProjectFolder, FileLink, NamedEntity } from "../types";
+import { getFileUrl } from "@/lib/fileUrl";
 
 // ---------------------------------------------------------------------------
 // Return type
@@ -86,22 +87,17 @@ export function useFilesData(
       return;
     }
 
-    const fileList = (data || [])
+    const fileList = await Promise.all((data || [])
       .filter((f) => f.name !== ".emptyFolderPlaceholder" && f.name.includes("."))
-      .map((f) => {
+      .map(async (f) => {
         const filePath = `${basePath}/${f.name}`;
         const mime =
           (f.metadata as Record<string, unknown>)?.mimetype as string || "";
         let thumbnailUrl: string | undefined;
         if (mime.startsWith("image/")) {
-          const {
-            data: { publicUrl },
-          } = supabase.storage
-            .from("project-files")
-            .getPublicUrl(filePath, {
-              transform: { width: 100, height: 100, resize: "cover" },
-            });
-          thumbnailUrl = publicUrl;
+          thumbnailUrl = (await getFileUrl(filePath, {
+            transform: { width: 100, height: 100, resize: "cover" },
+          })) ?? undefined;
         }
         return {
           id: f.id || f.name,
@@ -113,7 +109,7 @@ export function useFilesData(
           uploaded_by: "",
           thumbnail_url: thumbnailUrl,
         } as ProjectFile;
-      });
+      }));
 
     setFiles(fileList);
     setLoading(false);
@@ -159,14 +155,9 @@ export function useFilesData(
           if (item.metadata?.mimetype) {
             let thumbnailUrl: string | undefined;
             if (item.metadata.mimetype.startsWith("image/")) {
-              const {
-                data: { publicUrl },
-              } = supabase.storage
-                .from("project-files")
-                .getPublicUrl(fullPath, {
-                  transform: { width: 100, height: 100, resize: "cover" },
-                });
-              thumbnailUrl = publicUrl;
+              thumbnailUrl = (await getFileUrl(fullPath, {
+                transform: { width: 100, height: 100, resize: "cover" },
+              })) ?? undefined;
             }
             result.push({
               id: item.id || item.name,

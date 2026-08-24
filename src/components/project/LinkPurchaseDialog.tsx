@@ -209,7 +209,6 @@ export function LinkPurchaseDialog({
       const storagePath = `projects/${projectId}/${folder}/${smartName}`;
 
       await supabase.storage.from("project-files").upload(storagePath, file);
-      const { data: urlData } = supabase.storage.from("project-files").getPublicUrl(storagePath);
 
       if (mode === "link" && selectedEntity) {
         // Create task_file_link to connect document to existing entity

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
+import { signPayloadUrls } from "../_shared/fileUrl.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -135,16 +136,13 @@ serve(async (req) => {
       return jsonResponse({ error: "Failed to upload file" }, 500, req);
     }
 
-    const { data: urlData } = sb.storage
-      .from("project-files")
-      .getPublicUrl(storagePath);
-
     const source = category ? `worker_${category}` : "worker";
 
     const { data: photo, error: insertError } = await sb
       .from("photos")
       .insert({
-        url: urlData.publicUrl,
+        // Store the storage path; readers sign it on demand.
+        url: storagePath,
         linked_to_type: linkedToType,
         linked_to_id: linkedToId,
         uploaded_by_user_id: tokenRecord.created_by_user_id,
@@ -225,7 +223,8 @@ serve(async (req) => {
       });
     }
 
-    return jsonResponse({ success: true, photo }, 200, req);
+    // The worker has no session — sign the photo we just stored for them.
+    return jsonResponse(await signPayloadUrls(sb, { success: true, photo }), 200, req);
   } catch (error) {
     console.error("worker-upload-photo error:", error);
     return jsonResponse({ error: error.message }, 500, req);

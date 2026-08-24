@@ -77,6 +77,7 @@ import {
   type StatusTone,
   type StampTone,
 } from "@/components/documents-v2";
+import { useFileUrls } from "@/lib/fileUrl";
 
 interface QuoteData {
   id: string;
@@ -99,7 +100,8 @@ interface QuoteData {
 
 interface AtaPhoto {
   id: string;
-  storage_path: string;
+  /** Storage path (legacy rows may still hold a full URL). */
+  url: string;
   caption: string | null;
 }
 
@@ -183,6 +185,7 @@ export default function ViewQuoteV2() {
   const [latestRevision, setLatestRevision] = useState<{ id: string; quote_number: string | null } | null>(null);
   // ÄTA-specific: site-visit photos for the change-order grid (only fetched when is_ata)
   const [ataPhotos, setAtaPhotos] = useState<AtaPhoto[]>([]);
+  const ataPhotoUrls = useFileUrls(ataPhotos.map((p) => p.url));
 
   // ─── effects ───────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -275,7 +278,7 @@ export default function ViewQuoteV2() {
     if (q.is_ata) {
       const { data: photos } = await supabase
         .from("photos")
-        .select("id, storage_path, caption")
+        .select("id, url, caption")
         .eq("entity_type", "quote")
         .eq("entity_id", quoteId)
         .order("created_at", { ascending: true });
@@ -746,9 +749,8 @@ export default function ViewQuoteV2() {
                   <SidebarCard label={t("quotes.ataSitePhotos", "Foton från platsbesök")}>
                     <div className="grid grid-cols-3 gap-2">
                       {ataPhotos.map((p) => {
-                        const { data: { publicUrl } } = supabase.storage
-                          .from("project-files")
-                          .getPublicUrl(p.storage_path);
+                        const publicUrl = ataPhotoUrls.get(p.url);
+                        if (!publicUrl) return null;
                         return (
                           <a
                             key={p.id}

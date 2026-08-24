@@ -98,10 +98,9 @@ serve(async (req) => {
         });
 
       if (!uploadError) {
-        const { data: urlData } = sb.storage
-          .from("project-files")
-          .getPublicUrl(storagePath);
-        voiceUrl = urlData.publicUrl;
+        // The path travels in the comment text; get-worker-data signs it on the
+        // way out, so the link cannot outlive the worker's access.
+        voiceUrl = storagePath;
       }
     }
 

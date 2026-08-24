@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { InspoPhoto, InspoRoom, MaterialCard, DisplaySize, CropPosition, FitMode, CropShape } from "../types";
 import { BA_SOURCES } from "../types";
+import { signRows } from "@/lib/fileUrl";
 
 // ---------------------------------------------------------------------------
 // Return type
@@ -88,7 +89,7 @@ export function useInspirationData(
         .eq("project_id", projectId);
       const taskIds = new Set((taskRows || []).map((t) => t.id));
 
-      const photos: InspoPhoto[] = (photosRes.data || [])
+      const photos: InspoPhoto[] = await signRows((photosRes.data || [])
         .filter((p) => {
           if (p.linked_to_type === "project")
             return p.linked_to_id === projectId;
@@ -117,10 +118,12 @@ export function useInspirationData(
             p.linked_to_type === "room"
               ? roomMap.get(p.linked_to_id) || null
               : null,
-        }));
+        })));
 
       const matPhotoMap = new Map<string, string>();
-      for (const p of materialPhotosRes.data || []) {
+      for (const p of await signRows<{ id: string; url: string; linked_to_id: string }>(
+        (materialPhotosRes.data as Array<{ id: string; url: string; linked_to_id: string }>) || [],
+      )) {
         if (!matPhotoMap.has(p.linked_to_id))
           matPhotoMap.set(p.linked_to_id, p.url);
       }

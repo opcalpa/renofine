@@ -103,6 +103,7 @@ import { FileColumnCell } from "./files/FileColumnCell";
 import { FilePreviewDialog } from "./files/FilePreviewDialog";
 import { ColumnToggle } from "@/components/shared/ColumnToggle";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { getFileUrl, getFileUrls, useFileUrl } from '@/lib/fileUrl';
 
 interface ProjectFilesTabProps {
   projectId: string;
@@ -177,6 +178,7 @@ const ProjectFilesTab = ({ projectId, projectName, filesAccess = "view", onNavig
   const [showDocumentUploadSuggestion, setShowDocumentUploadSuggestion] = useState<ProjectFile | null>(null);
   const [showImageUploadSuggestion, setShowImageUploadSuggestion] = useState<ProjectFile | null>(null);
   const [floorPlanImportFile, setFloorPlanImportFile] = useState<ProjectFile | null>(null);
+  const floorPlanImportUrl = useFileUrl(floorPlanImportFile?.path);
   const [linkFile, setLinkFile] = useState<ProjectFile | null>(null);
   const [showSmartUpload, setShowSmartUpload] = useState(false);
   const [quoteReviewFile, setQuoteReviewFile] = useState<File | null>(null);
@@ -207,19 +209,18 @@ const ProjectFilesTab = ({ projectId, projectName, filesAccess = "view", onNavig
         if (!folderContents.has(folderPath)) {
           const basePath = `projects/${projectId}/${folderPath}`;
           supabase.storage.from('project-files').list(basePath, { sortBy: { column: 'name', order: 'asc' } })
-            .then(({ data }) => {
+            .then(async ({ data }) => {
               if (!data) return;
-              const subFiles = data
+              const subFiles = await Promise.all(data
                 .filter(f => !f.name.startsWith('.') && f.name.includes('.'))
-                .map(f => {
+                .map(async f => {
                   const filePath = `${basePath}/${f.name}`;
                   const mime = (f.metadata as Record<string, unknown>)?.mimetype as string || '';
                   let thumbnailUrl: string | undefined;
                   if (mime.startsWith('image/')) {
-                    const { data: { publicUrl } } = supabase.storage
-                      .from('project-files')
-                      .getPublicUrl(filePath, { transform: { width: 100, height: 100, resize: 'cover' } });
-                    thumbnailUrl = publicUrl;
+                    thumbnailUrl = (await getFileUrl(filePath, {
+                      transform: { width: 100, height: 100, resize: 'cover' },
+                    })) ?? undefined;
                   }
                   return {
                     id: f.id || f.name,
@@ -230,7 +231,7 @@ const ProjectFilesTab = ({ projectId, projectName, filesAccess = "view", onNavig
                     uploaded_at: f.created_at || '',
                     thumbnail_url: thumbnailUrl,
                   };
-                }) as ProjectFile[];
+                })) as ProjectFile[];
               setFolderContents(prev => new Map(prev).set(folderPath, subFiles));
             });
         }
@@ -604,19 +605,24 @@ const ProjectFilesTab = ({ projectId, projectName, filesAccess = "view", onNavig
 
   const handlePreview = async (file: ProjectFile) => {
     try {
-      const { data: { publicUrl } } = supabase.storage
-        .from('project-files')
-        .getPublicUrl(file.path);
-
       // Images → unified lightbox with zoom/rotate/comments
       if (isImageFile(file.name)) {
         const imageFiles = allPreviewableFiles.filter((f) => isImageFile(f.name));
         const idx = imageFiles.findIndex((f) => f.path === file.path);
-        const images = imageFiles.map((f) => {
-          const { data: { publicUrl: url } } = supabase.storage.from('project-files').getPublicUrl(f.path);
-          return { id: f.path, url, filename: f.name, downloadUrl: url };
-        });
+        const signed = await getFileUrls(imageFiles.map((f) => f.path));
+        const images = imageFiles
+          .map((f) => {
+            const url = signed.get(f.path);
+            return url ? { id: f.path, url, filename: f.name, downloadUrl: url } : null;
+          })
+          .filter((x): x is NonNullable<typeof x> => x !== null);
         imageLightbox.open(images, Math.max(0, idx));
+        return;
+      }
+
+      const publicUrl = await getFileUrl(file.path);
+      if (!publicUrl) {
+        toast({ title: t('files.previewError', 'Kunde inte öppna filen'), variant: 'destructive' });
         return;
       }
 
@@ -1754,12 +1760,7 @@ const ProjectFilesTab = ({ projectId, projectName, filesAccess = "view", onNavig
           onOpenChange={(open) => {
             if (!open) setFloorPlanImportFile(null);
           }}
-          initialImageUrl={(() => {
-            const { data: { publicUrl } } = supabase.storage
-              .from('project-files')
-              .getPublicUrl(floorPlanImportFile.path);
-            return publicUrl;
-          })()}
+          initialImageUrl={floorPlanImportUrl ?? ''}
           initialFileName={floorPlanImportFile.name}
           onImportComplete={() => {
             toast({
@@ -1829,9 +1830,8 @@ const ProjectFilesTab = ({ projectId, projectName, filesAccess = "view", onNavig
                   const safeName = action.file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
                   const path = `projects/${projectId}/floor-plans/${ts}-${safeName}`;
                   await supabase.storage.from("project-files").upload(path, action.file);
-                  const { data: urlData } = supabase.storage.from("project-files").getPublicUrl(path);
                   if (onUseAsBackground) {
-                    onUseAsBackground(urlData.publicUrl, action.file.name);
+                    onUseAsBackground(path, action.file.name);
                   }
                   toast({
                     title: t("smartUpload.actions.importCanvas"),

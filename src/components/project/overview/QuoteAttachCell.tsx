@@ -186,15 +186,12 @@ export function QuoteAttachCell({
         .upload(storagePath, uploadFile);
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from("project-files")
-        .getPublicUrl(storagePath);
-
       // Create photo record
       await supabase.from("photos").insert({
         linked_to_type: "task",
         linked_to_id: taskId,
-        url: publicUrl,
+        // Store the storage path; readers sign it on demand.
+        url: storagePath,
         caption: vendorName ? `${t("homeownerPlanning.quoteFrom", "Quote from")} ${vendorName}` : pendingFile.name,
         mime_type: uploadFile.type,
         uploaded_by_user_id: profile.id,

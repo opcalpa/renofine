@@ -754,14 +754,11 @@ export function QuickReceiptCaptureModal({
         await supabase.from("task_file_links").insert(linkData);
 
         // Also create photo record for visual display
-        const {
-          data: { publicUrl },
-        } = supabase.storage.from("project-files").getPublicUrl(storagePath);
-
         await supabase.from("photos").insert({
           linked_to_type: entityType,
           linked_to_id: entityId,
-          url: publicUrl,
+          // Store the storage path; readers sign it on demand.
+          url: storagePath,
           caption: filename,
           uploaded_by_user_id: profile.id,
         });

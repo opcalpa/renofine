@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { signRows } from "@/lib/fileUrl";
 
 export interface RoomCoverPhoto {
   url: string;
@@ -30,14 +31,20 @@ export function useRoomCoverPhotos(roomIds: string[]) {
       .in("linked_to_id", roomIds)
       .order("sort_order", { ascending: true, nullsFirst: false })
       .order("created_at", { ascending: true })
-      .then(({ data, error }) => {
+      .then(async ({ data, error }) => {
         if (cancelled) return;
         if (error) {
           console.error("useRoomCoverPhotos fetch failed:", error);
           return;
         }
+        const signedRows = await signRows<{
+          linked_to_id: string;
+          url: string;
+          caption: string | null;
+        }>((data as Array<{ linked_to_id: string; url: string; caption: string | null }>) || []);
+        if (cancelled) return;
         const map = new Map<string, RoomCoverPhoto>();
-        for (const row of data || []) {
+        for (const row of signedRows) {
           if (!map.has(row.linked_to_id)) {
             map.set(row.linked_to_id, {
               url: row.url,

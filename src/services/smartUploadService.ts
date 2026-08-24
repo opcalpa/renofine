@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getFileUrl } from "@/lib/fileUrl";
 
 // --- Classification types ---
 
@@ -241,7 +242,7 @@ export async function uploadToProjectStorage(
   file: File,
   projectId: string,
   subfolder = "uploads"
-): Promise<{ path: string; publicUrl: string }> {
+): Promise<{ path: string; url: string | null }> {
   const timestamp = Date.now();
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
   const path = `projects/${projectId}/${subfolder}/${timestamp}-${safeName}`;
@@ -254,11 +255,7 @@ export async function uploadToProjectStorage(
     throw new Error(`Upload failed: ${uploadError.message}`);
   }
 
-  const { data: urlData } = supabase.storage
-    .from("project-files")
-    .getPublicUrl(path);
-
-  return { path, publicUrl: urlData.publicUrl };
+  return { path, url: await getFileUrl(path) };
 }
 
 // --- Category filing (one engine for every "sort this into Files" path) ---

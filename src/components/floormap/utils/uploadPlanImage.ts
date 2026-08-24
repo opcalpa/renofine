@@ -48,16 +48,13 @@ export async function uploadPlanImage(
       .from('project-files')
       .upload(filePath, file);
     if (uploadError) throw uploadError;
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from('project-files').getPublicUrl(filePath);
     const { width, height } = await decodeCappedSize(file);
     return {
       id: uuidv4(),
       type: 'image',
       planId,
       coordinates: { x: viewCenter.x, y: viewCenter.y, width, height },
-      imageUrl: publicUrl,
+      imageUrl: filePath,
       imageOpacity: 0.5,
       locked: false,
       zIndex: -100,

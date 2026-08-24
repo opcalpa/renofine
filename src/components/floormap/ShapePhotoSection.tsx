@@ -14,6 +14,7 @@ import { Loader2, Upload, Image as ImageIcon, XCircle, Maximize2 } from "lucide-
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { PhotoCarousel } from "@/components/ui/photo-carousel";
+import { signRows } from "@/lib/fileUrl";
 
 interface Photo {
   id: string;
@@ -51,7 +52,7 @@ export function ShapePhotoSection({ shapeId, projectId, compact = false }: Shape
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setPhotos((data as Photo[]) || []);
+      setPhotos(await signRows((data as Photo[]) || []));
     } catch (error) {
       console.error("Error loading photos:", error);
       // Don't show toast for initial load failures - might just be no photos yet
@@ -115,14 +116,11 @@ export function ShapePhotoSection({ shapeId, projectId, compact = false }: Shape
           continue;
         }
 
-        const {
-          data: { publicUrl },
-        } = supabase.storage.from("project-files").getPublicUrl(fileName);
-
         const { error: dbError } = await supabase.from("photos").insert({
           linked_to_type: "shape",
           linked_to_id: shapeId,
-          url: publicUrl,
+          // Store the storage path; readers sign it on demand.
+          url: fileName,
           caption: file.name,
           uploaded_by_user_id: profile.id,
         });

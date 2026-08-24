@@ -141,12 +141,10 @@ export async function importPurchaseOrder(
       // Photo gallery is images-only — a PDF invoice still gets its
       // task_file_links row above, which is what the Files surfaces read.
       if (!isPdf) {
-        const { data: { publicUrl } } = supabase.storage
-          .from("project-files").getPublicUrl(storagePath);
         void supabase.from("photos").insert({
           linked_to_type: "material",
           linked_to_id: materialIds[0],
-          url: publicUrl,
+          url: storagePath,
           caption: filename,
           uploaded_by_user_id: profileId,
         }).then(() => {}, () => {});

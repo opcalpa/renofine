@@ -7,6 +7,7 @@ import { ImageIcon, ArrowRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { formatDistanceToNow } from "date-fns";
 import { getDateLocale } from "@/lib/dateFnsLocale";
+import { getFileUrls } from "@/lib/fileUrl";
 
 // Image file extensions to include from storage
 const IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".svg"];
@@ -260,13 +261,9 @@ export const RecentPhotos = ({
             const isImage = IMAGE_EXTENSIONS.some(ext => lowerName.endsWith(ext));
             if (!isImage) continue;
 
-            const { data: { publicUrl } } = supabase.storage
-              .from("project-files")
-              .getPublicUrl(`projects/${projectId}/${file.name}`);
-
             allPhotos.push({
               id: `file-${file.id}`,
-              url: publicUrl,
+              url: `projects/${projectId}/${file.name}`,
               caption: file.name,
               createdAt: file.created_at || new Date().toISOString(),
               source: "file",
@@ -274,6 +271,13 @@ export const RecentPhotos = ({
               linkTo: { type: "file" },
             });
           }
+        }
+
+        // One signing round for every source above; external URLs pass through.
+        const signed = await getFileUrls(allPhotos.map((p) => p.url));
+        for (const p of allPhotos) {
+          const url = signed.get(p.url);
+          if (url) p.url = url;
         }
 
         // Sort by date and take the 6 most recent

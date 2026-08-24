@@ -1,5 +1,6 @@
 import { FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useFileUrl } from '@/lib/fileUrl';
 
 interface PreviewFile {
   path: string;
@@ -12,14 +13,9 @@ interface BatchTolkFilePreviewProps {
   onClose: () => void;
 }
 
-function getPublicUrl(path: string) {
-  return supabase.storage.from('project-files').getPublicUrl(path).data.publicUrl;
-}
-
 export function BatchTolkFilePreview({ file, onClose }: BatchTolkFilePreviewProps) {
+  const url = useFileUrl(file?.path);
   if (!file) return null;
-
-  const url = getPublicUrl(file.path);
   const isPdf = file.type?.includes('pdf');
   const isImage = file.type?.startsWith('image/');
 
@@ -40,14 +36,14 @@ export function BatchTolkFilePreview({ file, onClose }: BatchTolkFilePreviewProp
       <div className="flex-1 overflow-auto">
         {isPdf ? (
           <iframe
-            src={`${url}#navpanes=0&scrollbar=1&view=FitH`}
+            src={url ? `${url}#navpanes=0&scrollbar=1&view=FitH` : undefined}
             title={file.name}
             className="w-full h-full border-0"
             style={{ minHeight: '400px' }}
           />
         ) : isImage ? (
           <img
-            src={url}
+            src={url ?? undefined}
             alt={file.name}
             className="max-w-full h-auto p-2"
           />

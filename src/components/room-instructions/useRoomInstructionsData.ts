@@ -2,11 +2,14 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { RoomInstruction, RoomTask, RoomMaterial, Photo, Checklist, FloorPlanShape } from "./types";
+import { signRows } from "@/lib/fileUrl";
 
 /**
  * Fetches and groups tasks by room for the authenticated builder view.
  * Only returns rooms where the builder has assigned tasks.
  */
+type PhotoRow = { id: string; url: string; caption: string | null; source: string | null; linked_to_id: string };
+
 export function useRoomInstructionsData(projectId: string, profileId: string | null) {
   const { data, isLoading } = useQuery({
     queryKey: ["room-instructions", projectId, profileId],
@@ -61,7 +64,7 @@ export function useRoomInstructionsData(projectId: string, profileId: string | n
       const roomRefPhotos = new Map<string, Photo[]>();
       const roomProgressPhotos = new Map<string, Photo[]>();
       const roomCompletedPhotos = new Map<string, Photo[]>();
-      for (const p of (photosRes.data || [])) {
+      for (const p of await signRows((photosRes.data as PhotoRow[]) || [])) {
         const photo: Photo = { id: p.id, url: p.url, caption: p.caption, source: p.source || undefined };
         if (p.source === "worker_progress") {
           const arr = roomProgressPhotos.get(p.linked_to_id) || [];
@@ -78,7 +81,7 @@ export function useRoomInstructionsData(projectId: string, profileId: string | n
         }
       }
       const taskPhotoMap = new Map<string, Photo[]>();
-      for (const p of (taskPhotosRes.data || [])) {
+      for (const p of await signRows((taskPhotosRes.data as PhotoRow[]) || [])) {
         const arr = taskPhotoMap.get(p.linked_to_id) || [];
         arr.push({ id: p.id, url: p.url, caption: p.caption, source: p.source || undefined });
         taskPhotoMap.set(p.linked_to_id, arr);

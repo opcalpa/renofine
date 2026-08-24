@@ -5,6 +5,7 @@
 
 import { supabase } from '@/lib/supabaseClient';
 import { AIDocumentExtractionResult } from './aiDocumentService.types';
+import { getFileUrl } from '@/lib/fileUrl';
 
 const MAX_FILE_SIZE_MB = 10;
 const SUPPORTED_TYPES = ['application/pdf', 'text/plain', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
@@ -35,14 +36,12 @@ function validateFile(fileName: string, mimeType: string, fileSize: number): voi
 }
 
 /**
- * Get public URL for a file in Supabase storage
+ * Short-lived signed URL for a file in the private `project-files` bucket.
+ * The model fetches this URL server-side, so it must outlive the extraction
+ * call — an hour is far more than one document takes.
  */
-export function getFilePublicUrl(filePath: string): string {
-  const { data } = supabase.storage
-    .from('project-files')
-    .getPublicUrl(filePath);
-
-  return data.publicUrl;
+export async function getFileSignedUrl(filePath: string): Promise<string | null> {
+  return getFileUrl(filePath);
 }
 
 /**

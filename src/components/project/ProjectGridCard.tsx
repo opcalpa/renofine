@@ -21,6 +21,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useFileUrl } from "@/lib/fileUrl";
 
 interface ProjectGridCardProps {
   project: {
@@ -67,6 +68,7 @@ export function ProjectGridCard({
 }: ProjectGridCardProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const coverUrl = useFileUrl(project.cover_image_url);
 
   // Fetch mini-stats for this card
   const { data: stats } = useQuery({
@@ -127,10 +129,10 @@ export function ProjectGridCard({
       )}
 
       {/* Cover image or gradient placeholder */}
-      {project.cover_image_url ? (
+      {coverUrl ? (
         <div className="h-32 overflow-hidden">
           <img
-            src={project.cover_image_url}
+            src={coverUrl}
             alt={project.name}
             className="w-full h-full object-cover"
             onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}

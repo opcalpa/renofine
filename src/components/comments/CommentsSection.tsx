@@ -14,6 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useCommentTranslation } from "@/hooks/useCommentTranslation";
 import { formatDistanceToNow } from "date-fns";
 import { getDateLocale } from "@/lib/dateFnsLocale";
+import { signCommentImages } from "@/lib/fileUrl";
 
 interface Comment {
   id: string;
@@ -184,13 +185,9 @@ export const CommentsSection = ({ taskId, materialId, entityId, entityType, draw
         continue;
       }
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('project-files')
-        .getPublicUrl(filePath);
-
       uploadedImages.push({
         id: Date.now().toString(),
-        url: publicUrl,
+        url: filePath,
         filename: image.name
       });
     }
@@ -358,7 +355,7 @@ export const CommentsSection = ({ taskId, materialId, entityId, entityType, draw
       const { data, error } = await query;
 
       if (error) throw error;
-      setComments(data || []);
+      setComments(await signCommentImages(data || []));
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : String(error);
       console.error("Error fetching comments:", msg);

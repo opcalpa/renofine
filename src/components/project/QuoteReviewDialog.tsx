@@ -56,6 +56,7 @@ import {
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCurrency } from "@/lib/currency";
+import { getFileUrl } from "@/lib/fileUrl";
 import {
   type TaskCategory,
   TASK_CATEGORY_LABELS,
@@ -189,9 +190,8 @@ export function QuoteReviewDialog({
       if (uploadErr) throw new Error(uploadErr.message);
       setTempPath(path);
 
-      const { data: urlData } = supabase.storage
-        .from("project-files")
-        .getPublicUrl(path);
+      const signedUrl = await getFileUrl(path);
+      if (!signedUrl) throw new Error("Kunde inte komma åt den uppladdade filen");
 
       // Call process-document-v2 (Claude Haiku 4.5, 2-pass) via fetch so we
       // surface the real server-side error body on non-2xx. Auto-retry once
@@ -211,7 +211,7 @@ export function QuoteReviewDialog({
             apikey: supabaseAnonKey,
           },
           body: JSON.stringify({
-            fileUrl: urlData.publicUrl,
+            fileUrl: signedUrl,
             fileType: file.type,
             fileName: file.name,
             mode: 'quote',

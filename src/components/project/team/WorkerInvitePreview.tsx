@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TaskOverride } from "./WorkerInviteFields";
+import { signRows } from "@/lib/fileUrl";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -102,7 +103,7 @@ export function WorkerInvitePreview({
         .eq("source", "before")
         .order("created_at", { ascending: true });
 
-      for (const p of taskPhotos || []) {
+      for (const p of (taskPhotos as Array<{ id: string; url: string; caption: string | null }>) || []) {
         resolved.push({ id: p.id, url: p.url, caption: p.caption, origin: "task" });
         seenIds.add(p.id);
       }
@@ -116,14 +117,15 @@ export function WorkerInvitePreview({
           .in("linked_to_id", task.roomIds)
           .order("created_at", { ascending: true });
 
-        for (const p of roomPhotos || []) {
+        for (const p of (roomPhotos as Array<{ id: string; url: string; caption: string | null }>) || []) {
           if (!seenIds.has(p.id)) {
             resolved.push({ id: p.id, url: p.url, caption: p.caption, origin: "room" });
           }
         }
       }
 
-      if (!cancelled) setBeforePhotos(resolved);
+      const signed = await signRows(resolved);
+      if (!cancelled) setBeforePhotos(signed);
     };
     setBeforePhotos([]);
     fetchBeforePhotos();

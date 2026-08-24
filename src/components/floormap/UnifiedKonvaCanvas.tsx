@@ -642,8 +642,6 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
       const filePath = `projects/${projectId}/Uppladdade filer/${Date.now()}-${file.name}`;
       const { error: uploadError } = await supabase.storage.from('project-files').upload(filePath, file);
       if (uploadError) throw uploadError;
-      const { data: { publicUrl } } = supabase.storage.from('project-files').getPublicUrl(filePath);
-
       // Place at center of visible viewport
       const { viewState } = useFloorMapStore.getState();
       const cx = (window.innerWidth / 2 - viewState.panX) / viewState.zoom;
@@ -654,7 +652,7 @@ export const UnifiedKonvaCanvas: React.FC<UnifiedKonvaCanvasProps> = ({ onRoomCr
         type: 'image',
         planId: currentPlanId,
         coordinates: { x: cx, y: cy, width: 0, height: 0 },
-        imageUrl: publicUrl,
+        imageUrl: filePath,
         imageOpacity: 0.5,
         locked: false,
         zIndex: -100,

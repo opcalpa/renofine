@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { startOfDay } from "date-fns";
+import { signRows } from "@/lib/fileUrl";
 
 export interface ActiveTask {
   id: string;
@@ -74,9 +75,11 @@ export function useClientViewData(projectId: string): ClientViewData {
               .order("created_at", { ascending: false })
               .limit(20);
             // Filter out inspiration sources client-side
-            const sitePhotos = (photos || [])
-              .filter((p) => !["pinterest", "url"].includes(p.source || ""))
-              .slice(0, 4);
+            const sitePhotos = await signRows(
+              ((photos as Array<SitePhoto & { source: string | null }>) || [])
+                .filter((p) => !["pinterest", "url"].includes(p.source || ""))
+                .slice(0, 4),
+            );
             return { data: sitePhotos, error };
           }),
       ]);

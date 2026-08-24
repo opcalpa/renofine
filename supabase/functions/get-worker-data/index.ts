@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
+import { signPayloadUrls } from "../_shared/fileUrl.ts";
 import {
   extractWallInstructions,
   normalizeRoomPoints,
@@ -569,7 +570,9 @@ serve(async (req) => {
       };
     });
 
-    return jsonResponse({
+    // Every file the worker sees is signed here, in one round. The worker has
+    // no session of their own — the invite token is what we validated above.
+    const payload = {
       projectName: project?.name || "",
       workerName: tokenRecord.worker_name,
       // Effective language (worker's, or the preview override) so the client
@@ -588,7 +591,9 @@ serve(async (req) => {
       wallObjects,
       wallSurfaces,
       wallNotes,
-    }, 200, req);
+    };
+
+    return jsonResponse(await signPayloadUrls(sb, payload), 200, req);
   } catch (error) {
     console.error("get-worker-data error:", error);
     return jsonResponse({ error: error.message }, 500, req);

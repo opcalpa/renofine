@@ -27,6 +27,7 @@ import { PhotoCarousel } from "@/components/ui/photo-carousel";
 import { compressImage } from "@/lib/compressImage";
 import { useTranslation } from "react-i18next";
 import type { Photo } from "./types";
+import { signRows } from "@/lib/fileUrl";
 
 // Pinterest Logo SVG
 const PinterestLogo = ({ className }: { className?: string }) => (
@@ -87,7 +88,7 @@ export function PhotoSection({ roomId, showPinterest = false }: PhotoSectionProp
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setPhotos((data as Photo[]) || []);
+      setPhotos(await signRows((data as Photo[]) || []));
     } catch (error) {
       console.error("Error loading photos:", error);
       toast.error(t('rooms.couldNotLoadPhotos', 'Could not load photos'));
@@ -172,14 +173,11 @@ export function PhotoSection({ roomId, showPinterest = false }: PhotoSectionProp
           continue;
         }
 
-        const {
-          data: { publicUrl },
-        } = supabase.storage.from("project-files").getPublicUrl(fileName);
-
         const { error: dbError } = await supabase.from("photos").insert({
           linked_to_type: "room",
           linked_to_id: roomId,
-          url: publicUrl,
+          // Store the storage path; readers sign it on demand.
+          url: fileName,
           caption: file.name,
           uploaded_by_user_id: profile.id,
         });

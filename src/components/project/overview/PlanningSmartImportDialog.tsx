@@ -56,6 +56,7 @@ import {
   TASK_CATEGORY_LABELS,
   TASK_CATEGORY_TO_COST_CENTER,
 } from "@/services/aiDocumentService.types";
+import { getFileUrl, useFileUrl } from "@/lib/fileUrl";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -250,6 +251,7 @@ export function PlanningSmartImportDialog({
   } | null>(null);
   const [previewExpanded, setPreviewExpanded] = useState(true);
   const [previewZoom, setPreviewZoom] = useState(100);
+  const previewUrl = useFileUrl(uploadedFile?.tempPath);
   /** Track which material is being edited: "taskIdx-matIdx" or "standalone-idx" */
   const [editingMaterialKey, setEditingMaterialKey] = useState<string | null>(null);
   const [quoteMetadata, setQuoteMetadata] = useState<QuoteMetadata | null>(null);
@@ -303,15 +305,14 @@ export function PlanningSmartImportDialog({
 
       if (uploadErr) throw new Error(uploadErr.message);
 
-      const { data: urlData } = supabase.storage
-        .from("project-files")
-        .getPublicUrl(tempPath);
+      const signedUrl = await getFileUrl(tempPath);
+      if (!signedUrl) throw new Error("Kunde inte komma åt den uppladdade filen");
 
       const { data, error } = await supabase.functions.invoke(
         "process-document",
         {
           body: {
-            fileUrl: urlData.publicUrl,
+            fileUrl: signedUrl,
             fileType: file.type,
             fileName: file.name,
             mode: "quote",
@@ -737,7 +738,7 @@ export function PlanningSmartImportDialog({
                 <div className="flex-1 border rounded-lg bg-muted/30 overflow-auto">
                   {uploadedFile.file.type?.includes('pdf') ? (
                     <iframe
-                      src={`${supabase.storage.from('project-files').getPublicUrl(uploadedFile.tempPath).data.publicUrl}#navpanes=0&scrollbar=1&view=FitH`}
+                      src={previewUrl ? `${previewUrl}#navpanes=0&scrollbar=1&view=FitH` : undefined}
                       title={uploadedFile.name}
                       className="w-full h-full border-0"
                       style={{ minHeight: '400px', transform: `scale(${previewZoom / 100})`, transformOrigin: 'top left', width: `${100 / (previewZoom / 100)}%` }}

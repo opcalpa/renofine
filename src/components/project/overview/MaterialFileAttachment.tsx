@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { getFileUrl } from "@/lib/fileUrl";
 
 interface FileLink {
   id: string;
@@ -129,16 +130,18 @@ export function MaterialFileAttachment({
     [fetchFiles]
   );
 
-  const handlePreview = useCallback((file: FileLink) => {
-    const { data } = supabase.storage.from("project-files").getPublicUrl(file.file_path);
-    setPreviewUrl(data.publicUrl);
+  const handlePreview = useCallback(async (file: FileLink) => {
+    const url = await getFileUrl(file.file_path);
+    if (!url) return;
+    setPreviewUrl(url);
     setPreviewFile(file);
   }, []);
 
-  const handleDownload = useCallback((file: FileLink) => {
-    const { data } = supabase.storage.from("project-files").getPublicUrl(file.file_path);
+  const handleDownload = useCallback(async (file: FileLink) => {
+    const url = await getFileUrl(file.file_path, { download: file.file_name });
+    if (!url) return;
     const a = document.createElement("a");
-    a.href = data.publicUrl;
+    a.href = url;
     a.download = file.file_name;
     a.target = "_blank";
     a.click();

@@ -7,6 +7,7 @@ import { ImageLightbox, useLightbox } from "@/components/shared/ImageLightbox";
 import { WorkerInstructionsView } from "@/components/project/WorkerInstructionsView";
 import { Loader2, MessageSquare, HelpCircle, Camera, Eye, ClipboardCheck } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { signRows } from "@/lib/fileUrl";
 
 interface WorkerActivityPanelProps {
   projectId: string;
@@ -113,7 +114,7 @@ export function WorkerActivityPanel({ projectId, workerToken, workerName, assign
       if (!active) return;
       setComments((commentsRes.data as WorkerComment[] | null) ?? []);
       setTasks((tasksRes.data as TaskStatusRow[] | null) ?? []);
-      setPhotos((photosRes.data as WorkerPhoto[] | null) ?? []);
+      setPhotos(await signRows((photosRes.data as WorkerPhoto[] | null) ?? []));
       setLoading(false);
     })();
     return () => {

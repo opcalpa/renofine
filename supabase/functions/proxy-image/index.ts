@@ -99,12 +99,9 @@ serve(async (req) => {
       );
     }
 
-    const { data: urlData } = supabaseAdmin.storage
-      .from("project-files")
-      .getPublicUrl(filePath);
-
+    // Hand back the storage path; the caller stores it and signs on read.
     return new Response(
-      JSON.stringify({ storageUrl: urlData.publicUrl }),
+      JSON.stringify({ storageUrl: filePath }),
       { headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
     );
   } catch (error) {

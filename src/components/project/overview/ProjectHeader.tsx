@@ -10,6 +10,7 @@ import { normalizeStatus, STATUS_META, PROJECT_STATUSES, type ProjectStatus } fr
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { OverviewProject } from "./types";
+import { useFileUrl, toStoragePath } from "@/lib/fileUrl";
 
 interface ProjectHeaderProps {
   project: OverviewProject;
@@ -24,7 +25,9 @@ export function ProjectHeader({ project, onOpenSettings, onCoverChange, onStatus
   const status = normalizeStatus(project.status);
   const meta = STATUS_META[status];
   const [uploading, setUploading] = useState(false);
+  // Holds a storage path (or an external URL); signed for display below.
   const [coverUrl, setCoverUrl] = useState(project.cover_image_url || null);
+  const coverDisplayUrl = useFileUrl(coverUrl);
   const [coverPosition, setCoverPosition] = useState(project.cover_image_position ?? 50);
   const [coverZoom, setCoverZoom] = useState(project.cover_image_zoom ?? 100);
   const [repositioning, setRepositioning] = useState(false);
@@ -88,11 +91,8 @@ export function ProjectHeader({ project, onOpenSettings, onCoverChange, onStatus
       });
 
       if (firstImage) {
-        const { data: { publicUrl } } = supabase.storage
-          .from("project-files")
-          .getPublicUrl(`projects/${project.id}/${firstImage.name}`);
         if (!cancelled) {
-          setCoverUrl(publicUrl);
+          setCoverUrl(`projects/${project.id}/${firstImage.name}`);
           setIsAutoCover(true);
         }
       }
@@ -135,8 +135,7 @@ export function ProjectHeader({ project, onOpenSettings, onCoverChange, onStatus
           const ext = f.name.split(".").pop()?.toLowerCase() || "";
           if (IMAGE_EXTS.includes(ext)) {
             const fullPath = folder ? `${path}/${f.name}` : `projects/${project.id}/${f.name}`;
-            const { data: { publicUrl } } = supabase.storage.from("project-files").getPublicUrl(fullPath);
-            images.push({ url: publicUrl, name: f.name });
+            images.push({ url: fullPath, name: f.name });
           }
         }
       }
@@ -171,7 +170,7 @@ export function ProjectHeader({ project, onOpenSettings, onCoverChange, onStatus
       const path = `projects/${project.id}/${Date.now()}.${ext}`;
 
       if (coverUrl) {
-        const oldPath = coverUrl.split("/project-files/")[1];
+        const oldPath = toStoragePath(coverUrl);
         if (oldPath) await supabase.storage.from("project-files").remove([oldPath]);
       }
 
@@ -185,17 +184,16 @@ export function ProjectHeader({ project, onOpenSettings, onCoverChange, onStatus
         return;
       }
 
-      const { data: { publicUrl } } = supabase.storage.from("project-files").getPublicUrl(path);
-      setCoverUrl(publicUrl);
+      setCoverUrl(path);
       setCoverPosition(50);
       setCoverZoom(100);
 
       await supabase.from("projects").update({
-        cover_image_url: publicUrl,
+        cover_image_url: path,
         cover_image_position: 50,
         cover_image_zoom: 100,
       } as Record<string, unknown>).eq("id", project.id);
-      onCoverChange?.(publicUrl);
+      onCoverChange?.(path);
     } catch {
       toast.error(t("errors.generic"));
     } finally {
@@ -206,7 +204,7 @@ export function ProjectHeader({ project, onOpenSettings, onCoverChange, onStatus
 
   const handleRemoveCover = async () => {
     if (!coverUrl) return;
-    const oldPath = coverUrl.split("/project-files/")[1];
+    const oldPath = toStoragePath(coverUrl);
     if (oldPath) await supabase.storage.from("project-files").remove([oldPath]);
 
     setCoverUrl(null);
@@ -281,7 +279,7 @@ export function ProjectHeader({ project, onOpenSettings, onCoverChange, onStatus
             onWheel={handleWheel}
           >
             <img
-              src={coverUrl}
+              src={coverDisplayUrl ?? undefined}
               alt={project.name}
               className="w-full h-full object-cover select-none"
               style={{

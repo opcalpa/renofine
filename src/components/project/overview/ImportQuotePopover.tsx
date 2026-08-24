@@ -17,6 +17,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/currency";
 import { analyzeDocument } from "@/services/receiptAnalysisService";
+import { useFileUrls } from "@/lib/fileUrl";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -120,6 +121,7 @@ export function ImportQuotePopover({
   const { t } = useTranslation();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const quoteFileUrls = useFileUrls(quotes.map((q) => q.file_path));
 
   const [open, setOpen] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -238,12 +240,6 @@ export function ImportQuotePopover({
     }
   };
 
-  // ---- Get public URL for file ----
-  const getFileUrl = (filePath: string) => {
-    const { data: { publicUrl } } = supabase.storage.from("project-files").getPublicUrl(filePath);
-    return publicUrl;
-  };
-
   return (
     <>
       <input
@@ -309,7 +305,7 @@ export function ImportQuotePopover({
                           )}
                           {q.file_path && (
                             <a
-                              href={getFileUrl(q.file_path)}
+                              href={quoteFileUrls.get(q.file_path) ?? undefined}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="text-primary hover:underline inline-flex items-center gap-0.5"

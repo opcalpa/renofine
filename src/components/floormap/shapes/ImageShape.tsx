@@ -12,6 +12,7 @@ import useImage from 'use-image';
 import { ShapeComponentProps } from './types';
 import { ImageCoordinates } from '../types';
 import { createUnifiedDragHandlers } from '../canvas/utils';
+import { useFileUrl } from '@/lib/fileUrl';
 
 /**
  * ImageShape - Renders a background image shape
@@ -31,7 +32,8 @@ export const ImageShape = React.memo<ShapeComponentProps>(({
   const dragHandlers = createUnifiedDragHandlers(shape.id);
 
   // Load image using Konva's useImage hook
-  const [image, status] = useImage(shape.imageUrl || '', 'anonymous');
+  const signedUrl = useFileUrl(shape.imageUrl);
+  const [image, status] = useImage(signedUrl || '', 'anonymous');
 
   // Track if image has loaded for initial sizing
   const [hasInitialized, setHasInitialized] = useState(false);

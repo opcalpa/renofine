@@ -1,6 +1,7 @@
 import React from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { FeedComment, FeedContextType, FeedThreadGroup, ActivityLogItem, UnifiedFeedItem } from "./types";
+import { signCommentImages } from "@/lib/fileUrl";
 
 export async function fetchAllProjectComments(projectId: string): Promise<FeedComment[]> {
   // Fetch all comments linked to this project's entities + project-level comments
@@ -87,7 +88,8 @@ export async function fetchAllProjectComments(projectId: string): Promise<FeedCo
   // Sort all by created_at descending
   results.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-  return results;
+  // Attachments are stored as paths; sign them all in one round.
+  return signCommentImages(results);
 }
 
 export function getContextType(comment: FeedComment): FeedContextType {

@@ -57,7 +57,8 @@ import {
   TASK_CATEGORY_LABELS,
   TASK_CATEGORY_TO_COST_CENTER,
 } from '@/services/aiDocumentService.types';
-import { extractFromDocument, getFilePublicUrl } from '@/services/aiDocumentService';
+import { extractFromDocument, getFileSignedUrl } from '@/services/aiDocumentService';
+import { useFileUrl } from '@/lib/fileUrl';
 import { calculateGridPlacements, createRoomPoints } from '@/components/floormap/utils/roomPlacement';
 import { FloorMapShape } from '@/components/floormap/types';
 import { saveShapesForPlan } from '@/components/floormap/utils/plans';
@@ -121,6 +122,7 @@ export function AIDocumentImportModal({
   const [editingTaskIndex, setEditingTaskIndex] = useState<number | null>(null);
   const [previewExpanded, setPreviewExpanded] = useState(true);
   const [previewZoom, setPreviewZoom] = useState(100);
+  const previewUrl = useFileUrl(file?.path);
 
   // Manual linking state
   const [existingRooms, setExistingRooms] = useState<{ id: string; name: string }[]>([]);
@@ -235,7 +237,8 @@ export function AIDocumentImportModal({
     setExtracting(true);
 
     try {
-      const fileUrl = getFilePublicUrl(file.path);
+      const fileUrl = await getFileSignedUrl(file.path);
+      if (!fileUrl) throw new Error('Kunde inte komma åt filen');
 
       const result = await extractFromDocument(fileUrl, file.type, file.name, file.size);
 
@@ -596,14 +599,14 @@ export function AIDocumentImportModal({
                   <div className="border rounded-lg bg-muted/30 overflow-auto" style={{ maxHeight: '35vh' }}>
                     {file.type?.includes('pdf') ? (
                       <iframe
-                        src={`${getFilePublicUrl(file.path)}#navpanes=0&scrollbar=1&view=FitH`}
+                        src={previewUrl ? `${previewUrl}#navpanes=0&scrollbar=1&view=FitH` : undefined}
                         title={file.name}
                         className="w-full border-0"
                         style={{ height: '35vh', transform: `scale(${previewZoom / 100})`, transformOrigin: 'top left', width: `${100 / (previewZoom / 100)}%` }}
                       />
                     ) : file.type?.startsWith('image/') ? (
                       <img
-                        src={`${getFilePublicUrl(file.path)}#navpanes=0&scrollbar=1&view=FitH`}
+                        src={previewUrl ?? undefined}
                         alt={file.name}
                         className="max-w-full h-auto mx-auto"
                         style={{ transform: `scale(${previewZoom / 100})`, transformOrigin: 'top center', maxHeight: '35vh' }}

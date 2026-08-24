@@ -56,8 +56,7 @@ export const GeneralCommentInput = ({ projectId, onPosted }: GeneralCommentInput
       const filePath = `comment-images/${fileName}`;
       const { error } = await supabase.storage.from("project-files").upload(filePath, compressed);
       if (error) { console.error("Upload error:", error); continue; }
-      const { data: { publicUrl } } = supabase.storage.from("project-files").getPublicUrl(filePath);
-      uploaded.push({ id: Date.now().toString(), url: publicUrl, filename: image.name });
+      uploaded.push({ id: Date.now().toString(), url: filePath, filename: image.name });
     }
     return uploaded;
   };

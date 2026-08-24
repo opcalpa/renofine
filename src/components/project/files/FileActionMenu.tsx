@@ -72,12 +72,7 @@ export function FileActionMenu({
         </DropdownMenuItem>
         {file.type?.startsWith("image/") && onUseAsBackground && (
           <DropdownMenuItem
-            onClick={() => {
-              const { data: { publicUrl } } = supabase.storage
-                .from("project-files")
-                .getPublicUrl(file.path);
-              onUseAsBackground(publicUrl, file.name);
-            }}
+            onClick={() => onUseAsBackground(file.path, file.name)}
           >
             <Layers className="h-4 w-4 mr-2" />
             {t("files.useAsBackground", "Använd som planritning")}

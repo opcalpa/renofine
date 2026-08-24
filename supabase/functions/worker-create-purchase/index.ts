@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
+import { signPaths } from "../_shared/fileUrl.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -155,8 +156,8 @@ serve(async (req) => {
         return jsonResponse({ error: "Failed to upload receipt" }, 500, req);
       }
       receiptFilePath = path;
-      const { data: urlData } = sb.storage.from("project-files").getPublicUrl(path);
-      receiptPublicUrl = urlData?.publicUrl ?? null;
+      const signed = await signPaths(sb, [path]);
+      receiptPublicUrl = signed.get(path) ?? null;
     }
 
     const isReceipt = fields.mode === "receipt";

@@ -24,6 +24,7 @@ import {
   SymbolCoordinates,
   TextCoordinates,
 } from '../../types';
+import { useFileUrl } from '@/lib/fileUrl';
 
 interface LegacyShapesLayerProps {
   shapes: FloorMapShape[];
@@ -117,7 +118,8 @@ const BackgroundImage: React.FC<{ shape: FloorMapShape; isSelected: boolean; zoo
   isSelected,
   zoom,
 }) => {
-  const [image] = useImage(shape.imageUrl ?? '', 'anonymous');
+  const signedUrl = useFileUrl(shape.imageUrl);
+  const [image] = useImage(signedUrl ?? '', 'anonymous');
   const c = shape.coordinates as SymbolCoordinates;
   if (!image) return null;
   // Uploads create the shape with width/height 0 — fall back to natural size

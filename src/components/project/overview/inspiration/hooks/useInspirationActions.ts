@@ -98,10 +98,6 @@ export function useInspirationActions(
             toast.error(uploadError.message || t("common.error"));
             continue;
           }
-          const { data: publicUrl } = supabase.storage
-            .from("project-files")
-            .getPublicUrl(path);
-
           const isBA = inspoView === "beforeafter";
           const roomId =
             selectedRoom !== "all" && selectedRoom !== "untagged"
@@ -110,7 +106,8 @@ export function useInspirationActions(
           await supabase.from("photos").insert({
             linked_to_type: isBA && roomId ? "room" : "project",
             linked_to_id: isBA && roomId ? roomId : projectId,
-            url: publicUrl.publicUrl,
+            // Store the storage path; readers sign it on demand.
+            url: path,
             caption: null,
             uploaded_by_user_id: profile.id,
             source: isBA ? baPhase : "upload",
@@ -163,13 +160,11 @@ export function useInspirationActions(
           });
         if (uploadError) throw uploadError;
 
-        const { data: publicUrl } = supabase.storage
-          .from("project-files")
-          .getPublicUrl(path);
         await supabase.from("photos").insert({
           linked_to_type: roomId ? "room" : "project",
           linked_to_id: roomId || projectId,
-          url: publicUrl.publicUrl,
+          // Store the storage path; readers sign it on demand.
+          url: path,
           uploaded_by_user_id: profile.id,
           source: category,
         });

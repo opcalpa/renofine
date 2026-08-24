@@ -30,12 +30,11 @@ export async function uploadRenaidaPhoto(
       .upload(path, uploadFile, { contentType: isCompressed ? "image/jpeg" : file.type });
     if (upErr) { console.error("Renaida photo upload failed:", upErr); return false; }
 
-    const { data } = supabase.storage.from("project-files").getPublicUrl(path);
-
     const { error: dbErr } = await supabase.from("photos").insert({
       linked_to_type: "project",
       linked_to_id: projectId,
-      url: data.publicUrl,
+      // Store the storage path; readers sign it on demand.
+      url: path,
       caption: null,
       uploaded_by_user_id: profileId,
       // "upload" is the inspiration convention; "progress" tags done-work photos.

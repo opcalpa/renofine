@@ -335,10 +335,8 @@ async function persistInstructionImages(
           console.error("Failed to upload instruction image:", uploadErr);
           continue;
         }
-        const { data: urlData } = supabase.storage
-          .from("project-files")
-          .getPublicUrl(path);
-        uploadedUrl = urlData.publicUrl;
+        // Store the storage path; get-worker-data signs it for the worker.
+        uploadedUrl = path;
       }
 
       rows.push({

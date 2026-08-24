@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { ELECTRICAL_ITEM_SUBTYPE_OPTIONS, ROOM_ITEM_CATEGORIES } from "../constants";
 import { matchTaskForCategory, type TaskLite } from "../../utils/roomItemTaskLink";
 import { getObjectsByCategory } from "../../objectLibrary";
+import { useFileUrl } from "@/lib/fileUrl";
 
 // Sentinel for the "no task" option (Radix Select forbids an empty-string value).
 const NO_TASK = "__none__";
@@ -109,6 +110,7 @@ export function RoomItemsSection({ roomId, projectId, onPlaceOnPlan }: RoomItems
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [editor, setEditor] = useState<EditorState>(emptyEditor);
+  const editorImageUrl = useFileUrl(editor.imageUrl);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -124,8 +126,7 @@ export function RoomItemsSection({ roomId, projectId, onPlaceOnPlan }: RoomItems
       const path = `room-items/${projectId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
       const { error: upErr } = await supabase.storage.from("project-files").upload(path, file);
       if (upErr) throw upErr;
-      const { data } = supabase.storage.from("project-files").getPublicUrl(path);
-      setEditor((prev) => ({ ...prev, imageUrl: data.publicUrl }));
+      setEditor((prev) => ({ ...prev, imageUrl: path }));
     } catch (err) {
       console.error("Failed to upload room-item image:", err);
       toast.error(t("roomItems.imageUploadError", "Kunde inte ladda upp bilden"));
@@ -579,7 +580,7 @@ export function RoomItemsSection({ roomId, projectId, onPlaceOnPlan }: RoomItems
               {editor.imageUrl ? (
                 <div className="relative mt-1 w-fit">
                   <img
-                    src={editor.imageUrl}
+                    src={editorImageUrl ?? undefined}
                     alt=""
                     className="h-24 w-24 rounded-md border object-cover"
                   />

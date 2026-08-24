@@ -143,9 +143,6 @@ export const MobileCanvasToolbar: React.FC<MobileCanvasToolbarProps> = ({
           .from('project-files')
           .upload(filePath, file);
         if (uploadError) throw uploadError;
-        const {
-          data: { publicUrl },
-        } = supabase.storage.from('project-files').getPublicUrl(filePath);
         const cx = (window.innerWidth / 2 - viewState.panX) / viewState.zoom;
         const cy = (window.innerHeight / 2 - viewState.panY) / viewState.zoom;
         const imageShape: FloorMapShape = {
@@ -153,7 +150,7 @@ export const MobileCanvasToolbar: React.FC<MobileCanvasToolbarProps> = ({
           type: 'image',
           planId: currentPlanId || undefined,
           coordinates: { x: cx, y: cy, width: 0, height: 0 },
-          imageUrl: publicUrl,
+          imageUrl: filePath,
           imageOpacity: 0.5,
           locked: false,
           zIndex: -100,

@@ -31,6 +31,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useFileUrl } from "@/lib/fileUrl";
 
 interface FileLink {
   id: string;
@@ -47,10 +48,6 @@ interface FilePreviewPopoverProps {
   taskId?: string | null;
   materialId?: string | null;
   children: React.ReactNode;
-}
-
-function getFileUrl(filePath: string): string {
-  return supabase.storage.from("project-files").getPublicUrl(filePath).data.publicUrl;
 }
 
 function isImage(name: string): boolean {
@@ -79,6 +76,7 @@ export function FilePreviewPopover({
   const [loading, setLoading] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [previewFile, setPreviewFile] = useState<FileLink | null>(null);
+  const previewUrl = useFileUrl(previewFile?.file_path);
   const [previewZoom, setPreviewZoom] = useState(100);
 
   const entityId = taskId || materialId;
@@ -235,7 +233,7 @@ export function FilePreviewPopover({
               <div className="flex-1 overflow-auto bg-muted/10">
                 {isPdf(previewFile.file_name) ? (
                   <iframe
-                    src={`${getFileUrl(previewFile.file_path)}#navpanes=0&scrollbar=1&view=FitH`}
+                    src={previewUrl ? `${previewUrl}#navpanes=0&scrollbar=1&view=FitH` : undefined}
                     className="w-full border-0"
                     style={{ height: "calc(90vh - 48px)" }}
                     title={previewFile.file_name}
@@ -243,7 +241,7 @@ export function FilePreviewPopover({
                 ) : isImage(previewFile.file_name) ? (
                   <div className="flex items-center justify-center p-4 overflow-auto h-full">
                     <img
-                      src={getFileUrl(previewFile.file_path)}
+                      src={previewUrl ?? undefined}
                       alt={previewFile.file_name}
                       className="max-w-full transition-transform"
                       style={{ transform: `scale(${previewZoom / 100})`, transformOrigin: "center" }}

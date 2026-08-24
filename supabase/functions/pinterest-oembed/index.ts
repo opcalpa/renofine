@@ -110,10 +110,8 @@ serve(async (req) => {
             .upload(filePath, arrayBuffer, { contentType });
 
           if (!uploadError) {
-            const { data: urlData } = supabaseAdmin.storage
-              .from("project-files")
-              .getPublicUrl(filePath);
-            storageUrl = urlData.publicUrl;
+            // Hand back the storage path; the caller stores it and signs on read.
+            storageUrl = filePath;
           } else {
             console.error("Storage upload error:", uploadError);
           }

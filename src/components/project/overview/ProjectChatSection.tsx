@@ -32,6 +32,7 @@ import { formatDistanceToNow } from "date-fns";
 import { getDateLocale } from "@/lib/dateFnsLocale";
 import type { FeedComment, UnifiedFeedItem, FeedFilterMode, PhotoFeedItem, ActivityLogItem } from "../feed/types";
 import { ImageLightbox, useLightbox } from "@/components/shared/ImageLightbox";
+import { getFileUrls } from "@/lib/fileUrl";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -160,9 +161,16 @@ async function fetchProjectPhotos(projectId: string): Promise<PhotoFeedItem[]> {
       if (!file.name || file.id === null) continue;
       const isImage = IMAGE_EXTENSIONS.some((ext) => file.name.toLowerCase().endsWith(ext));
       if (!isImage) continue;
-      const { data: { publicUrl } } = supabase.storage.from("project-files").getPublicUrl(`projects/${projectId}/${file.name}`);
-      photos.push({ id: `file-${file.id}`, url: publicUrl, caption: file.name, createdAt: file.created_at || new Date().toISOString(), source: "file", sourceName: file.name });
+      photos.push({ id: `file-${file.id}`, url: `projects/${projectId}/${file.name}`, caption: file.name, createdAt: file.created_at || new Date().toISOString(), source: "file", sourceName: file.name });
     }
+  }
+
+  // One signing round for every source above — storage listings, comment
+  // attachments and photo rows all hold paths now. External URLs pass through.
+  const signed = await getFileUrls(photos.map((p) => p.url));
+  for (const p of photos) {
+    const url = signed.get(p.url);
+    if (url) p.url = url;
   }
 
   photos.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -361,8 +369,7 @@ export function ProjectChatSection({ projectId, userType, onNavigateToEntity, on
           const filePath = `projects/${projectId}/dm-images/${fileName}`;
           const { error } = await supabase.storage.from("project-files").upload(filePath, compressed, { contentType: compressed.type || "image/jpeg" });
           if (error) { console.error("DM image upload error:", error); continue; }
-          const { data: { publicUrl } } = supabase.storage.from("project-files").getPublicUrl(filePath);
-          uploadedImages.push({ id: Date.now().toString(), url: publicUrl, filename: image.name });
+          uploadedImages.push({ id: Date.now().toString(), url: filePath, filename: image.name });
         }
       }
       const content = dmInput.trim() || (uploadedImages.length > 0 ? "📷" : "");
@@ -413,8 +420,7 @@ export function ProjectChatSection({ projectId, userType, onNavigateToEntity, on
           const filePath = `projects/${projectId}/comment-images/${fileName}`;
           const { error } = await supabase.storage.from("project-files").upload(filePath, compressed, { contentType: compressed.type || "image/jpeg" });
           if (error) { console.error("Upload error:", error); continue; }
-          const { data: { publicUrl } } = supabase.storage.from("project-files").getPublicUrl(filePath);
-          uploadedImages.push({ id: Date.now().toString(), url: publicUrl, filename: image.name });
+          uploadedImages.push({ id: Date.now().toString(), url: filePath, filename: image.name });
         }
       }
 
