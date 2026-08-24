@@ -340,7 +340,8 @@
     "zoomIn": "Zooma in",
     "notFound": "Fakturan hittades inte",
     "inclVat": "inkl. moms",
-    "exclVat": "exkl. moms"
+    "exclVat": "exkl. moms",
+    "noResults": "Inga träffar"
   },
   "beta": {
     "title": "Publik beta",
@@ -7804,7 +7805,11 @@
       "newProject": "Skapa nytt projekt",
       "newProjectHint": "Renaida läser filerna och föreslår rum, arbeten och inköp.",
       "existingProject": "Lägg till i befintligt projekt",
-      "existingProjectHint": "Du får godkänna varje förslag innan något läggs till."
+      "existingProjectHint": "Du får godkänna varje förslag innan något läggs till.",
+      "property": "Spara på bostaden",
+      "propertyHint": "Köpehandlingar, besiktning, frågelista — pappren om hemmet. De rör inga projekt.",
+      "pickProject": "Vilket projekt?",
+      "pickProperty": "Vilken bostad?"
     },
     "target": {
       "title": "{{count}} filer släppta",
@@ -7821,6 +7826,19 @@
       "task": "Lägg till arbetet {{title}}",
       "purchase": "Bokför inköp från {{vendor}} ({{total}} kr)",
       "sketch": "Rita in ritningen {{file}} ({{count}} rum)"
+    },
+    "property": {
+      "reading": "Läser igenom mappen…",
+      "readingNames": "Tittar på filnamnen",
+      "readingProgress": "Dokument {{done}} av {{total}}",
+      "saved_one": "{{count}} dokument sparat på {{address}}",
+      "saved_other": "{{count}} dokument sparade på {{address}}",
+      "failed_one": "{{count}} kunde inte sparas — försök igen.",
+      "failed_other": "{{count}} kunde inte sparas — försök igen.",
+      "notRead_one": "{{count}} dokument hann jag inte läsa igenom — det ligger under Övrigt.",
+      "notRead_other": "{{count}} dokument hann jag inte läsa igenom — de ligger under Övrigt.",
+      "oversized_one": "{{count}} fil var för stor för att läsas — den är sparad ändå.",
+      "oversized_other": "{{count}} filer var för stora för att läsas — de är sparade ändå."
     }
   },
   "addresses": {

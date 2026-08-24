@@ -44,6 +44,7 @@ import { FinancialAnalysisSection } from "@/components/project/FinancialAnalysis
 import { AIProjectImportModal } from "@/components/project/AIProjectImportModal";
 import { FolderDropZone } from "@/components/project/FolderDropZone";
 import { DropRouterDialog, type DropRoute } from "@/components/project/DropRouterDialog";
+import { PropertyFolderDropDialog } from "@/components/property/PropertyFolderDropDialog";
 import type { DroppedFile } from "@/lib/dropTree";
 import { stashDroppedFolder } from "@/services/agent/droppedFolderHandoff";
 import { HomeownerYearlyAnalysis } from "@/components/project/HomeownerYearlyAnalysis";
@@ -135,6 +136,12 @@ const Projects = () => {
   // Skiva 1: a folder dropped on this page → route it (new / existing project).
   const [droppedFiles, setDroppedFiles] = useState<DroppedFile[]>([]);
   const [dropRouterOpen, setDropRouterOpen] = useState(false);
+  /** The third door (P4): a folder routed to a home rather than a project. */
+  const [propertyDrop, setPropertyDrop] = useState<{
+    propertyId: string;
+    propertyName: string;
+    files: File[];
+  } | null>(null);
   const [renaidaFiles, setRenaidaFiles] = useState<File[] | undefined>(undefined);
   const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -438,6 +445,16 @@ const Projects = () => {
     if (route.kind === 'new') {
       setRenaidaFiles(droppedFiles.map((d) => d.file));
       setRenaidaOpen(true);
+      return;
+    }
+    if (route.kind === 'property') {
+      // The home's papers never enter a project: no navigation, no draft, no
+      // ingest engine. Read → propose → save on the address itself.
+      setPropertyDrop({
+        propertyId: route.propertyId,
+        propertyName: route.propertyName,
+        files: droppedFiles.map((d) => d.file),
+      });
       return;
     }
     // Existing project: the files ride an in-memory stash across the navigation.
@@ -1124,7 +1141,21 @@ const Projects = () => {
         onOpenChange={(o) => { setDropRouterOpen(o); if (!o) setDroppedFiles([]); }}
         files={droppedFiles}
         isGuest={isGuest}
+        isContractor={isContractor}
         onRoute={handleDropRoute}
+      />
+
+      {/* P4: the dropped folder belongs to a home, not a renovation. */}
+      <PropertyFolderDropDialog
+        propertyId={propertyDrop?.propertyId ?? null}
+        propertyName={propertyDrop?.propertyName ?? ''}
+        files={propertyDrop?.files ?? []}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPropertyDrop(null);
+            setDroppedFiles([]);
+          }
+        }}
       />
 
       {/* Mobile bottom navigation */}

@@ -52,9 +52,22 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   onConfirm: (documents: ReviewedDocument[]) => void;
   saving: boolean;
+  /**
+   * Where the pre-filled guess comes from. Defaults to the file name, which is
+   * all the upload button has to go on; a dropped FOLDER has already had the
+   * opening of unnamed documents read (P4) and passes those guesses in here.
+   */
+  guessFor?: (file: File) => PropertyDocumentCategory;
 }
 
-export function ReviewDocumentsDialog({ files, open, onOpenChange, onConfirm, saving }: Props) {
+export function ReviewDocumentsDialog({
+  files,
+  open,
+  onOpenChange,
+  onConfirm,
+  saving,
+  guessFor,
+}: Props) {
   const { t } = useTranslation();
   const [rows, setRows] = useState<ReviewedDocument[]>([]);
 
@@ -62,7 +75,7 @@ export function ReviewDocumentsDialog({ files, open, onOpenChange, onConfirm, sa
     if (!open) return;
     setRows(
       files.map((file) => {
-        const category = guessCategory(file.name);
+        const category = guessFor ? guessFor(file) : guessCategory(file.name);
         return {
           file,
           displayName: file.name,
@@ -71,7 +84,7 @@ export function ReviewDocumentsDialog({ files, open, onOpenChange, onConfirm, sa
         };
       })
     );
-  }, [open, files]);
+  }, [open, files, guessFor]);
 
   const patch = (index: number, updates: Partial<ReviewedDocument>) => {
     setRows((current) =>

@@ -88,7 +88,17 @@ function fileToBase64(file: File | Blob): Promise<string> {
   });
 }
 
-/** OCR / text-extract one image or document. Returns '' on any failure. */
+/**
+ * OCR / text-extract one image or document. Returns '' on any failure.
+ *
+ * Exported as `extractFileText` so the home-papers drop reads a document the
+ * exact same way this pipeline does — one extraction engine, not two that
+ * drift.
+ */
+export async function extractFileText(file: File): Promise<string> {
+  return extractText(file);
+}
+
 async function extractText(file: File): Promise<string> {
   try {
     const img = (file.type || '').startsWith('image/') || isImage(file);

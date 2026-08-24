@@ -1,15 +1,20 @@
 /**
  * "Vad ska jag göra med den här mappen?" — the router Carl asked for.
  *
- * Shown after a folder is dropped on a page that could mean either thing:
- * create a NEW project from it, or fold it into an EXISTING one. The picker
- * lists only projects the user may write to (demo projects excluded — see the
- * demo-visibility rule: public_demo is RLS-readable by everyone).
+ * A dropped folder can mean three things, and the app cannot tell which from
+ * the files alone: start a NEW project from it, fold it into an EXISTING one,
+ * or — the third door (P4) — file it under the HOME, because köpekontrakt and
+ * besiktningsprotokoll belong to the address and outlive every renovation on
+ * it. Asking is cheaper than guessing wrong in either direction.
+ *
+ * The project picker lists what RLS lets the user reach (demo projects
+ * excluded — public_demo is readable by everyone). The address picker is shown
+ * to homeowners only, matching how the address list itself is gated.
  */
 
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FolderInput, FolderPlus, FolderSymlink, Loader2 } from 'lucide-react';
+import { FolderInput, FolderPlus, FolderSymlink, House, Loader2, Search } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -18,14 +23,22 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { isDemoProject } from '@/services/demoProjectService';
 import { normalizeStatus } from '@/lib/projectStatus';
+import {
+  listMyPropertiesWithCounts,
+  propertyLabel,
+  compareByResidence,
+  type PropertyWithProjectCount,
+} from '@/services/propertyService';
 import type { DroppedFile } from '@/lib/dropTree';
 
 export type DropRoute =
   | { kind: 'new' }
-  | { kind: 'existing'; projectId: string; projectName: string };
+  | { kind: 'existing'; projectId: string; projectName: string }
+  | { kind: 'property'; propertyId: string; propertyName: string };
 
 interface Props {
   open: boolean;
@@ -34,12 +47,17 @@ interface Props {
   onRoute: (route: DropRoute) => void;
   /** Guests have no server projects — the picker is skipped for them. */
   isGuest?: boolean;
+  /** Addresses are a homeowner surface in v1, same as the address list. */
+  isContractor?: boolean;
 }
 
 interface PickerProject {
   id: string;
   name: string;
 }
+
+/** Above this many rows the list needs a filter to stay usable. */
+const FILTER_ABOVE = 8;
 
 /** The dropped folder's own name, derived from the relative paths. */
 export function droppedFolderName(files: DroppedFile[]): string | null {
@@ -48,16 +66,43 @@ export function droppedFolderName(files: DroppedFile[]): string | null {
   return first.relativePath.split('/')[0] || null;
 }
 
-export function DropRouterDialog({ open, onOpenChange, files, onRoute, isGuest = false }: Props) {
+export function DropRouterDialog({
+  open,
+  onOpenChange,
+  files,
+  onRoute,
+  isGuest = false,
+  isContractor = false,
+}: Props) {
   const { t } = useTranslation();
   const [projects, setProjects] = useState<PickerProject[] | null>(null);
-  const [picking, setPicking] = useState(false);
+  const [properties, setProperties] = useState<PropertyWithProjectCount[] | null>(null);
+  const [picking, setPicking] = useState<'project' | 'property' | null>(null);
+  const [filter, setFilter] = useState('');
 
   const folderName = useMemo(() => droppedFolderName(files), [files]);
+  const showAddresses = !isGuest && !isContractor;
+
+  // Addresses: every one the user can reach, most-lived-in first. Unlike the
+  // project picker this does NOT hide addresses without live projects — a home
+  // you have never renovated still has papers, and that is the whole point.
+  useEffect(() => {
+    if (!open) return;
+    if (!showAddresses) {
+      setProperties([]);
+      return;
+    }
+    let cancelled = false;
+    listMyPropertiesWithCounts().then((rows) => {
+      if (!cancelled) setProperties([...rows].sort(compareByResidence));
+    });
+    return () => { cancelled = true; };
+  }, [open, showAddresses]);
 
   useEffect(() => {
     if (!open) {
-      setPicking(false);
+      setPicking(null);
+      setFilter('');
       return;
     }
     if (isGuest) {
@@ -95,15 +140,28 @@ export function DropRouterDialog({ open, onOpenChange, files, onRoute, isGuest =
     return () => { cancelled = true; };
   }, [open, isGuest]);
 
-  // Nothing to fold into → don't ask a question with one possible answer.
+  // Only one possible answer → don't ask. Both lists have to be empty: an
+  // account with no projects but one address still has a real choice to make.
   useEffect(() => {
-    if (open && projects !== null && projects.length === 0) {
+    if (
+      open &&
+      projects !== null &&
+      properties !== null &&
+      projects.length === 0 &&
+      properties.length === 0
+    ) {
       onRoute({ kind: 'new' });
       onOpenChange(false);
     }
-  }, [open, projects, onRoute, onOpenChange]);
+  }, [open, projects, properties, onRoute, onOpenChange]);
 
   const fileCount = files.length;
+  const loading = projects === null || properties === null;
+
+  const matches = (haystack: string) =>
+    haystack.toLowerCase().includes(filter.trim().toLowerCase());
+  const shownProjects = (projects ?? []).filter((p) => matches(p.name));
+  const shownProperties = (properties ?? []).filter((p) => matches(propertyLabel(p)));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -120,11 +178,11 @@ export function DropRouterDialog({ open, onOpenChange, files, onRoute, isGuest =
           </DialogDescription>
         </DialogHeader>
 
-        {projects === null ? (
+        {loading ? (
           <div className="flex items-center justify-center py-8 text-muted-foreground">
             <Loader2 className="h-5 w-5 animate-spin" />
           </div>
-        ) : !picking ? (
+        ) : picking === null ? (
           <div className="grid gap-3">
             <Button
               variant="outline"
@@ -139,40 +197,111 @@ export function DropRouterDialog({ open, onOpenChange, files, onRoute, isGuest =
                 </span>
               </span>
             </Button>
-            <Button
-              variant="outline"
-              className="h-auto justify-start gap-3 py-4 text-left"
-              onClick={() => setPicking(true)}
-            >
-              <FolderSymlink className="h-5 w-5 shrink-0 text-primary" />
-              <span className="flex flex-col gap-0.5">
-                <span className="font-medium">{t('folderDrop.router.existingProject', 'Lägg till i befintligt projekt')}</span>
-                <span className="text-xs font-normal text-muted-foreground">
-                  {t('folderDrop.router.existingProjectHint', 'Du får godkänna varje förslag innan något läggs till.')}
+            {(projects ?? []).length > 0 && (
+              <Button
+                variant="outline"
+                className="h-auto justify-start gap-3 py-4 text-left"
+                onClick={() => setPicking('project')}
+              >
+                <FolderSymlink className="h-5 w-5 shrink-0 text-primary" />
+                <span className="flex flex-col gap-0.5">
+                  <span className="font-medium">{t('folderDrop.router.existingProject', 'Lägg till i befintligt projekt')}</span>
+                  <span className="text-xs font-normal text-muted-foreground">
+                    {t('folderDrop.router.existingProjectHint', 'Du får godkänna varje förslag innan något läggs till.')}
+                  </span>
                 </span>
-              </span>
-            </Button>
+              </Button>
+            )}
+            {/* The third door (P4). Papers about the home, not about a job —
+                they stay with the address long after the renovation is done. */}
+            {(properties ?? []).length > 0 && (
+              <Button
+                variant="outline"
+                className="h-auto justify-start gap-3 py-4 text-left"
+                onClick={() => setPicking('property')}
+              >
+                <House className="h-5 w-5 shrink-0 text-primary" />
+                <span className="flex flex-col gap-0.5">
+                  <span className="font-medium">{t('folderDrop.router.property', 'Spara på bostaden')}</span>
+                  <span className="text-xs font-normal text-muted-foreground">
+                    {t('folderDrop.router.propertyHint', 'Köpehandlingar, besiktning, frågelista — pappren om hemmet. De rör inga projekt.')}
+                  </span>
+                </span>
+              </Button>
+            )}
           </div>
         ) : (
           <div className="grid gap-2">
-            {projects.map((p) => (
-              <Button
-                key={p.id}
-                variant="outline"
-                className="justify-start"
-                onClick={() => {
-                  onRoute({ kind: 'existing', projectId: p.id, projectName: p.name });
-                  onOpenChange(false);
-                }}
-              >
-                {p.name}
-              </Button>
-            ))}
-            <Button variant="ghost" size="sm" className="mt-1" onClick={() => setPicking(false)}>
+            <p className="text-sm text-muted-foreground">
+              {picking === 'project'
+                ? t('folderDrop.router.pickProject', 'Vilket projekt?')
+                : t('folderDrop.router.pickProperty', 'Vilken bostad?')}
+            </p>
+            {/* A backfilled account can carry dozens of addresses; scrolling
+                past them to find one is not a picker, it is a haystack. */}
+            {(picking === 'project' ? (projects ?? []).length : (properties ?? []).length) > FILTER_ABOVE && (
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={filter}
+                  onChange={(e) => setFilter(e.target.value)}
+                  className="pl-8"
+                  placeholder={t('common.search', 'Sök')}
+                  autoFocus
+                />
+              </div>
+            )}
+            <div className="grid max-h-[45vh] gap-2 overflow-y-auto">
+              {picking === 'project'
+                ? shownProjects.map((p) => (
+                    <Button
+                      key={p.id}
+                      variant="outline"
+                      className="justify-start"
+                      onClick={() => {
+                        onRoute({ kind: 'existing', projectId: p.id, projectName: p.name });
+                        onOpenChange(false);
+                      }}
+                    >
+                      {p.name}
+                    </Button>
+                  ))
+                : shownProperties.map((p) => (
+                    <Button
+                      key={p.id}
+                      variant="outline"
+                      className="h-auto justify-start py-2.5 text-left"
+                      onClick={() => {
+                        onRoute({
+                          kind: 'property',
+                          propertyId: p.id,
+                          propertyName: propertyLabel(p),
+                        });
+                        onOpenChange(false);
+                      }}
+                    >
+                      <span className="flex min-w-0 flex-col gap-0.5">
+                        <span className="truncate font-medium">{propertyLabel(p)}</span>
+                        {p.liveProjectCount > 0 && (
+                          <span className="text-xs font-normal text-muted-foreground">
+                            {t('addresses.picker.projectCount', { count: p.liveProjectCount })}
+                          </span>
+                        )}
+                      </span>
+                    </Button>
+                  ))}
+              {(picking === 'project' ? shownProjects : shownProperties).length === 0 && (
+                <p className="py-4 text-center text-sm text-muted-foreground">
+                  {t('common.noResults', 'Inga träffar')}
+                </p>
+              )}
+            </div>
+            <Button variant="ghost" size="sm" className="mt-1" onClick={() => { setPicking(null); setFilter(''); }}>
               {t('common.back', 'Tillbaka')}
             </Button>
           </div>
         )}
+
       </DialogContent>
     </Dialog>
   );

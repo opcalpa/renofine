@@ -340,7 +340,8 @@
     "zoomIn": "Zoom in",
     "notFound": "Invoice not found",
     "inclVat": "incl. VAT",
-    "exclVat": "excl. VAT"
+    "exclVat": "excl. VAT",
+    "noResults": "No matches"
   },
   "beta": {
     "title": "Public Beta",
@@ -7805,7 +7806,11 @@
       "newProject": "Create a new project",
       "newProjectHint": "Renaida reads the files and suggests rooms, work and purchases.",
       "existingProject": "Add to an existing project",
-      "existingProjectHint": "You approve every suggestion before anything is added."
+      "existingProjectHint": "You approve every suggestion before anything is added.",
+      "property": "Save to the home",
+      "propertyHint": "Purchase papers, inspection, seller questionnaire — the papers about the home. They touch no projects.",
+      "pickProject": "Which project?",
+      "pickProperty": "Which home?"
     },
     "target": {
       "title": "{{count}} files dropped",
@@ -7822,6 +7827,19 @@
       "task": "Add the work {{title}}",
       "purchase": "Record purchase from {{vendor}} ({{total}} kr)",
       "sketch": "Draw in the plan {{file}} ({{count}} rooms)"
+    },
+    "property": {
+      "reading": "Reading through the folder…",
+      "readingNames": "Looking at the file names",
+      "readingProgress": "Document {{done}} of {{total}}",
+      "saved_one": "{{count}} document saved to {{address}}",
+      "saved_other": "{{count}} documents saved to {{address}}",
+      "failed_one": "{{count}} could not be saved — try again.",
+      "failed_other": "{{count}} could not be saved — try again.",
+      "notRead_one": "{{count}} document I did not get to read through — it is filed under Other.",
+      "notRead_other": "{{count}} documents I did not get to read through — they are filed under Other.",
+      "oversized_one": "{{count}} file was too large to read — it is saved anyway.",
+      "oversized_other": "{{count}} files were too large to read — they are saved anyway."
     }
   },
   "addresses": {
