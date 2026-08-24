@@ -3225,3 +3225,39 @@ planens §6 säger att projektets adressfält är sanningen för ROT/offerter i 
 adress-redigeringen täcker behovet. Tas upp igen om drift visar sig i praktiken.
 
 Hänger ihop med [[property-entity-epic]] (S2/S3-uppföljning).
+
+---
+id: property-documents-epic
+status: todo
+priority: P2
+tags: [epic, hemägare, adresser, dokument, mapp-ingest, rls]
+created: 2026-08-24
+---
+## EPIC: Bostadens papper — köpehandlingar på adressen, adress ur dokumenten, upplåtelseform
+
+Ur Carls fråga 2026-08-24 efter S1–S7: "jag älskar att kunna ha ALLA dokument
+kopplade till ett boende på en och samma plats." Fable-granskning av
+Opus-resonemanget + full plan: `~/.claude/plans/bostadens-papper.md`.
+
+**Verifierat nuläge:** filer är storage-only under `projects/{id}/`, storage-RLS
+fail-closed för andra prefix, `contract` = entreprenadkontrakt, ingest letar
+inte efter adress, ROT har bara fastighetsbeteckning (bostadsrätter kan inte
+fylla i sitt underlag), drop-routern har bara nytt/befintligt projekt och
+filtrerar projekt på `owner_id` (S4-svepet missade den).
+
+**Tre korrigeringar av det första resonemanget:** (1) kvitton bär butikens
+adress — utvinningen måste vara typ-rankad och alltid ett förslag; (2)
+upplåtelseform (bostadsrätt/äganderätt/hyresrätt) är den enda taxonomi
+S7-regeln släpper in — ROT-underlaget säger olika saker; (3) ingen
+vinstberäkning — visa fakta som underlag. Plus två som saknades helt:
+säljarens personnummer i kontrakten (insyn får aldrig se, AI-utvinning
+uttrycklig) och att S5-merge skulle strypa filåtkomst om storage-policyn
+parsar sökvägen (→ tabellen är sanningen, sökvägen opak).
+
+**Skivor (ordning):** P3 fundament + "Bostadens papper" på adress-sidan →
+P4 tredje dörren i droppen + blandade mappar + "flytta till bostaden" →
+P2 upplåtelseform + BRF-fält i ROT → P1 adress ur dokumenten (förslag) →
+P5 "Läs ut uppgifter" (uttryckligt, utan personnummer).
+
+**Antaganden Carl kan veta:** admin-medlemmar ser pappren; AI-utvinning
+uttrycklig, inte automatisk; proffs ser inget i v1; samma bucket, nytt prefix.
