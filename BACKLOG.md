@@ -3012,9 +3012,13 @@ samma adress (snapshot, ingen delad muterbar state); levande delat bas-lager
 `~/.claude/plans/adresser-property-entity.md` — verifierat nuläge (RLS-funktioner,
 6 skapandevägar, adressläsare, klient-perms-gapet), datamodell m. revert-SQL,
 backfill-design, write-through-copy-beslutet för adress-sanningen, yta-för-yta-
-tabell, 6 skivor S1–S6, fyravägs-RLS-testplan, riskmatris. 3 icke-blockerande
-frågor till Carl (S4-invite-rätt, S3-lansering, S5-merge över ägargräns).
-Nästa: Carl granskar planen → bygge skiva för skiva (Opus-jobb).
+tabell, 6 skivor S1–S6, fyravägs-RLS-testplan, riskmatris. Alla 3 restfrågor
+BESVARADE av Carl 2026-08-24: (1) admin får bjuda in — admin = fulla rättigheter,
+bara irreversibla handlingar (radera property, ta bort ägaren, merge, ägarbyte) är
+ägar-exklusiva → rollmatris §4.1 + DB-vakter; (2) S3 lanseras direkt för alla
+hemägare, ingen flagga; (3) merge-förslag bara inom det inloggad redan ser —
+två-konton-fallet löses av den som är admin på båda, ingen cross-account-läsning.
+Nästa: bygge skiva för skiva S1→S6 (Opus-jobb).
 
 ---
 id: floorplan-quality-epic
