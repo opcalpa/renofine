@@ -3172,7 +3172,15 @@
     "pageOf": "Page {{page}}/{{total}}",
     "previousPage": "Previous page",
     "nextPage": "Next page",
-    "pdfPreviewFailed": "Couldn't display the PDF — download it instead."
+    "pdfPreviewFailed": "Couldn't display the PDF — download it instead.",
+    "moveToProperty": {
+      "action": "Move to the home",
+      "preparing": "Fetching the file…",
+      "readFailed": "The file could not be fetched",
+      "failed": "The document could not be moved",
+      "movedName": "Saved to {{address}}",
+      "originalLeft": "The original is still in Files — remove it whenever you like."
+    }
   },
   "fileStats": {
     "quote": "Quotes",

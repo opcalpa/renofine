@@ -7,7 +7,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreVertical, Eye, Download, Sparkles, Layers, Link, MessageSquare, Trash2 } from "lucide-react";
+import { MoreVertical, Eye, Download, Sparkles, Layers, Link, MessageSquare, House, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface FileActionMenuFile {
@@ -26,6 +26,12 @@ interface FileActionMenuProps {
   onUseAsBackground?: (url: string, name: string) => void;
   onLink?: (file: FileActionMenuFile) => void;
   onComments?: (file: FileActionMenuFile) => void;
+  /**
+   * P4: this document is about the HOME, not this job. Only passed when the
+   * project sits on an address the user may manage — the move has somewhere
+   * to go and someone allowed to put it there.
+   */
+  onMoveToProperty?: (file: FileActionMenuFile) => void;
   onDelete?: (file: FileActionMenuFile) => void;
 }
 
@@ -38,6 +44,7 @@ export function FileActionMenu({
   onUseAsBackground,
   onLink,
   onComments,
+  onMoveToProperty,
   onDelete,
 }: FileActionMenuProps) {
   const { t } = useTranslation();
@@ -86,6 +93,12 @@ export function FileActionMenu({
           <DropdownMenuItem onClick={() => onComments(file)}>
             <MessageSquare className="h-4 w-4 mr-2" />
             {t("common.comments", "Kommentarer")}
+          </DropdownMenuItem>
+        )}
+        {canEdit && onMoveToProperty && (
+          <DropdownMenuItem onClick={() => onMoveToProperty(file)}>
+            <House className="h-4 w-4 mr-2" />
+            {t("files.moveToProperty.action", "Flytta till bostaden")}
           </DropdownMenuItem>
         )}
         {canEdit && onDelete && (

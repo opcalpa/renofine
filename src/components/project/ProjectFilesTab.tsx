@@ -96,6 +96,9 @@ import { BatchSmartUploadDialog, readDroppedItems, type DroppedFile } from "./Ba
 import { BatchSmartTolkDialog } from "./batch-tolk";
 import { FilesGridView } from "./files/FilesGridView";
 import { FileActionMenu } from "./files/FileActionMenu";
+import { MoveFileToPropertyDialog, type MovableProjectFile } from "@/components/property/MoveFileToPropertyDialog";
+import { propertyLabel } from "@/services/propertyService";
+import { canManageProperty } from "@/services/propertyMemberService";
 import { FileStatsStrip } from "./files/FileStatsStrip";
 import { FileColumnCell } from "./files/FileColumnCell";
 import { FilePreviewDialog } from "./files/FilePreviewDialog";
@@ -118,6 +121,48 @@ const ProjectFilesTab = ({ projectId, projectName, filesAccess = "view", onNavig
   const canManage = filesAccess === "edit";
   const imageLightbox = useLightbox();
   const [currentFolder, setCurrentFolder] = useState<string>('');
+  /**
+   * P4: where a misfiled home document can go. Null until we know the project
+   * sits on an address AND that this person may write to it — the menu item
+   * only appears when the move actually has a destination.
+   */
+  const [propertyTarget, setPropertyTarget] = useState<{ id: string; name: string } | null>(null);
+  const [fileToMove, setFileToMove] = useState<MovableProjectFile | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      // Two plain reads rather than an embed: PostgREST returns an embedded
+      // parent as an object or an array depending on how it reads the relation,
+      // and this is not worth a shape guess.
+      const { data: proj } = await supabase
+        .from('projects')
+        .select('property_id')
+        .eq('id', projectId)
+        .maybeSingle();
+      const propertyId = (proj as { property_id?: string | null } | null)?.property_id;
+      if (cancelled || !propertyId) return;
+
+      const { data: prop } = await supabase
+        .from('properties')
+        .select('id, name, address, city')
+        .eq('id', propertyId)
+        .maybeSingle();
+      if (cancelled || !prop) return;
+
+      // Owner or household admin only. The trusted-builder role can see this
+      // project's files but must never write to the home's papers.
+      const allowed = await canManageProperty(prop.id);
+      if (!cancelled && allowed) {
+        setPropertyTarget({ id: prop.id, name: propertyLabel(prop) });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [projectId]);
+
+  const handleMoveToProperty = useCallback((file: { name: string; path: string }) => {
+    setFileToMove({ name: file.name, path: file.path });
+  }, []);
 
   // ---- Data hook (files, folders, links, entities) ----
   const {
@@ -1429,6 +1474,7 @@ const ProjectFilesTab = ({ projectId, projectName, filesAccess = "view", onNavig
                                 onUseAsBackground={onUseAsBackground}
                                 onLink={setLinkFile}
                                 onComments={setSelectedFileForComments}
+                                onMoveToProperty={propertyTarget ? handleMoveToProperty : undefined}
                                 onDelete={setFileToDelete}
                               />
                             </TableCell>
@@ -1499,6 +1545,7 @@ const ProjectFilesTab = ({ projectId, projectName, filesAccess = "view", onNavig
                           onUseAsBackground={onUseAsBackground}
                           onLink={setLinkFile}
                           onComments={setSelectedFileForComments}
+                          onMoveToProperty={propertyTarget ? handleMoveToProperty : undefined}
                           onDelete={setFileToDelete}
                         />
                       </TableCell>
@@ -1595,6 +1642,15 @@ const ProjectFilesTab = ({ projectId, projectName, filesAccess = "view", onNavig
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* P4: "det här hörde inte hit" — a move, never a delete. */}
+      <MoveFileToPropertyDialog
+        file={fileToMove}
+        propertyId={propertyTarget?.id ?? null}
+        propertyName={propertyTarget?.name ?? ''}
+        onOpenChange={(open) => { if (!open) setFileToMove(null); }}
+        onMoved={() => { void fetchFiles(); void fetchAllFiles(); }}
+      />
 
       <FilePreviewDialog
         previewFile={previewFile}

@@ -2561,7 +2561,15 @@
     "pageOf": "Sida {{page}}/{{total}}",
     "previousPage": "Föregående sida",
     "nextPage": "Nästa sida",
-    "pdfPreviewFailed": "Kunde inte visa PDF:en — ladda ner den istället."
+    "pdfPreviewFailed": "Kunde inte visa PDF:en — ladda ner den istället.",
+    "moveToProperty": {
+      "action": "Flytta till bostaden",
+      "preparing": "Hämtar filen…",
+      "readFailed": "Filen kunde inte hämtas",
+      "failed": "Dokumentet kunde inte flyttas",
+      "movedName": "Sparad på {{address}}",
+      "originalLeft": "Originalet ligger kvar i Filer — ta bort det när du vill."
+    }
   },
   "fileStats": {
     "quote": "Offerter",
