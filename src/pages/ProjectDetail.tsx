@@ -1319,6 +1319,17 @@ const ProjectDetail = () => {
           }),
         );
       }
+      // A document cut off for length is the one case where a MISSING room and
+      // an absent room look identical. Say which happened.
+      if (outcome.truncatedDocCount > 0) {
+        inertNotes.push(
+          t('folderDrop.truncatedDocs', {
+            count: outcome.truncatedDocCount,
+            defaultValue:
+              '{{count}} dokument var så långa att jag bara hann läsa början — kolla att inget rum saknas.',
+          }),
+        );
+      }
       if (outcome.photosFiledCount > 0) {
         inertNotes.push(
           t('folderDrop.photosFiled', {

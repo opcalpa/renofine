@@ -148,6 +148,8 @@ interface ClassifyResult {
    * that may not shape a project — the server decides that, not this file.
    */
   scope?: AIParsedResult | null;
+  /** The document was longer than the reader could take — it read the start. */
+  text_truncated?: boolean;
 }
 
 /**
@@ -273,6 +275,12 @@ type Contribution = ContributionKind & {
   archive?: ArchiveEntry;
   /** Pages of a multi-page drawing PDF that were NOT read (never silent). */
   extraPages?: number;
+  /**
+   * The document was too long to read whole, so its rooms and tasks describe
+   * the beginning of it. Carried up so the summary can say so — a missing room
+   * must never be indistinguishable from a room that was not there.
+   */
+  truncatedText?: boolean;
   /** P1: what this one document said the home's address is, if anything. */
   address?: AddressCandidate;
 };
@@ -474,9 +482,18 @@ async function processDocument(
   // document that yielded nothing is "I did not understand this" — exactly what
   // an empty parse meant before, and one call cheaper to find out.
   const parsed = cls?.scope ?? null;
+  const truncatedText = cls?.text_truncated || undefined;
   return usable(parsed)
-    ? { kind: 'scope', parsed, sourceKind: 'document', fileName: file.name, archive, address }
-    : { kind: 'notUnderstood', archive, address };
+    ? {
+        kind: 'scope',
+        parsed,
+        sourceKind: 'document',
+        fileName: file.name,
+        archive,
+        address,
+        truncatedText,
+      }
+    : { kind: 'notUnderstood', archive, address, truncatedText };
 }
 
 /** A plain text/markdown file: read → parse as a project description. */
@@ -601,6 +618,12 @@ export interface IngestOutcome {
   oversizedCount: number;
   /** Unread pages of multi-page drawing PDFs (we read page 1). */
   skippedPlanPages: number;
+  /**
+   * Documents so long that only the beginning was read for work scope. Named
+   * rather than silent: rooms missing because a file was cut off must not look
+   * like rooms the file never mentioned.
+   */
+  truncatedDocCount: number;
   /**
    * Skiva 2: every original to file into the project's archive, with the
    * category it was classified as. Excludes fully extracted purchases (the
@@ -771,9 +794,11 @@ export async function ingestProjectFolder(
   const addressCandidates: AddressCandidate[] = [];
 
   let skippedPlanPages = 0;
+  let truncatedDocCount = 0;
   for (const c of settled) {
     if (c.archive) archiveFiles.push(c.archive);
     if (c.extraPages) skippedPlanPages += c.extraPages;
+    if (c.truncatedText) truncatedDocCount += 1;
     if (c.address) addressCandidates.push(c.address);
     switch (c.kind) {
       case 'scope':
@@ -839,6 +864,7 @@ export async function ingestProjectFolder(
     truncated,
     oversizedCount,
     skippedPlanPages,
+    truncatedDocCount,
     archiveFiles,
     modelCalls: calls,
   };

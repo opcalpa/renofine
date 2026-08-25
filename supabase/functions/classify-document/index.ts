@@ -68,6 +68,12 @@ interface ClassificationResult {
    * act on", which is the honest answer for a CV, a receipt or a bank statement.
    */
   scope: RenovationScope | null;
+  /**
+   * True when the document was longer than the scope reader could take, so what
+   * came back describes the beginning of it and not the whole. Never silent:
+   * the drop says so rather than letting missing rooms look like absent ones.
+   */
+  text_truncated: boolean;
 }
 
 /**
@@ -218,9 +224,18 @@ function narrowAddress(
  * page; a scope extraction needs the whole quote, and truncating one at 5 000
  * characters is how the last two rooms of a specification disappear. Only the
  * text actually present is sent, so a receipt still costs a receipt.
+ *
+ * The scope limit is generous rather than tight — roughly a thirty-page
+ * specification — because the thing it guards against is not a long document
+ * but an absurd one: an OCR pass over a 200-page scan can produce half a
+ * million characters, and reading all of it would cost far more than the rooms
+ * it contains are worth. Below the limit nothing is lost; above it, the caller
+ * is TOLD. A cap that silently reads half a specification and reports rooms as
+ * if it read all of it is the kind of quiet wrongness this pipeline exists to
+ * avoid.
  */
 const TEXT_LIMIT = 5000;
-const TEXT_LIMIT_WITH_SCOPE = 24000;
+const TEXT_LIMIT_WITH_SCOPE = 60000;
 
 async function classifyWithContent(
   content: string,
@@ -235,6 +250,9 @@ async function classifyWithContent(
   if (!apiKey) throw new Error('OPENAI_API_KEY is not configured');
 
   let userContent: unknown[];
+  const limit = scopeLang ? TEXT_LIMIT_WITH_SCOPE : TEXT_LIMIT;
+  // Only the text path can truncate; an image or a PDF is sent whole.
+  const truncated = !isImage && !isPdf && (content?.length ?? 0) > limit;
 
   if (isImage) {
     userContent = [
@@ -257,7 +275,6 @@ async function classifyWithContent(
       { type: 'text' as const, text: `File name: "${fileName}". Classify this document.` },
     ];
   } else {
-    const limit = scopeLang ? TEXT_LIMIT_WITH_SCOPE : TEXT_LIMIT;
     userContent = [
       {
         type: 'text' as const,
@@ -330,10 +347,11 @@ async function classifyWithContent(
       property_address,
       address_source,
       scope,
+      text_truncated: truncated,
     };
   } catch {
     console.error('Failed to parse classification:', jsonText.substring(0, 500));
-    return { type: 'other', confidence: 0, summary: '', vendor_name: null, invoice_date: null, invoice_amount: null, suggested_action: 'store_only', property_address: null, address_source: null, scope: null };
+    return { type: 'other', confidence: 0, summary: '', vendor_name: null, invoice_date: null, invoice_amount: null, suggested_action: 'store_only', property_address: null, address_source: null, scope: null, text_truncated: truncated };
   }
 }
 
@@ -426,6 +444,7 @@ serve(async (req) => {
         property_address: null,
         address_source: null,
         scope: null,
+        text_truncated: false,
       }),
       {
         headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },

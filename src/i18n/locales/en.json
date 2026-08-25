@@ -7909,7 +7909,9 @@
     "archiveFailed_other": "{{count}} files could not be saved to Files — drop them again or upload them manually.",
     "nothingFoundNothingSaved": "I didn't find anything to add, and the files could not be saved either.",
     "notUnderstoodFolder_one": "{{count}} file I could not identify — it is in {{folder}} and touches nothing in the project.",
-    "notUnderstoodFolder_other": "{{count}} files I could not identify — they are in {{folder}} and touch nothing in the project."
+    "notUnderstoodFolder_other": "{{count}} files I could not identify — they are in {{folder}} and touch nothing in the project.",
+    "truncatedDocs_one": "{{count}} document was long enough that I only read the beginning — check that no room is missing.",
+    "truncatedDocs_other": "{{count}} documents were long enough that I only read the beginning — check that no room is missing."
   },
   "addresses": {
     "picker": {
@@ -8186,6 +8188,8 @@
     },
     "doneMoved_one": "{{count}} file was moved to the folder you chose.",
     "doneMoved_other": "{{count}} files were moved to the folder you chose.",
-    "modelCalls": "It cost {{calls}} AI calls ({{perFile}} per file)."
+    "modelCalls": "It cost {{calls}} AI calls ({{perFile}} per file).",
+    "truncatedDocs_one": "{{count}} document was long enough that I only read the beginning — check that no room is missing.",
+    "truncatedDocs_other": "{{count}} documents were long enough that I only read the beginning — check that no room is missing."
   }
 }

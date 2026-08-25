@@ -289,6 +289,18 @@ export function ImportReviewPage({
             </>
           )}
         </p>
+        {/* A document cut off for length is the one case where a room that is
+            MISSING looks exactly like a room that was never there. A toast
+            disappears; this stays until the person has decided. */}
+        {session.outcome.truncatedDocCount > 0 && (
+          <p className="text-sm text-amber-700 dark:text-amber-500">
+            {t('importReview.truncatedDocs', {
+              count: session.outcome.truncatedDocCount,
+              defaultValue:
+                '{{count}} dokument var så långa att jag bara hann läsa början — kolla att inget rum saknas.',
+            })}
+          </p>
+        )}
         {/* What the drop cost. Measured, not estimated — every claim about this
             pipeline getting cheaper was a guess until this number existed. The
             per-function breakdown sits in the tooltip so the headline stays
