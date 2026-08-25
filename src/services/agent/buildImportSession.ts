@@ -103,12 +103,22 @@ export function buildImportSession({
   // Files that produced something come first — they are what needs checking.
   for (const [name] of proposalsByFile) push(name, 'interpreted');
 
+  // Skipped before being read. Named rather than silently missing: a file that
+  // changed nothing still deserves to be accounted for.
+  for (const name of outcome.alreadyImportedNames ?? []) push(name, 'alreadyImported');
+
   for (const candidate of outcome.propertyDocuments) {
     push(candidate.file.name, 'homePaper', candidate.file.type);
   }
   for (const entry of outcome.archiveFiles) {
     push(entry.file.name, 'filed', entry.file.type);
   }
+
+  // Anything the project already has starts switched OFF. It is still listed,
+  // so a second copy is a deliberate choice rather than an accident.
+  const rejected = new Set<string>(
+    proposals.filter((p) => p.duplicateOfExisting).map((p) => p.id)
+  );
 
   return {
     projectId,
@@ -118,6 +128,6 @@ export function buildImportSession({
     existingRooms,
     existingPlans,
     drawings,
-    rejected: new Set<string>(),
+    rejected,
   };
 }

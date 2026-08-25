@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { FileText, Image as ImageIcon, Home, AlertCircle, Sparkles } from 'lucide-react';
+import { FileText, Image as ImageIcon, Home, AlertCircle, Sparkles, CheckCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ImportFileKind, ImportFileRow, ImportSession } from '@/services/agent/importSession';
 
@@ -19,6 +19,12 @@ const GROUPS: Array<{ kind: ImportFileKind; labelKey: string; fallback: string; 
     labelKey: 'importReview.files.interpreted',
     fallback: 'Gav projektet något',
     hint: 'importReview.files.interpretedHint',
+  },
+  {
+    kind: 'alreadyImported',
+    labelKey: 'importReview.files.alreadyImported',
+    fallback: 'Fanns redan — lästes inte om',
+    hint: 'importReview.files.alreadyImportedHint',
   },
   {
     kind: 'filed',
@@ -41,6 +47,7 @@ const GROUPS: Array<{ kind: ImportFileKind; labelKey: string; fallback: string; 
 ];
 
 function FileKindIcon({ kind, name }: { kind: ImportFileKind; name: string }) {
+  if (kind === 'alreadyImported') return <CheckCheck className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />;
   if (kind === 'homePaper') return <Home className="h-3.5 w-3.5 shrink-0 text-amber-600" />;
   if (kind === 'unreadable') return <AlertCircle className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />;
   if (kind === 'interpreted') return <Sparkles className="h-3.5 w-3.5 shrink-0 text-primary" />;

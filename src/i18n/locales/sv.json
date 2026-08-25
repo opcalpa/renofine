@@ -8132,7 +8132,9 @@
       "nTasks": "{{count}} arbeten",
       "nPurchases": "{{count}} inköp",
       "drawing": "Ritning",
-      "nothing": "Inget nytt"
+      "nothing": "Inget nytt",
+      "alreadyImported": "Fanns redan — lästes inte om",
+      "alreadyImportedRow": "Redan importerad tidigare"
     },
     "rooms": {
       "title": "Rum",
@@ -8167,6 +8169,9 @@
       "fileOnlyHint": "Rör inte planritaren alls.",
       "ontoPlan": "På {{name}}",
       "newPlan": "På en ny planritning"
-    }
+    },
+    "leadSkipped": "{{count}} filer kände jag igen sedan tidigare och hoppade över helt.",
+    "duplicate": "Finns redan i projektet",
+    "duplicatePurchase": "Redan bokförd — samma leverantör och fakturanummer"
   }
 }

@@ -7925,7 +7925,9 @@
       "nTasks": "{{count}} tasks",
       "nPurchases": "{{count}} purchases",
       "drawing": "Drawing",
-      "nothing": "Nothing new"
+      "nothing": "Nothing new",
+      "alreadyImported": "Ya estaba — no se releyó",
+      "alreadyImportedRow": "Importado antes"
     },
     "rooms": {
       "title": "Rooms",
@@ -7960,6 +7962,9 @@
       "fileOnlyHint": "Doesn't touch the planner at all.",
       "ontoPlan": "Onto {{name}}",
       "newPlan": "Onto a new plan"
-    }
+    },
+    "leadSkipped": "Reconocí {{count}} archivos de antes y los omití por completo.",
+    "duplicate": "Ya está en el proyecto",
+    "duplicatePurchase": "Ya contabilizado — mismo proveedor y número de factura"
   }
 }

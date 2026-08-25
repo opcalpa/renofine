@@ -93,6 +93,7 @@ import { loadPlansFromDB, loadShapesForPlan } from "@/components/floormap/utils/
 import { ImportReviewPage } from "@/components/project/import-review/ImportReviewPage";
 import { applyImportSession, mergedRoomCount } from "@/services/agent/applyImportSession";
 import type { ImportSession } from "@/services/agent/importSession";
+import { loadImportedFingerprints, loadPurchaseKeys, loadTaskKeys } from "@/services/agent/importFingerprint";
 
 interface Project {
   id: string;
@@ -1178,15 +1179,31 @@ const ProjectDetail = () => {
     if (!project?.id || files.length === 0) return;
     setIngestBusy({ phase: 'read', done: 0, total: files.length });
     try {
+      // What the project already holds, fetched BEFORE reading anything. Files
+      // it recognises are skipped whole — no extraction, no classification, no
+      // parsing — which is the only saving that removes a call rather than
+      // making it cheaper. Re-dropping a folder to add three files should cost
+      // three files, not a hundred.
+      const [alreadyImported, existingTaskKeys, existingPurchaseKeys] = await Promise.all([
+        loadImportedFingerprints(project.id),
+        loadTaskKeys(project.id),
+        loadPurchaseKeys(project.id),
+      ]);
+
       const outcome = await ingestProjectFolder(files, emptyDraft(), i18n.language, {
         collectPurchases: true,
         isContractor: effectiveUserType === 'contractor',
         onProgress: (progress) => setIngestBusy(progress),
+        alreadyImported,
       });
 
       const proposals = ingestOutcomeToProposals(
         outcome,
-        { existingRooms: roomsData.map((r: { id: string; name: string }) => ({ id: r.id, name: r.name })) },
+        {
+          existingRooms: roomsData.map((r: { id: string; name: string }) => ({ id: r.id, name: r.name })),
+          existingTaskKeys,
+          existingPurchaseKeys,
+        },
         {
           labelFor: (wt) => t(`intake.workType.${wt}`, wt),
           copy: {

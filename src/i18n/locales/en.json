@@ -8133,7 +8133,9 @@
       "nTasks": "{{count}} tasks",
       "nPurchases": "{{count}} purchases",
       "drawing": "Drawing",
-      "nothing": "Nothing new"
+      "nothing": "Nothing new",
+      "alreadyImported": "Already here — not re-read",
+      "alreadyImportedRow": "Imported earlier"
     },
     "rooms": {
       "title": "Rooms",
@@ -8168,6 +8170,9 @@
       "fileOnlyHint": "Doesn't touch the planner at all.",
       "ontoPlan": "Onto {{name}}",
       "newPlan": "Onto a new plan"
-    }
+    },
+    "leadSkipped": "I recognised {{count}} files from before and skipped them entirely.",
+    "duplicate": "Already in the project",
+    "duplicatePurchase": "Already booked — same supplier and invoice number"
   }
 }

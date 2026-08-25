@@ -49,7 +49,7 @@ import {
   wasRecognised,
   type PropertyDocumentCategory,
 } from './propertyDocumentService';
-import { rasterizePdfFirstPage } from '@/lib/pdfRaster';
+import { extractPdfTextLocally, rasterizePdfFirstPage } from '@/lib/pdfRaster';
 import { analyzeFloorPlanFile, type AIConversionResult } from './aiVisionService';
 import {
   mergeParseIntoDraft,
@@ -58,6 +58,7 @@ import {
   type ProvenanceKind,
   type QuoteLine,
 } from './renaidaProjectFlow';
+import { fileFingerprint } from '@/lib/importKeys';
 
 /**
  * A renovation folder, not a photo-library dump — bound the LLM cost. A whole
@@ -107,6 +108,13 @@ export async function extractFileText(file: File): Promise<string> {
 
 async function extractText(file: File): Promise<string> {
   try {
+    // A PDF with a text layer needs no model at all. Most quotes and invoices
+    // have one, so this removes roughly a third of the calls in a document
+    // folder — and it is faster than the round trip it replaces.
+    if (isPdf(file)) {
+      const local = await extractPdfTextLocally(file);
+      if (local) return local;
+    }
     const img = (file.type || '').startsWith('image/') || isImage(file);
     const prepared = img ? await compressImage(file, { maxDimension: 1600 }) : file;
     const base64 = await fileToBase64(prepared);
@@ -537,6 +545,11 @@ export interface IngestOutcome {
    * project's files with a note that they can be moved).
    */
   propertyDocuments: PropertyDocCandidate[];
+  /**
+   * Files recognised as already imported and skipped without being read.
+   * Named so the review page can say which, instead of a silent difference.
+   */
+  alreadyImportedNames: string[];
   /** True when the drop exceeded MAX_FILES and the tail was skipped. */
   truncated: boolean;
   /** How many files were skipped for being over the size limit. */
@@ -580,6 +593,12 @@ export async function ingestProjectFolder(
      * each home paper that would otherwise be filed without a model call.
      */
     suggestAddress?: boolean;
+    /**
+     * Fingerprints (name + byte size) of files this project already holds.
+     * Matching files are dropped BEFORE any model call — re-dropping a folder
+     * to add three files should cost three files, not a hundred.
+     */
+    alreadyImported?: Set<string>;
   }
 ): Promise<IngestOutcome> {
   const collectPurchases = opts?.collectPurchases ?? false;
@@ -589,8 +608,21 @@ export async function ingestProjectFolder(
   // Oversized files never reach the LLM — a 30 MB scan is cost, not signal.
   const sized = allFiles.filter((f) => f.size <= MAX_FILE_BYTES);
   const oversizedCount = allFiles.length - sized.length;
-  const files = sized.slice(0, MAX_FILES);
-  const truncated = sized.length > files.length;
+  const capped = sized.slice(0, MAX_FILES);
+  const truncated = sized.length > capped.length;
+
+  // Skip what the project already has. This is the single biggest saving in
+  // the whole pipeline: a skipped file costs nothing at all, where every other
+  // optimisation only makes a call cheaper.
+  const alreadyImported = opts?.alreadyImported;
+  const skipped: File[] = [];
+  const files = alreadyImported
+    ? capped.filter((f) => {
+        if (!alreadyImported.has(fileFingerprint(f.name, f.size))) return true;
+        skipped.push(f);
+        return false;
+      })
+    : capped;
 
   const photos = files.filter(isImage);
   const rest = files.filter((f) => !isImage(f));
@@ -732,6 +764,7 @@ export async function ingestProjectFolder(
     draft,
     filesSeen: allFiles.length,
     filesRead: files.length,
+    alreadyImportedNames: skipped.map((f) => f.name),
     roomsAdded: draft.rooms.length - roomsBefore,
     tasksAdded: draft.tasks.length - tasksBefore,
     receiptCount,

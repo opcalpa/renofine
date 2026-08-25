@@ -23,6 +23,7 @@ function outcome(over: Partial<IngestOutcome> = {}): IngestOutcome {
     draft: { rooms: [], tasks: [], answered: [] },
     filesSeen: 0,
     filesRead: 0,
+    alreadyImportedNames: [],
     roomsAdded: 0,
     tasksAdded: 0,
     receiptCount: 0,

@@ -19,6 +19,8 @@ import type { IngestOutcome } from '../ingestProjectFolder';
 export type ImportFileKind =
   /** Gave the project something (rooms, tasks, a purchase, a drawing). */
   | 'interpreted'
+  /** Recognised as already imported and never read — the cheap path. */
+  | 'alreadyImported'
   /** Read fine, recognised as nothing. Filed, touches nothing. */
   | 'filed'
   /** Belongs to the home, not the renovation. */

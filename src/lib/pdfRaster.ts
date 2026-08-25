@@ -25,6 +25,53 @@ async function loadPdfjs(): Promise<PdfjsModule> {
   return pdfjsPromise;
 }
 
+/**
+ * Read a PDF's embedded text locally, without a model call.
+ *
+ * Quotes and invoices out of any business system carry real text — sending
+ * them to a vision model to be told what they say is paying for something the
+ * file already contains. Only scanned paper genuinely needs the model, and it
+ * gives itself away by returning (almost) nothing here.
+ *
+ * Returns '' when there is no usable text layer, so the caller falls back.
+ */
+export async function extractPdfTextLocally(file: File, maxChars = 20000): Promise<string> {
+  try {
+    const pdfjs = await loadPdfjs();
+    const buffer = await file.arrayBuffer();
+    const task = pdfjs.getDocument({ data: buffer });
+    try {
+      const doc = await task.promise;
+      const parts: string[] = [];
+      let chars = 0;
+      // The classifier reads the opening anyway; a 200-page appendix is cost
+      // without signal.
+      const pages = Math.min(doc.numPages, 10);
+      for (let i = 1; i <= pages && chars < maxChars; i++) {
+        const page = await doc.getPage(i);
+        const content = await page.getTextContent();
+        const text = content.items
+          .map((item) => (typeof item === 'object' && item && 'str' in item ? String(item.str) : ''))
+          .join(' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+        if (text) {
+          parts.push(text);
+          chars += text.length;
+        }
+      }
+      const joined = parts.join('\n').slice(0, maxChars);
+      // A handful of characters means a scan with a stray label on it, not a
+      // text layer — let the model have it.
+      return joined.length >= 120 ? joined : '';
+    } finally {
+      await task.destroy().catch(() => {});
+    }
+  } catch {
+    return '';
+  }
+}
+
 export interface PdfRasterResult {
   /** Page 1 as a PNG file, named after the source. */
   file: File;

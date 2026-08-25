@@ -163,6 +163,12 @@ export interface AgentProposal {
    * between "the app invented a bathroom" and "your contract mentions one".
    */
   sourceFile?: string;
+  /**
+   * This already exists in the project (same work in the same room, or the
+   * same invoice from the same supplier). Shown unchecked under "Fanns redan"
+   * rather than hidden — skipping silently is its own kind of lying.
+   */
+  duplicateOfExisting?: boolean;
 }
 
 /** A reversible record of one applied action, used for one-tap undo. */

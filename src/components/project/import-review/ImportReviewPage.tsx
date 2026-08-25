@@ -176,6 +176,9 @@ export function ImportReviewPage({
 
   const describeFile = useCallback(
     (file: ImportFileRow): string => {
+      if (file.kind === 'alreadyImported') {
+        return t('importReview.files.alreadyImportedRow', 'Redan importerad tidigare');
+      }
       if (file.kind === 'homePaper') {
         return t('importReview.files.homePaperRow', 'Handlar om bostaden');
       }
@@ -253,6 +256,16 @@ export function ImportReviewPage({
             'importReview.lead',
             'Jag läste {{files}} filer. Kolla att jag förstod dem rätt — särskilt rummen, som kan vara sådana du redan har.',
             { files: session.outcome.filesRead }
+          )}
+          {(session.outcome.alreadyImportedNames?.length ?? 0) > 0 && (
+            <>
+              {' '}
+              {t(
+                'importReview.leadSkipped',
+                '{{count}} filer kände jag igen sedan tidigare och hoppade över helt.',
+                { count: session.outcome.alreadyImportedNames?.length ?? 0 }
+              )}
+            </>
           )}
         </p>
       </header>
@@ -341,6 +354,11 @@ function ImportPurchases({
                 />
                 <span className="min-w-0 flex-1">
                   <span className="block text-sm">{proposal.summary}</span>
+                  {proposal.duplicateOfExisting && (
+                    <span className="block text-[11px] text-amber-600">
+                      {t('importReview.duplicatePurchase', 'Redan bokförd — samma leverantör och fakturanummer')}
+                    </span>
+                  )}
                   {details.length > 0 && (
                     <span className="block text-[11px] text-muted-foreground">
                       {details.join(' · ')}

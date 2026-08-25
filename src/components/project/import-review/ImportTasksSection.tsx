@@ -107,10 +107,16 @@ function TaskRow({
         <p className="truncate text-sm" title={action.title}>
           {action.title}
         </p>
-        {proposal.sourceFile && (
-          <p className="truncate text-[11px] text-muted-foreground" title={proposal.sourceFile}>
-            {t('importReview.fromFile', 'Från {{file}}', { file: proposal.sourceFile })}
+        {proposal.duplicateOfExisting ? (
+          <p className="truncate text-[11px] text-amber-600">
+            {t('importReview.duplicate', 'Finns redan i projektet')}
           </p>
+        ) : (
+          proposal.sourceFile && (
+            <p className="truncate text-[11px] text-muted-foreground" title={proposal.sourceFile}>
+              {t('importReview.fromFile', 'Från {{file}}', { file: proposal.sourceFile })}
+            </p>
+          )
         )}
       </div>
 

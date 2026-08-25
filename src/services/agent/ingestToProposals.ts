@@ -16,6 +16,7 @@ import type { ProjectDraft, WorkTypeLabeller } from '../renaidaProjectFlow';
 import { taskTitle } from '../renaidaProjectFlow';
 import { registerSketch } from './sketchRegistry';
 import { matchRoom } from '@/lib/roomMatch';
+import { purchaseKeys, taskKey } from '@/lib/importKeys';
 
 export interface ExistingProjectContext {
   /**
@@ -23,6 +24,14 @@ export interface ExistingProjectContext {
    * tasks point at the room that EXISTS instead of proposing a duplicate.
    */
   existingRooms: { id: string; name: string }[];
+  /**
+   * Keys of work and purchases the project already holds. A folder dropped a
+   * second time must not book the same invoice twice — that one is worse than
+   * a duplicate room, because it doubles the budget rather than adding a row
+   * to delete.
+   */
+  existingTaskKeys?: Set<string>;
+  existingPurchaseKeys?: Set<string>;
 }
 
 interface Options {
@@ -111,12 +120,17 @@ export function ingestOutcomeToProposals(
         title,
         ...(existingRoomId ? { roomId: existingRoomId } : roomName ? { roomName } : {}),
       };
+      // Same work, same room, already there — only detectable for rooms that
+      // exist, which is exactly the re-drop case.
+      const duplicate =
+        !!context.existingTaskKeys?.has(taskKey(title, existingRoomId ?? null));
       proposals.push({
         id: proposalId('task', i),
         summary: copy.task(title, task.roomName),
         confidence: task.source?.confidence ?? 0.8,
         action,
         sourceFile: task.source?.fileName,
+        ...(duplicate ? { duplicateOfExisting: true } : {}),
       });
     });
 
@@ -124,11 +138,19 @@ export function ingestOutcomeToProposals(
   // Already envelope-shaped: the ingest engine builds ImportPurchaseAction via
   // the same captureDocument path the camera uses. Pass straight through.
   outcome.pendingPurchases.forEach((action, i) => {
+    const keys = purchaseKeys({
+      vendorName: action.vendorName,
+      invoiceNumber: action.invoiceNumber ?? null,
+      total: action.total,
+      date: action.documentDate ?? null,
+    });
+    const duplicate = keys.some((k) => context.existingPurchaseKeys?.has(k));
     proposals.push({
       id: proposalId('purchase', i),
       summary: copy.purchase(action.vendorName, action.total),
       confidence: 0.8,
       action,
+      ...(duplicate ? { duplicateOfExisting: true } : {}),
     });
   });
 
