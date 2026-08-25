@@ -21,6 +21,7 @@ import {
   PanelsTopLeft,
   PenLine,
   Redo2,
+  FolderOpen,
   Ruler,
   Scaling,
   Shapes,
@@ -44,10 +45,21 @@ import {
 } from '@/components/ui/tooltip';
 import { AIFloorPlanImport } from '@/components/project/AIFloorPlanImport';
 import { useFloorMapStore } from '../store';
-import { Tool } from '../types';
+import { FloorMapShape, Tool } from '../types';
 import { ObjectLibraryPanel } from '../objectLibrary/ObjectLibraryPanel';
 import { TemplatesPanelV2 } from './TemplatesPanelV2';
-import { uploadPlanImage } from '../utils/uploadPlanImage';
+import {
+  UNDERLAY_ACCEPT,
+  isPdf,
+  planLayerFromStoredFile,
+  uploadPlanImage,
+} from '../utils/uploadPlanImage';
+import {
+  UnderlayPageDialog,
+  UnderlayPicker,
+  type UnderlayCandidate,
+} from '../UnderlayPicker';
+import { rasterizePdfPage } from '@/lib/pdfRaster';
 import { undo, redo } from './core/executor';
 import { useEditorUiStore } from './state/uiStore';
 
@@ -123,35 +135,79 @@ export const EditorToolbar = ({ projectId }: EditorToolbarProps) => {
   const [objectsTab, setObjectsTab] = useState<'objects' | 'templates'>('objects');
   const [underlayOpen, setUnderlayOpen] = useState(false);
   const [aiImportOpen, setAiImportOpen] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  /** A PDF picked from disk that turned out to have several pages. */
+  const [pendingPdf, setPendingPdf] = useState<{ file: File; pageCount: number } | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   const isOpeningActive = OPENING_TOOLS.some((o) => o.tool === activeTool);
   const isShapeActive = SHAPE_TOOLS.some((s) => s.tool === activeTool);
 
-  const handleImageFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const store = useFloorMapStore.getState();
-    const { viewState } = store;
-    const viewCenter = {
+  const viewCenter = () => {
+    const { viewState } = useFloorMapStore.getState();
+    return {
       x: (window.innerWidth / 2 - viewState.panX) / viewState.zoom,
       y: (window.innerHeight / 2 - viewState.panY) / viewState.zoom,
     };
+  };
+
+  /** One landing place for every route onto the canvas. */
+  const placeLayer = (shape: FloorMapShape | null, name: string) => {
+    if (!shape) return;
+    useFloorMapStore.getState().addShape(shape);
+    toast.success(
+      t(
+        'floormap.imageAddedTrace',
+        '"{{name}}" tillagd — sätt skalan med Kalibrera skala innan du ritar',
+        { name }
+      )
+    );
+  };
+
+  const handleImageFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // A multi-page PDF picked from disk gets the same question as one picked
+    // from the project's files — taking page 1 silently is how you end up
+    // tracing the cover sheet.
+    if (isPdf(file)) {
+      const probe = await rasterizePdfPage(file, 1, 120);
+      if (probe && probe.pageCount > 1) {
+        setPendingPdf({ file, pageCount: probe.pageCount });
+        if (imageInputRef.current) imageInputRef.current.value = '';
+        return;
+      }
+    }
+
+    await uploadAndPlace(file, 1);
+    if (imageInputRef.current) imageInputRef.current.value = '';
+  };
+
+  const uploadAndPlace = async (file: File, page: number) => {
+    const store = useFloorMapStore.getState();
     const shape = await uploadPlanImage(
       projectId,
       file,
       store.currentPlanId || undefined,
-      viewCenter
+      viewCenter(),
+      page
     );
-    if (shape) {
-      store.addShape(shape);
-      toast.success(
-        t('floormap.imageAddedTrace', '"{{name}}" tillagd — markera bilden och lås den för kalkering', {
-          name: file.name,
-        })
-      );
-    }
-    if (imageInputRef.current) imageInputRef.current.value = '';
+    placeLayer(shape, shape?.name ?? file.name);
+  };
+
+  const handlePickStored = async (file: UnderlayCandidate, page: number) => {
+    setPickerOpen(false);
+    const store = useFloorMapStore.getState();
+    const shape = await planLayerFromStoredFile(
+      projectId,
+      file.path,
+      file.name,
+      store.currentPlanId || undefined,
+      viewCenter(),
+      page
+    );
+    placeLayer(shape, shape?.name ?? file.name);
   };
 
   return (
@@ -363,6 +419,18 @@ export const EditorToolbar = ({ projectId }: EditorToolbarProps) => {
         </PopoverTrigger>
         <PopoverContent side="right" align="start" className="ml-2 w-56 p-1">
           <button
+            data-testid="underlay-from-project"
+            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-gray-100"
+            onClick={() => {
+              setPickerOpen(true);
+              setUnderlayOpen(false);
+            }}
+          >
+            <FolderOpen className="h-4 w-4 text-gray-500" />
+            {t('floormap.underlayFromProject', 'Ur projektets filer')}
+          </button>
+          <button
+            data-testid="underlay-upload"
             className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-gray-100"
             onClick={() => {
               imageInputRef.current?.click();
@@ -370,7 +438,7 @@ export const EditorToolbar = ({ projectId }: EditorToolbarProps) => {
             }}
           >
             <PanelsTopLeft className="h-4 w-4 text-gray-500" />
-            {t('floormap.uploadTraceImage', 'Ladda upp ritning (kalkera)')}
+            {t('floormap.uploadTraceImage', 'Ladda upp ny (bild eller PDF)')}
           </button>
           <button
             className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-gray-100"
@@ -402,10 +470,29 @@ export const EditorToolbar = ({ projectId }: EditorToolbarProps) => {
         <Redo2 className={cn('h-5 w-5', !canRedo && 'opacity-30')} />
       </RailButton>
 
+      <UnderlayPicker
+        projectId={projectId}
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        onPick={handlePickStored}
+      />
+
+      <UnderlayPageDialog
+        open={pendingPdf !== null}
+        name={pendingPdf?.file.name ?? ''}
+        pageCount={pendingPdf?.pageCount ?? 1}
+        onPick={(page) => {
+          const pending = pendingPdf;
+          setPendingPdf(null);
+          if (pending) void uploadAndPlace(pending.file, page);
+        }}
+        onCancel={() => setPendingPdf(null)}
+      />
+
       <input
         ref={imageInputRef}
         type="file"
-        accept="image/*"
+        accept={UNDERLAY_ACCEPT}
         onChange={handleImageFile}
         className="hidden"
       />

@@ -2316,7 +2316,7 @@
     "deleteFloorPlan": "Radera planritning?",
     "cannotBeUndone": "Detta kan inte ångras.",
     "allObjectsDeleted": "Alla väggar, rum och objekt i denna plan raderas permanent.",
-    "uploadTraceImage": "Ladda upp ritning (kalkera)",
+    "uploadTraceImage": "Ladda upp ny (bild eller PDF)",
     "aiImport": "AI-tolka planritning",
     "inherit": {
       "title": "Utgå från en tidigare ritning",
@@ -2341,7 +2341,18 @@
       "tracedWarning": "Obs: bara ritningen skalas om. Det du redan ritat följer inte med.",
       "failed": "Kunde inte kalibrera — dra en längre sträcka och försök igen",
       "done": "Skalan är satt — ritningen är nu {{span}} m bred"
-    }
+    },
+    "underlayPicker": {
+      "title": "Välj ritning ur projektets filer",
+      "description": "Läggs under canvasen att kalkera på. Sätt skalan efteråt med Kalibrera skala.",
+      "root": "Projektets rot",
+      "empty": "Inga bilder eller PDF:er i projektet ännu. Ladda upp en ritning under Filer först.",
+      "pagePrompt": "\"{{name}}\" har {{count}} sidor. Vilken vill du lägga in?",
+      "pageTitle": "Vilken sida?",
+      "page": "Sida {{page}}"
+    },
+    "underlayFromProject": "Ur projektets filer",
+    "imageAddedTrace": "\"{{name}}\" tillagd — sätt skalan med Kalibrera skala innan du ritar"
   },
   "canvas": {
     "settings": "Ritinställningar",

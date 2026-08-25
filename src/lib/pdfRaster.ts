@@ -77,14 +77,20 @@ export interface PdfRasterResult {
   file: File;
   /** Total pages in the document — callers say out loud when they read only one. */
   pageCount: number;
+  /** Which page was actually rendered, after clamping. */
+  pageNumber: number;
 }
 
 /**
- * Render page 1 at roughly `targetWidth` CSS pixels. Returns null when the file
- * isn't a readable PDF — callers treat rasterization as best-effort.
+ * Render one page at roughly `targetWidth` CSS pixels. Returns null when the
+ * file isn't a readable PDF — callers treat rasterization as best-effort.
+ *
+ * `pageNumber` is 1-based and clamped to the document, so a caller that has
+ * stale page count cannot render nothing.
  */
-export async function rasterizePdfFirstPage(
+export async function rasterizePdfPage(
   file: File,
+  pageNumber = 1,
   targetWidth = 1600
 ): Promise<PdfRasterResult | null> {
   let task: ReturnType<PdfjsModule['getDocument']> | null = null;
@@ -94,8 +100,9 @@ export async function rasterizePdfFirstPage(
     task = pdfjs.getDocument({ data });
     const doc = await task.promise;
     const pageCount = doc.numPages;
+    const wanted = Math.min(Math.max(1, Math.round(pageNumber)), pageCount);
 
-    const page = await doc.getPage(1);
+    const page = await doc.getPage(wanted);
     const base = page.getViewport({ scale: 1 });
     const scale = Math.max(0.1, Math.min(4, targetWidth / base.width));
     const viewport = page.getViewport({ scale });
@@ -117,15 +124,27 @@ export async function rasterizePdfFirstPage(
     if (!blob) return null;
 
     const baseName = file.name.replace(/\.pdf$/i, '');
+    // Name the page when there is more than one, so a layer built from page 3
+    // does not land in storage looking like page 1.
+    const suffix = pageCount > 1 ? `-sida-${wanted}` : '';
     return {
-      file: new File([blob], `${baseName}.png`, { type: 'image/png' }),
+      file: new File([blob], `${baseName}${suffix}.png`, { type: 'image/png' }),
       pageCount,
+      pageNumber: wanted,
     };
   } catch (e) {
-    console.error('rasterizePdfFirstPage failed', e);
+    console.error('rasterizePdfPage failed', e);
     return null;
   } finally {
     // v6: destroy() is on the loading task, not the document proxy.
     void task?.destroy();
   }
+}
+
+/** Page 1, the common case. Kept so the ingest path reads as it always did. */
+export function rasterizePdfFirstPage(
+  file: File,
+  targetWidth = 1600
+): Promise<PdfRasterResult | null> {
+  return rasterizePdfPage(file, 1, targetWidth);
 }

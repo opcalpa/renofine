@@ -2947,7 +2947,7 @@
     "deleteFloorPlan": "Delete Floor Plan?",
     "cannotBeUndone": "This cannot be undone.",
     "allObjectsDeleted": "All walls, rooms, and objects in this plan will be permanently deleted.",
-    "uploadTraceImage": "Upload drawing (trace)",
+    "uploadTraceImage": "Upload new (image or PDF)",
     "aiImport": "AI-interpret floor plan",
     "inherit": {
       "title": "Start from an earlier drawing",
@@ -2972,7 +2972,18 @@
       "tracedWarning": "Note: only the drawing is rescaled. What you have already drawn does not follow.",
       "failed": "Could not calibrate — drag a longer distance and try again",
       "done": "Scale set — the drawing is now {{span}} m wide"
-    }
+    },
+    "underlayPicker": {
+      "title": "Choose a drawing from the project's files",
+      "description": "Placed under the canvas to trace on. Set the scale afterwards with Calibrate scale.",
+      "root": "Project root",
+      "empty": "No images or PDFs in the project yet. Upload a drawing under Files first.",
+      "pagePrompt": "\"{{name}}\" has {{count}} pages. Which one do you want?",
+      "pageTitle": "Which page?",
+      "page": "Page {{page}}"
+    },
+    "underlayFromProject": "From the project's files",
+    "imageAddedTrace": "\"{{name}}\" added — set the scale with Calibrate scale before you draw"
   },
   "canvas": {
     "settings": "Drawing Settings",

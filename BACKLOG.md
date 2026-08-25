@@ -439,8 +439,39 @@ det du just pekade på står stilla och ritningen växer runt det.
 ett oberoende uträknat värde, att ankaret står stilla när lagret inte ligger i
 origo, att den vägrar på för korta sträckor, och att ångra fungerar.
 
-**KVAR i kortet:** B (placera en redan uppladdad fil som lager), C (PDF som
-lager i planritaren), D (handskiss → geometri med stegvis bekräftelse).
+### B + C LEVERERADE 2026-08-25 (s84)
+
+**B — ritningen finns redan i projektet.** Ny post i Underlag-menyn, "Ur
+projektets filer", som listar allt bild- och PDF-material i projektet med
+miniatyr och vilken mapp det ligger i. En bild refereras DÄR DEN LIGGER, ingen
+kopia laddas upp. Det var hela glappet: en ritning som kom in med mapp-importen
+eller ligger under bostadens papper gick inte att kalkera på utan att laddas
+ner och upp igen.
+
+**C — PDF hela vägen in.** `accept` tar `application/pdf`, och den valda sidan
+rastreras till PNG som blir lagret; originalet står kvar orört. Flersidiga
+ritningar FRÅGAR vilken sida — att tyst ta sida 1 är hur man slutar med
+försättsbladet som underlag. Samma fråga oavsett om PDF:en kommer från
+projektets filer eller från disk.
+
+- `rasterizePdfFirstPage` generaliserad till `rasterizePdfPage(file, page,
+  targetWidth)`; det gamla namnet finns kvar som tunn wrapper så
+  ingest-vägen läser som förut. Sidnumret klamras mot dokumentet.
+- Sidfrågan bor i EN komponent (`PageChoice`) som både väljaren och
+  disk-vägen använder. Första utkastet använde `window.prompt` — den blockerar
+  hela sidan och går inte att testa; utbytt mot en dialog.
+- **Buggfix på köpet:** ett nytt lager placerades med sitt ÖVRE VÄNSTRA HÖRN i
+  vyns mitt, alltså halvt utanför skärmen — man fick leta efter det man just
+  lagt in. Nu centreras det på vyn.
+- Sorterar inte bort "icke-ritningar". Vi kan inte veta vilken bild som är en
+  ritning, och att gissa bort den man vill ha är värre än en längre lista —
+  mappnamnet under varje fil gör urskiljningen.
+
+6 e2e (`e2e/planner-underlay.spec.ts`) mot demoprojektets riktiga filer (gäster
+får läsa dem via storage-policyn), plus en genererad tvåsidig PDF som fixtur
+för sidvalet.
+
+**KVAR i kortet:** D (handskiss → geometri med stegvis bekräftelse).
 Se även [[kalibrera-om-hela-planen]].
 
 ---
