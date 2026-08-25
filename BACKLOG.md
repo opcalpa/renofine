@@ -66,7 +66,7 @@ kan andra dem av misstag. Inga migrationer i det har arbetet.
 
 ---
 id: visa-och-styr-filsorteringen-vid-mapp-drop
-status: todo
+status: done
 priority: P2
 tags: [import, filer, ux, idea, carl]
 created: 2026-08-25
@@ -108,7 +108,17 @@ datum och ofta rum per fil — **filter i Filer-vyn ger mer nytta an fler
 mappnivaer**, utan att lasa fast en fil. Mappar for igenkanning, filter for att
 faktiskt hitta. Vag A+B mot ett filterlager innan C byggs.
 
-**Vantar pa Carls val:** bygga A+B, eller ta filter-spret i stallet.
+**A + B LEVERERADE 2026-08-25** (commit `46d9efd`), Carls val.
+- B: `other` far `/Import YYYY-MM-DD` i stallet for projektets rot. Texten som
+  sa "de ligger under Övrigt" om filer i roten namnger nu ratt mapp.
+- A: avstamningssidan visar "Var filerna hamnar" (antal per mapp) och varje
+  filrad har mappen som en bytbar knapp. Flytten sker vid godkannande, inte
+  medan man funderar. Kvittot raknar de flyttade.
+- 6 test pinnar besluten. e2e 114/30 av 144 (fran 107/31 av 138).
+
+**KVAR pa kortet:** C (andra axeln rum/leverantor) och filter-sparet — se
+invandningen ovan. Carls on-device-test av A+B med en riktig mapp aterstar;
+drag-drop gar inte att simulera.
 
 ---
 id: rot-rules-popover-pa-levande-ytan
