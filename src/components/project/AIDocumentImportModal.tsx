@@ -62,6 +62,7 @@ import { useFileUrl } from '@/lib/fileUrl';
 import { calculateGridPlacements, createRoomPoints } from '@/components/floormap/utils/roomPlacement';
 import { FloorMapShape } from '@/components/floormap/types';
 import { saveShapesForPlan } from '@/components/floormap/utils/plans';
+import { saveTaskCosts } from "@/lib/taskCosts";
 
 interface ProjectFile {
   id: string;
@@ -444,7 +445,7 @@ export function AIDocumentImportModal({
 
           const costCenter = TASK_CATEGORY_TO_COST_CENTER[task.category as TaskCategory] || 'construction';
 
-          const { error: taskError } = await supabase.from('tasks').insert({
+          const { data: createdTask, error: taskError } = await supabase.from('tasks').insert({
             project_id: projectId,
             room_id: roomId,
             title: task.title,
@@ -454,17 +455,21 @@ export function AIDocumentImportModal({
             created_by_user_id: profileId,
             cost_center: costCenter,
             task_cost_type: 'subcontractor',
-            subcontractor_cost: task.estimatedCost || null,
             material_estimate: task.materialCost || null,
             budget: (task.estimatedCost || 0) + (task.materialCost || 0) > 0
               ? (task.estimatedCost || 0) + (task.materialCost || 0)
               : null,
             rot_eligible: task.rotEligible || false,
             rot_amount: task.rotAmount || null,
-          });
+          }).select('id').single();
 
           if (taskError) {
             console.error('Error creating task:', taskError);
+          } else if (createdTask && task.estimatedCost) {
+            // UE-kostnaden hör till task_costs (se lib/taskCosts.ts).
+            await saveTaskCosts(createdTask.id, projectId, {
+              subcontractor_cost: task.estimatedCost,
+            });
           }
         }
       }

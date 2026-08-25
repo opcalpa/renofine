@@ -44,6 +44,7 @@ import { useBulkTaskActions } from "./tasks/useBulkTaskActions";
 import { BulkActionBar } from "./tasks/BulkActionBar";
 import { SwipeableRoomInstructions, useRoomInstructionsData } from "@/components/room-instructions";
 import { TasksCalendarView } from "./calendar";
+import { splitTaskCostFields, saveTaskCosts } from "@/lib/taskCosts";
 
 interface ChecklistItem {
   id: string;
@@ -384,12 +385,19 @@ const TasksTab = ({ projectId, projectName, projectStatus, tasksScope = 'all', t
         payload.material_estimate = editingTask.material_estimate || null;
       }
 
+      // Kostnadsbasen bor i task_costs — dela patchen (se lib/taskCosts.ts).
+      const { taskPatch, costPatch, hasCosts } = splitTaskCostFields(payload);
+
       const { error } = await supabase
         .from("tasks")
-        .update(payload)
+        .update(taskPatch)
         .eq("id", editingTask.id);
 
       if (error) throw error;
+
+      if (hasCosts) {
+        await saveTaskCosts(editingTask.id, projectId, costPatch);
+      }
 
       toast({
         title: t('tasks.taskUpdated'),

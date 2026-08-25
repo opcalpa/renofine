@@ -100,7 +100,7 @@ async function fetchContext(projectId: string, authHeader: string): Promise<{ ro
       { headers },
     ),
     fetch(
-      `${supabaseRestUrl("tasks")}?project_id=eq.${projectId}&select=id,title,status,checklists,hourly_rate,estimated_hours,subcontractor_cost&order=created_at.desc&limit=200`,
+      `${supabaseRestUrl("tasks")}?project_id=eq.${projectId}&select=id,title,status,checklists,hourly_rate,estimated_hours,task_costs(subcontractor_cost)&order=created_at.desc&limit=200`,
       { headers },
     ),
     // Renaida's learned facts about this user (project-specific + global).
@@ -120,14 +120,20 @@ async function fetchContext(projectId: string, authHeader: string): Promise<{ ro
   const memories: MemoryCtx[] = memRes.ok ? await memRes.json() : [];
   const tasks: TaskCtx[] = tasksRaw.map((t: {
     id: string; title: string; status: string | null; checklists?: unknown;
-    hourly_rate?: number | null; estimated_hours?: number | null; subcontractor_cost?: number | null;
-  }) => ({
-    id: t.id, title: t.title, status: t.status, checklistItems: extractChecklistItems(t.checklists),
-    // Cost-breakdown fields feed the budget-refusal guard in normalizeProposals.
-    hourly_rate: t.hourly_rate ?? null,
-    estimated_hours: t.estimated_hours ?? null,
-    subcontractor_cost: t.subcontractor_cost ?? null,
-  }));
+    hourly_rate?: number | null; estimated_hours?: number | null;
+    // Kostnadsbasen bor i task_costs sedan 2026-08-25 (egen RLS — en kund får
+    // aldrig med den ut). PostgREST ger embeden som objekt eller enradig array.
+    task_costs?: { subcontractor_cost?: number | null } | Array<{ subcontractor_cost?: number | null }> | null;
+  }) => {
+    const costs = Array.isArray(t.task_costs) ? t.task_costs[0] : t.task_costs;
+    return {
+      id: t.id, title: t.title, status: t.status, checklistItems: extractChecklistItems(t.checklists),
+      // Cost-breakdown fields feed the budget-refusal guard in normalizeProposals.
+      hourly_rate: t.hourly_rate ?? null,
+      estimated_hours: t.estimated_hours ?? null,
+      subcontractor_cost: costs?.subcontractor_cost ?? null,
+    };
+  });
   return { rooms, tasks, memories, members };
 }
 

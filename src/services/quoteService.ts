@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { lockProject, unlockProject } from "./projectLockService";
 import { inviteCustomerAsClient } from "./intakeService";
 import { analytics, AnalyticsEvents } from "@/lib/analytics";
+import { splitTaskCostFields, saveTaskCosts, fetchTaskCosts } from "@/lib/taskCosts";
 
 const ROT_RATE = 0.3;
 const VAT_RATE = 0.25;
@@ -512,16 +513,17 @@ export async function createTasksFromQuote(quoteId: string) {
   const existingSourceIds = new Set<string>();
   const sourceTaskMarkups = new Map<string, { markup_percent: number | null; material_markup_percent: number | null; labor_cost_percent: number | null }>();
   if (sourceTaskIds.length > 0) {
-    const { data: found } = await supabase
-      .from("tasks")
-      .select("id, markup_percent, material_markup_percent, labor_cost_percent")
-      .in("id", sourceTaskIds);
+    const [{ data: found }, costsByTask] = await Promise.all([
+      supabase.from("tasks").select("id").in("id", sourceTaskIds),
+      fetchTaskCosts(sourceTaskIds),
+    ]);
     for (const t of found || []) {
       existingSourceIds.add(t.id);
+      const c = costsByTask.get(t.id);
       sourceTaskMarkups.set(t.id, {
-        markup_percent: t.markup_percent,
-        material_markup_percent: t.material_markup_percent,
-        labor_cost_percent: t.labor_cost_percent,
+        markup_percent: c?.markup_percent ?? null,
+        material_markup_percent: c?.material_markup_percent ?? null,
+        labor_cost_percent: c?.labor_cost_percent ?? null,
       });
     }
   }
@@ -574,11 +576,17 @@ export async function createTasksFromQuote(quoteId: string) {
       taskUpdates.rot_amount = Math.round(taskRotAmount * 100) / 100;
     }
 
+    // UE-kostnaden hör till task_costs (se lib/taskCosts.ts).
+    const { taskPatch, costPatch, hasCosts } = splitTaskCostFields(taskUpdates);
+
     const { error } = await supabase
       .from("tasks")
-      .update(taskUpdates)
+      .update(taskPatch)
       .eq("id", sourceTaskId);
     if (!error) updated++;
+    if (hasCosts) {
+      await saveTaskCosts(sourceTaskId, projectId, costPatch);
+    }
   }
 
   // ── 2. Orphan items (manually added in quote, no source task) ──

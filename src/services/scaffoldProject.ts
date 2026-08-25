@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { linkNewProjectToProperty } from "@/services/propertyService";
+import { saveTaskCosts } from "@/lib/taskCosts";
 
 /**
  * scaffoldProject — ONE documented engine for creating a whole project from
@@ -236,7 +237,6 @@ export async function scaffoldProject(
         created_by_user_id: creatorProfileId,
         cost_center: task.costCenter ?? null,
         task_cost_type: task.taskCostType ?? null,
-        subcontractor_cost: task.subcontractorCost ?? null,
         hourly_rate: task.hourlyRate ?? null,
         estimated_hours: task.estimatedHours ?? null,
         material_estimate: task.materialEstimate ?? null,
@@ -255,6 +255,13 @@ export async function scaffoldProject(
     }
     taskIds.push(data.id);
     decisions.push({ kind: "task", label: task.title });
+
+    // UE-kostnaden hör till task_costs, inte tasks (se lib/taskCosts.ts).
+    if (task.subcontractorCost != null) {
+      await saveTaskCosts(data.id, projectId, {
+        subcontractor_cost: task.subcontractorCost,
+      });
+    }
 
     for (const mat of task.materials ?? []) {
       if (await insertMaterial(projectId, data.id, roomId, mat, creatorProfileId)) {

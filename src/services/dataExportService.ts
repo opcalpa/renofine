@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { TASK_COSTS_EMBED, flattenTaskCostRows } from "@/lib/taskCosts";
 
 export interface ExportedData {
   exportDate: string;
@@ -58,9 +59,13 @@ export async function exportUserData(): Promise<ExportedData> {
   const { data: tasks } = projectIds.length > 0
     ? await supabase
         .from("tasks")
-        .select("*")
+        .select(`*, ${TASK_COSTS_EMBED}`)
         .in("project_id", projectIds)
     : { data: [] };
+
+  const tasksFlat = flattenTaskCostRows(
+    (tasks || []) as unknown as Array<Record<string, unknown>>,
+  );
 
   // Get all materials in user's projects
   const { data: materials } = projectIds.length > 0
@@ -141,7 +146,7 @@ export async function exportUserData(): Promise<ExportedData> {
     profile: profile as Record<string, unknown>,
     projects: (projects || []) as Record<string, unknown>[],
     rooms: (rooms || []) as Record<string, unknown>[],
-    tasks: (tasks || []) as Record<string, unknown>[],
+    tasks: tasksFlat as Record<string, unknown>[],
     materials: (materials || []) as Record<string, unknown>[],
     purchaseRequests: (purchaseRequests || []) as Record<string, unknown>[],
     quotes: (quotes || []) as Record<string, unknown>[],

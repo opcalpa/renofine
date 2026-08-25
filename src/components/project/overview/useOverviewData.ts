@@ -12,6 +12,7 @@ import {
   type ViewerMode,
 } from "@/services/projectDataService";
 import type { OverviewTask, TaskStats, BudgetStats, OrderStats, TimelineStats, OverviewData, OverviewProject } from "./types";
+import { TASK_COSTS_EMBED, flattenTaskCostRows } from "@/lib/taskCosts";
 
 interface RawTask {
   id: string;
@@ -157,7 +158,7 @@ export function useOverviewData(project: OverviewProject, skip?: boolean): Overv
       const [tasksRes, stakeholdersRes, materialsRes, activitiesData, quotesRes, invoicesRes, profileRes] = await Promise.all([
         supabase
           .from("tasks")
-          .select("*")
+          .select(`*, ${TASK_COSTS_EMBED}`)
           .eq("project_id", project.id),
         supabase
           .from("stakeholders" as never)
@@ -185,7 +186,9 @@ export function useOverviewData(project: OverviewProject, skip?: boolean): Overv
           .single() : Promise.resolve({ data: null }),
       ]);
 
-      const tasks: RawTask[] = (tasksRes.data || []) as unknown as RawTask[];
+      const tasks: RawTask[] = flattenTaskCostRows(
+        (tasksRes.data || []) as unknown as Array<Record<string, unknown>>,
+      ) as unknown as RawTask[];
       const stakeholders: Stakeholder[] = (stakeholdersRes.data || []) as unknown as Stakeholder[];
       const materials: Material[] = materialsRes.data || [];
 

@@ -59,6 +59,7 @@ import {
   type RecipeEstimationSettings,
   type RecipeRoom,
 } from "@/lib/materialRecipes";
+import { TASK_COSTS_EMBED, flattenTaskCostRows, splitTaskCostFields, saveTaskCosts } from "@/lib/taskCosts";
 
 /** E2: provenance of a suggested calc cell (Renaida/estimation engine). */
 interface EstimateMeta {
@@ -548,7 +549,7 @@ export function PlanningTaskList({
     const [tasksRes, roomsRes, plannedMatsRes] = await Promise.all([
       supabase
         .from("tasks")
-        .select("*")
+        .select(`*, ${TASK_COSTS_EMBED}`)
         .eq("project_id", projectId)
         .order("created_at", { ascending: true }),
       supabase
@@ -602,7 +603,9 @@ export function PlanningTaskList({
     );
 
     setTasks(
-      (tasksRes.data || []).map((task) => {
+      (flattenTaskCostRows(
+        (tasksRes.data || []) as unknown as Array<Record<string, unknown>>,
+      ) as unknown as NonNullable<typeof tasksRes.data>).map((task) => {
         // Prefer planned materials from materials table over legacy JSONB
         const planned = plannedByTask.get(task.id);
         // Build room_ids — prefer array field, fall back to single room_id
@@ -624,17 +627,22 @@ export function PlanningTaskList({
 
   const handleSaveMargin = useCallback(
     async (taskId: string, newCostPct: number) => {
-      const { error } = await supabase
-        .from("tasks")
-        .update({ labor_cost_percent: newCostPct })
-        .eq("id", taskId);
-      if (error) {
-        toast({ title: t("common.error"), description: error.message, variant: "destructive" });
+      // Marginalen är byggarens kostnadsbas — den bor i task_costs, inte på
+      // tasks-raden (se lib/taskCosts.ts).
+      const ok = await saveTaskCosts(taskId, projectId, {
+        labor_cost_percent: newCostPct,
+      });
+      if (!ok) {
+        toast({
+          title: t("common.error"),
+          description: t("common.saveFailed", "Kunde inte spara"),
+          variant: "destructive",
+        });
       } else {
         fetchData();
       }
     },
-    [fetchData, t, toast]
+    [fetchData, projectId, t, toast]
   );
 
   useEffect(() => {
@@ -778,10 +786,17 @@ export function PlanningTaskList({
         }
       }
 
+      // Kostnadsfälten går till task_costs (se lib/taskCosts.ts).
+      const { taskPatch, costPatch, hasCosts } = splitTaskCostFields(updates);
+
       const { error } = await supabase
         .from("tasks")
-        .update(updates)
+        .update(taskPatch)
         .eq("id", taskId);
+
+      if (!error && hasCosts) {
+        await saveTaskCosts(taskId, projectId, costPatch);
+      }
 
       if (error) {
         toast({

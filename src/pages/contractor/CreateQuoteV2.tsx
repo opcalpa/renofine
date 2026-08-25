@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createQuote, addQuoteItem, updateQuoteDraft, replaceQuoteItems, generateQuoteNumber, recalculateQuoteTotals, calculateRotDeduction } from "@/services/quoteService";
 import { cn } from "@/lib/utils";
+import { TASK_COSTS_EMBED, flattenTaskCostRows } from "@/lib/taskCosts";
 
 interface SimpleProject {
   id: string;
@@ -409,7 +410,7 @@ export default function CreateQuoteV2() {
       if (taskIds.length > 0) {
         const { data: tasks } = await supabase
           .from("tasks")
-          .select("id, title, description, budget, room_id, rooms(name), task_cost_type, estimated_hours, hourly_rate, subcontractor_cost, markup_percent, material_estimate, material_markup_percent")
+          .select(`id, title, description, budget, room_id, rooms(name), task_cost_type, estimated_hours, hourly_rate, material_estimate, ${TASK_COSTS_EMBED}`)
           .in("id", taskIds)
           .order("created_at");
 
@@ -434,7 +435,9 @@ export default function CreateQuoteV2() {
         }
 
         if (tasks && tasks.length > 0) {
-          for (const task of tasks) {
+          for (const task of flattenTaskCostRows(
+            (tasks || []) as unknown as Array<Record<string, unknown>>,
+          ) as unknown as NonNullable<typeof tasks>) {
             const roomName = (task.rooms as { name: string } | null)?.name || null;
             // Material cost: prefer actual planned materials linked to this task.
             // Only fall back to material_estimate if NO planned materials exist for this task.

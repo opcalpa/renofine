@@ -19,6 +19,7 @@ import {
   computeMaterialBudget,
 } from "./budgetCalc";
 import type { BudgetRow } from "./types";
+import { TASK_COSTS_EMBED, flattenTaskCostRows } from "@/lib/taskCosts";
 
 export interface PurchaseOrderInfo {
   status: string;
@@ -87,7 +88,7 @@ export function useBudgetData(projectId: string): UseBudgetDataResult {
       const [tasksRes, materialsRes, extraRes, projectRes, taskDocsRes, materialDocsRes, purchaseOrdersRes] = await Promise.all([
         supabase
           .from("tasks")
-          .select("id, title, status, budget, ordered_amount, payment_status, paid_amount, room_id, cost_center, start_date, finish_date, is_ata, estimated_hours, hourly_rate, labor_cost_percent, subcontractor_cost, markup_percent, material_estimate, material_markup_percent, task_cost_type, rot_amount, supplier_id")
+          .select(`id, title, status, budget, ordered_amount, payment_status, paid_amount, room_id, cost_center, start_date, finish_date, is_ata, estimated_hours, hourly_rate, material_estimate, task_cost_type, rot_amount, supplier_id, ${TASK_COSTS_EMBED}`)
           .eq("project_id", projectId),
         supabase
           .from("materials")
@@ -121,13 +122,19 @@ export function useBudgetData(projectId: string): UseBudgetDataResult {
       ]);
 
       if (tasksRes.error) throw tasksRes.error;
+
+      // Kostnadsfälten ligger i task_costs sedan 2026-08-25 — platta ut embeden
+      // en gång här så alla uträkningar nedan ser oförändrad form.
+      const budgetTasks = flattenTaskCostRows(
+        (tasksRes.data || []) as unknown as Array<Record<string, unknown>>,
+      ) as unknown as NonNullable<typeof tasksRes.data>;
       if (materialsRes.error) throw materialsRes.error;
       if (extraRes.error) throw extraRes.error;
 
       setProjectBudget(projectRes.data?.contract_value ?? 0);
 
       // Build ÄTA rows from both tasks (is_ata) and materials (exclude_from_budget)
-      const ataTasks = (tasksRes.data || []).filter((t) => t.is_ata);
+      const ataTasks = budgetTasks.filter((t) => t.is_ata);
       const ataMaterials = extraRes.data || [];
       const materialAtaTotal = ataMaterials.reduce((sum, m) => sum + (m.price_total || 0), 0);
       const taskAtaTotal = ataTasks.reduce((sum, t) => sum + (t.budget || 0), 0);
@@ -162,7 +169,7 @@ export function useBudgetData(projectId: string): UseBudgetDataResult {
 
       // Collect unique room_ids to resolve names
       const roomIds = new Set<string>();
-      for (const tt of tasksRes.data || []) {
+      for (const tt of budgetTasks) {
         if (tt.room_id) roomIds.add(tt.room_id);
       }
       for (const m of materialsRes.data || []) {
@@ -239,7 +246,7 @@ export function useBudgetData(projectId: string): UseBudgetDataResult {
       }
 
       // 1. Task rows (work budget posts) — labor cost only, materials are separate rows
-      const taskRows: BudgetRow[] = (tasksRes.data || []).filter((tt) => !tt.is_ata).map((tt) => {
+      const taskRows: BudgetRow[] = budgetTasks.filter((tt) => !tt.is_ata).map((tt) => {
         const attachmentCount = taskDocCounts.get(tt.id) || 0;
         const laborCost = computeTaskLaborCost(tt, defaultLaborCostPercent);
         const fullEstCost = computeTaskEstimatedCost(tt, defaultLaborCostPercent, materialPlannedMap.get(tt.id));
@@ -335,7 +342,7 @@ export function useBudgetData(projectId: string): UseBudgetDataResult {
 
       // 3. Synthetic material budget posts for tasks with material_estimate but no planned rows
       const syntheticBudgetRows: BudgetRow[] = [];
-      for (const tt of tasksRes.data || []) {
+      for (const tt of budgetTasks) {
         if (tt.is_ata) continue;
         if (tasksWithPlannedMaterials.has(tt.id)) continue;
         const matEst = tt.material_estimate || 0;

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { RowType, UnifiedRow } from "./types";
+import { TASK_COSTS_EMBED, flattenTaskCostRows } from "@/lib/taskCosts";
 
 interface Room {
   id: string;
@@ -52,7 +53,7 @@ export function useUnifiedTableData(projectId: string): UseUnifiedTableDataResul
         supabase
           .from("tasks")
           .select(
-            "id, title, budget, ordered_amount, paid_amount, payment_status, status, priority, progress, room_id, cost_center, start_date, finish_date, due_date, assigned_to_stakeholder_id, estimated_hours, hourly_rate, subcontractor_cost, material_estimate, markup_percent, is_ata"
+            `id, title, budget, ordered_amount, paid_amount, payment_status, status, priority, progress, room_id, cost_center, start_date, finish_date, due_date, assigned_to_stakeholder_id, estimated_hours, hourly_rate, material_estimate, is_ata, ${TASK_COSTS_EMBED}`
           )
           .eq("project_id", projectId),
         supabase
@@ -98,6 +99,12 @@ export function useUnifiedTableData(projectId: string): UseUnifiedTableDataResul
       ]);
 
       if (tasksRes.error) throw tasksRes.error;
+
+      // task_costs-embeden plattas ut en gång, så raduträkningarna nedan är
+      // oförändrade.
+      const unifiedTasks = flattenTaskCostRows(
+        (tasksRes.data || []) as unknown as Array<Record<string, unknown>>,
+      ) as unknown as NonNullable<typeof tasksRes.data>;
       if (materialsRes.error) throw materialsRes.error;
       if (extraMaterialsRes.error) throw extraMaterialsRes.error;
 
@@ -108,7 +115,7 @@ export function useUnifiedTableData(projectId: string): UseUnifiedTableDataResul
         (sum, m) => sum + (m.price_total || 0),
         0
       );
-      const taskAtaTotal = (tasksRes.data || [])
+      const taskAtaTotal = unifiedTasks
         .filter((t) => t.is_ata)
         .reduce((sum, t) => sum + (t.budget || 0), 0);
       setExtraTotal(materialAtaTotal + taskAtaTotal);
@@ -157,7 +164,7 @@ export function useUnifiedTableData(projectId: string): UseUnifiedTableDataResul
       }
 
       // Build task rows (exclude ATA from main list)
-      const taskRows: UnifiedRow[] = (tasksRes.data || [])
+      const taskRows: UnifiedRow[] = unifiedTasks
         .filter((t) => !t.is_ata)
         .map((t) => {
           const attachmentCount = taskDocCounts.get(t.id) || 0;

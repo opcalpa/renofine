@@ -21,6 +21,7 @@
  * the handle_quote_status_project_sync DB trigger — not consolidated here.
  */
 import { supabase } from "@/integrations/supabase/client";
+import { saveTaskCosts, saveTaskCostsBulk } from "@/lib/taskCosts";
 
 export async function activateProject(projectId: string): Promise<void> {
   const { error } = await supabase
@@ -121,8 +122,10 @@ export async function activateProject(projectId: string): Promise<void> {
     for (const [taskId, cost] of costByTask) {
       await supabase
         .from("tasks")
-        .update({ subcontractor_cost: cost, task_cost_type: "subcontractor" })
+        .update({ task_cost_type: "subcontractor" })
         .eq("id", taskId);
+      // Själva kostnaden hör till task_costs (se lib/taskCosts.ts).
+      await saveTaskCosts(taskId, projectId, { subcontractor_cost: cost });
     }
 
     // Standalone UE (no task_id): create new task cards
@@ -135,11 +138,18 @@ export async function activateProject(projectId: string): Promise<void> {
         status: "to_do",
         priority: "medium",
         task_cost_type: "subcontractor",
-        subcontractor_cost: (m.price_total || 0) * (1 + (m.markup_percent || 0) / 100),
         room_id: m.room_id ?? null,
         created_by_user_id: creatorId,
       }));
       await supabase.from("tasks").insert(newTasks);
+      await saveTaskCostsBulk(
+        standalone.map((m, i) => ({
+          task_id: newTasks[i].id,
+          project_id: projectId,
+          subcontractor_cost:
+            (m.price_total || 0) * (1 + (m.markup_percent || 0) / 100),
+        })),
+      );
     }
 
     // Delete all UE sentinel rows — their data is now on tasks

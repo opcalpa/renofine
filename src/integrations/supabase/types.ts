@@ -3573,6 +3573,54 @@ export type Database = {
           },
         ]
       }
+      task_costs: {
+        Row: {
+          created_at: string
+          labor_cost_percent: number | null
+          markup_percent: number | null
+          material_markup_percent: number | null
+          project_id: string
+          subcontractor_cost: number | null
+          task_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          labor_cost_percent?: number | null
+          markup_percent?: number | null
+          material_markup_percent?: number | null
+          project_id: string
+          subcontractor_cost?: number | null
+          task_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          labor_cost_percent?: number | null
+          markup_percent?: number | null
+          material_markup_percent?: number | null
+          project_id?: string
+          subcontractor_cost?: number | null
+          task_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_costs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_costs_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: true
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_dependencies: {
         Row: {
           created_at: string
@@ -4455,6 +4503,7 @@ export type Database = {
         Args: { file_path: string }
         Returns: boolean
       }
+      user_can_edit_costs: { Args: { p_project_id: string }; Returns: boolean }
       user_can_invite_to_project: {
         Args: { project_uuid: string }
         Returns: boolean
@@ -4495,6 +4544,7 @@ export type Database = {
             }
             Returns: boolean
           }
+      user_can_view_costs: { Args: { p_project_id: string }; Returns: boolean }
       user_can_view_overview: {
         Args: { p_project_id: string }
         Returns: boolean
@@ -4519,6 +4569,10 @@ export type Database = {
       }
       user_has_project_access: {
         Args: { project_id: string }
+        Returns: boolean
+      }
+      user_is_client_on_project: {
+        Args: { p_project_id: string }
         Returns: boolean
       }
       user_is_property_member: {

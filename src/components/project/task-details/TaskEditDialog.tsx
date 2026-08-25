@@ -47,6 +47,7 @@ import { OverviewTab } from "./tabs/OverviewTab";
 import { EconomyTab } from "./tabs/EconomyTab";
 import { RelatedTab, type TaskDependency, type RelatedPurchaseOrder } from "./tabs/RelatedTab";
 import { FieldVisibilityMenu, type FieldVisibilityItem } from "./FieldVisibilityMenu";
+import { TASK_COSTS_EMBED, flattenTaskCosts, splitTaskCostFields, saveTaskCosts } from "@/lib/taskCosts";
 
 // Per-user, device-local show/hide of optional dialog fields
 const FIELD_PREFS_KEY = "rf-task-field-prefs";
@@ -233,13 +234,19 @@ export const TaskEditDialog = ({
 
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data: rawTask, error } = await supabase
         .from("tasks")
-        .select("*")
+        .select(`*, ${TASK_COSTS_EMBED}`)
         .eq("id", taskId)
         .single();
 
       if (error) throw error;
+
+      // Kostnadsfälten kommer via embeden — platta ut dem så resten av rutan
+      // ser samma form som före task_costs-gränsen.
+      const data = flattenTaskCosts(
+        (rawTask || {}) as unknown as Record<string, unknown>,
+      ) as unknown as NonNullable<typeof rawTask>;
 
       // Fetch linked materials for this task
       const { data: linkedMaterials } = await supabase
@@ -584,12 +591,20 @@ export const TaskEditDialog = ({
         payload.internal_notes = task.internal_notes || null;
       }
 
+      // Kostnadsbasen bor i task_costs sedan 2026-08-25 — dela patchen så
+      // inget påslag råkar skrivas tillbaka på tasks-raden.
+      const { taskPatch, costPatch, hasCosts } = splitTaskCostFields(payload);
+
       const { error } = await supabase
         .from("tasks")
-        .update(payload)
+        .update(taskPatch)
         .eq("id", task.id);
 
       if (error) throw error;
+
+      if (hasCosts) {
+        await saveTaskCosts(task.id, task.project_id, costPatch);
+      }
 
       // Sync material items → materials table (fallback for any manual edits since last apply)
       const items: MaterialItem[] = task.material_items || [];

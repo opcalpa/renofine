@@ -5,6 +5,7 @@ import {
   addInvoiceItem,
   recalculateInvoiceTotals,
 } from "./invoiceService";
+import { TASK_COSTS_EMBED, flattenTaskCostRows } from "@/lib/taskCosts";
 
 // --- Types ---
 
@@ -136,7 +137,7 @@ export async function fetchInvoiceableTasks(
   const { data: tasks, error } = await supabase
     .from("tasks")
     .select(
-      "id, title, status, budget, task_cost_type, estimated_hours, hourly_rate, subcontractor_cost, markup_percent, material_estimate, material_markup_percent, invoiced_amount, invoiced_percent"
+      `id, title, status, budget, task_cost_type, estimated_hours, hourly_rate, material_estimate, invoiced_amount, invoiced_percent, ${TASK_COSTS_EMBED}`
     )
     .eq("project_id", projectId)
     .in("status", ["completed", "in_progress"]);
@@ -146,7 +147,11 @@ export async function fetchInvoiceableTasks(
     return [];
   }
 
-  return (tasks || [])
+  return (
+    flattenTaskCostRows(
+      (tasks || []) as unknown as Array<Record<string, unknown>>,
+    ) as unknown as NonNullable<typeof tasks>
+  )
     .map((t) => {
       const cost = calculateTaskCost(t);
       if (cost <= 0) return null;

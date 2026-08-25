@@ -5,6 +5,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { TASK_COSTS_EMBED, flattenTaskCostRows } from "@/lib/taskCosts";
 
 export interface TaskItem {
   id: string;
@@ -143,7 +144,7 @@ export function useTasksData(
     try {
       let query = supabase
         .from("tasks")
-        .select("*")
+        .select(`*, ${TASK_COSTS_EMBED}`)
         .eq("project_id", projectId);
 
       if (tasksScope === "assigned" && currentProfileId) {
@@ -192,7 +193,9 @@ export function useTasksData(
         }
       });
 
-      const mappedTasks = (data || []).map((task: Record<string, unknown>) => ({
+      const mappedTasks = flattenTaskCostRows(
+        (data || []) as unknown as Array<Record<string, unknown>>,
+      ).map((task: Record<string, unknown>) => ({
         ...task,
         assigned_to_stakeholder_id: (task.assigned_to_stakeholder_id || task.assigned_to_contractor_id || null) as string | null,
         attachmentCount: attachCountMap.get(task.id as string) || 0,

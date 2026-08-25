@@ -9,6 +9,7 @@ import { useAuthSession } from "@/hooks/useAuthSession";
 import { useGuestMode } from "@/hooks/useGuestMode";
 import { getGuestProjects } from "@/services/guestStorageService";
 import { PUBLIC_DEMO_PROJECT_TYPE } from "@/constants/publicDemo";
+import { TASK_COSTS_EMBED, flattenTaskCostRows } from "@/lib/taskCosts";
 
 export interface ProjectItem {
   id: string;
@@ -101,13 +102,25 @@ export function useProjectsData(): ProjectsDataResult {
     if (projectIds.length === 0) return;
     const { data: tasks } = await supabase
       .from("tasks")
-      .select("project_id, status, budget, estimated_hours, hourly_rate, labor_cost_percent, subcontractor_cost, markup_percent, material_estimate, material_markup_percent")
+      .select(`project_id, status, budget, estimated_hours, hourly_rate, material_estimate, ${TASK_COSTS_EMBED}`)
       .in("project_id", projectIds);
 
     if (!tasks) return;
 
+    // Kostnadsfälten kommer via task_costs-embeden; platta ut dem så
+    // uträkningen nedan ser samma form som förut.
+    const flatTasks = flattenTaskCostRows(
+      tasks as unknown as Array<Record<string, unknown>>,
+    ) as unknown as Array<{
+      project_id: string; status: string | null; budget: number | null;
+      estimated_hours: number | null; hourly_rate: number | null;
+      material_estimate: number | null; labor_cost_percent: number | null;
+      subcontractor_cost: number | null; markup_percent: number | null;
+      material_markup_percent: number | null;
+    }>;
+
     const financials: Record<string, ProjectFinancials> = {};
-    for (const task of tasks) {
+    for (const task of flatTasks) {
       if (!financials[task.project_id]) financials[task.project_id] = { budget: 0, profit: 0, tasksDone: 0, tasksTotal: 0, spentAmount: 0 };
       const fin = financials[task.project_id];
       fin.budget += task.budget || 0;
