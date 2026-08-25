@@ -3673,7 +3673,7 @@ persistens är en uppföljning, inte del av epicen.
 
 ---
 id: e2e-floorplanner-stale-selectors
-status: todo
+status: done
 priority: P2
 tags: [e2e, teknisk-skuld, floorplanner]
 created: 2026-08-25
@@ -3722,7 +3722,24 @@ steg för steg mot den körande appen:
 **Användare är INTE drabbade av det här** — en människa ser dialogen och
 klickar OK. Men grävandet hittade en riktig bugg, se `demo-autosave-ljuger`.
 
-### Exekvering (Opus-jobb, ~1–2 h)
+### ✅ LEVERERAT 2026-08-25 — 6 → 34 gröna av 34
+
+Fyra orsaker, alla testsidiga, ingen produktbugg i planritaren:
+1. Hjälparen väntade aldrig på demo-guiden (`isVisible` väntar inte) → delad
+   hjälpare `e2e/lib/demoPlanner.ts`. **6 → 20**
+2. Absoluta antal mot ett demo med egen geometri → delta-assertions. **20 → 21**
+3. Test som ritade ovanpå demots plan → `{ blank: true }`. **21 → 27**
+4. Zoom-beroende px→mm-antaganden → `pinView()`; tvetydigt 'Planritning' →
+   pekar ut brödsmulan. **27 → 34**
+
+Rensningen går via kommandot, inte Cmd+A + Delete: demots rum är kopplade till
+rum-entiteter, så `shape.delete` stannar korrekt och frågar. Den grinden är
+produkten som fungerar.
+
+**Hela sviten: 154/2 av 156** (från 107/31 av 138). Kvar: `language-switching`
+och `pwa-share-target`, egna orsaker, ej undersökta.
+
+### Ursprunglig plan (utförd)
 1. `openDemoPlanner` + de två andra hjälparna: byt `isVisible({timeout})` mot
    `getByRole('alertdialog').waitFor({state:'visible'})` → klicka OK →
    `waitFor({state:'hidden'})`. Gör det till EN delad hjälpare i `e2e/lib/`.
