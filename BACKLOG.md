@@ -3631,7 +3631,7 @@ priority: P2
 tags: [e2e, teknisk-skuld, floorplanner]
 created: 2026-08-25
 ---
-## 32 e2e-test är döda på gammal UI-drift i planritaren
+## 28 e2e-test döda i planritaren — orsaken är INTE bara stale selectors (se rättelse)
 
 Upptäckt 2026-08-25: **38 av 118 test failade**, och hade gjort det sedan
 långt före den sessionen. Baseline-siffran "e2e 54/0" som stått i minnet var
@@ -3642,10 +3642,37 @@ nav-element med texten `"Planer"`, en etikett som inte finns någonstans i
 appen längre (den heter `"Ritning"` och ligger i `"Yta"`-dropdownen). Testen
 går nu direkt på URL:en. 7 test lever igen.
 
-**Kvar: 32 test** som failar djupare in i editorn — t.ex.
-`page.getByTestId('tool-shapes').click()` som timeoutar, alltså verktygsraden
-som byggts om utan att testen följt med. Plus `language-switching` och
-`pwa-share-target` som failar av egna skäl.
+**Kvar: 28 test** som failar djupare in i editorn. Plus `language-switching`
+(letar efter en språkknapp vars tillgänglighetsnamn inte finns kvar),
+`pwa-share-target`, `worker-wall-resolution` och `wallview-secondary-host`.
+
+---
+
+## ⚠️ RÄTTELSE 2026-08-25 — "gammal UI-drift" var en gissning, och den höll inte
+
+Titeln på det här kortet påstår att testen är döda på stale selectors. Mätt mot
+den körande appen stämmer det INTE för det test jag grävde i
+(`closing a wall loop auto-creates a room with correct area`):
+
+**1. Demot har egen planritning nu.** Planen hydrerar asynkront och innehåller
+12 väggar, 5 rum och 5 öppningar. Testet mäter `rooms.length === 1` mot en plan
+som redan har 5 rum → failar oavsett vad ritningen gör. Rummen har dessutom
+`area: null`, så `toBeCloseTo(12, 1)` kunde aldrig passera.
+Testet skrevs mot ett tomt demo som inte finns längre.
+
+**2. Allvarligare: ritningen skapar INGENTING.** Med väggverktyget aktivt
+(verifierat: `getTool()` går `select` → `wall`, alltså funkar tangentbordet och
+editorn lever) ger fem klick på canvasen noll nya former. Före: 22. Efter: 22.
+
+Det andra fyndet är inte teststäd. Antingen blockerar en gäst-/demospärr
+skrivningar tyst, eller så är ritvägen trasig, eller så når Playwrights
+musevent inte Konvas träffdetektering. **Vilket det är avgör om användare är
+drabbade eller bara testen** — en gäst som öppnar demot och inte kan rita är en
+riktig bugg, inte teknisk skuld.
+
+**Ingen har svarat på det.** Nästa steg är den frågan, inte att skriva om
+selektorer. Verifierat via en tillfällig diagnosspec (borttagen efteråt);
+mätningarna står ovan.
 
 Det här är farligt på samma sätt som en tyst fångad exception: en tredjedel av
 sviten kan inte fånga något, och den täcker planritaren. Gå igenom test för
