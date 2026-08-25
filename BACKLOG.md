@@ -29,6 +29,82 @@ med sidomarginaler även på mobil, istället för basens fullbredds bottom-shee
 Se `src/components/project/overview/ShareRfqDialog.tsx`. Kvar: Carl on-device-verify.
 
 ---
+id: rot-rules-popover-pa-levande-ytan
+status: todo
+priority: P3
+tags: [rot, ux, transparens]
+created: 2026-08-25
+---
+## "Så här räknas ROT" saknas på den yta användaren faktiskt ser
+
+`RotRulesPopover` — en liten info-ikon som öppnar Skatteverkets ROT-regler för
+aktuellt år (datadriven ur `rot_rules`-tabellen: takbelopp per person, procent,
+kombinerat ROT/RUT-tak, källänk) — satt bara i `RotSummaryCard`, som aldrig
+renderades. Raderad 2026-08-25 (commit `a880d0f`) tillsammans med de tre döda
+ROT-ytorna; koden finns kvar i git om den ska tillbaka.
+
+**Förslaget:** lyft popovern till `HomeownerAnalysisSection` (den LEVANDE
+ROT-ytan) och till deklarationsunderlaget. En hemägare som ser en ROT-siffra bör
+kunna klicka och se varför den blev så, med länk till Skatteverket.
+
+Litet jobb: hämta komponenten ur git, wrappa i `.rf-paper` om tokens behövs,
+sätt in bredvid ROT-summan. Kolla först att regeltexterna stämmer med
+s81:s Skatteverket-verifiering (bostadsrätt = föreningens org.nr + lgh-nummer,
+INTE fastighetsbeteckning).
+
+---
+id: skiss-till-canvas-bildlager
+status: todo
+priority: P2
+tags: [floorplanner, renaida, import, idea, carl]
+created: 2026-08-25
+---
+## Handskisser och bildfiler som lager på canvasen — vad som finns och vad som saknas
+
+Carls fråga 2026-08-25: kan Renaida/importen rita ut saker från uppladdade
+**handskisser** i planritaren, eller bara **placera ut befintliga bildfiler**
+(både bildformat och PDF) som **lager ovanpå canvasen**? Hans egen bedömning:
+ta det senare, med verifiering i flera steg. Kartlagt mot koden samma dag.
+
+### Finns redan (verifierat i kod)
+1. **Lägg bild som lager inne i planritaren** — `uploadPlanImage`
+   (`src/components/floormap/utils/uploadPlanImage.ts`): laddar upp, behåller
+   bildens riktiga proportioner, opacitet 0.5, `zIndex: -100`. Nås från v2:s
+   EditorToolbar (legacy-toolbaren har en inline-kopia).
+2. **Ritningsval i importen** — "rita av / lägg som lager / bara spara"
+   (`ImportDrawingsSection` + `addDrawingAsLayer` i `applyImportSession.ts`).
+3. **Rita av en ritning** — `analyzeFloorPlanFile` → `process-floorplan` ger
+   väggar/rum i mm med antagen grov skala.
+4. **PDF** — `rasterizePdfFirstPage` rendrar sida 1 i importvägen.
+
+### Saknas — i värdeordning
+- **A. Skalkalibrering (störst, och helt utan AI).** Ett lager har idag ingen
+  verklig skala: importvägen sätter en fast bredd (`LAYER_SPAN_MM = 10000`) och
+  planritarens uppladdning använder bildens pixelmått. Alltså är allt man ritar
+  ovanpå en gissning. Fix: två klick på en känd sträcka + skriv in verkligt mått
+  ("den här väggen är 3 400 mm") → skala hela lagret. Det här är vad som gör
+  skillnad mellan "en bild i bakgrunden" och "en ritning man kan bygga efter".
+- **B. Placera en REDAN uppladdad fil som lager.** Går bara att ladda upp en NY
+  bild i planritaren; det finns ingen väg från Filer/bostadens papper till
+  canvasen. Precis det Carl bad om.
+- **C. PDF som lager inne i planritaren.** `uploadPlanImage` avvisar allt som
+  inte är `image/*`. Rastreraren finns redan — behöver kopplas in + sidväljare
+  för flersidiga ritningar (importen läser bara sida 1 idag och räknar resten
+  som `extraPages`).
+- **D. Handskiss → geometri med verifiering i flera steg.** AI-vägen finns men
+  är trimmad för tryckta planritningar. En handskiss är lågkonfidens-fallet och
+  behöver Carls stegvisa bekräftelse: rum först → bekräfta → väggar → bekräfta →
+  mått → bekräfta. Aldrig ett stort svep som användaren måste städa efter.
+
+### Föreslagen ordning
+A → B → C → D. A och B är deterministiska och gör lagret användbart på egen
+hand; D är det enda som behöver modellen, och det blir mycket lättare att lita
+på när skalan redan är kalibrerad (A) — då kan en avritad vägg jämföras med det
+riktiga måttet i stället för att bara se rimlig ut.
+
+**Fixat redan:** lager-vägen tvingade 4:3-proportion (commit `56720cf`).
+
+---
 id: rfq-invite-email-enrich
 status: todo
 priority: P2
