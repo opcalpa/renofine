@@ -6,6 +6,7 @@
  * the same edge were silently invisible.
  */
 import { test, expect, Page } from '@playwright/test';
+import { clearPlan, dismissDemoGuide, pinView, waitForDemoPlan } from './lib/demoPlanner';
 
 declare global {
   interface Window {
@@ -21,17 +22,20 @@ async function openDemoPlanner(page: Page) {
   await page.goto('/');
   await page.getByText('Se demoprojekt').first().click();
   await page.waitForURL(/\/projects\//);
-  const ok = page.getByRole('button', { name: 'OK' });
-  if (await ok.isVisible({ timeout: 5000 }).catch(() => false)) await ok.click();
+  await dismissDemoGuide(page);
   // Route straight to the drawing view. This used to click a nav item labelled
   // "Planer"; that label is now "Ritning" and lives inside the "Yta" dropdown,
   // which silently killed 38 tests. The URL is the stable contract — these
   // tests are about the editor, not about how the nav is worded.
   await page.goto(`${new URL(page.url()).pathname}?tab=spaceplanner&subtab=floorplan`);
-  const okPlanner = page.getByRole('button', { name: 'OK' });
-  if (await okPlanner.isVisible({ timeout: 5000 }).catch(() => false)) await okPlanner.click();
+  await dismissDemoGuide(page);
   await expect(page.getByTestId('editor-v2-canvas')).toBeVisible({ timeout: 15000 });
   await page.waitForFunction(() => !!window.__rfEditorDebug);
+  // The demo ships its own furnished plan now; these tests build their own
+  // geometry and translate screen pixels into millimetres.
+  await waitForDemoPlan(page);
+  await clearPlan(page);
+  await pinView(page);
 }
 
 test('wall view shows objects hosted on secondary walls along the same edge', async ({ page }) => {

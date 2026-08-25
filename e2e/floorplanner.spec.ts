@@ -564,8 +564,10 @@ test.describe('Floor planner v2', () => {
     await expect(page.getByTestId('elevation-v2-rail')).toBeVisible();
     await expect(page.locator('.bg-amber-50')).toHaveCount(0);
 
-    // Breadcrumb back returns to the floor plan
-    await page.getByRole('button', { name: 'Planritning' }).click();
+    // Breadcrumb back returns to the floor plan. The plan PICKER carries the
+    // same label, so take the breadcrumb's copy (rendered after the picker)
+    // rather than hoping for a single match.
+    await page.getByRole('button', { name: 'Planritning' }).last().click();
     await expect(page.getByTestId('editor-v2-canvas')).toBeVisible();
   });
 
@@ -750,7 +752,7 @@ test.describe('Floor planner v2', () => {
     await elevCanvas.click({ position: { x: eb.width / 2, y: eb.height / 2 } });
 
     // Back on the floor plan the opening exists mid-wall on a real wall
-    await page.getByRole('button', { name: 'Planritning' }).click();
+    await page.getByRole('button', { name: 'Planritning' }).last().click();
     await expect(page.getByTestId('editor-v2-canvas')).toBeVisible();
     const opening = await page.evaluate(() => {
       const o = window.__rfEditorDebug!
@@ -809,7 +811,7 @@ test.describe('Floor planner v2', () => {
     await expect(page.getByTestId('wall-surface-chip')).toContainText('Gips');
 
     // Back on the plan: the note exists wall-anchored and stays out of the floor view
-    await page.getByRole('button', { name: 'Planritning' }).click();
+    await page.getByRole('button', { name: 'Planritning' }).last().click();
     await expect(page.getByTestId('editor-v2-canvas')).toBeVisible();
     const result = await page.evaluate(() => {
       const shapes = window.__rfEditorDebug!.getShapes();
@@ -913,7 +915,7 @@ test.describe('Floor planner v2', () => {
   test('templates tab places a default template as one grouped undo step', async ({ page }) => {
     await openDemoPlanner(page, { blank: true });
     // Placement needs currentPlanId — wait for the plan picker to resolve
-    await expect(page.getByRole('button', { name: /Floor Plan|Plan 1/i })).toBeVisible({
+    await expect(page.getByRole('button', { name: /Planritning|Floor Plan|Plan 1/i }).first()).toBeVisible({
       timeout: 15000,
     });
 

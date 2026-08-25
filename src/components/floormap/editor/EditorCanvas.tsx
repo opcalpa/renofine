@@ -390,6 +390,11 @@ export const EditorCanvas = ({ isReadOnly, isDemo, roomDataVersion }: EditorCanv
       getShapes: () => useFloorMapStore.getState().shapes,
       getUi: () => useEditorUiStore.getState(),
       getView: () => useFloorMapStore.getState().viewState,
+      // Pin the view. Geometry tests translate screen pixels into millimetres,
+      // which only holds at a known zoom and pan — otherwise they measure the
+      // camera instead of the editor.
+      setView: (v: { zoom?: number; panX?: number; panY?: number }) =>
+        useFloorMapStore.getState().setViewState(v),
       getTool: () => useFloorMapStore.getState().activeTool,
       execute,
       select: (ids: string[]) => useFloorMapStore.getState().setSelectedShapeIds(ids),

@@ -10,6 +10,7 @@
  * (imported from supabase/functions/get-worker-data) on the serialized data.
  */
 import { test, expect, Page } from '@playwright/test';
+import { clearPlan, dismissDemoGuide, pinView, waitForDemoPlan } from './lib/demoPlanner';
 import {
   extractWallInstructions,
   normalizeRoomPoints,
@@ -33,21 +34,20 @@ async function openDemoPlanner(page: Page) {
   await page.goto('/');
   await page.getByText('Se demoprojekt').first().click();
   await page.waitForURL(/\/projects\//);
-  const ok = page.getByRole('button', { name: 'OK' });
-  if (await ok.isVisible({ timeout: 5000 }).catch(() => false)) {
-    await ok.click();
-  }
+  await dismissDemoGuide(page);
   // Route straight to the drawing view. This used to click a nav item labelled
   // "Planer"; that label is now "Ritning" and lives inside the "Yta" dropdown,
   // which silently killed 38 tests. The URL is the stable contract — these
   // tests are about the editor, not about how the nav is worded.
   await page.goto(`${new URL(page.url()).pathname}?tab=spaceplanner&subtab=floorplan`);
-  const okPlanner = page.getByRole('button', { name: 'OK' });
-  if (await okPlanner.isVisible({ timeout: 5000 }).catch(() => false)) {
-    await okPlanner.click();
-  }
+  await dismissDemoGuide(page);
   await expect(page.getByTestId('editor-v2-canvas')).toBeVisible({ timeout: 15000 });
   await page.waitForFunction(() => !!window.__rfEditorDebug);
+  // The demo ships its own furnished plan now; these tests build their own
+  // geometry and translate screen pixels into millimetres.
+  await waitForDemoPlan(page);
+  await clearPlan(page);
+  await pinView(page);
 }
 
 test('wall note + surface finish resolve to the linked room from serialized v2 shapes', async ({ page }) => {
@@ -98,7 +98,7 @@ test('wall note + surface finish resolve to the linked room from serialized v2 s
   await materialInput.blur();
   await expect(page.getByTestId('wall-surface-chip')).toContainText('Gips');
 
-  await page.getByRole('button', { name: 'Planritning' }).click();
+  await page.getByRole('button', { name: 'Planritning' }).last().click();
   await expect(page.getByTestId('editor-v2-canvas')).toBeVisible();
 
   // Serialize shapes EXACTLY as plans.ts saveShapesForPlan writes shape_data.

@@ -16,6 +16,7 @@ import { expect, Page } from '@playwright/test';
 interface EditorDebug {
   getShapes: () => Array<{ id: string; type: string; area?: number }>;
   execute: (name: string, params: Record<string, unknown>) => unknown;
+  setView: (v: { zoom?: number; panX?: number; panY?: number }) => void;
 }
 
 declare global {
@@ -66,6 +67,19 @@ export async function clearPlan(page: Page): Promise<void> {
     .catch(() => {});
 }
 
+/**
+ * Put the camera where the geometry tests assume it is.
+ *
+ * They click screen pixels and assert millimetres — "400 px across = 4 m" —
+ * which is only true at zoom 1 with no pan. Loading the demo's plan fits the
+ * view to its content, so those tests silently started measuring the camera.
+ * At zoom 1 / pan 0, one screen pixel is one world unit again.
+ */
+export async function pinView(page: Page): Promise<void> {
+  await page.evaluate(() => window.__rfEditorDebug?.setView({ zoom: 1, panX: 0, panY: 0 }));
+  await page.waitForTimeout(100);
+}
+
 export async function openDemoPlanner(
   page: Page,
   opts: { flag?: 'v2' | 'v1' | 'none'; blank?: boolean } = {}
@@ -89,7 +103,10 @@ export async function openDemoPlanner(
   await expect(page.getByTestId('editor-v2-canvas')).toBeVisible({ timeout: 15000 });
   await page.waitForFunction(() => !!window.__rfEditorDebug);
   await waitForDemoPlan(page);
-  if (opts.blank) await clearPlan(page);
+  if (opts.blank) {
+    await clearPlan(page);
+    await pinView(page);
+  }
 }
 
 /**
