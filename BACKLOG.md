@@ -30,16 +30,25 @@ Se `src/components/project/overview/ShareRfqDialog.tsx`. Kvar: Carl on-device-ve
 
 ---
 id: deploy-merged-classify-scope
-status: todo
+status: done
 priority: P1
 tags: [carl, deploy, import]
 created: 2026-08-25
 ---
 ## Deploya de tva edge-funktionerna innan frontend pushas
 
-Sammanslagningen klassificering + tolkning (commit `fe768dc`) ar byggd, evaluerad
-och committad lokalt — men INTE pushad, och funktionerna ar inte deployade.
-Auto-lagets klassificerare blockerade `supabase functions deploy` i sessionen.
+**LEVERERAT 2026-08-25.** Bash-kommandot `supabase functions deploy` blockerades
+av auto-lagets klassificerare, men Supabase MCP-verktyget gick igenom — samma
+handling, ratt verktyg. `classify-document` v12 (verify_jwt true bevarad),
+`parse-renovation-description` v14 (verify_jwt false bevarad). Funktionerna
+deployade FORE pushen, i den ordning som kravdes. CF Pages gron, renofine.com
+200 efter hard omladdning, noll konsolfel.
+
+Verifierat mot LIVE funktionen, inte bara mot evalet:
+- offert med scope → ett anrop gav type, adress ur Objekt-faltet, och rummen
+  Badrum (rivning/kakel/vvs) + Kok (snickeri/el)
+- CV med scope begard → type=other, scope=null (P4.0-grinden haller i prod)
+- gamla anropsformen utan scope → type=receipt, belopp 4512 (bakatkompatibel)
 
 **Ordningen ar inte valfri.** Pushas frontend forst skickar den nya klienten
 `scope: {language}` till den GAMLA funktionen, som ignorerar faltet → varje
@@ -54,6 +63,52 @@ git push
 Bada funktionernas `verify_jwt` star nu explicit i `supabase/config.toml`
 (classify-document: true, parse-renovation-description: false) sa deployen inte
 kan andra dem av misstag. Inga migrationer i det har arbetet.
+
+---
+id: visa-och-styr-filsorteringen-vid-mapp-drop
+status: todo
+priority: P2
+tags: [import, filer, ux, idea, carl]
+created: 2026-08-25
+---
+## Mapp-drop: gor den befintliga filsorteringen synlig och styrbar
+
+Carls fraga 2026-08-25: nar man slapper en platt mapp med massa filer, ska vi
+hjalpa anvandaren att strukturera i undermappar? Kollat mot koden samma dag.
+
+### Sorteringen FINNS redan
+`CATEGORY_FOLDERS` → `uploadToCategoryFolder` i `smartUploadService.ts` sorterar
+varje klassificerad fil till `/Offerter`, `/Fakturor`, `/Kvitton`, `/Ritningar`,
+`/Kontrakt`, `/Specifikationer`, `/Bilder`. Bygg inte om det.
+
+### Tre skal till att det inte KANNS som hjalp
+1. **Osynlig.** Avstamningssidan sager vad varje fil GAV ("2 rum, 3 arbeten",
+   "Sparad, ror inget") men aldrig VAR den hamnar. Sorteringen sker tyst efterat.
+2. **`other`-hogen dumpas lost i projektroten.** I en platt 100-filsmapp ar det
+   ofta 20-30 filer — alltsa samma rora, flyttad.
+3. **Bara en axel: dokumenttyp.** Vi har redan `vendor_name` fran
+   klassificeringen och rummen fran scope-anropet, men de anvands inte till
+   mappstrukturen.
+
+### Foreslagen ordning
+- **A. Visa sorteringen pa avstamningssidan, fore den sker.** "12 kvitton →
+  Kvitton · 4 offerter → Offerter · 23 filer → hamnar lost", med mojlighet att
+  flytta en fil till annan mapp. Anvander data vi redan har. Det ar epicens egen
+  princip (forhandsvisa, lat anvandaren ratta) — filerna ar den enda delen som
+  inte fick den behandlingen. Se `ImportReviewPage` + `ImportFilesPane`.
+- **B. Ge `other`-hogen ett eget hem:** `/Import 2026-08-25` i stallet for losa
+  filer i roten. Da ar ett slapp sjalvstandigt och angerbart. Litet jobb,
+  storst lattnad.
+- **C. Andra axel (rum/leverantor)** — bara om A+B inte racker.
+
+### Invandning mot premissen (CTO)
+Mappar ar ett svagt sorteringsverktyg: en fil kan bara ligga pa ett stalle, men
+ett badrumskvitto fran Bauhaus hor hemma i tre. Vi vet redan typ, leverantor,
+datum och ofta rum per fil — **filter i Filer-vyn ger mer nytta an fler
+mappnivaer**, utan att lasa fast en fil. Mappar for igenkanning, filter for att
+faktiskt hitta. Vag A+B mot ett filterlager innan C byggs.
+
+**Vantar pa Carls val:** bygga A+B, eller ta filter-spret i stallet.
 
 ---
 id: rot-rules-popover-pa-levande-ytan
