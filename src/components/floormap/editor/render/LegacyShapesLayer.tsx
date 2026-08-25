@@ -25,6 +25,7 @@ import {
   TextCoordinates,
 } from '../../types';
 import { useFileUrl } from '@/lib/fileUrl';
+import { effectiveImageSize } from './imageSize';
 
 interface LegacyShapesLayerProps {
   shapes: FloorMapShape[];
@@ -122,15 +123,10 @@ const BackgroundImage: React.FC<{ shape: FloorMapShape; isSelected: boolean; zoo
   const [image] = useImage(signedUrl ?? '', 'anonymous');
   const c = shape.coordinates as SymbolCoordinates;
   if (!image) return null;
-  // Uploads create the shape with width/height 0 — fall back to natural size
-  // (capped) exactly like the legacy ImageShape did.
-  let width = c.width;
-  let height = c.height;
-  if (!width || width < 10 || !height || height < 10) {
-    const scale = Math.min(1, 800 / Math.max(image.width, image.height));
-    width = image.width * scale;
-    height = image.height * scale;
-  }
+  // Uploads created the shape with width/height 0 and let the renderer fall
+  // back to the natural size. That fallback now lives in effectiveImageSize so
+  // scale calibration sees the same number the eye does.
+  const { width, height } = effectiveImageSize(c, image);
   return (
     <Group name={shape.id} x={c.x} y={c.y} listening={!shape.locked}>
       <KonvaImage

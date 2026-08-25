@@ -22,6 +22,7 @@ import {
   PenLine,
   Redo2,
   Ruler,
+  Scaling,
   Shapes,
   Sparkles,
   Square,
@@ -288,6 +289,16 @@ export const EditorToolbar = ({ projectId }: EditorToolbarProps) => {
         testId="tool-measure"
       >
         <Ruler className="h-5 w-5" />
+      </RailButton>
+
+      <RailButton
+        active={activeTool === 'calibrate'}
+        label={t('floormap.tools.calibrate', 'Kalibrera skala')}
+        shortcut="K"
+        onClick={() => setActiveTool('calibrate')}
+        testId="tool-calibrate"
+      >
+        <Scaling className="h-5 w-5" />
       </RailButton>
 
       <RailButton

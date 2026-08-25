@@ -58,6 +58,12 @@ interface EditorUiState {
   measurements: Measurement[];
   /** Wall whose dimension label is being edited inline (click on the label). */
   wallLengthEditId: string | null;
+  /**
+   * Scale calibration awaiting its real-world length: the two points the person
+   * clicked on a background image, and the layer they belong to. Set by the
+   * calibrate tool, consumed by CalibrationEditor, cleared on commit or Escape.
+   */
+  calibration: { shapeId: string; from: Point; to: Point } | null;
   /** Text shape being edited inline (placement or double-click). */
   textEditId: string | null;
   /** Request from the canvas to open the wall elevation view ("Visa väggvy"). */
@@ -83,6 +89,7 @@ interface EditorUiState {
   setRoomDetailsRoomId: (id: string | null) => void;
   setOpeningGhost: (g: { rect: Point[]; valid: boolean } | null) => void;
   setMeasurements: (m: Measurement[]) => void;
+  setCalibration: (c: { shapeId: string; from: Point; to: Point } | null) => void;
   setWallLengthEditId: (id: string | null) => void;
   setObjectGhost: (g: EditorUiState['objectGhost']) => void;
   setTextEditId: (id: string | null) => void;
@@ -104,6 +111,7 @@ export const useEditorUiStore = create<EditorUiState>((set) => ({
   roomDetailsRoomId: null,
   openingGhost: null,
   measurements: [],
+  calibration: null,
   wallLengthEditId: null,
   textEditId: null,
   objectGhost: null,
@@ -122,6 +130,7 @@ export const useEditorUiStore = create<EditorUiState>((set) => ({
   setRoomDetailsRoomId: (id) => set({ roomDetailsRoomId: id }),
   setOpeningGhost: (g) => set({ openingGhost: g }),
   setMeasurements: (m) => set({ measurements: m }),
+  setCalibration: (c) => set({ calibration: c }),
   setWallLengthEditId: (id) => set({ wallLengthEditId: id }),
   setObjectGhost: (g) => set({ objectGhost: g }),
   setTextEditId: (id) => set({ textEditId: id }),

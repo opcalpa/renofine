@@ -7,7 +7,7 @@
  */
 
 import { v4 as uuidv4 } from 'uuid';
-import { FloorMapShape, LineCoordinates } from '../../types';
+import { FloorMapShape, ImageCoordinates, LineCoordinates } from '../../types';
 import { getAdminDefaults } from '../../canvas/constants';
 import { commit, getShapes, transaction } from './executor';
 import { Patch, makeUpdatePatch } from './patches';
@@ -35,6 +35,13 @@ export interface Point {
 }
 
 export const JUNCTION_EPSILON = 0.5; // world units (= 5 mm at standard scale)
+
+/** Shortest calibration segment we trust, in world units. Below this the
+ *  factor is dominated by the imprecision of the two clicks. */
+export const CALIBRATE_MIN_SPAN = 4;
+/** Sane bounds for the typed real-world length: 1 cm to 100 m. */
+export const CALIBRATE_MIN_MM = 10;
+export const CALIBRATE_MAX_MM = 100_000;
 
 export interface WallDrawParams {
   /** Polyline vertices in world coords; N points → N-1 wall segments. */
@@ -120,6 +127,23 @@ export function isWall(shape: FloorMapShape): boolean {
 
 export interface ShapeAddParams {
   shape: Omit<FloorMapShape, 'id' | 'planId'> & Partial<Pick<FloorMapShape, 'id' | 'planId'>>;
+}
+
+export interface ImageCalibrateParams {
+  /** The background image layer being calibrated. */
+  id: string;
+  /** The two points the person clicked, in world units. */
+  from: Point;
+  to: Point;
+  /** What that distance measures in the real world. */
+  realMM: number;
+  /**
+   * The layer's size as currently DRAWN. Old uploads stored 0/0 and let the
+   * renderer substitute the natural size, so the caller resolves it through
+   * effectiveImageSize() and passes what is actually on screen — scaling a
+   * stored 0 would make the layer vanish.
+   */
+  effective: { width: number; height: number };
 }
 
 export interface OpeningAddParams {
@@ -390,6 +414,54 @@ export const commands = {
     const shape = getShapes().find((s) => s.id === params.id);
     if (!shape) return;
     commit('Ändra', [makeUpdatePatch(shape, params.updates)]);
+  },
+
+  /**
+   * Give a background image a REAL scale.
+   *
+   * Until this runs, a traced layer has no relationship to millimetres at all:
+   * the import sizes a drawing to an assumed 10 m span and a manual upload uses
+   * the image's pixel dimensions. Everything drawn on top therefore looks
+   * plausible and measures wrong.
+   *
+   * The person clicks along something whose true length they know — a wall, a
+   * door, a scale bar — and types that length. The layer is scaled about the
+   * FIRST clicked point, so the thing they just pointed at stays where it is
+   * and the plan grows or shrinks around it.
+   *
+   * Returns the factor applied, so the caller can tell them what happened.
+   */
+  'image.calibrate'(params: ImageCalibrateParams): number | null {
+    const shape = getShapes().find((s) => s.id === params.id && s.type === 'image');
+    if (!shape) return null;
+
+    const measured = Math.hypot(params.to.x - params.from.x, params.to.y - params.from.y);
+    // A stray double-click gives a near-zero segment; scaling by it would send
+    // the factor to infinity. Ask for a real drag instead of guessing.
+    if (measured < CALIBRATE_MIN_SPAN) return null;
+    if (!Number.isFinite(params.realMM) || params.realMM < CALIBRATE_MIN_MM) return null;
+    if (params.realMM > CALIBRATE_MAX_MM) return null;
+
+    const factor = mmToWorld(params.realMM) / measured;
+    if (!Number.isFinite(factor) || factor <= 0) return null;
+
+    const c = shape.coordinates as ImageCoordinates;
+    const { width, height } = params.effective;
+    if (!width || !height) return null;
+
+    const a = params.from;
+    commit('Kalibrera skala', [
+      makeUpdatePatch(shape, {
+        coordinates: {
+          ...c,
+          x: a.x + (c.x - a.x) * factor,
+          y: a.y + (c.y - a.y) * factor,
+          width: width * factor,
+          height: height * factor,
+        },
+      }),
+    ]);
+    return factor;
   },
 
   /**

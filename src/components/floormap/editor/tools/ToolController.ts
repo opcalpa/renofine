@@ -16,6 +16,7 @@ import { WallTool } from './WallTool';
 import { PanTool } from './PanTool';
 import { OpeningTool } from './OpeningTool';
 import { MeasureTool } from './MeasureTool';
+import { CalibrateTool } from './CalibrateTool';
 import { ObjectPlaceTool } from './ObjectPlaceTool';
 import { RoomRectTool } from './RoomRectTool';
 import { TextTool } from './TextTool';
@@ -47,6 +48,7 @@ export class ToolController {
       new WallTool(),
       new PanTool(),
       new MeasureTool(),
+      new CalibrateTool(),
       new ObjectPlaceTool(),
       new RoomRectTool(),
       new TextTool(),
@@ -207,6 +209,7 @@ export class ToolController {
         h: 'pan',
         d: 'door_line',
         m: 'measure',
+        k: 'calibrate',
         r: 'room',
         t: 'text',
       };

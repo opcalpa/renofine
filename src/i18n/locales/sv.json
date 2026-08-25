@@ -2169,7 +2169,8 @@
       "connector": "Koppling",
       "stickyNote": "Post-it-lapp",
       "wall": "Vägg",
-      "underlay": "Underlag & import"
+      "underlay": "Underlag & import",
+      "calibrate": "Kalibrera skala"
     },
     "hoverInfo": {
       "wall": "Vägg",
@@ -2331,7 +2332,16 @@
     },
     "roomsPlacedFromImport": "{{count}} rum utplacerade bredvid ritningen — dra dem på plats",
     "savedOffline": "Sparat lokalt. Ändringarna synkas när du är uppkopplad igen.",
-    "demoNotSaved": "Det här är demot — din ritning sparas inte. Skapa ett konto för att behålla den."
+    "demoNotSaved": "Det här är demot — din ritning sparas inte. Skapa ett konto för att behålla den.",
+    "calibrate": {
+      "prompt": "Hur lång är sträckan i verkligheten?",
+      "hint": "Klicka längs något du vet måttet på — en vägg, en dörr — och skriv in måttet",
+      "noLayer": "Lägg in en ritning som lager först — sedan kan du sätta dess skala",
+      "pickLayer": "Markera vilken ritning du vill kalibrera först",
+      "tracedWarning": "Obs: bara ritningen skalas om. Det du redan ritat följer inte med.",
+      "failed": "Kunde inte kalibrera — dra en längre sträcka och försök igen",
+      "done": "Skalan är satt — ritningen är nu {{span}} m bred"
+    }
   },
   "canvas": {
     "settings": "Ritinställningar",

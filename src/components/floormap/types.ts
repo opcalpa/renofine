@@ -325,7 +325,7 @@ export const FONT_SIZE_PRESETS: Record<FontSizePreset, number> = {
 };
 
 export type ViewMode = 'floor' | 'elevation' | '3d';
-export type Tool = 'select' | 'freehand' | 'line' | 'wall' | 'room' | 'eraser' | 'rectangle' | 'circle' | 'triangle' | 'polygon' | 'symbol' | 'object' | 'measure' | 'text' | 'sticky_note' | 'pan' | 'door' | 'opening' | 'scissors' | 'glue' | 'bezier' | 'window_line' | 'door_line' | 'sliding_door_line' | 'opening_line' | 'connector';
+export type Tool = 'select' | 'freehand' | 'line' | 'wall' | 'room' | 'eraser' | 'rectangle' | 'circle' | 'triangle' | 'polygon' | 'symbol' | 'object' | 'measure' | 'calibrate' | 'text' | 'sticky_note' | 'pan' | 'door' | 'opening' | 'scissors' | 'glue' | 'bezier' | 'window_line' | 'door_line' | 'sliding_door_line' | 'opening_line' | 'connector';
 export type Unit = 'mm' | 'cm' | 'm' | 'inch' | 'ft' | 'yd';
 export type MeasurementSystem = 'metric' | 'imperial';
 

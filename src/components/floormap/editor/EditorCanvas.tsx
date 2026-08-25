@@ -27,6 +27,7 @@ import { FloatingSelectionToolbar } from './FloatingSelectionToolbar';
 import { EditorContextMenu } from './EditorContextMenu';
 import { ZoomCluster } from './ZoomCluster';
 import { WallLengthEditor } from './WallLengthEditor';
+import { CalibrationEditor } from './CalibrationEditor';
 import { TextEditor } from './TextEditor';
 import { RoomNamingController } from './RoomNamingController';
 import { WallsLayer } from './render/WallsLayer';
@@ -390,6 +391,10 @@ export const EditorCanvas = ({ isReadOnly, isDemo, roomDataVersion }: EditorCanv
       getShapes: () => useFloorMapStore.getState().shapes,
       getUi: () => useEditorUiStore.getState(),
       getView: () => useFloorMapStore.getState().viewState,
+      // Scale calibration turns world units into millimetres, so a test that
+      // asserts millimetres has to know the conversion rather than re-derive it
+      // from the code under test.
+      getScale: () => useFloorMapStore.getState().scaleSettings,
       // Pin the view. Geometry tests translate screen pixels into millimetres,
       // which only holds at a known zoom and pan — otherwise they measure the
       // camera instead of the editor.
@@ -514,6 +519,7 @@ export const EditorCanvas = ({ isReadOnly, isDemo, roomDataVersion }: EditorCanv
       <ZoomCluster containerSize={size} />
       {!isReadOnly && <FloatingSelectionToolbar />}
       {!isReadOnly && <WallLengthEditor />}
+      {!isReadOnly && <CalibrationEditor />}
       {!isReadOnly && <TextEditor />}
       <RoomNamingController isReadOnly={isReadOnly} />
       <Stage

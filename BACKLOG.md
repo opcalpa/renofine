@@ -276,6 +276,33 @@ skriven. Det här är samma avsikt applicerad på resten.
 generösare än gränssnittet — skyddet satt bara i klienten.
 
 ---
+id: kalibrera-om-hela-planen
+status: todo
+priority: P3
+tags: [floorplanner, skala, idea]
+created: 2026-08-25
+---
+## Skala om det man REDAN ritat, inte bara bakgrundsbilden
+
+Följdfråga från skalkalibreringen (s84). `image.calibrate` skalar LAGRET. Gör
+man det först — den tänkta ordningen — är det precis rätt. Gör man det efter
+att ha kalkerat, behåller de ritade väggarna sina egna millimeter och slutar
+ligga i linje med bilden.
+
+Rutan säger ifrån när det gäller ("Obs: bara ritningen skalas om. Det du redan
+ritat följer inte med."), så det överraskar ingen. Men den som upptäcker att
+hela planen ritades i fel skala vill ha motsatsen: behåll bilden, skala om
+GEOMETRIN.
+
+Det är en egen operation — "planen är ritad i fel skala, gör om" — och den rör
+väggar, rum, öppningar och objekt på en gång, med rumsareor som måste räknas
+om. Rimligen ett kommando `plan.rescale` som tar en faktor och en ankarpunkt,
+byggt på samma patch-mekanik, så det blir ETT ångra-steg.
+
+Inte brådskande: rätt ordning (kalibrera först) är den vi lär ut, och
+varningen fångar fel ordning.
+
+---
 id: klient-accept-behover-serversida
 status: todo
 priority: P2
@@ -386,6 +413,35 @@ på när skalan redan är kalibrerad (A) — då kan en avritad vägg jämföras
 riktiga måttet i stället för att bara se rimlig ut.
 
 **Fixat redan:** lager-vägen tvingade 4:3-proportion (commit `56720cf`).
+
+### A LEVERERAT 2026-08-25 (s84) — lagret har en verklig skala
+
+Nytt verktyg **Kalibrera skala** (K) i v2-raden. Klicka längs något du vet
+måttet på, skriv in måttet, och lagret skalas om. Ankaret är FÖRSTA klicket, så
+det du just pekade på står stilla och ritningen växer runt det.
+
+- `image.calibrate` i kommandoregistret → ångra fungerar som allt annat, och
+  Renaida kan kalla den senare (samma yta som resten av editorn).
+- `CalibrateTool` snappar MEDVETET INTE. Snapping drar klicket mot rutnät och
+  befintlig geometri, men här pekar man på pixlar i ett foto — den ritade
+  planen är precis det som ännu inte är att lita på. Shift låser i stället till
+  vågrätt/lodrätt, som en planritnings väggar brukar löpa.
+- Grinden ("vilket lager?") bor i verktygets `activate()`, inte i knappen, så
+  tangenten och knappen beter sig lika. Utan lager förklarar den vad som
+  saknas i stället för att äta två klick.
+- `effectiveImageSize()` bröts ut ur renderaren: gamla uppladdningar lagrade
+  0/0 och lät renderaren fylla i naturlig storlek. Att skala en lagrad nolla
+  hade fått lagret att försvinna — nu läser båda sidor samma tal.
+- Vägrar på sträckor under `CALIBRATE_MIN_SPAN` (en dubbelklick nära noll ger
+  oändlig faktor) och på mått utanför 1 cm–100 m.
+
+7 e2e-test (`e2e/planner-calibrate.spec.ts`), inklusive att faktorn stämmer mot
+ett oberoende uträknat värde, att ankaret står stilla när lagret inte ligger i
+origo, att den vägrar på för korta sträckor, och att ångra fungerar.
+
+**KVAR i kortet:** B (placera en redan uppladdad fil som lager), C (PDF som
+lager i planritaren), D (handskiss → geometri med stegvis bekräftelse).
+Se även [[kalibrera-om-hela-planen]].
 
 ---
 id: rfq-invite-email-enrich

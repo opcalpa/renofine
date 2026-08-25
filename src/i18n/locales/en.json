@@ -2800,7 +2800,8 @@
       "connector": "Connector",
       "stickyNote": "Sticky note",
       "wall": "Wall",
-      "underlay": "Base layer & import"
+      "underlay": "Base layer & import",
+      "calibrate": "Calibrate scale"
     },
     "hoverInfo": {
       "wall": "Wall",
@@ -2962,7 +2963,16 @@
     },
     "roomsPlacedFromImport": "{{count}} rooms placed beside the drawing — drag them into place",
     "savedOffline": "Saved locally. Your changes will sync once you are back online.",
-    "demoNotSaved": "This is the demo — your drawing is not saved. Create an account to keep it."
+    "demoNotSaved": "This is the demo — your drawing is not saved. Create an account to keep it.",
+    "calibrate": {
+      "prompt": "How long is that in reality?",
+      "hint": "Click along something you know the measurement of — a wall, a door — then type it",
+      "noLayer": "Add a drawing as a layer first — then you can set its scale",
+      "pickLayer": "Select which drawing you want to calibrate first",
+      "tracedWarning": "Note: only the drawing is rescaled. What you have already drawn does not follow.",
+      "failed": "Could not calibrate — drag a longer distance and try again",
+      "done": "Scale set — the drawing is now {{span}} m wide"
+    }
   },
   "canvas": {
     "settings": "Drawing Settings",
