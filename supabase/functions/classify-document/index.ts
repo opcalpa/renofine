@@ -1,5 +1,11 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import {
+  scopeJsonShape,
+  scopeRules,
+  validateScope,
+  type RenovationScope,
+} from '../_shared/renovationScope.ts';
 
 const ALLOWED_ORIGINS = [
   'http://localhost:5173',
@@ -39,6 +45,13 @@ interface PropertyAddress {
   city: string | null;
 }
 
+/**
+ * Document classes that may shape a project. Mirrors SCOPE_BEARING in
+ * src/services/ingestProjectFolder.ts — and this copy is the one that decides,
+ * because it runs on the server where the model's answer lands first.
+ */
+const SCOPE_BEARING: readonly DocumentType[] = ['quote', 'contract', 'specification'];
+
 interface ClassificationResult {
   type: DocumentType;
   confidence: number;
@@ -49,9 +62,44 @@ interface ClassificationResult {
   suggested_action: 'extract_tasks' | 'extract_purchase' | 'import_to_canvas' | 'store_only';
   property_address: PropertyAddress | null;
   address_source: AddressSource;
+  /**
+   * The work scope this document describes — present ONLY when the caller asked
+   * for it AND the document is one that may carry scope. Null means "nothing to
+   * act on", which is the honest answer for a CV, a receipt or a bank statement.
+   */
+  scope: RenovationScope | null;
 }
 
-function buildSystemPrompt(): string {
+/**
+ * `scopeLang` turns this into ONE call that answers both "what is this?" and
+ * "what work does it describe?". The folder ingest used to ask those with two
+ * round trips over the same text; a quote, a contract and a specification are
+ * the most common files in a real project folder, and each of them paid twice.
+ */
+function buildSystemPrompt(scopeLang: string | null): string {
+  const base = buildClassifyPrompt();
+  if (!scopeLang) return base;
+  return `${base}
+
+ADDITIONALLY — WORK SCOPE:
+If (and only if) the type you chose is "quote", "contract" or "specification",
+also extract the renovation scope the document describes, as a "scope" field.
+For EVERY other type — including "other" — set "scope": null. Do not guess a
+scope out of a document you could not place: a CV, a bank statement or a
+purchase contract for a home describes no renovation, and inventing rooms from
+one is worse than returning nothing.
+
+The "scope" field, when present, has this exact structure:
+${scopeJsonShape(scopeLang)}
+
+${scopeRules(scopeLang)}
+
+Add "scope" to the SAME JSON object as the classification fields. The
+classification "summary" describes the DOCUMENT; the scope's own "summary"
+describes the RENOVATION. They are different fields and both may be present.`;
+}
+
+function buildClassifyPrompt(): string {
   return `You classify renovation project documents. Analyze the document and determine its type.
 
 DOCUMENT TYPES:
@@ -165,6 +213,15 @@ function narrowAddress(
   };
 }
 
+/**
+ * How much document text the merged call reads. Classification needs the first
+ * page; a scope extraction needs the whole quote, and truncating one at 5 000
+ * characters is how the last two rooms of a specification disappear. Only the
+ * text actually present is sent, so a receipt still costs a receipt.
+ */
+const TEXT_LIMIT = 5000;
+const TEXT_LIMIT_WITH_SCOPE = 24000;
+
 async function classifyWithContent(
   content: string,
   fileName: string,
@@ -172,6 +229,7 @@ async function classifyWithContent(
   isPdf: boolean,
   base64Data?: string,
   mimeType?: string,
+  scopeLang?: string | null,
 ): Promise<ClassificationResult> {
   const apiKey = Deno.env.get('OPENAI_API_KEY');
   if (!apiKey) throw new Error('OPENAI_API_KEY is not configured');
@@ -199,10 +257,11 @@ async function classifyWithContent(
       { type: 'text' as const, text: `File name: "${fileName}". Classify this document.` },
     ];
   } else {
+    const limit = scopeLang ? TEXT_LIMIT_WITH_SCOPE : TEXT_LIMIT;
     userContent = [
       {
         type: 'text' as const,
-        text: `File name: "${fileName}". Document text (first 5000 chars):\n\n${content.substring(0, 5000)}\n\nClassify this document.`,
+        text: `File name: "${fileName}". Document text (first ${limit} chars):\n\n${content.substring(0, limit)}\n\nClassify this document.`,
       },
     ];
   }
@@ -216,11 +275,14 @@ async function classifyWithContent(
     body: JSON.stringify({
       model: 'gpt-4o-mini',
       messages: [
-        { role: 'system', content: buildSystemPrompt() },
+        { role: 'system', content: buildSystemPrompt(scopeLang ?? null) },
         { role: 'user', content: userContent },
       ],
-      max_tokens: 512,
+      // A scope answer is a whole plan, not a label — 512 tokens truncates it
+      // mid-JSON, and a truncated JSON is an unread document.
+      max_tokens: scopeLang ? 3000 : 512,
       temperature: 0.1,
+      ...(scopeLang ? { response_format: { type: 'json_object' as const } } : {}),
     }),
   });
 
@@ -248,6 +310,15 @@ async function classifyWithContent(
     const type: DocumentType = validTypes.includes(result.type) ? result.type : 'other';
     const { property_address, address_source } = narrowAddress(type, result);
 
+    // P4.0, enforced in code: only a document class that actually carries work
+    // scope may hand rooms and tasks to a project. A model that decided "other"
+    // and then listed three rooms anyway is answered with null — this is the one
+    // gate that stopped a CV from giving someone's project a kitchen.
+    const scope =
+      scopeLang && SCOPE_BEARING.includes(type)
+        ? validateScope(result.scope, content || '')
+        : null;
+
     return {
       type,
       confidence: typeof result.confidence === 'number' ? result.confidence : 0.5,
@@ -258,10 +329,11 @@ async function classifyWithContent(
       suggested_action: validActions.includes(result.suggested_action) ? result.suggested_action : 'store_only',
       property_address,
       address_source,
+      scope,
     };
   } catch {
     console.error('Failed to parse classification:', jsonText.substring(0, 500));
-    return { type: 'other', confidence: 0, summary: '', vendor_name: null, invoice_date: null, invoice_amount: null, suggested_action: 'store_only', property_address: null, address_source: null };
+    return { type: 'other', confidence: 0, summary: '', vendor_name: null, invoice_date: null, invoice_amount: null, suggested_action: 'store_only', property_address: null, address_source: null, scope: null };
   }
 }
 
@@ -272,6 +344,15 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
+
+    // `scope: { language }` asks for the merged answer: classification AND the
+    // work scope, in one call. Absent → the classic classify-only response.
+    const scopeLang: string | null =
+      body.scope && typeof body.scope === 'object' && typeof body.scope.language === 'string'
+        ? body.scope.language
+        : body.scope === true
+          ? 'sv'
+          : null;
 
     // NEW: Accept filePath for server-side file fetch (fast path)
     if (body.filePath && body.fileName) {
@@ -291,6 +372,7 @@ serve(async (req) => {
         isPdf,
         isPdf ? base64 : undefined,
         mimeType,
+        scopeLang,
       );
 
       console.log('Classification:', result.type, 'confidence:', result.confidence);
@@ -313,7 +395,15 @@ serve(async (req) => {
 
     console.log('Legacy path: classifying document:', fileName, 'isImage:', isImage);
 
-    const result = await classifyWithContent(content, fileName || 'unknown', isImage, false);
+    const result = await classifyWithContent(
+      content,
+      fileName || 'unknown',
+      isImage,
+      false,
+      undefined,
+      undefined,
+      scopeLang,
+    );
 
     console.log('Classification:', result.type, 'confidence:', result.confidence);
 
@@ -335,6 +425,7 @@ serve(async (req) => {
         suggested_action: 'store_only',
         property_address: null,
         address_source: null,
+        scope: null,
       }),
       {
         headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },

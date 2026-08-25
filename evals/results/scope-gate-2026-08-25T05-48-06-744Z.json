@@ -1,0 +1,49 @@
+{
+  "rows": [
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "cv",
+      "type": "other",
+      "rooms": 0,
+      "globals": 0,
+      "pass": true,
+      "error": null
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "kopekontrakt",
+      "type": "contract",
+      "rooms": 0,
+      "globals": 0,
+      "pass": true,
+      "error": null
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "kontoutdrag",
+      "type": "other",
+      "rooms": 0,
+      "globals": 0,
+      "pass": true,
+      "error": null
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "kvitto",
+      "type": "receipt",
+      "rooms": 0,
+      "globals": 0,
+      "pass": true,
+      "error": null
+    },
+    {
+      "model": "gpt-4o-mini",
+      "caseId": "forsakringsbrev",
+      "type": "other",
+      "rooms": 0,
+      "globals": 0,
+      "pass": true,
+      "error": null
+    }
+  ]
+}

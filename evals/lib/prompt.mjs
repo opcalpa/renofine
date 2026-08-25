@@ -146,6 +146,64 @@ export function buildParseUser(description) {
   return description;
 }
 
+/**
+ * The merged call sees a FILE, not a chat message — the ingest path only ever
+ * reaches a scope extraction for a document it has classified. Framing the case
+ * text as a work-description document is what production does; feeding it bare
+ * would test a path no user has.
+ */
+export function buildMergedUser(description) {
+  return `File name: "arbetsbeskrivning.pdf". Document text (first 24000 chars):\n\n${description}\n\nClassify this document.`;
+}
+
+/**
+ * The MERGED prompt: classify the document AND extract its work scope in one
+ * call. Mirrors supabase/functions/classify-document/index.ts + _shared/
+ * renovationScope.ts. Run with `--merged` to prove the merge did not cost
+ * extraction quality before it ships.
+ */
+export function buildMergedSystem(lang = "sv") {
+  const scopeBody = buildParseSystem(lang)
+    .replace(
+      "You are a renovation planning assistant. Parse the user's free-text renovation description and extract structured data.\n\nReturn JSON with this exact structure:\n",
+      ""
+    )
+    .replace("\n\nReturn valid JSON only, no markdown.", "");
+  return `You classify renovation project documents. Analyze the document and determine its type.
+
+DOCUMENT TYPES:
+- "quote" — A price offer/estimate from a contractor or supplier. Contains line items with prices, work descriptions, totals. Swedish: "Offert", "Prisförslag", "Anbud".
+- "invoice" — A bill requesting payment. Has invoice number, due date, OCR/payment reference, bankgiro. Swedish: "Faktura".
+- "receipt" — Proof of payment already made. From retail stores, hardware stores. Swedish: "Kvitto", "Kassakvitto".
+- "floor_plan" — Architectural drawing, blueprint, or floor plan image. Shows rooms, walls, dimensions. Can be a photo of a printed drawing.
+- "contract" — Legal agreement, construction contract, work order. Swedish: "Avtal", "Kontrakt", "Beställning".
+- "specification" — Technical specification, material list, scope of work document without prices. Swedish: "Beskrivning", "Specifikation", "Arbetsbeskrivning".
+- "product_image" — Photo of a product, material sample, fixture, appliance, or inspiration image.
+- "other" — Anything that doesn't fit above categories.
+
+RULES:
+- Be decisive. Pick the most specific type that fits.
+- summary: 1-2 sentences in Swedish describing what the document is.
+- confidence: 0.0-1.0
+
+ADDITIONALLY — WORK SCOPE:
+If (and only if) the type you chose is "quote", "contract" or "specification",
+also extract the renovation scope the document describes, as a "scope" field.
+For EVERY other type — including "other" — set "scope": null. Do not guess a
+scope out of a document you could not place: a CV, a bank statement or a
+purchase contract for a home describes no renovation, and inventing rooms from
+one is worse than returning nothing.
+
+The "scope" field, when present, has this exact structure:
+${scopeBody}
+
+Add "scope" to the SAME JSON object as the classification fields. The
+classification "summary" describes the DOCUMENT; the scope's own "summary"
+describes the RENOVATION. They are different fields and both may be present.
+
+Return valid JSON only, no markdown.`;
+}
+
 // The "naive LLM, no domain knowledge" baseline for the head-to-head. Same
 // model, same input — but stripped of every construction rule the production
 // prompt carries (don't-translate color codes, preserve meaning). This isolates

@@ -11,13 +11,14 @@
 //   node evals/run-extraction.mjs --models gpt-4o-mini,gpt-4o
 //   node evals/run-extraction.mjs --no-judge                      # deterministic only (cheap)
 //   node evals/run-extraction.mjs --cases kitchen-granularity,global-vs-perroom-trap
+//   node evals/run-extraction.mjs --merged --no-judge          # the one-call path
 //
 // Needs OPENAI_API_KEY (and ANTHROPIC_API_KEY if a claude model is used).
 
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildParseSystem, buildParseUser } from "./lib/prompt.mjs";
+import { buildParseSystem, buildParseUser, buildMergedSystem, buildMergedUser } from "./lib/prompt.mjs";
 import { scoreExtractionStructure, scoreRooms, scoreObjectFields, scoreGlobals, applyGlobalGuard } from "./lib/extraction-scorers.mjs";
 import { callModel, safeParseJson } from "./lib/models.mjs";
 
@@ -25,13 +26,16 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const GEN_TEMPERATURE = 0.3; // matches production
 
 function parseArgs(argv) {
-  const args = { models: ["gpt-4o-mini"], judge: "gpt-4o", cases: null, judgeOn: true };
+  const args = { models: ["gpt-4o-mini"], judge: "gpt-4o", cases: null, judgeOn: true, merged: false };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--models") args.models = argv[++i].split(",").map((s) => s.trim());
     else if (a === "--judge") args.judge = argv[++i].trim();
     else if (a === "--cases") args.cases = argv[++i].split(",").map((s) => s.trim());
     else if (a === "--no-judge") args.judgeOn = false;
+    // Score the ONE-CALL path (classify + scope together) instead of the
+    // standalone parser, so the merge has to prove it costs no quality.
+    else if (a === "--merged") args.merged = true;
   }
   return args;
 }
@@ -72,7 +76,7 @@ async function main() {
   if (args.cases) cases = cases.filter((c) => args.cases.includes(c.id));
   if (!cases.length) throw new Error("no cases matched --cases filter");
 
-  console.log(`\nRenofine eval · parse-renovation-description`);
+  console.log(`\nRenofine eval · ${args.merged ? "classify+scope (ONE call)" : "parse-renovation-description"}`);
   console.log(`models: ${args.models.join(", ")}`);
   console.log(`judge:  ${args.judgeOn ? args.judge : "(off)"}`);
   console.log(`cases:  ${cases.length}\n`);
@@ -83,10 +87,20 @@ async function main() {
       const lang = c.input.language || "sv";
       const row = { model, caseId: c.id, structureOk: false, rooms: null, objects: null, globals: null, judge: null, error: null };
       try {
-        const raw = await callModel(model, buildParseSystem(lang), buildParseUser(c.input.description), { temperature: GEN_TEMPERATURE, jsonObject: true });
+        const raw = args.merged
+          ? await callModel(model, buildMergedSystem(lang), buildMergedUser(c.input.description), { temperature: GEN_TEMPERATURE, jsonObject: true })
+          : await callModel(model, buildParseSystem(lang), buildParseUser(c.input.description), { temperature: GEN_TEMPERATURE, jsonObject: true });
         const parsed = safeParseJson(raw);
+        // In merged mode the scope is nested, and a non-scope-bearing class is
+        // answered with null on purpose — that is the P4.0 gate, not a failure
+        // of extraction, so the row says which happened.
+        if (parsed.ok && args.merged) {
+          row.docType = parsed.value.type ?? null;
+          parsed.value = parsed.value.scope ?? null;
+          if (!parsed.value) parsed.ok = false;
+        }
         if (!parsed.ok) {
-          row.error = "unparseable JSON";
+          row.error = args.merged && row.docType ? `no scope (type=${row.docType})` : "unparseable JSON";
         } else {
           // Mirror production's post-processing (global-guard) so the eval scores
           // what a user actually gets, not just the raw model output.

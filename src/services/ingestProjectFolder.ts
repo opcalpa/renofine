@@ -5,9 +5,9 @@
  * Each file is routed by type:
  *   • photos            → OCR'd and parsed TOGETHER (one cheap pass, coarse
  *                         'photo' provenance) — a beginner's pile of snaps.
- *   • documents (PDF/…) → text-extracted, classified, and — when they carry
- *                         work scope (quote/spec/contract) — parsed on their
- *                         own so their rooms/tasks keep that file's provenance.
+ *   • documents (PDF/…) → text-extracted, then classified AND read for work
+ *                         scope in ONE call (quote/spec/contract only), so
+ *                         their rooms/tasks keep that file's provenance.
  *   • text files        → read directly and parsed (own file provenance).
  *   • receipts/invoices → only COUNTED here; they belong to the post-creation
  *                         purchase flow (D1), not the birth draft.
@@ -137,6 +137,11 @@ interface ClassifyResult {
   invoice_amount: number | null;
   property_address?: DocumentPropertyAddress | null;
   address_source?: AddressSource | null;
+  /**
+   * The work scope, when the same call was asked for it. Null for every class
+   * that may not shape a project — the server decides that, not this file.
+   */
+  scope?: AIParsedResult | null;
 }
 
 /**
@@ -165,11 +170,24 @@ function asDocumentType(raw: string | undefined): DocumentType {
   return DOCUMENT_TYPES.includes(raw as DocumentType) ? (raw as DocumentType) : 'other';
 }
 
-/** Classify already-extracted text (base64-free legacy path — no storage). */
-async function classifyText(text: string, fileName: string): Promise<ClassifyResult | null> {
+/**
+ * Classify already-extracted text (base64-free legacy path — no storage).
+ *
+ * `scopeLanguage` asks the SAME call to also read out the work scope. Both
+ * questions are about the same text — "what is this?" and "what does it say?" —
+ * and asking them separately meant every quote, contract and specification in a
+ * dropped folder paid for two round trips over identical input. The server only
+ * answers the second question for classes that may carry scope, so an unplaced
+ * document still comes back with nothing to act on.
+ */
+async function classifyText(
+  text: string,
+  fileName: string,
+  scopeLanguage?: string
+): Promise<ClassifyResult | null> {
   try {
     const { data, error } = await supabase.functions.invoke('classify-document', {
-      body: { text, fileName },
+      body: { text, fileName, ...(scopeLanguage ? { scope: { language: scopeLanguage } } : {}) },
     });
     if (error || !data) return null;
     return data as ClassifyResult;
@@ -385,7 +403,9 @@ async function processDocument(
     return { kind: 'propertyDoc', candidate: { file, category: homePaper }, address };
   }
 
-  const cls = await classifyText(text, file.name);
+  // ONE call for both questions: what is this document, and what work does it
+  // describe. The scope comes back only for classes that may carry it.
+  const cls = await classifyText(text, file.name, language);
   const type = asDocumentType(cls?.type);
   const archive: ArchiveEntry = { file, category: type };
   const address = suggestAddress ? toCandidate(cls, type, file.name) : undefined;
@@ -438,7 +458,10 @@ async function processDocument(
     const lines = await extractQuoteLines(file);
     if (lines.length > 0) return { kind: 'quoteLines', lines, fileName: file.name, archive, address };
   }
-  const parsed = await parseProjectDescription(text, language);
+  // The scope already came back with the classification. A scope-bearing
+  // document that yielded nothing is "I did not understand this" — exactly what
+  // an empty parse meant before, and one call cheaper to find out.
+  const parsed = cls?.scope ?? null;
   return usable(parsed)
     ? { kind: 'scope', parsed, sourceKind: 'document', fileName: file.name, archive, address }
     : { kind: 'notUnderstood', archive, address };
