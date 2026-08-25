@@ -155,6 +155,53 @@ invandningen ovan. Carls on-device-test av A+B med en riktig mapp aterstar;
 drag-drop gar inte att simulera.
 
 ---
+id: demo-autosave-ljuger
+status: todo
+priority: P1
+tags: [floorplanner, demo, bugg, aktivering, carl]
+created: 2026-08-25
+---
+## Gäst ritar i demot → "Saved offline" — men det sparas aldrig, och appen tror att det gick
+
+Hittad 2026-08-25 under analysen av planritarens e2e-skuld. **Verifierad i
+runtime**, inte härledd: en gäst i demot (v2, standard på desktop) ritar en
+vägg → 12→13 former → autosave efter 2,5 s → `POST floor_map_shapes` **401**,
+RLS 42501 → toasten säger **"Saved offline. Changes will sync when connection
+is restored."**
+
+Det är osant på tre sätt, och alla tre sitter i `saveShapesForPlan`
+(`src/components/floormap/utils/plans.ts`, catch-blocket ~rad 479):
+1. **Felklassning.** `catch` behandlar VARJE fel som "offline". Gästen är online;
+   skrivningen nekades. Den synkas aldrig.
+2. **`return true` vid fel.** `EditorCanvas.save` tror att det lyckades och
+   visar därför aldrig sin egen "Kunde inte spara planritningen". Felet sväljs.
+3. **Engelska i ett svenskt UI.** Strängen är hårdkodad.
+
+Och orsaken till att det ens händer: **v2-canvasen vet inte att den är i
+demot.** `FloorMapEditor` skickar `isReadOnly={isReadOnly && !isDemo}` — så
+demot blir ritbart (rätt) men autosaven (`if (isReadOnly || dirtyCounter === 0)
+return`) tror att den får spara. Legacy-canvasen hade spärren
+`if (!currentPlanId || isReadOnly || isDemo)`; v2 tappade den.
+
+**Blandat budskap ovanpå:** topbaren visar "Endast visning" (från
+`permissions.spacePlanner === 'view'`) samtidigt som canvasen är ritbar.
+
+👤 Det här träffar exakt den person vi jagar: en nyfiken gäst som testar
+ritverktyget i demot — första riktiga handlingen — får ett meddelande om
+nätverksproblem som inte finns. Aktiveringsflaskhalsen, i planritaren.
+
+### Exekvering (Opus-jobb, ~1 h)
+1. `EditorCanvas`: ta emot `isDemo`; hoppa över autosave i demo och visa
+   i stället en stilla rad "Demo — ritningen sparas inte, skapa konto för att
+   behålla den" (CTA:n finns redan i demobannern).
+2. `saveShapesForPlan` catch: skilj `!isOnline()` (→ offline-toast, i18n) från
+   allt annat (→ `return false`, låt anroparen visa "Kunde inte spara").
+   Lägg strängen i `floormap.*`.
+3. Bestäm vad "Endast visning" ska betyda i demot — badge bort, eller
+   canvasen låst. Inte både och.
+4. e2e: gäst ritar i demot → ingen toast om offline, ingen 401 i nätverket.
+
+---
 id: rot-rules-popover-pa-levande-ytan
 status: todo
 priority: P3
@@ -3631,7 +3678,7 @@ priority: P2
 tags: [e2e, teknisk-skuld, floorplanner]
 created: 2026-08-25
 ---
-## 28 e2e-test döda i planritaren — orsaken är INTE bara stale selectors (se rättelse)
+## 28 e2e-test döda i planritaren — rotorsak hittad: hjälparen väntar inte på demo-guiden
 
 Upptäckt 2026-08-25: **38 av 118 test failade**, och hade gjort det sedan
 långt före den sessionen. Baseline-siffran "e2e 54/0" som stått i minnet var
@@ -3648,36 +3695,43 @@ går nu direkt på URL:en. 7 test lever igen.
 
 ---
 
-## ⚠️ RÄTTELSE 2026-08-25 — "gammal UI-drift" var en gissning, och den höll inte
+## ✅ ANALYS KLAR 2026-08-25 (Fable) — rotorsaken är hittad och mätt
 
-Titeln på det här kortet påstår att testen är döda på stale selectors. Mätt mot
-den körande appen stämmer det INTE för det test jag grävde i
-(`closing a wall loop auto-creates a room with correct area`):
+Kortets titel var fel. Testen dör inte på stale selectors. Kedjan, verifierad
+steg för steg mot den körande appen:
 
-**1. Demot har egen planritning nu.** Planen hydrerar asynkront och innehåller
-12 väggar, 5 rum och 5 öppningar. Testet mäter `rooms.length === 1` mot en plan
-som redan har 5 rum → failar oavsett vad ritningen gör. Rummen har dessutom
-`area: null`, så `toBeCloseTo(12, 1)` kunde aldrig passera.
-Testet skrevs mot ett tomt demo som inte finns längre.
+1. **Demot har egen planritning nu**: 12 väggar, 5 rum, 5 öppningar, hydrerar
+   asynkront ~1–6 s efter att canvasen syns.
+2. **`DemoPageGuide` visar en `AlertDialog` ("Ytplanering", knapp "OK")** när
+   man landar på planritaren. Backdropen är `fixed inset-0 z-50` och äter
+   varje klick. Tangentbordet fungerar (går till `document`), pekaren inte.
+3. **Hjälparen `openDemoPlanner` "stänger" dialogen med
+   `isVisible({ timeout: 5000 })` — som INTE väntar.** Playwrights egna typer:
+   *"This option is ignored. isVisible() does not wait… returns immediately."*
+   Dialogen monteras efter kontrollen → aldrig stängd → alla klick nekade.
+   Samma mönster i `worker-wall-resolution` (2) och `wallview-secondary-host` (2).
+4. **Mätt:** med en hjälpare som väntar (`waitFor({state:'visible'})` + klick +
+   `waitFor({state:'hidden'})`) går floorplanner.spec från **6 → 19 gröna av 34**.
+5. **De 15 kvar** är två sorter, båda testskuld: (a) absoluta antal mot ett demo
+   som numera har geometri — `fast drawing of separate wall chains` väntar 3
+   väggar, får 15 (=12+3); `closing a wall loop` väntar 1 rum, får 5, och
+   demorummen har `area: null` (seeden sätter aldrig area) så
+   `toBeCloseTo(12)` kan aldrig passera. (b) Interferens i fullkörningen:
+   `measure tool` och `door placement` PASSERAR körda ensamma.
 
-**2. Allvarligare: ritningen skapar INGENTING.** Med väggverktyget aktivt
-(verifierat: `getTool()` går `select` → `wall`, alltså funkar tangentbordet och
-editorn lever) ger fem klick på canvasen noll nya former. Före: 22. Efter: 22.
+**Användare är INTE drabbade av det här** — en människa ser dialogen och
+klickar OK. Men grävandet hittade en riktig bugg, se `demo-autosave-ljuger`.
 
-Det andra fyndet är inte teststäd. Antingen blockerar en gäst-/demospärr
-skrivningar tyst, eller så är ritvägen trasig, eller så når Playwrights
-musevent inte Konvas träffdetektering. **Vilket det är avgör om användare är
-drabbade eller bara testen** — en gäst som öppnar demot och inte kan rita är en
-riktig bugg, inte teknisk skuld.
-
-**Ingen har svarat på det.** Nästa steg är den frågan, inte att skriva om
-selektorer. Verifierat via en tillfällig diagnosspec (borttagen efteråt);
-mätningarna står ovan.
-
-Det här är farligt på samma sätt som en tyst fångad exception: en tredjedel av
-sviten kan inte fånga något, och den täcker planritaren. Gå igenom test för
-test, uppdatera selektorerna mot dagens UI, och lägg `data-testid` där de
-saknas i stället för att matcha på text.
+### Exekvering (Opus-jobb, ~1–2 h)
+1. `openDemoPlanner` + de två andra hjälparna: byt `isVisible({timeout})` mot
+   `getByRole('alertdialog').waitFor({state:'visible'})` → klicka OK →
+   `waitFor({state:'hidden'})`. Gör det till EN delad hjälpare i `e2e/lib/`.
+2. Skriv om absoluta antal till delta: läs antal före, assert `after - before`.
+   `closing a wall loop`: hitta det NYA rummet (id ej i före-mängden), assert
+   dess area — inte `rooms[0]`.
+3. Kör fullt; det som fortfarande faller ensamt är riktig selector-drift och tas
+   ett i taget. Det som passerar ensamt men faller i full körning →
+   `test.describe.configure({ mode: 'serial' })` eller isolera sessionStorage.
 
 ---
 id: worker-view-viral-cta
