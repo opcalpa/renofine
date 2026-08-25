@@ -2203,6 +2203,45 @@ Avvisad fix (A): byta `select("*")` mot kolumnlistor på de hetaste ställena �
 det är UI-disciplin, inte en gräns; nästa `select("*")` öppnar hålet igen, och
 RLS släpper fortfarande raderna till den som frågar själv via devtools.
 
+### LEVERERAT 2026-08-25 (s84) — LÄSLÄCKAN ÄR STÄNGD
+
+Fix B byggd och verifierad i prod. Tre migrationer, alla med revert-SQL skriven
+FÖRE respektive migration:
+
+1. `20260825120000_task_costs_boundary.sql` — `task_costs` med egen policy
+   (`user_can_view_costs`, fail-closed, kunder aldrig) + backfill. Hårdnade
+   samtidigt `user_can_view_purchases` / `user_can_view_budget` /
+   `user_purchases_scope` från fail-open till fail-closed.
+2. `20260825121000_materials_client_exclusion.sql` — **läxan i ren form**: efter
+   (1) läste kunden materialen ändå, för att `materials`-ALL-policyn INLINAR
+   `role = ANY('editor','admin','client')` och därför inte ärver något av
+   funktionen jag just hårdnat. Verifierat mot TABELLEN, inte predikatet.
+3. `20260825130000_drop_task_cost_columns.sql` — droppet, kört FÖRST efter att
+   CF-deployen var grön (dessförinnan hade explicita selects gett 400 i prod).
+
+Koden: `src/lib/taskCosts.ts` är enda bryggan. `TASK_COSTS_EMBED` hydrerar vid
+hämtning, `splitTaskCostFields` delar patchen vid skrivning — konsumenterna
+läser `task.markup_percent` precis som förut, så de 165 läsställena rördes
+aldrig. 14 filer + `agent-route` (deployad).
+
+Slutverifiering, båda vägarna:
+- kund: 0 kostnadsrader, 0 material, 0 inköpsordrar — men ser sina 11 arbeten,
+  sin offert och sina 4 rum. Kundvyn är intakt, bara byggarens affär är borta.
+- ägare: 11 kostnadsrader, UE 12 000 kr, påslag 10 % — oförändrat.
+- co_owner: 5 kostnadsrader. planning_contributor: oförändrad.
+  (Sista var det skarpa testet — `sthlmrides` är BÅDE kund på ett projekt och
+  medplanerare på ett annat, och spärren nyckar på `role_type`, aldrig `role`.)
+- prod som byggare efter droppet: "BUDGET 134k kr · Ber. vinst ~35,2k kr" —
+  vinsten räknas ur just de flyttade fälten, noll konsolfel.
+- typecheck 336 = baseline, bygget grönt, e2e 154/2 före OCH efter droppet.
+
+**KVAR i det här kortet** (läsläckan var bara en del av det):
+- Kundvyn är fortfarande EN FLIK bland de råa flikarna, inte en dedikerad shell.
+- Den döda `isInvitedClient`-grenen är fortfarande inte aktiverad.
+- `invited_client` saknas fortfarande i `RequireRole`-typen.
+- Och separat, allvarligare: kunden kan ÄNDRA arbeten →
+  [[tasks-update-slapper-in-kunden]].
+
 ---
 id: user-type-smaerre-inkonsekvenser
 status: todo
