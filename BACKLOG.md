@@ -2081,6 +2081,61 @@ created: 2026-07-24
 ## Inbjuden kund ser råa flikar + ekonomiskydd hänger på feature-flagga
 Audit-fynd #5+#6 + strukturgrepp 4: client-personan mappas till homeowner och får view på Översikt/Arbeten/Ritning/Filer — Kundvyn är EN flik, inte den begränsade vyn. Och är isTeamV2MaskingEnabled av visar ReadOnlyBudgetView builderns kostnader för kunden. Fix: customer-safe-projektion i persona-kontraktet (oavsett flagga) + dedikerad Kundvy-shell; aktivera den döda isInvitedClient-grenen; lägg invited_client i RequireRole-typen.
 
+### RÄTTELSE + BEVIS 2026-08-25 (s84) — läckan är VERKLIG, och flaggan är INTE fixen
+
+**Bevisat mot tabellen, inte predikatet** ([[feedback_rls_test_the_table_not_the_predicate]]).
+RLS-simulerat som den enda levande client-delningen i prod
+(`sthlmrides@gmail.com` på projektet "Lallargatan 22", ägare Carl, skapad 2026-03-10):
+
+    set local role authenticated;
+    set local request.jwt.claims = '{"sub":"<klientens auth uid>","role":"authenticated"}';
+    select count(*), count(subcontractor_cost), count(markup_percent) from tasks where project_id = ...;
+    -> 11 rader, 1 med subcontractor_cost (12 000 kr), 11 med markup_percent (10 %), 11 med budget
+
+Klienten läser dessutom 5 materials (2 med `price_total`, 3 med `vendor_name`),
+1 purchase_order och 1 quote. Alltså: **byggarens inköpspris, leverantör och
+påslag ligger i kundens session.**
+
+**Varför:** RLS är RADbaserad, inte kolumnbaserad. `tasks`-policyn kräver bara
+`user_has_project_access AND user_can_view_tasks AND scope='all'` — passerar den
+kommer HELA raden med. Kolumnmaskeringen finns bara i SECURITY DEFINER-RPC:erna
+(`_project_data_masked`), som är en HELT ANNAN läsväg.
+
+**Premissen i kortet var fel på två sätt:**
+1. `VITE_TEAM_V2_MASKING` är inte "osatt av misstag" — `vite.config.ts` bakar
+   medvetet in `?? ""`, så av är default. Det är designat som opt-in.
+2. **Att slå på flaggan stänger INTE hålet.** Bara 5 komponenter använder
+   `projectDataService`; `from("tasks")` förekommer **165 gånger i ~50 filer**
+   (TasksTab, ProjectTimeline, unified-table, useTasksData …). De läser rått
+   oavsett flagga. Flaggan gömmer Budget-fliken och Översiktens siffror — den är
+   en UI-grind, inte en datagräns.
+
+**Nuvarande exponering: noll riktiga kunder.** Enda client-delningen i prod är på
+Carls eget projekt. Hålet blir skarpt i samma sekund en riktig byggare bjuder in
+en riktig kund. Alltså: inte brådskande i natt, men obligatoriskt före den
+första riktiga kundinbjudan.
+
+**Två sidoläckor hittade på köpet:**
+- `personaToAccess.ts:63` ger klienten `budget: "view"` med kommentaren
+  *"backend masks markup"* — backend maskerar bara när flaggan är på.
+- `user_can_view_purchases` / `user_can_view_budget` gör
+  `COALESCE(purchases_access, 'view') != 'none'` — **NULL betyder alltså JA**.
+  En delning utan explicit värde får läsa. `user_purchases_scope` gör samma sak
+  med `COALESCE(purchases_scope,'all')`. Fail-open i två funktioner.
+  (Den levande delningen har explicit `'view'`/`'all'`, så det är inte orsaken
+  här — men det är en laddad pistol för nästa delning som skapas utan värden.)
+
+**Föreslagen fix (B): flytta pengarna ur `tasks`.**
+`subcontractor_cost`, `markup_percent`, `material_markup_percent`,
+`labor_cost_percent` → egen tabell `task_costs` med egen RLS
+(`user_can_view_budget` OCH `role_type <> 'client'`). Då blir `select("*")` på
+tasks säkert **av konstruktion** och alla 165 läsställena slutar läcka utan att
+röras. 32 filer rör dessa kolumner och behöver följa med. Fail-open-COALESCE:arna
+rättas i samma migration.
+Avvisad fix (A): byta `select("*")` mot kolumnlistor på de hetaste ställena —
+det är UI-disciplin, inte en gräns; nästa `select("*")` öppnar hålet igen, och
+RLS släpper fortfarande raderna till den som frågar själv via devtools.
+
 ---
 id: user-type-smaerre-inkonsekvenser
 status: todo
