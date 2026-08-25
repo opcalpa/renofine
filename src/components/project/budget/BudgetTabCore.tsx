@@ -17,7 +17,6 @@ import { BudgetChartsSection } from "../BudgetChartsSection";
 import { BuilderSummaryCards } from "./BuilderSummaryCards";
 import { HomeownerBudgetView } from "./HomeownerBudgetView";
 import { HomeownerAnalysisSection } from "./HomeownerAnalysisSection";
-import { RotSummaryCard } from "../overview/RotSummaryCard";
 import { useTaxDeductionVisible } from "@/hooks/useTaxDeduction";
 import { TaskEditDialog } from "../TaskEditDialog";
 import { MaterialEditDialog } from "../MaterialEditDialog";

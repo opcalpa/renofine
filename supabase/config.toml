@@ -40,6 +40,14 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/parse-renovation-description/index.ts"
 
+# Reads a document a signed-in person dropped. It has always required a JWT —
+# stated here so a deploy can never quietly relax it (the s82 lesson: a deploy
+# flag IS a security setting).
+[functions.classify-document]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/classify-document/index.ts"
+
 [functions.extract-property-document]
 enabled = true
 verify_jwt = true
