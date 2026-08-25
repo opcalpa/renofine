@@ -2075,13 +2075,38 @@ Carls fråga 2026-07-24: verifiera hela plattformen utifrån de tre perspektiven
 
 ---
 id: user-type-builder-budget-fel-falt
-status: todo
+status: done
 priority: P1
 tags: [audit, budget, byggare, bug]
 created: 2026-07-24
 ---
 ## CreateProjectDialog skriver byggarens budget till hemägar-privatfältet
 Audit-fynd #4: dialogen skriver ALLTID beloppet till project_private_budget.private_budget_cap ("homeowner's private cap") oavsett roll. En byggares inmatade budget försvinner tyst — BuilderSummaryCards läser aldrig fältet. Fix: roll-medveten skrivning (byggare → ingen/eget fält) eller dölj fältet för contractor.
+
+**RÄTTELSE 2026-08-25 (s84): "försvinner tyst" stämde inte.** Raden ovanför
+skriver också `total_budget` på projektet (`CreateProjectDialog.tsx:129`), och
+översiktens budgetruta läser `contract_value ?? total_budget`
+(`useOverviewData.ts:282`). Byggaren SER alltså sin siffra — på översikten.
+Det stämmer att Budget-fliken inte visar den: `BuilderSummaryCards` läser bara
+quotes/invoices/quote_items och visar "Contract".
+
+Den verkliga skadan låg någon annanstans: `private_budget_cap` driver
+`AtaBudgetWarningSection`, den PRIVATA varningen ägaren får innan hon
+accepterar en offert ("det här spränger ditt tak"). En byggare som äger sitt
+eget projekt fick alltså en hemägar-formulerad varning om sin EGEN offert.
+Samma inmatning betydde två olika saker beroende på roll, och appen skrev båda.
+
+**LEVERERAT 2026-08-25:** skrivningen är roll-gatad på
+`onboarding_user_type === "homeowner"` (aldrig `is_professional`, enligt
+[[feedback_role_gating_signal]]). `total_budget` skrivs som förut, så inget
+går förlorat för byggaren — det slutar bara betyda fel sak. Städade samtidigt
+en JSDoc som beskrev en funktion som inte finns (påstod att offert-importen
+skrev private_budget_cap; det gör den inte).
+
+**Kvar (eget beslut, ej bugg):** Budget-fliken visar aldrig byggarens
+planerade budget, bara kontraktsvärdet ur offerterna. Om en byggare ska kunna
+sätta ett eget internt tak behövs ett eget fält — det är en produktfråga, inte
+en fix.
 
 ---
 id: user-type-hemagare-forbrukat-tvetydigt

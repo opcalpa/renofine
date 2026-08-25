@@ -138,7 +138,7 @@ export function CreateProjectDialog({
 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
-      const { data: profile } = await supabase.from("profiles").select("id").eq("user_id", user.id).single();
+      const { data: profile } = await supabase.from("profiles").select("id, onboarding_user_type").eq("user_id", user.id).single();
       if (!profile) throw new Error("Profile not found");
 
       const { data, error } = await supabase.from("projects").insert({
@@ -160,8 +160,15 @@ export function CreateProjectDialog({
         });
       }
 
-      // Initial budget entered at creation = homeowner's private cap (RLS owner-only)
-      if (budget) {
+      // Initial budget entered at creation = homeowner's private cap (RLS owner-only).
+      // ROLE-GATED: private_budget_cap is a HOMEOWNER concept — the ceiling she
+      // doesn't want to cross, which drives the private ÄTA warning before she
+      // accepts a quote. A builder's budget is the contract value, and writing a
+      // private cap for him made the app warn about "your private budget" on his
+      // own quote. The number still lands on projects.total_budget either way,
+      // so nothing is lost for a builder — it just stops meaning the wrong thing.
+      // Role signal is onboarding_user_type only (never is_professional).
+      if (budget && profile.onboarding_user_type === "homeowner") {
         await supabase.from("project_private_budget").insert({
           project_id: data.id,
           private_budget_cap: Number(budget),
@@ -341,11 +348,6 @@ export function CreateProjectDialog({
     }
   };
 
-  /**
-   * Quote-mode AI upload for AUTHENTICATED users.
-   * Extracts rooms + tasks + budget metadata via process-document(mode="quote"),
-   * then creates project, rooms, tasks, and private_budget_cap in one shot.
-   */
   // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
