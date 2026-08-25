@@ -66,7 +66,7 @@ kan andra dem av misstag. Inga migrationer i det har arbetet.
 
 ---
 id: logga-modellanropen-over-tid
-status: todo
+status: done
 priority: P3
 tags: [sil, matning, import, kostnad]
 created: 2026-08-25
@@ -82,12 +82,21 @@ inte att jamfora ett slapp med ett annat, eller se om nasta optimering faktiskt
 sankte kostnaden. SIL-regeln i CLAUDE.md sager att AI-anrop ska instrumenteras
 mot aidev-admin (`lab:renofine:…`) — det ar den delen som inte ar gjord.
 
-Litet jobb: skicka `outcome.modelCalls` (total + byKind + filesRead) till
-aidev-admin nar ett slapp ar klart. Da blir "billigare import" nagot man kan
-visa i en kurva i stallet for pasta.
+**LEVERERAT 2026-08-25** (`71801b2`) — men INTE via aidev-admin. Den tjansten
+kor pa localhost:5007 med en ingest-nyckel; appen kor i anvandarens webblasare
+och kan varken na den eller bara nyckeln. PostHog ar redan i prod och ar den
+enda vagen som fungerar harifran.
 
-`callsPerFile` ar talet att folja: totalen vaxer med mappens storlek, kvoten gor
-det inte.
+Kostnaden rider med `folder_ingest_proposed`: model_calls, files_read,
+files_seen, files_skipped, truncated_docs, calls_per_file + en rad per
+edge-funktion. Bada vagarna skickar (`surface`: project_detail / renaida_dialog)
+— fodelseflodet var helt omatt forut.
+
+`calls_per_file` ar talet att folja: totalen vaxer med mappens storlek, kvoten
+gor det inte.
+
+**KVAR:** ingen har tittat pa datan an. Forsta slappet efter deployen ger
+nollpunkten att jamfora mot.
 
 ---
 id: visa-och-styr-filsorteringen-vid-mapp-drop
