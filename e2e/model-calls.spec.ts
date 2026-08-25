@@ -10,6 +10,7 @@ import {
   callsPerFile,
   describeModelCalls,
   makeModelCallLog,
+  modelCallProperties,
   noteModelCall,
 } from '../src/lib/modelCalls';
 
@@ -65,5 +66,44 @@ test.describe('model call log', () => {
 
   test('nothing read divides by nothing, and says so', () => {
     expect(callsPerFile(makeModelCallLog(), 0)).toBeNull();
+  });
+});
+
+/**
+ * The analytics shape. Two call sites report a drop — the birth dialog and an
+ * existing project — and if they invent different property names the metric
+ * silently becomes two metrics that cannot be compared. That is worse than not
+ * measuring, so the shape is built in one place and pinned here.
+ */
+test.describe('model call properties', () => {
+  test('a drop reports its total, its files and the ratio between them', () => {
+    const log = makeModelCallLog();
+    for (let i = 0; i < 30; i++) noteModelCall(log, 'classify-document');
+    expect(modelCallProperties(log, 100)).toEqual({
+      model_calls: 30,
+      files_read: 100,
+      calls_per_file: 0.3,
+      calls_classify_document: 30,
+    });
+  });
+
+  test('per-function counts survive as chartable names', () => {
+    const log = makeModelCallLog();
+    noteModelCall(log, 'parse-renovation-description');
+    noteModelCall(log, 'extract-document-text');
+    const props = modelCallProperties(log, 2);
+    // Hyphens cannot be charted as property names; underscores can.
+    expect(props.calls_parse_renovation_description).toBe(1);
+    expect(props.calls_extract_document_text).toBe(1);
+  });
+
+  test('a drop that read nothing reports no ratio rather than a wrong one', () => {
+    const props = modelCallProperties(makeModelCallLog(), 0);
+    expect(props.model_calls).toBe(0);
+    expect('calls_per_file' in props).toBe(false);
+  });
+
+  test('no log at all reports nothing, not zeroes that look like a measurement', () => {
+    expect(modelCallProperties(undefined, 10)).toEqual({});
   });
 });

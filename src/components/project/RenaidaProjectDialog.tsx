@@ -25,6 +25,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { createGuestProjectFromGuidedSetup, canCreateGuestProject } from '@/services/guestStorageService';
 import { compressImage } from '@/lib/compressImage';
 import { analytics, AnalyticsEvents, ProjectCreationMethod } from '@/lib/analytics';
+import { modelCallProperties } from '@/lib/modelCalls';
 import { scaffoldProject } from '@/services/scaffoldProject';
 import { activateProject } from '@/services/activateProject';
 import {
@@ -619,6 +620,17 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
         user_type: userType,
         parsed: outcome.roomsAdded > 0 || outcome.tasksAdded > 0,
         via: 'folder',
+      });
+      // A drop at a project's BIRTH costs the same model calls as one into an
+      // existing project, and it is the more common path — measuring only the
+      // other one would have charted half the pipeline.
+      analytics.capture(AnalyticsEvents.FOLDER_INGEST_PROPOSED, {
+        surface: 'renaida_dialog',
+        count: outcome.roomsAdded + outcome.tasksAdded,
+        files_seen: outcome.filesSeen,
+        files_skipped: outcome.alreadyImportedNames?.length ?? 0,
+        truncated_docs: outcome.truncatedDocCount,
+        ...modelCallProperties(outcome.modelCalls, outcome.filesRead),
       });
 
       const label = `📁 ${t('renaidaFlow.folder.dropped', '{{count}} filer släppta', {

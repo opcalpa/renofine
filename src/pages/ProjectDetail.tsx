@@ -12,6 +12,7 @@ import { getManageablePropertyForProject } from "@/services/propertyService";
 import { uploadPropertyDocument } from "@/services/propertyDocumentService";
 import { ingestOutcomeToProposals } from "@/services/agent/ingestToProposals";
 import { emptyDraft } from "@/services/renaidaProjectFlow";
+import { modelCallProperties } from "@/lib/modelCalls";
 import {
   ensureCategoryFolder,
   ensureFolder,
@@ -1354,9 +1355,16 @@ const ProjectDetail = () => {
         toast({ title: inertNotes.join(' ') });
       }
 
+      // The cost rides along with the outcome, so "the import got cheaper" is a
+      // curve rather than a claim. Without this the number lives only in the
+      // moment the person happens to be looking at the review page.
       analytics.capture(AnalyticsEvents.FOLDER_INGEST_PROPOSED, {
         surface: 'project_detail',
         count: proposals.length,
+        files_seen: outcome.filesSeen,
+        files_skipped: outcome.alreadyImportedNames?.length ?? 0,
+        truncated_docs: outcome.truncatedDocCount,
+        ...modelCallProperties(outcome.modelCalls, outcome.filesRead),
       });
       // A whole folder is a reconciliation, not a checklist: it needs the room
       // it might duplicate, the file it came from, and somewhere to say "this

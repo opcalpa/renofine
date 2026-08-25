@@ -63,3 +63,32 @@ export function callsPerFile(log: ModelCallLog, filesRead: number): number | nul
   if (filesRead <= 0) return null;
   return Math.round((log.total / filesRead) * 10) / 10;
 }
+
+/**
+ * The cost of one run, flattened for analytics.
+ *
+ * Shared so every place that reports a drop reports the SAME shape — two call
+ * sites inventing their own property names is how a metric becomes two metrics
+ * that cannot be compared, which is worse than not measuring at all.
+ *
+ * `calls_per_file` is the number to chart: the total rises with the size of the
+ * folder, the ratio only moves when the pipeline itself gets cheaper. The
+ * per-function counts ride along as `calls_<name>` so a jump can be traced to
+ * the function that caused it without another release.
+ */
+export function modelCallProperties(
+  log: ModelCallLog | undefined,
+  filesRead: number
+): Record<string, number> {
+  if (!log) return {};
+  const props: Record<string, number> = {
+    model_calls: log.total,
+    files_read: filesRead,
+  };
+  const perFile = callsPerFile(log, filesRead);
+  if (perFile !== null) props.calls_per_file = perFile;
+  for (const [kind, n] of Object.entries(log.byKind)) {
+    props[`calls_${kind.replace(/-/g, '_')}`] = n;
+  }
+  return props;
+}
