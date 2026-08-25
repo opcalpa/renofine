@@ -213,7 +213,7 @@ nätverksproblem som inte finns. Aktiveringsflaskhalsen, i planritaren.
 
 ---
 id: tasks-update-slapper-in-kunden
-status: todo
+status: done
 priority: P1
 tags: [sakerhet, rls, kundvy, roller]
 created: 2026-08-25
@@ -252,6 +252,64 @@ hemliga, men frågan "ska kunden kunna ÄNDRA dem?" är samma fråga.
 Innan fix: bestäm vad en kund SKA få skriva. Rimligen bara sitt eget —
 kommentarer, godkännanden, önskemål (`purchase_requests`) — aldrig
 arbetsraderna.
+
+### LEVERERAT 2026-08-25 (s84)
+
+`20260825140000_client_write_lockdown.sql` (revert skriven först). Hålet var
+bredare än kortet sa — samma mönster fanns i **sex** policyer, inte en:
+`tasks_insert`, `tasks_update`, `rooms` (ALL, alltså även radera),
+`external_quotes_insert/update` och `eqa_insert/update`.
+
+Fixat via `user_is_client_on_project()` (nyckar på role_type) i stället för att
+röra arrayen — precis som kortet varnade för. Verifierat att medplaneraren
+överlevde: **samma person** (`sthlmrides`) är kund på Lallargatan och
+planning_contributor på Bergsgatan, och efter migrationen skriver hon
+**0 arbeten / 0 rum som kund** men fortfarande **1 arbete / 1 rum som
+medplanerare**. Ägare 11/4, entreprenör 12 — oförändrade. Kundens LÄSVY är
+intakt: 11 arbeten, 4 rum, 1 offert.
+
+`tasks_delete` rördes inte — den uteslöt redan 'client' och var alltså medvetet
+skriven. Det här är samma avsikt applicerad på resten.
+
+**Detaljen som gör det till en riktig eskalering:** delningens `tasks_access`
+är redan `'view'`, så UI:t renderade skrivskyddat hela tiden. Databasen var
+generösare än gränssnittet — skyddet satt bara i klienten.
+
+---
+id: klient-accept-behover-serversida
+status: todo
+priority: P2
+tags: [offert, sakerhet, rls, arkitektur]
+created: 2026-08-25
+---
+## En kund som accepterar en offert kan inte materialisera arbetena
+
+Upptäckt 2026-08-25 (s84) när kundens skrivrätt stängdes
+([[tasks-update-slapper-in-kunden]]).
+
+`ViewQuote.handleAccept` gör tre skrivningar **som den som accepterar**:
+sätter offerten till accepted, flippar projektet till active, och kallar
+`createTasksFromQuote(quoteId)` som INSERTar och UPDATEar `tasks`.
+
+Det betyder att kundens auktoritet i dag uttrycks som "får skriva arbeten",
+när den egentligen är "får acceptera den här offerten". Nu när kunden inte
+längre får skriva i `tasks` skulle en kund-accept tyst misslyckas med
+materialiseringen — offerten blir accepterad men inga arbeten skapas.
+
+**Varför det inte brinner:** kollat i prod 2026-08-25 — **varje offert har
+`client_id = NULL`**. Ingen kund har någonsin varit mottagare av en offert,
+alltså har den här vägen aldrig körts. Byggarna accepterar sina egna offerter
+som projektägare, och ägarvägen är orörd.
+
+**Innan `client_id` någonsin börjar sättas** behövs en serversidig
+materialisering: en edge-funktion (eller SECURITY DEFINER-RPC) `accept-quote`
+som verifierar att anroparen är offertens mottagare och sedan applicerar
+offerten med förhöjd behörighet. Logiken finns redan i TS
+(`quoteService.createTasksFromQuote`) och kan flyttas till
+`supabase/functions/_shared/` — samma mönster som `renovationScope.ts`, så
+det blir ingen andra implementation att hålla i synk.
+
+Gör INTE detta genom att ge kunden skrivrätt till `tasks` igen.
 
 ---
 id: rot-rules-popover-pa-levande-ytan
