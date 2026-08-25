@@ -65,6 +65,31 @@ Bada funktionernas `verify_jwt` star nu explicit i `supabase/config.toml`
 kan andra dem av misstag. Inga migrationer i det har arbetet.
 
 ---
+id: logga-modellanropen-over-tid
+status: todo
+priority: P3
+tags: [sil, matning, import, kostnad]
+created: 2026-08-25
+---
+## Modellanropen visas men loggas inte — halva matningen kvar
+
+Raknaren ar byggd 2026-08-25 (`c85bfeb`): varje slapp bar nu sin egen
+`ModelCallLog`, och avstamningssidan sager "Det kostade 62 AI-anrop (0,6 per
+fil)" med uppdelning per edge-funktion i tooltipen. Slut pa att gissa.
+
+**Men siffran lever bara i det ogonblicket.** Den skrivs ingenstans, sa det gar
+inte att jamfora ett slapp med ett annat, eller se om nasta optimering faktiskt
+sankte kostnaden. SIL-regeln i CLAUDE.md sager att AI-anrop ska instrumenteras
+mot aidev-admin (`lab:renofine:…`) — det ar den delen som inte ar gjord.
+
+Litet jobb: skicka `outcome.modelCalls` (total + byKind + filesRead) till
+aidev-admin nar ett slapp ar klart. Da blir "billigare import" nagot man kan
+visa i en kurva i stallet for pasta.
+
+`callsPerFile` ar talet att folja: totalen vaxer med mappens storlek, kvoten gor
+det inte.
+
+---
 id: visa-och-styr-filsorteringen-vid-mapp-drop
 status: done
 priority: P2
