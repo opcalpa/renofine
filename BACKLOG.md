@@ -156,7 +156,7 @@ drag-drop gar inte att simulera.
 
 ---
 id: demo-autosave-ljuger
-status: todo
+status: done
 priority: P1
 tags: [floorplanner, demo, bugg, aktivering, carl]
 created: 2026-08-25
@@ -190,7 +190,17 @@ return`) tror att den får spara. Legacy-canvasen hade spärren
 ritverktyget i demot — första riktiga handlingen — får ett meddelande om
 nätverksproblem som inte finns. Aktiveringsflaskhalsen, i planritaren.
 
-### Exekvering (Opus-jobb, ~1 h)
+### ✅ LEVERERAT 2026-08-25 (`e3ffd25`)
+1. `EditorCanvas` tar emot `isDemo` → ingen autosave i demot. Ritandet är kvar.
+2. `saveShapesForPlan`: `!isOnline()` → offline-toast + `return true`; allt annat
+   → `return false` så anroparen visar "Kunde inte spara planritningen".
+3. Badgen "Endast visning" följer nu samma sanning som canvasen.
+4. Gästen får EN rad: "Det här är demot — din ritning sparas inte."
+5. `e2e/demo-planner-save.spec.ts` pinnar båda halvorna: ritningen fungerar
+   (12→13 väggar), raden syns, och efter autosave-debouncen finns NOLL nekade
+   skrivningar och ingen offline-text.
+
+### Ursprunglig plan (utförd)
 1. `EditorCanvas`: ta emot `isDemo`; hoppa över autosave i demo och visa
    i stället en stilla rad "Demo — ritningen sparas inte, skapa konto för att
    behålla den" (CTA:n finns redan i demobannern).
