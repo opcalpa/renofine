@@ -1,4 +1,9 @@
-import { test, expect, Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
+import {
+  countShapes,
+  openDemoPlanner,
+  shapeIds,
+} from './lib/demoPlanner';
 
 /**
  * Floor planner v2 smoke tests.
@@ -8,56 +13,12 @@ import { test, expect, Page } from '@playwright/test';
  * opted into via its localStorage flag and asserted through the dev-only
  * window.__rfEditorDebug handle (available in dev builds only, which is what
  * the Playwright webServer runs).
+ *
+ * The demo ships its OWN floor plan (12 walls, 5 rooms, 5 openings). Every
+ * count here is therefore a DELTA — asserting an absolute number would pin the
+ * demo's seed data instead of the editor's behaviour, which is what silently
+ * broke this suite once the demo gained geometry.
  */
-
-declare global {
-  interface Window {
-    __rfEditorDebug?: {
-      getShapes: () => Array<{
-        id: string;
-        type: string;
-        coordinates: Record<string, number>;
-        metadata?: { lengthMM?: number };
-      }>;
-      getUi: () => {
-        canUndo: boolean;
-        canRedo: boolean;
-        measurements: Array<{ from: { x: number; y: number }; to: { x: number; y: number } }>;
-        snapGuides: Array<{ distanceLabel?: string }>;
-      };
-      getTool: () => string;
-    };
-  }
-}
-
-async function openDemoPlanner(page: Page, opts: { flag?: 'v2' | 'v1' | 'none' } = {}) {
-  const flag = opts.flag ?? 'v2';
-  await page.addInitScript((f) => {
-    if (f === 'v2') localStorage.setItem('renofine.editorV2', '1');
-    if (f === 'v1') localStorage.setItem('renofine.editorV2', '0');
-    // f === 'none' leaves it unset → exercises the desktop-first default
-    localStorage.setItem('i18nextLng', 'sv');
-  }, flag);
-  await page.goto('/');
-  await page.getByText('Se demoprojekt').first().click();
-  await page.waitForURL(/\/projects\//);
-  // Dismiss the intro dialog if present
-  const ok = page.getByRole('button', { name: 'OK' });
-  if (await ok.isVisible({ timeout: 5000 }).catch(() => false)) {
-    await ok.click();
-  }
-  // Route straight to the drawing view. This used to click a nav item labelled
-  // "Planer"; that label is now "Ritning" and lives inside the "Yta" dropdown,
-  // which silently killed 38 tests. The URL is the stable contract — these
-  // tests are about the editor, not about how the nav is worded.
-  await page.goto(`${new URL(page.url()).pathname}?tab=spaceplanner&subtab=floorplan`);
-  const okPlanner = page.getByRole('button', { name: 'OK' });
-  if (await okPlanner.isVisible({ timeout: 5000 }).catch(() => false)) {
-    await okPlanner.click();
-  }
-  await expect(page.getByTestId('editor-v2-canvas')).toBeVisible({ timeout: 15000 });
-  await page.waitForFunction(() => !!window.__rfEditorDebug);
-}
 
 test.describe('Floor planner v2', () => {
   test('shows the beta badge so the active editor is unambiguous', async ({ page }) => {
@@ -113,9 +74,12 @@ test.describe('Floor planner v2', () => {
   });
 
   test('closing a wall loop auto-creates a room with correct area', async ({ page }) => {
-    await openDemoPlanner(page);
+    await openDemoPlanner(page, { blank: true });
     const canvas = page.getByTestId('editor-v2-canvas');
     const box = (await canvas.boundingBox())!;
+    // The demo arrives with its own rooms, so this test is about the room the
+    // LOOP creates — identified by id, not by being the only one on the plan.
+    const roomsBefore = await shapeIds(page, 'room');
     const click = async (x: number, y: number) => {
       await page.mouse.move(box.x + x, box.y + y);
       await page.mouse.down();
@@ -131,14 +95,15 @@ test.describe('Floor planner v2', () => {
     await click(300, 500);
     await click(300, 200); // close the loop
 
-    const rooms = await page.evaluate(() =>
-      window.__rfEditorDebug!
-        .getShapes()
-        .filter((s) => s.type === 'room')
-        .map((s) => ({ area: (s as { area?: number }).area }))
+    const created = await page.evaluate(
+      (before) =>
+        (window.__rfEditorDebug!.getShapes() as Array<{ id: string; type: string; area?: number }>)
+          .filter((s) => s.type === 'room' && !before.includes(s.id))
+          .map((s) => ({ id: s.id, area: s.area })),
+      roomsBefore
     );
-    expect(rooms.length).toBe(1);
-    expect(rooms[0].area).toBeCloseTo(12, 1);
+    expect(created.length).toBe(1);
+    expect(created[0].area).toBeCloseTo(12, 1);
 
     // The naming dialog opens for the new room — cancel keeps the room.
     const namingDialog = page.getByRole('dialog');
@@ -151,13 +116,14 @@ test.describe('Floor planner v2', () => {
     await page.mouse.click(box.x + 500, box.y + 200);
     await page.keyboard.press('Delete');
     const stillThere = await page.evaluate(
-      () => window.__rfEditorDebug!.getShapes().filter((s) => s.type === 'room').length
+      (id) => window.__rfEditorDebug!.getShapes().some((s) => s.id === id),
+      created[0].id
     );
-    expect(stillThere).toBe(1);
+    expect(stillThere).toBe(true);
   });
 
   test('door placement snaps to a wall and slides along it', async ({ page }) => {
-    await openDemoPlanner(page);
+    await openDemoPlanner(page, { blank: true });
     const canvas = page.getByTestId('editor-v2-canvas');
     const box = (await canvas.boundingBox())!;
 
@@ -218,6 +184,7 @@ test.describe('Floor planner v2', () => {
 
   test('duplicate (Cmd+D) copies the selection and undoes as one step', async ({ page }) => {
     await openDemoPlanner(page);
+    const wallsBefore = await countShapes(page, 'wall');
     const canvas = page.getByTestId('editor-v2-canvas');
     const box = (await canvas.boundingBox())!;
 
@@ -230,16 +197,19 @@ test.describe('Floor planner v2', () => {
     await page.mouse.up();
     await page.keyboard.press('Enter');
 
-    const wallCount = () =>
-      page.evaluate(() => window.__rfEditorDebug!.getShapes().filter((s) => s.type === 'wall').length);
-    const drawn = await wallCount();
+    const wallCount = () => countShapes(page, 'wall');
+    // Select-all now grabs the demo's own walls too, so the honest assertion
+    // is that duplicating EVERYTHING doubles everything — and that one undo
+    // puts all of it back. Both hold whatever the plan started with.
+    const total = await wallCount();
+    expect(total).toBeGreaterThan(wallsBefore); // the chain was drawn
 
     await page.keyboard.press('v');
     await page.keyboard.press('ControlOrMeta+a');
     await page.keyboard.press('ControlOrMeta+d');
-    expect(await wallCount()).toBe(drawn * 2);
+    expect(await wallCount()).toBe(total * 2);
     await page.keyboard.press('ControlOrMeta+z');
-    expect(await wallCount()).toBe(drawn);
+    expect(await wallCount()).toBe(total);
   });
 
   test('copy/paste (Cmd+C/V) recreates the selection with fresh ids', async ({ page }) => {
@@ -303,7 +273,7 @@ test.describe('Floor planner v2', () => {
   });
 
   test('opening width edits from the selection toolbar and shows corner distances', async ({ page }) => {
-    await openDemoPlanner(page);
+    await openDemoPlanner(page, { blank: true });
     const canvas = page.getByTestId('editor-v2-canvas');
     const box = (await canvas.boundingBox())!;
 
@@ -388,7 +358,7 @@ test.describe('Floor planner v2', () => {
   });
 
   test('clicking a dimension label and typing a new length moves the wall', async ({ page }) => {
-    await openDemoPlanner(page);
+    await openDemoPlanner(page, { blank: true });
     const canvas = page.getByTestId('editor-v2-canvas');
     const box = (await canvas.boundingBox())!;
 
@@ -425,6 +395,7 @@ test.describe('Floor planner v2', () => {
     // Enter that ended it), which used to swallow the next chain's first
     // vertex when drawing quickly.
     await openDemoPlanner(page);
+    const wallsBefore = await countShapes(page, 'wall');
     const canvas = page.getByTestId('editor-v2-canvas');
     const box = (await canvas.boundingBox())!;
     const click = async (x: number, y: number) => {
@@ -444,14 +415,13 @@ test.describe('Floor planner v2', () => {
     await click(800, 420);
     await page.keyboard.press('Enter');
 
-    const walls = await page.evaluate(
-      () => window.__rfEditorDebug!.getShapes().filter((s) => s.type === 'wall').length
-    );
-    expect(walls).toBe(3);
+    // Three chains of one segment each — counted as a delta over the demo's
+    // own walls, so this pins the editor and not the seed data.
+    expect((await countShapes(page, 'wall')) - wallsBefore).toBe(3);
   });
 
   test('library object: place with wall snap + auto-rotate, slide, release, R-rotate', async ({ page }) => {
-    await openDemoPlanner(page);
+    await openDemoPlanner(page, { blank: true });
     const canvas = page.getByTestId('editor-v2-canvas');
     const box = (await canvas.boundingBox())!;
 
@@ -562,7 +532,7 @@ test.describe('Floor planner v2', () => {
   });
 
   test('selecting a wall offers "Väggvy" and opens elevation with breadcrumb', async ({ page }) => {
-    await openDemoPlanner(page);
+    await openDemoPlanner(page, { blank: true });
     const canvas = page.getByTestId('editor-v2-canvas');
     const box = (await canvas.boundingBox())!;
     const click = async (x: number, y: number) => {
@@ -600,7 +570,7 @@ test.describe('Floor planner v2', () => {
   });
 
   test('object placed inside a linked room gets the room id stamped (E3 mirror)', async ({ page }) => {
-    await openDemoPlanner(page);
+    await openDemoPlanner(page, { blank: true });
     const canvas = page.getByTestId('editor-v2-canvas');
     const box = (await canvas.boundingBox())!;
     const click = async (x: number, y: number) => {
@@ -654,7 +624,7 @@ test.describe('Floor planner v2', () => {
   });
 
   test('drag-and-drop from the object panel places a wall-snapped object', async ({ page }) => {
-    await openDemoPlanner(page);
+    await openDemoPlanner(page, { blank: true });
     const canvas = page.getByTestId('editor-v2-canvas');
     const box = (await canvas.boundingBox())!;
     const click = async (x: number, y: number) => {
@@ -746,7 +716,7 @@ test.describe('Floor planner v2', () => {
   });
 
   test('opening can be placed directly in the wall view at the clicked position', async ({ page }) => {
-    await openDemoPlanner(page);
+    await openDemoPlanner(page, { blank: true });
     const canvas = page.getByTestId('editor-v2-canvas');
     const box = (await canvas.boundingBox())!;
     const click = async (x: number, y: number) => {
@@ -797,7 +767,7 @@ test.describe('Floor planner v2', () => {
   });
 
   test('wall view: text note placement and per-wall surface instruction', async ({ page }) => {
-    await openDemoPlanner(page);
+    await openDemoPlanner(page, { blank: true });
     const canvas = page.getByTestId('editor-v2-canvas');
     const box = (await canvas.boundingBox())!;
     const click = async (x: number, y: number) => {
@@ -941,7 +911,7 @@ test.describe('Floor planner v2', () => {
   });
 
   test('templates tab places a default template as one grouped undo step', async ({ page }) => {
-    await openDemoPlanner(page);
+    await openDemoPlanner(page, { blank: true });
     // Placement needs currentPlanId — wait for the plan picker to resolve
     await expect(page.getByRole('button', { name: /Floor Plan|Plan 1/i })).toBeVisible({
       timeout: 15000,
@@ -1103,7 +1073,7 @@ test.describe('Floor planner v2', () => {
   });
 
   test('right-click context menu: tools + recent objects + wall actions', async ({ page }) => {
-    await openDemoPlanner(page);
+    await openDemoPlanner(page, { blank: true });
     const canvas = page.getByTestId('editor-v2-canvas');
     const box = (await canvas.boundingBox())!;
 
@@ -1219,7 +1189,7 @@ test.describe('Floor planner v2', () => {
   });
 
   test('closeout controls: shape fill colour, z-order, and text bold/size', async ({ page }) => {
-    await openDemoPlanner(page);
+    await openDemoPlanner(page, { blank: true });
     const canvas = page.getByTestId('editor-v2-canvas');
     const box = (await canvas.boundingBox())!;
 
