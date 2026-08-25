@@ -212,6 +212,48 @@ nätverksproblem som inte finns. Aktiveringsflaskhalsen, i planritaren.
 4. e2e: gäst ritar i demot → ingen toast om offline, ingen 401 i nätverket.
 
 ---
+id: tasks-update-slapper-in-kunden
+status: todo
+priority: P1
+tags: [sakerhet, rls, kundvy, roller]
+created: 2026-08-25
+---
+## En inbjuden kund kan ÄNDRA byggarens arbeten (write-eskalering)
+
+Hittad 2026-08-25 (s84) medan kostnadsläckan stängdes. `tasks_update`-policyn:
+
+    (is_system_admin() OR user_owns_project(project_id)
+     OR project_id IN (SELECT ps.project_id FROM project_shares ps
+                       WHERE ps.shared_with_user_id = get_user_profile_id()
+                         AND ps.role = ANY (ARRAY['editor','admin','client'])))
+
+**Bevisat mot tabellen** (i en transaktion som rullades tillbaka — inget
+ändrades): som den levande client-delningen på "Lallargatan 22" gick
+`update tasks set budget = budget where project_id = ...` igenom på **11 av 11
+rader**. Kunden kan alltså ändra status, datum, budget och titel på byggarens
+arbeten.
+
+Det här är en ANNAN bugg än läsläckan i
+[[user-type-kundvy-persona-kontrakt]] — den är stängd via `task_costs`,
+och den handlade om att SE. Den här handlar om att SKRIVA, och den är kvar.
+
+**Fällan när den fixas:** policyn nycklar på `role`, inte `role_type`.
+`role = 'client'` matchar även **planning_contributor**, som är en helt annan
+roll (medplanerare) och ska behålla sin skrivrätt. Använd
+`user_is_client_on_project()` (finns sedan 20260825120000, nyckar på
+role_type) i stället för att plocka bort `'client'` ur arrayen — annars tystar
+man medplanerarens funktion på köpet.
+
+Kolla samtidigt de andra policyerna som inlinar `'client'`:
+`external_quotes_update`, `eqa_update` (båda UPDATE) och
+`rooms` "Users can manage rooms in accessible projects" (ALL). Rum är knappast
+hemliga, men frågan "ska kunden kunna ÄNDRA dem?" är samma fråga.
+
+Innan fix: bestäm vad en kund SKA få skriva. Rimligen bara sitt eget —
+kommentarer, godkännanden, önskemål (`purchase_requests`) — aldrig
+arbetsraderna.
+
+---
 id: rot-rules-popover-pa-levande-ytan
 status: todo
 priority: P3
