@@ -41,6 +41,32 @@ export interface ImportApplyResult extends ApplyResult {
  */
 const LAYER_SPAN_MM = 10000;
 
+/**
+ * The drawing's real proportions, read from the stored file.
+ *
+ * Without this the layer was forced to 4:3 — a portrait A4 plan landed on the
+ * canvas squashed into landscape, and every wall traced over it inherited the
+ * distortion. The bucket is private, so the bytes come through a short-lived
+ * signed URL. Returns null when the file cannot be read — a PDF original is the
+ * normal such case — and the caller then keeps the old assumption rather than
+ * failing the whole import.
+ */
+async function drawingAspect(storagePath: string): Promise<number | null> {
+  try {
+    const { data } = await supabase.storage
+      .from('project-files')
+      .createSignedUrl(storagePath, 60);
+    if (!data?.signedUrl) return null;
+    const blob = await (await fetch(data.signedUrl)).blob();
+    const bitmap = await createImageBitmap(blob);
+    const aspect = bitmap.height / bitmap.width;
+    bitmap.close?.();
+    return Number.isFinite(aspect) && aspect > 0 ? aspect : null;
+  } catch {
+    return null;
+  }
+}
+
 async function addDrawingAsLayer(
   drawing: ImportDrawing,
   projectId: string
@@ -57,12 +83,13 @@ async function addDrawingAsLayer(
   // Never overwrite: read what the plan holds and append.
   const existing = await loadShapesForPlan(planId);
   const span = LAYER_SPAN_MM * worldPerMm();
+  const aspect = (await drawingAspect(drawing.storagePath)) ?? 0.75;
 
   const image: FloorMapShape = {
     id: uuidv4(),
     type: 'image',
     planId,
-    coordinates: { x: 0, y: 0, width: span, height: span * 0.75 },
+    coordinates: { x: 0, y: 0, width: span, height: span * aspect },
     imageUrl: drawing.storagePath,
     imageOpacity: 0.5,
     locked: false,
