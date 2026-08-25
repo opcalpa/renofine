@@ -56,11 +56,18 @@ let v2DimensionDefaultApplied = false;
 
 interface EditorCanvasProps {
   isReadOnly?: boolean;
+  /**
+   * The public demo. Drawing is allowed — trying the tool IS the point — but
+   * nothing may be written: the guest owns no project, so RLS refuses every
+   * shape. The legacy canvas had this guard; v2 was born without it and spent
+   * every 2.5 seconds telling guests their work was "saved offline".
+   */
+  isDemo?: boolean;
   /** Bumped when room details change — re-merges room finishes onto shapes. */
   roomDataVersion?: number;
 }
 
-export const EditorCanvas = ({ isReadOnly, roomDataVersion }: EditorCanvasProps) => {
+export const EditorCanvas = ({ isReadOnly, isDemo, roomDataVersion }: EditorCanvasProps) => {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
@@ -312,12 +319,28 @@ export const EditorCanvas = ({ isReadOnly, roomDataVersion }: EditorCanvasProps)
     return ok;
   }, [t]);
 
-  // Debounced autosave on committed changes
+  // Debounced autosave on committed changes. The demo never saves — the write
+  // would be refused by RLS anyway, and a guest deserves to hear that their
+  // drawing is temporary ONCE, not a failure notice every few seconds.
   useEffect(() => {
-    if (isReadOnly || dirtyCounter === 0) return;
+    if (isReadOnly || isDemo || dirtyCounter === 0) return;
     const timer = setTimeout(save, AUTOSAVE_DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [dirtyCounter, isReadOnly, save]);
+  }, [dirtyCounter, isReadOnly, isDemo, save]);
+
+  // Say it once, the first time a guest actually changes something. Silence
+  // would be its own small lie: the drawing looks as permanent as any other.
+  const demoNoticeShown = useRef(false);
+  useEffect(() => {
+    if (!isDemo || dirtyCounter === 0 || demoNoticeShown.current) return;
+    demoNoticeShown.current = true;
+    toast.info(
+      t(
+        'floormap.demoNotSaved',
+        'Det här är demot — din ritning sparas inte. Skapa ett konto för att behålla den.'
+      )
+    );
+  }, [isDemo, dirtyCounter, t]);
 
   // Compatibility bridge for the legacy toolbar (removed in phase 5 when the
   // new EditorToolbar replaces SimpleToolbar/HomeownerToolbar).

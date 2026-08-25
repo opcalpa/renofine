@@ -297,7 +297,9 @@ export const FloorMapEditor = ({ projectId, projectName, onBack, backLabel, isRe
   return (
     <div className="flex flex-col h-full">
       {/* Top Bar with Plan Selector */}
-      <SpacePlannerTopBar projectId={projectId} projectName={projectName} onBack={onBack} backLabel={backLabel} isReadOnly={isReadOnly} />
+      {/* The demo IS drawable, so it must not wear a "view only" badge next to a
+            canvas that accepts a wall. One answer, not two. */}
+        <SpacePlannerTopBar projectId={projectId} projectName={projectName} onBack={onBack} backLabel={backLabel} isReadOnly={isReadOnly && !isDemo} />
       
       <style dangerouslySetInnerHTML={{
         __html: `
@@ -386,7 +388,7 @@ export const FloorMapEditor = ({ projectId, projectName, onBack, backLabel, isRe
         {/* Main Canvas Area - Switch based on viewMode */}
         {viewMode === 'floor' && isEditorV2Enabled() && (
           <main className="flex-1 overflow-hidden relative">
-            <EditorCanvas isReadOnly={isReadOnly && !isDemo} roomDataVersion={roomUpdateTrigger} />
+            <EditorCanvas isReadOnly={isReadOnly && !isDemo} isDemo={isDemo} roomDataVersion={roomUpdateTrigger} />
             {!isReadOnly && <PropertyInsightsPanel />}
           </main>
         )}

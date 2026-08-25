@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { FloorMapPlan, FloorMapShape } from '../types';
 import { toast } from 'sonner';
+import i18n from '@/i18n/config';
 import {
   saveShapesToLocalStorage,
   loadShapesFromLocalStorage,
@@ -321,7 +322,12 @@ export const saveShapesForPlan = async (
   // If offline, inform user and return success
   if (!isOnline()) {
     // Offline mode, skipping database save
-    toast.warning('Changes saved offline. Will sync when back online.');
+    toast.warning(
+      i18n.t(
+        'floormap.savedOffline',
+        'Sparat lokalt. Ändringarna synkas när du är uppkopplad igen.'
+      )
+    );
     return true;
   }
 
@@ -478,8 +484,22 @@ export const saveShapesForPlan = async (
     return true;
   } catch (error) {
     console.error('❌ Error saving shapes for plan:', error);
-    toast.warning('Saved offline. Changes will sync when connection is restored.');
-    return true; // Return true since we saved to localStorage
+    // Two very different failures used to share one answer. Offline IS a kind
+    // of success — the shapes sit in localStorage and sync later. A rejected
+    // write is not: it never lands, never syncs, and telling someone their
+    // work is "saved offline" while the server refused it is a lie the app
+    // keeps repeating every 2.5 seconds. Say which one happened, and let the
+    // caller decide what to show for the second.
+    if (!isOnline()) {
+      toast.warning(
+        i18n.t(
+          'floormap.savedOffline',
+          'Sparat lokalt. Ändringarna synkas när du är uppkopplad igen.'
+        )
+      );
+      return true;
+    }
+    return false;
   }
 };
 

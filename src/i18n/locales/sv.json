@@ -2329,7 +2329,9 @@
       "copied": "Ritningen är kopierad",
       "copiedDescription": "\"{{name}}\" är nu din egen plan i det här projektet"
     },
-    "roomsPlacedFromImport": "{{count}} rum utplacerade bredvid ritningen — dra dem på plats"
+    "roomsPlacedFromImport": "{{count}} rum utplacerade bredvid ritningen — dra dem på plats",
+    "savedOffline": "Sparat lokalt. Ändringarna synkas när du är uppkopplad igen.",
+    "demoNotSaved": "Det här är demot — din ritning sparas inte. Skapa ett konto för att behålla den."
   },
   "canvas": {
     "settings": "Ritinställningar",

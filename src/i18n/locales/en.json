@@ -2960,7 +2960,9 @@
       "copied": "The drawing is copied",
       "copiedDescription": "\"{{name}}\" is now your own plan in this project"
     },
-    "roomsPlacedFromImport": "{{count}} rooms placed beside the drawing — drag them into place"
+    "roomsPlacedFromImport": "{{count}} rooms placed beside the drawing — drag them into place",
+    "savedOffline": "Saved locally. Your changes will sync once you are back online.",
+    "demoNotSaved": "This is the demo — your drawing is not saved. Create an account to keep it."
   },
   "canvas": {
     "settings": "Drawing Settings",
