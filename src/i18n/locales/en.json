@@ -8185,6 +8185,7 @@
       "count_other": "{{count}} files"
     },
     "doneMoved_one": "{{count}} file was moved to the folder you chose.",
-    "doneMoved_other": "{{count}} files were moved to the folder you chose."
+    "doneMoved_other": "{{count}} files were moved to the folder you chose.",
+    "modelCalls": "It cost {{calls}} AI calls ({{perFile}} per file)."
   }
 }

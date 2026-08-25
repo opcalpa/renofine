@@ -59,6 +59,11 @@ import {
   type QuoteLine,
 } from './renaidaProjectFlow';
 import { fileFingerprint } from '@/lib/importKeys';
+import {
+  makeModelCallLog,
+  noteModelCall,
+  type ModelCallLog,
+} from '@/lib/modelCalls';
 
 /**
  * A renovation folder, not a photo-library dump — bound the LLM cost. A whole
@@ -106,7 +111,7 @@ export async function extractFileText(file: File): Promise<string> {
   return extractText(file);
 }
 
-async function extractText(file: File): Promise<string> {
+async function extractText(file: File, calls?: ModelCallLog): Promise<string> {
   try {
     // A PDF with a text layer needs no model at all. Most quotes and invoices
     // have one, so this removes roughly a third of the calls in a document
@@ -125,6 +130,7 @@ async function extractText(file: File): Promise<string> {
         fileName: file.name,
       },
     });
+    noteModelCall(calls, 'extract-document-text');
     if (error) return '';
     return ((data as { text?: string } | null)?.text ?? '').trim();
   } catch {
@@ -183,12 +189,14 @@ function asDocumentType(raw: string | undefined): DocumentType {
 async function classifyText(
   text: string,
   fileName: string,
-  scopeLanguage?: string
+  scopeLanguage?: string,
+  calls?: ModelCallLog
 ): Promise<ClassifyResult | null> {
   try {
     const { data, error } = await supabase.functions.invoke('classify-document', {
       body: { text, fileName, ...(scopeLanguage ? { scope: { language: scopeLanguage } } : {}) },
     });
+    noteModelCall(calls, 'classify-document');
     if (error || !data) return null;
     return data as ClassifyResult;
   } catch {
@@ -339,11 +347,12 @@ export function chooseSuggestedAddress(
  * an assumed rough scale). Room names fold into the draft right away; the
  * geometry becomes a sketch in the planner at project birth.
  */
-async function processFloorPlanImage(file: File): Promise<Contribution> {
+async function processFloorPlanImage(file: File, calls?: ModelCallLog): Promise<Contribution> {
   try {
     // Shared dims/ratio/analysis helper — single source with the live-panel
     // floor-plan capture (SP1) in aiVisionService.
     const result = await analyzeFloorPlanFile(file);
+    noteModelCall(calls, 'process-floorplan');
     const roomNames = (result.rooms ?? [])
       .map((r) => (r.name ?? '').trim())
       .filter((n) => n && !/^room$/i.test(n));
@@ -380,9 +389,10 @@ async function processDocument(
   language: string,
   collectPurchases: boolean,
   isContractor: boolean,
-  suggestAddress: boolean
+  suggestAddress: boolean,
+  calls?: ModelCallLog
 ): Promise<Contribution> {
-  const text = await extractText(file);
+  const text = await extractText(file, calls);
   if (!text) return { kind: 'unreadable', archive: { file, category: 'other' } };
 
   // The home's own papers leave the project pipeline here, before a single
@@ -396,7 +406,7 @@ async function processDocument(
     // it costs. Into an existing project the address is known, so the promise
     // of "no model call" holds there.
     const address = suggestAddress
-      ? toCandidate(await classifyText(text, file.name), 'contract', file.name)
+      ? toCandidate(await classifyText(text, file.name, undefined, calls), 'contract', file.name)
       : undefined;
     // No `archive` stamp — a document belongs in one place, and this one's
     // place is the address (or the project's files, if the caller keeps it).
@@ -405,7 +415,7 @@ async function processDocument(
 
   // ONE call for both questions: what is this document, and what work does it
   // describe. The scope comes back only for classes that may carry it.
-  const cls = await classifyText(text, file.name, language);
+  const cls = await classifyText(text, file.name, language, calls);
   const type = asDocumentType(cls?.type);
   const archive: ArchiveEntry = { file, category: type };
   const address = suggestAddress ? toCandidate(cls, type, file.name) : undefined;
@@ -415,6 +425,7 @@ async function processDocument(
     if (collectPurchases) {
       try {
         const captured = await captureDocument(file);
+        noteModelCall(calls, 'process-document-v2');
         if (captured.kind === 'receipt' || captured.kind === 'invoice') {
           // No archive stamp: the order owns this file (receipt_file_path).
           return { kind: 'purchase', action: captured.action, address };
@@ -431,7 +442,7 @@ async function processDocument(
     if (isPdf(file)) {
       const raster = await rasterizePdfFirstPage(file);
       if (raster) {
-        const analyzed = await processFloorPlanImage(raster.file);
+        const analyzed = await processFloorPlanImage(raster.file, calls);
         if (analyzed.kind === 'sketch') {
           return {
             ...analyzed,
@@ -456,6 +467,7 @@ async function processDocument(
   // and price-less quotes fall through to the plain scope parse below.
   if (type === 'quote' && isContractor) {
     const lines = await extractQuoteLines(file);
+    noteModelCall(calls, 'process-document-v2');
     if (lines.length > 0) return { kind: 'quoteLines', lines, fileName: file.name, archive, address };
   }
   // The scope already came back with the classification. A scope-bearing
@@ -468,7 +480,11 @@ async function processDocument(
 }
 
 /** A plain text/markdown file: read → parse as a project description. */
-async function processTextFile(file: File, language: string): Promise<Contribution> {
+async function processTextFile(
+  file: File,
+  language: string,
+  calls?: ModelCallLog
+): Promise<Contribution> {
   let text = '';
   try {
     text = (await file.text()).trim();
@@ -485,18 +501,24 @@ async function processTextFile(file: File, language: string): Promise<Contributi
   // still parsed — but a parse that finds nothing is "I did not understand
   // this", not "I could not read it".
   const parsed = await parseProjectDescription(text, language);
+  noteModelCall(calls, 'parse-renovation-description');
   return usable(parsed)
     ? { kind: 'scope', parsed, sourceKind: 'document', fileName: file.name, archive }
     : { kind: 'notUnderstood', archive };
 }
 
 /** All photos in the drop: OCR each, parse the combined text once. */
-async function processPhotos(files: File[], language: string): Promise<Contribution | null> {
+async function processPhotos(
+  files: File[],
+  language: string,
+  calls?: ModelCallLog
+): Promise<Contribution | null> {
   if (files.length === 0) return null;
-  const texts = await Promise.all(files.map(extractText));
+  const texts = await Promise.all(files.map((f) => extractText(f, calls)));
   const combined = texts.filter(Boolean).join('\n\n');
   if (!combined) return { kind: 'unreadable' };
   const parsed = await parseProjectDescription(combined, language);
+  noteModelCall(calls, 'parse-renovation-description');
   // Combined parse → coarse 'photo' provenance (no single originating file).
   return usable(parsed) ? { kind: 'scope', parsed, sourceKind: 'photo' } : { kind: 'unreadable' };
 }
@@ -593,6 +615,12 @@ export interface IngestOutcome {
   suggestedAddress: AddressCandidate | null;
   /** How many documents named a DIFFERENT street than the suggestion. */
   addressDisagreement: number;
+  /**
+   * What this drop actually cost in model calls. The saving from skipping a
+   * file already imported shows up here as an absence — which is the only
+   * honest way to see it.
+   */
+  modelCalls: ModelCallLog;
 }
 
 /**
@@ -624,6 +652,7 @@ export async function ingestProjectFolder(
     alreadyImported?: Set<string>;
   }
 ): Promise<IngestOutcome> {
+  const calls = makeModelCallLog();
   const collectPurchases = opts?.collectPurchases ?? false;
   const isContractor = opts?.isContractor ?? false;
   const suggestAddress = opts?.suggestAddress ?? false;
@@ -669,7 +698,9 @@ export async function ingestProjectFolder(
     onProgress?.({ phase: 'classify', done: 0, total: photos.length });
     const kinds = await mapLimit(photos, CONCURRENCY, async (f) => {
       try {
-        return asDocumentType((await classifyDocument(f)).type);
+        const kind = asDocumentType((await classifyDocument(f)).type);
+        noteModelCall(calls, 'classify-document');
+        return kind;
       } catch {
         return 'other' as DocumentType;
       } finally {
@@ -686,11 +717,15 @@ export async function ingestProjectFolder(
 
   // Phase 1 — extract/classify/parse (network-bound, independent, bounded).
   const thunks: Array<() => Promise<Contribution | null>> = [
-    () => processPhotos(ocrImages, language),
-    ...planImages.map((f) => () => processFloorPlanImage(f)),
-    ...pdfs.map((f) => () => processDocument(f, language, collectPurchases, isContractor, suggestAddress)),
-    ...docs.map((f) => () => processDocument(f, language, collectPurchases, isContractor, suggestAddress)),
-    ...texts.map((f) => () => processTextFile(f, language)),
+    () => processPhotos(ocrImages, language, calls),
+    ...planImages.map((f) => () => processFloorPlanImage(f, calls)),
+    ...pdfs.map(
+      (f) => () => processDocument(f, language, collectPurchases, isContractor, suggestAddress, calls)
+    ),
+    ...docs.map(
+      (f) => () => processDocument(f, language, collectPurchases, isContractor, suggestAddress, calls)
+    ),
+    ...texts.map((f) => () => processTextFile(f, language, calls)),
   ];
   // Progress is counted in FILES, not thunks — "fil 3 av 12" has to match the
   // folder the user dropped. The photo thunk covers a whole batch, so it
@@ -805,5 +840,6 @@ export async function ingestProjectFolder(
     oversizedCount,
     skippedPlanPages,
     archiveFiles,
+    modelCalls: calls,
   };
 }

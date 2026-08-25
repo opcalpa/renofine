@@ -8184,6 +8184,7 @@
       "count_other": "{{count}} filer"
     },
     "doneMoved_one": "{{count}} fil flyttades till mappen du valde.",
-    "doneMoved_other": "{{count}} filer flyttades till mappen du valde."
+    "doneMoved_other": "{{count}} filer flyttades till mappen du valde.",
+    "modelCalls": "Det kostade {{calls}} AI-anrop ({{perFile}} per fil)."
   }
 }

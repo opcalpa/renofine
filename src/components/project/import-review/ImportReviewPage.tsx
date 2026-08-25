@@ -12,6 +12,7 @@ import type {
 } from '@/services/agent/importSession';
 import { changeCount, purchaseProposals } from '@/services/agent/importSession';
 import { actionDetails } from '@/components/agent/ConfirmDiff';
+import { callsPerFile, describeModelCalls } from '@/lib/modelCalls';
 import { ImportFilesPane } from './ImportFilesPane';
 import { ImportPreview } from './ImportPreview';
 import { ImportRoomsSection } from './ImportRoomsSection';
@@ -288,6 +289,21 @@ export function ImportReviewPage({
             </>
           )}
         </p>
+        {/* What the drop cost. Measured, not estimated — every claim about this
+            pipeline getting cheaper was a guess until this number existed. The
+            per-function breakdown sits in the tooltip so the headline stays
+            readable. */}
+        {session.outcome.modelCalls?.total > 0 && (
+          <p
+            className="text-xs text-muted-foreground"
+            title={describeModelCalls(session.outcome.modelCalls)}
+          >
+            {t('importReview.modelCalls', 'Det kostade {{calls}} AI-anrop ({{perFile}} per fil).', {
+              calls: session.outcome.modelCalls.total,
+              perFile: callsPerFile(session.outcome.modelCalls, session.outcome.filesRead) ?? 0,
+            })}
+          </p>
+        )}
       </header>
 
       {isMobile ? (
