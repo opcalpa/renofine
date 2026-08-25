@@ -29,6 +29,33 @@ med sidomarginaler även på mobil, istället för basens fullbredds bottom-shee
 Se `src/components/project/overview/ShareRfqDialog.tsx`. Kvar: Carl on-device-verify.
 
 ---
+id: deploy-merged-classify-scope
+status: todo
+priority: P1
+tags: [carl, deploy, import]
+created: 2026-08-25
+---
+## Deploya de tva edge-funktionerna innan frontend pushas
+
+Sammanslagningen klassificering + tolkning (commit `fe768dc`) ar byggd, evaluerad
+och committad lokalt — men INTE pushad, och funktionerna ar inte deployade.
+Auto-lagets klassificerare blockerade `supabase functions deploy` i sessionen.
+
+**Ordningen ar inte valfri.** Pushas frontend forst skickar den nya klienten
+`scope: {language}` till den GAMLA funktionen, som ignorerar faltet → varje
+offert, kontrakt och specifikation i en slappt mapp blir "forstod inte" och ger
+inga rum alls. Servern ar bakatkompatibel; klienten ar det inte.
+
+```
+supabase functions deploy classify-document parse-renovation-description --project-ref pfyxywuchbakuphxhgec
+git push
+```
+
+Bada funktionernas `verify_jwt` star nu explicit i `supabase/config.toml`
+(classify-document: true, parse-renovation-description: false) sa deployen inte
+kan andra dem av misstag. Inga migrationer i det har arbetet.
+
+---
 id: rot-rules-popover-pa-levande-ytan
 status: todo
 priority: P3
