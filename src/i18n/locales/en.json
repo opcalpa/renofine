@@ -7907,7 +7907,9 @@
     "photosFiled_other": "{{count}} photos saved to Files without being interpreted.",
     "archiveFailed_one": "{{count}} file could not be saved to Files — drop it again or upload it manually.",
     "archiveFailed_other": "{{count}} files could not be saved to Files — drop them again or upload them manually.",
-    "nothingFoundNothingSaved": "I didn't find anything to add, and the files could not be saved either."
+    "nothingFoundNothingSaved": "I didn't find anything to add, and the files could not be saved either.",
+    "notUnderstoodFolder_one": "{{count}} file I could not identify — it is in {{folder}} and touches nothing in the project.",
+    "notUnderstoodFolder_other": "{{count}} files I could not identify — they are in {{folder}} and touch nothing in the project."
   },
   "addresses": {
     "picker": {
@@ -8173,6 +8175,16 @@
     },
     "leadSkipped": "I recognised {{count}} files from before and skipped them entirely.",
     "duplicate": "Already in the project",
-    "duplicatePurchase": "Already booked — same supplier and invoice number"
+    "duplicatePurchase": "Already booked — same supplier and invoice number",
+    "filing": {
+      "title": "Where the files go",
+      "hint": "The files are sorted by what they are. To move one, change its folder in the list.",
+      "root": "Project root",
+      "move": "Move to another folder",
+      "count_one": "{{count}} file",
+      "count_other": "{{count}} files"
+    },
+    "doneMoved_one": "{{count}} file was moved to the folder you chose.",
+    "doneMoved_other": "{{count}} files were moved to the folder you chose."
   }
 }

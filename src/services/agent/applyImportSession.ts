@@ -10,7 +10,8 @@ import type { FloorMapShape } from '@/components/floormap/types';
 import { applyProposals } from './applyProposals';
 import type { ApplyResult } from './applyProposals';
 import type { AgentProposal, ProposalAction } from './types';
-import type { ImportDrawing, ImportSession } from './importSession';
+import { movedFiles, type ImportDrawing, type ImportSession } from './importSession';
+import { ensureFolder, moveToFolder } from '@/services/smartUploadService';
 import type { PlaceRoomRequest } from '@/components/floormap/editor/placeRoomFromList';
 
 /**
@@ -29,6 +30,8 @@ export interface ImportApplyResult extends ApplyResult {
   placeableRooms: PlaceRoomRequest[];
   /** The plan a drawing landed on, so the app can navigate there. */
   targetPlanId: string | null;
+  /** How many files the person moved to another folder, and that actually moved. */
+  filesMoved: number;
 }
 
 /**
@@ -101,7 +104,44 @@ async function addDrawingAsLayer(
   return saved ? planId : null;
 }
 
+/**
+ * Carry out the folder moves the person made on the review page.
+ *
+ * FIRST, before anything reads a path: a drawing that was moved must become a
+ * layer at its NEW path, or the canvas would point at a file that is no longer
+ * there. Returns how many actually moved — a move that failed leaves the file
+ * where it was, and the caller says so rather than claiming otherwise.
+ */
+async function applyFolderMoves(
+  session: ImportSession
+): Promise<{ moved: number; newPaths: Map<string, string> }> {
+  const moves = movedFiles(session);
+  const newPaths = new Map<string, string>();
+  if (moves.length === 0) return { moved: 0, newPaths };
+
+  for (const folder of new Set(moves.map((f) => f.targetFolder as string))) {
+    await ensureFolder(session.projectId, folder);
+  }
+
+  for (const file of moves) {
+    const from = file.storagePath as string;
+    const to = await moveToFolder(session.projectId, from, file.targetFolder as string);
+    // A move that failed leaves the file where it was — recording nothing here
+    // is what keeps the rest of the apply pointing at a path that exists.
+    if (to) newPaths.set(from, to);
+  }
+  return { moved: newPaths.size, newPaths };
+}
+
 export async function applyImportSession(session: ImportSession): Promise<ImportApplyResult> {
+  // Moves first: everything below reads storage paths. The session belongs to
+  // React, so the new paths ride along in a map instead of being written back
+  // into it.
+  const { moved: filesMoved, newPaths } = await applyFolderMoves(session);
+  const atCurrentPath = (drawing: ImportDrawing): ImportDrawing =>
+    drawing.storagePath && newPaths.has(drawing.storagePath)
+      ? { ...drawing, storagePath: newPaths.get(drawing.storagePath) }
+      : drawing;
   const drawingsByProposal = new Map(session.drawings.map((d) => [d.proposalId, d]));
 
   // Drawings the person wants as a layer must NOT go through the tracing
@@ -120,7 +160,7 @@ export async function applyImportSession(session: ImportSession): Promise<Import
   let targetPlanId: string | null = null;
   for (const drawing of session.drawings) {
     if (drawing.choice !== 'layer') continue;
-    const planId = await addDrawingAsLayer(drawing, session.projectId);
+    const planId = await addDrawingAsLayer(atCurrentPath(drawing), session.projectId);
     if (planId) targetPlanId = planId;
   }
   if (!targetPlanId) {
@@ -156,7 +196,7 @@ export async function applyImportSession(session: ImportSession): Promise<Import
     if (area) room.areaSqm = area;
   }
 
-  return { ...result, placeableRooms, targetPlanId };
+  return { ...result, placeableRooms, targetPlanId, filesMoved };
 }
 
 /** Rooms the person merged into existing ones — for an honest summary. */

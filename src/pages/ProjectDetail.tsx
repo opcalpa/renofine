@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { FolderDropZone } from "@/components/project/FolderDropZone";
 import { DropTargetChoiceDialog, type DropTargetChoice } from "@/components/project/DropTargetChoiceDialog";
@@ -12,7 +12,12 @@ import { getManageablePropertyForProject } from "@/services/propertyService";
 import { uploadPropertyDocument } from "@/services/propertyDocumentService";
 import { ingestOutcomeToProposals } from "@/services/agent/ingestToProposals";
 import { emptyDraft } from "@/services/renaidaProjectFlow";
-import { ensureCategoryFolder, uploadToCategoryFolder } from "@/services/smartUploadService";
+import {
+  ensureCategoryFolder,
+  ensureFolder,
+  importFolderName,
+  uploadToCategoryFolder,
+} from "@/services/smartUploadService";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useRenaidaStore } from "@/stores/renaidaStore";
@@ -172,6 +177,12 @@ const ProjectDetail = () => {
    */
   const [homePapers, setHomePapers] = useState<PropertyDocCandidate[]>([]);
   const [homePapersSaving, setHomePapersSaving] = useState(false);
+  /**
+   * The folder this drop's unrecognised files share. Held in a ref because the
+   * home-papers question is answered AFTER the archiving, and both must file
+   * into the same place — a drop that straddles midnight must not split in two.
+   */
+  const importFolderRef = useRef<string>('');
   const [propertyTarget, setPropertyTarget] = useState<{ id: string; name: string } | null>(null);
   const [batchOpen, setBatchOpen] = useState(false);
   const [batchFiles, setBatchFiles] = useState<DroppedFile[]>([]);
@@ -932,6 +943,11 @@ const ProjectDetail = () => {
         merged > 0
           ? t('importReview.doneMerged', '{{count}} rum slogs ihop med rum du redan hade.', { count: merged })
           : null,
+        result.filesMoved > 0
+          ? t('importReview.doneMoved', '{{count}} filer flyttades till mappen du valde.', {
+              count: result.filesMoved,
+            })
+          : null,
         result.failed.length > 0
           ? t('importReview.doneFailed', '{{count}} misslyckades.', { count: result.failed.length })
           : null,
@@ -1178,6 +1194,7 @@ const ProjectDetail = () => {
   const runIngestIntoProject = async (files: File[]) => {
     if (!project?.id || files.length === 0) return;
     setIngestBusy({ phase: 'read', done: 0, total: files.length });
+    importFolderRef.current = importFolderName(new Date());
     try {
       // What the project already holds, fetched BEFORE reading anything. Files
       // it recognises are skipped whole — no extraction, no classification, no
@@ -1249,8 +1266,14 @@ const ProjectDetail = () => {
       const archivedPaths = new Map<string, string>();
       if (outcome.archiveFiles.length > 0) {
         try {
+          const importFolder = importFolderRef.current;
           for (const cat of new Set(outcome.archiveFiles.map((a) => a.category))) {
             await ensureCategoryFolder(project.id, cat);
+          }
+          // Everything the reader could not place shares one dated folder
+          // instead of scattering across the project's root.
+          if (outcome.archiveFiles.some((a) => a.category === 'other')) {
+            await ensureFolder(project.id, importFolder);
           }
           // Uploading 100 originals is minutes of its own. It used to run
           // silently after the reading finished, which is the gap that made
@@ -1260,7 +1283,7 @@ const ProjectDetail = () => {
           setIngestBusy({ phase: 'archive', done, total });
           const results = await Promise.all(
             outcome.archiveFiles.map(async (a) => {
-              const path = await uploadToCategoryFolder(project.id, a.file, a.category);
+              const path = await uploadToCategoryFolder(project.id, a.file, a.category, importFolder);
               done += 1;
               setIngestBusy({ phase: 'archive', done, total, fileName: a.file.name });
               // Keep the path: the review page previews the ORIGINAL, which is
@@ -1288,9 +1311,11 @@ const ProjectDetail = () => {
       }
       if (outcome.notUnderstoodCount > 0) {
         inertNotes.push(
-          t('folderDrop.notUnderstood', {
+          t('folderDrop.notUnderstoodFolder', {
             count: outcome.notUnderstoodCount,
-            defaultValue: '{{count}} filer visste jag inte vad de var — de ligger under Övrigt och rör inget i projektet.',
+            folder: importFolderRef.current.replace(/^\//, ''),
+            defaultValue:
+              '{{count}} filer visste jag inte vad de var — de ligger i {{folder}} och rör inget i projektet.',
           }),
         );
       }
@@ -1412,7 +1437,8 @@ const ProjectDetail = () => {
     });
   };
 
-  /** "Keep them here." Filed under Övrigt, still not part of the project. */
+  /** "Keep them here." Filed in this drop's import folder, still not part of
+   * the project. */
   const handleHomePapersKeep = async () => {
     if (!project?.id || homePapers.length === 0) {
       setHomePapers([]);
@@ -1420,9 +1446,12 @@ const ProjectDetail = () => {
     }
     setHomePapersSaving(true);
     try {
-      await ensureCategoryFolder(project.id, 'other');
+      const importFolder = importFolderRef.current || importFolderName(new Date());
+      await ensureFolder(project.id, importFolder);
       await Promise.all(
-        homePapers.map((c) => uploadToCategoryFolder(project.id, c.file, 'other')),
+        homePapers.map((c) =>
+          uploadToCategoryFolder(project.id, c.file, 'other', importFolder),
+        ),
       );
     } catch (e) {
       console.error('ProjectDetail: filing home papers in the project failed', e);

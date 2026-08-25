@@ -12,6 +12,9 @@ import { buildImportSession } from '../src/services/agent/buildImportSession';
 import {
   assignableRooms,
   changeCount,
+  destinationFolder,
+  filingSummary,
+  movedFiles,
   roomProposals,
   taskProposals,
 } from '../src/services/agent/importSession';
@@ -204,5 +207,103 @@ test.describe('changeCount — what the confirm button promises', () => {
     });
     expect(roomProposals(s)).toHaveLength(1);
     expect(taskProposals(s)).toHaveLength(1);
+  });
+});
+
+/**
+ * Where the files LAND. The sorting into /Kvitton, /Offerter and the rest was
+ * always there, but it happened silently after the review — so the person could
+ * neither see it nor disagree with it. These pin the answer the review page now
+ * gives, and the one thing that must never regress: a file the person did not
+ * move is not moved.
+ */
+test.describe('filing — where the dropped files go', () => {
+  function filedSession(paths: Array<[string, string]>) {
+    return buildImportSession({
+      projectId: 'p1',
+      outcome: outcome({
+        filesRead: paths.length,
+        archiveFiles: paths.map(([name]) => ({
+          file: new File([''], name),
+          category: 'other' as const,
+        })),
+      } as Partial<IngestOutcome>),
+      proposals: [],
+      existingRooms: EXISTING,
+      existingPlans: [],
+      archivedPaths: new Map(paths),
+    });
+  }
+
+  test('a file carries the folder it was actually filed into', () => {
+    const session = filedSession([
+      ['kvitto.pdf', 'projects/p1/Kvitton/1-kvitto.pdf'],
+      ['okant.pdf', 'projects/p1/Import 2026-08-25/2-okant.pdf'],
+    ]);
+    const byName = new Map(session.files.map((f) => [f.name, f.folder]));
+    expect(byName.get('kvitto.pdf')).toBe('/Kvitton');
+    expect(byName.get('okant.pdf')).toBe('/Import 2026-08-25');
+  });
+
+  test('a file in the project root reports the root, not undefined', () => {
+    const session = filedSession([['los.pdf', 'projects/p1/1-los.pdf']]);
+    expect(session.files[0].folder).toBe('');
+    expect(destinationFolder(session.files[0])).toBe('');
+  });
+
+  test('the summary counts files per folder, biggest pile first', () => {
+    const session = filedSession([
+      ['a.pdf', 'projects/p1/Kvitton/a.pdf'],
+      ['b.pdf', 'projects/p1/Kvitton/b.pdf'],
+      ['c.pdf', 'projects/p1/Offerter/c.pdf'],
+    ]);
+    expect(filingSummary(session)).toEqual([
+      { folder: '/Kvitton', count: 2 },
+      { folder: '/Offerter', count: 1 },
+    ]);
+  });
+
+  test('moving a file changes the summary before anything is applied', () => {
+    const session = filedSession([
+      ['a.pdf', 'projects/p1/Import 2026-08-25/a.pdf'],
+      ['b.pdf', 'projects/p1/Import 2026-08-25/b.pdf'],
+    ]);
+    session.files[0].targetFolder = '/Kvitton';
+    expect(filingSummary(session)).toEqual([
+      { folder: '/Import 2026-08-25', count: 1 },
+      { folder: '/Kvitton', count: 1 },
+    ]);
+  });
+
+  test('only files the person actually moved are touched on apply', () => {
+    const session = filedSession([
+      ['a.pdf', 'projects/p1/Kvitton/a.pdf'],
+      ['b.pdf', 'projects/p1/Kvitton/b.pdf'],
+      ['c.pdf', 'projects/p1/Kvitton/c.pdf'],
+    ]);
+    // Untouched.
+    expect(movedFiles(session)).toEqual([]);
+    // Moved somewhere else.
+    session.files[0].targetFolder = '/Offerter';
+    // Explicitly re-picked the folder it is already in — not a move.
+    session.files[1].targetFolder = '/Kvitton';
+    expect(movedFiles(session).map((f) => f.name)).toEqual(['a.pdf']);
+  });
+
+  test('a file that never reached storage offers no folder to move', () => {
+    const session = buildImportSession({
+      projectId: 'p1',
+      outcome: outcome({
+        propertyDocuments: [{ file: new File([''], 'kopekontrakt.pdf') }],
+      } as Partial<IngestOutcome>),
+      proposals: [],
+      existingRooms: EXISTING,
+      existingPlans: [],
+      archivedPaths: new Map(),
+    });
+    const row = session.files.find((f) => f.name === 'kopekontrakt.pdf')!;
+    expect(row.folder).toBeUndefined();
+    expect(destinationFolder(row)).toBeUndefined();
+    expect(filingSummary(session)).toEqual([]);
   });
 });

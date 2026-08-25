@@ -17,6 +17,7 @@ import { ImportPreview } from './ImportPreview';
 import { ImportRoomsSection } from './ImportRoomsSection';
 import { ImportTasksSection } from './ImportTasksSection';
 import { ImportDrawingsSection } from './ImportDrawingsSection';
+import { ImportFilingSection } from './ImportFilingSection';
 
 /**
  * Reconcile a dropped folder against the project it landed on.
@@ -203,6 +204,23 @@ export function ImportReviewPage({
     [session.proposals, t]
   );
 
+  /**
+   * Move one file to another folder in Files. Recorded on the row and carried
+   * out on accept, so nothing in storage changes while the person is still
+   * making up their mind.
+   */
+  const handleMoveFile = useCallback(
+    (fileId: string, folder: string) => {
+      onChange({
+        ...session,
+        files: session.files.map((f) =>
+          f.id === fileId ? { ...f, targetFolder: folder } : f
+        ),
+      });
+    },
+    [session, onChange]
+  );
+
   const purchases = purchaseProposals(session);
   const total = changeCount(session);
 
@@ -212,6 +230,7 @@ export function ImportReviewPage({
       selectedFileId={selectedFileId}
       onSelectFile={(f) => setSelectedFileId(f.id)}
       describeFile={describeFile}
+      onMoveFile={handleMoveFile}
     />
   );
 
@@ -242,6 +261,7 @@ export function ImportReviewPage({
         onChoice={handleDrawingChoice}
         onTargetPlan={handleTargetPlan}
       />
+      <ImportFilingSection session={session} />
     </div>
   );
 

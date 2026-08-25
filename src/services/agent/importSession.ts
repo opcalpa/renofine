@@ -37,6 +37,50 @@ export interface ImportFileRow {
   mimeType?: string;
   /** Proposal ids this file produced, so selecting a file highlights its rows. */
   proposalIds: string[];
+  /**
+   * The folder it was filed into ("/Kvitton", "/Import 2026-08-25", "" = the
+   * project's root). The sorting already happened; this is what makes it
+   * visible instead of something that silently happened to the person's files.
+   */
+  folder?: string;
+  /**
+   * Where the person moved it to during review. Undefined = leave it. Applied
+   * as a real storage move on accept, so cancelling still costs nothing.
+   */
+  targetFolder?: string;
+}
+
+/** Where a file will actually live once the session is applied. */
+export function destinationFolder(file: ImportFileRow): string | undefined {
+  if (!file.storagePath) return undefined;
+  return file.targetFolder ?? file.folder ?? '';
+}
+
+/**
+ * How many files land in each folder, after the person's changes.
+ *
+ * The review page can list a hundred rows without ever answering "so where did
+ * my files go?". This is that answer, in one line per folder.
+ */
+export function filingSummary(
+  session: ImportSession
+): Array<{ folder: string; count: number }> {
+  const counts = new Map<string, number>();
+  for (const file of session.files) {
+    const folder = destinationFolder(file);
+    if (folder === undefined) continue;
+    counts.set(folder, (counts.get(folder) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .map(([folder, count]) => ({ folder, count }))
+    .sort((a, b) => b.count - a.count || a.folder.localeCompare(b.folder));
+}
+
+/** Files the person moved — the only ones the apply step has to touch. */
+export function movedFiles(session: ImportSession): ImportFileRow[] {
+  return session.files.filter(
+    (f) => f.storagePath && f.targetFolder !== undefined && f.targetFolder !== f.folder
+  );
 }
 
 export interface ExistingRoom {

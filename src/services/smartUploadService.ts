@@ -1,5 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
 import { getFileUrl } from "@/lib/fileUrl";
+import { pathInFolder } from "@/lib/projectFolders";
+
+export { folderOfPath, importFolderName } from "@/lib/projectFolders";
 
 // --- Classification types ---
 
@@ -277,17 +280,40 @@ export const CATEGORY_FOLDERS: Record<DocumentType, string> = {
 };
 
 /** Storage keeps no empty directories — a placeholder makes the folder appear. */
-export async function ensureCategoryFolder(
-  projectId: string,
-  category: DocumentType
-): Promise<void> {
-  const folder = CATEGORY_FOLDERS[category];
+export async function ensureFolder(projectId: string, folder: string): Promise<void> {
   if (!folder) return;
   await supabase.storage
     .from("project-files")
     .upload(`projects/${projectId}${folder}/.emptyFolderPlaceholder`, new Blob([""]), {
       upsert: true,
     });
+}
+
+export async function ensureCategoryFolder(
+  projectId: string,
+  category: DocumentType
+): Promise<void> {
+  await ensureFolder(projectId, CATEGORY_FOLDERS[category]);
+}
+
+/**
+ * Move one archived file to another folder, keeping its stored name.
+ * Returns the new path, or null when the move failed — a failed move must
+ * leave the file where it was rather than lose it.
+ */
+export async function moveToFolder(
+  projectId: string,
+  path: string,
+  folder: string
+): Promise<string | null> {
+  const target = pathInFolder(projectId, path, folder);
+  if (target === path) return path;
+  const { error } = await supabase.storage.from("project-files").move(path, target);
+  if (error) {
+    console.error("moveToFolder failed", error);
+    return null;
+  }
+  return target;
 }
 
 /**

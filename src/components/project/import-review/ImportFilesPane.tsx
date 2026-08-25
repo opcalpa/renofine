@@ -1,7 +1,21 @@
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FileText, Image as ImageIcon, Home, AlertCircle, Sparkles, CheckCheck } from 'lucide-react';
+import { FileText, Image as ImageIcon, Home, AlertCircle, Sparkles, CheckCheck, FolderOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { ImportFileKind, ImportFileRow, ImportSession } from '@/services/agent/importSession';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { CATEGORY_FOLDERS } from '@/services/smartUploadService';
+import {
+  destinationFolder,
+  type ImportFileKind,
+  type ImportFileRow,
+  type ImportSession,
+} from '@/services/agent/importSession';
+import { folderLabel } from './ImportFilingSection';
 
 /**
  * The files, grouped by what they actually did to the project.
@@ -64,6 +78,8 @@ interface ImportFilesPaneProps {
   onSelectFile: (file: ImportFileRow) => void;
   /** One-line summary of what a file produced ("2 rum · 3 arbeten"). */
   describeFile: (file: ImportFileRow) => string;
+  /** Move one archived file to another folder in Files. */
+  onMoveFile: (fileId: string, folder: string) => void;
 }
 
 export function ImportFilesPane({
@@ -71,8 +87,22 @@ export function ImportFilesPane({
   selectedFileId,
   onSelectFile,
   describeFile,
+  onMoveFile,
 }: ImportFilesPaneProps) {
   const { t } = useTranslation();
+  const rootLabel = t('importReview.filing.root', 'Projektets rot');
+
+  // The known category folders, plus whatever this drop actually used — that is
+  // how the dated import folder shows up as a destination without being
+  // hard-coded anywhere.
+  const folderOptions = useMemo(() => {
+    const used = session.files
+      .map((f) => destinationFolder(f))
+      .filter((f): f is string => f !== undefined);
+    return [...new Set([...Object.values(CATEGORY_FOLDERS), ...used])].sort((a, b) =>
+      a === '' ? 1 : b === '' ? -1 : a.localeCompare(b)
+    );
+  }, [session.files]);
 
   return (
     <div className="space-y-4">
@@ -102,6 +132,7 @@ export function ImportFilesPane({
               <ul className="space-y-0.5">
                 {files.map((file) => {
                   const selected = file.id === selectedFileId;
+                  const folder = destinationFolder(file);
                   return (
                     <li key={file.id}>
                       <button
@@ -122,6 +153,31 @@ export function ImportFilesPane({
                           </span>
                         </span>
                       </button>
+                      {folder !== undefined && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              type="button"
+                              className="ml-7 flex max-w-full items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                              title={t('importReview.filing.move', 'Flytta till en annan mapp')}
+                            >
+                              <FolderOpen className="h-3 w-3 shrink-0" />
+                              <span className="truncate">{folderLabel(folder, rootLabel)}</span>
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start" className="max-h-64 overflow-y-auto">
+                            {folderOptions.map((option) => (
+                              <DropdownMenuItem
+                                key={option || '__root__'}
+                                onSelect={() => onMoveFile(file.id, option)}
+                                className={cn('text-xs', option === folder && 'font-medium')}
+                              >
+                                {folderLabel(option, rootLabel)}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
                     </li>
                   );
                 })}

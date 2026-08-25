@@ -7,6 +7,7 @@
 
 import type { AgentProposal, ProposalAction } from './types';
 import type { IngestOutcome } from '../ingestProjectFolder';
+import { folderOfPath } from '@/lib/projectFolders';
 import type {
   ExistingPlan,
   ExistingRoom,
@@ -90,11 +91,15 @@ export function buildImportSession({
   const push = (name: string, kind: ImportFileKind, mimeType?: string) => {
     if (seen.has(name)) return;
     seen.add(name);
+    const storagePath = archivedPaths.get(name);
     rows.push({
       id: name,
       name,
       kind,
-      storagePath: archivedPaths.get(name),
+      storagePath,
+      // The sorting already happened; carrying the folder here is what lets the
+      // review page say where a file went instead of leaving it a surprise.
+      folder: storagePath ? folderOfPath(projectId, storagePath) : undefined,
       mimeType,
       proposalIds: proposalsByFile.get(name) ?? [],
     });

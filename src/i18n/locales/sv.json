@@ -7906,7 +7906,9 @@
     "photosFiled_other": "{{count}} bilder sparade i Filer utan att tolkas.",
     "archiveFailed_one": "{{count}} fil kunde inte sparas i Filer — släpp den igen eller ladda upp den manuellt.",
     "archiveFailed_other": "{{count}} filer kunde inte sparas i Filer — släpp dem igen eller ladda upp dem manuellt.",
-    "nothingFoundNothingSaved": "Jag hittade inget att lägga till, och filerna kunde inte sparas heller."
+    "nothingFoundNothingSaved": "Jag hittade inget att lägga till, och filerna kunde inte sparas heller.",
+    "notUnderstoodFolder_one": "{{count}} fil visste jag inte vad den var — den ligger i {{folder}} och rör inget i projektet.",
+    "notUnderstoodFolder_other": "{{count}} filer visste jag inte vad de var — de ligger i {{folder}} och rör inget i projektet."
   },
   "addresses": {
     "picker": {
@@ -8172,6 +8174,16 @@
     },
     "leadSkipped": "{{count}} filer kände jag igen sedan tidigare och hoppade över helt.",
     "duplicate": "Finns redan i projektet",
-    "duplicatePurchase": "Redan bokförd — samma leverantör och fakturanummer"
+    "duplicatePurchase": "Redan bokförd — samma leverantör och fakturanummer",
+    "filing": {
+      "title": "Var filerna hamnar",
+      "hint": "Filerna är sorterade efter vad de är. Vill du flytta någon, ändra mappen vid filen i listan.",
+      "root": "Projektets rot",
+      "move": "Flytta till en annan mapp",
+      "count_one": "{{count}} fil",
+      "count_other": "{{count}} filer"
+    },
+    "doneMoved_one": "{{count}} fil flyttades till mappen du valde.",
+    "doneMoved_other": "{{count}} filer flyttades till mappen du valde."
   }
 }
