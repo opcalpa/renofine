@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Input } from "@/components/ui/input";
 import { Search, CheckSquare, Package, FileText, Home, FolderOpen, Loader2 } from "lucide-react";
+import { myProjectIds } from "@/lib/myProjects";
 
 interface SearchResult {
   id: string;
@@ -153,6 +154,10 @@ export function GlobalSearch() {
       const { data: projects } = await supabase
         .from("projects")
         .select("id, name, description")
+        // Search my own reach, not the whole database: the projects policy
+        // starts with `is_system_admin() OR …`, so an admin was searching
+        // every user's projects. See lib/myProjects.ts.
+        .in("id", await myProjectIds())
         .ilike("name", searchPattern)
         .neq("project_type", PUBLIC_DEMO_PROJECT_TYPE)
         .limit(3);

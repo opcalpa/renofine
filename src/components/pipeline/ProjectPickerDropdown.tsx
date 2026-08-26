@@ -11,6 +11,7 @@ import { Loader2, FileText, ChevronDown, FolderOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PUBLIC_DEMO_PROJECT_TYPE } from "@/constants/publicDemo";
 import { isDemoProject } from "@/services/demoProjectService";
+import { myProjectIds } from "@/lib/myProjects";
 
 interface Project {
   id: string;
@@ -34,9 +35,18 @@ export function ProjectPickerDropdown({
 
   useEffect(() => {
     const fetchProjects = async () => {
+      const mine = await myProjectIds();
+      if (mine.length === 0) {
+        setProjects([]);
+        setLoading(false);
+        return;
+      }
       const { data, error } = await supabase
         .from("projects")
         .select("id, name, project_type")
+        // Own/shared/address only — the projects policy would hand a system
+        // admin every project in the database. See lib/myProjects.ts.
+        .in("id", mine)
         .is("deleted_at", null)
         .neq("project_type", PUBLIC_DEMO_PROJECT_TYPE)
         .order("created_at", { ascending: false });

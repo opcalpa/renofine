@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.1"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
@@ -3833,11 +3833,8 @@ export type Database = {
           invoiced_amount: number | null
           invoiced_percent: number | null
           is_ata: boolean | null
-          labor_cost_percent: number | null
-          markup_percent: number | null
           material_estimate: number | null
           material_items: Json | null
-          material_markup_percent: number | null
           ocr_number: string | null
           ordered_amount: number | null
           paid_amount: number | null
@@ -3853,7 +3850,6 @@ export type Database = {
           rot_eligible: boolean | null
           start_date: string | null
           status: string | null
-          subcontractor_cost: number | null
           supplier_id: string | null
           task_cost_type: string | null
           title: string
@@ -3886,11 +3882,8 @@ export type Database = {
           invoiced_amount?: number | null
           invoiced_percent?: number | null
           is_ata?: boolean | null
-          labor_cost_percent?: number | null
-          markup_percent?: number | null
           material_estimate?: number | null
           material_items?: Json | null
-          material_markup_percent?: number | null
           ocr_number?: string | null
           ordered_amount?: number | null
           paid_amount?: number | null
@@ -3906,7 +3899,6 @@ export type Database = {
           rot_eligible?: boolean | null
           start_date?: string | null
           status?: string | null
-          subcontractor_cost?: number | null
           supplier_id?: string | null
           task_cost_type?: string | null
           title: string
@@ -3939,11 +3931,8 @@ export type Database = {
           invoiced_amount?: number | null
           invoiced_percent?: number | null
           is_ata?: boolean | null
-          labor_cost_percent?: number | null
-          markup_percent?: number | null
           material_estimate?: number | null
           material_items?: Json | null
-          material_markup_percent?: number | null
           ocr_number?: string | null
           ordered_amount?: number | null
           paid_amount?: number | null
@@ -3959,7 +3948,6 @@ export type Database = {
           rot_eligible?: boolean | null
           start_date?: string | null
           status?: string | null
-          subcontractor_cost?: number | null
           supplier_id?: string | null
           task_cost_type?: string | null
           title?: string
@@ -4479,6 +4467,7 @@ export type Database = {
         Args: { p_source_id: string; p_target_id: string }
         Returns: number
       }
+      my_project_ids: { Args: never; Returns: string[] }
       property_owner_profile_id: {
         Args: { p_property_id: string }
         Returns: string

@@ -34,6 +34,7 @@ import {
   type PropertyWithProjectCount,
 } from '@/services/propertyService';
 import type { DroppedFile } from '@/lib/dropTree';
+import { myProjectIds } from '@/lib/myProjects';
 
 export type DropRoute =
   | { kind: 'new' }
@@ -111,14 +112,21 @@ export function DropRouterDialog({
     }
     let cancelled = false;
     (async () => {
-      // No owner filter: `projects.owner_id` is a PROFILE id, and this compared
-      // it to the AUTH user id — two different uuids — so the list came back
-      // empty for everyone and the dialog silently skipped the question. RLS
-      // already scopes this to what the user may reach, which is also what
-      // brings in projects shared through an address (S4 admin).
+      // Scoped through my_project_ids(), NOT through the projects policy alone.
+      // That policy starts with `is_system_admin() OR …`, so a system admin
+      // reached every project in the database — Carl saw 25 here, 22 of them
+      // other people's (2026-08-26). Owner/share/address access is what belongs
+      // in a picker; the admin view is opt-in, on the projects page.
+      const mine = await myProjectIds();
+      if (cancelled) return;
+      if (mine.length === 0) {
+        setProjects([]);
+        return;
+      }
       const { data, error } = await supabase
         .from('projects')
         .select('id, name, status, project_type')
+        .in('id', mine)
         .is('deleted_at', null)
         .order('updated_at', { ascending: false })
         .limit(50);

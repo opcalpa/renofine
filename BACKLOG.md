@@ -303,6 +303,56 @@ Inte brådskande: rätt ordning (kalibrera först) är den vi lär ut, och
 varningen fångar fel ordning.
 
 ---
+id: admin-vy-lackte-in-i-projektvaeljare
+status: done
+priority: P1
+tags: [sakerhet, rls, admin, ux]
+created: 2026-08-26
+---
+## Projektväljarna visade en systemadmin ALLA användares projekt
+
+Carls fynd 2026-08-26: vid mapp-släpp → "lägg till i befintligt projekt" listades
+projekt han varken sett på startsidan eller skapat — inklusive projekt ägda av
+riktiga externa användare (`stefan.norell@hotmail.com`, `denmol@gmail.com`).
+
+**Ingen läcka mot vanliga konton.** `projects`-policyn börjar med
+`is_system_admin() OR …`, och Carls huvudkonto ÄR systemadmin. Mätt:
+**admin såg 25 projekt (3 egna, 22 andras), ett icke-admin-konto ser 3.**
+
+**Varför startsidan visade färre:** `Projects.tsx:220` har en uttrycklig
+admin-filtrering med en Admin-knapp. Väljarna hade ingen.
+
+**Rotorsaken var strukturell:** "admin ser allt" beviljas i RLS och ogörs ad hoc
+i EN komponent. Varje annan yta som listar projekt ärvde därför admin-vyn.
+
+**Vad som kunde hänt:** filer kunde ändå inte skrivas till ett främmande projekt
+(`user_can_manage_project_files` saknar admin-grenen), men `tasks_insert` och
+`rooms` HAR `is_system_admin()` — ett felklick hade skapat rum och arbeten i en
+främlings projekt medan filerna nekades. Halvt applicerad import i någon annans
+data.
+
+**LEVERERAT 2026-08-26:** `my_project_ids()`
+(`20260826090000_my_project_ids.sql`, revert skriven först) — projekten man når
+SOM SIG SJÄLV: äger, är delad med, eller når via adressen, utan admin-bypassen.
+`src/lib/myProjects.ts` är enda vägen dit, och den **fail-closed**: går
+uppslaget fel blir listan tom, aldrig "visa allt". En tom väljare är ett synligt
+fel, en väljare full av främmande projekt är ett osynligt.
+
+Svept ALLA ytor som listar projekt:
+- ✅ Startsidan — hade redan admin-filter + knapp
+- ✅ AppHeader — filtrerade redan på `owner_id` + delningar
+- 🔧 Mapp-släppets väljare — fixad
+- 🔧 `ProjectPickerDropdown` — fixad
+- 🔧 `GlobalSearch` — fixad (en admin sökte i alla användares projekt)
+- ✅ Övriga träffar var en insert, en `.eq("id")` och en redan id-begränsad lista
+
+Verifierat: admin **25 → 4** i väljaren, och de fyra är tre egna plus
+`Rindögatan 27` som faktiskt ÄR delad med honom. Icke-admin oförändrat 3.
+
+Admin-vyn finns kvar — den är opt-in via Admin-knappen på projektsidan, som
+förut.
+
+---
 id: klient-accept-behover-serversida
 status: todo
 priority: P2
