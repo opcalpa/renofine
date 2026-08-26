@@ -26,6 +26,9 @@ export interface InspoPhoto {
   id: string;
   url: string;
   caption: string | null;
+  /** Vad bilden visar: before|during|after|inspiration|receipt|product|unclassified. */
+  kind: string;
+  /** Varifrån den kom (upload/pinterest/worker/renaida) — proveniens, inte innehåll. */
   source: string;
   sourceUrl: string | null;
   roomId: string | null;
@@ -56,7 +59,9 @@ export interface MaterialCard {
   photoUrl: string | null;
 }
 
-export const BA_SOURCES = new Set(["before", "during", "after"]);
+export const BA_KINDS = new Set(["before", "during", "after"]);
+/** Inköpsfamiljen: dokument och produktbilder — hör till Inköp, aldrig rummets bildflöde. */
+export const PURCHASE_KINDS = new Set(["receipt", "product"]);
 
 export const MOODBOARD_BACKGROUNDS = [
   { id: "white", color: "#ffffff", label: "Pure White" },

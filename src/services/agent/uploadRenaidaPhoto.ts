@@ -38,7 +38,10 @@ export async function uploadRenaidaPhoto(
       caption: null,
       uploaded_by_user_id: profileId,
       // "upload" is the inspiration convention; "progress" tags done-work photos.
-      source: kind === "inspiration" ? "upload" : "progress",
+      // kind = innehåll, source = proveniens. Den gamla strängen "progress"
+      // kändes inte igen av någon läsare — bilden föll ner i inspirationsvyn.
+      kind: kind === "inspiration" ? "inspiration" : "during",
+      source: "renaida",
     });
     if (dbErr) { console.error("Renaida photo insert failed:", dbErr); return false; }
     return true;

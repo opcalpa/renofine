@@ -195,6 +195,9 @@ export function QuoteAttachCell({
         caption: vendorName ? `${t("homeownerPlanning.quoteFrom", "Quote from")} ${vendorName}` : pendingFile.name,
         mime_type: uploadFile.type,
         uploaded_by_user_id: profile.id,
+        // En offert är ett dokument — hör till Inköp, inte rummets bildflöde.
+        kind: "receipt",
+        source: "upload",
       });
 
       // Create task_file_link

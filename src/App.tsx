@@ -13,6 +13,7 @@ import Auth from "./pages/Auth";
 import Projects from "./pages/Projects";
 import ProjectDetail from "./pages/ProjectDetail";
 import Profile from "./pages/Profile";
+import Admin from "./pages/Admin";
 import InvitationResponse from "./pages/InvitationResponse";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
@@ -160,6 +161,8 @@ const App = () => (
               <Route path="/addresses/:propertyId" element={<RequireAuth allowGuest={false}><Suspense fallback={null}><AddressDetail /></Suspense></RequireAuth>} />
               <Route path="/address-invite/:token" element={<Suspense fallback={null}><AddressInviteAccept /></Suspense>} />
               <Route path="/profile" element={<RequireAuth allowGuest={false}><Profile /></RequireAuth>} />
+              {/* Servern är gränsen: RPC:erna kastar 42501 för icke-admin. */}
+              <Route path="/admin" element={<RequireAuth allowGuest={false}><Admin /></RequireAuth>} />
               <Route path="/quotes/:quoteId" element={USE_QUOTE_VIEW_V2 ? <ViewQuoteV2 /> : <ViewQuote />} />
               <Route path="/invoices/:invoiceId" element={USE_INVOICE_VIEW_V2 ? <ViewInvoiceV2 /> : <ViewInvoice />} />
 

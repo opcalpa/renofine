@@ -16,6 +16,7 @@ interface Photo {
   url: string;
   caption: string | null;
   source?: string;
+  kind?: string;
   mime_type?: string;
   created_at: string;
 }
@@ -95,7 +96,7 @@ export const EntityPhotoGallery = forwardRef<EntityPhotoGalleryHandle, EntityPho
     try {
       const { data, error } = await supabase
         .from("photos")
-        .select("id, url, caption, source, mime_type, created_at")
+        .select("id, url, caption, source, kind, mime_type, created_at")
         .eq("linked_to_type", entityType)
         .eq("linked_to_id", entityId)
         .order("created_at", { ascending: false });
@@ -179,7 +180,7 @@ export const EntityPhotoGallery = forwardRef<EntityPhotoGalleryHandle, EntityPho
           mime_type: file.type,
           uploaded_by_user_id: profile.id,
           source: needsClassification ? "unclassified" : "upload",
-        }).select("id, url, caption, source, mime_type, created_at").single();
+        }).select("id, url, caption, source, kind, mime_type, created_at").single();
 
         if (dbError || !insertedPhoto) {
           console.error("Database error:", dbError);
@@ -251,10 +252,10 @@ export const EntityPhotoGallery = forwardRef<EntityPhotoGalleryHandle, EntityPho
     }
   };
 
-  const classifyPhoto = async (photoId: string, source: string) => {
+  const classifyPhoto = async (photoId: string, kind: string) => {
     const { error } = await supabase
       .from("photos")
-      .update({ source })
+      .update({ kind })
       .eq("id", photoId);
     if (!error) {
       setUnclassifiedPhotos((prev) => prev.filter((p) => p.id !== photoId));
@@ -271,7 +272,7 @@ export const EntityPhotoGallery = forwardRef<EntityPhotoGalleryHandle, EntityPho
         const groups: Array<{ source: string; label: string; icon: string; photos: Photo[] }> = [];
         const bySource: Record<string, Photo[]> = {};
         for (const p of imagePhotos) {
-          const key = p.source || "unclassified";
+          const key = p.kind || p.source || "unclassified";
           if (!bySource[key]) bySource[key] = [];
           bySource[key].push(p);
         }
@@ -510,8 +511,8 @@ export const EntityPhotoGallery = forwardRef<EntityPhotoGalleryHandle, EntityPho
           loadPhotos();
         } : undefined}
         onDelete={(photo) => handleDeletePhoto(photo.id, photo.url)}
-        onSourceChange={async (photo, source) => {
-          await supabase.from("photos").update({ source }).eq("id", photo.id);
+        onSourceChange={async (photo, kind) => {
+          await supabase.from("photos").update({ kind }).eq("id", photo.id);
           loadPhotos();
         }}
         onCaptionChange={async (photo, caption) => {

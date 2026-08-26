@@ -353,6 +353,99 @@ Admin-vyn finns kvar — den är opt-in via Admin-knappen på projektsidan, som
 förut.
 
 ---
+id: bildtyps-systemet-kind
+status: done
+priority: P1
+tags: [bilder, arkitektur, agent-readable, ux]
+created: 2026-08-26
+---
+## Ett bildtypssystem: kind (innehåll) skilt från source (proveniens)
+
+Carls designrunda 2026-08-26. `photos.source` gjorde två jobb: upload/pinterest
+är VARIFRÅN, before/worker_progress är VAD. "Inspiration" fanns inte som
+kategori — den var frånvaron av före/under/efter, så kvittobilder utan source
+och dokumentationsfoton föll in i inspirationsvyn. Och "pågående" stavades på
+TRE sätt av tre kodvägar (during/worker_progress/progress) där läsarna bara
+kände igen två — Renaidas capture-bilder skulle ha försvunnit.
+
+**LEVERERAT (skiva 1+2):**
+- `photos.kind` = before|during|after|inspiration|receipt|product; source = ren
+  proveniens (upload/pinterest/worker/renaida). Migration + backfill + en
+  INSERT-trigger som härleder kind ur source för gamla deployade klienter — 
+  ingen rad kan någonsin ha NULL, så läsarna slipper fallback-logik för evigt.
+- receipt/product i stället för ett grovt "purchase": EntityPhotoGallery hade
+  redan exakt den distinktionen som klassificeringsval (🧾/📦), och Carls
+  fältfall kräver den (målaren fotar penslar + "Kup 10" = PRODUKTBILD med
+  köpönskan, inte kvitto).
+- Inköpsfamiljen exkluderas ur rummets bildflöde — kvitton är dokument, inte
+  vyer av rummet.
+- Bilder-sektionen: EN dropdown (Alla/Före/Pågående/Färdigt/Inspiration, med
+  antal) i stället för två pills. Alla-läget badgear varje fasbild. Moodboard
+  bara under Inspiration. Jämförelsevyn bara när det finns BÅDE före- och
+  efterbilder — gatat på data, inte bara på val.
+- Alla 12 skrivare + 3 läsarfiler + worker-upload-photo (deployad) uppdaterade.
+
+**Design-testet** ([[feedback_agent_readable_architecture]]): "visa alla
+pågående-bilder" är nu EN fråga (`kind = 'during'`) i stället för tre strängar.
+
+---
+id: admin-rapportyta
+status: done
+priority: P2
+tags: [admin, sakerhet, rapporter]
+created: 2026-08-26
+---
+## /admin: rapportytan som is_system_admin egentligen var till för
+
+Carls egen diagnos 2026-08-26: flaggan var en legacy-lösning för "snabbt se hur
+många användare och projekt som finns" — men den beviljar ambient synlighet i
+varje RLS-fråga (se [[admin-vy-lackte-in-i-projektvaeljare]]).
+
+**LEVERERAT (skiva 3):** `admin_platform_stats()` + `admin_user_list()` — 
+SECURITY DEFINER-RPC:er som SJÄLVA kollar is_system_admin() och kastar 42501
+annars — plus sidan `/admin`: räknekort (användare/projekt/bilder/offerter, nya
+per 7/30 dagar) och kontolista med e-post, roll, antal projekt, senast aktiv,
+sökbar. Servern är gränsen: en icke-admin som surfar dit får nekandet från
+databasen (verifierat båda vägarna).
+
+**Medvetet INTE byggt:** sätta andras lösenord (kräver service-role, hör inte
+hemma i klienten). Att UTLÖSA återställningsmejl kan läggas till som
+edge-funktion om behovet uppstår.
+
+**Kvar att besluta ([[admin-vy-lackte-in-i-projektvaeljare]]):** om Carls
+vardagskonto ska vara systemadmin alls, nu när rapportbehovet har en egen dörr.
+
+---
+id: inkopsbild-onskemal-malaren
+status: todo
+priority: P2
+tags: [inkop, worker, foto, renaida, idea, carl]
+created: 2026-08-26
+---
+## Målarens "Kup 10": produktbild + köpönskan, skild från kvitto
+
+Carls fältfall 2026-08-26: hans polska målare skickar hellre en BILD på
+penslarna med "Kup 10" än röstmeddelanden eller långa texter. Det är en
+PRODUKTBILD med en köpönskan — varken kvitto eller rumsbild.
+
+**Grunden är redan lagd:** `photos.kind` skiljer nu `receipt` (kvitto, hänt
+köp) från `product` (produktbild). Och båda ändarna finns i systemet:
+`purchase_requests`-tabellen (material_id, requested_by, status, notes) och
+edge-funktionen `worker-create-purchase`.
+
+**Det som saknas är kopplingen:** arbetarens foto-flöde ska kunna märka en bild
+som produkt + önskan, vilket skapar (a) photos-raden med kind='product',
+(b) en material-rad från bildtexten ("Kup 10" → namn + antal, ev. via Renaida),
+(c) en purchase_request som ägaren ser i Inköp med bilden bredvid.
+
+Byggarens vy: önskemålen dyker upp i Inköp som förfrågningar att godkänna —
+samma request→PO-invariant som [[project_purchase_order_invariant]].
+
+Avgränsning: INTE ett nytt kommunikationssystem. En bild + max ett kort
+textfält, resten härleds. Verifiera med Taulant/målaren innan UI byggs —
+det här kortet är designen, inte beslutet.
+
+---
 id: klient-accept-behover-serversida
 status: todo
 priority: P2

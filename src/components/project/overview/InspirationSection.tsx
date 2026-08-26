@@ -60,6 +60,17 @@ export function InspirationSection({ projectId, currency, isPlanning = false }: 
   const [editingCaption, setEditingCaption] = useState<string | null>(null);
   const [captionDraft, setCaptionDraft] = useState("");
   const [baPhase, setBaPhase] = useState<"before" | "during" | "after">("before");
+  /**
+   * The ONE filter over the section: Alla / Före / Pågående / Färdigt /
+   * Inspiration — a dropdown like the room picker beside it, instead of two
+   * pills that could not fit five categories. Inköpsfamiljen (kvitton,
+   * produktbilder) is deliberately absent: those are documents, not views of
+   * the room, and live under Inköp.
+   */
+  const [photoFilter, setPhotoFilter] = usePersistedPreference<
+    "all" | "before" | "during" | "after" | "inspiration"
+  >("inspo-photo-filter", "inspiration");
+  const [filterMenuOpen, setFilterMenuOpen] = useState(false);
   const [baViewMode, setBaViewMode] = useState<"gallery" | "compare">("gallery");
   const [inspoView, setInspoView] = usePersistedPreference<"gallery" | "moodboard" | "beforeafter">("inspo-view-mode", "gallery");
   const [collapsed, setCollapsed] = usePersistedPreference("inspo-collapsed", false);
@@ -79,7 +90,7 @@ export function InspirationSection({ projectId, currency, isPlanning = false }: 
 
   // ---- Data hook ----
   const {
-    rooms, allPhotos, beforePhotos, materialCards, filteredPhotos,
+    rooms, allPhotos, beforePhotos, duringPhotos, afterPhotos, materialCards, filteredPhotos,
     beforeAfterByRoom, allGalleryPhotos, totalCount, rawData: data, tasks,
   } = useInspirationData(projectId, selectedRoom);
 
@@ -120,6 +131,31 @@ export function InspirationSection({ projectId, currency, isPlanning = false }: 
   const hasPhotos = totalCount > 0;
 
   // Gallery navigation
+  /** The photos of the phase the dropdown selected (beforeafter mode). */
+  const phasePhotos =
+    baPhase === "before" ? beforePhotos : baPhase === "during" ? duringPhotos : afterPhotos;
+
+  /**
+   * What the main grid shows. "Alla" = inspiration + every phase, each tile
+   * badged with its kind so seven mixed photos are tellable apart — the whole
+   * point of offering Alla.
+   */
+  const gridPhotos =
+    photoFilter === "all"
+      ? [...filteredPhotos, ...beforePhotos, ...duringPhotos, ...afterPhotos]
+      : filteredPhotos;
+
+  /** Jämförelsen kräver båda sidor; utan dem renderar vi galler oavsett vad
+   *  som råkar vara sparat som föredraget läge. */
+  const canCompare = beforePhotos.length > 0 && afterPhotos.length > 0;
+  const effectiveBaView = canCompare ? baViewMode : "gallery";
+
+  const KIND_BADGE: Record<string, string> = {
+    before: t("photoSource.before", "Före"),
+    during: t("photoSource.during", "Pågående"),
+    after: t("photoSource.after", "Färdigt"),
+  };
+
   const openGallery = (index: number) => setGalleryIndex(index);
   const openGalleryById = (photoId: string) => {
     const idx = allGalleryPhotos.findIndex((p) => p.id === photoId);
@@ -137,37 +173,66 @@ export function InspirationSection({ projectId, currency, isPlanning = false }: 
         <div className={cn("flex items-center gap-2 flex-wrap", !collapsed && "mb-3")}>
           {/* Section title */}
           <div className="flex rounded-full border overflow-hidden">
+            <Popover open={filterMenuOpen} onOpenChange={setFilterMenuOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  data-testid="photo-filter"
+                  className="text-xs font-medium flex items-center gap-1.5 px-3 py-1.5 transition-colors bg-primary text-primary-foreground"
+                >
+                  {photoFilter === "inspiration" ? <Sparkles className="h-3 w-3" /> : <Camera className="h-3 w-3" />}
+                  {photoFilter === "all" && t("common.all", "Alla")}
+                  {photoFilter === "before" && t("photoSource.before", "Före")}
+                  {photoFilter === "during" && t("photoSource.during", "Pågående")}
+                  {photoFilter === "after" && t("photoSource.after", "Färdigt")}
+                  {photoFilter === "inspiration" && t("inspiration.title")}
+                  <ChevronDown className="h-3 w-3" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-48 p-1" align="start">
+                {(
+                  [
+                    { value: "all", label: t("common.all", "Alla"), count: filteredPhotos.length + beforePhotos.length + duringPhotos.length + afterPhotos.length },
+                    { value: "before", label: t("photoSource.before", "Före"), count: beforePhotos.length },
+                    { value: "during", label: t("photoSource.during", "Pågående"), count: duringPhotos.length },
+                    { value: "after", label: t("photoSource.after", "Färdigt"), count: afterPhotos.length },
+                    { value: "inspiration", label: t("inspiration.title"), count: allPhotos.length },
+                  ] as const
+                ).map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    data-testid={`photo-filter-${opt.value}`}
+                    className={cn(
+                      "flex items-center justify-between w-full px-2 py-1.5 text-xs rounded",
+                      photoFilter === opt.value ? "bg-accent font-medium" : "hover:bg-accent"
+                    )}
+                    onClick={() => {
+                      setPhotoFilter(opt.value);
+                      setFilterMenuOpen(false);
+                      setCollapsed(false);
+                      if (opt.value === "before" || opt.value === "during" || opt.value === "after") {
+                        setBaPhase(opt.value);
+                        setInspoView("beforeafter");
+                      } else if (inspoView === "beforeafter" || opt.value === "all") {
+                        // Moodboard är inspirationens verktyg — Alla renderar galler.
+                        setInspoView("gallery");
+                      }
+                    }}
+                  >
+                    <span>{opt.label}</span>
+                    <span className="text-muted-foreground">({opt.count})</span>
+                  </button>
+                ))}
+              </PopoverContent>
+            </Popover>
             <button
               type="button"
-              onClick={() => { if (inspoView === "beforeafter") setInspoView("gallery"); else setCollapsed(!collapsed); }}
-              className={cn(
-                "text-xs font-medium flex items-center gap-1.5 px-3 py-1.5 transition-colors",
-                inspoView !== "beforeafter"
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground hover:text-foreground"
-              )}
+              onClick={() => setCollapsed(!collapsed)}
+              className="px-2 py-1.5 bg-muted text-muted-foreground hover:text-foreground border-l"
+              title={t("inspiration.collapse", "Fäll ihop")}
             >
-              <Sparkles className="h-3 w-3" />
-              {t("inspiration.title")}
-              {inspoView !== "beforeafter" && (
-                <ChevronDown className={cn("h-3 w-3 transition-transform", collapsed && "-rotate-90")} />
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={() => { setInspoView("beforeafter"); setCollapsed(false); }}
-              className={cn(
-                "text-xs font-medium flex items-center gap-1.5 px-3 py-1.5 transition-colors border-l",
-                inspoView === "beforeafter"
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <Camera className="h-3 w-3" />
-              {t("inspiration.beforePhotos", "Före-bilder")}
-              {beforePhotos.length > 0 && (
-                <span className="text-[10px] opacity-75">({beforePhotos.length})</span>
-              )}
+              <ChevronDown className={cn("h-3 w-3 transition-transform", collapsed && "-rotate-90")} />
             </button>
           </div>
           {/* Room filter — shared across all views */}
@@ -205,7 +270,7 @@ export function InspirationSection({ projectId, currency, isPlanning = false }: 
             </Popover>
           )}
           {/* Before/After: gallery/compare toggle + phase pills */}
-          {inspoView === "beforeafter" && (
+          {inspoView === "beforeafter" && canCompare && (
             <>
             <div className="flex rounded-md border bg-muted/30 p-0.5">
               <button
@@ -234,7 +299,7 @@ export function InspirationSection({ projectId, currency, isPlanning = false }: 
             </>
           )}
           {/* Gallery/Moodboard sub-toggle — only for Inspiration tab, hidden in beforeafter */}
-          {hasPhotos && inspoView !== "beforeafter" && (
+          {hasPhotos && inspoView !== "beforeafter" && photoFilter === "inspiration" && (
             <div className="flex rounded-md border bg-muted/30 p-0.5">
               <button
                 type="button"
@@ -404,13 +469,13 @@ export function InspirationSection({ projectId, currency, isPlanning = false }: 
             dragging ? "border-primary bg-primary/5" : hasPhotos ? "border-transparent" : "border-muted",
           )}
         >
-          {filteredPhotos.length > 0 ? (
+          {gridPhotos.length > 0 ? (
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 p-1">
-              {filteredPhotos.map((photo, idx) => (
+              {gridPhotos.map((photo) => (
                 <div
                   key={photo.id}
                   className="relative aspect-square rounded-lg overflow-hidden group cursor-pointer"
-                  onClick={() => openGallery(idx)}
+                  onClick={() => openGalleryById(photo.id)}
                 >
                   <img
                     src={photo.url}
@@ -420,6 +485,11 @@ export function InspirationSection({ projectId, currency, isPlanning = false }: 
                   />
                   {/* Badges — top right */}
                   <div className="absolute top-1 right-1 flex gap-1">
+                    {photoFilter === "all" && KIND_BADGE[photo.kind] && (
+                      <Badge variant="secondary" className="text-[9px] px-1 py-0 bg-primary/10 text-primary">
+                        {KIND_BADGE[photo.kind]}
+                      </Badge>
+                    )}
                     {photo.source === "pinterest" && (
                       <Badge variant="secondary" className="text-[9px] px-1 py-0 bg-red-100 text-red-700">Pin</Badge>
                     )}
@@ -1052,12 +1122,12 @@ export function InspirationSection({ projectId, currency, isPlanning = false }: 
         {/* ===== BEFORE / AFTER VIEW ===== */}
         {inspoView === "beforeafter" && (
           <div className="space-y-4">
-            {baViewMode === "gallery" ? (
+            {effectiveBaView === "gallery" ? (
               /* Gallery: simple grid of before photos */
-              beforePhotos.length === 0 ? (
+              phasePhotos.length === 0 ? (
                 <div className="flex flex-col items-center py-8 text-center">
                   <Camera className="h-8 w-8 text-muted-foreground/30 mb-2" />
-                  <p className="text-sm text-muted-foreground mb-1">{t("inspiration.noBeforePhotos", "No before photos yet")}</p>
+                  <p className="text-sm text-muted-foreground mb-1">{t("inspiration.noPhasePhotos", "Inga bilder i den här fasen ännu")}</p>
                   <p className="text-xs text-muted-foreground/60 mb-3">{t("inspiration.noBeforePhotosHint", "Upload photos of the current state before renovation starts")}</p>
                   <Button size="sm" variant="outline" onClick={() => { fileInputRef.current?.click(); }}>
                     <Upload className="h-3.5 w-3.5 mr-1.5" />
@@ -1066,7 +1136,7 @@ export function InspirationSection({ projectId, currency, isPlanning = false }: 
                 </div>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 p-1">
-                  {beforePhotos.map((photo, idx) => (
+                  {phasePhotos.map((photo, idx) => (
                     <div
                       key={photo.id}
                       className="relative group aspect-square rounded-lg overflow-hidden cursor-pointer"

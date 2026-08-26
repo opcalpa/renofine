@@ -11,6 +11,7 @@ interface Photo {
   url: string;
   caption?: string | null;
   source?: string | null;
+  kind?: string | null;
   source_url?: string | null;
   created_at?: string;
 }
@@ -133,7 +134,7 @@ export function PhotoCarousel({
   if (!open || photos.length === 0) return null;
 
   const currentPhoto = photos[currentIndex];
-  const sourceInfo = currentPhoto.source ? SOURCE_LABELS[currentPhoto.source] : null;
+  const sourceInfo = currentPhoto.kind ? SOURCE_LABELS[currentPhoto.kind] : null;
 
   return (
     <div
@@ -343,7 +344,7 @@ export function PhotoCarousel({
                 <div className="flex flex-wrap gap-1.5">
                   {CLASSIFIABLE_SOURCES.map((src) => {
                     const info = SOURCE_LABELS[src];
-                    const isActive = currentPhoto.source === src;
+                    const isActive = currentPhoto.kind === src;
                     return (
                       <button
                         key={src}
@@ -361,9 +362,9 @@ export function PhotoCarousel({
                     );
                   })}
                 </div>
-              ) : sourceInfo && currentPhoto.source && !["upload", "unclassified"].includes(currentPhoto.source) ? (
+              ) : sourceInfo && currentPhoto.kind && !["inspiration", "unclassified"].includes(currentPhoto.kind) ? (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs border bg-muted">
-                  {sourceInfo.icon} {t(sourceInfo.labelKey, currentPhoto.source)}
+                  {sourceInfo.icon} {t(sourceInfo.labelKey, currentPhoto.kind ?? undefined)}
                 </span>
               ) : (
                 <p className="text-xs text-muted-foreground italic">{t("entityPhotos.noCategory", "Not classified")}</p>

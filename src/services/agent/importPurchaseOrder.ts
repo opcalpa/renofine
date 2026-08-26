@@ -147,6 +147,8 @@ export async function importPurchaseOrder(
           url: storagePath,
           caption: filename,
           uploaded_by_user_id: profileId,
+          kind: "receipt",
+          source: "renaida",
         }).then(() => {}, () => {});
       }
     }

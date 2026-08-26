@@ -761,6 +761,10 @@ export function QuickReceiptCaptureModal({
           url: storagePath,
           caption: filename,
           uploaded_by_user_id: profile.id,
+          // Ett kvitto är en INKÖPSBILD, inte en vy av rummet. Utan kind föll
+          // det igenom till inspirationsvyn (bevisat 2026-08-26).
+          kind: "receipt",
+          source: "upload",
         });
       }
       }

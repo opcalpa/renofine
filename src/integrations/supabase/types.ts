@@ -1749,6 +1749,7 @@ export type Database = {
           grid_col_span: number
           grid_row_span: number
           id: string
+          kind: string | null
           linked_to_id: string
           linked_to_type: string
           mime_type: string | null
@@ -1772,6 +1773,7 @@ export type Database = {
           grid_col_span?: number
           grid_row_span?: number
           id?: string
+          kind?: string | null
           linked_to_id: string
           linked_to_type: string
           mime_type?: string | null
@@ -1795,6 +1797,7 @@ export type Database = {
           grid_col_span?: number
           grid_row_span?: number
           id?: string
+          kind?: string | null
           linked_to_id?: string
           linked_to_type?: string
           mime_type?: string | null
@@ -4414,6 +4417,19 @@ export type Database = {
         Returns: Json
       }
       accept_property_invitation: { Args: { p_token: string }; Returns: string }
+      admin_platform_stats: { Args: never; Returns: Json }
+      admin_user_list: {
+        Args: never
+        Returns: {
+          created_at: string
+          email: string
+          last_project_activity: string
+          name: string
+          profile_id: string
+          project_count: number
+          user_type: string
+        }[]
+      }
       derive_viewer_mode: { Args: { p_project_id: string }; Returns: string }
       get_intake_request_by_token: {
         Args: { p_token: string }

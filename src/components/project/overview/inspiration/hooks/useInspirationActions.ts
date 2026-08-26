@@ -110,7 +110,10 @@ export function useInspirationActions(
             url: path,
             caption: null,
             uploaded_by_user_id: profile.id,
-            source: isBA ? baPhase : "upload",
+            // kind = vad bilden visar; source = varifrån den kom. Fasen bor i
+            // kind sedan 2026-08-26 — source är ren proveniens.
+            kind: isBA ? baPhase : "inspiration",
+            source: "upload",
           });
           uploaded++;
         }
@@ -166,7 +169,8 @@ export function useInspirationActions(
           // Store the storage path; readers sign it on demand.
           url: path,
           uploaded_by_user_id: profile.id,
-          source: category,
+          kind: category,
+          source: "upload",
         });
         invalidate();
         toast.success(t("inspiration.photoAdded", "Bild tillagd"));
@@ -228,6 +232,7 @@ export function useInspirationActions(
             linked_to_id: projectId,
             url: finalUrl,
             caption: pinData.title || null,
+            kind: "inspiration",
             source: "pinterest",
             source_url: pinUrl,
             pinterest_pin_id: pinData.pinId,
@@ -261,6 +266,7 @@ export function useInspirationActions(
         linked_to_type: "project",
         linked_to_id: projectId,
         url,
+        kind: "inspiration",
         source: "url",
         source_url: url,
         uploaded_by_user_id: profile.id,

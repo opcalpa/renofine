@@ -8,7 +8,7 @@ import { signRows } from "@/lib/fileUrl";
  * Fetches and groups tasks by room for the authenticated builder view.
  * Only returns rooms where the builder has assigned tasks.
  */
-type PhotoRow = { id: string; url: string; caption: string | null; source: string | null; linked_to_id: string };
+type PhotoRow = { id: string; url: string; caption: string | null; source: string | null; kind: string | null; linked_to_id: string };
 
 export function useRoomInstructionsData(projectId: string, profileId: string | null) {
   const { data, isLoading } = useQuery({
@@ -39,12 +39,12 @@ export function useRoomInstructionsData(projectId: string, profileId: string | n
           ? supabase.from("rooms").select("id, name, wall_spec, floor_spec, ceiling_spec, joinery_spec, dimensions, ceiling_height_mm").in("id", roomIds)
           : { data: [] },
         roomIds.length > 0
-          ? supabase.from("photos").select("id, url, caption, source, linked_to_id").eq("linked_to_type", "room").in("linked_to_id", roomIds)
+          ? supabase.from("photos").select("id, url, caption, source, kind, linked_to_id").eq("linked_to_type", "room").in("linked_to_id", roomIds)
           : { data: [] },
         roomIds.length > 0
           ? supabase.from("materials").select("id, name, quantity, unit, vendor_name, room_id, task_id").eq("project_id", projectId).in("room_id", roomIds)
           : { data: [] },
-        supabase.from("photos").select("id, url, caption, source, linked_to_id").eq("linked_to_type", "task").in("linked_to_id", tasks.map((t) => t.id)),
+        supabase.from("photos").select("id, url, caption, source, kind, linked_to_id").eq("linked_to_type", "task").in("linked_to_id", tasks.map((t) => t.id)),
         supabase.from("floor_map_shapes").select("id, room_id, points, fill_color, stroke_color, name").eq("project_id", projectId).eq("shape_type", "room"),
       ]);
 
@@ -66,11 +66,13 @@ export function useRoomInstructionsData(projectId: string, profileId: string | n
       const roomCompletedPhotos = new Map<string, Photo[]>();
       for (const p of await signRows((photosRes.data as PhotoRow[]) || [])) {
         const photo: Photo = { id: p.id, url: p.url, caption: p.caption, source: p.source || undefined };
-        if (p.source === "worker_progress") {
+        // worker_progress/worker_completed finns inte längre som source —
+        // fasen bor i kind och arbetar-identiteten i source='worker'.
+        if (p.kind === "during" && p.source === "worker") {
           const arr = roomProgressPhotos.get(p.linked_to_id) || [];
           arr.push(photo);
           roomProgressPhotos.set(p.linked_to_id, arr);
-        } else if (p.source === "worker_completed") {
+        } else if (p.kind === "after" && p.source === "worker") {
           const arr = roomCompletedPhotos.get(p.linked_to_id) || [];
           arr.push(photo);
           roomCompletedPhotos.set(p.linked_to_id, arr);

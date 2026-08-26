@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { InspoPhoto, InspoRoom, MaterialCard, DisplaySize, CropPosition, FitMode, CropShape } from "../types";
-import { BA_SOURCES } from "../types";
+import { BA_KINDS, PURCHASE_KINDS } from "../types";
 import { signRows } from "@/lib/fileUrl";
 
 // ---------------------------------------------------------------------------
@@ -16,6 +16,10 @@ export interface InspirationDataResult {
   allPhotos: InspoPhoto[];
   /** Before-phase photos */
   beforePhotos: InspoPhoto[];
+  /** During-phase photos */
+  duringPhotos: InspoPhoto[];
+  /** After-phase photos */
+  afterPhotos: InspoPhoto[];
   /** Material cards with room context */
   materialCards: MaterialCard[];
   /** Photos filtered by selected room */
@@ -28,7 +32,7 @@ export interface InspirationDataResult {
     during: InspoPhoto[];
     after: InspoPhoto[];
   }>;
-  /** Combined gallery photos (filtered inspiration + before) */
+  /** Combined gallery photos (filtered inspiration + all phases) */
   allGalleryPhotos: InspoPhoto[];
   /** Total count of displayable content */
   totalCount: number;
@@ -62,7 +66,7 @@ export function useInspirationData(
           supabase
             .from("photos")
             .select(
-              "id, url, caption, linked_to_id, linked_to_type, source, source_url, display_size, sort_order, crop_position, fit_mode, crop_zoom, crop_offset_x, crop_offset_y, crop_shape, grid_col_span, grid_row_span",
+              "id, url, caption, linked_to_id, linked_to_type, kind, source, source_url, display_size, sort_order, crop_position, fit_mode, crop_zoom, crop_offset_x, crop_offset_y, crop_shape, grid_col_span, grid_row_span",
             )
             .or(
               "linked_to_type.eq.room,linked_to_type.eq.project,linked_to_type.eq.task",
@@ -101,6 +105,9 @@ export function useInspirationData(
           id: p.id,
           url: p.url,
           caption: p.caption,
+          // Triggern garanterar kind på nya rader; fallback täcker klient-cache
+          // från före migrationen.
+          kind: p.kind || "inspiration",
           source: p.source || "upload",
           sourceUrl: p.source_url || null,
           displaySize: (p.display_size as DisplaySize) || "md",
@@ -160,12 +167,26 @@ export function useInspirationData(
 
   // Derived lists
   const rooms = data?.rooms || [];
+  // Inspiration är en EGEN kategori nu, inte frånvaron av före/under/efter.
+  // Inköpsfamiljen (kvitton, produktbilder) är inte en vy av rummet och hör
+  // hemma under Inköp — aldrig här.
   const allPhotos = useMemo(
-    () => (data?.photos || []).filter((p) => !BA_SOURCES.has(p.source)),
+    () =>
+      (data?.photos || []).filter(
+        (p) => !BA_KINDS.has(p.kind) && !PURCHASE_KINDS.has(p.kind),
+      ),
     [data?.photos],
   );
   const beforePhotos = useMemo(
-    () => (data?.photos || []).filter((p) => p.source === "before"),
+    () => (data?.photos || []).filter((p) => p.kind === "before"),
+    [data?.photos],
+  );
+  const duringPhotos = useMemo(
+    () => (data?.photos || []).filter((p) => p.kind === "during"),
+    [data?.photos],
+  );
+  const afterPhotos = useMemo(
+    () => (data?.photos || []).filter((p) => p.kind === "after"),
     [data?.photos],
   );
   const materialCards = data?.materialCards || [];
@@ -178,9 +199,7 @@ export function useInspirationData(
   }, [allPhotos, selectedRoom]);
 
   const beforeAfterByRoom = useMemo(() => {
-    const baPhotos = (data?.photos || []).filter((p) =>
-      BA_SOURCES.has(p.source),
-    );
+    const baPhotos = (data?.photos || []).filter((p) => BA_KINDS.has(p.kind));
     const targetPhotos =
       selectedRoom === "all"
         ? baPhotos
@@ -208,17 +227,9 @@ export function useInspirationData(
         });
       }
       const group = roomGroups.get(key)!;
-      if (photo.source === "before") group.before.push(photo);
-      else if (
-        photo.source === "during" ||
-        photo.source === "worker_progress"
-      )
-        group.during.push(photo);
-      else if (
-        photo.source === "after" ||
-        photo.source === "worker_completed"
-      )
-        group.after.push(photo);
+      if (photo.kind === "before") group.before.push(photo);
+      else if (photo.kind === "during") group.during.push(photo);
+      else if (photo.kind === "after") group.after.push(photo);
     }
 
     return Array.from(roomGroups.entries())
@@ -230,8 +241,10 @@ export function useInspirationData(
   }, [data?.photos, selectedRoom, t]);
 
   const allGalleryPhotos = useMemo(
-    () => [...filteredPhotos, ...beforePhotos],
-    [filteredPhotos, beforePhotos],
+    // Everything the lightbox can be opened on — all phases included, so an
+    // "Alla"-grid tile always resolves to an index here.
+    () => [...filteredPhotos, ...beforePhotos, ...duringPhotos, ...afterPhotos],
+    [filteredPhotos, beforePhotos, duringPhotos, afterPhotos],
   );
 
   const totalCount =
@@ -241,6 +254,8 @@ export function useInspirationData(
     rooms,
     allPhotos,
     beforePhotos,
+    duringPhotos,
+    afterPhotos,
     materialCards,
     filteredPhotos,
     beforeAfterByRoom,

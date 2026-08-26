@@ -136,7 +136,9 @@ serve(async (req) => {
       return jsonResponse({ error: "Failed to upload file" }, 500, req);
     }
 
-    const source = category ? `worker_${category}` : "worker";
+    // kind = vad bilden visar (fasen), source = vem den kom ifrån. De gamla
+    // sammanslagna strängarna worker_progress/worker_completed dog 2026-08-26.
+    const kind = category === "completed" ? "after" : "during";
 
     const { data: photo, error: insertError } = await sb
       .from("photos")
@@ -147,7 +149,8 @@ serve(async (req) => {
         linked_to_id: linkedToId,
         uploaded_by_user_id: tokenRecord.created_by_user_id,
         caption: `${tokenRecord.worker_name}`,
-        source,
+        kind,
+        source: "worker",
         mime_type: file.type || "image/jpeg",
       })
       .select("id, url, caption")
