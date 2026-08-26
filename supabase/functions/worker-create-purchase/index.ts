@@ -57,13 +57,19 @@ function clampPositive(v: unknown, fallback: number): number {
   return n > 0 ? n : fallback;
 }
 
-async function parsePayload(req: Request): Promise<{ fields: PayloadFields; file: File | null }> {
+async function parsePayload(
+  req: Request
+): Promise<{ fields: PayloadFields; file: File | null; photo: File | null }> {
   const contentType = req.headers.get("content-type") || "";
   if (contentType.includes("multipart/form-data")) {
     const fd = await req.formData();
     const file = fd.get("receiptFile");
+    // A product photo is the whole point of the field flow: "Kup 10" plus a
+    // picture of the brushes says more than nine form fields ever did.
+    const photo = fd.get("photo");
     return {
       file: file instanceof File ? file : null,
+      photo: photo instanceof File && photo.size > 0 ? photo : null,
       fields: {
         token: String(fd.get("token") ?? ""),
         name: String(fd.get("name") ?? ""),
@@ -83,6 +89,7 @@ async function parsePayload(req: Request): Promise<{ fields: PayloadFields; file
   const body = await req.json();
   return {
     file: null,
+    photo: null,
     fields: {
       token: body.token ?? "",
       name: body.name ?? "",
@@ -106,7 +113,7 @@ serve(async (req) => {
   }
 
   try {
-    const { fields, file } = await parsePayload(req);
+    const { fields, file, photo } = await parsePayload(req);
 
     if (!fields.token || !fields.name?.trim()) {
       return jsonResponse({ error: "token and name are required" }, 400, req);
@@ -234,10 +241,51 @@ serve(async (req) => {
       return jsonResponse({ error: "Failed to create material" }, 500, req);
     }
 
+    // Hang the product photo on the material itself. 'material' is an existing
+    // linked_to_type, so the owner sees the picture next to the row they are
+    // approving in Inköp — which is the only place the picture is any use.
+    let productPhotoId: string | null = null;
+    if (photo) {
+      const ext = photo.name?.split(".").pop() || "jpg";
+      const uniqueName = `${crypto.randomUUID()}.${ext}`;
+      const path = `projects/${tokenRecord.project_id}/attachments/material/${uniqueName}`;
+      const buf = await photo.arrayBuffer();
+      const { error: photoUpErr } = await sb.storage.from("project-files").upload(path, buf, {
+        contentType: photo.type || "image/jpeg",
+        upsert: false,
+      });
+      if (photoUpErr) {
+        // The purchase itself already exists and is the thing that matters —
+        // losing the picture must not lose the request.
+        console.error("Product photo upload failed (purchase kept):", photoUpErr);
+      } else {
+        const { data: ph, error: photoInsErr } = await sb
+          .from("photos")
+          .insert({
+            url: path,
+            linked_to_type: "material",
+            linked_to_id: mat.id,
+            uploaded_by_user_id: tokenRecord.created_by_user_id,
+            caption: fields.name.trim(),
+            kind: isReceipt ? "receipt" : "product",
+            source: "worker",
+            mime_type: photo.type || "image/jpeg",
+          })
+          .select("id")
+          .single();
+        if (photoInsErr) {
+          console.error("Product photo insert failed (purchase kept):", photoInsErr);
+        } else {
+          productPhotoId = ph.id;
+        }
+      }
+    }
+
     return jsonResponse(
       {
         purchaseOrderId: po.id,
         materialId: mat.id,
+        productPhotoId,
         receiptFilePath,
         receiptUrl: receiptPublicUrl,
       },

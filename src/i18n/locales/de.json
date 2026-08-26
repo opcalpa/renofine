@@ -7966,5 +7966,28 @@
     "leadSkipped": "{{count}} Dateien kannte ich bereits und habe sie übersprungen.",
     "duplicate": "Bereits im Projekt",
     "duplicatePurchase": "Bereits gebucht — gleicher Lieferant und gleiche Rechnungsnummer"
+  },
+  "field": {
+    "intent": {
+      "klart": "Fertig",
+      "behover": "Brauche",
+      "fraga": "Frage",
+      "info": "Info"
+    },
+    "promise": {
+      "klart": "Als erledigte Arbeit gemeldet.",
+      "behover": "Zur Genehmigung gesendet.",
+      "fraga": "Du bekommst eine Antwort.",
+      "info": "Wird vom Projektleiter gelesen."
+    },
+    "placeholder": "Schreib etwas oder schick einfach ein Foto",
+    "takePhoto": "Foto aufnehmen",
+    "voice": "Aufnehmen",
+    "recording": "Nimmt auf",
+    "howMany": "Wie viele?",
+    "whichTask": "Welche Arbeit?",
+    "send": "Senden",
+    "sent": "Gesendet",
+    "unnamedItem": "Material"
   }
 }

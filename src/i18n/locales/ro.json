@@ -1146,5 +1146,28 @@
     "contractor": "Constructor",
     "contractorDesc": "Conduc o firmă de construcții",
     "continue": "Continuare"
+  },
+  "field": {
+    "intent": {
+      "klart": "Gata",
+      "behover": "Am nevoie",
+      "fraga": "Întrebare",
+      "info": "Info"
+    },
+    "promise": {
+      "klart": "Raportat ca lucrare finalizată.",
+      "behover": "Trimis spre aprobare.",
+      "fraga": "Vei primi un răspuns.",
+      "info": "Citit de managerul de proiect."
+    },
+    "placeholder": "Scrie sau trimite doar o poză",
+    "takePhoto": "Fă o poză",
+    "voice": "Înregistrează",
+    "recording": "Se înregistrează",
+    "howMany": "Câte?",
+    "whichTask": "Ce lucrare?",
+    "send": "Trimite",
+    "sent": "Trimis",
+    "unnamedItem": "Material"
   }
 }

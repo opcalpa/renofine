@@ -448,9 +448,25 @@ Följdfrågor bara när det inte går att härleda (vilket arbete? hur många?),
 max djup 2, oftast 0. Aldrig ett formulär. Landar på rätt plats med bilden
 och ett-trycks-svar; ägaren får EN "Från fältet"-lista.
 
-**Skivor:** S1 intent i data · S2 arbetarvyn (kameraknapp + fyrval, ersätter
-nio-fälts-dialogen) · S3 ägarens "Från fältet" · S4 Renaida-fotofrågan mappad
-till samma nycklar · S5 mätning (tid-till-svar).
+**Skivor:** ~~S1 intent i data~~ ✅ · ~~S2 arbetarvyn~~ ✅ · S3 ägarens
+"Från fältet" · S4 Renaida-fotofrågan mappad till samma nycklar · S5 mätning
+(tid-till-svar).
+
+**S1+S2 LEVERERADE 2026-08-26 (s85).** `comments.intent` (check + partiellt
+index för öppna frågor, migration applicerad). `lib/fieldIntent.ts` = grammatiken
+(fyra avsikter, ikon + `parseNeed`/`guessIntent`, deterministiskt före modell).
+`WorkerComposer` ersätter nio-fälts-dialogens request-väg (0 användningar):
+kamera · fritext · mikrofon + fyra chips, kvantitet läses ur texten, "vilket
+arbete?" hoppas över när det går att härleda. `worker-send-message` bär nu
+avsikt + bild + projektnivå (taskId valfritt); `worker-create-purchase` hänger
+produktbilden på materialraden (`linked_to_type='material'`, `kind='product'`).
+Kvittologgning behåller sin egen form — belopp är bokföring, inte fältprat.
+
+**Prod-verifierat:** alla fyra avsikterna landar rätt (fråga = enda olösta,
+klart → `kind='after'`, bild utan ord accepteras, `behover` via meddelande-
+dörren avvisas till null). I Chrome: "Kup 10 pędzli" i ett ukrainskt gränssnitt
+förifyller antal 10; "Vilket arbete?" ställs vid 4 arbeten, hoppas vid 1.
+10 språk. e2e 176/2, typecheck 336 = baseline, 0 konsolfel. Testdata städad.
 
 **Beslut TAGNA 2026-08-26 (Carl):** A fyra avsikter · B hemägarens önskan =
 arbetarens Behöver i Inköp · C modellanrop för Behöver (text/röst först, bild

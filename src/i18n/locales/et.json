@@ -1146,5 +1146,28 @@
     "contractor": "Ehitaja",
     "contractorDesc": "Juhin ehitusettevõtet",
     "continue": "Jätka"
+  },
+  "field": {
+    "intent": {
+      "klart": "Valmis",
+      "behover": "Vajan",
+      "fraga": "Küsimus",
+      "info": "Info"
+    },
+    "promise": {
+      "klart": "Registreeritud tehtud tööna.",
+      "behover": "Saadetud kinnitamiseks.",
+      "fraga": "Saad vastuse.",
+      "info": "Loeb projektijuht."
+    },
+    "placeholder": "Kirjuta või saada lihtsalt pilt",
+    "takePhoto": "Tee foto",
+    "voice": "Salvesta",
+    "recording": "Salvestab",
+    "howMany": "Mitu?",
+    "whichTask": "Milline töö?",
+    "send": "Saada",
+    "sent": "Saadetud",
+    "unnamedItem": "Materjal"
   }
 }

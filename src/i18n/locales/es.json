@@ -7966,5 +7966,28 @@
     "leadSkipped": "Reconocí {{count}} archivos de antes y los omití por completo.",
     "duplicate": "Ya está en el proyecto",
     "duplicatePurchase": "Ya contabilizado — mismo proveedor y número de factura"
+  },
+  "field": {
+    "intent": {
+      "klart": "Hecho",
+      "behover": "Necesito",
+      "fraga": "Pregunta",
+      "info": "Info"
+    },
+    "promise": {
+      "klart": "Registrado como trabajo terminado.",
+      "behover": "Enviado para aprobación.",
+      "fraga": "Recibirás una respuesta.",
+      "info": "Lo lee el jefe de proyecto."
+    },
+    "placeholder": "Escribe, o envía solo una foto",
+    "takePhoto": "Hacer una foto",
+    "voice": "Grabar",
+    "recording": "Grabando",
+    "howMany": "¿Cuántos?",
+    "whichTask": "¿Qué trabajo?",
+    "send": "Enviar",
+    "sent": "Enviado",
+    "unnamedItem": "Material"
   }
 }

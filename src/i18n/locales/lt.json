@@ -1146,5 +1146,28 @@
     "contractor": "Rangovas",
     "contractorDesc": "Vadovauju statybų įmonei",
     "continue": "Tęsti"
+  },
+  "field": {
+    "intent": {
+      "klart": "Baigta",
+      "behover": "Reikia",
+      "fraga": "Klausimas",
+      "info": "Info"
+    },
+    "promise": {
+      "klart": "Užregistruota kaip atliktas darbas.",
+      "behover": "Išsiųsta patvirtinti.",
+      "fraga": "Gausite atsakymą.",
+      "info": "Perskaitys projekto vadovas."
+    },
+    "placeholder": "Parašykite arba tiesiog atsiųskite nuotrauką",
+    "takePhoto": "Nufotografuoti",
+    "voice": "Įrašyti",
+    "recording": "Įrašoma",
+    "howMany": "Kiek?",
+    "whichTask": "Kuris darbas?",
+    "send": "Siųsti",
+    "sent": "Išsiųsta",
+    "unnamedItem": "Medžiaga"
   }
 }

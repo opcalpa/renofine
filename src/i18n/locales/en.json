@@ -8329,5 +8329,28 @@
     "incVat": "incl. VAT",
     "exVat": "excl. VAT",
     "dialogDesc": "The project is created. This is what the plan looks like."
+  },
+  "field": {
+    "intent": {
+      "klart": "Done",
+      "behover": "Need",
+      "fraga": "Question",
+      "info": "Info"
+    },
+    "promise": {
+      "klart": "Reported as completed work.",
+      "behover": "Sent for approval.",
+      "fraga": "You will get an answer.",
+      "info": "Read by the project manager."
+    },
+    "placeholder": "Write, or just send a picture",
+    "takePhoto": "Take a photo",
+    "voice": "Record",
+    "recording": "Recording",
+    "howMany": "How many?",
+    "whichTask": "Which job?",
+    "send": "Send",
+    "sent": "Sent",
+    "unnamedItem": "Material"
   }
 }

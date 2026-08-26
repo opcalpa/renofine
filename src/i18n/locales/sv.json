@@ -8328,5 +8328,28 @@
     "incVat": "ink. moms",
     "exVat": "ex. moms",
     "dialogDesc": "Projektet är skapat. Så här ser planen ut."
+  },
+  "field": {
+    "intent": {
+      "klart": "Klart",
+      "behover": "Behöver",
+      "fraga": "Fråga",
+      "info": "Info"
+    },
+    "promise": {
+      "klart": "Rapporteras som utfört arbete.",
+      "behover": "Skickas för godkännande.",
+      "fraga": "Du får svar.",
+      "info": "Läses av projektledaren."
+    },
+    "placeholder": "Skriv, eller skicka bara en bild",
+    "takePhoto": "Ta ett foto",
+    "voice": "Spela in",
+    "recording": "Spelar in",
+    "howMany": "Hur många?",
+    "whichTask": "Vilket arbete?",
+    "send": "Skicka",
+    "sent": "Skickat",
+    "unnamedItem": "Material"
   }
 }

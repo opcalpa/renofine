@@ -7793,5 +7793,28 @@
     "opening": "Otwieranie…",
     "toastTitle": "Otwiera się Twój program pocztowy",
     "toastDesc": "Wyślij stamtąd e-mail, a szybko odpowiemy."
+  },
+  "field": {
+    "intent": {
+      "klart": "Gotowe",
+      "behover": "Potrzebuję",
+      "fraga": "Pytanie",
+      "info": "Info"
+    },
+    "promise": {
+      "klart": "Zgłoszone jako wykonana praca.",
+      "behover": "Wysłane do zatwierdzenia.",
+      "fraga": "Otrzymasz odpowiedź.",
+      "info": "Przeczyta kierownik projektu."
+    },
+    "placeholder": "Napisz albo wyślij samo zdjęcie",
+    "takePhoto": "Zrób zdjęcie",
+    "voice": "Nagraj",
+    "recording": "Nagrywanie",
+    "howMany": "Ile sztuk?",
+    "whichTask": "Które zadanie?",
+    "send": "Wyślij",
+    "sent": "Wysłano",
+    "unnamedItem": "Materiał"
   }
 }

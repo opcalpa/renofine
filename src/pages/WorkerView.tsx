@@ -8,6 +8,7 @@ import { WorkerTaskCard, type WorkerTask } from "@/components/worker/WorkerTaskC
 import type { FloorPlanObject, WallNote, WallObject, WallSurface } from "@/components/worker/roomObjectShared";
 import { SwipeableRoomInstructions, groupWorkerTasksByRoom } from "@/components/room-instructions";
 import { WorkerPurchaseRequestDialog } from "@/components/worker/WorkerPurchaseRequestDialog";
+import { WorkerComposer } from "@/components/worker/WorkerComposer";
 import {
   WorkerLanguageSelector,
   workerLangOverrideKey,
@@ -393,14 +394,30 @@ export default function WorkerView() {
         </div>
       )}
 
-      {/* Action bar — Be om inköp / Logga inköp */}
-      {(data.canCreatePurchases !== false || data.canLogReceipts) && token && (
-        <div className="max-w-lg mx-auto px-4 pt-3 flex justify-end">
-          <WorkerPurchaseRequestDialog
+      {/* The composer — one place to say anything, with the four-way choice.
+          It sits ABOVE the task list because a photo of the brushes is more
+          often what the worker opened the link to send than a checklist tick. */}
+      {token && (
+        <div className="max-w-lg mx-auto px-4 pt-3">
+          <WorkerComposer
             token={token}
             tasks={data.tasks.map((task) => ({ id: task.id, title: task.title }))}
             canCreatePurchases={data.canCreatePurchases !== false}
-            canLogReceipts={!!data.canLogReceipts}
+            onSent={loadWorkerData}
+          />
+        </div>
+      )}
+
+      {/* Logging a receipt with an amount is bookkeeping, not field talk — it
+          keeps its own form. The nine-field "Be om inköp" request path is gone;
+          the composer's 🛒 replaces it. */}
+      {data.canLogReceipts && token && (
+        <div className="max-w-lg mx-auto px-4 pt-2 flex justify-end">
+          <WorkerPurchaseRequestDialog
+            token={token}
+            tasks={data.tasks.map((task) => ({ id: task.id, title: task.title }))}
+            canCreatePurchases={false}
+            canLogReceipts={true}
           />
         </div>
       )}
