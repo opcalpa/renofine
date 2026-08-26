@@ -4363,3 +4363,97 @@ Från integrations-analysen (punkt 4). Tidplanen som prenumererbar ICS-URL,
 importerbar i Google/Apple/Outlook utan någon API-relation. Låg kostnad, och
 delnings-URL:en till kund och hantverkare är ännu en yta där Renofine syns
 hos icke-användare.
+
+---
+id: gast-planen-som-saljartefakt
+status: todo
+priority: P1
+tags: [growth, aktivering, gast, renaida, mobil]
+created: 2026-08-26
+---
+## Gästen får "Din renoveringsplan" i stället för en tom projektyta
+
+Ur analysen /Users/calpa/Developer/Renofine/docs/gastdemo-analys-2026-08.md
+(2026-08-26). Carls idé om gäst-personifierade demon är **redan byggd** —
+gästläge + beskriv/boxar + AI-tolkning + lokalt projekt — och konverterar
+**0 av 36** på 90 dagar. Diagnos: output ≈ input. Gästen skriver "kök, kakel,
+el" och får rum som heter Kök och arbeten som heter Kakel, plus en tur som
+säger "Nästa" fem gånger. Överskottet (kostnad, ROT, ordning, vad du glömt)
+finns i motorn men visas aldrig.
+
+**Bygg:** EN skärm *Din renoveringsplan* direkt när wizarden är klar
+(`GuidedSetupWizard` `submitted`-vyn), deterministisk ur utkastet:
+kostnadsspann per rum (`materialRecipes`/SmartEstimate — finns för gäst i
+`GuestTaskEstimateSheet`), ROT-uppskattning, yrkesordning som veckoplan
+(`workTypeUtils`), "tre saker du troligen glömt" (`renaida-critic`, EN
+modellutropning, mallfallback), "det här frågar en byggare dig" (mallar).
+CTA där värdet är: **"Spara planen" → konto** (`guestMigrationService`).
+
+**Dörren:** landningssidans "Se demoprojekt" (1,8 % klickar) ersätts med
+fältet *"Vad ska du renovera?"* + sex boxar → planen. Inga tre klick före
+värdet (rollmodal → språk → val). 82 % av besökarna är på mobil från Facebook —
+boxar och röst, inte mapp-drop. "Din plan"-kort överst i `GuestPlanningSection`
+så återvändande gäster hittar tillbaka.
+
+Mätning: `guest_plan_shown` → `signup_completed`. Baslinje 0/36, mål >10 %.
+
+Gör INTE: serverrader för gäster, klonat Villa Andersson-demo med gästens
+namn, LLM-skriven plan i löptext, e-postfångst före värdet, mer mapp-drop.
+
+---
+id: anon-edge-rate-limit-svep
+status: todo
+priority: P2
+tags: [sakerhet, kostnad, edge-functions, gast]
+created: 2026-08-26
+---
+## Fyra modell-funktioner är öppna för anon-nyckeln utan rate-limit
+
+Verifierat 2026-08-26 i `supabase/config.toml` + funktionskoden.
+`classify-document`, `extract-document-text`, `transcribe-audio` och
+`process-document-v2` har `verify_jwt = true` — men anon-nyckeln är en giltig
+signerad JWT och släpps igenom — och **ingen** `checkRateLimit`. Gästens
+mapp-drop och röstinspelning går dit i dag (kommentaren i
+`RenaidaProjectDialog`: "extract/parse endpoints pass anon-JWT"). Ett skript
+med den publika nyckeln kan loopa gpt-4o-mini-anrop obegränsat.
+
+`parse-renovation-description`, `renaida-suggest`, `renaida-critic` har
+limiten (20/h/IP via `edge_rate_limits`) — kopierad tre gånger.
+
+**Gör:** `supabase/functions/_shared/rateLimit.ts` (en implementation, samma
+mönster som `renovationScope.ts`), applicera på de fyra öppna funktionerna med
+anon-tak (~30/h/IP) och högre tak för inloggade (nyckla på `sub` i JWT:n).
+Kapa gäst-drop klientside till 20 filer (`MAX_FILES = 100` i
+`ingestProjectFolder.ts` gäller alla). Deploya de fyra.
+
+---
+id: gast-offert-forhandsvisning-proffs
+status: todo
+priority: P3
+tags: [growth, proffs, offert, gast, idea]
+created: 2026-08-26
+---
+## Proffsens plan är offerten: "beskriv jobbet → offert med ROT på 60 sekunder"
+
+Skiva 2 av [[gast-planen-som-saljartefakt]]. Hemägarens överskott är planen;
+proffsens är offerten (PROFFS-aha verifierat solitt i maj-walken). Gästresan
+10 jul: proffs läste FAQ om ROT/kunder/priser, provade allt, spelade in röst
+till Renaida i demot — och skapade aldrig konto. `/quotes/new` är
+`allowGuest={false}`. En **läs-bara offert-förhandsvisning** ur samma utkast
+(E1 `calcLevel: 'suggest'`) med "Skicka offerten → konto" som CTA. Bygg efter
+att hemägar-planen mätts — motorn är gäst-anpassad där, inte här.
+
+---
+id: wizard-rumschips-rageclick-mobil
+status: todo
+priority: P3
+tags: [bugfix, mobil, onboarding]
+created: 2026-08-26
+---
+## Rage-klick på rumschips i wizarden (2 av 5 gästresor)
+
+PostHog `$rageclick` på "🚗 Garage" (10 jul) och i arbetstyps-steget (6 jul),
+båda mobil. `RoomsStep` togglar på `onClick` — kan vara att emoji-spannet
+och chip-texten ger dubbla träffar, eller att chipen inte visar vald-status
+tydligt nog. Verifiera på riktig iPhone (Device: mobil, Kontotyp: gäst) innan
+kodändring. Räkna `$rageclick` på `/start` som mätare.
