@@ -10,6 +10,108 @@ export interface ChangelogEntry {
 export const DEMO_PROJECT_PATH = "/projects/demo";
 
 export const changelog: ChangelogEntry[] = [
+  // ── 2026-08-26 ──
+  {
+    date: "2026-08-26",
+    title: "\"Från fältet\" — hantverkaren berättar om dagen, du får den på svenska",
+    description: "Din hantverkare öppnar sin länk och berättar vad som hänt under dagen — med egna ord, på sitt eget språk, gärna med ett foto. Du får det översatt i en egen inkorg på Översikt: vad som blev klart, vad som behöver köpas och vad hen undrar över. Hantverkaren behöver inte välja meddelandetyp eller fylla i något formulär, och en enda rapport kan bli flera rader hos dig.",
+    tags: ["Fältet", "Arbeten", "Nyhet"],
+  },
+  {
+    date: "2026-08-26",
+    title: "Den som hellre pratar än skriver kan göra det",
+    description: "Håll in mikrofonen och berätta i stället för att skriva. Inspelningen skrivs ut till text åt dig, så rapporten går att läsa och söka i som vilken annan som helst — du behöver aldrig lyssna igenom ett röstmeddelande för att veta vad som hände på bygget.",
+    tags: ["Fältet", "Renaida", "Förbättring"],
+  },
+  {
+    date: "2026-08-26",
+    title: "Timmarna kommer med rapporten — du godkänner eller nekar",
+    description: "Hantverkaren kan lägga till hur många timmar dagen tog i samma rapport som allt annat. Du ser dem som ett kort att godkänna eller neka, och ingenting hamnar i projektet förrän du sagt ja. Slut på att samla ihop tider via sms i efterhand.",
+    tags: ["Fältet", "Budget", "Nyhet"],
+  },
+  {
+    date: "2026-08-26",
+    title: "Du ser när hantverkaren har läst jobbet",
+    description: "När hantverkaren öppnat sitt arbete och tryckt \"Jag har läst jobbet\" syns det på teamet. Du slipper ringa och fråga om instruktionerna gått fram.",
+    tags: ["Fältet", "Arbeten", "Förbättring"],
+  },
+  {
+    date: "2026-08-26",
+    title: "Tio språk — och hela sidan byter, inte bara knapparna",
+    description: "Arbetarvyn finns på svenska, engelska, tyska, franska, spanska, polska, ukrainska, rumänska, litauiska och estniska. Byter hantverkaren språk översätts även arbetena, rummen och instruktionerna — inte bara menyerna runtomkring.",
+    tags: ["Fältet", "Förbättring"],
+  },
+  {
+    date: "2026-08-26",
+    title: "Din renoveringsplan på under en minut — utan konto",
+    description: "Skriv vad du ska renovera på startsidan så får du en riktig plan tillbaka: kostnadsspann per rum, vad ROT-avdraget kan dra av, i vilken ordning yrkena behöver komma in och vad som brukar glömmas bort. Ingen inloggning och inget kort — och vill du jobba vidare på planen tar du den med dig in i ett projekt.",
+    tags: ["Planering", "ROT", "Nyhet"],
+  },
+  {
+    date: "2026-08-26",
+    title: "Kalibrera skalan — bakgrundsbilden blir en ritning att bygga efter",
+    description: "Lägg in en ritning eller en handskiss som lager och peka ut ett mått du redan känner till, till exempel en dörrbredd eller en vägg. Då vet planritaren hur många millimeter en bildpunkt är, och allt du ritar ovanpå får riktiga mått i stället för att vara en gissning.",
+    tags: ["Canvas", "Planering", "Nyhet"],
+  },
+  {
+    date: "2026-08-26",
+    title: "Ritningen kan komma ur projektets filer — även som PDF",
+    description: "Du behöver inte leta upp filen på datorn en gång till. Välj en ritning som redan ligger bland projektets filer, och är det en PDF med flera sidor väljer du själv vilken sida som ska bli lagret.",
+    tags: ["Canvas", "Filer", "Förbättring"],
+  },
+  {
+    date: "2026-08-26",
+    title: "Låt Renaida rita av planen steg för steg",
+    description: "Renaida ritar av ditt inlagda lager i tre omgångar — först rummen, sedan väggarna, sedan detaljerna — och du godkänner varje steg innan nästa börjar. Blir något fel ångrar du bara det steget i stället för hela avritningen.",
+    tags: ["Canvas", "Renaida", "Nyhet"],
+  },
+  {
+    date: "2026-08-26",
+    title: "Bilderna sorterade: Före, Pågående, Färdigt och Inspiration",
+    description: "Projektets bilder har fått en egen sortering med antal per kategori. Moodboarden visar bara inspirationsbilder, kvitton hamnar inte längre bland dem, och före/efter-jämförelsen dyker upp när du faktiskt har både en före- och en efterbild.",
+    tags: ["Filer", "Projektvy", "Förbättring"],
+  },
+
+  // ── 2026-08-25 ──
+  {
+    date: "2026-08-25",
+    title: "Släpp en hel mapp — och stäm av innan något sparas",
+    description: "Dra in en mapp med offerter, ritningar och kvitton så läser Renaida igenom den och visar ett förslag: vilka rum, arbeten och inköp hon hittat, med originalet bredvid så du kan kontrollera varje sak. Du bockar av det som stämmer innan något läggs till i projektet — och rum som redan finns känns igen i stället för att skapas som dubbletter.",
+    tags: ["Filer", "Renaida", "Nyhet"],
+  },
+  {
+    date: "2026-08-25",
+    title: "Se var filerna hamnar, och flytta dem innan du godkänner",
+    description: "När du släpper en mapp visar vi nu hur många filer som hamnar i varje mapp, och du kan byta mapp på varje enskild fil. Flytten sker först när du godkänner — inte medan du fortfarande funderar.",
+    tags: ["Filer", "Förbättring"],
+  },
+  {
+    date: "2026-08-25",
+    title: "Arbeten och Inköp syns direkt i rumslistan",
+    description: "Rumslistan har fått två nya kolumner, så du ser hur mycket som är planerat i varje rum utan att behöva öppna det.",
+    tags: ["Arbeten", "Inköp", "Projektvy", "Förbättring"],
+  },
+
+  // ── 2026-08-24 ──
+  {
+    date: "2026-08-24",
+    title: "Spara bostadens papper på adressen — inte i ett projekt",
+    description: "Köpekontrakt, energideklaration, föreningsstadgar och besiktningsprotokoll hör till bostaden, inte till en enskild renovering. Nu sparar du dem på adressen i stället, så ligger de kvar när projektet är avslutat och finns där nästa gång du ska göra något.",
+    tags: ["Filer", "Nyhet"],
+  },
+  {
+    date: "2026-08-24",
+    title: "Adressen föreslås ur dina egna dokument",
+    description: "Laddar du upp ett dokument som innehåller bostadens adress föreslår Renaida den åt dig — du behöver bara bekräfta att den stämmer. Avsändarens adress föreslås aldrig, så en mäklares eller en byggfirmas kontorsadress hamnar inte på din bostad av misstag.",
+    tags: ["Renaida", "Nyhet"],
+  },
+  {
+    date: "2026-08-24",
+    title: "ROT-avdraget fungerar nu även för dig som bor i bostadsrätt",
+    description: "ROT-beräkningen krävde tidigare en fastighetsbeteckning — något du som bor i bostadsrätt aldrig kan fylla i, vilket gjorde att avdraget inte gick att räkna med. Nu väljer du upplåtelseform och fyller i det som gäller just dig: fastighetsbeteckning för småhus, föreningens organisationsnummer och lägenhetsnummer för bostadsrätt.",
+    tags: ["ROT", "Budget", "Förbättring"],
+  },
+
   // ── 2026-08-17 ──
   {
     date: "2026-08-17",
