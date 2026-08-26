@@ -68,14 +68,36 @@ Språkoberoende genom **ikon + ordet på eget språk** (sju språk finns). Ikone
 är samma på båda sidor, så "🛒" betyder samma sak för en polsk målare och en
 svensk projektledare — utan Google Translate.
 
+## Bilden är ett alternativ, inte ett krav (Carls förtydligande 2026-08-26)
+
+Bildkommunikation är ETT sätt att säga vad man vill — vid sidan av att bara
+skriva det, i ett specifikt fält eller i en generell chatt. Grammatiken får
+därför inte hänga på bilden. Den hänger på **avsikten**:
+
+- **Input** = bild och/eller text och/eller röst. Vilken kombination som
+  helst, inklusive bara "Kup 10 pędzli" utan bild.
+- **Avsikten** sätts av arbetaren (fyra chips) eller härleds/frågas. Samma
+  fyra oavsett om det kom en bild eller en rad text.
+- **Följdfrågan "hur många?"** läser antal och produkt ur texten/rösten när
+  det finns, ur bilden när det inte finns, och frågar när inget av dem räcker.
+- **Ingen tvingad koppling till ett arbete.** Text som inte hör till ett
+  arbete blir en projektnivå-kommentar (`comments.project_id` finns). Att
+  tvinga fram ett arbete är ett formulär.
+
+Konkret följd för UI:t: de fyra avsikts-chipsen sitter på **komposeraren**
+(där text, röst och bild möts), inte bara på kameraknappen. Skriver man en
+rad utan att välja chip går den som 💬 Info — och Renaida får föreslå
+en annan avsikt om raden uppenbart är en fråga eller ett behov ("?" eller
+"kup/köp/need/potrzebuję" → förslag, aldrig tyst omklassning).
+
 ## De två vägarna är samma väg
 
 Den öppna vägen är **knappen du inte hittade**. Regeln:
 
-> När en bild kommer in utan avsikt frågar Renaida EXAKT det fyrvalet som den
-> strukturerade vyn visar som fyra knappar. Följdfrågorna är EXAKT de fält
-> det strukturerade flödet skulle bett om — och bara de som inte går att
-> härleda.
+> När input kommer in utan avsikt — bild, text eller röst — frågar Renaida
+> EXAKT det fyrvalet som den strukturerade vyn visar som fyra knappar.
+> Följdfrågorna är EXAKT de fält det strukturerade flödet skulle bett om —
+> och bara de som inte går att härleda.
 
 Så finns det bara en mekanik att lära, en att underhålla, och en att mäta.
 Capture → föreslå → bekräfta, samma som allt annat i Renaida.
@@ -83,7 +105,7 @@ Capture → föreslå → bekräfta, samma som allt annat i Renaida.
 ### Följdfrågeträdet (max djup 2, oftast 0)
 
 ```
-Bild kommer in
+Input kommer in (bild / text / röst, i valfri kombination)
 │
 ├─ F1 (alltid, om avsikt saknas): "Vad är det här?"
 │     [✅ Klart] [🛒 Behöver] [❓ Fråga] [💬 Info]
@@ -156,13 +178,12 @@ Det är styrkan: fyra avsikter täcker inte bara byggare⇄arbetare.
    `field_message_answered {intent, seconds_to_answer}`. Tid-till-svar är
    siffran som säger om byggaren faktiskt blev snabbare.
 
-## Beslut som är Carls
+## Beslut — TAGNA av Carl 2026-08-26 (rekommendationerna gäller)
 
-A. **Fyra avsikter (med Fråga) eller tre (Fråga in i Övrigt)?** Rekommendation:
-   fyra — frågan är det enda som blockerar arbetaren.
-B. **Hemägarens "Önskat material" = samma request-rad som arbetarens Behöver?**
-   Rekommendation: ja — en önskan är en önskan, Inköp är stället.
-C. **Modellanrop i arbetarvyn för Behöver (produktnamn + antal ur bilden)?**
-   Rekommendation: ja — ett anrop, rate-limitat, ersätter nio fält.
-D. **Vem testar?** Carls polska målare med det byggda flödet, inte med en
-   fråga. Ett flöde på tio sekunder ger bättre svar än en hypotetisk fråga.
+A. **Fyra avsikter**, med Fråga separat.
+B. **Hemägarens "Önskat material" = samma request-rad** som arbetarens Behöver.
+C. **Modellanrop för Behöver** — ett anrop, rate-limitat. Läser text/röst
+   först, bilden när text saknas.
+D. **Målaren testar det byggda flödet**, inte en hypotetisk fråga.
+E. (Carls tillägg) **Bilden är ett alternativ till text** — grammatiken
+   hänger på avsikten, inte på modaliteten. Se avsnittet ovan.

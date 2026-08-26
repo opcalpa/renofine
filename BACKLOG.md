@@ -452,9 +452,11 @@ och ett-trycks-svar; ägaren får EN "Från fältet"-lista.
 nio-fälts-dialogen) · S3 ägarens "Från fältet" · S4 Renaida-fotofrågan mappad
 till samma nycklar · S5 mätning (tid-till-svar).
 
-**Carls beslut innan bygge (i docen §Beslut):** A fyra eller tre avsikter ·
-B hemägarens önskan = arbetarens Behöver i Inköp · C modellanrop för Behöver ·
-D målaren testar det BYGGDA flödet, inte en fråga.
+**Beslut TAGNA 2026-08-26 (Carl):** A fyra avsikter · B hemägarens önskan =
+arbetarens Behöver i Inköp · C modellanrop för Behöver (text/röst först, bild
+sen) · D målaren testar det BYGGDA flödet · E bilden är ett alternativ till
+text — avsikts-chipsen sitter på komposeraren, inte bara på kameran.
+**Redo för Opus: S1 + S2 först.**
 
 ---
 id: klient-accept-behover-serversida
