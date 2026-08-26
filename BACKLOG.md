@@ -422,31 +422,47 @@ stället för 25, och Carl upptäcker appen som hans användare ser den.
 id: inkopsbild-onskemal-malaren
 status: todo
 priority: P2
-tags: [inkop, worker, foto, renaida, idea, carl]
+tags: [worker, renaida, foto, sprak, inkop, carl]
 created: 2026-08-26
+updated: 2026-08-26
 ---
-## Målarens "Kup 10": produktbild + köpönskan, skild från kvitto
+## Arbetaren pratar med Renaida på sitt eget språk — en bild, tre utfall
 
-Carls fältfall 2026-08-26: hans polska målare skickar hellre en BILD på
-penslarna med "Kup 10" än röstmeddelanden eller långa texter. Det är en
-PRODUKTBILD med en köpönskan — varken kvitto eller rumsbild.
+**Omformulerat 2026-08-26 av Carl:** det här handlar inte om "inköpsbilden".
+Det handlar om att en byggare/målare/hantverkare ska kunna kommunicera med
+Renofine **via Renaida, på sitt eget språk**, genom att skicka en vanlig bild
+och välja vad den betyder. Inköpet är bara ett av utfallen.
 
-**Grunden är redan lagd:** `photos.kind` skiljer nu `receipt` (kvitto, hänt
-köp) från `product` (produktbild). Och båda ändarna finns i systemet:
-`purchase_requests`-tabellen (material_id, requested_by, status, notes) och
-edge-funktionen `worker-create-purchase`.
+Fältfallet som startade det: Carls polska målare skickar hellre en BILD på
+penslarna med "Kup 10" än röstmeddelanden eller långa texter.
 
-**Det som saknas är kopplingen:** arbetarens foto-flöde ska kunna märka en bild
-som produkt + önskan, vilket skapar (a) photos-raden med kind='product',
-(b) en material-rad från bildtexten ("Kup 10" → namn + antal, ev. via Renaida),
-(c) en purchase_request som ägaren ser i Inköp med bilden bredvid.
+**Tre utfall arbetaren väljer mellan:**
+1. **Utfört arbete** → foto på arbetet (finns delvis: `worker-upload-photo`
+   mappar `completed` → `kind='after'`, annars `during`).
+2. **Materialköp** → produktbild + köpönskan → `purchase_requests` som ägaren
+   godkänner i Inköp (`worker-create-purchase` + `MaterialRequestButton` finns).
+3. **Övrigt** → meddelande med bild (`worker-send-message` finns).
 
-Byggarens vy: önskemålen dyker upp i Inköp som förfrågningar att godkänna —
-samma request→PO-invariant som [[project_purchase_order_invariant]].
+**Vad som redan finns (verifierat 2026-08-26):** arbetarvyn kan språk
+(`language` ur token, översatt välkomstmeddelande, `translate-comments`),
+den kan ladda upp foto med kategori, och alla tre edge-funktionerna finns
+(`worker-upload-photo`, `worker-create-purchase`, `worker-send-message`,
+plus `worker-ask-question`). `photos.kind` skiljer redan `product` från
+`receipt` sedan s84.
 
-Avgränsning: INTE ett nytt kommunikationssystem. En bild + max ett kort
-textfält, resten härleds. Verifiera med Taulant/målaren innan UI byggs —
-det här kortet är designen, inte beslutet.
+**Vad som saknas:** (a) fotokategorin är binär (during/after) — ingen
+produkt/köp-gren, (b) Renaida finns inte som mottagare i arbetarvyn, (c) ingen
+plats där arbetaren skriver/talar en rad på sitt språk som tolkas till en
+strukturerad handling.
+
+**Formen:** EN capture → Renaida föreslår → arbetaren bekräftar. Samma mekanik
+som [[project_agentic_strategy]] beskriver, nu i arbetarvyn. Bild + max ett
+kort fritextfält (gärna röst), resten härleds. INTE ett nytt
+kommunikationssystem, INTE en chatt.
+
+**Blockering:** verifiera med Carls målare innan UI byggs — det här kortet är
+designen, inte beslutet. (Gäller INTE längre Taulant, se
+[[project_traction_reality]]: han slutade 11 juli och ska inte vara en grind.)
 
 ---
 id: klient-accept-behover-serversida
