@@ -8332,7 +8332,7 @@
   "field": {
     "intent": {
       "klart": "Klart",
-      "behover": "Behöver",
+      "behover": "Behövs",
       "fraga": "Fråga",
       "info": "Info"
     },
@@ -8351,5 +8351,37 @@
     "send": "Skicka",
     "sent": "Skickat",
     "unnamedItem": "Material"
+  },
+  "fieldInbox": {
+    "title": "Från fältet",
+    "subtitle": "Frågor och inköp som stannat upp någon på plats. Svara här, så går arbetet vidare.",
+    "subtitleClear": "Ingen på plats väntar på dig just nu.",
+    "waitingOnYou": "väntar på dig",
+    "filterAll": "Allt",
+    "filterQuestions": "Frågor",
+    "filterPurchases": "Inköp",
+    "photo": "Foto",
+    "minutes": "{{count}} min",
+    "hours": "{{count}} tim",
+    "days": "{{count}} d",
+    "translated": "Översatt ·",
+    "showingOriginal": "Originalet ·",
+    "showOriginal": "visa original",
+    "showTranslation": "visa översättning",
+    "answer": "Svara",
+    "send": "Skicka",
+    "replyPlaceholder": "Skriv ditt svar…",
+    "answerSent": "Svar skickat",
+    "answerFailed": "Kunde inte skicka svaret",
+    "approvePurchase": "Godkänn inköpet",
+    "purchaseApproved": "Inköpet godkänt",
+    "purchaseDeclined": "Inköpet avslaget",
+    "decisionFailed": "Kunde inte spara beslutet",
+    "openInPurchases": "Öppna i Inköp",
+    "askClient": "Fråga kunden",
+    "forwarded": "Frågan syns nu för kunden",
+    "forwardFailed": "Kunde inte skicka vidare",
+    "forwardedBadge": "Skickad till kunden",
+    "settledToday": "Klart idag · inget att göra"
   }
 }

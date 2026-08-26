@@ -29,6 +29,7 @@ import { InvoiceMethodDialog } from "@/components/invoices/InvoiceMethodDialog";
 import { useProjectLock } from "@/hooks/useProjectLock";
 import { CommentsSection } from "@/components/comments/CommentsSection";
 import { ProjectChatSection } from "./overview/ProjectChatSection";
+import { FieldInboxSection } from "./overview/FieldInboxSection";
 import { PlanningTaskList } from "./overview/PlanningTaskList";
 import { PlanningRoomList } from "./overview/PlanningRoomList";
 import { HomeownerPlanningView } from "./overview/HomeownerPlanningView";
@@ -481,6 +482,22 @@ const OverviewTab = ({
               </Button>
               )}
       </div>
+
+      {/* Från fältet — what has stopped somebody on site, above everything else.
+          The builder is the bottleneck on every build, so this is what they
+          should see before the numbers. Renders nothing when nothing waits.
+          isGuest excludes the guest plan; isInvitedClient excludes the
+          customer — the field talks to the builder, who forwards what is
+          genuinely the customer's call. */}
+      {!isGuest && !isInvitedClient && (
+        <FieldInboxSection
+          projectId={project.id}
+          enabled={isProjectOwner || overviewAccess === 'edit'}
+          currency={project.currency}
+          addressLabel={project.address ?? null}
+          onNavigateToPurchases={onNavigateToPurchases}
+        />
+      )}
 
       <PulseCards
           taskStats={taskStats}

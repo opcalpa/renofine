@@ -1,0 +1,576 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import {
+  Check,
+  Clock,
+  HelpCircle,
+  Image as ImageIcon,
+  Languages,
+  MessageSquare,
+  Send,
+  ShoppingCart,
+  UserRound,
+  X,
+} from "lucide-react";
+import { useCommentTranslation } from "@/hooks/useCommentTranslation";
+import {
+  useFieldInbox,
+  type FieldInboxItem,
+  type FieldInboxSettledItem,
+} from "@/hooks/useFieldInbox";
+import { useCurrentProfileId } from "@/hooks/useCurrentProfileId";
+import { formatCurrency } from "@/lib/currency";
+
+/**
+ * "Från fältet" — the builder's inbox for what has stopped somebody on site.
+ *
+ * Three rules from the design carry the whole surface:
+ *
+ *   1. The picture IS the message. Workers send a photo instead of text, so it
+ *      gets a column, never a thumbnail.
+ *   2. One tap is enough. Yes / No / Answer — nothing opens a form.
+ *   3. Waiting time is information. Past an hour it turns warn-coloured: a
+ *      blocked tradesperson costs more than an unanswered notification.
+ *
+ * It renders nothing at all when nothing is waiting. A section that is empty
+ * most days is a section you stop reading, so it only exists when it has
+ * something to say.
+ */
+
+interface FieldInboxSectionProps {
+  projectId: string;
+  /** Only the builder side sees the field. Off for the customer view. */
+  enabled: boolean;
+  currency?: string | null;
+  /** Project address — the eyebrow, so a builder with several sites knows where. */
+  addressLabel?: string | null;
+  onNavigateToPurchases?: (materialId?: string) => void;
+}
+
+type Filter = "all" | "questions" | "purchases";
+
+const HOUR_MS = 60 * 60 * 1000;
+
+function useWaitLabel() {
+  const { t } = useTranslation();
+  return useCallback(
+    (createdAt: string) => {
+      const ms = Date.now() - new Date(createdAt).getTime();
+      const minutes = Math.max(0, Math.round(ms / 60000));
+      const urgent = ms >= HOUR_MS;
+      if (minutes < 60) {
+        return { label: t("fieldInbox.minutes", "{{count}} min", { count: minutes }), urgent };
+      }
+      const hours = Math.floor(minutes / 60);
+      if (hours < 24) {
+        return { label: t("fieldInbox.hours", "{{count}} tim", { count: hours }), urgent };
+      }
+      return {
+        label: t("fieldInbox.days", "{{count}} d", { count: Math.floor(hours / 24) }),
+        urgent,
+      };
+    },
+    [t]
+  );
+}
+
+function PhotoPanel({
+  item,
+  className,
+}: {
+  item: FieldInboxItem;
+  className: string;
+}) {
+  const { t } = useTranslation();
+  if (item.image) {
+    return (
+      <div className={`${className} relative overflow-hidden bg-[var(--rf-stone)]`}>
+        <img
+          src={item.image.url}
+          alt={item.image.caption ?? item.content}
+          className="h-full w-full object-cover"
+          loading="lazy"
+        />
+        <span className="absolute left-2.5 top-2.5 rounded-md bg-[rgba(20,15,5,0.62)] px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.04em] text-white">
+          {t("fieldInbox.photo", "Foto")}
+        </span>
+      </div>
+    );
+  }
+  // No photo: a calm placeholder on desktop, where it is a narrow column.
+  // On mobile it would be a screenful of nothing, so it is dropped entirely —
+  // the rule is that the picture is the message, not that there is a frame.
+  return (
+    <div
+      className={`${className} hidden items-center justify-center bg-[var(--rf-surface-2)] md:flex`}
+      aria-hidden
+    >
+      {item.kind === "purchase" ? (
+        <ShoppingCart className="h-10 w-10 text-[var(--rf-fg-subtle)] opacity-50" strokeWidth={1.4} />
+      ) : (
+        <MessageSquare className="h-10 w-10 text-[var(--rf-fg-subtle)] opacity-50" strokeWidth={1.4} />
+      )}
+    </div>
+  );
+}
+
+export function FieldInboxSection({
+  projectId,
+  enabled,
+  currency,
+  addressLabel,
+  onNavigateToPurchases,
+}: FieldInboxSectionProps) {
+  const { t } = useTranslation();
+  const profileId = useCurrentProfileId();
+  const { items, settled, counts, reload, removeItem, markForwarded } = useFieldInbox(
+    projectId,
+    enabled
+  );
+  const { ensureTranslations, getTranslatedContent } = useCommentTranslation();
+  const waitLabel = useWaitLabel();
+
+  const [filter, setFilter] = useState<Filter>("all");
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
+  const [showOriginal, setShowOriginal] = useState<Set<string>>(new Set());
+  const [busy, setBusy] = useState<string | null>(null);
+
+  // Translated by default — the builder should never have to ask for it.
+  useEffect(() => {
+    const questions = items.filter((i) => i.kind === "question");
+    if (questions.length > 0) {
+      void ensureTranslations(questions.map((q) => ({ id: q.id, content: q.content })));
+    }
+  }, [items, ensureTranslations]);
+
+  const visible = useMemo(() => {
+    if (filter === "questions") return items.filter((i) => i.kind === "question");
+    if (filter === "purchases") return items.filter((i) => i.kind === "purchase");
+    return items;
+  }, [items, filter]);
+
+  const answerQuestion = useCallback(
+    async (item: FieldInboxItem, answer: string) => {
+      if (!profileId) return;
+      setBusy(item.id);
+      const { error } = await supabase.from("comments").insert({
+        content: answer,
+        parent_comment_id: item.id,
+        project_id: projectId,
+        created_by_user_id: profileId,
+        is_resolved: true,
+        // An answer to an internal question stays internal.
+        visible_to_client: false,
+      });
+      if (error) {
+        setBusy(null);
+        console.error("Failed to answer:", error);
+        toast.error(t("fieldInbox.answerFailed", "Kunde inte skicka svaret"));
+        return;
+      }
+      const { error: resolveError } = await supabase
+        .from("comments")
+        .update({ is_resolved: true })
+        .eq("id", item.id);
+      setBusy(null);
+      if (resolveError) {
+        console.error("Failed to resolve:", resolveError);
+        toast.error(t("fieldInbox.answerFailed", "Kunde inte skicka svaret"));
+        return;
+      }
+      removeItem(item.id);
+      setReplyingTo(null);
+      setReplyText("");
+      toast.success(t("fieldInbox.answerSent", "Svar skickat"));
+      void reload();
+    },
+    [profileId, projectId, removeItem, reload, t]
+  );
+
+  const decidePurchase = useCallback(
+    async (item: FieldInboxItem, decision: "approved" | "declined") => {
+      if (!item.purchase) return;
+      setBusy(item.id);
+      const { error } = await supabase
+        .from("materials")
+        .update({ status: decision })
+        .eq("id", item.purchase.materialId);
+      setBusy(null);
+      if (error) {
+        console.error("Failed to decide purchase:", error);
+        toast.error(t("fieldInbox.decisionFailed", "Kunde inte spara beslutet"));
+        return;
+      }
+      removeItem(item.id);
+      toast.success(
+        decision === "approved"
+          ? t("fieldInbox.purchaseApproved", "Inköpet godkänt")
+          : t("fieldInbox.purchaseDeclined", "Inköpet avslaget")
+      );
+      void reload();
+    },
+    [removeItem, reload, t]
+  );
+
+  /**
+   * Pass a question on to the customer. The field talks to the builder; when a
+   * question is genuinely the customer's call (a tile choice, a variation
+   * order) the builder forwards it with one tap instead of retyping it.
+   */
+  const askClient = useCallback(
+    async (item: FieldInboxItem) => {
+      setBusy(item.id);
+      const { error } = await supabase
+        .from("comments")
+        .update({ visible_to_client: true })
+        .eq("id", item.id);
+      setBusy(null);
+      if (error) {
+        console.error("Failed to forward question:", error);
+        toast.error(t("fieldInbox.forwardFailed", "Kunde inte skicka vidare"));
+        return;
+      }
+      markForwarded(item.id);
+      toast.success(t("fieldInbox.forwarded", "Frågan syns nu för kunden"));
+    },
+    [markForwarded, t]
+  );
+
+  if (!enabled || (items.length === 0 && settled.length === 0)) return null;
+
+  const filters: { key: Filter; label: string; count: number; icon: JSX.Element | null }[] = [
+    { key: "all", label: t("fieldInbox.filterAll", "Allt"), count: counts.total, icon: null },
+    {
+      key: "questions",
+      label: t("fieldInbox.filterQuestions", "Frågor"),
+      count: counts.questions,
+      icon: <HelpCircle className="h-3.5 w-3.5 text-[var(--rf-warn)]" />,
+    },
+    {
+      key: "purchases",
+      label: t("fieldInbox.filterPurchases", "Inköp"),
+      count: counts.purchases,
+      icon: <ShoppingCart className="h-3.5 w-3.5 text-[var(--rf-green)]" />,
+    },
+  ];
+
+  return (
+    <section className="rf-paper rounded-xl border border-[var(--rf-hairline)] bg-[var(--rf-paper)] p-4 md:p-6">
+      {/* Header */}
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          {addressLabel && <div className="rf-eyebrow">{addressLabel}</div>}
+          <h2 className="rf-display mt-1 text-2xl leading-tight md:text-[32px]">
+            {t("fieldInbox.title", "Från fältet")}
+          </h2>
+        </div>
+        {counts.total > 0 && (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--rf-warn-soft)] px-3 py-1.5 text-[13px] font-medium text-[var(--rf-warn-soft-fg)]">
+            <Clock className="h-3.5 w-3.5" />
+            <span className="rf-num">{counts.total}</span>{" "}
+            {t("fieldInbox.waitingOnYou", "väntar på dig")}
+          </span>
+        )}
+      </div>
+
+      <p className="mt-2.5 max-w-[52ch] text-sm leading-relaxed text-[var(--rf-fg-muted)]">
+        {counts.total > 0
+          ? t(
+              "fieldInbox.subtitle",
+              "Frågor och inköp som stannat upp någon på plats. Svara här, så går arbetet vidare."
+            )
+          : t("fieldInbox.subtitleClear", "Ingen på plats väntar på dig just nu.")}
+      </p>
+
+      {/* Filter */}
+      {counts.total > 0 && (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {filters.map((f) => (
+            <button
+              key={f.key}
+              type="button"
+              onClick={() => setFilter(f.key)}
+              className={`inline-flex min-h-[36px] items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[13px] font-medium transition-colors ${
+                filter === f.key
+                  ? "border-[var(--rf-green)] bg-[var(--rf-green)] text-[var(--rf-paper-2)]"
+                  : "border-[var(--rf-hairline)] bg-[var(--rf-surface)] text-[var(--rf-ink)]"
+              }`}
+            >
+              {filter !== f.key && f.icon}
+              {f.label}
+              <span
+                className={`rf-num ${filter === f.key ? "opacity-75" : "text-[var(--rf-fg-muted)]"}`}
+              >
+                {f.count}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Cards */}
+      <div className="mt-4 flex flex-col gap-3.5">
+        {visible.map((item) => {
+          const wait = waitLabel(item.createdAt);
+          const isQuestion = item.kind === "question";
+          const original = item.content;
+          const translated = isQuestion ? getTranslatedContent(item.id, original) : original;
+          const isTranslated = isQuestion && translated !== original;
+          const showingOriginal = showOriginal.has(item.id);
+          const body = showingOriginal ? original : translated;
+          const disabled = busy === item.id;
+
+          return (
+            <article
+              key={item.id}
+              className="flex flex-col overflow-hidden rounded-xl border border-[var(--rf-hairline)] bg-[var(--rf-surface)] md:flex-row"
+            >
+              <PhotoPanel item={item} className="h-[152px] w-full md:h-auto md:w-[168px] md:shrink-0" />
+
+              <div className="flex min-w-0 flex-grow flex-col gap-3 p-4 md:p-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <div className="mb-1.5 flex flex-wrap items-center gap-2">
+                      <span
+                        className={`inline-flex items-center gap-1.5 rounded-[5px] px-2 py-0.5 text-[11px] font-medium ${
+                          isQuestion
+                            ? "bg-[var(--rf-warn-soft)] text-[var(--rf-warn-soft-fg)]"
+                            : "bg-[var(--rf-green-soft)] text-[var(--rf-green-soft-fg)]"
+                        }`}
+                      >
+                        {isQuestion ? (
+                          <HelpCircle className="h-3 w-3" />
+                        ) : (
+                          <ShoppingCart className="h-3 w-3" />
+                        )}
+                        {isQuestion
+                          ? t("field.intent.fraga", "Fråga")
+                          : t("field.intent.behover", "Behövs")}
+                      </span>
+                      {item.context && (
+                        <span className="text-xs text-[var(--rf-fg-subtle)]">{item.context}</span>
+                      )}
+                      {item.visibleToClient && (
+                        <span className="inline-flex items-center gap-1 text-xs text-[var(--rf-fg-subtle)]">
+                          <UserRound className="h-3 w-3" />
+                          {t("fieldInbox.forwardedBadge", "Skickad till kunden")}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="rf-display text-lg leading-snug md:text-[22px]">
+                      {item.kind === "purchase" && item.purchase?.quantity
+                        ? `${item.purchase.quantity}${
+                            item.purchase.unit ? ` ${item.purchase.unit}` : ""
+                          } × ${item.content}`
+                        : body}
+                    </div>
+
+                    {item.kind === "purchase" && item.purchase?.priceTotal ? (
+                      <div className="rf-num mt-1 text-sm text-[var(--rf-fg-muted)]">
+                        {formatCurrency(item.purchase.priceTotal, currency)}
+                        {item.purchase.vendorName ? ` · ${item.purchase.vendorName}` : ""}
+                      </div>
+                    ) : null}
+
+                    {isTranslated && (
+                      <div className="mt-1.5 flex items-center gap-1.5">
+                        <Languages className="h-3 w-3 text-[var(--rf-fg-subtle)]" />
+                        <span className="text-xs text-[var(--rf-fg-subtle)]">
+                          {showingOriginal
+                            ? t("fieldInbox.showingOriginal", "Originalet ·")
+                            : t("fieldInbox.translated", "Översatt ·")}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setShowOriginal((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(item.id)) next.delete(item.id);
+                              else next.add(item.id);
+                              return next;
+                            })
+                          }
+                          className="border-b border-dotted border-[var(--rf-green)] text-xs text-[var(--rf-green)]"
+                        >
+                          {showingOriginal
+                            ? t("fieldInbox.showTranslation", "visa översättning")
+                            : t("fieldInbox.showOriginal", "visa original")}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="shrink-0 text-right">
+                    {item.authorName && (
+                      <div className="text-[13px] font-medium">{item.authorName}</div>
+                    )}
+                    <div
+                      className={`rf-num mt-0.5 text-xs ${
+                        wait.urgent
+                          ? "font-medium text-[var(--rf-warn)]"
+                          : "text-[var(--rf-fg-subtle)]"
+                      }`}
+                    >
+                      {wait.label}
+                    </div>
+                  </div>
+                </div>
+
+                {/* One tap is enough */}
+                {replyingTo === item.id ? (
+                  <div className="flex flex-col gap-2">
+                    <textarea
+                      value={replyText}
+                      onChange={(e) => setReplyText(e.target.value)}
+                      rows={2}
+                      autoFocus
+                      placeholder={t("fieldInbox.replyPlaceholder", "Skriv ditt svar…")}
+                      className="w-full resize-none rounded-[10px] border border-[var(--rf-hairline)] bg-[var(--rf-paper-2)] p-3 text-sm outline-none focus:border-[var(--rf-green)]"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        disabled={disabled || !replyText.trim()}
+                        onClick={() => void answerQuestion(item, replyText.trim())}
+                        className="col-span-2 md:col-span-1 inline-flex min-h-[48px] flex-grow items-center justify-center gap-2 rounded-[10px] bg-[var(--rf-green)] px-4 text-sm font-medium text-[var(--rf-paper-2)] disabled:opacity-50 md:min-h-[44px]"
+                      >
+                        <Send className="h-4 w-4" />
+                        {t("fieldInbox.send", "Skicka")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setReplyingTo(null);
+                          setReplyText("");
+                        }}
+                        className="inline-flex min-h-[48px] items-center justify-center rounded-[10px] border border-[var(--rf-hairline)] bg-[var(--rf-surface)] px-4 text-sm font-medium md:min-h-[44px]"
+                      >
+                        {t("common.cancel", "Avbryt")}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2 md:flex md:flex-wrap md:items-center">
+                    {isQuestion ? (
+                      <>
+                        <button
+                          type="button"
+                          disabled={disabled}
+                          onClick={() => void answerQuestion(item, t("common.yes", "Ja"))}
+                          className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[10px] bg-[var(--rf-green)] px-5 text-sm font-medium text-[var(--rf-paper-2)] disabled:opacity-50 md:min-h-[44px]"
+                        >
+                          <Check className="h-4 w-4" />
+                          {t("common.yes", "Ja")}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={disabled}
+                          onClick={() => void answerQuestion(item, t("common.no", "Nej"))}
+                          className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[10px] border border-[var(--rf-hairline)] bg-[var(--rf-surface)] px-5 text-sm font-medium disabled:opacity-50 md:min-h-[44px]"
+                        >
+                          <X className="h-4 w-4" />
+                          {t("common.no", "Nej")}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setReplyingTo(item.id)}
+                          className="col-span-2 md:col-span-1 inline-flex min-h-[48px] flex-grow items-center justify-center gap-2 rounded-[10px] border border-[var(--rf-hairline)] bg-[var(--rf-surface)] px-4 text-sm font-medium text-[var(--rf-fg-muted)] md:min-h-[44px]"
+                        >
+                          <MessageSquare className="h-4 w-4" />
+                          {t("fieldInbox.answer", "Svara")}
+                        </button>
+                        {!item.visibleToClient && (
+                          <button
+                            type="button"
+                            disabled={disabled}
+                            onClick={() => void askClient(item)}
+                            className="col-span-2 md:col-span-1 inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[10px] border border-[var(--rf-hairline)] bg-[var(--rf-surface)] px-4 text-sm font-medium text-[var(--rf-fg-muted)] disabled:opacity-50 md:min-h-[44px]"
+                          >
+                            <UserRound className="h-4 w-4" />
+                            {t("fieldInbox.askClient", "Fråga kunden")}
+                          </button>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          disabled={disabled}
+                          onClick={() => void decidePurchase(item, "approved")}
+                          className="col-span-2 md:col-span-1 inline-flex min-h-[48px] flex-grow items-center justify-center gap-2 rounded-[10px] bg-[var(--rf-green)] px-4 text-sm font-medium text-[var(--rf-paper-2)] disabled:opacity-50 md:min-h-[44px]"
+                        >
+                          <Check className="h-4 w-4" />
+                          {t("fieldInbox.approvePurchase", "Godkänn inköpet")}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={disabled}
+                          onClick={() => void decidePurchase(item, "declined")}
+                          className="inline-flex min-h-[48px] items-center justify-center rounded-[10px] border border-[var(--rf-hairline)] bg-[var(--rf-surface)] px-5 text-sm font-medium disabled:opacity-50 md:min-h-[44px]"
+                        >
+                          {t("common.no", "Nej")}
+                        </button>
+                        {onNavigateToPurchases && (
+                          <button
+                            type="button"
+                            onClick={() => onNavigateToPurchases(item.purchase?.materialId)}
+                            className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[10px] border border-[var(--rf-hairline)] bg-[var(--rf-surface)] px-4 text-sm font-medium text-[var(--rf-fg-muted)] md:min-h-[44px]"
+                          >
+                            <ImageIcon className="h-4 w-4" />
+                            {t("fieldInbox.openInPurchases", "Öppna i Inköp")}
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            </article>
+          );
+        })}
+      </div>
+
+      {/* Settled — sinks away, never disappears */}
+      {settled.length > 0 && (
+        <div className="mt-7 border-t border-[var(--rf-hairline)] pt-5">
+          <div className="rf-eyebrow mb-3">
+            {t("fieldInbox.settledToday", "Klart idag · inget att göra")}
+          </div>
+          <div className="flex flex-col gap-2">
+            {settled.map((s: FieldInboxSettledItem) => (
+              <div
+                key={s.id}
+                className="flex items-center gap-3 rounded-[10px] bg-[var(--rf-surface-2)] px-3.5 py-2.5"
+              >
+                {s.intent === "klart" ? (
+                  <Check className="h-4 w-4 shrink-0 text-[var(--rf-green-soft-fg)]" />
+                ) : (
+                  <MessageSquare className="h-4 w-4 shrink-0 text-[var(--rf-fg-muted)]" />
+                )}
+                <span className="min-w-0 flex-grow truncate text-sm">
+                  {s.authorName ? `${s.authorName}: ` : ""}
+                  <span className="text-[var(--rf-fg-muted)]">{s.content}</span>
+                </span>
+                {s.context && (
+                  <span className="hidden shrink-0 text-xs text-[var(--rf-fg-subtle)] sm:inline">
+                    {s.context}
+                  </span>
+                )}
+                <span className="rf-num shrink-0 text-xs text-[var(--rf-fg-subtle)]">
+                  {new Date(s.createdAt).toLocaleTimeString(undefined, {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}

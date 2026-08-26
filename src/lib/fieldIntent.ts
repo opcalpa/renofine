@@ -50,7 +50,7 @@ export const FIELD_INTENT_META: Record<FieldIntent, FieldIntentMeta> = {
     intent: 'behover',
     icon: '🛒',
     labelKey: 'field.intent.behover',
-    labelFallback: 'Behöver',
+    labelFallback: 'Behövs',
     promiseKey: 'field.promise.behover',
     promiseFallback: 'Skickas för godkännande.',
   },

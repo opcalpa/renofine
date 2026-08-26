@@ -193,6 +193,12 @@ serve(async (req) => {
         // already settled, so they never sit in the owner's "waiting on me"
         // list — that list is only useful if everything in it is actionable.
         is_resolved: intent !== null && intent !== "fraga",
+        // The field talks to the BUILDER, not to the builder's customer.
+        // comments.visible_to_client defaults to true, so without this a
+        // worker's question surfaces in the client's feed the moment the
+        // client can see Tasks. The builder forwards what is genuinely the
+        // customer's decision (tile choice, variation order) with one tap.
+        visible_to_client: false,
         images: photoRow
           ? [{ id: photoRow.id, url: photoRow.url, caption: photoRow.caption }]
           : undefined,

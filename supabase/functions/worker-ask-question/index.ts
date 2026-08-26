@@ -89,6 +89,8 @@ serve(async (req) => {
         created_by_user_id: tokenRecord.created_by_user_id,
         author_display_name: `${tokenRecord.worker_name} (worker)`,
         is_resolved: false,
+        // Internal to the builder — see worker-send-message.
+        visible_to_client: false,
       })
       .select("id, content, created_at")
       .single();

@@ -223,6 +223,8 @@ serve(async (req) => {
         author_display_name: workerLabel,
         created_by_user_id: tokenRecord.created_by_user_id,
         images: [{ id: photo.id, url: photo.url, caption: photo.caption }],
+        // Internal to the builder — see worker-send-message.
+        visible_to_client: false,
       });
     }
 

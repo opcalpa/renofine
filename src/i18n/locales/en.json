@@ -8333,7 +8333,7 @@
   "field": {
     "intent": {
       "klart": "Done",
-      "behover": "Need",
+      "behover": "Needed",
       "fraga": "Question",
       "info": "Info"
     },
@@ -8352,5 +8352,37 @@
     "send": "Send",
     "sent": "Sent",
     "unnamedItem": "Material"
+  },
+  "fieldInbox": {
+    "title": "From the site",
+    "subtitle": "Questions and purchases that have stopped somebody on site. Answer here and the work moves on.",
+    "subtitleClear": "Nobody on site is waiting on you right now.",
+    "waitingOnYou": "waiting on you",
+    "filterAll": "All",
+    "filterQuestions": "Questions",
+    "filterPurchases": "Purchases",
+    "photo": "Photo",
+    "minutes": "{{count}} min",
+    "hours": "{{count}} h",
+    "days": "{{count}} d",
+    "translated": "Translated ·",
+    "showingOriginal": "Original ·",
+    "showOriginal": "show original",
+    "showTranslation": "show translation",
+    "answer": "Answer",
+    "send": "Send",
+    "replyPlaceholder": "Write your answer…",
+    "answerSent": "Answer sent",
+    "answerFailed": "Could not send the answer",
+    "approvePurchase": "Approve the purchase",
+    "purchaseApproved": "Purchase approved",
+    "purchaseDeclined": "Purchase declined",
+    "decisionFailed": "Could not save the decision",
+    "openInPurchases": "Open in Purchases",
+    "askClient": "Ask the customer",
+    "forwarded": "The customer can now see the question",
+    "forwardFailed": "Could not forward",
+    "forwardedBadge": "Sent to the customer",
+    "settledToday": "Settled today · nothing to do"
   }
 }
