@@ -412,8 +412,11 @@ databasen (verifierat båda vägarna).
 hemma i klienten). Att UTLÖSA återställningsmejl kan läggas till som
 edge-funktion om behovet uppstår.
 
-**Kvar att besluta ([[admin-vy-lackte-in-i-projektvaeljare]]):** om Carls
-vardagskonto ska vara systemadmin alls, nu när rapportbehovet har en egen dörr.
+**BESLUTAT & GENOMFÖRT 2026-08-26:** admin flyttad till ett separat konto,
+`carl.palmquist+admin@gmail.com` (skapat via appens signup, flagga satt,
+/admin verifierad INNAN huvudkontot fråntogs flaggan — ingen glipa).
+`carl.palmquist@gmail.com` är nu ett vanligt hemägarkonto: ser 4 projekt i
+stället för 25, och Carl upptäcker appen som hans användare ser den.
 
 ---
 id: inkopsbild-onskemal-malaren
