@@ -79,6 +79,11 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/worker-create-purchase/index.ts"
 
+[functions.worker-send-report]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/worker-send-report/index.ts"
+
 [functions.intake-upload]
 enabled = true
 verify_jwt = false
