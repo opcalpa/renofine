@@ -483,7 +483,13 @@ text — avsikts-chipsen sitter på komposeraren, inte bara på kameran.
 
 **OMGÅNG 3 (Fable 2026-08-26, efter Carls test som Piotr): grammatiken omprövad → "Rapporten från dagen".** Beslut A (en avsikt per meddelande) satte sorteringen före sägandet. Nu: fritt innehåll (text/röst/foto) + valfria tillägg (✓ Klart · 📊 % · ⏱ Timmar · 🛒 Beställ); Fråga/Info härleds, aldrig knappar; EN sändning som servern delar upp i rader under `report_id`. Beslut I–L tagna (bekräftelse efter, timmar per dag, ett kort per rapport, Förstått-knapp). **Lucka hittad:** röst sparas rått ("🎤 url"), byggaren får ljudfil utan text/översättning. Designen: /Users/calpa/Developer/Renofine/docs/faltkommunikation-design-2026-08.md (omgång 3).
 
-**Kvar att bygga (Opus, i ordning):**
+**S6–S9 LEVERERADE 2026-08-26 (ed3391e, 357f4a8, e2e25ed, 0bbe60a — pushade, deployer gröna, 4 migrationer).** Hela grammatik v2 lever: `field_reports` + tolk + `worker-send-report` (röst transkriberas server-side) · komposerare v2 (ett fält + fyra valfria tillägg, Fråga/Info härleds, kvitto efter sändning) · inkorg v2 (ett kort per rapport, timmar att godkänna, `time_entries.worker_token_id` + `declined_at`) · "Jag har läst jobbet" + mätning (`field_report_sent` / `field_report_answered` / `worker_acknowledged`).
+
+🚩 **Lärdom värd att minnas:** `\b` i JS-regex räknar bara `A-Z0-9_`. Polska "potrzebuję", ukrainska "потрібно"/"годин"/"чи" matchade ALDRIG — ukrainska frågor utan frågetecken nådde aldrig byggarens inkorg. Använd `(?<!\p{L})…(?!\p{L})` med `/u`.
+
+**KVAR:** S4 (Renaida-fotofrågan mappad till samma nycklar). Sen: **skicka arbetarlänken till en riktig hantverkare** — allt är byggt, inget är provat skarpt.
+
+**Tidigare plan (nu klar):**
 - **S6** `field_reports` + tolk (`lib/fieldReport.ts`: regex för timmar/%/antal+produkt/frågetecken, modell-fallback ETT anrop) + `worker-send-report` (transkriberar röst server-side, skriver comments/photos/materials+PO/time_entries/tasks i ett svep) + `time_entries.worker_token_id` (nullable, `user_id` nullable, CHECK exakt en, `approved=false`).
 - **S7** Komposerare v2: ett fält, mic/kamera, fyra tillägg, "Skickat: fråga · 10 × penslar · 8 h" + Ändra. Gamla fyra chips bort.
 - **S8** Inkorg v2: ett kort per rapport, [Godkänn 8 h]-väg, Timmar-filter.
