@@ -479,7 +479,9 @@ text — avsikts-chipsen sitter på komposeraren, inte bara på kameran.
 - **G.** "Från fältet" = **sektion högst upp på Översikt**, bara när något väntar. Ingen ny flik.
 - **H.** **Arbetarmeddelanden dolda för kunden.** FYND: `comments.visible_to_client` defaultar `true` och `worker-send-message` sätter det aldrig ⇒ arbetarens fråga syns i kundens flöde idag om kunden ser Arbeten. Fix i S3: skriv `visible_to_client=false` + "Fråga kunden"-tryck för vidarebefordran.
 
-**Kvar att bygga (S3, i ordning):** (1) chip-texten F, (2) läckan H (en rad i edge-funktionen + deploy), (3) sektionen "Från fältet" på Översikt: öppna frågor (`intent='fraga' AND is_resolved=false`) + väntande köp (PO `requested`) med ett-trycks-svar [Ja][Nej][Svara] / [Godkänn][Nej][Svara], väntetid >1 h i `--rf-warn`, (4) "Fråga kunden" (sätter `visible_to_client=true` + notis). Sen S4 Renaida-mappning, S5 mätning.
+**S3 LEVERERAT 2026-08-26 (commit `1da3c31`, pushat, deploy grön):** chip-texten F, läckan H (tre funktioner + backfill-migration), sektionen "Från fältet" på Översikt och "Fråga kunden" — allt verifierat i appen mot prod-data (arbetare → byggare → godkänt inköp → vidarebefordrad fråga → svarad fråga), testdatan raderad.
+
+**Kvar:** S4 (Renaida-fotofrågan mappad till samma nycklar) + S5 (mätning: `field_message_sent` / `field_message_answered`, tid-till-svar). Sen: skicka arbetarlänken till målaren och se om flödet används skarpt.
 
 
 ---
