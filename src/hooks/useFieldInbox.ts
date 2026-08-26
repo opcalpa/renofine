@@ -1,59 +1,102 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getFileUrls } from "@/lib/fileUrl";
-import type { FieldIntent } from "@/lib/fieldIntent";
 
 /**
  * "Från fältet" — what has stopped somebody on site.
  *
- * The builder is the bottleneck on every build, so this list holds exactly the
- * two things that are waiting on a decision from them:
+ * A report from site arrives as ONE thing said, carrying several parts: a
+ * question, a purchase, hours, a percentage. It is therefore returned as ONE
+ * card with one action per part, not as three unrelated rows — splitting it
+ * would hand the builder the pieces and keep the sentence to ourselves.
  *
- *   questions — comments with intent='fraga' that are not resolved
- *   purchases — materials the worker asked for, whose PO is still 'requested'
+ * Three kinds of part are waiting on the builder and nothing else is:
+ *   question — comments.intent='fraga', unresolved
+ *   purchase — materials 'submitted' whose PO is still 'requested'
+ *   hours    — time_entries reported from a worker link, not yet judged
  *
- * Everything else a worker sends (a report, a note) arrives already settled and
- * belongs in the feed, not here. A list that is only useful if every row is
- * actionable stops being useful the moment one row isn't.
+ * Anything that arrived settled (a note, a completion, a percentage) is not a
+ * row here. A list is only useful when every line in it is actionable.
+ *
+ * Messages sent before grammar v2 have no report; each becomes a card of its
+ * own so nothing that was already waiting disappears.
  */
 
-export type FieldInboxKind = "question" | "purchase";
+export type FieldInboxPartKind = "question" | "purchase" | "hours";
 
 export interface FieldInboxImage {
   url: string;
   caption: string | null;
 }
 
-export interface FieldInboxItem {
+export interface FieldInboxPart {
+  kind: FieldInboxPartKind;
+  /** comment id / material id / time entry id — what the action acts on. */
   id: string;
-  kind: FieldInboxKind;
-  /** The worker's own words, in their language. */
-  content: string;
-  authorName: string;
-  createdAt: string;
-  /** Room / task the message hangs on, already resolved to a name. */
-  context: string | null;
-  image: FieldInboxImage | null;
-  /** purchase only — what to approve. */
+  /** question */
+  visibleToClient?: boolean;
+  /** purchase */
   purchase?: {
     materialId: string;
-    purchaseOrderId: string;
+    purchaseOrderId: string | null;
     quantity: number | null;
     unit: string | null;
     priceTotal: number | null;
     vendorName: string | null;
+    name: string;
   };
-  /** question only — whether it has been passed on to the customer. */
-  visibleToClient?: boolean;
+  /** hours */
+  hours?: { value: number; note: string | null; date: string };
+}
+
+export interface FieldInboxCard {
+  /** Report id, or the single part's id for a pre-v2 message. */
+  id: string;
+  reportId: string | null;
+  authorName: string;
+  createdAt: string;
+  /** Room or task the report hangs on, resolved to a name. */
+  context: string | null;
+  image: FieldInboxImage | null;
+  /** The worker's own words, in their language. */
+  text: string;
+  /** Key the translation is cached under — the comment the words live in. */
+  textId: string | null;
+  parts: FieldInboxPart[];
 }
 
 export interface FieldInboxSettledItem {
   id: string;
-  intent: FieldIntent | null;
+  intent: string | null;
   content: string;
   authorName: string;
   createdAt: string;
   context: string | null;
+}
+
+const WORKER_SUFFIX = " (worker)";
+
+/** Strip the marker the edge functions append so the site sees a person. */
+function displayName(raw: string | null): string {
+  if (!raw) return "";
+  return raw.endsWith(WORKER_SUFFIX) ? raw.slice(0, -WORKER_SUFFIX.length) : raw;
+}
+
+function firstImage(images: unknown): FieldInboxImage | null {
+  if (!Array.isArray(images)) return null;
+  for (const img of images) {
+    if (img && typeof img === "object" && typeof (img as { url?: unknown }).url === "string") {
+      const { url, caption } = img as { url: string; caption?: string | null };
+      return { url, caption: caption ?? null };
+    }
+  }
+  return null;
+}
+
+function startOfToday(): string {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d.toISOString();
 }
 
 interface CommentRow {
@@ -66,6 +109,7 @@ interface CommentRow {
   is_resolved: boolean | null;
   visible_to_client: boolean;
   images: unknown;
+  report_id: string | null;
 }
 
 interface MaterialRow {
@@ -75,67 +119,51 @@ interface MaterialRow {
   unit: string | null;
   price_total: number | null;
   vendor_name: string | null;
-  description: string | null;
   created_at: string;
   task_id: string | null;
   purchase_order_id: string | null;
   submitted_by_worker_token_id: string | null;
+  report_id: string | null;
 }
 
-const WORKER_SUFFIX = " (worker)";
-
-/** Strip the marker the edge functions append so the site sees a person, not a role. */
-function displayName(raw: string | null): string {
-  if (!raw) return "";
-  return raw.endsWith(WORKER_SUFFIX) ? raw.slice(0, -WORKER_SUFFIX.length) : raw;
-}
-
-function firstImage(images: unknown): { url: string; caption: string | null } | null {
-  if (!Array.isArray(images)) return null;
-  for (const img of images) {
-    if (img && typeof img === "object" && typeof (img as { url?: unknown }).url === "string") {
-      const { url, caption } = img as { url: string; caption?: string | null };
-      return { url, caption: caption ?? null };
-    }
-  }
-  return null;
-}
-
-/** Start of the local day — "Klart idag" means today, not "the last 24 hours". */
-function startOfToday(): string {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d.toISOString();
+interface TimeRow {
+  id: string;
+  hours: number;
+  date: string;
+  description: string | null;
+  created_at: string | null;
+  task_id: string | null;
+  worker_token_id: string | null;
+  report_id: string | null;
 }
 
 export function useFieldInbox(projectId: string | undefined, enabled: boolean) {
-  const [items, setItems] = useState<FieldInboxItem[]>([]);
+  const [cards, setCards] = useState<FieldInboxCard[]>([]);
   const [settled, setSettled] = useState<FieldInboxSettledItem[]>([]);
   const [loading, setLoading] = useState(false);
 
   const load = useCallback(async () => {
     if (!projectId || !enabled) {
-      setItems([]);
+      setCards([]);
       setSettled([]);
       return;
     }
     setLoading(true);
     try {
-      const [openRes, settledRes, materialsRes] = await Promise.all([
+      const commentCols =
+        "id, content, created_at, author_display_name, task_id, intent, is_resolved, visible_to_client, images, report_id";
+
+      const [openRes, settledRes, materialsRes, timeRes] = await Promise.all([
         supabase
           .from("comments")
-          .select(
-            "id, content, created_at, author_display_name, task_id, intent, is_resolved, visible_to_client, images"
-          )
+          .select(commentCols)
           .eq("project_id", projectId)
           .eq("intent", "fraga")
           .eq("is_resolved", false)
           .order("created_at", { ascending: true }),
         supabase
           .from("comments")
-          .select(
-            "id, content, created_at, author_display_name, task_id, intent, is_resolved, visible_to_client, images"
-          )
+          .select(commentCols)
           .eq("project_id", projectId)
           .not("intent", "is", null)
           .eq("is_resolved", true)
@@ -145,20 +173,29 @@ export function useFieldInbox(projectId: string | undefined, enabled: boolean) {
         supabase
           .from("materials")
           .select(
-            "id, name, quantity, unit, price_total, vendor_name, description, created_at, task_id, purchase_order_id, submitted_by_worker_token_id"
+            "id, name, quantity, unit, price_total, vendor_name, created_at, task_id, purchase_order_id, submitted_by_worker_token_id, report_id"
           )
           .eq("project_id", projectId)
           .eq("status", "submitted")
           .not("purchase_order_id", "is", null)
+          .order("created_at", { ascending: true }),
+        supabase
+          .from("time_entries")
+          .select("id, hours, date, description, created_at, task_id, worker_token_id, report_id")
+          .eq("project_id", projectId)
+          .eq("approved", false)
+          .is("declined_at", null)
+          .not("worker_token_id", "is", null)
           .order("created_at", { ascending: true }),
       ]);
 
       const openComments = (openRes.data ?? []) as unknown as CommentRow[];
       const settledComments = (settledRes.data ?? []) as unknown as CommentRow[];
       const materials = (materialsRes.data ?? []) as unknown as MaterialRow[];
+      const timeRows = (timeRes.data ?? []) as unknown as TimeRow[];
 
-      // Only materials whose PO is still awaiting the builder's word. Anything
-      // already ordered or delivered is bookkeeping, not a decision.
+      // Only materials whose PO still awaits the builder's word. Anything
+      // already ordered is bookkeeping, not a decision.
       const poIds = [...new Set(materials.map((m) => m.purchase_order_id).filter(Boolean))] as string[];
       const requestedPoIds = new Set<string>();
       if (poIds.length > 0) {
@@ -169,111 +206,210 @@ export function useFieldInbox(projectId: string | undefined, enabled: boolean) {
           .eq("status", "requested");
         for (const po of pos ?? []) requestedPoIds.add(po.id);
       }
-      const pending = materials.filter(
+      const pendingMaterials = materials.filter(
         (m) => m.purchase_order_id && requestedPoIds.has(m.purchase_order_id)
       );
 
-      // Names for the context line, in one round per kind.
+      // ---- The reports these parts belong to ----
+      const reportIds = [
+        ...new Set(
+          [...openComments, ...pendingMaterials, ...timeRows]
+            .map((r) => r.report_id)
+            .filter(Boolean) as string[]
+        ),
+      ];
+      const reports = new Map<
+        string,
+        { id: string; task_id: string | null; raw_text: string | null; created_at: string; worker_token_id: string | null }
+      >();
+      if (reportIds.length > 0) {
+        const { data } = await supabase
+          .from("field_reports")
+          .select("id, task_id, raw_text, created_at, worker_token_id")
+          .in("id", reportIds);
+        for (const r of data ?? []) reports.set(r.id, r);
+      }
+
+      // Every comment belonging to one of these reports carries its words and
+      // its photo, including reports whose only waiting part is hours.
+      const reportComments = new Map<string, CommentRow>();
+      if (reportIds.length > 0) {
+        const { data } = await supabase
+          .from("comments")
+          .select(commentCols)
+          .in("report_id", reportIds);
+        for (const c of (data ?? []) as unknown as CommentRow[]) {
+          if (c.report_id && !reportComments.has(c.report_id)) reportComments.set(c.report_id, c);
+        }
+      }
+
+      // ---- Names for the context line and the person ----
       const taskIds = [
         ...new Set(
-          [...openComments, ...settledComments, ...pending]
+          [...openComments, ...settledComments, ...pendingMaterials, ...timeRows]
             .map((r) => r.task_id)
             .filter(Boolean) as string[]
         ),
       ];
       const taskNames = new Map<string, string>();
       if (taskIds.length > 0) {
-        const { data: tasks } = await supabase
-          .from("tasks")
-          .select("id, title")
-          .in("id", taskIds);
-        for (const t of tasks ?? []) taskNames.set(t.id, t.title);
+        const { data } = await supabase.from("tasks").select("id, title").in("id", taskIds);
+        for (const t of data ?? []) taskNames.set(t.id, t.title);
       }
 
-      // Who is blocked. A material carries the token that submitted it, not a
-      // name — but "Piotr is waiting" is the whole point of the row.
       const tokenIds = [
-        ...new Set(pending.map((m) => m.submitted_by_worker_token_id).filter(Boolean) as string[]),
+        ...new Set(
+          [
+            ...pendingMaterials.map((m) => m.submitted_by_worker_token_id),
+            ...timeRows.map((t) => t.worker_token_id),
+            ...[...reports.values()].map((r) => r.worker_token_id),
+          ].filter(Boolean) as string[]
+        ),
       ];
       const workerNames = new Map<string, string>();
       if (tokenIds.length > 0) {
-        const { data: tokens } = await supabase
+        const { data } = await supabase
           .from("worker_access_tokens")
           .select("id, worker_name")
           .in("id", tokenIds);
-        for (const tk of tokens ?? []) workerNames.set(tk.id, tk.worker_name);
+        for (const tk of data ?? []) workerNames.set(tk.id, tk.worker_name);
       }
 
-      // The product shot hangs on the material, not on a comment.
+      // The product shot hangs on the material, not on the comment.
       const productImages = new Map<string, FieldInboxImage>();
-      if (pending.length > 0) {
-        const { data: photos } = await supabase
+      if (pendingMaterials.length > 0) {
+        const { data } = await supabase
           .from("photos")
           .select("linked_to_id, url, caption")
           .eq("linked_to_type", "material")
-          .in(
-            "linked_to_id",
-            pending.map((m) => m.id)
-          );
-        for (const p of photos ?? []) {
+          .in("linked_to_id", pendingMaterials.map((m) => m.id));
+        for (const p of data ?? []) {
           if (!productImages.has(p.linked_to_id)) {
             productImages.set(p.linked_to_id, { url: p.url, caption: p.caption });
           }
         }
       }
 
-      const questionItems: FieldInboxItem[] = openComments.map((c) => ({
-        id: c.id,
-        kind: "question",
-        content: c.content,
-        authorName: displayName(c.author_display_name),
-        createdAt: c.created_at,
-        context: c.task_id ? taskNames.get(c.task_id) ?? null : null,
-        image: firstImage(c.images),
-        visibleToClient: c.visible_to_client,
-      }));
+      // ---- Build one card per report, plus one per pre-v2 orphan ----
+      const byId = new Map<string, FieldInboxCard>();
 
-      const purchaseItems: FieldInboxItem[] = pending.map((m) => ({
-        id: m.id,
-        kind: "purchase",
-        content: m.name,
-        authorName: m.submitted_by_worker_token_id
-          ? workerNames.get(m.submitted_by_worker_token_id) ?? ""
-          : "",
-        createdAt: m.created_at,
-        context: m.task_id ? taskNames.get(m.task_id) ?? null : null,
-        image: productImages.get(m.id) ?? null,
-        purchase: {
-          materialId: m.id,
-          purchaseOrderId: m.purchase_order_id as string,
-          quantity: m.quantity,
-          unit: m.unit,
-          priceTotal: m.price_total,
-          vendorName: m.vendor_name,
-        },
-      }));
+      const cardFor = (
+        key: string,
+        seed: () => Omit<FieldInboxCard, "parts">
+      ): FieldInboxCard => {
+        const existing = byId.get(key);
+        if (existing) return existing;
+        const created = { ...seed(), parts: [] as FieldInboxPart[] };
+        byId.set(key, created);
+        return created;
+      };
 
-      const all = [...purchaseItems, ...questionItems].sort(
+      const cardForReport = (reportId: string, fallbackCreatedAt: string) => {
+        const report = reports.get(reportId);
+        const comment = reportComments.get(reportId);
+        return cardFor(reportId, () => ({
+          id: reportId,
+          reportId,
+          authorName:
+            displayName(comment?.author_display_name ?? null) ||
+            (report?.worker_token_id ? workerNames.get(report.worker_token_id) ?? "" : ""),
+          createdAt: report?.created_at ?? comment?.created_at ?? fallbackCreatedAt,
+          context: report?.task_id ? taskNames.get(report.task_id) ?? null : null,
+          image: firstImage(comment?.images),
+          text: report?.raw_text ?? comment?.content ?? "",
+          textId: comment?.id ?? null,
+        }));
+      };
+
+      for (const c of openComments) {
+        const card = c.report_id
+          ? cardForReport(c.report_id, c.created_at)
+          : cardFor(c.id, () => ({
+              id: c.id,
+              reportId: null,
+              authorName: displayName(c.author_display_name),
+              createdAt: c.created_at,
+              context: c.task_id ? taskNames.get(c.task_id) ?? null : null,
+              image: firstImage(c.images),
+              text: c.content,
+              textId: c.id,
+            }));
+        card.parts.push({ kind: "question", id: c.id, visibleToClient: c.visible_to_client });
+      }
+
+      for (const m of pendingMaterials) {
+        const card = m.report_id
+          ? cardForReport(m.report_id, m.created_at)
+          : cardFor(m.id, () => ({
+              id: m.id,
+              reportId: null,
+              authorName: m.submitted_by_worker_token_id
+                ? workerNames.get(m.submitted_by_worker_token_id) ?? ""
+                : "",
+              createdAt: m.created_at,
+              context: m.task_id ? taskNames.get(m.task_id) ?? null : null,
+              image: productImages.get(m.id) ?? null,
+              text: "",
+              textId: null,
+            }));
+        if (!card.image) card.image = productImages.get(m.id) ?? null;
+        card.parts.push({
+          kind: "purchase",
+          id: m.id,
+          purchase: {
+            materialId: m.id,
+            purchaseOrderId: m.purchase_order_id,
+            quantity: m.quantity,
+            unit: m.unit,
+            priceTotal: m.price_total,
+            vendorName: m.vendor_name,
+            name: m.name,
+          },
+        });
+      }
+
+      for (const te of timeRows) {
+        const created = te.created_at ?? te.date;
+        const card = te.report_id
+          ? cardForReport(te.report_id, created)
+          : cardFor(te.id, () => ({
+              id: te.id,
+              reportId: null,
+              authorName: te.worker_token_id ? workerNames.get(te.worker_token_id) ?? "" : "",
+              createdAt: created,
+              context: te.task_id ? taskNames.get(te.task_id) ?? null : null,
+              image: null,
+              text: "",
+              textId: null,
+            }));
+        card.parts.push({
+          kind: "hours",
+          id: te.id,
+          hours: { value: Number(te.hours), note: te.description, date: te.date },
+        });
+      }
+
+      const all = [...byId.values()].sort(
         (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
       );
 
       // Stored references are PATHS — sign once, here in the data layer, never
       // in the <img>. A signed URL is never written back anywhere.
-      const paths = all.map((i) => i.image?.url).filter(Boolean) as string[];
+      const paths = all.map((c) => c.image?.url).filter(Boolean) as string[];
       if (paths.length > 0) {
         const signed = await getFileUrls(paths);
-        for (const item of all) {
-          if (!item.image) continue;
-          const url = signed.get(item.image.url);
-          if (url) item.image = { ...item.image, url };
+        for (const card of all) {
+          if (!card.image) continue;
+          const url = signed.get(card.image.url);
+          if (url) card.image = { ...card.image, url };
         }
       }
 
-      setItems(all);
+      setCards(all);
       setSettled(
         settledComments.map((c) => ({
           id: c.id,
-          intent: (c.intent as FieldIntent | null) ?? null,
+          intent: c.intent,
           content: c.content,
           authorName: displayName(c.author_display_name),
           createdAt: c.created_at,
@@ -291,25 +427,33 @@ export function useFieldInbox(projectId: string | undefined, enabled: boolean) {
     void load();
   }, [load]);
 
-  const counts = useMemo(
-    () => ({
-      total: items.length,
-      questions: items.filter((i) => i.kind === "question").length,
-      purchases: items.filter((i) => i.kind === "purchase").length,
-    }),
-    [items]
-  );
+  const counts = useMemo(() => {
+    const parts = cards.flatMap((c) => c.parts);
+    return {
+      total: parts.length,
+      questions: parts.filter((p) => p.kind === "question").length,
+      purchases: parts.filter((p) => p.kind === "purchase").length,
+      hours: parts.filter((p) => p.kind === "hours").length,
+    };
+  }, [cards]);
 
-  /** Drop a row the moment the builder acts — the server call follows. */
-  const removeItem = useCallback((id: string) => {
-    setItems((prev) => prev.filter((i) => i.id !== id));
-  }, []);
-
-  const markForwarded = useCallback((id: string) => {
-    setItems((prev) =>
-      prev.map((i) => (i.id === id ? { ...i, visibleToClient: true } : i))
+  /** Drop one part the moment the builder acts; the card goes when it empties. */
+  const removePart = useCallback((partId: string) => {
+    setCards((prev) =>
+      prev
+        .map((c) => ({ ...c, parts: c.parts.filter((p) => p.id !== partId) }))
+        .filter((c) => c.parts.length > 0)
     );
   }, []);
 
-  return { items, settled, counts, loading, reload: load, removeItem, markForwarded };
+  const markForwarded = useCallback((partId: string) => {
+    setCards((prev) =>
+      prev.map((c) => ({
+        ...c,
+        parts: c.parts.map((p) => (p.id === partId ? { ...p, visibleToClient: true } : p)),
+      }))
+    );
+  }, []);
+
+  return { cards, settled, counts, loading, reload: load, removePart, markForwarded };
 }

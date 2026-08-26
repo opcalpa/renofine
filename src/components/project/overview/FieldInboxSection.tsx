@@ -6,18 +6,19 @@ import {
   Check,
   Clock,
   HelpCircle,
-  Image as ImageIcon,
   Languages,
   MessageSquare,
   Send,
   ShoppingCart,
+  Timer,
   UserRound,
   X,
 } from "lucide-react";
 import { useCommentTranslation } from "@/hooks/useCommentTranslation";
 import {
   useFieldInbox,
-  type FieldInboxItem,
+  type FieldInboxCard,
+  type FieldInboxPart,
   type FieldInboxSettledItem,
 } from "@/hooks/useFieldInbox";
 import { useCurrentProfileId } from "@/hooks/useCurrentProfileId";
@@ -26,17 +27,21 @@ import { formatCurrency } from "@/lib/currency";
 /**
  * "Från fältet" — the builder's inbox for what has stopped somebody on site.
  *
- * Three rules from the design carry the whole surface:
+ * One card per report, because that is how it was said: a worker's "8 timmar,
+ * kaklet 70 %, behöver fog, vilken fog?" is one thing said with several parts,
+ * and splitting it into three unrelated rows would hand over the pieces while
+ * keeping the sentence to ourselves.
  *
- *   1. The picture IS the message. Workers send a photo instead of text, so it
- *      gets a column, never a thumbnail.
- *   2. One tap is enough. Yes / No / Answer — nothing opens a form.
- *   3. Waiting time is information. Past an hour it turns warn-coloured: a
- *      blocked tradesperson costs more than an unanswered notification.
+ * The rules the design does not bend on:
+ *   1. The picture IS the message — a column, never a thumbnail.
+ *   2. One tap is enough, per part. Nothing opens a form.
+ *   3. Waiting time is information; past an hour it turns warn-coloured,
+ *      because a blocked tradesperson costs more than an unanswered
+ *      notification.
+ *   4. Translated by default, with a quiet way to the original.
+ *   5. Settled work sinks into "Klart idag" instead of disappearing.
  *
- * It renders nothing at all when nothing is waiting. A section that is empty
- * most days is a section you stop reading, so it only exists when it has
- * something to say.
+ * Renders nothing at all when nothing is waiting.
  */
 
 interface FieldInboxSectionProps {
@@ -49,7 +54,7 @@ interface FieldInboxSectionProps {
   onNavigateToPurchases?: (materialId?: string) => void;
 }
 
-type Filter = "all" | "questions" | "purchases";
+type Filter = "all" | "questions" | "purchases" | "hours";
 
 const HOUR_MS = 60 * 60 * 1000;
 
@@ -67,29 +72,20 @@ function useWaitLabel() {
       if (hours < 24) {
         return { label: t("fieldInbox.hours", "{{count}} tim", { count: hours }), urgent };
       }
-      return {
-        label: t("fieldInbox.days", "{{count}} d", { count: Math.floor(hours / 24) }),
-        urgent,
-      };
+      return { label: t("fieldInbox.days", "{{count}} d", { count: Math.floor(hours / 24) }), urgent };
     },
     [t]
   );
 }
 
-function PhotoPanel({
-  item,
-  className,
-}: {
-  item: FieldInboxItem;
-  className: string;
-}) {
+function PhotoPanel({ card, className }: { card: FieldInboxCard; className: string }) {
   const { t } = useTranslation();
-  if (item.image) {
+  if (card.image) {
     return (
       <div className={`${className} relative overflow-hidden bg-[var(--rf-stone)]`}>
         <img
-          src={item.image.url}
-          alt={item.image.caption ?? item.content}
+          src={card.image.url}
+          alt={card.image.caption ?? card.text}
           className="h-full w-full object-cover"
           loading="lazy"
         />
@@ -99,16 +95,19 @@ function PhotoPanel({
       </div>
     );
   }
-  // No photo: a calm placeholder on desktop, where it is a narrow column.
-  // On mobile it would be a screenful of nothing, so it is dropped entirely —
-  // the rule is that the picture is the message, not that there is a frame.
+  // No photo: a calm placeholder on desktop, where it is a narrow column. On
+  // mobile it would be a screenful of nothing, so it is dropped — the rule is
+  // that the picture is the message, not that there is a frame.
+  const first = card.parts[0]?.kind;
   return (
     <div
       className={`${className} hidden items-center justify-center bg-[var(--rf-surface-2)] md:flex`}
       aria-hidden
     >
-      {item.kind === "purchase" ? (
+      {first === "purchase" ? (
         <ShoppingCart className="h-10 w-10 text-[var(--rf-fg-subtle)] opacity-50" strokeWidth={1.4} />
+      ) : first === "hours" ? (
+        <Timer className="h-10 w-10 text-[var(--rf-fg-subtle)] opacity-50" strokeWidth={1.4} />
       ) : (
         <MessageSquare className="h-10 w-10 text-[var(--rf-fg-subtle)] opacity-50" strokeWidth={1.4} />
       )}
@@ -125,7 +124,7 @@ export function FieldInboxSection({
 }: FieldInboxSectionProps) {
   const { t } = useTranslation();
   const profileId = useCurrentProfileId();
-  const { items, settled, counts, reload, removeItem, markForwarded } = useFieldInbox(
+  const { cards, settled, counts, reload, removePart, markForwarded } = useFieldInbox(
     projectId,
     enabled
   );
@@ -140,71 +139,75 @@ export function FieldInboxSection({
 
   // Translated by default — the builder should never have to ask for it.
   useEffect(() => {
-    const questions = items.filter((i) => i.kind === "question");
-    if (questions.length > 0) {
-      void ensureTranslations(questions.map((q) => ({ id: q.id, content: q.content })));
-    }
-  }, [items, ensureTranslations]);
+    const withWords = cards
+      .filter((c) => c.textId && c.text.trim())
+      .map((c) => ({ id: c.textId as string, content: c.text }));
+    if (withWords.length > 0) void ensureTranslations(withWords);
+  }, [cards, ensureTranslations]);
 
   const visible = useMemo(() => {
-    if (filter === "questions") return items.filter((i) => i.kind === "question");
-    if (filter === "purchases") return items.filter((i) => i.kind === "purchase");
-    return items;
-  }, [items, filter]);
+    if (filter === "all") return cards;
+    const kind = filter === "questions" ? "question" : filter === "purchases" ? "purchase" : "hours";
+    return cards
+      .map((c) => ({ ...c, parts: c.parts.filter((p) => p.kind === kind) }))
+      .filter((c) => c.parts.length > 0);
+  }, [cards, filter]);
 
   const answerQuestion = useCallback(
-    async (item: FieldInboxItem, answer: string) => {
+    async (part: FieldInboxPart, answer: string) => {
       if (!profileId) return;
-      setBusy(item.id);
+      setBusy(part.id);
       const { error } = await supabase.from("comments").insert({
         content: answer,
-        parent_comment_id: item.id,
+        parent_comment_id: part.id,
         project_id: projectId,
         created_by_user_id: profileId,
         is_resolved: true,
         // An answer to an internal question stays internal.
         visible_to_client: false,
       });
+      if (!error) {
+        const { error: resolveError } = await supabase
+          .from("comments")
+          .update({ is_resolved: true })
+          .eq("id", part.id);
+        if (resolveError) {
+          setBusy(null);
+          console.error("Failed to resolve:", resolveError);
+          toast.error(t("fieldInbox.answerFailed", "Kunde inte skicka svaret"));
+          return;
+        }
+      }
+      setBusy(null);
       if (error) {
-        setBusy(null);
         console.error("Failed to answer:", error);
         toast.error(t("fieldInbox.answerFailed", "Kunde inte skicka svaret"));
         return;
       }
-      const { error: resolveError } = await supabase
-        .from("comments")
-        .update({ is_resolved: true })
-        .eq("id", item.id);
-      setBusy(null);
-      if (resolveError) {
-        console.error("Failed to resolve:", resolveError);
-        toast.error(t("fieldInbox.answerFailed", "Kunde inte skicka svaret"));
-        return;
-      }
-      removeItem(item.id);
+      removePart(part.id);
       setReplyingTo(null);
       setReplyText("");
       toast.success(t("fieldInbox.answerSent", "Svar skickat"));
       void reload();
     },
-    [profileId, projectId, removeItem, reload, t]
+    [profileId, projectId, removePart, reload, t]
   );
 
   const decidePurchase = useCallback(
-    async (item: FieldInboxItem, decision: "approved" | "declined") => {
-      if (!item.purchase) return;
-      setBusy(item.id);
+    async (part: FieldInboxPart, decision: "approved" | "declined") => {
+      if (!part.purchase) return;
+      setBusy(part.id);
       const { error } = await supabase
         .from("materials")
         .update({ status: decision })
-        .eq("id", item.purchase.materialId);
+        .eq("id", part.purchase.materialId);
       setBusy(null);
       if (error) {
         console.error("Failed to decide purchase:", error);
         toast.error(t("fieldInbox.decisionFailed", "Kunde inte spara beslutet"));
         return;
       }
-      removeItem(item.id);
+      removePart(part.id);
       toast.success(
         decision === "approved"
           ? t("fieldInbox.purchaseApproved", "Inköpet godkänt")
@@ -212,7 +215,36 @@ export function FieldInboxSection({
       );
       void reload();
     },
-    [removeItem, reload, t]
+    [removePart, reload, t]
+  );
+
+  /**
+   * Hours are what the invoice is built from, so a NO is recorded rather than
+   * deleted: a claim that was made stays visible.
+   */
+  const decideHours = useCallback(
+    async (part: FieldInboxPart, decision: "approved" | "declined") => {
+      setBusy(part.id);
+      const patch =
+        decision === "approved"
+          ? { approved: true, approved_by: profileId, approved_at: new Date().toISOString() }
+          : { declined_at: new Date().toISOString(), declined_by: profileId };
+      const { error } = await supabase.from("time_entries").update(patch).eq("id", part.id);
+      setBusy(null);
+      if (error) {
+        console.error("Failed to decide hours:", error);
+        toast.error(t("fieldInbox.decisionFailed", "Kunde inte spara beslutet"));
+        return;
+      }
+      removePart(part.id);
+      toast.success(
+        decision === "approved"
+          ? t("fieldInbox.hoursApproved", "Timmarna godkända")
+          : t("fieldInbox.hoursDeclined", "Timmarna avslagna")
+      );
+      void reload();
+    },
+    [profileId, removePart, reload, t]
   );
 
   /**
@@ -221,25 +253,25 @@ export function FieldInboxSection({
    * order) the builder forwards it with one tap instead of retyping it.
    */
   const askClient = useCallback(
-    async (item: FieldInboxItem) => {
-      setBusy(item.id);
+    async (part: FieldInboxPart) => {
+      setBusy(part.id);
       const { error } = await supabase
         .from("comments")
         .update({ visible_to_client: true })
-        .eq("id", item.id);
+        .eq("id", part.id);
       setBusy(null);
       if (error) {
         console.error("Failed to forward question:", error);
         toast.error(t("fieldInbox.forwardFailed", "Kunde inte skicka vidare"));
         return;
       }
-      markForwarded(item.id);
+      markForwarded(part.id);
       toast.success(t("fieldInbox.forwarded", "Frågan syns nu för kunden"));
     },
     [markForwarded, t]
   );
 
-  if (!enabled || (items.length === 0 && settled.length === 0)) return null;
+  if (!enabled || (cards.length === 0 && settled.length === 0)) return null;
 
   const filters: { key: Filter; label: string; count: number; icon: JSX.Element | null }[] = [
     { key: "all", label: t("fieldInbox.filterAll", "Allt"), count: counts.total, icon: null },
@@ -255,11 +287,21 @@ export function FieldInboxSection({
       count: counts.purchases,
       icon: <ShoppingCart className="h-3.5 w-3.5 text-[var(--rf-green)]" />,
     },
+    {
+      key: "hours",
+      label: t("fieldInbox.filterHours", "Timmar"),
+      count: counts.hours,
+      icon: <Timer className="h-3.5 w-3.5 text-[var(--rf-green)]" />,
+    },
   ];
+
+  const btnPrimary =
+    "inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[10px] bg-[var(--rf-green)] px-4 text-sm font-medium text-[var(--rf-paper-2)] disabled:opacity-50 md:min-h-[44px]";
+  const btnSecondary =
+    "inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[10px] border border-[var(--rf-hairline)] bg-[var(--rf-surface)] px-4 text-sm font-medium disabled:opacity-50 md:min-h-[44px]";
 
   return (
     <section className="rf-paper rounded-xl border border-[var(--rf-hairline)] bg-[var(--rf-paper)] p-4 md:p-6">
-      {/* Header */}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           {addressLabel && <div className="rf-eyebrow">{addressLabel}</div>}
@@ -285,97 +327,57 @@ export function FieldInboxSection({
           : t("fieldInbox.subtitleClear", "Ingen på plats väntar på dig just nu.")}
       </p>
 
-      {/* Filter */}
       {counts.total > 0 && (
         <div className="mt-4 flex flex-wrap gap-2">
-          {filters.map((f) => (
-            <button
-              key={f.key}
-              type="button"
-              onClick={() => setFilter(f.key)}
-              className={`inline-flex min-h-[36px] items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[13px] font-medium transition-colors ${
-                filter === f.key
-                  ? "border-[var(--rf-green)] bg-[var(--rf-green)] text-[var(--rf-paper-2)]"
-                  : "border-[var(--rf-hairline)] bg-[var(--rf-surface)] text-[var(--rf-ink)]"
-              }`}
-            >
-              {filter !== f.key && f.icon}
-              {f.label}
-              <span
-                className={`rf-num ${filter === f.key ? "opacity-75" : "text-[var(--rf-fg-muted)]"}`}
+          {filters
+            .filter((f) => f.key === "all" || f.count > 0)
+            .map((f) => (
+              <button
+                key={f.key}
+                type="button"
+                onClick={() => setFilter(f.key)}
+                className={`inline-flex min-h-[36px] items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[13px] font-medium transition-colors ${
+                  filter === f.key
+                    ? "border-[var(--rf-green)] bg-[var(--rf-green)] text-[var(--rf-paper-2)]"
+                    : "border-[var(--rf-hairline)] bg-[var(--rf-surface)] text-[var(--rf-ink)]"
+                }`}
               >
-                {f.count}
-              </span>
-            </button>
-          ))}
+                {filter !== f.key && f.icon}
+                {f.label}
+                <span className={`rf-num ${filter === f.key ? "opacity-75" : "text-[var(--rf-fg-muted)]"}`}>
+                  {f.count}
+                </span>
+              </button>
+            ))}
         </div>
       )}
 
-      {/* Cards */}
       <div className="mt-4 flex flex-col gap-3.5">
-        {visible.map((item) => {
-          const wait = waitLabel(item.createdAt);
-          const isQuestion = item.kind === "question";
-          const original = item.content;
-          const translated = isQuestion ? getTranslatedContent(item.id, original) : original;
-          const isTranslated = isQuestion && translated !== original;
-          const showingOriginal = showOriginal.has(item.id);
+        {visible.map((card) => {
+          const wait = waitLabel(card.createdAt);
+          const original = card.text;
+          const translated = card.textId ? getTranslatedContent(card.textId, original) : original;
+          const isTranslated = !!card.textId && !!original.trim() && translated !== original;
+          const showingOriginal = showOriginal.has(card.id);
           const body = showingOriginal ? original : translated;
-          const disabled = busy === item.id;
 
           return (
             <article
-              key={item.id}
+              key={card.id}
               className="flex flex-col overflow-hidden rounded-xl border border-[var(--rf-hairline)] bg-[var(--rf-surface)] md:flex-row"
             >
-              <PhotoPanel item={item} className="h-[152px] w-full md:h-auto md:w-[168px] md:shrink-0" />
+              <PhotoPanel card={card} className="h-[152px] w-full md:h-auto md:w-[168px] md:shrink-0" />
 
               <div className="flex min-w-0 flex-grow flex-col gap-3 p-4 md:p-5">
+                {/* Who, when, where */}
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
-                    <div className="mb-1.5 flex flex-wrap items-center gap-2">
-                      <span
-                        className={`inline-flex items-center gap-1.5 rounded-[5px] px-2 py-0.5 text-[11px] font-medium ${
-                          isQuestion
-                            ? "bg-[var(--rf-warn-soft)] text-[var(--rf-warn-soft-fg)]"
-                            : "bg-[var(--rf-green-soft)] text-[var(--rf-green-soft-fg)]"
-                        }`}
-                      >
-                        {isQuestion ? (
-                          <HelpCircle className="h-3 w-3" />
-                        ) : (
-                          <ShoppingCart className="h-3 w-3" />
-                        )}
-                        {isQuestion
-                          ? t("field.intent.fraga", "Fråga")
-                          : t("field.intent.behover", "Behövs")}
-                      </span>
-                      {item.context && (
-                        <span className="text-xs text-[var(--rf-fg-subtle)]">{item.context}</span>
-                      )}
-                      {item.visibleToClient && (
-                        <span className="inline-flex items-center gap-1 text-xs text-[var(--rf-fg-subtle)]">
-                          <UserRound className="h-3 w-3" />
-                          {t("fieldInbox.forwardedBadge", "Skickad till kunden")}
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="rf-display text-lg leading-snug md:text-[22px]">
-                      {item.kind === "purchase" && item.purchase?.quantity
-                        ? `${item.purchase.quantity}${
-                            item.purchase.unit ? ` ${item.purchase.unit}` : ""
-                          } × ${item.content}`
-                        : body}
-                    </div>
-
-                    {item.kind === "purchase" && item.purchase?.priceTotal ? (
-                      <div className="rf-num mt-1 text-sm text-[var(--rf-fg-muted)]">
-                        {formatCurrency(item.purchase.priceTotal, currency)}
-                        {item.purchase.vendorName ? ` · ${item.purchase.vendorName}` : ""}
-                      </div>
+                    {card.context && (
+                      <div className="mb-1 text-xs text-[var(--rf-fg-subtle)]">{card.context}</div>
+                    )}
+                    {body.trim() ? (
+                      <div className="rf-display text-lg leading-snug md:text-[22px]">{body}</div>
                     ) : null}
-
                     {isTranslated && (
                       <div className="mt-1.5 flex items-center gap-1.5">
                         <Languages className="h-3 w-3 text-[var(--rf-fg-subtle)]" />
@@ -389,8 +391,8 @@ export function FieldInboxSection({
                           onClick={() =>
                             setShowOriginal((prev) => {
                               const next = new Set(prev);
-                              if (next.has(item.id)) next.delete(item.id);
-                              else next.add(item.id);
+                              if (next.has(card.id)) next.delete(card.id);
+                              else next.add(card.id);
                               return next;
                             })
                           }
@@ -403,16 +405,13 @@ export function FieldInboxSection({
                       </div>
                     )}
                   </div>
-
                   <div className="shrink-0 text-right">
-                    {item.authorName && (
-                      <div className="text-[13px] font-medium">{item.authorName}</div>
+                    {card.authorName && (
+                      <div className="text-[13px] font-medium">{card.authorName}</div>
                     )}
                     <div
                       className={`rf-num mt-0.5 text-xs ${
-                        wait.urgent
-                          ? "font-medium text-[var(--rf-warn)]"
-                          : "text-[var(--rf-fg-subtle)]"
+                        wait.urgent ? "font-medium text-[var(--rf-warn)]" : "text-[var(--rf-fg-subtle)]"
                       }`}
                     >
                       {wait.label}
@@ -420,121 +419,191 @@ export function FieldInboxSection({
                   </div>
                 </div>
 
-                {/* One tap is enough */}
-                {replyingTo === item.id ? (
-                  <div className="flex flex-col gap-2">
-                    <textarea
-                      value={replyText}
-                      onChange={(e) => setReplyText(e.target.value)}
-                      rows={2}
-                      autoFocus
-                      placeholder={t("fieldInbox.replyPlaceholder", "Skriv ditt svar…")}
-                      className="w-full resize-none rounded-[10px] border border-[var(--rf-hairline)] bg-[var(--rf-paper-2)] p-3 text-sm outline-none focus:border-[var(--rf-green)]"
-                    />
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        disabled={disabled || !replyText.trim()}
-                        onClick={() => void answerQuestion(item, replyText.trim())}
-                        className="col-span-2 md:col-span-1 inline-flex min-h-[48px] flex-grow items-center justify-center gap-2 rounded-[10px] bg-[var(--rf-green)] px-4 text-sm font-medium text-[var(--rf-paper-2)] disabled:opacity-50 md:min-h-[44px]"
+                {/* One action row per part — the report stays one thing said */}
+                {card.parts.map((part) => {
+                  const disabled = busy === part.id;
+
+                  if (part.kind === "hours" && part.hours) {
+                    return (
+                      <div
+                        key={part.id}
+                        className="flex flex-col gap-2 rounded-[10px] bg-[var(--rf-surface-2)] p-3"
                       >
-                        <Send className="h-4 w-4" />
-                        {t("fieldInbox.send", "Skicka")}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setReplyingTo(null);
-                          setReplyText("");
-                        }}
-                        className="inline-flex min-h-[48px] items-center justify-center rounded-[10px] border border-[var(--rf-hairline)] bg-[var(--rf-surface)] px-4 text-sm font-medium md:min-h-[44px]"
-                      >
-                        {t("common.cancel", "Avbryt")}
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 gap-2 md:flex md:flex-wrap md:items-center">
-                    {isQuestion ? (
-                      <>
-                        <button
-                          type="button"
-                          disabled={disabled}
-                          onClick={() => void answerQuestion(item, t("common.yes", "Ja"))}
-                          className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[10px] bg-[var(--rf-green)] px-5 text-sm font-medium text-[var(--rf-paper-2)] disabled:opacity-50 md:min-h-[44px]"
-                        >
-                          <Check className="h-4 w-4" />
-                          {t("common.yes", "Ja")}
-                        </button>
-                        <button
-                          type="button"
-                          disabled={disabled}
-                          onClick={() => void answerQuestion(item, t("common.no", "Nej"))}
-                          className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[10px] border border-[var(--rf-hairline)] bg-[var(--rf-surface)] px-5 text-sm font-medium disabled:opacity-50 md:min-h-[44px]"
-                        >
-                          <X className="h-4 w-4" />
-                          {t("common.no", "Nej")}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setReplyingTo(item.id)}
-                          className="col-span-2 md:col-span-1 inline-flex min-h-[48px] flex-grow items-center justify-center gap-2 rounded-[10px] border border-[var(--rf-hairline)] bg-[var(--rf-surface)] px-4 text-sm font-medium text-[var(--rf-fg-muted)] md:min-h-[44px]"
-                        >
-                          <MessageSquare className="h-4 w-4" />
-                          {t("fieldInbox.answer", "Svara")}
-                        </button>
-                        {!item.visibleToClient && (
+                        <div className="flex items-baseline gap-2">
+                          <Timer className="h-4 w-4 shrink-0 self-center text-[var(--rf-fg-muted)]" />
+                          <span className="rf-num text-lg font-medium">
+                            {t("fieldInbox.hoursValue", "{{count}} h", { count: part.hours.value })}
+                          </span>
+                          {part.hours.note && (
+                            <span className="min-w-0 truncate text-xs text-[var(--rf-fg-subtle)]">
+                              {part.hours.note}
+                            </span>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 md:flex">
                           <button
                             type="button"
                             disabled={disabled}
-                            onClick={() => void askClient(item)}
-                            className="col-span-2 md:col-span-1 inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[10px] border border-[var(--rf-hairline)] bg-[var(--rf-surface)] px-4 text-sm font-medium text-[var(--rf-fg-muted)] disabled:opacity-50 md:min-h-[44px]"
+                            onClick={() => void decideHours(part, "approved")}
+                            className={`${btnPrimary} md:flex-grow`}
                           >
-                            <UserRound className="h-4 w-4" />
-                            {t("fieldInbox.askClient", "Fråga kunden")}
+                            <Check className="h-4 w-4" />
+                            {t("fieldInbox.approveHours", "Godkänn timmarna")}
                           </button>
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          type="button"
-                          disabled={disabled}
-                          onClick={() => void decidePurchase(item, "approved")}
-                          className="col-span-2 md:col-span-1 inline-flex min-h-[48px] flex-grow items-center justify-center gap-2 rounded-[10px] bg-[var(--rf-green)] px-4 text-sm font-medium text-[var(--rf-paper-2)] disabled:opacity-50 md:min-h-[44px]"
-                        >
-                          <Check className="h-4 w-4" />
-                          {t("fieldInbox.approvePurchase", "Godkänn inköpet")}
-                        </button>
-                        <button
-                          type="button"
-                          disabled={disabled}
-                          onClick={() => void decidePurchase(item, "declined")}
-                          className="inline-flex min-h-[48px] items-center justify-center rounded-[10px] border border-[var(--rf-hairline)] bg-[var(--rf-surface)] px-5 text-sm font-medium disabled:opacity-50 md:min-h-[44px]"
-                        >
-                          {t("common.no", "Nej")}
-                        </button>
-                        {onNavigateToPurchases && (
                           <button
                             type="button"
-                            onClick={() => onNavigateToPurchases(item.purchase?.materialId)}
-                            className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[10px] border border-[var(--rf-hairline)] bg-[var(--rf-surface)] px-4 text-sm font-medium text-[var(--rf-fg-muted)] md:min-h-[44px]"
+                            disabled={disabled}
+                            onClick={() => void decideHours(part, "declined")}
+                            className={btnSecondary}
                           >
-                            <ImageIcon className="h-4 w-4" />
-                            {t("fieldInbox.openInPurchases", "Öppna i Inköp")}
+                            {t("common.no", "Nej")}
                           </button>
-                        )}
-                      </>
-                    )}
-                  </div>
-                )}
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  if (part.kind === "purchase" && part.purchase) {
+                    const p = part.purchase;
+                    return (
+                      <div
+                        key={part.id}
+                        className="flex flex-col gap-2 rounded-[10px] bg-[var(--rf-surface-2)] p-3"
+                      >
+                        <div className="flex items-center gap-2">
+                          <ShoppingCart className="h-4 w-4 shrink-0 text-[var(--rf-green-soft-fg)]" />
+                          <span className="min-w-0 truncate font-medium">
+                            {p.quantity ? `${p.quantity}${p.unit ? ` ${p.unit}` : ""} × ` : ""}
+                            {p.name}
+                          </span>
+                          {p.priceTotal ? (
+                            <span className="rf-num ml-auto shrink-0 text-sm text-[var(--rf-fg-muted)]">
+                              {formatCurrency(p.priceTotal, currency)}
+                            </span>
+                          ) : null}
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 md:flex">
+                          <button
+                            type="button"
+                            disabled={disabled}
+                            onClick={() => void decidePurchase(part, "approved")}
+                            className={`${btnPrimary} col-span-2 md:col-span-1 md:flex-grow`}
+                          >
+                            <Check className="h-4 w-4" />
+                            {t("fieldInbox.approvePurchase", "Godkänn inköpet")}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={disabled}
+                            onClick={() => void decidePurchase(part, "declined")}
+                            className={btnSecondary}
+                          >
+                            {t("common.no", "Nej")}
+                          </button>
+                          {onNavigateToPurchases && (
+                            <button
+                              type="button"
+                              onClick={() => onNavigateToPurchases(p.materialId)}
+                              className={`${btnSecondary} text-[var(--rf-fg-muted)]`}
+                            >
+                              {t("fieldInbox.openInPurchases", "Öppna i Inköp")}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // question
+                  if (replyingTo === part.id) {
+                    return (
+                      <div key={part.id} className="flex flex-col gap-2">
+                        <textarea
+                          value={replyText}
+                          onChange={(e) => setReplyText(e.target.value)}
+                          rows={2}
+                          autoFocus
+                          placeholder={t("fieldInbox.replyPlaceholder", "Skriv ditt svar…")}
+                          className="w-full resize-none rounded-[10px] border border-[var(--rf-hairline)] bg-[var(--rf-paper-2)] p-3 text-sm outline-none focus:border-[var(--rf-green)]"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            disabled={disabled || !replyText.trim()}
+                            onClick={() => void answerQuestion(part, replyText.trim())}
+                            className={`${btnPrimary} flex-grow`}
+                          >
+                            <Send className="h-4 w-4" />
+                            {t("fieldInbox.send", "Skicka")}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setReplyingTo(null);
+                              setReplyText("");
+                            }}
+                            className={btnSecondary}
+                          >
+                            {t("common.cancel", "Avbryt")}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div key={part.id} className="grid grid-cols-2 gap-2 md:flex md:flex-wrap">
+                      <button
+                        type="button"
+                        disabled={disabled}
+                        onClick={() => void answerQuestion(part, t("common.yes", "Ja"))}
+                        className={btnPrimary}
+                      >
+                        <Check className="h-4 w-4" />
+                        {t("common.yes", "Ja")}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={disabled}
+                        onClick={() => void answerQuestion(part, t("common.no", "Nej"))}
+                        className={btnSecondary}
+                      >
+                        <X className="h-4 w-4" />
+                        {t("common.no", "Nej")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setReplyingTo(part.id)}
+                        className={`${btnSecondary} col-span-2 text-[var(--rf-fg-muted)] md:col-span-1 md:flex-grow`}
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                        {t("fieldInbox.answer", "Svara")}
+                      </button>
+                      {part.visibleToClient ? (
+                        <span className="col-span-2 inline-flex items-center gap-1 text-xs text-[var(--rf-fg-subtle)] md:col-span-1">
+                          <UserRound className="h-3 w-3" />
+                          {t("fieldInbox.forwardedBadge", "Skickad till kunden")}
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={disabled}
+                          onClick={() => void askClient(part)}
+                          className={`${btnSecondary} col-span-2 text-[var(--rf-fg-muted)] md:col-span-1`}
+                        >
+                          <UserRound className="h-4 w-4" />
+                          {t("fieldInbox.askClient", "Fråga kunden")}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </article>
           );
         })}
       </div>
 
-      {/* Settled — sinks away, never disappears */}
       {settled.length > 0 && (
         <div className="mt-7 border-t border-[var(--rf-hairline)] pt-5">
           <div className="rf-eyebrow mb-3">

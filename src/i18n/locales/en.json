@@ -8392,6 +8392,11 @@
     "forwarded": "The customer can now see the question",
     "forwardFailed": "Could not forward",
     "forwardedBadge": "Sent to the customer",
-    "settledToday": "Settled today · nothing to do"
+    "settledToday": "Settled today · nothing to do",
+    "filterHours": "Hours",
+    "hoursValue": "{{count}} h",
+    "approveHours": "Approve the hours",
+    "hoursApproved": "Hours approved",
+    "hoursDeclined": "Hours declined"
   }
 }

@@ -8391,6 +8391,11 @@
     "forwarded": "Frågan syns nu för kunden",
     "forwardFailed": "Kunde inte skicka vidare",
     "forwardedBadge": "Skickad till kunden",
-    "settledToday": "Klart idag · inget att göra"
+    "settledToday": "Klart idag · inget att göra",
+    "filterHours": "Timmar",
+    "hoursValue": "{{count}} h",
+    "approveHours": "Godkänn timmarna",
+    "hoursApproved": "Timmarna godkända",
+    "hoursDeclined": "Timmarna avslagna"
   }
 }

@@ -24,9 +24,15 @@ export interface ParsedNeed {
   name: string;
 }
 
-/** Buy-verbs in the languages the worker view already speaks. */
+/**
+ * Buy-verbs in the languages the worker view speaks.
+ *
+ * Lookarounds, not \b: a word boundary counts only A-Z0-9_, so a verb ending
+ * in a non-ASCII letter never matched. "potrzebuję" and "потрібно" — the two
+ * languages most likely to need this — silently fell through for weeks.
+ */
 const BUY_VERBS =
-  /\b(k[öo]p(er|a|t)?|kup(i[ćc]|uj[eę])?|beh[öo]ver|need|potrzebuj[eę]|treba|купити|купую|потрібно|nevoie|cump[ăa]r|reikia|vaja)\b/giu;
+  /(?<!\p{L})(k[öo]p(er|a|t)?|kup(i[ćc]|uj[eę])?|beh[öo]ver|beh[öo]vs|need|potrzebuj[eę]|treba|brakuje|купити|купую|потрібно|nevoie|cump[ăa]r|reikia|vaja)(?!\p{L})/giu;
 
 export function parseNeed(text: string): ParsedNeed {
   const raw = (text || '').trim();

@@ -385,7 +385,9 @@ serve(async (req) => {
           task_id: taskId,
           name: purchasePart.name,
           quantity: purchasePart.value ?? 1,
-          unit: "st",
+          // No unit unless the worker said one. "5 st × worków fugi" invents a
+          // Swedish word inside a Polish sentence; "5 × worków fugi" does not.
+          unit: null,
           status: "submitted",
           created_by_user_id: tokenRecord.created_by_user_id,
           submitted_by_worker_token_id: tokenRecord.id,

@@ -38,33 +38,42 @@ export interface ParsedReport {
   source: 'regex' | 'model' | 'explicit';
 }
 
-/** Buy-verbs in the languages the worker view speaks. Mirrors src/lib/fieldIntent.ts. */
+/**
+ * Buy-verbs in the languages the worker view speaks.
+ *
+ * Lookarounds, not \b: a word boundary counts only A-Z0-9_, so a verb ending
+ * in a non-ASCII letter never matched. "potrzebuję" and "потрібно" — the two
+ * languages most likely to need this — silently fell through for weeks.
+ */
 const BUY_VERBS =
-  /\b(k[öo]p(er|a|t)?|kup(i[ćc]|uj[eę])?|beh[öo]ver|beh[öo]vs|need|potrzebuj[eę]|treba|brakuje|купити|купую|потрібно|nevoie|cump[ăa]r|reikia|vaja)\b/giu;
+  /(?<!\p{L})(k[öo]p(er|a|t)?|kup(i[ćc]|uj[eę])?|beh[öo]ver|beh[öo]vs|need|potrzebuj[eę]|treba|brakuje|купити|купую|потрібно|nevoie|cump[ăa]r|reikia|vaja)(?!\p{L})/giu;
 
-/** "8 h", "8 tim", "8 godzin", "8 год", "8 ore", "8 val", "8 tundi". */
+/**
+ * "8 h", "8 tim", "8 godzin", "8 год", "8 ore", "8 val", "8 tundi".
+ * `(?!\p{L})` instead of `\b` throughout — see the note on BUY_VERBS.
+ */
 const HOURS =
-  /(\d{1,2}(?:[.,]\d)?)\s*(h\b|tim(mar|me)?\b|godz(in|iny|in)?\b|год(ин|ини)?\b|ore\b|val\b|tund(i|e)?\b|hour(s)?\b)/giu;
+  /(\d{1,2}(?:[.,]\d)?)\s*(h|tim(mar|me)?|godz(in|iny)?|год(ин|ини)?|ore|val|tund(i|e)?|hour(s)?)(?!\p{L})/giu;
 
 /** "2 man", "2 personer", "2 osoby", "2 люди" — multiplies the hours. */
 const CREW =
-  /(\d{1,2})\s*(man\b|pers(on|oner|ony|oane)?\b|osob(y|ę|a)?\b|люд(ей|и)\b|gubu\b|arbetare\b|worker(s)?\b)/giu;
+  /(\d{1,2})\s*(man|pers(on|oner|ony|oane)?|osob(y|ę|a)?|люд(ей|и)|arbetare|worker(s)?)(?!\p{L})/giu;
 
 const PERCENT = /(\d{1,3})\s*%/g;
 
 /** Words that make a sentence a question even without a question mark. */
 const QUESTION_WORDS =
-  /\b(kan|ska|f[åa]r|vilken|vilket|vilka|hur|n[äa]r|varf[öo]r|czy|jak(i|a|ie)?|kiedy|dlaczego|чи|як|коли|чому|which|what|when|why|how|should|can)\b/iu;
+  /(?<!\p{L})(kan|ska|f[åa]r|vilken|vilket|vilka|hur|n[äa]r|varf[öo]r|czy|jak(i|a|ie)?|kiedy|dlaczego|чи|як|коли|чому|which|what|when|why|how|should|can)(?!\p{L})/iu;
 
 const DONE_WORDS =
-  /\b(klar(t|a)?\b|f[äa]rdig(t|a)?\b|gotow(e|y|a)\b|sko[nń]czone\b|готово\b|зроблено\b|done\b|finished\b|gata\b|baigta\b|valmis\b)/iu;
+  /(?<!\p{L})(klar(t|a)?|f[äa]rdig(t|a)?|gotow(e|y|a)|sko[nń]czone|готово|зроблено|done|finished|gata|baigta|valmis)(?!\p{L})/iu;
 
 /**
  * Words that put the finishing in the future. "Blir klart imorgon" is a plan,
  * not a report, and must never hand work off for review.
  */
 const FUTURE_WORDS =
-  /\b(imorgon|i\s?morgon|blir|ska|kommer\s+att|n[äa]sta\s+vecka|jutro|b[eę]dzie|завтра|буде|tomorrow|will\s+be|next\s+week|m[âa]ine|rytoj|homme)\b/iu;
+  /(?<!\p{L})(imorgon|i\s?morgon|blir|ska|kommer\s+att|n[äa]sta\s+vecka|jutro|b[eę]dzie|завтра|буде|tomorrow|will\s+be|next\s+week|m[âa]ine|rytoj|homme)(?!\p{L})/iu;
 
 function firstNumber(re: RegExp, text: string): { value: number; match: string } | null {
   re.lastIndex = 0;
