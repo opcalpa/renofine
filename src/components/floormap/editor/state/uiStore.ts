@@ -64,6 +64,12 @@ interface EditorUiState {
    * calibrate tool, consumed by CalibrationEditor, cleared on commit or Escape.
    */
   calibration: { shapeId: string; from: Point; to: Point } | null;
+  /**
+   * The background layer being traced step by step, or null. Lives here rather
+   * than in the toolbar so the panel can render over the CANVAS — it asks "does
+   * this look right?", which a modal covering the drawing cannot.
+   */
+  traceLayerId: string | null;
   /** Text shape being edited inline (placement or double-click). */
   textEditId: string | null;
   /** Request from the canvas to open the wall elevation view ("Visa väggvy"). */
@@ -90,6 +96,7 @@ interface EditorUiState {
   setOpeningGhost: (g: { rect: Point[]; valid: boolean } | null) => void;
   setMeasurements: (m: Measurement[]) => void;
   setCalibration: (c: { shapeId: string; from: Point; to: Point } | null) => void;
+  setTraceLayerId: (id: string | null) => void;
   setWallLengthEditId: (id: string | null) => void;
   setObjectGhost: (g: EditorUiState['objectGhost']) => void;
   setTextEditId: (id: string | null) => void;
@@ -112,6 +119,7 @@ export const useEditorUiStore = create<EditorUiState>((set) => ({
   openingGhost: null,
   measurements: [],
   calibration: null,
+  traceLayerId: null,
   wallLengthEditId: null,
   textEditId: null,
   objectGhost: null,
@@ -131,6 +139,7 @@ export const useEditorUiStore = create<EditorUiState>((set) => ({
   setOpeningGhost: (g) => set({ openingGhost: g }),
   setMeasurements: (m) => set({ measurements: m }),
   setCalibration: (c) => set({ calibration: c }),
+  setTraceLayerId: (id) => set({ traceLayerId: id }),
   setWallLengthEditId: (id) => set({ wallLengthEditId: id }),
   setObjectGhost: (g) => set({ objectGhost: g }),
   setTextEditId: (id) => set({ textEditId: id }),

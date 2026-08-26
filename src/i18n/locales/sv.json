@@ -2352,7 +2352,28 @@
       "page": "Sida {{page}}"
     },
     "underlayFromProject": "Ur projektets filer",
-    "imageAddedTrace": "\"{{name}}\" tillagd — sätt skalan med Kalibrera skala innan du ritar"
+    "imageAddedTrace": "\"{{name}}\" tillagd — sätt skalan med Kalibrera skala innan du ritar",
+    "trace": {
+      "title": "Rita av ritningen",
+      "description": "Ett steg i taget. Du ser resultatet på canvasen innan du säger ja till nästa.",
+      "analyzing": "Läser ritningen…",
+      "found": "Jag hittade {{count}} {{what}}. Lägg in dem?",
+      "applied": "{{count}} {{what}} inlagda. Ser det rätt ut?",
+      "stepOf": "Steg {{step}} av {{total}}",
+      "apply": "Visa på canvasen",
+      "skip": "Hoppa över",
+      "keep": "Ja, behåll",
+      "discard": "Nej, ångra steget",
+      "done": "Klart. Kontrollera måtten mot ritningen innan du bygger vidare.",
+      "failed": "Kunde inte läsa ritningen",
+      "uncalibrated": "Lagret har ingen satt skala — måtten blir gissningar. Kalibrera först för riktiga mått.",
+      "noLayer": "Lägg in en ritning som lager först — sedan kan jag rita av den",
+      "pickLayer": "Markera vilken ritning du vill rita av först",
+      "stageRooms": "rum",
+      "stageWalls": "väggar",
+      "stageDetails": "dörrar och fast inredning"
+    },
+    "traceLayer": "Rita av lagret (stegvis)"
   },
   "canvas": {
     "settings": "Ritinställningar",

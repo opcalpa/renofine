@@ -88,10 +88,16 @@ async function callVisionAPI(
 function convertToFloorMapShapes(
   aiResult: AIConversionResult,
   ratio: number,
-  planId: string
+  planId: string,
+  origin: { x: number; y: number } = { x: 0, y: 0 }
 ): FloorMapShape[] {
   const shapes: FloorMapShape[] = [];
-  const r = (v: number) => v * ratio;
+  // The model reads the picture, so its coordinates start at the picture's top
+  // left. When we trace a layer that already sits somewhere on the canvas, the
+  // result has to land ON it — hence the origin offset. Every r() here is a
+  // coordinate; sizes are carried in real-mm fields that must not be shifted.
+  const rx = (v: number) => v * ratio + origin.x;
+  const ry = (v: number) => v * ratio + origin.y;
 
   // Walls
   aiResult.walls?.forEach((wall) => {
@@ -99,7 +105,7 @@ function convertToFloorMapShapes(
       id: uuidv4(),
       planId,
       type: 'wall',
-      coordinates: { x1: r(wall.x1), y1: r(wall.y1), x2: r(wall.x2), y2: r(wall.y2) },
+      coordinates: { x1: rx(wall.x1), y1: ry(wall.y1), x2: rx(wall.x2), y2: ry(wall.y2) },
       thicknessMM: wall.thickness || 150,
       heightMM: 2400,
       strokeColor: '#2d3748',
@@ -116,8 +122,8 @@ function convertToFloorMapShapes(
       type: 'freehand',
       coordinates: {
         points: [
-          { x: r(door.x), y: r(door.y) },
-          { x: r(door.x) + 1, y: r(door.y) + 1 },
+          { x: rx(door.x), y: ry(door.y) },
+          { x: rx(door.x) + 1, y: ry(door.y) + 1 },
         ],
       },
       strokeColor: '#000000',
@@ -127,8 +133,8 @@ function convertToFloorMapShapes(
       metadata: {
         isLibrarySymbol: true,
         symbolType,
-        placementX: r(door.x),
-        placementY: r(door.y),
+        placementX: rx(door.x),
+        placementY: ry(door.y),
         scale: 1,
         rotation: rotation,
       },
@@ -143,8 +149,8 @@ function convertToFloorMapShapes(
       type: 'freehand',
       coordinates: {
         points: [
-          { x: r(fixture.x), y: r(fixture.y) },
-          { x: r(fixture.x) + 1, y: r(fixture.y) + 1 },
+          { x: rx(fixture.x), y: ry(fixture.y) },
+          { x: rx(fixture.x) + 1, y: ry(fixture.y) + 1 },
         ],
       },
       strokeColor: '#000000',
@@ -154,8 +160,8 @@ function convertToFloorMapShapes(
       metadata: {
         isLibrarySymbol: true,
         symbolType: fixture.symbolType,
-        placementX: r(fixture.x),
-        placementY: r(fixture.y),
+        placementX: rx(fixture.x),
+        placementY: ry(fixture.y),
         scale: 1,
         rotation: fixture.rotation || 0,
       },
@@ -173,7 +179,7 @@ function convertToFloorMapShapes(
       id: uuidv4(),
       planId,
       type: 'room',
-      coordinates: { points: room.points.map((p) => ({ x: r(p.x), y: r(p.y) })) },
+      coordinates: { points: room.points.map((p) => ({ x: rx(p.x), y: ry(p.y) })) },
       name: room.name || 'Unnamed Room',
       color: 'rgba(59, 130, 246, 0.2)',
       fillOpacity: 0.1,
@@ -244,7 +250,8 @@ export async function analyzeFloorPlanFile(file: File): Promise<AIConversionResu
  */
 export function floorPlanResultToShapes(
   aiResult: AIConversionResult,
-  planId: string
+  planId: string,
+  origin?: { x: number; y: number }
 ): FloorMapShape[] {
-  return convertToFloorMapShapes(aiResult, worldPerMm(), planId);
+  return convertToFloorMapShapes(aiResult, worldPerMm(), planId, origin);
 }

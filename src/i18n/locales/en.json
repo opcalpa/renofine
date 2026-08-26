@@ -2983,7 +2983,28 @@
       "page": "Page {{page}}"
     },
     "underlayFromProject": "From the project's files",
-    "imageAddedTrace": "\"{{name}}\" added — set the scale with Calibrate scale before you draw"
+    "imageAddedTrace": "\"{{name}}\" added — set the scale with Calibrate scale before you draw",
+    "trace": {
+      "title": "Trace the drawing",
+      "description": "One step at a time. You see the result on the canvas before saying yes to the next.",
+      "analyzing": "Reading the drawing…",
+      "found": "I found {{count}} {{what}}. Add them?",
+      "applied": "{{count}} {{what}} added. Does that look right?",
+      "stepOf": "Step {{step}} of {{total}}",
+      "apply": "Show on the canvas",
+      "skip": "Skip",
+      "keep": "Yes, keep",
+      "discard": "No, undo this step",
+      "done": "Done. Check the measurements against the drawing before building on it.",
+      "failed": "Could not read the drawing",
+      "uncalibrated": "The layer has no scale set — measurements will be guesses. Calibrate first for real ones.",
+      "noLayer": "Add a drawing as a layer first — then I can trace it",
+      "pickLayer": "Select which drawing you want to trace first",
+      "stageRooms": "rooms",
+      "stageWalls": "walls",
+      "stageDetails": "doors and fixtures"
+    },
+    "traceLayer": "Trace the layer (step by step)"
   },
   "canvas": {
     "settings": "Drawing Settings",

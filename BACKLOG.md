@@ -364,7 +364,7 @@ INTE fastighetsbeteckning).
 
 ---
 id: skiss-till-canvas-bildlager
-status: todo
+status: done
 priority: P2
 tags: [floorplanner, renaida, import, idea, carl]
 created: 2026-08-25
@@ -471,8 +471,39 @@ projektets filer eller från disk.
 får läsa dem via storage-policyn), plus en genererad tvåsidig PDF som fixtur
 för sidvalet.
 
-**KVAR i kortet:** D (handskiss → geometri med stegvis bekräftelse).
-Se även [[kalibrera-om-hela-planen]].
+### D LEVERERAT 2026-08-25 (s84) — stegvis avritning, hela kortet klart
+
+"Rita av lagret (stegvis)" i Underlag-menyn. Läser det lager som redan ligger på
+canvasen och lägger in ETT slag i taget: rum → bekräfta → väggar → bekräfta →
+dörrar och fast inredning → bekräfta.
+
+**Poängen med att A kom först.** Den gamla AI-vägen (`analyzeFloorPlanFile`)
+antar `DEFAULT_SKETCH_SPAN_MM = 10000` — precis den gissning kalibreringen tar
+bort. Ritar man av ett KALIBRERAT lager är px→mm inte en gissning alls, den
+faller ut ur lagrets egen geometri: `worldToMm(lagrets bredd) / bildens
+pixelbredd`. En avritad vägg går därmed att jämföra med ett verkligt mått i
+stället för att bara se rimlig ut. Är lagret inte kalibrerat säger flödet
+ifrån i stället för att tyst rita i fel skala.
+
+- `convertToFloorMapShapes` tog emot en `origin`, så geometrin landar PÅ lagret
+  där det ligger i stället för i origo.
+- Varje steg är EN transaktion → "ångra steget" är editorns eget ångra. Inget
+  skrivs till ett nytt plan bakom ryggen på någon (det gamla flödet skapade ett
+  plan och sparade till DB innan man sett något — att ångra betydde att radera
+  ett plan).
+- Tomma slag hoppas över, aldrig en tom fråga om noll dörrar. Viktigt: ett tomt
+  steg pushar inga patchar, så ett senare "ångra steget" hade tagit bort det
+  FÖREGÅENDE steget. Testat.
+- **Gjordes om under bygget:** första versionen var en modal dialog — den
+  täckte planen, alltså precis det den frågade om ("ser det rätt ut?"). Nu en
+  flytande panel längst ner. Ett e2e-test mäter att panelen ligger under
+  canvasens mitt, så den regressionen inte kan smyga tillbaka.
+
+4 e2e (`e2e/planner-trace.spec.ts`) med modellanropet avlyssnat via
+`page.route` — sviten handlar om stegningen och ångra-beteendet, inte om vad en
+vision-modell råkar svara i dag.
+
+**KORTET ÄR KLART** (A + B + C + D). Se även [[kalibrera-om-hela-planen]].
 
 ---
 id: rfq-invite-email-enrich

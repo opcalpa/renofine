@@ -28,6 +28,7 @@ import { EditorContextMenu } from './EditorContextMenu';
 import { ZoomCluster } from './ZoomCluster';
 import { WallLengthEditor } from './WallLengthEditor';
 import { CalibrationEditor } from './CalibrationEditor';
+import { TraceLayerPanel } from './TraceLayerPanel';
 import { TextEditor } from './TextEditor';
 import { RoomNamingController } from './RoomNamingController';
 import { WallsLayer } from './render/WallsLayer';
@@ -520,6 +521,7 @@ export const EditorCanvas = ({ isReadOnly, isDemo, roomDataVersion }: EditorCanv
       {!isReadOnly && <FloatingSelectionToolbar />}
       {!isReadOnly && <WallLengthEditor />}
       {!isReadOnly && <CalibrationEditor />}
+      {!isReadOnly && <TraceLayerPanel />}
       {!isReadOnly && <TextEditor />}
       <RoomNamingController isReadOnly={isReadOnly} />
       <Stage

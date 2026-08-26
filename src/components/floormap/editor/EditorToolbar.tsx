@@ -59,6 +59,7 @@ import {
   UnderlayPicker,
   type UnderlayCandidate,
 } from '../UnderlayPicker';
+import { resolveCalibrationTarget } from './tools/CalibrateTool';
 import { rasterizePdfPage } from '@/lib/pdfRaster';
 import { undo, redo } from './core/executor';
 import { useEditorUiStore } from './state/uiStore';
@@ -128,6 +129,7 @@ export const EditorToolbar = ({ projectId }: EditorToolbarProps) => {
   const setPendingObjectId = useFloorMapStore((s) => s.setPendingObjectId);
   const canUndo = useEditorUiStore((s) => s.canUndo);
   const canRedo = useEditorUiStore((s) => s.canRedo);
+  const setTraceLayerId = useEditorUiStore((s) => s.setTraceLayerId);
 
   const [openingOpen, setOpeningOpen] = useState(false);
   const [shapesOpen, setShapesOpen] = useState(false);
@@ -439,6 +441,33 @@ export const EditorToolbar = ({ projectId }: EditorToolbarProps) => {
           >
             <PanelsTopLeft className="h-4 w-4 text-gray-500" />
             {t('floormap.uploadTraceImage', 'Ladda upp ny (bild eller PDF)')}
+          </button>
+          <button
+            data-testid="underlay-trace"
+            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-gray-100"
+            onClick={() => {
+              const target = resolveCalibrationTarget();
+              setUnderlayOpen(false);
+              if (!target) {
+                toast.info(
+                  t(
+                    'floormap.trace.noLayer',
+                    'Lägg in en ritning som lager först — sedan kan jag rita av den'
+                  )
+                );
+                return;
+              }
+              if (target === 'ambiguous') {
+                toast.info(
+                  t('floormap.trace.pickLayer', 'Markera vilken ritning du vill rita av först')
+                );
+                return;
+              }
+              setTraceLayerId(target.id);
+            }}
+          >
+            <Sparkles className="h-4 w-4 text-gray-500" />
+            {t('floormap.traceLayer', 'Rita av lagret (stegvis)')}
           </button>
           <button
             className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-gray-100"
