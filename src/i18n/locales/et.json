@@ -1168,6 +1168,15 @@
     "whichTask": "Milline töö?",
     "send": "Saada",
     "sent": "Saadetud",
-    "unnamedItem": "Materjal"
+    "unnamedItem": "Materjal",
+    "placeholderV2": "Mis juhtus? Kirjuta, räägi või pildista",
+    "addDone": "Valmis",
+    "addProgress": "Edenemine",
+    "addHours": "Tunnid",
+    "addPurchase": "Telli",
+    "hoursToday": "Tunde täna",
+    "whatToBuy": "Mida on vaja?",
+    "sentColon": "Saadetud:",
+    "receiptHours": "{{count}} h"
   }
 }

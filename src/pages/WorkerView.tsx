@@ -472,7 +472,9 @@ export default function WorkerView() {
               wallObjects={data.wallObjects}
               wallSurfaces={data.wallSurfaces}
               wallNotes={data.wallNotes}
+              canCreatePurchases={data.canCreatePurchases !== false}
               onTaskUpdate={handleTaskUpdate}
+              onReload={() => void loadWorkerData()}
             />
           ))}
         </main>

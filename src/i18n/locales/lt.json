@@ -1168,6 +1168,15 @@
     "whichTask": "Kuris darbas?",
     "send": "Siųsti",
     "sent": "Išsiųsta",
-    "unnamedItem": "Medžiaga"
+    "unnamedItem": "Medžiaga",
+    "placeholderV2": "Kas nutiko? Rašykite, kalbėkite ar nufotografuokite",
+    "addDone": "Baigta",
+    "addProgress": "Pažanga",
+    "addHours": "Valandos",
+    "addPurchase": "Užsakyti",
+    "hoursToday": "Valandos šiandien",
+    "whatToBuy": "Ko reikia?",
+    "sentColon": "Išsiųsta:",
+    "receiptHours": "{{count}} val."
   }
 }

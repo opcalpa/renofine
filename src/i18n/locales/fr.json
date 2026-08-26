@@ -7988,6 +7988,15 @@
     "whichTask": "Quel travail ?",
     "send": "Envoyer",
     "sent": "Envoyé",
-    "unnamedItem": "Matériau"
+    "unnamedItem": "Matériau",
+    "placeholderV2": "Que s'est-il passé ? Écrivez, parlez ou photographiez",
+    "addDone": "Terminé",
+    "addProgress": "Avancement",
+    "addHours": "Heures",
+    "addPurchase": "Commander",
+    "hoursToday": "Heures aujourd'hui",
+    "whatToBuy": "Que faut-il ?",
+    "sentColon": "Envoyé :",
+    "receiptHours": "{{count}} h"
   }
 }

@@ -8351,7 +8351,16 @@
     "whichTask": "Which job?",
     "send": "Send",
     "sent": "Sent",
-    "unnamedItem": "Material"
+    "unnamedItem": "Material",
+    "placeholderV2": "What happened? Write, speak or photograph",
+    "addDone": "Done",
+    "addProgress": "Progress",
+    "addHours": "Hours",
+    "addPurchase": "Order",
+    "hoursToday": "Hours today",
+    "whatToBuy": "What is needed?",
+    "sentColon": "Sent:",
+    "receiptHours": "{{count}} h"
   },
   "fieldInbox": {
     "title": "From the site",

@@ -8350,7 +8350,16 @@
     "whichTask": "Vilket arbete?",
     "send": "Skicka",
     "sent": "Skickat",
-    "unnamedItem": "Material"
+    "unnamedItem": "Material",
+    "placeholderV2": "Vad hände? Skriv, prata eller fota",
+    "addDone": "Klart",
+    "addProgress": "Framsteg",
+    "addHours": "Timmar",
+    "addPurchase": "Beställ",
+    "hoursToday": "Timmar idag",
+    "whatToBuy": "Vad behövs?",
+    "sentColon": "Skickat:",
+    "receiptHours": "{{count}} h"
   },
   "fieldInbox": {
     "title": "Från fältet",

@@ -7785,6 +7785,15 @@
     "whichTask": "Яка робота?",
     "send": "Надіслати",
     "sent": "Надіслано",
-    "unnamedItem": "Матеріал"
+    "unnamedItem": "Матеріал",
+    "placeholderV2": "Що сталося? Напишіть, скажіть або сфотографуйте",
+    "addDone": "Готово",
+    "addProgress": "Прогрес",
+    "addHours": "Години",
+    "addPurchase": "Замовити",
+    "hoursToday": "Годин сьогодні",
+    "whatToBuy": "Що потрібно?",
+    "sentColon": "Надіслано:",
+    "receiptHours": "{{count}} год"
   }
 }

@@ -7815,6 +7815,15 @@
     "whichTask": "Które zadanie?",
     "send": "Wyślij",
     "sent": "Wysłano",
-    "unnamedItem": "Materiał"
+    "unnamedItem": "Materiał",
+    "placeholderV2": "Co się wydarzyło? Napisz, powiedz lub sfotografuj",
+    "addDone": "Gotowe",
+    "addProgress": "Postęp",
+    "addHours": "Godziny",
+    "addPurchase": "Zamów",
+    "hoursToday": "Godziny dzisiaj",
+    "whatToBuy": "Czego potrzeba?",
+    "sentColon": "Wysłano:",
+    "receiptHours": "{{count}} godz."
   }
 }

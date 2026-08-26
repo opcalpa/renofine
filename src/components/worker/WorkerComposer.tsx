@@ -1,39 +1,31 @@
 /**
- * The one place a worker says anything — a photo, a line, a voice note, or all
- * three — and picks what it means.
+ * The one place a worker says anything about the day.
  *
- * What it replaces: a "Be om inköp" dialog with NINE fields (name, quantity,
- * unit, price, vendor, task, description, date, payment method, receipt file).
- * It was used exactly zero times in production. The two messages workers did
- * send both carried a photo and no useful text, which is the whole thesis:
- * on a site with a language gap the picture is the message and the words are
- * optional.
+ * What it replaces, in two steps:
+ *   1. a "Be om inköp" dialog with NINE fields, used exactly zero times;
+ *   2. four chips where exactly ONE had to be picked before speaking.
  *
- * The photo is an ALTERNATIVE, not a requirement. Typing "Kup 10 pędzli" with
- * no picture goes through the identical four-way choice, and so does a voice
- * note. The grammar hangs on the intent, never on the modality — which is why
- * the intent chips sit here, on the composer, and not on the camera button.
+ * Step 2 was our own mistake. A tradesperson says everything in one breath —
+ * "8 timmar, kaklet 70 %, behöver fog, kommer sent imorgon" — and making them
+ * sort that into four separate flows put the sorting BEFORE the saying. In
+ * Carl's words: "hur ska dom ens fatta det!?"
  *
- * Follow-up questions are asked only when the answer cannot be derived: the
- * task is skipped when there is one obvious candidate, and the quantity is
- * pre-filled from the text before anything is asked. Depth is at most two and
- * usually zero. No field is ever mandatory.
+ * So: one field for what happened (type, speak, photograph, or any mix), and
+ * four OPTIONAL add-ons ticked only when they apply. Question and info are
+ * never buttons — a question mark makes it a question, and the receiver then
+ * owes an answer. The server reads the rest out of the words and returns what
+ * it understood, which is shown as a receipt AFTER sending. Nothing is
+ * confirmed beforehand: hours and purchases wait for the builder's yes anyway,
+ * so a misreading costs a correction, never money.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Camera, Loader2, Mic, Send, Square, X } from 'lucide-react';
+import { Camera, Check, Loader2, Mic, Percent, Send, ShoppingCart, Square, Timer, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { supabase } from '@/integrations/supabase/client';
-import {
-  FIELD_INTENTS,
-  FIELD_INTENT_META,
-  guessIntent,
-  parseNeed,
-  type FieldIntent,
-} from '@/lib/fieldIntent';
+import { parseNeed } from '@/lib/fieldIntent';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -41,6 +33,13 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 export interface ComposerTask {
   id: string;
   title: string;
+}
+
+/** One part of what the server understood, echoed back as the receipt. */
+interface ReportPart {
+  kind: 'note' | 'question' | 'done' | 'progress' | 'hours' | 'purchase';
+  value?: number;
+  name?: string;
 }
 
 interface Props {
@@ -52,18 +51,26 @@ interface Props {
   onSent?: () => void;
 }
 
+type AddOn = 'done' | 'progress' | 'hours' | 'purchase';
+
 export function WorkerComposer({ token, tasks, taskId, canCreatePurchases, onSent }: Props) {
   const { t } = useTranslation();
 
   const [text, setText] = useState('');
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const [intent, setIntent] = useState<FieldIntent | null>(null);
-  const [quantity, setQuantity] = useState(1);
-  // Only asked when the composer is not already inside a task AND there is
-  // more than one candidate. One task is not a question worth asking.
-  const [chosenTask, setChosenTask] = useState<string | null>(taskId ?? null);
   const [sending, setSending] = useState(false);
+
+  // Add-ons: off until ticked. Nothing here is ever required.
+  const [active, setActive] = useState<Set<AddOn>>(new Set());
+  const [progress, setProgress] = useState(50);
+  const [hours, setHours] = useState(8);
+  const [quantity, setQuantity] = useState(1);
+  const [productName, setProductName] = useState('');
+
+  const [chosenTask, setChosenTask] = useState<string | null>(taskId ?? null);
+  /** The receipt: what the server made of the last report. */
+  const [receipt, setReceipt] = useState<ReportPart[] | null>(null);
 
   const [recording, setRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -92,35 +99,83 @@ export function WorkerComposer({ token, tasks, taskId, canCreatePurchases, onSen
     return () => URL.revokeObjectURL(url);
   }, [photo]);
 
-  // Typing "10 penslar" fills the quantity before it is ever asked for.
+  // Typing "10 penslar" fills the quantity and the product before either is
+  // ever asked for — the same courtesy the old composer did for quantity only.
   useEffect(() => {
     const parsed = parseNeed(text);
     if (parsed.quantity) setQuantity(parsed.quantity);
+    if (parsed.name) setProductName(parsed.name);
   }, [text]);
 
-  const suggested = guessIntent(text);
   // "Which task?" is skipped when there is exactly one — so the one must
-  // actually be chosen, or "Klart" lands as a project note and never moves
-  // the task. The question was skipped; the answer was not filled in.
+  // actually be chosen, or the report lands on the project and moves nothing.
   const effectiveTaskId = taskId ?? chosenTask ?? (tasks.length === 1 ? tasks[0].id : null);
-  const needsTaskChoice =
-    !taskId && tasks.length > 1 && (intent === 'klart' || intent === 'behover');
-  const hasContent = !!text.trim() || !!photo;
-  const availableIntents = FIELD_INTENTS.filter(
-    (i) => i !== 'behover' || canCreatePurchases
-  );
+  const needsTaskChoice = !taskId && tasks.length > 1 && active.size > 0;
+  const hasContent = !!text.trim() || !!photo || active.size > 0;
+
+  const toggle = (key: AddOn) =>
+    setActive((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      // Done and a partial percentage are the same statement twice; the tick
+      // that says "finished" wins and the slider goes away.
+      if (key === 'done' && next.has('done')) next.delete('progress');
+      if (key === 'progress' && next.has('progress')) next.delete('done');
+      return next;
+    });
 
   const reset = () => {
     setText('');
     setPhoto(null);
-    setIntent(null);
+    setActive(new Set());
     setQuantity(1);
+    setProductName('');
     if (!taskId) setChosenTask(null);
     if (fileRef.current) fileRef.current.value = '';
   };
 
+  /** Everything the worker said, in one request. Voice included. */
+  const buildForm = useCallback(
+    (voice?: Blob) => {
+      const fd = new FormData();
+      fd.append('token', token);
+      if (effectiveTaskId) fd.append('taskId', effectiveTaskId);
+      if (text.trim()) fd.append('text', text.trim());
+      if (photo) fd.append('photo', photo);
+      if (voice) fd.append('voice', voice, `voice-${Date.now()}.webm`);
+      if (active.has('done')) fd.append('done', 'true');
+      if (active.has('progress')) fd.append('progress', String(progress));
+      if (active.has('hours')) fd.append('hours', String(hours));
+      if (active.has('purchase')) {
+        fd.append('purchaseName', productName.trim() || text.trim() || t('field.unnamedItem', 'Material'));
+        fd.append('purchaseQuantity', String(quantity));
+      }
+      return fd;
+    },
+    [token, effectiveTaskId, text, photo, active, progress, hours, quantity, productName, t]
+  );
+
+  const post = useCallback(
+    async (fd: FormData) => {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/worker-send-report`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${SUPABASE_ANON_KEY}`, apikey: SUPABASE_ANON_KEY },
+        body: fd,
+      });
+      if (!res.ok) throw new Error(`report failed: ${res.status}`);
+      const data = await res.json();
+      setReceipt(Array.isArray(data?.parts) ? data.parts : []);
+      toast.success(t('field.sent', 'Skickat'));
+      reset();
+      onSent?.();
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [t, onSent]
+  );
+
   // ---------------------------------------------------------------------------
-  // Voice — sent immediately, because a recording is already a finished thought
+  // Voice — carries the ticked add-ons too, and is transcribed on the server
   // ---------------------------------------------------------------------------
   const stopRecording = useCallback(() => {
     if (recorderRef.current && recorderRef.current.state !== 'inactive') {
@@ -144,22 +199,9 @@ export function WorkerComposer({ token, tasks, taskId, canCreatePurchases, onSen
         if (blob.size === 0) return;
         setSending(true);
         try {
-          const fd = new FormData();
-          fd.append('token', token);
-          if (effectiveTaskId) fd.append('taskId', effectiveTaskId);
-          fd.append('intent', intent ?? 'info');
-          fd.append('voice', blob, `voice-${Date.now()}.webm`);
-          if (photo) fd.append('photo', photo);
-          const res = await fetch(`${SUPABASE_URL}/functions/v1/worker-send-message`, {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${SUPABASE_ANON_KEY}`, apikey: SUPABASE_ANON_KEY },
-            body: fd,
-          });
-          if (!res.ok) throw new Error('voice failed');
-          toast.success(t('field.sent', 'Skickat'));
-          reset();
-          onSent?.();
-        } catch {
+          await post(buildForm(blob));
+        } catch (err) {
+          console.error('Voice report failed:', err);
           toast.error(t('common.error', 'Kunde inte skicka'));
         } finally {
           setSending(false);
@@ -173,74 +215,69 @@ export function WorkerComposer({ token, tasks, taskId, canCreatePurchases, onSen
     } catch {
       toast.error(t('worker.micDenied', 'Mikrofonen är inte tillåten'));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, effectiveTaskId, intent, photo, t, onSent]);
+  }, [buildForm, post, t]);
 
-  // ---------------------------------------------------------------------------
-  // Send
-  // ---------------------------------------------------------------------------
   const send = async () => {
     if (!hasContent || sending) return;
-    const chosen = intent ?? 'info';
     setSending(true);
     try {
-      if (chosen === 'behover') {
-        // A purchase is not a message: it becomes a real request the owner
-        // approves, through the same endpoint and the same PO invariant the
-        // rest of the app uses. Only `name` is required by the server — the
-        // other eight fields the old dialog demanded are genuinely optional.
-        const parsed = parseNeed(text);
-        const fd = new FormData();
-        fd.append('token', token);
-        fd.append('mode', 'request');
-        fd.append('name', parsed.name || text.trim() || t('field.unnamedItem', 'Material'));
-        fd.append('quantity', String(quantity));
-        if (effectiveTaskId) fd.append('taskId', effectiveTaskId);
-        if (text.trim()) fd.append('description', text.trim());
-        if (photo) fd.append('photo', photo);
-        const res = await fetch(`${SUPABASE_URL}/functions/v1/worker-create-purchase`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${SUPABASE_ANON_KEY}`, apikey: SUPABASE_ANON_KEY },
-          body: fd,
-        });
-        if (!res.ok) throw new Error('purchase failed');
-      } else {
-        const fd = new FormData();
-        fd.append('token', token);
-        if (effectiveTaskId) fd.append('taskId', effectiveTaskId);
-        fd.append('intent', chosen);
-        if (text.trim()) fd.append('message', text.trim());
-        if (photo) fd.append('photo', photo);
-        const res = await fetch(`${SUPABASE_URL}/functions/v1/worker-send-message`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${SUPABASE_ANON_KEY}`, apikey: SUPABASE_ANON_KEY },
-          body: fd,
-        });
-        if (!res.ok) throw new Error('message failed');
-      }
-      toast.success(t('field.sent', 'Skickat'));
-      reset();
-      onSent?.();
+      await post(buildForm());
     } catch (err) {
-      console.error('Field message failed:', err);
+      console.error('Field report failed:', err);
       toast.error(t('common.error', 'Kunde inte skicka'));
     } finally {
       setSending(false);
     }
   };
 
-  const meta = intent ? FIELD_INTENT_META[intent] : null;
+  const addOns: { key: AddOn; icon: JSX.Element; label: string }[] = [
+    { key: 'done', icon: <Check className="h-4 w-4" />, label: t('field.addDone', 'Klart') },
+    { key: 'progress', icon: <Percent className="h-4 w-4" />, label: t('field.addProgress', 'Framsteg') },
+    { key: 'hours', icon: <Timer className="h-4 w-4" />, label: t('field.addHours', 'Timmar') },
+    ...(canCreatePurchases
+      ? [{ key: 'purchase' as AddOn, icon: <ShoppingCart className="h-4 w-4" />, label: t('field.addPurchase', 'Beställ') }]
+      : []),
+  ];
+
+  /** The receipt line: "Skickat: fråga · 10 × penslar · 8 h". */
+  const receiptLabel = (p: ReportPart): string => {
+    switch (p.kind) {
+      case 'hours':
+        return t('field.receiptHours', '{{count}} h', { count: p.value ?? 0 });
+      case 'progress':
+        return `${p.value ?? 0} %`;
+      case 'purchase':
+        return `${p.value ?? 1} × ${p.name ?? ''}`.trim();
+      case 'done':
+        return t('field.addDone', 'Klart');
+      case 'question':
+        return t('field.intent.fraga', 'Fråga');
+      default:
+        return t('field.intent.info', 'Info');
+    }
+  };
 
   return (
     <div className="rounded-xl border bg-card p-3 space-y-3">
+      {/* What we understood, AFTER sending. Never a gate before it. */}
+      {receipt && (
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg bg-muted/50 px-3 py-2 text-sm">
+          <span className="text-muted-foreground">{t('field.sentColon', 'Skickat:')}</span>
+          <span className="font-medium">{receipt.map(receiptLabel).filter(Boolean).join(' · ')}</span>
+          <button
+            type="button"
+            onClick={() => setReceipt(null)}
+            className="ml-auto text-xs text-muted-foreground underline underline-offset-2"
+          >
+            {t('common.close', 'Stäng')}
+          </button>
+        </div>
+      )}
+
       {/* Photo preview — the message itself, not an attachment */}
       {photoPreview && (
         <div className="relative">
-          <img
-            src={photoPreview}
-            alt=""
-            className="w-full max-h-52 rounded-lg object-cover"
-          />
+          <img src={photoPreview} alt="" className="w-full max-h-52 rounded-lg object-cover" />
           <button
             type="button"
             onClick={() => setPhoto(null)}
@@ -269,7 +306,7 @@ export function WorkerComposer({ token, tasks, taskId, canCreatePurchases, onSen
           type="button"
           variant="outline"
           size="icon"
-          className="h-11 w-11 shrink-0"
+          className="h-12 w-12 shrink-0"
           onClick={() => fileRef.current?.click()}
           aria-label={t('field.takePhoto', 'Ta ett foto')}
         >
@@ -279,8 +316,8 @@ export function WorkerComposer({ token, tasks, taskId, canCreatePurchases, onSen
         <Input
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder={t('field.placeholder', 'Skriv, eller skicka bara en bild')}
-          className="h-11"
+          placeholder={t('field.placeholderV2', 'Vad hände? Skriv, prata eller fota')}
+          className="h-12"
           onKeyDown={(e) => {
             if (e.key === 'Enter') send();
           }}
@@ -290,7 +327,7 @@ export function WorkerComposer({ token, tasks, taskId, canCreatePurchases, onSen
           type="button"
           variant={recording ? 'destructive' : 'outline'}
           size="icon"
-          className="h-11 w-11 shrink-0"
+          className="h-12 w-12 shrink-0"
           onClick={recording ? stopRecording : startRecording}
           aria-label={t('field.voice', 'Spela in')}
         >
@@ -305,56 +342,68 @@ export function WorkerComposer({ token, tasks, taskId, canCreatePurchases, onSen
         </p>
       )}
 
-      {/* The four-way choice — icon first, so it reads without the word */}
-      <div className="grid grid-cols-4 gap-1.5">
-        {availableIntents.map((key) => {
-          const m = FIELD_INTENT_META[key];
-          const active = intent === key;
-          const isSuggested = !intent && suggested === key;
+      {/* Add-ons — tick only what applies. Combine freely. */}
+      <div className="flex flex-wrap gap-1.5">
+        {addOns.map(({ key, icon, label }) => {
+          const on = active.has(key);
           return (
             <button
               key={key}
               type="button"
-              onClick={() => setIntent(active ? null : key)}
-              className={`flex min-h-[56px] flex-col items-center justify-center gap-0.5 rounded-lg border px-1 py-2 text-xs transition-colors ${
-                active
-                  ? 'border-primary bg-primary/10 font-medium'
-                  : isSuggested
-                    ? 'border-primary/40 bg-primary/5'
-                    : 'border-border bg-background'
+              onClick={() => toggle(key)}
+              aria-pressed={on}
+              className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-full border px-3.5 text-sm transition-colors ${
+                on ? 'border-primary bg-primary/10 font-medium' : 'border-border bg-background'
               }`}
             >
-              <span className="text-lg leading-none" aria-hidden>
-                {m.icon}
-              </span>
-              <span className="leading-tight">{t(m.labelKey, m.labelFallback)}</span>
+              {icon}
+              {label}
             </button>
           );
         })}
       </div>
 
-      {/* Quantity — only for a purchase, pre-filled, thumb-sized */}
-      {intent === 'behover' && (
+      {/* Each add-on asks for its one number, and nothing else */}
+      {active.has('progress') && (
+        <div className="space-y-1.5 rounded-lg bg-muted/40 px-3 py-2">
+          <div className="flex items-center justify-between">
+            <span className="text-sm">{t('field.addProgress', 'Framsteg')}</span>
+            <span className="text-lg font-medium tabular-nums">{progress} %</span>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            step={5}
+            value={progress}
+            onChange={(e) => setProgress(Number(e.target.value))}
+            className="h-8 w-full accent-primary"
+            aria-label={t('field.addProgress', 'Framsteg')}
+          />
+        </div>
+      )}
+
+      {active.has('hours') && (
         <div className="flex items-center justify-between gap-3 rounded-lg bg-muted/40 px-3 py-2">
-          <span className="text-sm">{t('field.howMany', 'Hur många?')}</span>
+          <span className="text-sm">{t('field.hoursToday', 'Timmar idag')}</span>
           <div className="flex items-center gap-2">
             <Button
               type="button"
               variant="outline"
               size="icon"
-              className="h-10 w-10"
-              onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+              className="h-11 w-11"
+              onClick={() => setHours((h) => Math.max(0.5, h - 0.5))}
               aria-label="-"
             >
               −
             </Button>
-            <span className="w-10 text-center text-lg font-medium tabular-nums">{quantity}</span>
+            <span className="w-12 text-center text-lg font-medium tabular-nums">{hours}</span>
             <Button
               type="button"
               variant="outline"
               size="icon"
-              className="h-10 w-10"
-              onClick={() => setQuantity((q) => q + 1)}
+              className="h-11 w-11"
+              onClick={() => setHours((h) => Math.min(24, h + 0.5))}
               aria-label="+"
             >
               +
@@ -363,7 +412,44 @@ export function WorkerComposer({ token, tasks, taskId, canCreatePurchases, onSen
         </div>
       )}
 
-      {/* Which job — asked only when it cannot be derived */}
+      {active.has('purchase') && (
+        <div className="space-y-2 rounded-lg bg-muted/40 px-3 py-2">
+          <Input
+            value={productName}
+            onChange={(e) => setProductName(e.target.value)}
+            placeholder={t('field.whatToBuy', 'Vad behövs?')}
+            className="h-11"
+          />
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-sm">{t('field.howMany', 'Hur många?')}</span>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-11 w-11"
+                onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                aria-label="-"
+              >
+                −
+              </Button>
+              <span className="w-10 text-center text-lg font-medium tabular-nums">{quantity}</span>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-11 w-11"
+                onClick={() => setQuantity((q) => q + 1)}
+                aria-label="+"
+              >
+                +
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Which job — asked only when an add-on needs one and it cannot be derived */}
       {needsTaskChoice && (
         <div className="space-y-1.5">
           <span className="text-sm text-muted-foreground">
@@ -375,7 +461,7 @@ export function WorkerComposer({ token, tasks, taskId, canCreatePurchases, onSen
                 key={task.id}
                 type="button"
                 onClick={() => setChosenTask(chosenTask === task.id ? null : task.id)}
-                className={`min-h-[40px] rounded-full border px-3 py-1.5 text-sm ${
+                className={`min-h-[44px] rounded-full border px-3 py-1.5 text-sm ${
                   chosenTask === task.id
                     ? 'border-primary bg-primary/10 font-medium'
                     : 'border-border bg-background'
@@ -388,16 +474,11 @@ export function WorkerComposer({ token, tasks, taskId, canCreatePurchases, onSen
         </div>
       )}
 
-      {/* What happens next, in the worker's own language */}
-      {meta && hasContent && (
-        <p className="text-xs text-muted-foreground">{t(meta.promiseKey, meta.promiseFallback)}</p>
-      )}
-
       <Button
         type="button"
         onClick={send}
         disabled={!hasContent || sending || recording}
-        className="h-11 w-full gap-2"
+        className="h-12 w-full gap-2"
       >
         {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
         {t('field.send', 'Skicka')}

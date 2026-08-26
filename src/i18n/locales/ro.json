@@ -1168,6 +1168,15 @@
     "whichTask": "Ce lucrare?",
     "send": "Trimite",
     "sent": "Trimis",
-    "unnamedItem": "Material"
+    "unnamedItem": "Material",
+    "placeholderV2": "Ce s-a întâmplat? Scrie, vorbește sau fotografiază",
+    "addDone": "Gata",
+    "addProgress": "Progres",
+    "addHours": "Ore",
+    "addPurchase": "Comandă",
+    "hoursToday": "Ore azi",
+    "whatToBuy": "Ce este necesar?",
+    "sentColon": "Trimis:",
+    "receiptHours": "{{count}} h"
   }
 }

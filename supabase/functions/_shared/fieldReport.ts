@@ -99,7 +99,12 @@ export function parseNeed(text: string): { quantity: number | null; name: string
  */
 function clauses(text: string): string[] {
   return text
-    .split(/[\n;,]+|\s+(?:och|and|oraz|i|та|și|ir|ja)\s+/giu)
+    .split(
+      // Sentence enders only when a space or the end follows, so "8.5 h" stays
+      // one number. Without this, "behöver 5 säckar fog. Vilken fog?" made the
+      // question part of the product name.
+      /[\n;,]+|[.!?]+(?=\s|$)|\s+(?:och|and|oraz|i|та|și|ir|ja)\s+/giu
+    )
     .map((c) => c.trim())
     .filter(Boolean);
 }

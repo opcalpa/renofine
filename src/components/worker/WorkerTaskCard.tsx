@@ -9,7 +9,7 @@ import { ColorSwatchRow } from "./ColorSwatchRow";
 import { RoomObjectViews } from "./RoomObjectViews";
 import type { FloorPlanObject, WallNote, WallObject, WallSurface } from "./roomObjectShared";
 import { RoomSpecsSummary } from "./RoomSpecsSummary";
-import { WorkerMessageInput } from "./WorkerMessageInput";
+import { WorkerComposer } from "./WorkerComposer";
 import { MapPin, Ruler, Camera, Loader2, CheckSquare, ImageIcon, MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -121,7 +121,10 @@ interface WorkerTaskCardProps {
   wallObjects?: WallObject[];
   wallSurfaces?: WallSurface[];
   wallNotes?: WallNote[];
+  canCreatePurchases?: boolean;
   onTaskUpdate: (taskId: string, updates: Partial<WorkerTask>) => void;
+  /** Refetch after a report — the server may have moved status or progress. */
+  onReload?: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -151,7 +154,9 @@ export function WorkerTaskCard({
   wallObjects,
   wallSurfaces,
   wallNotes,
+  canCreatePurchases = true,
   onTaskUpdate,
+  onReload,
 }: WorkerTaskCardProps) {
   const { t } = useTranslation();
   const [uploading, setUploading] = useState(false);
@@ -596,22 +601,14 @@ export function WorkerTaskCard({
           </div>
         )}
 
-        {/* Message input */}
-        <WorkerMessageInput
+        {/* The same composer as at the top, already pointed at this task —
+            one mechanic to learn, not a second message box that does less. */}
+        <WorkerComposer
           token={token}
+          tasks={[{ id: task.id, title: task.title }]}
           taskId={task.id}
-          onMessageSent={(content) => {
-            onTaskUpdate(task.id, {
-              messages: [...task.messages, {
-                id: crypto.randomUUID(),
-                content,
-                createdAt: new Date().toISOString(),
-                authorName: "",
-                isWorker: true,
-                images: [],
-              }],
-            });
-          }}
+          canCreatePurchases={canCreatePurchases}
+          onSent={onReload}
         />
       </div>
     </div>
