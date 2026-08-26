@@ -481,7 +481,15 @@ text — avsikts-chipsen sitter på komposeraren, inte bara på kameran.
 
 **S3 LEVERERAT 2026-08-26 (commit `1da3c31`, pushat, deploy grön):** chip-texten F, läckan H (tre funktioner + backfill-migration), sektionen "Från fältet" på Översikt och "Fråga kunden" — allt verifierat i appen mot prod-data (arbetare → byggare → godkänt inköp → vidarebefordrad fråga → svarad fråga), testdatan raderad.
 
-**Kvar:** S4 (Renaida-fotofrågan mappad till samma nycklar) + S5 (mätning: `field_message_sent` / `field_message_answered`, tid-till-svar). Sen: skicka arbetarlänken till målaren och se om flödet används skarpt.
+**OMGÅNG 3 (Fable 2026-08-26, efter Carls test som Piotr): grammatiken omprövad → "Rapporten från dagen".** Beslut A (en avsikt per meddelande) satte sorteringen före sägandet. Nu: fritt innehåll (text/röst/foto) + valfria tillägg (✓ Klart · 📊 % · ⏱ Timmar · 🛒 Beställ); Fråga/Info härleds, aldrig knappar; EN sändning som servern delar upp i rader under `report_id`. Beslut I–L tagna (bekräftelse efter, timmar per dag, ett kort per rapport, Förstått-knapp). **Lucka hittad:** röst sparas rått ("🎤 url"), byggaren får ljudfil utan text/översättning. Designen: /Users/calpa/Developer/Renofine/docs/faltkommunikation-design-2026-08.md (omgång 3).
+
+**Kvar att bygga (Opus, i ordning):**
+- **S6** `field_reports` + tolk (`lib/fieldReport.ts`: regex för timmar/%/antal+produkt/frågetecken, modell-fallback ETT anrop) + `worker-send-report` (transkriberar röst server-side, skriver comments/photos/materials+PO/time_entries/tasks i ett svep) + `time_entries.worker_token_id` (nullable, `user_id` nullable, CHECK exakt en, `approved=false`).
+- **S7** Komposerare v2: ett fält, mic/kamera, fyra tillägg, "Skickat: fråga · 10 × penslar · 8 h" + Ändra. Gamla fyra chips bort.
+- **S8** Inkorg v2: ett kort per rapport, [Godkänn 8 h]-väg, Timmar-filter.
+- **S9** "Förstått"-knapp (`acknowledged_at`, syns i Team) + mätning `field_report_sent {parts}` / `field_report_answered {seconds}`.
+- S4 (Renaida-fotofrågan → samma nycklar) kvarstår efter S9.
+Sen: arbetarlänken till målaren, skarpt.
 
 
 ---

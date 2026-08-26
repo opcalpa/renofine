@@ -207,3 +207,106 @@ H. **Arbetarmeddelanden är byggarens, dolda för kunden som standard.**
    med `visible_to_client=false`; byggaren vidarebefordrar kundens beslut
    (kakelval, ÄTA) med ett tryck — "Fråga kunden". Hemägaren som leder eget
    bygge är ägare och ser förstås allt.
+
+---
+
+## Omgång 3 — "Rapporten från dagen" (Fable-analys 2026-08-26, efter Carls test)
+
+**Carls ståndpunkt (efter att ha testat som Piotr):** i WhatsApp säger en
+hantverkare allt i ett andetag — läser instruktionen, lämnar status, anger
+timmar, beställer material, ställer en fråga. "Vi låter dom fortsätta göra det
+fast på ett mer strukturerat sätt. Vi tvingar dom inte att göra exakt EN i
+taget i 3–4 separerade flöden — hur ska dom ens fatta det!?"
+
+Han har rätt, och beslut A (fyra avsikter, en per meddelande) satte
+sorteringen FÖRE sägandet. Det ska vara tvärtom.
+
+### Grammatik v2: en rapport = fritt innehåll + valfria tillägg
+
+- **Fritt:** text / röst / foto i valfri blandning. Ett av dem räcker.
+- **Tillägg** (bockas i bara när det gäller): ✓ Klart · 📊 Status % ·
+  ⏱ Timmar · 🛒 Beställ (produkt + antal).
+- **Fråga/Info är aldrig knappar** — härleds ("?"/frågeord ⇒ `fraga`,
+  mottagaren skyldig svar; annars `info`).
+- **En sändning.** Servern (`worker-send-report`) delar upp i rader:
+  `comments` (texten, `intent`=primär), `photos`, `materials`+`purchase_orders`,
+  `time_entries`, `tasks.progress/status`. Alla rader bär `report_id`
+  (ny tabell `field_reports`: token, task, rå text, ljud-URL, tolkning-JSON).
+
+### Sändning: optimistisk, ingen bekräftelseruta
+
+Efter Skicka: raden "Skickat: fråga · 10 × penslar · 8 h" + "Ändra".
+Allt som kostar (inköp, timmar) godkänns av byggaren ändå ⇒ feltolkning
+stoppas där. Ett bekräftelsesteg hos arbetaren = de två processerna Carl
+inte vill ha.
+
+### Röst = text, samma väg
+
+**Lucka idag:** röst sparas rått som "🎤 <url>"-kommentar. Byggaren får en
+ljudfil, ingen text, ingen översättning (`transcribe-audio` kräver
+inloggad användare). Ny väg: `worker-send-report` transkriberar server-side
+(intern anropsväg för token, rate-limitat per token) och kör texten genom
+SAMMA tolk. Renaida = tolken (agentic-strategin: capture→gör→visa).
+
+### Tolken: deterministiskt först, ett modellanrop max
+
+Regex: timmar (`8 h|tim|godz|год|ore`, "2 man × 8 h" ⇒ 16 h + not), procent,
+`parseNeed` (antal+produkt), frågetecken. Modell bara när texten bär mer än
+regexen fångar, eller vid röst. `_shared/rateLimit` finns.
+
+### Timmar (Carl: "alltid extremt centralt") — saknar ALLT idag
+
+`time_entries.user_id NOT NULL` ⇒ arbetare utan konto har ingen väg.
+Förslag: `worker_token_id uuid NULL` + `user_id` nullable + CHECK (exakt en),
+`approved=false` för fältet. Per DAG, arbete om härledbart. Byggaren
+godkänner i Från fältet som inköp; godkända timmar in i tidrapporten som
+befintliga. Attribution = token (person), inte ägarens id.
+
+### Status
+
+Fritt % skriver `tasks.progress`; checklistan består som sanning för VAD.
+100 % eller ✓ Klart ⇒ `awaiting_review` (som nu).
+
+### Inkorgen v2: ett kort per rapport
+
+Foto, översatt text, en åtgärdsrad per del som kräver byggaren:
+[Godkänn 10 × penslar] [Godkänn 8 h] [Ja · Nej · Svara]. Delar utan åtgärd
+(klart, info, %) = fakta i kortet. Kortet försvinner när allt är taget.
+Filter: Allt · Frågor · Inköp · Timmar.
+
+### Kvittens
+
+Välkomstkortet får "✓ Förstått" ⇒ `worker_access_tokens.acknowledged_at`.
+Byggaren ser "öppnade 07:02 · bekräftade 07:03" i Team. Inte blockerande.
+
+### Gårdagens chips
+
+Klart ⇒ tillägg. Behövs ⇒ Beställ-tillägget. Fråga/Info ⇒ härledda
+etiketter, inga knappar. `comments.intent`, `visible_to_client`,
+Från fältet-ytan och godkänn-vägarna återanvänds. S1–S3 = grunden.
+
+### Skivor (Opus)
+
+- **S6** `field_reports` + tolk (`lib/fieldReport.ts`, deterministisk +
+  modell-fallback) + `worker-send-report` inkl. röst-transkribering +
+  `time_entries.worker_token_id`.
+- **S7** Komposerare v2: ett fält, mic/kamera, fyra tillägg, optimistisk
+  sändning med "Skickat: …"-rad + Ändra.
+- **S8** Inkorg v2: kort per rapport, timmar-godkännande, Timmar-filter.
+- **S9** Kvittens + mätning (`field_report_sent {parts}`,
+  `field_report_answered {seconds}`).
+
+### Beslut som väntar på Carl (se nedan när tagna)
+1. Bekräftelse efter (rekommenderat) / före / ingen.
+2. Timmar per dag med valfritt arbete (rekommenderat) / per arbete / bara dag.
+3. Ett kort per rapport (rekommenderat) / ett per del.
+4. Kvittens "Förstått"-knapp (rekommenderat) / första bocken / ingen.
+
+### Beslut omgång 3 — TAGNA av Carl 2026-08-26 (rekommendationerna gäller)
+
+I. **Bekräftelse EFTER sändning** med "Skickat: …"-rad + Ändra. Aldrig en
+   ruta före. Pengar godkänns av byggaren.
+J. **Timmar per dag, arbete om härledbart.** "2 man 8 h" = 16 h + not.
+   `time_entries.worker_token_id`, ogodkända tills byggaren säger ja.
+K. **Ett kort per rapport** i Från fältet, en åtgärdsrad per del.
+L. **"Förstått"-knapp** på välkomstkortet ⇒ `acknowledged_at`. Blockerar inget.
