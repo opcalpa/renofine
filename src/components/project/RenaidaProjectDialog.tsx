@@ -599,6 +599,7 @@ export function RenaidaProjectDialog({ open, onOpenChange, userType = 'homeowner
       const base = applyAnswer(s, { kind: 'skip' }, draft); // marks 'describe' answered
       const outcome = await ingestProjectFolder(files, base, i18n.language, {
         collectPurchases: !isGuest,
+        isGuest,
         isContractor: userType === 'contractor',
         onProgress: (progress) => setIngestProgress(progress),
         // Only where the address is still unknown: a fresh project. Folding

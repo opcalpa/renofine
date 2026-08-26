@@ -4421,10 +4421,11 @@ utanför kortets ordalydelse — se [[gast-turen-efter-planen]].
 
 ---
 id: anon-edge-rate-limit-svep
-status: todo
+status: done
 priority: P2
 tags: [sakerhet, kostnad, edge-functions, gast]
 created: 2026-08-26
+updated: 2026-08-26
 ---
 ## Fyra modell-funktioner är öppna för anon-nyckeln utan rate-limit
 
@@ -4444,6 +4445,35 @@ mönster som `renovationScope.ts`), applicera på de fyra öppna funktionerna me
 anon-tak (~30/h/IP) och högre tak för inloggade (nyckla på `sub` i JWT:n).
 Kapa gäst-drop klientside till 20 filer (`MAX_FILES = 100` i
 `ingestProjectFolder.ts` gäller alla). Deploya de fyra.
+
+**LEVERERAT 2026-08-26 (s85), 7 funktioner deployade.**
+
+**RÄTTELSE till kortets premiss:** `transcribe-audio` var INTE öppen. Den
+anropar `/auth/v1/user` med anroparens header, och anon-nyckeln får 401 där —
+den krävde alltså redan en riktig session (och röst är dessutom dold för
+gäster, `hideVoice={isGuest}`). Tre funktioner var faktiskt exponerade, inte
+fyra: `classify-document`, `extract-document-text`, `process-document-v2`.
+transcribe-audio fick ändå ett tak som djupförsvar mot ett inloggat konto
+som loopar den.
+
+`_shared/rateLimit.ts` ersätter tre handskrivna kopior och täcker nu sju
+funktioner. Den avgörande detaljen som ligger i koden, inte i någons huvud:
+**`sub` får bara tros när plattformen verifierat signaturen** (`verify_jwt =
+true`). På en `verify_jwt = false`-funktion kan vem som helst mynta en token
+med färskt `sub` per anrop och gå rakt förbi en per-användare-hink — därför är
+`trustJwt` ett obligatoriskt argument, och de tre öppna funktionerna skickar
+`false` och förblir IP-nycklade.
+
+Tak: classify/extract 60 anon / 400 inloggad, process-document-v2 20/200 (dyrast
+per anrop), transcribe-audio 10/120, de tre gamla oförändrade (40/40, 20/20).
+Ingen pg_cron finns, så loggen städar sig själv: 1-på-25 chans att rensa rader
+äldre än 24 h.
+
+**Prod-bevis:** 45 anrop mot `renaida-critic` med den publika nyckeln gav
+40× 200 följt av 5× 429 — taket går i lås på exakt rätt ställe, och de nekade
+anropen skrev inga rader. De tre nyskyddade räknar (IP-nycklade rader
+verifierade i `edge_rate_limits`). Testraderna städade bort efteråt.
+e2e 176/2, typecheck 336 = baseline, prod-build grön.
 
 ---
 id: gast-offert-forhandsvisning-proffs

@@ -71,6 +71,14 @@ import {
  * anything over CONFIRM_ABOVE before spending the calls.
  */
 const MAX_FILES = 100;
+/**
+ * Guests get a tighter cap. Not a product limit — an abuse one: a guest drop
+ * reaches classify/extract on the publishable anon key, and the server-side
+ * anon tier is sized for exactly this many files (see
+ * supabase/functions/_shared/rateLimit.ts). A drop that would blow through the
+ * limit halfway is worse than one that says up front what it will read.
+ */
+const MAX_FILES_GUEST = 20;
 /** Above this many files the caller asks before starting (cost guard). */
 export const CONFIRM_ABOVE = 40;
 /** Files larger than this are skipped outright (and said out loud). */
@@ -673,6 +681,8 @@ export async function ingestProjectFolder(
      * to add three files should cost three files, not a hundred.
      */
     alreadyImported?: Set<string>;
+    /** Guests are capped harder — see MAX_FILES_GUEST. */
+    isGuest?: boolean;
   }
 ): Promise<IngestOutcome> {
   const calls = makeModelCallLog();
@@ -683,7 +693,8 @@ export async function ingestProjectFolder(
   // Oversized files never reach the LLM — a 30 MB scan is cost, not signal.
   const sized = allFiles.filter((f) => f.size <= MAX_FILE_BYTES);
   const oversizedCount = allFiles.length - sized.length;
-  const capped = sized.slice(0, MAX_FILES);
+  const fileCap = opts?.isGuest ? MAX_FILES_GUEST : MAX_FILES;
+  const capped = sized.slice(0, fileCap);
   const truncated = sized.length > capped.length;
 
   // Skip what the project already has. This is the single biggest saving in

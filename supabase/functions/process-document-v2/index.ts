@@ -1,4 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { checkRateLimit, rateLimitedBody } from '../_shared/rateLimit.ts';
 // @ts-ignore - pdf-parse types
 import pdf from 'npm:pdf-parse@1.1.1';
 // @ts-ignore - mammoth types
@@ -14,6 +15,15 @@ const ALLOWED_ORIGINS = [
 
 const ANTHROPIC_MODEL = 'claude-haiku-4-5-20251001';
 const ANTHROPIC_VERSION = '2023-06-01';
+
+/**
+ * Undeclared in config.toml, so it runs on the platform default verify_jwt = true
+ * — which the anon key satisfies. The tiers are tighter than the classify pair
+ * because a call here reads a whole document through Claude: it is the most
+ * expensive single request the app can make, so it gets the smallest anon budget.
+ */
+const RATE_LIMIT_SCOPE = 'process-document-v2';
+const RATE_LIMIT_TIERS = { anon: 20, authenticated: 200 };
 
 function getCorsHeaders(req: Request) {
   const origin = req.headers.get('origin') || '';
@@ -746,6 +756,14 @@ serve(async (req) => {
   }
 
   try {
+    const rl = await checkRateLimit(req, RATE_LIMIT_SCOPE, RATE_LIMIT_TIERS, true);
+    if (!rl.allowed) {
+      return new Response(JSON.stringify(rateLimitedBody({ success: false })), {
+        status: 429,
+        headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
+      });
+    }
+
     const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
     if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not configured');
 

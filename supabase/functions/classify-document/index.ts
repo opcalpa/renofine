@@ -6,6 +6,16 @@ import {
   validateScope,
   type RenovationScope,
 } from '../_shared/renovationScope.ts';
+import { checkRateLimit, rateLimitedBody } from '../_shared/rateLimit.ts';
+
+/**
+ * `verify_jwt = true` is NOT a limit here: the publishable anon key is a validly
+ * signed JWT, so the platform waves it through and the guest folder drop travels
+ * that way on purpose. The anon tier has to fit one honest guest drop (capped at
+ * 20 files client-side, ~2 calls per file) and nothing beyond it.
+ */
+const RATE_LIMIT_SCOPE = 'classify-document';
+const RATE_LIMIT_TIERS = { anon: 60, authenticated: 400 };
 
 const ALLOWED_ORIGINS = [
   'http://localhost:5173',
@@ -361,6 +371,17 @@ serve(async (req) => {
   }
 
   try {
+    // Before the body is even read — a hammering caller costs us nothing.
+    // trustJwt: true mirrors verify_jwt = true in config.toml (the platform
+    // checked the signature, so `sub` can be believed). See _shared/rateLimit.ts.
+    const rl = await checkRateLimit(req, RATE_LIMIT_SCOPE, RATE_LIMIT_TIERS, true);
+    if (!rl.allowed) {
+      return new Response(JSON.stringify(rateLimitedBody({ type: 'other', confidence: 0 })), {
+        status: 429,
+        headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
+      });
+    }
+
     const body = await req.json();
 
     // `scope: { language }` asks for the merged answer: classification AND the

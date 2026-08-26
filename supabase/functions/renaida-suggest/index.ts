@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { checkRateLimit, rateLimitedBody } from "../_shared/rateLimit.ts";
 
 /**
  * renaida-suggest — LLM-generated "smart add-on" suggestions for the Renaida
@@ -20,8 +21,10 @@ const ALLOWED_ORIGINS = [
 ];
 
 const RATE_LIMIT_SCOPE = "renaida-suggest";
-const RATE_LIMIT_MAX = 40;
-const RATE_LIMIT_WINDOW_MINUTES = 60;
+// verify_jwt = false here, so the JWT cannot be trusted to name a caller
+// (anyone could mint one with a fresh `sub` per request and walk past a
+// per-user bucket). Both tiers are therefore IP-keyed and equal.
+const RATE_LIMIT_TIERS = { anon: 40, authenticated: 40 };
 
 const VALID_WORK_TYPES = [
   "rivning", "el", "vvs", "kakel", "snickeri", "malning",
@@ -46,67 +49,15 @@ function jsonResponse(data: unknown, status: number, req: Request) {
   });
 }
 
-function getClientFingerprint(req: Request): string {
-  const cf = req.headers.get("cf-connecting-ip");
-  if (cf) return cf;
-  const real = req.headers.get("x-real-ip");
-  if (real) return real;
-  const fwd = req.headers.get("x-forwarded-for");
-  if (fwd) return fwd.split(",")[0].trim();
-  return "unknown";
-}
-
-function supabaseRestHeaders() {
-  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  return {
-    apikey: serviceRoleKey,
-    Authorization: `Bearer ${serviceRoleKey}`,
-    "Content-Type": "application/json",
-  };
-}
-
-function supabaseRestUrl(path: string): string {
-  return `${Deno.env.get("SUPABASE_URL")!}/rest/v1/${path}`;
-}
-
-async function checkRateLimit(fingerprint: string): Promise<{ allowed: boolean; count: number }> {
-  try {
-    const since = new Date(Date.now() - RATE_LIMIT_WINDOW_MINUTES * 60 * 1000).toISOString();
-    const params = new URLSearchParams({
-      select: "id",
-      scope: `eq.${RATE_LIMIT_SCOPE}`,
-      fingerprint: `eq.${fingerprint}`,
-      created_at: `gte.${since}`,
-    });
-    const countRes = await fetch(`${supabaseRestUrl("edge_rate_limits")}?${params}`, {
-      headers: { ...supabaseRestHeaders(), Prefer: "count=exact" },
-    });
-    if (!countRes.ok) return { allowed: true, count: 0 };
-    const range = countRes.headers.get("content-range") || "";
-    const count = parseInt(range.split("/")[1] || "0", 10) || 0;
-    if (count >= RATE_LIMIT_MAX) return { allowed: false, count };
-    fetch(supabaseRestUrl("edge_rate_limits"), {
-      method: "POST",
-      headers: supabaseRestHeaders(),
-      body: JSON.stringify({ fingerprint, scope: RATE_LIMIT_SCOPE }),
-    }).catch((e) => console.error("rate-limit insert failed:", e));
-    return { allowed: true, count: count + 1 };
-  } catch (err) {
-    console.error("checkRateLimit failed (failing open):", err);
-    return { allowed: true, count: 0 };
-  }
-}
-
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: getCorsHeaders(req) });
   }
 
   try {
-    const fingerprint = getClientFingerprint(req);
-    const rl = await checkRateLimit(fingerprint);
+    const rl = await checkRateLimit(req, RATE_LIMIT_SCOPE, RATE_LIMIT_TIERS, false);
     if (!rl.allowed) {
-      return jsonResponse({ error: "Rate limit exceeded", suggestions: [] }, 429, req);
+      return jsonResponse(rateLimitedBody({ suggestions: [] }), 429, req);
     }
 
     const { projectType, rooms = [], existingWorkTypes = [], language, userType } = await req.json();

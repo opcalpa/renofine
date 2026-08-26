@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { checkRateLimit, rateLimitedBody } from "../_shared/rateLimit.ts";
 
 /**
  * transcribe-audio — server-side speech-to-text for voice capture.
@@ -17,6 +18,15 @@ const ALLOWED_ORIGINS = [
   "https://app.renofine.com",
   "https://renofine.com",
 ];
+
+/**
+ * This one was ALREADY closed: verifyCaller below calls /auth/v1/user, which
+ * returns 401 for the anon key, so it is not an open transcription proxy. The
+ * limit here is defence in depth against a signed-in account looping it — hence
+ * a generous authenticated tier and an anon tier that should never be reached.
+ */
+const RATE_LIMIT_SCOPE = "transcribe-audio";
+const RATE_LIMIT_TIERS = { anon: 10, authenticated: 120 };
 
 const MAX_AUDIO_BYTES = 15 * 1024 * 1024; // ~15MB ≈ several minutes of opus
 const PRIMARY_MODEL = "gpt-4o-mini-transcribe";
@@ -71,6 +81,9 @@ serve(async (req) => {
     if (!authHeader || !(await verifyCaller(authHeader))) {
       return json({ error: "Unauthorized" }, 401);
     }
+
+    const rl = await checkRateLimit(req, RATE_LIMIT_SCOPE, RATE_LIMIT_TIERS, true);
+    if (!rl.allowed) return json(rateLimitedBody({ text: "" }), 429);
 
     const form = await req.formData();
     const audio = form.get("audio");

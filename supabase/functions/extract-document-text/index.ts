@@ -1,4 +1,13 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { checkRateLimit, rateLimitedBody } from '../_shared/rateLimit.ts';
+
+/**
+ * Undeclared in config.toml, so it runs on the platform default verify_jwt = true
+ * — which the anon key satisfies. The guest folder drop reaches this endpoint,
+ * so the anon tier is sized for one honest drop and nothing beyond it.
+ */
+const RATE_LIMIT_SCOPE = 'extract-document-text';
+const RATE_LIMIT_TIERS = { anon: 60, authenticated: 400 };
 
 const ALLOWED_ORIGINS = [
   'http://localhost:5173',
@@ -149,6 +158,14 @@ serve(async (req) => {
   }
 
   try {
+    const rl = await checkRateLimit(req, RATE_LIMIT_SCOPE, RATE_LIMIT_TIERS, true);
+    if (!rl.allowed) {
+      return new Response(JSON.stringify(rateLimitedBody({ text: '' })), {
+        status: 429,
+        headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
+      });
+    }
+
     const { fileBase64, mimeType, fileName }: ExtractRequest = await req.json();
 
     if (!fileBase64 || !mimeType) {
