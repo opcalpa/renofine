@@ -1,6 +1,9 @@
 import { useState, useCallback, useMemo } from "react";
 import { GuestLoginPrompt } from "@/components/guest/GuestLoginPrompt";
 import { GuestPlanCard } from "./GuestPlanCard";
+
+/** Set on the guest's first own edit — see hasEdited below. */
+const TOUR_READY_KEY = "guest_planning_edited";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -187,7 +190,41 @@ export function GuestPlanningSection({ projectId, projectStatus, onActivate }: G
   const roomMap = useMemo(() => new Map(rooms.map((r) => [r.id, r.name])), [rooms]);
 
   // Refresh helpers
-  const refreshTasks = useCallback(() => setTasks(getGuestTasks(projectId)), [projectId]);
+  /**
+   * The tour waits for the guest's first own edit.
+   *
+   * It used to fire on arrival, which put a six-step walkthrough of an empty
+   * task table on top of the renovation plan the guest had just been given —
+   * and in three of five recorded journeys that tour was the last thing they
+   * did before leaving. "How do I add more?" is only a question once someone
+   * has added one, so the answer waits until they have.
+   *
+   * Persisted, so it survives the reload a returning guest arrives on: someone
+   * who already built something should not be treated as a first-timer.
+   *
+   * Every mutation in this component funnels through refreshTasks (refreshRooms
+   * calls it too, for the delete cascade), so that is the one place to mark it.
+   */
+  const [hasEdited, setHasEdited] = useState(
+    () => localStorage.getItem(TOUR_READY_KEY) === "true"
+  );
+
+  const markEdited = useCallback(() => {
+    setHasEdited((prev) => {
+      if (prev) return prev;
+      try {
+        localStorage.setItem(TOUR_READY_KEY, "true");
+      } catch {
+        // Storage full / private mode — the tour just stays deferred this session.
+      }
+      return true;
+    });
+  }, []);
+
+  const refreshTasks = useCallback(() => {
+    setTasks(getGuestTasks(projectId));
+    markEdited();
+  }, [projectId, markEdited]);
   const refreshRooms = useCallback(() => {
     setRooms(getGuestRooms(projectId));
     refreshTasks(); // room deletion cascades
@@ -905,7 +942,7 @@ export function GuestPlanningSection({ projectId, projectStatus, onActivate }: G
       </div>
 
       {/* Planning tour for first-time guests */}
-      <PlanningTour />
+      <PlanningTour enabled={hasEdited} />
 
       {/* Task estimate sheet */}
       {selectedTaskId && (

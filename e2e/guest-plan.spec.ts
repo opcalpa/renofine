@@ -105,4 +105,17 @@ test('finishing the wizard shows the plan, not a "project created" card', async 
   await page.getByRole('button', { name: 'Fortsätt utan konto' }).click();
   await page.waitForURL(/\/projects\//);
   await expect(page.getByRole('button', { name: 'Visa hela planen' })).toBeVisible({ timeout: 25000 });
+
+  // The tour must NOT be covering the plan the guest just earned. It used to
+  // auto-start here, and in three of five recorded journeys it was the last
+  // thing a guest did before leaving. It waits for their first own edit now.
+  await page.waitForTimeout(1500);
+  await expect(page.getByText('Ditt arbetsomfång')).toHaveCount(0);
+  expect(await page.evaluate(() => localStorage.getItem('guest_planning_edited'))).toBeNull();
+
+  // ...and it does arrive once they have added something of their own.
+  await page.getByRole('button', { name: 'Arbete', exact: true }).click();
+  await page.getByPlaceholder('t.ex. Riva badrum').fill('Spackling av hallen');
+  await page.getByRole('button', { name: 'Lägg till', exact: true }).click();
+  await expect(page.getByText('Ditt arbetsomfång')).toBeVisible({ timeout: 15000 });
 });

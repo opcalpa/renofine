@@ -4509,10 +4509,11 @@ kodändring. Räkna `$rageclick` på `/start` som mätare.
 
 ---
 id: gast-turen-efter-planen
-status: todo
+status: done
 priority: P2
 tags: [growth, aktivering, gast, onboarding]
 created: 2026-08-26
+updated: 2026-08-26
 ---
 ## Projektturen kör direkt efter planen — flytta den eller ta bort den för gäster
 
@@ -4528,3 +4529,20 @@ gästens FÖRSTA egna ändring (lagt till ett arbete/rum), eller (c) korta den
 till ett steg som pekar på "Din plan"-kortet.
 
 Mät före/efter på `guest_plan_shown` → `signup_completed`.
+
+**LEVERERAT 2026-08-26 (s85) — alternativ (b).** `PlanningTour` fick ett
+`enabled`-prop och startar inte längre av sig själv; `GuestPlanningSection`
+sätter `hasEdited` vid gästens första egna ändring (allt muterande går genom
+`refreshTasks`, även `refreshRooms` via raderings-kaskaden, så det finns EN
+plats att märka det på). Flaggan persisteras i localStorage — en gäst som
+redan byggt något ska inte behandlas som förstagångsbesökare vid nästa besök.
+
+Valde (b) framför (a) och (c): bevisen handlar om turens TAJMING, inte om
+dess längd. "Hur lägger jag till fler?" är en fråga först när någon lagt till
+en — så svaret väntar tills de gjort det. Att korta turen vore en gissning
+utöver det datan säger.
+
+Verifierat i Chrome: vid ankomst är turen borta, planen syns oskymd och
+`guest_planning_edited` är null; efter att ett arbete lagts till sätts flaggan
+och turen kommer. Båda halvorna låsta i `e2e/guest-plan.spec.ts`.
+e2e 176/2, typecheck 336 = baseline, prod-build grön, 0 konsolfel.

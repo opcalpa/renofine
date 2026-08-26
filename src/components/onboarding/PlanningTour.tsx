@@ -6,6 +6,18 @@ import { cn } from "@/lib/utils";
 
 const STORAGE_KEY = "guest_planning_tour_completed";
 
+interface PlanningTourProps {
+  /**
+   * Whether the guest is ready for a tutorial. It used to auto-start the moment
+   * a guest landed in the project, which put a six-step walkthrough of an empty
+   * task table on top of the renovation plan they had just been shown — and in
+   * three of five recorded guest journeys that tour was the last thing they did
+   * before leaving. A tour answers "how do I add more of this?", which is only
+   * a question once someone has added one. So the caller decides when.
+   */
+  enabled?: boolean;
+}
+
 interface TourStep {
   target: string; // data-tour attribute value
   titleKey: string;
@@ -104,7 +116,7 @@ interface SpotlightRect {
   height: number;
 }
 
-export function PlanningTour() {
+export function PlanningTour({ enabled = true }: PlanningTourProps = {}) {
   const { t } = useTranslation();
   const [active, setActive] = useState(false);
   const [step, setStep] = useState(0);
@@ -112,15 +124,16 @@ export function PlanningTour() {
   const [tooltipPos, setTooltipPos] = useState<TooltipPosition | null>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
 
-  // Auto-start for first-time guests
+  // Start for first-time guests, but only once the caller says they are ready.
   useEffect(() => {
+    if (!enabled) return;
     const completed = localStorage.getItem(STORAGE_KEY) === "true";
     if (!completed) {
       // Small delay so DOM has rendered
       const timer = setTimeout(() => setActive(true), 800);
       return () => clearTimeout(timer);
     }
-  }, []);
+  }, [enabled]);
 
   const currentStep = TOUR_STEPS[step];
 
