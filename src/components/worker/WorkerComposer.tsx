@@ -99,7 +99,10 @@ export function WorkerComposer({ token, tasks, taskId, canCreatePurchases, onSen
   }, [text]);
 
   const suggested = guessIntent(text);
-  const effectiveTaskId = taskId ?? chosenTask;
+  // "Which task?" is skipped when there is exactly one — so the one must
+  // actually be chosen, or "Klart" lands as a project note and never moves
+  // the task. The question was skipped; the answer was not filled in.
+  const effectiveTaskId = taskId ?? chosenTask ?? (tasks.length === 1 ? tasks[0].id : null);
   const needsTaskChoice =
     !taskId && tasks.length > 1 && (intent === 'klart' || intent === 'behover');
   const hasContent = !!text.trim() || !!photo;

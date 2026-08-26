@@ -41,10 +41,15 @@ serve(async (req) => {
   }
 
   try {
-    const { token, preview, previewLang } = await req.json();
+    const { token, preview, previewLang, lang } = await req.json();
     if (!token || typeof token !== "string") {
       return jsonResponse({ error: "Token is required" }, 400, req);
     }
+    // The worker's flag switch. Without this the flag only changed the UI
+    // chrome while the tasks stayed baked in the invite language — half a page
+    // in the wrong language, which is worse than all of it.
+    const requestedLang =
+      typeof lang === "string" && /^[a-z]{2}$/.test(lang) ? lang : null;
     // Owner preview ("Se exakt vad {namn} ser"): may render in a chosen
     // language (back-translation toggle) and must NOT touch last_accessed_at,
     // which is the worker's real read-receipt signal.
@@ -314,7 +319,7 @@ serve(async (req) => {
     // "sv" = originals, or the worker's language = exactly what they see).
     const workerLang = isPreview && typeof previewLang === "string" && previewLang
       ? previewLang
-      : tokenRecord.worker_language;
+      : requestedLang || tokenRecord.worker_language;
     let translationsMap: Record<string, { title: string; description: string | null; checklists: unknown }> = {};
     let roomTranslationsMap: Record<string, { name: string; description: string | null }> = {};
     if (workerLang && workerLang !== "en" && workerLang !== "sv") {

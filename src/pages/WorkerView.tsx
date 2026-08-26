@@ -91,11 +91,20 @@ export default function WorkerView() {
     loadWorkerData();
   }, [token]);
 
-  const loadWorkerData = async () => {
+  const loadWorkerData = async (langOverride?: string) => {
     try {
+      // A language the worker chose earlier (flag menu) wins over the invite
+      // language — for the content too, not only the chrome.
+      let storedOverride: string | null = null;
+      try {
+        storedOverride = token ? localStorage.getItem(workerLangOverrideKey(token)) : null;
+      } catch {
+        storedOverride = null;
+      }
+      const requestedLang = langOverride || storedOverride || undefined;
       const { data: result, error: fnError } = await supabase.functions.invoke(
         "get-worker-data",
-        { body: { token } }
+        { body: requestedLang ? { token, lang: requestedLang } : { token } }
       );
 
       if (fnError) {
@@ -117,8 +126,7 @@ export default function WorkerView() {
       }
 
       // Set language from worker token — unless worker has manually overridden it
-      const override = token ? localStorage.getItem(workerLangOverrideKey(token)) : null;
-      const effectiveLang = override || result.language;
+      const effectiveLang = requestedLang || result.language;
       if (effectiveLang && effectiveLang !== i18n.language) {
         i18n.changeLanguage(effectiveLang);
       }
@@ -347,7 +355,9 @@ export default function WorkerView() {
               {t("worker.hello", "Hej")}, {data.workerName}
             </p>
           </div>
-          {token && <WorkerLanguageSelector token={token} />}
+          {token && (
+            <WorkerLanguageSelector token={token} onChange={(code) => void loadWorkerData(code)} />
+          )}
           {/* View toggle */}
           <div className="flex rounded-md border bg-muted/30 p-0.5">
             <button

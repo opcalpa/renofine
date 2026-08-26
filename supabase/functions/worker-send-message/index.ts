@@ -40,6 +40,11 @@ function jsonResponse(data: unknown, status: number, req: Request) {
  */
 const MESSAGE_INTENTS = new Set(["klart", "fraga", "info"]);
 
+// "Klart" promises "Rapporteras som utfört arbete" — so it must hand the work
+// off for review, the same way a completion photo does. Statuses the PM has
+// already decided ('completed', 'awaiting_review', 'cancelled') are left alone.
+const TRANSITIONABLE_STATUSES = new Set(["planned", "to_do", "waiting", "in_progress"]);
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: getCorsHeaders(req) });
@@ -211,7 +216,26 @@ serve(async (req) => {
       return jsonResponse({ error: "Failed to send message" }, 500, req);
     }
 
-    return jsonResponse({ success: true, comment, photo: photoRow }, 200, req);
+    // Keep the button's promise: a "klart" on a specific task moves it to
+    // "Väntar granskning". Best-effort — the report itself is already saved.
+    let taskStatus: string | null = null;
+    if (intent === "klart" && taskId) {
+      const { data: taskRow } = await sb
+        .from("tasks")
+        .select("status")
+        .eq("id", taskId)
+        .single();
+      if (taskRow && TRANSITIONABLE_STATUSES.has(taskRow.status)) {
+        const { error: statusError } = await sb
+          .from("tasks")
+          .update({ status: "awaiting_review", updated_at: new Date().toISOString() })
+          .eq("id", taskId);
+        if (statusError) console.error("Task status update error:", statusError);
+        else taskStatus = "awaiting_review";
+      }
+    }
+
+    return jsonResponse({ success: true, comment, photo: photoRow, taskStatus }, 200, req);
   } catch (error) {
     console.error("worker-send-message error:", error);
     return jsonResponse({ error: (error as Error).message }, 500, req);

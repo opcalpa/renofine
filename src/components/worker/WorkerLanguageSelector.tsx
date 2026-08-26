@@ -23,13 +23,16 @@ const LANGUAGES = [
 
 interface WorkerLanguageSelectorProps {
   token: string;
+  /** The page re-fetches its content in the new language — the flag must
+      change everything on screen, not only the UI chrome. */
+  onChange?: (code: string) => void;
 }
 
 export function workerLangOverrideKey(token: string) {
   return `worker-lang-override-${token}`;
 }
 
-export function WorkerLanguageSelector({ token }: WorkerLanguageSelectorProps) {
+export function WorkerLanguageSelector({ token, onChange }: WorkerLanguageSelectorProps) {
   const { i18n, t } = useTranslation();
   const current = LANGUAGES.find((l) => l.code === i18n.language) || LANGUAGES[0];
 
@@ -40,6 +43,7 @@ export function WorkerLanguageSelector({ token }: WorkerLanguageSelectorProps) {
     } catch {
       // localStorage unavailable — fall back to in-memory only
     }
+    onChange?.(code);
   };
 
   return (
