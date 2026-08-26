@@ -474,6 +474,14 @@ sen) · D målaren testar det BYGGDA flödet · E bilden är ett alternativ till
 text — avsikts-chipsen sitter på komposeraren, inte bara på kameran.
 **Redo för Opus: S1 + S2 först.**
 
+**Beslut omgång 2 (Carl 2026-08-26, efter S1+S2) — designdok F–H:**
+- **F.** Knappen heter **"Behövs"** (sv) / "Needed" (en). Nyckel `behover` kvar, övriga språk orörda.
+- **G.** "Från fältet" = **sektion högst upp på Översikt**, bara när något väntar. Ingen ny flik.
+- **H.** **Arbetarmeddelanden dolda för kunden.** FYND: `comments.visible_to_client` defaultar `true` och `worker-send-message` sätter det aldrig ⇒ arbetarens fråga syns i kundens flöde idag om kunden ser Arbeten. Fix i S3: skriv `visible_to_client=false` + "Fråga kunden"-tryck för vidarebefordran.
+
+**Kvar att bygga (S3, i ordning):** (1) chip-texten F, (2) läckan H (en rad i edge-funktionen + deploy), (3) sektionen "Från fältet" på Översikt: öppna frågor (`intent='fraga' AND is_resolved=false`) + väntande köp (PO `requested`) med ett-trycks-svar [Ja][Nej][Svara] / [Godkänn][Nej][Svara], väntetid >1 h i `--rf-warn`, (4) "Fråga kunden" (sätter `visible_to_client=true` + notis). Sen S4 Renaida-mappning, S5 mätning.
+
+
 ---
 id: klient-accept-behover-serversida
 status: todo

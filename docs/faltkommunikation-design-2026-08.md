@@ -187,3 +187,23 @@ C. **Modellanrop för Behöver** — ett anrop, rate-limitat. Läser text/röst
 D. **Målaren testar det byggda flödet**, inte en hypotetisk fråga.
 E. (Carls tillägg) **Bilden är ett alternativ till text** — grammatiken
    hänger på avsikten, inte på modaliteten. Se avsnittet ovan.
+
+## Beslut, omgång 2 — TAGNA av Carl 2026-08-26 (efter S1+S2)
+
+F. **Knappen heter "Behövs"** (sv) / "Needed" (en). "Behöver" hängde i luften
+   som ett verb utan subjekt och läste som oöversatt "Need". Övriga språk är
+   hela uttryck ("Potrzebuję", "Потрібно") och rörs inte. Nyckeln `behover`
+   i koden är oförändrad. "Inköp" avvisat: förväxlas med att lämna kvitto på
+   något man redan köpt.
+G. **"Från fältet" är en sektion högst upp på Översikt**, synlig bara när
+   något väntar, med notisen som leder dit. Ingen ny flik (13 flikar på
+   desktop, 10 ikoner i mobilnavet redan; en tom flik slutar man öppna).
+   Beställningar-pulskortet visar redan väntande köp — sektionen är
+   fortsättningen på det.
+H. **Arbetarmeddelanden är byggarens, dolda för kunden som standard.**
+   Fynd: `comments.visible_to_client` är `true` som default och
+   `worker-send-message` sätter det aldrig ⇒ en arbetares fråga syns i
+   kundens flöde om kunden fått se Arbeten. Fix: arbetarmeddelanden skrivs
+   med `visible_to_client=false`; byggaren vidarebefordrar kundens beslut
+   (kakelval, ÄTA) med ett tryck — "Fråga kunden". Hemägaren som leder eget
+   bygge är ägare och ser förstås allt.
