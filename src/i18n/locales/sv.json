@@ -718,6 +718,28 @@
       "terms": "Villkor",
       "privacy": "Integritet",
       "security": "Säkerhet"
+    },
+    "starter": {
+      "title": "Vad ska du renovera?",
+      "placeholder": "T.ex. måla om vardagsrummet och lägga nytt golv",
+      "submit": "Visa min plan",
+      "micro": "Kostnadsspann, ROT och tidsplan på under en minut · inget konto",
+      "preset": {
+        "kitchen": "Köket",
+        "bathroom": "Badrummet",
+        "painting": "Måla om",
+        "flooring": "Nytt golv",
+        "electrical": "El",
+        "whole": "Hela bostaden"
+      },
+      "sentence": {
+        "kitchen": "Jag ska renovera köket — nya skåp, bänkskiva, kakel och el.",
+        "bathroom": "Jag ska renovera badrummet — rivning, tätskikt, kakel, VVS och el.",
+        "painting": "Jag ska måla om vardagsrummet, sovrummet och hallen.",
+        "flooring": "Jag ska lägga nytt golv i vardagsrummet, sovrummet och hallen.",
+        "electrical": "Jag ska dra om elen i hela lägenheten och byta elcentral.",
+        "whole": "Jag ska totalrenovera lägenheten — kök, badrum, vardagsrum, sovrum och hall."
+      }
     }
   },
   "startProject": {
@@ -8230,5 +8252,81 @@
     "modelCalls": "Det kostade {{calls}} AI-anrop ({{perFile}} per fil).",
     "truncatedDocs_one": "{{count}} dokument var så långt att jag bara hann läsa början — kolla att inget rum saknas.",
     "truncatedDocs_other": "{{count}} dokument var så långa att jag bara hann läsa början — kolla att inget rum saknas."
+  },
+  "renovationPlan": {
+    "title": "Din renoveringsplan",
+    "headlineDesc": "Uppskattat spann för {{rooms}} rum, {{weeks}} veckors arbete.",
+    "rotTitle": "ROT-avdrag",
+    "rotDesc": "30 % av arbetskostnaden inklusive moms — det du får tillbaka.",
+    "rotCapped": "30 % av arbetskostnaden. Taket är 50 000 kr per person och år.",
+    "perRoom": "Rum för rum",
+    "wholeProperty": "Hela bostaden",
+    "assumedArea": "antagen yta",
+    "orderTitle": "Ordningen yrkena kommer i",
+    "week": "v {{n}}",
+    "weekRange": "v {{from}}–{{to}}",
+    "phase": {
+      "demolition": "Rivning och bortforsling",
+      "installations": "El och VVS",
+      "shell": "Fönster, dörrar, fasad och tak",
+      "wetwork": "Tätskikt och kakel",
+      "carpentry": "Snickeri och kök",
+      "surfaces": "Målning och golv",
+      "outdoor": "Utomhus och övrigt"
+    },
+    "missingTitle": "Det här glöms oftast bort",
+    "checking": "Renaida granskar planen…",
+    "nothingMissing": "Inget kritiskt saknas — planen håller ihop.",
+    "missing": {
+      "waterproofing": {
+        "label": "Tätskikt",
+        "reason": "Kaklar du ett våtrum utan det får allt göras om."
+      },
+      "demolition": {
+        "label": "Rivning och bortforsling",
+        "reason": "Det sker ändå första dagen — bättre budgeterat än inte."
+      },
+      "ventilation": {
+        "label": "Ventilation i våtrummet",
+        "reason": "Utan den underkänns besiktningen och fukten blir kvar."
+      }
+    },
+    "questionsTitle": "Det här frågar en byggare dig",
+    "questionsTitleContractor": "Det här behöver du fråga kunden",
+    "question": {
+      "wasteDisposal": "Vart går rivningsmassorna, och ingår container?",
+      "fuseBox": "Hur gammal är elcentralen, och finns plats för fler grupper?",
+      "certifiedElectrician": "Ingår behörig elektriker, eller ordnas det separat?",
+      "pipeAge": "Hur gamla är rören, och när relinades de senast?",
+      "waterShutoff": "Var sitter huvudavstängningen, och vem får stänga av?",
+      "waterproofingCert": "Ingår våtrumsintyg för tätskiktet?",
+      "substrate": "Vad sitter bakom kaklet i dag — gips, betong eller trä?",
+      "ventilation": "Finns mekanisk ventilation, och behöver den uppgraderas?",
+      "measurements": "Mäts måtten på plats, eller utgår ni från din ritning?",
+      "applianceDelivery": "Vem köper och levererar vitvarorna?",
+      "surfaceCondition": "Hur ser väggarna ut — behöver de spacklas först?",
+      "subfloorLevel": "Är undergolvet plant, eller behövs flytspackel?",
+      "buildingPermit": "Behövs bygglov eller godkännande från föreningen?",
+      "scaffolding": "Ingår ställning i priset?",
+      "accessAndKeys": "Hur kommer hantverkarna in när du är på jobbet?",
+      "livingThere": "Ska ni bo kvar under arbetet?",
+      "startDate": "När kan arbetet börja, och hur länge får det ta?"
+    },
+    "assumption": {
+      "typicalAreas": "Rumsytor du inte angett är typiska svenska storlekar — fyll i den riktiga ytan för en skarpare siffra.",
+      "exVat": "Beloppen är exklusive moms och en uppskattning, inte en offert.",
+      "rotCap": "ROT-beloppet är kapat till 50 000 kr per person och år.",
+      "finishLevel": "Den övre siffran räknar med exklusivt ytskikt, den nedre med standardmaterial.",
+      "incVat": "Beloppen är inklusive moms och en uppskattning, inte en offert."
+    },
+    "savePlan": "Spara planen",
+    "openProject": "Öppna projektet",
+    "continueWithout": "Fortsätt utan konto",
+    "saveHint": "Planen ligger bara i den här webbläsaren tills du sparar den.",
+    "rotShort": "ROT ger tillbaka ca {{amount}} kr",
+    "showFull": "Visa hela planen",
+    "incVat": "ink. moms",
+    "exVat": "ex. moms",
+    "dialogDesc": "Projektet är skapat. Så här ser planen ut."
   }
 }

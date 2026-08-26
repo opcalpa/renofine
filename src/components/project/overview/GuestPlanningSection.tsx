@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo } from "react";
 import { GuestLoginPrompt } from "@/components/guest/GuestLoginPrompt";
+import { GuestPlanCard } from "./GuestPlanCard";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -336,6 +337,9 @@ export function GuestPlanningSection({ projectId, projectStatus, onActivate }: G
 
   return (
     <>
+      {/* The way back to the plan — see GuestPlanCard for why it lives here. */}
+      <GuestPlanCard projectId={projectId} rooms={rooms} tasks={tasks} />
+
       {/* Activate project button — shown in planning phase when ready */}
       {isPlanning && (
         <div className="flex items-center justify-end gap-3">

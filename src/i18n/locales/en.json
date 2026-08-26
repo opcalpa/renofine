@@ -718,6 +718,28 @@
       "terms": "Terms",
       "privacy": "Privacy",
       "security": "Security"
+    },
+    "starter": {
+      "title": "What are you renovating?",
+      "placeholder": "E.g. repaint the living room and lay a new floor",
+      "submit": "Show my plan",
+      "micro": "Cost range, ROT and schedule in under a minute · no account",
+      "preset": {
+        "kitchen": "The kitchen",
+        "bathroom": "The bathroom",
+        "painting": "Repaint",
+        "flooring": "New floor",
+        "electrical": "Electrical",
+        "whole": "The whole home"
+      },
+      "sentence": {
+        "kitchen": "I am renovating the kitchen — new cabinets, worktop, tiling and electrical.",
+        "bathroom": "I am renovating the bathroom — demolition, waterproofing, tiling, plumbing and electrical.",
+        "painting": "I am repainting the living room, the bedroom and the hallway.",
+        "flooring": "I am laying a new floor in the living room, the bedroom and the hallway.",
+        "electrical": "I am rewiring the whole apartment and replacing the fuse box.",
+        "whole": "I am fully renovating the apartment — kitchen, bathroom, living room, bedroom and hallway."
+      }
     }
   },
   "startProject": {
@@ -8231,5 +8253,81 @@
     "modelCalls": "It cost {{calls}} AI calls ({{perFile}} per file).",
     "truncatedDocs_one": "{{count}} document was long enough that I only read the beginning — check that no room is missing.",
     "truncatedDocs_other": "{{count}} documents were long enough that I only read the beginning — check that no room is missing."
+  },
+  "renovationPlan": {
+    "title": "Your renovation plan",
+    "headlineDesc": "Estimated range for {{rooms}} rooms, {{weeks}} weeks of work.",
+    "rotTitle": "ROT deduction",
+    "rotDesc": "30% of the labour cost including VAT — what you get back.",
+    "rotCapped": "30% of the labour cost. The cap is SEK 50,000 per person per year.",
+    "perRoom": "Room by room",
+    "wholeProperty": "The whole property",
+    "assumedArea": "assumed area",
+    "orderTitle": "The order the trades come in",
+    "week": "wk {{n}}",
+    "weekRange": "wk {{from}}–{{to}}",
+    "phase": {
+      "demolition": "Demolition and waste removal",
+      "installations": "Electrical and plumbing",
+      "shell": "Windows, doors, facade and roof",
+      "wetwork": "Waterproofing and tiling",
+      "carpentry": "Carpentry and kitchen",
+      "surfaces": "Painting and flooring",
+      "outdoor": "Outdoor and remaining work"
+    },
+    "missingTitle": "This is what gets forgotten most often",
+    "checking": "Renaida is reviewing the plan…",
+    "nothingMissing": "Nothing critical is missing — the plan holds together.",
+    "missing": {
+      "waterproofing": {
+        "label": "Waterproofing (tätskikt)",
+        "reason": "Tiling a wet room without it means redoing the whole thing."
+      },
+      "demolition": {
+        "label": "Demolition and waste removal",
+        "reason": "It happens anyway on day one — better budgeted than not."
+      },
+      "ventilation": {
+        "label": "Ventilation in the wet room",
+        "reason": "Without it the inspection fails and moisture stays in."
+      }
+    },
+    "questionsTitle": "This is what a builder will ask you",
+    "questionsTitleContractor": "This is what you need to ask the client",
+    "question": {
+      "wasteDisposal": "Where does the waste go, and is a skip included?",
+      "fuseBox": "How old is the fuse box, and does it have room for more circuits?",
+      "certifiedElectrician": "Is a certified electrician included, or arranged separately?",
+      "pipeAge": "How old are the pipes, and when was the last relining?",
+      "waterShutoff": "Where is the main water shut-off, and who may turn it off?",
+      "waterproofingCert": "Is the waterproofing certificate (våtrumsintyg) included?",
+      "substrate": "What is behind the tiles today — plasterboard, concrete or wood?",
+      "ventilation": "Is there mechanical ventilation, and does it need upgrading?",
+      "measurements": "Are measurements taken on site, or from your drawing?",
+      "applianceDelivery": "Who buys and delivers the appliances?",
+      "surfaceCondition": "What condition are the walls in — do they need filling first?",
+      "subfloorLevel": "Is the subfloor level, or does it need levelling compound?",
+      "buildingPermit": "Is a building permit or a housing-association approval needed?",
+      "scaffolding": "Is scaffolding included in the price?",
+      "accessAndKeys": "How do the tradespeople get in when you are at work?",
+      "livingThere": "Will you be living there during the work?",
+      "startDate": "When can the work start, and how long may it take?"
+    },
+    "assumption": {
+      "typicalAreas": "Room sizes you did not give are typical Swedish sizes — enter the actual area for a sharper figure.",
+      "exVat": "Amounts are excluding VAT and are an estimate, not a quote.",
+      "rotCap": "The ROT figure is capped at SEK 50,000 per person per year.",
+      "finishLevel": "The high end assumes a premium finish; the low end standard materials.",
+      "incVat": "Amounts include VAT and are an estimate, not a quote."
+    },
+    "savePlan": "Save the plan",
+    "openProject": "Open the project",
+    "continueWithout": "Continue without an account",
+    "saveHint": "The plan lives only in this browser until you save it.",
+    "rotShort": "ROT gives back about {{amount}} SEK",
+    "showFull": "Show the full plan",
+    "incVat": "incl. VAT",
+    "exVat": "excl. VAT",
+    "dialogDesc": "The project is created. This is what the plan looks like."
   }
 }

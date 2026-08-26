@@ -1,15 +1,18 @@
 import { useTranslation } from "react-i18next";
 import { ArrowRight, Eye } from "lucide-react";
 import { Pill } from "../Pill";
+import { PlanStarter } from "../PlanStarter";
 import { RenaidaLive } from "../RenaidaLive";
 
 interface HeroSectionProps {
   onCta: () => void;
   onDemo: () => void;
   onScreenshotClick: () => void;
+  /** The visitor's own words → straight to their plan. See PlanStarter. */
+  onStartPlan: (description: string, preset: string | null) => void;
 }
 
-export function HeroSection({ onCta, onDemo }: HeroSectionProps) {
+export function HeroSection({ onCta, onDemo, onStartPlan }: HeroSectionProps) {
   const { t } = useTranslation();
 
   return (
@@ -69,17 +72,18 @@ export function HeroSection({ onCta, onDemo }: HeroSectionProps) {
                 padding: "12px 18px",
                 borderRadius: 6,
                 background: "transparent",
-                color: "var(--lp-fg)",
+                color: "var(--lp-fg-muted)",
                 fontSize: 14,
                 fontWeight: 500,
-                border: "1px solid var(--lp-hairline)",
+                border: "none",
               }}
             >
               <Eye size={14} />
               {t("landingV2.hero.ctaSecondary", "Se demoprojekt")}
             </button>
           </div>
-          <div style={{ marginTop: 32, fontSize: 12, color: "var(--lp-fg-subtle)" }}>
+          <PlanStarter onStart={onStartPlan} variant="desktop" />
+          <div style={{ marginTop: 20, fontSize: 12, color: "var(--lp-fg-subtle)" }}>
             {t("landingV2.hero.micro", "Inga kontokrav \u00b7 Importera projekt p\u00e5 2 minuter \u00b7 Avsluta n\u00e4r du vill")}
           </div>
         </div>
@@ -129,20 +133,21 @@ export function HeroSection({ onCta, onDemo }: HeroSectionProps) {
             onClick={onDemo}
             className="inline-flex items-center justify-center gap-2 cursor-pointer"
             style={{
-              padding: "14px 18px",
+              padding: "12px 18px",
               borderRadius: 6,
               background: "transparent",
-              color: "var(--lp-fg)",
+              color: "var(--lp-fg-muted)",
               fontSize: 15,
               fontWeight: 500,
-              border: "1px solid var(--lp-hairline)",
-              minHeight: 48,
+              border: "none",
+              minHeight: 44,
             }}
           >
             <Eye size={14} />
             {t("landingV2.hero.ctaSecondary", "Se demoprojekt")}
           </button>
         </div>
+        <PlanStarter onStart={onStartPlan} variant="mobile" />
         <div className="mt-6">
           <RenaidaLive onCta={onCta} />
         </div>

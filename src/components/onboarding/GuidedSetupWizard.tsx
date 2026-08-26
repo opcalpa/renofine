@@ -1,8 +1,8 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, Loader2, CheckCircle, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { analytics, AnalyticsEvents, ProjectCreationMethod } from "@/lib/analytics";
@@ -16,6 +16,8 @@ import {
 } from "./guided-setup/types";
 import type { AIParsedResult } from "@/components/project/overview/planning-wizard/types";
 import { aiResultToGuidedData } from "./guided-setup/aiPrefill";
+import { RenovationPlanView } from "./RenovationPlanView";
+import type { PlanInput, PlanTaskInput } from "@/lib/renovationPlan";
 import { DescribeStep } from "./guided-setup/DescribeStep";
 import { PropertyStep } from "./guided-setup/PropertyStep";
 import { RoomsStep } from "./guided-setup/RoomsStep";
@@ -34,6 +36,12 @@ interface GuidedSetupWizardProps {
   /** Start voice recording immediately on the describe step — used when the
    * launcher was a mic-branded button that promised voice (OwnerStart path 1). */
   autoStartVoice?: boolean;
+  /** The visitor already said what they want on the landing page — analyse it
+   * on open instead of asking the same question a second time. */
+  initialDescription?: string;
+  /** Fires when the wizard flips to the plan, so the host dialog can retitle —
+   * "Berätta om din renovering" above a finished plan reads as a stuck step. */
+  onPlanShown?: () => void;
 }
 
 type StepKey = "describe" | "rooms" | "workTypes" | "matrix" | "property" | "summary";
@@ -81,22 +89,52 @@ function matrixToTasks(formData: GuidedFormData) {
   return tasks;
 }
 
+/**
+ * The same matrix, kept in the plan's vocabulary (WorkType survives, the cost
+ * centre string does not). Separate from `matrixToTasks` because that one feeds
+ * project creation and must keep its exact insert shape.
+ */
+function matrixToPlanTasks(formData: GuidedFormData): PlanTaskInput[] {
+  const tasks: PlanTaskInput[] = [];
+
+  for (const wt of formData.workTypes) {
+    const roomIds = formData.matrix[wt.id];
+    if (!roomIds?.size) continue;
+
+    if (roomIds.has(WHOLE_PROPERTY_KEY)) {
+      tasks.push({ workType: wt.value, label: wt.label, roomName: null });
+    } else {
+      for (const roomId of roomIds) {
+        const room = formData.rooms.find((r) => r.id === roomId);
+        if (room) tasks.push({ workType: wt.value, label: wt.label, roomName: room.name });
+      }
+    }
+  }
+
+  return tasks;
+}
+
 export function GuidedSetupWizard({
   onComplete,
   onCancel,
+  userType,
   profileId,
   isGuest = false,
   autoStartVoice = false,
+  initialDescription,
+  onPlanShown,
 }: GuidedSetupWizardProps) {
   const { t, i18n } = useTranslation();
   const [stepIndex, setStepIndex] = useState(0);
   const [blankMode, setBlankMode] = useState(false);
   const [formData, setFormData] = useState<GuidedFormData>(INITIAL_FORM_DATA);
-  const [description, setDescription] = useState("");
+  const [description, setDescription] = useState(initialDescription ?? "");
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzed, setAnalyzed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  /** Set once the project exists — the plan screen needs it for the CTA target. */
+  const [createdProjectId, setCreatedProjectId] = useState<string | null>(null);
 
   const steps = blankMode ? BLANK_STEPS : FULL_STEPS;
   const currentKey = steps[stepIndex];
@@ -157,6 +195,20 @@ export function GuidedSetupWizard({
     }
     return true;
   }, [description, updateFormData, t, i18n.language]);
+
+  // A landing-page intent is already an answer to the describe step, so run the
+  // parse immediately. Guarded by a ref: React 18 StrictMode mounts twice in
+  // dev, and a double parse is a double model call.
+  const autoAnalyzed = useRef(false);
+  useEffect(() => {
+    if (autoAnalyzed.current) return;
+    if (!initialDescription || initialDescription.trim().length <= 10) return;
+    autoAnalyzed.current = true;
+    void (async () => {
+      const proceed = await handleAnalyze();
+      if (proceed) setStepIndex(1);
+    })();
+  }, [initialDescription, handleAnalyze]);
 
   const handleDescribeNext = async () => {
     // Drive every first pass through AI; re-entering with a result skips re-analysis.
@@ -238,9 +290,17 @@ export function GuidedSetupWizard({
         });
       }
 
-      setSubmitted(true);
       toast.success(t("guidedSetup.projectCreated"));
-      onComplete(result.projectId);
+
+      // Blank mode has no rooms and no work types, so there is no plan to show
+      // — going straight into the empty project is the honest answer there.
+      if (blankMode) {
+        onComplete(result.projectId);
+        return;
+      }
+      setCreatedProjectId(result.projectId);
+      setSubmitted(true);
+      onPlanShown?.();
     } catch (error) {
       console.error("Failed to create project from guided setup:", error);
       toast.error(t("common.error"));
@@ -251,21 +311,28 @@ export function GuidedSetupWizard({
 
   const progressPercent = ((stepIndex + 1) / steps.length) * 100;
 
-  if (submitted) {
+  // The finish state IS the plan. The old "Projekt skapat" card handed the user
+  // a five-step tour of an empty project; the plan hands them the cost range,
+  // the ROT, the trade order and what they forgot — before asking for anything.
+  if (submitted && createdProjectId) {
+    const planInput: PlanInput = {
+      rooms: formData.rooms.map((r) => ({
+        name: r.name,
+        areaSqm: r.area_sqm ?? null,
+        widthM: r.width_m ?? null,
+        depthM: r.depth_m ?? null,
+        ceilingHeightMm: r.ceiling_height_mm,
+      })),
+      tasks: matrixToPlanTasks(formData),
+      userType,
+    };
     return (
-      <div className="text-center py-8">
-        <div className="flex justify-center mb-6">
-          <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center">
-            <CheckCircle className="h-8 w-8 text-green-600" />
-          </div>
-        </div>
-        <h2 className="text-2xl font-semibold mb-2">
-          {t("guidedSetup.projectCreated")}
-        </h2>
-        <p className="text-muted-foreground">
-          {t("guidedSetup.projectCreatedDesc")}
-        </p>
-      </div>
+      <RenovationPlanView
+        input={planInput}
+        isGuest={isGuest}
+        projectId={createdProjectId}
+        onOpenProject={() => onComplete(createdProjectId)}
+      />
     );
   }
 

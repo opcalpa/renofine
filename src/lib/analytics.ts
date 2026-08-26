@@ -111,6 +111,13 @@ export const AnalyticsEvents = {
   // (see VALUE_EVENTS). Turns "signed up" into a measurable "actually used it".
   ACTIVATION_REACHED: "activation_reached",
 
+  // The renovation plan — the surplus a guest sees BEFORE creating an account.
+  // The funnel to watch is guest_plan_shown → signup_completed; the baseline it
+  // replaces was 36 guests finishing the wizard and 0 creating an account.
+  GUEST_PLAN_SHOWN: "guest_plan_shown",
+  GUEST_PLAN_CTA_CLICKED: "guest_plan_cta_clicked",
+  GUEST_INTENT_SUBMITTED: "guest_intent_submitted",
+
   // Folder ingest ("släpp din mapp") — the desktop migration wedge.
   FOLDER_DROP_STARTED: "folder_drop_started",
   FOLDER_DROP_ROUTED: "folder_drop_routed",

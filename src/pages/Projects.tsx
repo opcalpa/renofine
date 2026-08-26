@@ -35,6 +35,7 @@ import {
 import { WelcomeModal, QuickStartChoice } from "@/components/onboarding/WelcomeModal";
 import { ColumnToggle } from "@/components/shared/ColumnToggle";
 import { GuidedSetupWizard } from "@/components/onboarding/GuidedSetupWizard";
+import { takeGuestIntent } from "@/lib/guestIntent";
 import { PageLoadingSkeleton } from "@/components/ui/skeleton-screens";
 import { isDemoProject, seedDemoProject, hasDemoProject as userHasDemoProject } from "@/services/demoProjectService";
 import { normalizeStatus, STATUS_META } from "@/lib/projectStatus";
@@ -130,6 +131,10 @@ const Projects = () => {
     }
   }, [authLoading, isGuest, profile?.id, showWelcomeModal]);
   const [showGuidedSetup, setShowGuidedSetup] = useState(false);
+  /** Set when the visitor typed/tapped what they want on the landing page. */
+  const [guestIntent, setGuestIntent] = useState<string | null>(null);
+  /** The wizard reached its plan — the dialog is no longer asking questions. */
+  const [wizardShowingPlan, setWizardShowingPlan] = useState(false);
   const [planWizardOpen, setPlanWizardOpen] = useState(false);
   const [showAIImport, setShowAIImport] = useState(false);
   const [renaidaOpen, setRenaidaOpen] = useState(false);
@@ -300,6 +305,16 @@ const Projects = () => {
       });
       window.history.replaceState({}, "", "/start");
     }
+  }, []);
+
+  // The landing page's "Vad ska du renovera?" hands the answer over here. Read
+  // once (takeGuestIntent clears as it reads) and go straight into the wizard —
+  // the visitor already answered its first question.
+  useEffect(() => {
+    const intent = takeGuestIntent();
+    if (!intent) return;
+    setGuestIntent(intent.description);
+    setShowGuidedSetup(true);
   }, []);
 
   // Hidden A/B access to the legacy creation wizards (removed from the main UI
@@ -1083,9 +1098,13 @@ const Projects = () => {
       <Dialog open={showGuidedSetup} onOpenChange={setShowGuidedSetup}>
         <DialogContent className="md:max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{t("guidedSetup.title")}</DialogTitle>
+            <DialogTitle>
+              {wizardShowingPlan ? t("renovationPlan.title", "Din renoveringsplan") : t("guidedSetup.title")}
+            </DialogTitle>
             <DialogDescription>
-              {t("guidedSetup.titleDesc")}
+              {wizardShowingPlan
+                ? t("renovationPlan.dialogDesc", "Projektet är skapat. Så här ser planen ut.")
+                : t("guidedSetup.titleDesc")}
             </DialogDescription>
           </DialogHeader>
           {(profile?.id || isGuest) && (
@@ -1093,12 +1112,20 @@ const Projects = () => {
               userType={((isGuest ? guestRole : profile?.onboarding_user_type) as "homeowner" | "contractor") || "homeowner"}
               profileId={profile?.id as string | undefined}
               isGuest={isGuest}
+              initialDescription={guestIntent ?? undefined}
+              onPlanShown={() => setWizardShowingPlan(true)}
               onComplete={(projectId) => {
                 setShowGuidedSetup(false);
+                setGuestIntent(null);
+                setWizardShowingPlan(false);
                 refreshStorageUsage?.();
                 navigate(`/projects/${projectId}`);
               }}
-              onCancel={() => setShowGuidedSetup(false)}
+              onCancel={() => {
+                setShowGuidedSetup(false);
+                setGuestIntent(null);
+                setWizardShowingPlan(false);
+              }}
             />
           )}
         </DialogContent>

@@ -4366,10 +4366,11 @@ hos icke-användare.
 
 ---
 id: gast-planen-som-saljartefakt
-status: todo
+status: done
 priority: P1
 tags: [growth, aktivering, gast, renaida, mobil]
 created: 2026-08-26
+updated: 2026-08-26
 ---
 ## Gästen får "Din renoveringsplan" i stället för en tom projektyta
 
@@ -4399,6 +4400,24 @@ Mätning: `guest_plan_shown` → `signup_completed`. Baslinje 0/36, mål >10 %.
 
 Gör INTE: serverrader för gäster, klonat Villa Andersson-demo med gästens
 namn, LLM-skriven plan i löptext, e-postfångst före värdet, mer mapp-drop.
+
+**LEVERERAT 2026-08-26 (s85).** `src/lib/renovationPlan.ts` (ren motor, noll
+nätverk), `RenovationPlanView` (wizardens slutvy), `PlanStarter` (hero-dörren),
+`guestIntent.ts` (avsikten över navigeringen), `GuestPlanCard` (vägen tillbaka
+inne i projektet). Critic-anropet är strikt additivt — den deterministiska
+"det här glöms bort"-listan står kvar när modellen tiger eller nekas.
+e2e `guest-plan.spec.ts` (2 gröna), svit 176/2 = baseline, typecheck 336 =
+baseline, prod-build grön, verifierat i Chrome utan konsolfel.
+
+Två rättelser under bygget: (1) rena ytberäkningar gav 23 000 kr för ett helt
+badrum — minimitimmar och minimimaterial per yrke-i-rum lades till, nu
+96 000–163 000 kr ink. moms; (2) planen visade **ex moms för en hemägare**,
+vilket bryter projektets egen momsregel — moms appliceras nu en gång i motorn
+efter roll och etiketteras alltid.
+
+**Kvar (Carls val):** den 6-stegs projektturen kör fortfarande direkt efter
+planen. Den var en del av diagnosen ("Nästa ×5 i ett tomt projekt") men låg
+utanför kortets ordalydelse — se [[gast-turen-efter-planen]].
 
 ---
 id: anon-edge-rate-limit-svep
@@ -4457,3 +4476,25 @@ båda mobil. `RoomsStep` togglar på `onClick` — kan vara att emoji-spannet
 och chip-texten ger dubbla träffar, eller att chipen inte visar vald-status
 tydligt nog. Verifiera på riktig iPhone (Device: mobil, Kontotyp: gäst) innan
 kodändring. Räkna `$rageclick` på `/start` som mätare.
+
+---
+id: gast-turen-efter-planen
+status: todo
+priority: P2
+tags: [growth, aktivering, gast, onboarding]
+created: 2026-08-26
+---
+## Projektturen kör direkt efter planen — flytta den eller ta bort den för gäster
+
+Uppföljning till [[gast-planen-som-saljartefakt]]. Gästen får nu planen
+(kostnad, ROT, ordning, vad som glöms) och trycker "Fortsätt utan konto" —
+och möts omedelbart av `PlanningTour`, sex steg som säger "Nästa". I
+PostHog-resorna var precis den turen sista handlingen före avhopp i tre av
+fem fall.
+
+Att bara ta bort den var utanför P1-kortets ordalydelse, så den står kvar.
+Valet är Carls: (a) ta bort turen för gäster helt, (b) flytta den till efter
+gästens FÖRSTA egna ändring (lagt till ett arbete/rum), eller (c) korta den
+till ett steg som pekar på "Din plan"-kortet.
+
+Mät före/efter på `guest_plan_shown` → `signup_completed`.

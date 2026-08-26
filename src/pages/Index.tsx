@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useGuestMode } from "@/hooks/useGuestMode";
 import { PUBLIC_DEMO_PROJECT_ID } from "@/constants/publicDemo";
+import { saveGuestIntent } from "@/lib/guestIntent";
+import { analytics, AnalyticsEvents } from "@/lib/analytics";
 import { GuestRoleModal } from "@/components/guest/GuestRoleModal";
 import { PublicNav } from "@/components/landing/PublicNav";
 import { HeroSection } from "@/components/landing/sections/HeroSection";
@@ -55,6 +57,27 @@ const Index = () => {
     [navigate]
   );
 
+  /**
+   * The hero's "Vad ska du renovera?" path. It skips the role modal AND the
+   * welcome modal on purpose: those are the three clicks that stood between a
+   * visitor and the plan. The role defaults to homeowner (the presets are
+   * homeowner-shaped) and stays switchable from the guest header afterwards.
+   */
+  const handleStartPlan = useCallback(
+    (description: string, preset: string | null) => {
+      analytics.capture(AnalyticsEvents.GUEST_INTENT_SUBMITTED, {
+        preset: preset ?? "typed",
+        length: description.length,
+      });
+      saveGuestIntent({ description, preset });
+      localStorage.setItem("guest_user_type", "homeowner");
+      localStorage.setItem("guest_onboarding_completed", "true");
+      enterGuestMode();
+      navigate("/start");
+    },
+    [enterGuestMode, navigate]
+  );
+
   const handleScrollTo = useCallback((id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
   }, []);
@@ -69,7 +92,7 @@ const Index = () => {
       }}
     >
       <PublicNav onCta={handleCta} onLogin={handleLogin} onScrollTo={handleScrollTo} />
-      <HeroSection onCta={handleCta} onDemo={handleDemo} onScreenshotClick={handleDemo} />
+      <HeroSection onCta={handleCta} onDemo={handleDemo} onScreenshotClick={handleDemo} onStartPlan={handleStartPlan} />
       <LogoStrip />
       <StatsBand />
       <BuilderFeatures onDemoTab={handleDemoTab} />
