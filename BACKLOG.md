@@ -422,47 +422,39 @@ stället för 25, och Carl upptäcker appen som hans användare ser den.
 id: inkopsbild-onskemal-malaren
 status: todo
 priority: P2
-tags: [worker, renaida, foto, sprak, inkop, carl]
+tags: [worker, renaida, foto, sprak, inkop, kundvy, carl]
 created: 2026-08-26
 updated: 2026-08-26
+resources: [Designen | /Users/calpa/Developer/Renofine/docs/faltkommunikation-design-2026-08.md]
 ---
-## Arbetaren pratar med Renaida på sitt eget språk — en bild, tre utfall
+## Fältkommunikation: bilden är meddelandet — fyra avsikter, en mekanik, alla tre relationer
 
-**Omformulerat 2026-08-26 av Carl:** det här handlar inte om "inköpsbilden".
-Det handlar om att en byggare/målare/hantverkare ska kunna kommunicera med
-Renofine **via Renaida, på sitt eget språk**, genom att skicka en vanlig bild
-och välja vad den betyder. Inköpet är bara ett av utfallen.
+**Designad 2026-08-26 (Fable, s85):** /Users/calpa/Developer/Renofine/docs/faltkommunikation-design-2026-08.md
 
-Fältfallet som startade det: Carls polska målare skickar hellre en BILD på
-penslarna med "Kup 10" än röstmeddelanden eller långa texter.
+Kortet började som "målarens Kup 10" och blev grammatiken för ALL
+fältkommunikation: byggare⇄arbetare, hemägare⇄byggare, ägare⇄Renaida.
 
-**Tre utfall arbetaren väljer mellan:**
-1. **Utfört arbete** → foto på arbetet (finns delvis: `worker-upload-photo`
-   mappar `completed` → `kind='after'`, annars `during`).
-2. **Materialköp** → produktbild + köpönskan → `purchase_requests` som ägaren
-   godkänner i Inköp (`worker-create-purchase` + `MaterialRequestButton` finns).
-3. **Övrigt** → meddelande med bild (`worker-send-message` finns).
+**Datan som styrde:** 11 arbetartokens, 5 arbetarfoton, 2 arbetarmeddelanden
+(båda med bild), **0 inköpsförfrågningar någonsin** — nio-fälts-dialogen
+"Be om inköp" har aldrig använts. Ägarsidan HAR redan den öppna vägen
+(Renaida: foto → "Vad är det här?" med fem val). Arbetarsidan har bara den
+strukturerade, i fel form.
 
-**Vad som redan finns (verifierat 2026-08-26):** arbetarvyn kan språk
-(`language` ur token, översatt välkomstmeddelande, `translate-comments`),
-den kan ladda upp foto med kategori, och alla tre edge-funktionerna finns
-(`worker-upload-photo`, `worker-create-purchase`, `worker-send-message`,
-plus `worker-ask-question`). `photos.kind` skiljer redan `product` från
-`receipt` sedan s84.
+**Grammatiken:** varje meddelande = en bild + EN avsikt, formulerad som vad
+mottagaren ska göra: ✅ Klart (inget) · 🛒 Behöver (godkänn köp) · ❓ Fråga
+(svara) · 💬 Info (läs). Ikon + ord på eget språk. Samma fyra i båda vägarna:
+den öppna (bild in → Renaida frågar fyrvalet) ÄR knappen du inte hittade.
+Följdfrågor bara när det inte går att härleda (vilket arbete? hur många?),
+max djup 2, oftast 0. Aldrig ett formulär. Landar på rätt plats med bilden
+och ett-trycks-svar; ägaren får EN "Från fältet"-lista.
 
-**Vad som saknas:** (a) fotokategorin är binär (during/after) — ingen
-produkt/köp-gren, (b) Renaida finns inte som mottagare i arbetarvyn, (c) ingen
-plats där arbetaren skriver/talar en rad på sitt språk som tolkas till en
-strukturerad handling.
+**Skivor:** S1 intent i data · S2 arbetarvyn (kameraknapp + fyrval, ersätter
+nio-fälts-dialogen) · S3 ägarens "Från fältet" · S4 Renaida-fotofrågan mappad
+till samma nycklar · S5 mätning (tid-till-svar).
 
-**Formen:** EN capture → Renaida föreslår → arbetaren bekräftar. Samma mekanik
-som [[project_agentic_strategy]] beskriver, nu i arbetarvyn. Bild + max ett
-kort fritextfält (gärna röst), resten härleds. INTE ett nytt
-kommunikationssystem, INTE en chatt.
-
-**Blockering:** verifiera med Carls målare innan UI byggs — det här kortet är
-designen, inte beslutet. (Gäller INTE längre Taulant, se
-[[project_traction_reality]]: han slutade 11 juli och ska inte vara en grind.)
+**Carls beslut innan bygge (i docen §Beslut):** A fyra eller tre avsikter ·
+B hemägarens önskan = arbetarens Behöver i Inköp · C modellanrop för Behöver ·
+D målaren testar det BYGGDA flödet, inte en fråga.
 
 ---
 id: klient-accept-behover-serversida
