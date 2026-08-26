@@ -7826,6 +7826,8 @@
     "hoursToday": "Godziny dzisiaj",
     "whatToBuy": "Czego potrzeba?",
     "sentColon": "Wysłano:",
-    "receiptHours": "{{count}} godz."
+    "receiptHours": "{{count}} godz.",
+    "addAnotherItem": "Dodaj kolejne",
+    "removeItem": "Usuń"
   }
 }

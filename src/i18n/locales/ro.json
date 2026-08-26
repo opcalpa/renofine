@@ -1177,7 +1177,9 @@
     "hoursToday": "Ore azi",
     "whatToBuy": "Ce este necesar?",
     "sentColon": "Trimis:",
-    "receiptHours": "{{count}} h"
+    "receiptHours": "{{count}} h",
+    "addAnotherItem": "Adaugă încă unul",
+    "removeItem": "Șterge"
   },
   "worker": {
     "acknowledge": "Am citit lucrarea",

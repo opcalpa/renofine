@@ -1177,7 +1177,9 @@
     "hoursToday": "Valandos šiandien",
     "whatToBuy": "Ko reikia?",
     "sentColon": "Išsiųsta:",
-    "receiptHours": "{{count}} val."
+    "receiptHours": "{{count}} val.",
+    "addAnotherItem": "Pridėti dar",
+    "removeItem": "Pašalinti"
   },
   "worker": {
     "acknowledge": "Perskaičiau darbą",

@@ -8364,7 +8364,9 @@
     "hoursToday": "Hours today",
     "whatToBuy": "What is needed?",
     "sentColon": "Sent:",
-    "receiptHours": "{{count}} h"
+    "receiptHours": "{{count}} h",
+    "addAnotherItem": "Add another",
+    "removeItem": "Remove"
   },
   "fieldInbox": {
     "title": "From the site",

@@ -162,6 +162,42 @@ function numOrNull(v: FormDataEntryValue | null): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+/**
+ * What the worker asked to be ordered.
+ *
+ * `purchaseItems` is a JSON list — several things can be needed in one breath.
+ * The single `purchaseName` form is still read so a page loaded before this
+ * shipped (the worker view is a link people keep open on site all day) does
+ * not silently lose its order.
+ */
+const MAX_PURCHASE_ITEMS = 20;
+
+function readPurchases(form: FormData): Array<{ quantity: number | null; name: string }> {
+  const raw = form.get("purchaseItems");
+  if (typeof raw === "string" && raw.trim()) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed
+          .map((it) => ({
+            quantity: numOrNull(it?.quantity),
+            name: String(it?.name ?? "").slice(0, 200).trim(),
+          }))
+          .filter((it) => it.name.length > 0)
+          .slice(0, MAX_PURCHASE_ITEMS);
+      }
+    } catch (e) {
+      console.error("purchaseItems parse error:", e);
+    }
+  }
+  const legacy = form.get("purchaseName");
+  if (legacy) {
+    const name = String(legacy).slice(0, 200).trim();
+    if (name) return [{ quantity: numOrNull(form.get("purchaseQuantity")), name }];
+  }
+  return [];
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: getCorsHeaders(req) });
@@ -186,15 +222,13 @@ serve(async (req) => {
       done: String(form.get("done") ?? "") === "true",
       progress: numOrNull(form.get("progress")),
       hours: numOrNull(form.get("hours")),
-      purchase: form.get("purchaseName")
-        ? {
-            quantity: numOrNull(form.get("purchaseQuantity")),
-            name: String(form.get("purchaseName")).slice(0, 200).trim(),
-          }
-        : null,
+      purchases: readPurchases(form),
     };
 
-    if (!text && !photoFile && !voiceFile && !explicit.done && explicit.progress == null && explicit.hours == null && !explicit.purchase) {
+    if (
+      !text && !photoFile && !voiceFile && !explicit.done &&
+      explicit.progress == null && explicit.hours == null && explicit.purchases.length === 0
+    ) {
       return jsonResponse({ error: "Nothing to send" }, 400, req);
     }
 
@@ -362,8 +396,11 @@ serve(async (req) => {
     }
 
     // ---- Purchase: request PO + material, same invariant as everywhere ----
-    const purchasePart = part("purchase");
-    if (purchasePart?.name) {
+    // Several things needed on the same day are ONE request with several
+    // lines, not several requests. That is how the builder actually orders,
+    // and it keeps one errand from filling the inbox with three cards.
+    const purchaseParts = parsed.parts.filter((p) => p.kind === "purchase" && p.name);
+    if (purchaseParts.length > 0) {
       const { data: po, error: poError } = await sb
         .from("purchase_orders")
         .insert({
@@ -372,30 +409,33 @@ serve(async (req) => {
           total: 0,
           source: "manual",
           created_by_user_id: tokenRecord.created_by_user_id,
-          notes: purchasePart.reason,
+          notes: [...new Set(purchaseParts.map((p) => p.reason))].join("; "),
         })
         .select("id")
         .single();
       if (poError || !po) {
         console.error("PO insert error:", poError);
       } else {
-        const { error: matError } = await sb.from("materials").insert({
-          project_id: tokenRecord.project_id,
-          purchase_order_id: po.id,
-          task_id: taskId,
-          name: purchasePart.name,
-          quantity: purchasePart.value ?? 1,
-          // No unit unless the worker said one. "5 st × worków fugi" invents a
-          // Swedish word inside a Polish sentence; "5 × worków fugi" does not.
-          unit: null,
-          status: "submitted",
-          created_by_user_id: tokenRecord.created_by_user_id,
-          submitted_by_worker_token_id: tokenRecord.id,
-          exclude_from_budget: false,
-          report_id: reportId,
-        });
+        const { error: matError } = await sb.from("materials").insert(
+          purchaseParts.map((p) => ({
+            project_id: tokenRecord.project_id,
+            purchase_order_id: po.id,
+            task_id: taskId,
+            name: p.name,
+            quantity: p.value ?? 1,
+            // No unit unless the worker said one. "5 st × worków fugi" invents
+            // a Swedish word inside a Polish sentence; "5 × worków fugi" does not.
+            unit: null,
+            status: "submitted",
+            created_by_user_id: tokenRecord.created_by_user_id,
+            submitted_by_worker_token_id: tokenRecord.id,
+            exclude_from_budget: false,
+            report_id: reportId,
+          }))
+        );
         if (matError) {
           console.error("Material insert error:", matError);
+          // The PO must not survive without its lines — materials_po_invariant_check.
           await sb.from("purchase_orders").delete().eq("id", po.id);
         }
       }

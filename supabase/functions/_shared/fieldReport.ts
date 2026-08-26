@@ -33,6 +33,15 @@ export interface ReportPart {
   reason: string;
 }
 
+/**
+ * Kinds that may appear more than once in one report.
+ *
+ * A tradesperson needing nails AND filler said one thing, not two, so the list
+ * has to survive the de-dupe. Everything else is said once: two "8 h" in the
+ * same breath is a misreading, not two days.
+ */
+const REPEATABLE: ReadonlySet<ReportPartKind> = new Set<ReportPartKind>(['purchase']);
+
 export interface ParsedReport {
   parts: ReportPart[];
   source: 'regex' | 'model' | 'explicit';
@@ -125,14 +134,19 @@ function clauses(text: string): string[] {
  */
 export function parseReport(
   text: string,
-  explicit: { done?: boolean; progress?: number | null; hours?: number | null; purchase?: { quantity: number | null; name: string } | null } = {}
+  explicit: {
+    done?: boolean;
+    progress?: number | null;
+    hours?: number | null;
+    purchases?: Array<{ quantity: number | null; name: string }> | null;
+  } = {}
 ): ParsedReport {
   const raw = (text || '').trim();
   const parts: ReportPart[] = [];
   const seen = new Set<ReportPartKind>();
 
   const add = (part: ReportPart) => {
-    if (seen.has(part.kind)) return;
+    if (seen.has(part.kind) && !REPEATABLE.has(part.kind)) return;
     seen.add(part.kind);
     parts.push(part);
   };
@@ -145,11 +159,12 @@ export function parseReport(
   if (explicit.hours != null && explicit.hours > 0) {
     add({ kind: 'hours', value: explicit.hours, reason: 'ticked by the worker' });
   }
-  if (explicit.purchase && (explicit.purchase.quantity || explicit.purchase.name)) {
+  for (const item of explicit.purchases ?? []) {
+    if (!item?.name?.trim()) continue;
     add({
       kind: 'purchase',
-      value: explicit.purchase.quantity ?? undefined,
-      name: explicit.purchase.name,
+      value: item.quantity ?? undefined,
+      name: item.name.trim(),
       reason: 'ticked by the worker',
     });
   }

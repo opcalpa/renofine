@@ -31,6 +31,15 @@ import { analytics, AnalyticsEvents } from '@/lib/analytics';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+/** Matches MAX_PURCHASE_ITEMS in worker-send-report — the server trims to this. */
+const MAX_ORDER_ITEMS = 20;
+
+/** One thing to order: what it is, and how many. */
+interface OrderItem {
+  name: string;
+  quantity: number;
+}
+
 export interface ComposerTask {
   id: string;
   title: string;
@@ -66,8 +75,10 @@ export function WorkerComposer({ token, tasks, taskId, canCreatePurchases, onSen
   const [active, setActive] = useState<Set<AddOn>>(new Set());
   const [progress, setProgress] = useState(50);
   const [hours, setHours] = useState(8);
-  const [quantity, setQuantity] = useState(1);
-  const [productName, setProductName] = useState('');
+  /** One line per thing needed. A day on site rarely needs exactly one item. */
+  const [items, setItems] = useState<OrderItem[]>([{ name: '', quantity: 1 }]);
+  /** Once the worker edits the list themselves, the text stops overwriting it. */
+  const itemsTouched = useRef(false);
 
   const [chosenTask, setChosenTask] = useState<string | null>(taskId ?? null);
   /** The receipt: what the server made of the last report. */
@@ -102,11 +113,33 @@ export function WorkerComposer({ token, tasks, taskId, canCreatePurchases, onSen
 
   // Typing "10 penslar" fills the quantity and the product before either is
   // ever asked for — the same courtesy the old composer did for quantity only.
+  // Only the first line, and only until the worker touches the list: filling in
+  // rows someone is already editing takes the pen out of their hand.
   useEffect(() => {
+    if (itemsTouched.current) return;
     const parsed = parseNeed(text);
-    if (parsed.quantity) setQuantity(parsed.quantity);
-    if (parsed.name) setProductName(parsed.name);
+    if (!parsed.quantity && !parsed.name) return;
+    setItems((prev) => {
+      const [first, ...rest] = prev;
+      return [
+        { name: parsed.name || first.name, quantity: parsed.quantity || first.quantity },
+        ...rest,
+      ];
+    });
   }, [text]);
+
+  const setItem = (i: number, patch: Partial<OrderItem>) => {
+    itemsTouched.current = true;
+    setItems((prev) => prev.map((it, idx) => (idx === i ? { ...it, ...patch } : it)));
+  };
+  const addItem = () => {
+    itemsTouched.current = true;
+    setItems((prev) => (prev.length >= MAX_ORDER_ITEMS ? prev : [...prev, { name: '', quantity: 1 }]));
+  };
+  const removeItem = (i: number) => {
+    itemsTouched.current = true;
+    setItems((prev) => (prev.length === 1 ? prev : prev.filter((_, idx) => idx !== i)));
+  };
 
   // "Which task?" is skipped when there is exactly one — so the one must
   // actually be chosen, or the report lands on the project and moves nothing.
@@ -130,8 +163,8 @@ export function WorkerComposer({ token, tasks, taskId, canCreatePurchases, onSen
     setText('');
     setPhoto(null);
     setActive(new Set());
-    setQuantity(1);
-    setProductName('');
+    setItems([{ name: '', quantity: 1 }]);
+    itemsTouched.current = false;
     if (!taskId) setChosenTask(null);
     if (fileRef.current) fileRef.current.value = '';
   };
@@ -149,12 +182,23 @@ export function WorkerComposer({ token, tasks, taskId, canCreatePurchases, onSen
       if (active.has('progress')) fd.append('progress', String(progress));
       if (active.has('hours')) fd.append('hours', String(hours));
       if (active.has('purchase')) {
-        fd.append('purchaseName', productName.trim() || text.trim() || t('field.unnamedItem', 'Material'));
-        fd.append('purchaseQuantity', String(quantity));
+        const listed = items
+          .filter((it) => it.name.trim())
+          .map((it) => ({ name: it.name.trim(), quantity: it.quantity }));
+        // Ticking "Beställ" and naming nothing still means something is needed —
+        // the words become the item rather than the request being dropped.
+        fd.append(
+          'purchaseItems',
+          JSON.stringify(
+            listed.length > 0
+              ? listed
+              : [{ name: text.trim() || t('field.unnamedItem', 'Material'), quantity: items[0]?.quantity ?? 1 }]
+          )
+        );
       }
       return fd;
     },
-    [token, effectiveTaskId, text, photo, active, progress, hours, quantity, productName, t]
+    [token, effectiveTaskId, text, photo, active, progress, hours, items, t]
   );
 
   const post = useCallback(
@@ -425,39 +469,69 @@ export function WorkerComposer({ token, tasks, taskId, canCreatePurchases, onSen
       )}
 
       {active.has('purchase') && (
-        <div className="space-y-2 rounded-lg bg-muted/40 px-3 py-2">
-          <Input
-            value={productName}
-            onChange={(e) => setProductName(e.target.value)}
-            placeholder={t('field.whatToBuy', 'Vad behövs?')}
-            className="h-11"
-          />
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-sm">{t('field.howMany', 'Hur många?')}</span>
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                className="h-11 w-11"
-                onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                aria-label="-"
+        <div className="space-y-1.5 rounded-lg bg-muted/40 px-3 py-2">
+          {/* Item and count share a row: a phone held in a glove has little
+              screen, and a stacked "Hur många?" label per item would push the
+              send button off it once more than one thing is needed. */}
+          {items.map((item, i) => (
+            <div key={i} className="flex items-center gap-1.5">
+              <Input
+                value={item.name}
+                onChange={(e) => setItem(i, { name: e.target.value })}
+                placeholder={t('field.whatToBuy', 'Vad behövs?')}
+                className="h-11 min-w-0 flex-1"
+              />
+              <div
+                role="group"
+                aria-label={t('field.howMany', 'Hur många?')}
+                className="flex shrink-0 items-center gap-0.5"
               >
-                −
-              </Button>
-              <span className="w-10 text-center text-lg font-medium tabular-nums">{quantity}</span>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                className="h-11 w-11"
-                onClick={() => setQuantity((q) => q + 1)}
-                aria-label="+"
-              >
-                +
-              </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-11 w-10"
+                  onClick={() => setItem(i, { quantity: Math.max(1, item.quantity - 1) })}
+                  aria-label="-"
+                >
+                  −
+                </Button>
+                <span className="w-6 text-center text-base font-medium tabular-nums">{item.quantity}</span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-11 w-10"
+                  onClick={() => setItem(i, { quantity: item.quantity + 1 })}
+                  aria-label="+"
+                >
+                  +
+                </Button>
+              </div>
+              {items.length > 1 && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-11 w-8 shrink-0 text-muted-foreground"
+                  onClick={() => removeItem(i)}
+                  aria-label={t('field.removeItem', 'Ta bort')}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
             </div>
-          </div>
+          ))}
+          {items.length < MAX_ORDER_ITEMS && (
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-10 w-full text-sm text-muted-foreground"
+              onClick={addItem}
+            >
+              + {t('field.addAnotherItem', 'Lägg till fler')}
+            </Button>
+          )}
         </div>
       )}
 

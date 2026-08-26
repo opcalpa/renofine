@@ -7796,6 +7796,8 @@
     "hoursToday": "Годин сьогодні",
     "whatToBuy": "Що потрібно?",
     "sentColon": "Надіслано:",
-    "receiptHours": "{{count}} год"
+    "receiptHours": "{{count}} год",
+    "addAnotherItem": "Додати ще",
+    "removeItem": "Видалити"
   }
 }

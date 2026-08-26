@@ -8363,7 +8363,9 @@
     "hoursToday": "Timmar idag",
     "whatToBuy": "Vad behövs?",
     "sentColon": "Skickat:",
-    "receiptHours": "{{count}} h"
+    "receiptHours": "{{count}} h",
+    "addAnotherItem": "Lägg till fler",
+    "removeItem": "Ta bort"
   },
   "fieldInbox": {
     "title": "Från fältet",

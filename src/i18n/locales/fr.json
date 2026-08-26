@@ -7999,6 +7999,8 @@
     "hoursToday": "Heures aujourd'hui",
     "whatToBuy": "Que faut-il ?",
     "sentColon": "Envoyé :",
-    "receiptHours": "{{count}} h"
+    "receiptHours": "{{count}} h",
+    "addAnotherItem": "Ajouter un autre",
+    "removeItem": "Supprimer"
   }
 }

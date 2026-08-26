@@ -1177,7 +1177,9 @@
     "hoursToday": "Tunde täna",
     "whatToBuy": "Mida on vaja?",
     "sentColon": "Saadetud:",
-    "receiptHours": "{{count}} h"
+    "receiptHours": "{{count}} h",
+    "addAnotherItem": "Lisa veel",
+    "removeItem": "Eemalda"
   },
   "worker": {
     "acknowledge": "Olen tööd lugenud",
