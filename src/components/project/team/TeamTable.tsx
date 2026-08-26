@@ -1,6 +1,6 @@
 import { Fragment, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Crown, Pencil, X, Phone, Mail, ChevronDown, ChevronRight, Copy, MessageCircle, Send, Clock, Eye, EyeOff } from "lucide-react";
+import { Crown, Pencil, X, Phone, Mail, ChevronDown, ChevronRight, Copy, MessageCircle, Send, Clock, Eye, EyeOff, CheckCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Table,
@@ -52,6 +52,8 @@ export interface TeamRow {
   personnummerLast4: string | null;
   /** Read-receipt: when the worker last opened their link (null = never opened). */
   lastAccessedAt?: string | null;
+  /** When the worker confirmed they had read the job. */
+  acknowledgedAt?: string | null;
 }
 
 interface TeamTableProps {
@@ -103,41 +105,56 @@ function modePill(row: TeamRow): Pill | null {
 }
 
 /**
- * Read-receipt pill for worker rows — "Öppnad" / "Ej öppnad ännu" at a glance,
- * with the exact last-access date on hover. Data already lives on the row
- * (last_accessed_at is tracked by get-worker-data and protected from the
- * preview-bump), it was just never surfaced.
+ * Read-receipt pill for worker rows — three states, not two.
+ *
+ * "Öppnad" only ever meant the link was fetched. Opened is not read, and read
+ * is not understood, which matters most where the instruction is in a language
+ * the reader learned second. "Bekräftad" is the worker's own tap.
  */
 function ReadReceiptBadge({
   lastAccessedAt,
+  acknowledgedAt,
   t,
 }: {
   lastAccessedAt: string | null | undefined;
+  acknowledgedAt?: string | null;
   t: (key: string, fallback?: string) => string;
 }) {
   const opened = !!lastAccessedAt;
+  const confirmed = !!acknowledgedAt;
   const badge = (
     <span
       className={cn(
         "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium",
-        opened
-          ? "bg-emerald-100 text-emerald-800"
-          : "bg-muted text-muted-foreground",
+        confirmed
+          ? "bg-emerald-100 text-emerald-900"
+          : opened
+            ? "bg-emerald-50 text-emerald-800"
+            : "bg-muted text-muted-foreground",
       )}
     >
-      {opened ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
-      {opened
-        ? t("teamWorker.opened", "Öppnad")
-        : t("teamWorker.notOpenedYet", "Ej öppnad ännu")}
+      {confirmed ? <CheckCheck className="h-3 w-3" /> : opened ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+      {confirmed
+        ? t("teamWorker.acknowledged", "Bekräftad")
+        : opened
+          ? t("teamWorker.opened", "Öppnad")
+          : t("teamWorker.notOpenedYet", "Ej öppnad ännu")}
     </span>
   );
-  if (!opened) return badge;
+  if (!opened && !confirmed) return badge;
   return (
     <Tooltip>
       <TooltipTrigger asChild>{badge}</TooltipTrigger>
       <TooltipContent>
         {t("teamWorker.lastAccessed", "Senast besökt")}:{" "}
-        {new Date(lastAccessedAt!).toLocaleString()}
+        {lastAccessedAt ? new Date(lastAccessedAt).toLocaleString() : "—"}
+        {confirmed && (
+          <>
+            <br />
+            {t("teamWorker.acknowledgedAt", "Bekräftad")}:{" "}
+            {new Date(acknowledgedAt!).toLocaleString()}
+          </>
+        )}
       </TooltipContent>
     </Tooltip>
   );
@@ -352,7 +369,7 @@ export function TeamTable({
                         {t(`team.status.${row.status}`, row.status)}
                       </Badge>
                       {row.type === "worker" && (
-                        <ReadReceiptBadge lastAccessedAt={row.lastAccessedAt} t={t} />
+                        <ReadReceiptBadge lastAccessedAt={row.lastAccessedAt} acknowledgedAt={row.acknowledgedAt} t={t} />
                       )}
                     </div>
                   </div>
@@ -559,7 +576,7 @@ export function TeamTable({
                       {t(`team.status.${row.status}`, row.status)}
                     </Badge>
                     {row.type === "worker" && (
-                      <ReadReceiptBadge lastAccessedAt={row.lastAccessedAt} t={t} />
+                      <ReadReceiptBadge lastAccessedAt={row.lastAccessedAt} acknowledgedAt={row.acknowledgedAt} t={t} />
                     )}
                   </div>
                 </TableCell>

@@ -26,6 +26,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { parseNeed } from '@/lib/fieldIntent';
+import { analytics, AnalyticsEvents } from '@/lib/analytics';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -165,7 +166,18 @@ export function WorkerComposer({ token, tasks, taskId, canCreatePurchases, onSen
       });
       if (!res.ok) throw new Error(`report failed: ${res.status}`);
       const data = await res.json();
-      setReceipt(Array.isArray(data?.parts) ? data.parts : []);
+      const parts: ReportPart[] = Array.isArray(data?.parts) ? data.parts : [];
+      setReceipt(parts);
+      // What a report actually carries is the question worth answering: did
+      // combining parts in one message happen, or do people still send one
+      // thing at a time?
+      analytics.capture(AnalyticsEvents.FIELD_REPORT_SENT, {
+        parts: parts.map((p) => p.kind),
+        part_count: parts.length,
+        has_photo: !!photo,
+        has_voice: fd.has('voice'),
+        has_text: !!fd.get('text'),
+      });
       toast.success(t('field.sent', 'Skickat'));
       reset();
       onSent?.();

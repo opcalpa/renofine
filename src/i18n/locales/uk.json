@@ -4757,7 +4757,9 @@
     "taskCount_one": "{{count}} завдання",
     "taskCount_other": "{{count}} завдань",
     "roomEyebrow": "КІМНАТА",
-    "taskEyebrow": "ЗАВДАННЯ"
+    "taskEyebrow": "ЗАВДАННЯ",
+    "acknowledge": "Я прочитав завдання",
+    "acknowledged": "Ви підтвердили завдання"
   },
   "teamWorker": {
     "workers": "Працівники",

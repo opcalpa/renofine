@@ -5193,7 +5193,9 @@
     "showOriginal": "Pokaż oryginał",
     "showTranslated": "Pokaż tłumaczenie",
     "completeTaskWithPhoto": "Oznacz jako ukończone + zdjęcie",
-    "photoRequiredHint": "Zdjęcie wymagane do zakończenia"
+    "photoRequiredHint": "Zdjęcie wymagane do zakończenia",
+    "acknowledge": "Przeczytałem zlecenie",
+    "acknowledged": "Potwierdziłeś zlecenie"
   },
   "planningWizard": {
     "micDenied": "Mikrofon jest zablokowany — sprawdź uprawnienia przeglądarki.",

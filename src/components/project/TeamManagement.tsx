@@ -359,7 +359,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
   const [workerTokens, setWorkerTokens] = useState<Array<{
     id: string; token: string; worker_name: string; worker_phone: string | null;
     worker_email: string | null; worker_language: string; assigned_task_ids: string[];
-    expires_at: string; last_accessed_at: string | null; revoked_at: string | null;
+    expires_at: string; last_accessed_at: string | null; acknowledged_at: string | null; revoked_at: string | null;
     can_create_purchases: boolean; can_log_receipts: boolean; created_at: string;
   }>>([]);
   const [workerTaskNames, setWorkerTaskNames] = useState<Record<string, string>>({});
@@ -533,7 +533,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
       if (canManageTeam) {
         const { data: wTokens } = await supabase
           .from("worker_access_tokens")
-          .select("id, token, worker_name, worker_phone, worker_email, worker_language, assigned_task_ids, expires_at, last_accessed_at, revoked_at, can_create_purchases, can_log_receipts, created_at")
+          .select("id, token, worker_name, worker_phone, worker_email, worker_language, assigned_task_ids, expires_at, last_accessed_at, acknowledged_at, revoked_at, can_create_purchases, can_log_receipts, created_at")
           .eq("project_id", projectId)
           .order("created_at", { ascending: false });
         setWorkerTokens((wTokens || []) as typeof workerTokens);
@@ -938,6 +938,7 @@ const TeamManagement = ({ projectId, isOwner, canManageTeam: canManageProp }: Te
         workerToken: wt.token,
         personnummerLast4: null,
         lastAccessedAt: wt.last_accessed_at,
+        acknowledgedAt: wt.acknowledged_at,
       });
     }
 

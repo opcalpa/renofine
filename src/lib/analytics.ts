@@ -125,6 +125,13 @@ export const AnalyticsEvents = {
 
   // Errors (supplement to Sentry)
   ERROR_BOUNDARY_TRIGGERED: "error_boundary_triggered",
+
+  // Field reports — the worker link. `parts` is what the server understood,
+  // and seconds_to_answer is the number that says whether the builder
+  // actually got faster; everything else here is a vanity count.
+  FIELD_REPORT_SENT: "field_report_sent",
+  FIELD_REPORT_ANSWERED: "field_report_answered",
+  WORKER_ACKNOWLEDGED: "worker_acknowledged",
 } as const;
 
 /**

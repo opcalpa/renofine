@@ -23,6 +23,7 @@ import {
 } from "@/hooks/useFieldInbox";
 import { useCurrentProfileId } from "@/hooks/useCurrentProfileId";
 import { formatCurrency } from "@/lib/currency";
+import { analytics, AnalyticsEvents } from "@/lib/analytics";
 
 /**
  * "Från fältet" — the builder's inbox for what has stopped somebody on site.
@@ -153,8 +154,20 @@ export function FieldInboxSection({
       .filter((c) => c.parts.length > 0);
   }, [cards, filter]);
 
+  /**
+   * Time-to-answer is the one number that says whether the builder actually
+   * got faster. Everything else about this surface is a vanity count.
+   */
+  const trackAnswered = useCallback((kind: string, createdAt: string, decision: string) => {
+    analytics.capture(AnalyticsEvents.FIELD_REPORT_ANSWERED, {
+      part: kind,
+      decision,
+      seconds_to_answer: Math.max(0, Math.round((Date.now() - new Date(createdAt).getTime()) / 1000)),
+    });
+  }, []);
+
   const answerQuestion = useCallback(
-    async (part: FieldInboxPart, answer: string) => {
+    async (part: FieldInboxPart, answer: string, createdAt: string) => {
       if (!profileId) return;
       setBusy(part.id);
       const { error } = await supabase.from("comments").insert({
@@ -184,17 +197,18 @@ export function FieldInboxSection({
         toast.error(t("fieldInbox.answerFailed", "Kunde inte skicka svaret"));
         return;
       }
+      trackAnswered("question", createdAt, answer);
       removePart(part.id);
       setReplyingTo(null);
       setReplyText("");
       toast.success(t("fieldInbox.answerSent", "Svar skickat"));
       void reload();
     },
-    [profileId, projectId, removePart, reload, t]
+    [profileId, projectId, removePart, reload, t, trackAnswered]
   );
 
   const decidePurchase = useCallback(
-    async (part: FieldInboxPart, decision: "approved" | "declined") => {
+    async (part: FieldInboxPart, decision: "approved" | "declined", createdAt: string) => {
       if (!part.purchase) return;
       setBusy(part.id);
       const { error } = await supabase
@@ -207,6 +221,7 @@ export function FieldInboxSection({
         toast.error(t("fieldInbox.decisionFailed", "Kunde inte spara beslutet"));
         return;
       }
+      trackAnswered("purchase", createdAt, decision);
       removePart(part.id);
       toast.success(
         decision === "approved"
@@ -215,7 +230,7 @@ export function FieldInboxSection({
       );
       void reload();
     },
-    [removePart, reload, t]
+    [removePart, reload, t, trackAnswered]
   );
 
   /**
@@ -223,7 +238,7 @@ export function FieldInboxSection({
    * deleted: a claim that was made stays visible.
    */
   const decideHours = useCallback(
-    async (part: FieldInboxPart, decision: "approved" | "declined") => {
+    async (part: FieldInboxPart, decision: "approved" | "declined", createdAt: string) => {
       setBusy(part.id);
       const patch =
         decision === "approved"
@@ -236,6 +251,7 @@ export function FieldInboxSection({
         toast.error(t("fieldInbox.decisionFailed", "Kunde inte spara beslutet"));
         return;
       }
+      trackAnswered("hours", createdAt, decision);
       removePart(part.id);
       toast.success(
         decision === "approved"
@@ -244,7 +260,7 @@ export function FieldInboxSection({
       );
       void reload();
     },
-    [profileId, removePart, reload, t]
+    [profileId, removePart, reload, t, trackAnswered]
   );
 
   /**
@@ -444,7 +460,7 @@ export function FieldInboxSection({
                           <button
                             type="button"
                             disabled={disabled}
-                            onClick={() => void decideHours(part, "approved")}
+                            onClick={() => void decideHours(part, "approved", card.createdAt)}
                             className={`${btnPrimary} md:flex-grow`}
                           >
                             <Check className="h-4 w-4" />
@@ -453,7 +469,7 @@ export function FieldInboxSection({
                           <button
                             type="button"
                             disabled={disabled}
-                            onClick={() => void decideHours(part, "declined")}
+                            onClick={() => void decideHours(part, "declined", card.createdAt)}
                             className={btnSecondary}
                           >
                             {t("common.no", "Nej")}
@@ -486,7 +502,7 @@ export function FieldInboxSection({
                           <button
                             type="button"
                             disabled={disabled}
-                            onClick={() => void decidePurchase(part, "approved")}
+                            onClick={() => void decidePurchase(part, "approved", card.createdAt)}
                             className={`${btnPrimary} col-span-2 md:col-span-1 md:flex-grow`}
                           >
                             <Check className="h-4 w-4" />
@@ -495,7 +511,7 @@ export function FieldInboxSection({
                           <button
                             type="button"
                             disabled={disabled}
-                            onClick={() => void decidePurchase(part, "declined")}
+                            onClick={() => void decidePurchase(part, "declined", card.createdAt)}
                             className={btnSecondary}
                           >
                             {t("common.no", "Nej")}
@@ -530,7 +546,7 @@ export function FieldInboxSection({
                           <button
                             type="button"
                             disabled={disabled || !replyText.trim()}
-                            onClick={() => void answerQuestion(part, replyText.trim())}
+                            onClick={() => void answerQuestion(part, replyText.trim(), card.createdAt)}
                             className={`${btnPrimary} flex-grow`}
                           >
                             <Send className="h-4 w-4" />
@@ -556,7 +572,7 @@ export function FieldInboxSection({
                       <button
                         type="button"
                         disabled={disabled}
-                        onClick={() => void answerQuestion(part, t("common.yes", "Ja"))}
+                        onClick={() => void answerQuestion(part, t("common.yes", "Ja"), card.createdAt)}
                         className={btnPrimary}
                       >
                         <Check className="h-4 w-4" />
@@ -565,7 +581,7 @@ export function FieldInboxSection({
                       <button
                         type="button"
                         disabled={disabled}
-                        onClick={() => void answerQuestion(part, t("common.no", "Nej"))}
+                        onClick={() => void answerQuestion(part, t("common.no", "Nej"), card.createdAt)}
                         className={btnSecondary}
                       >
                         <X className="h-4 w-4" />

@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Loader2, AlertCircle, Wrench, Layers, List, Languages } from "lucide-react";
+import { Loader2, AlertCircle, Wrench, Layers, List, Languages, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { analytics, AnalyticsEvents } from "@/lib/analytics";
 import { WorkerTaskCard, type WorkerTask } from "@/components/worker/WorkerTaskCard";
 import type { FloorPlanObject, WallNote, WallObject, WallSurface } from "@/components/worker/roomObjectShared";
 import { SwipeableRoomInstructions, groupWorkerTasksByRoom } from "@/components/room-instructions";
@@ -45,6 +46,8 @@ interface WorkerViewData {
   workerName: string;
   language: string;
   welcomeMessage: string | null;
+  /** When the worker confirmed they had read the job. Null until they do. */
+  acknowledgedAt: string | null;
   canUploadPhotos: boolean;
   canToggleChecklist: boolean;
   canCreatePurchases?: boolean;
@@ -75,6 +78,9 @@ export default function WorkerView() {
   // Original always stays on data.welcomeMessage so user can toggle back.
   const [welcomeTranslated, setWelcomeTranslated] = useState<string | null>(null);
   const [showOriginalGreeting, setShowOriginalGreeting] = useState(false);
+  // Optimistic: the confirmation is one tap and must feel like one.
+  const [acknowledged, setAcknowledged] = useState(false);
+  const [acknowledging, setAcknowledging] = useState(false);
 
   // Group tasks by room for swipe view
   const roomInstructions = useMemo(
@@ -401,6 +407,51 @@ export default function WorkerView() {
               </button>
             )}
           </div>
+        </div>
+      )}
+
+      {/* "I have read the job."
+          Opened is not read, and read is not understood — which matters most
+          exactly here, where the instruction is in a language the reader
+          learned second. One tap, never blocking: the job is readable either
+          way, and a worker who ignores this loses nothing. */}
+      {token && !data.acknowledgedAt && !acknowledged && (data.welcomeMessage || data.tasks.length > 0) && (
+        <div className="max-w-lg mx-auto px-4 pt-3">
+          <button
+            type="button"
+            disabled={acknowledging}
+            onClick={async () => {
+              setAcknowledging(true);
+              try {
+                const { error } = await supabase.functions.invoke("worker-acknowledge", {
+                  body: { token },
+                });
+                if (error) throw error;
+                setAcknowledged(true);
+                analytics.capture(AnalyticsEvents.WORKER_ACKNOWLEDGED, {
+                  language: data.language,
+                });
+              } catch (err) {
+                console.error("Acknowledge failed:", err);
+                toast.error(t("common.error", "Kunde inte skicka"));
+              } finally {
+                setAcknowledging(false);
+              }
+            }}
+            className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 text-sm font-medium disabled:opacity-60"
+          >
+            <Check className="h-4 w-4" />
+            {t("worker.acknowledge", "Jag har läst jobbet")}
+          </button>
+        </div>
+      )}
+
+      {token && (data.acknowledgedAt || acknowledged) && (
+        <div className="max-w-lg mx-auto px-4 pt-3">
+          <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+            <Check className="h-3.5 w-3.5" />
+            {t("worker.acknowledged", "Du har bekräftat jobbet")}
+          </p>
         </div>
       )}
 

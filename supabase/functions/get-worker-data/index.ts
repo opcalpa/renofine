@@ -96,6 +96,8 @@ serve(async (req) => {
         workerName: tokenRecord.worker_name,
         language: tokenRecord.worker_language,
         welcomeMessage: tokenRecord.welcome_message || null,
+        // Opened is not read. This is the worker's own confirmation.
+        acknowledgedAt: tokenRecord.acknowledged_at || null,
         canUploadPhotos: tokenRecord.can_upload_photos,
         canToggleChecklist: tokenRecord.can_toggle_checklist,
         canCreatePurchases: tokenRecord.can_create_purchases ?? true,
@@ -585,6 +587,8 @@ serve(async (req) => {
       language: workerLang,
       workerLanguage: tokenRecord.worker_language,
       welcomeMessage: tokenRecord.welcome_message || null,
+      // Opened is not read. This is the worker's own confirmation.
+      acknowledgedAt: tokenRecord.acknowledged_at || null,
       canUploadPhotos: tokenRecord.can_upload_photos,
       canToggleChecklist: tokenRecord.can_toggle_checklist,
       canCreatePurchases: tokenRecord.can_create_purchases ?? true,

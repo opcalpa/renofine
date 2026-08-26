@@ -1178,5 +1178,9 @@
     "whatToBuy": "Ce este necesar?",
     "sentColon": "Trimis:",
     "receiptHours": "{{count}} h"
+  },
+  "worker": {
+    "acknowledge": "Am citit lucrarea",
+    "acknowledged": "Ai confirmat lucrarea"
   }
 }

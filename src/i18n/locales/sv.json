@@ -6941,7 +6941,9 @@
     "photoRequiredHint": "Foto krävs för att markera klart",
     "roomEyebrow": "RUM",
     "taskEyebrow": "UPPGIFT",
-    "taskCount": "{{count}} uppgifter"
+    "taskCount": "{{count}} uppgifter",
+    "acknowledge": "Jag har läst jobbet",
+    "acknowledged": "Du har bekräftat jobbet"
   },
   "teamWorker": {
     "workers": "Arbetare",
@@ -6994,7 +6996,9 @@
     "previewHint": "Välj en uppgift för att se hur arbetaren ser den",
     "contactStepDescription": "Fyll i kontaktuppgifter för arbetaren",
     "beforePhotos": "Före-bilder",
-    "fromRoom": "rum"
+    "fromRoom": "rum",
+    "acknowledged": "Bekräftad",
+    "acknowledgedAt": "Bekräftad"
   },
   "batchTolk": {
     "title": "Smart Tolk",

@@ -1178,5 +1178,9 @@
     "whatToBuy": "Ko reikia?",
     "sentColon": "Išsiųsta:",
     "receiptHours": "{{count}} val."
+  },
+  "worker": {
+    "acknowledge": "Perskaičiau darbą",
+    "acknowledged": "Patvirtinote darbą"
   }
 }
