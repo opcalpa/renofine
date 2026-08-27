@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { X, FlaskConical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -8,6 +8,7 @@ const DISMISSED_KEY = "beta-banner-dismissed-v1";
 
 export function BetaBanner() {
   const { t } = useTranslation();
+  const { pathname } = useLocation();
   const [isLoaded, setIsLoaded] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
 
@@ -22,8 +23,9 @@ export function BetaBanner() {
     setIsDismissed(true);
   };
 
-  // Don't render until we've checked localStorage (prevents flash)
-  if (!isLoaded || isDismissed) {
+  // Don't render until we've checked localStorage (prevents flash).
+  // Embedded demos (/embed/*) live inside an iframe on another site: no banner there.
+  if (!isLoaded || isDismissed || pathname.startsWith("/embed/")) {
     return null;
   }
 

@@ -9,6 +9,7 @@ import { GuestProvider } from "@/contexts/GuestContext";
 import { MeasurementProvider } from "@/contexts/MeasurementContext";
 import "@/i18n/config";
 import Index from "./pages/Index";
+import EmbedRenaida from "./pages/EmbedRenaida";
 import Auth from "./pages/Auth";
 import Projects from "./pages/Projects";
 import ProjectDetail from "./pages/ProjectDetail";
@@ -69,6 +70,7 @@ function isPublicAppPath(pathname: string): boolean {
   return (
     publicPaths.includes(pathname) ||
     pathname.startsWith("/w/") ||
+    pathname.startsWith("/embed/") ||
     pathname.startsWith("/intake/") ||
     pathname.startsWith("/quotes/") ||
     pathname.startsWith("/invoices/")
@@ -135,6 +137,8 @@ const App = () => (
             <Routes>
               {/* ── Public routes ── */}
               <Route path="/" element={<Index />} />
+              {/* Frame-friendly Renaida demo for carlpalmquist.com (iframe). Zero backend. */}
+              <Route path="/embed/renaida" element={<EmbedRenaida />} />
               <Route path="/_doc-playground" element={<Suspense fallback={null}><DocPlayground /></Suspense>} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/invitation" element={<InvitationResponse />} />
