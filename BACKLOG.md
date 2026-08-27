@@ -419,6 +419,99 @@ edge-funktion om behovet uppstår.
 stället för 25, och Carl upptäcker appen som hans användare ser den.
 
 ---
+id: vinn-bygglet-kunder
+status: todo
+priority: P1
+tags: [strategy, pro, bygglet, pricing, pilot, carl]
+created: 2026-08-27
+updated: 2026-08-27
+resources: [Analysen | /Users/calpa/Developer/Renofine/docs/vinn-bygglet-kunder-2026-08.md]
+---
+## Vinna Bygglets kunder — och behålla dem (epic)
+
+**Fable-analys 2026-08-27**, kodverifierad i två resor + webbresearch + SmartCraft Q2.
+Slutsats: **Renofine kan kroka en Bygglet-kund men inte behålla en.** Kroken finns
+(röst på två tryck, tio språk, fältfolk utan platser). Månadsskiftet stänger inte:
+timmar blir aldrig faktura, moms sparas aldrig, ingen fil når revisorn.
+
+Bygglet slås på affären, inte på funktioner: andra kontorsplatsen +959 kr/mån,
+12 mån bindning, +10–12 % pris/år, ingen ukrainska, nettoretention negativ. Ingen
+kör "byt från Bygglet".
+
+**Ordning:** Fas 0 trovärdighet (korten nedan) → Fas 1 kroken (firma-entitet, samma
+komposerare för ägaren, egna timmar, klistra-in-import) → Fas 2 stanna (moms +
+omvänd byggmoms, timmar/ÄTA → faktura, SIE4 nåbar, offline-skal) → Fas 3 pilot med
+3 firmor nära förnyelse. Fyra beslut väntar på Carl i dokumentets sista avsnitt.
+
+---
+id: proffs-onboarding-lovar-osant
+status: todo
+priority: P1
+tags: [bug, pro, onboarding, trust]
+created: 2026-08-27
+updated: 2026-08-27
+resources: [Analysen | /Users/calpa/Developer/Renofine/docs/vinn-bygglet-kunder-2026-08.md]
+---
+## Proffs-onboardingen lovar två saker som inte finns
+
+`ContractorStart.tsx:169-186` säger "Importera kundregister — CSV från ditt nuvarande
+system" och "Fortnox, Visma eller Bokio — fakturor flödar automatiskt". **Ingen av dem
+existerar i koden** (noll `papaparse`/`xlsx`/`text/csv`; ingen Fortnox/Visma-kod).
+Det är det första en kontorsperson från Bygglet läser. Ta bort tills det är byggt.
+
+Samma svep: `Projects.tsx:489` saknar guard så proffsens snabbval sväljs;
+"Hantera kundregister" länkar till `/contractor/clients` som ger 404
+(`ProjectCustomerCard.tsx:95,155`).
+
+---
+id: ata-tokens-anon-update
+status: todo
+priority: P1
+tags: [security, rls, ata]
+created: 2026-08-27
+updated: 2026-08-27
+---
+## ÄTA-tokens: anon får UPDATE på alla rader
+
+`20260428120000_create_ata_approval_tokens.sql:48-58` ger `anon` SELECT **och UPDATE**
+på hela tabellen med `USING (true)`. Vem som helst kan godkänna vilken ÄTA som helst
+utan att kunna länken. Rätt form: UPDATE bara via edge-funktion med service role som
+verifierar token — eller policy `USING (token = current_setting(...))`. Skriv revert
+först, testa mot TABELLEN (inte bara predikatet).
+
+---
+id: paxml-export-tom-fil
+status: todo
+priority: P1
+tags: [bug, pro, lon, export]
+created: 2026-08-27
+updated: 2026-08-27
+---
+## PAXml-exporten säger "klart" och levererar en tom fil
+
+`paxmlExportService.ts:104` matchar `profiles.user_id` mot värden som är `profiles.id`
+(`TimeTrackingTab.tsx:100,171`) ⇒ `workerMap` tom ⇒ varje rad hoppas över vid `:131`
+⇒ grön toast över en tom fil. En tom fil med "klart" är värre än ingen knapp.
+Laga id-matchningen och lägg en vakt: noll rader ⇒ säg det, ingen fil.
+
+---
+id: sprakbyte-oversatter-inte-arbetena
+status: todo
+priority: P1
+tags: [bug, worker, sprak, changelog]
+created: 2026-08-27
+updated: 2026-08-27
+---
+## Språkbytet i arbetarvyn lämnar arbetena på svenska
+
+`translate-task-content` anropas från exakt ett ställe — `submitInvite.ts:287`, vid
+inbjudan, för inbjudningsspråket. Byter arbetaren flagga till ett annat språk läses
+cachade tabeller som saknar det språket ⇒ arbeten/rum/instruktioner står kvar på
+svenska. Fix: on-demand backfill vid byte (samma funktion, nytt språk, cacha).
+**Changelog-inlägget 26/8 "hela sidan byter, inte bara knapparna" överdriver** — rätta
+texten samtidigt.
+
+---
 id: paminnelse-vid-dagens-slut
 status: todo
 priority: P2

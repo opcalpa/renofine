@@ -335,6 +335,10 @@ Versionssystem (semver):
   av integrationer med growth som lins, gatekeeper-status per plattform, och
   vilka dörrar som är stängda (byggvaruhus, hitta-byggare). Har en
   rättelse-sektion från kod-verifiering 2026-08-25 — läs den före planering.
+- **Bygglet-kunder (vinna + behålla):** `docs/vinn-bygglet-kunder-2026-08.md` —
+  kodverifierad status för kontors- och fältresan steg för steg, Bygglets 2026-priser
+  och klagomål, SmartCraft Q2, ordningen fas 0–3 och fyra beslut. Läs den före allt
+  proffs-/GTM-arbete; minnets gap-tabell från april är inaktuell.
 
 ---
 *Last Updated: 2026-08-25*
