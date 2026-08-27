@@ -30,6 +30,7 @@ import { useProjectLock } from "@/hooks/useProjectLock";
 import { CommentsSection } from "@/components/comments/CommentsSection";
 import { ProjectChatSection } from "./overview/ProjectChatSection";
 import { FieldInboxSection } from "./overview/FieldInboxSection";
+import { SiteReportCard } from "./overview/SiteReportCard";
 import { PlanningTaskList } from "./overview/PlanningTaskList";
 import { PlanningRoomList } from "./overview/PlanningRoomList";
 import { HomeownerPlanningView } from "./overview/HomeownerPlanningView";
@@ -489,6 +490,14 @@ const OverviewTab = ({
           isGuest excludes the guest plan; isInvitedClient excludes the
           customer — the field talks to the builder, who forwards what is
           genuinely the customer's call. */}
+      {/* The owner's own report, in the same place they read everyone else's. */}
+      {!isGuest && !isInvitedClient && (
+        <SiteReportCard
+          projectId={project.id}
+          enabled={isProjectOwner || overviewAccess === 'edit'}
+        />
+      )}
+
       {!isGuest && !isInvitedClient && (
         <FieldInboxSection
           projectId={project.id}

@@ -8369,7 +8369,8 @@
     "undo": "Undo",
     "undone": "Undone",
     "undoTooLate": "Too late to undo",
-    "undoTooLateBuilder": "The builder has already responded"
+    "undoTooLateBuilder": "The builder has already responded",
+    "fromSite": "From the site"
   },
   "fieldInbox": {
     "title": "From the site",

@@ -1183,7 +1183,8 @@
     "undo": "Võta tagasi",
     "undone": "Tagasi võetud",
     "undoTooLate": "Tagasivõtmiseks on hilja",
-    "undoTooLateBuilder": "Ehitusjuht on juba vastanud"
+    "undoTooLateBuilder": "Ehitusjuht on juba vastanud",
+    "fromSite": "Ehitusplatsilt"
   },
   "worker": {
     "acknowledge": "Olen tööd lugenud",

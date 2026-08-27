@@ -7833,6 +7833,7 @@
     "undo": "Cofnij",
     "undone": "Cofnięto",
     "undoTooLate": "Za późno, aby cofnąć",
-    "undoTooLateBuilder": "Kierownik już zareagował"
+    "undoTooLateBuilder": "Kierownik już zareagował",
+    "fromSite": "Z budowy"
   }
 }

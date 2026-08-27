@@ -255,6 +255,11 @@ const ProjectDetail = () => {
     budget: economyTabAllowed ? permissions.budget : "none",
     table: economyTabAllowed ? permissions.budget : "none",
     team: permissions.teams,
+    // Tid saknades i kartan, så isTabBlocked() föll tillbaka på enbart
+    // modulflaggan medan skrivbordsfliken ALSO kollade permissions.timeTracking.
+    // En medlem utan tidbehörighet hade sett fliken i mobilnavet och landat på
+    // "Ingen behörighet". En karta, båda navigeringarna.
+    timetracking: permissions.timeTracking,
     sharing: (isPublicDemoProject && demoPrefs.preferences.role === "homeowner")
       ? "view"
       : (permissions.customerView || "none"),

@@ -1183,7 +1183,8 @@
     "undo": "Anulează",
     "undone": "Anulat",
     "undoTooLate": "Prea târziu pentru anulare",
-    "undoTooLateBuilder": "Constructorul a răspuns deja"
+    "undoTooLateBuilder": "Constructorul a răspuns deja",
+    "fromSite": "De pe șantier"
   },
   "worker": {
     "acknowledge": "Am citit lucrarea",

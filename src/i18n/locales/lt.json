@@ -1183,7 +1183,8 @@
     "undo": "Atšaukti",
     "undone": "Atšaukta",
     "undoTooLate": "Per vėlu atšaukti",
-    "undoTooLateBuilder": "Vadovas jau atsakė"
+    "undoTooLateBuilder": "Vadovas jau atsakė",
+    "fromSite": "Iš statybvietės"
   },
   "worker": {
     "acknowledge": "Perskaičiau darbą",

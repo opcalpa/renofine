@@ -8004,6 +8004,7 @@
     "undo": "Deshacer",
     "undone": "Deshecho",
     "undoTooLate": "Demasiado tarde para deshacer",
-    "undoTooLateBuilder": "El constructor ya ha respondido"
+    "undoTooLateBuilder": "El constructor ya ha respondido",
+    "fromSite": "Desde la obra"
   }
 }

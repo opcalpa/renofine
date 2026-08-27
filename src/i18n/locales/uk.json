@@ -7803,6 +7803,7 @@
     "undo": "Скасувати",
     "undone": "Скасовано",
     "undoTooLate": "Запізно скасовувати",
-    "undoTooLateBuilder": "Виконроб уже відповів"
+    "undoTooLateBuilder": "Виконроб уже відповів",
+    "fromSite": "З будівництва"
   }
 }

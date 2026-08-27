@@ -8004,6 +8004,7 @@
     "undo": "Annuler",
     "undone": "Annulé",
     "undoTooLate": "Trop tard pour annuler",
-    "undoTooLateBuilder": "Le chef de chantier a déjà répondu"
+    "undoTooLateBuilder": "Le chef de chantier a déjà répondu",
+    "fromSite": "Depuis le chantier"
   }
 }

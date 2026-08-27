@@ -8004,6 +8004,7 @@
     "undo": "Rückgängig",
     "undone": "Rückgängig gemacht",
     "undoTooLate": "Zu spät zum Rückgängigmachen",
-    "undoTooLateBuilder": "Der Bauleiter hat bereits reagiert"
+    "undoTooLateBuilder": "Der Bauleiter hat bereits reagiert",
+    "fromSite": "Von der Baustelle"
   }
 }

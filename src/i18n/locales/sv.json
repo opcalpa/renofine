@@ -8368,7 +8368,8 @@
     "undo": "Ångra",
     "undone": "Ångrat",
     "undoTooLate": "För sent att ångra",
-    "undoTooLateBuilder": "Byggaren har redan tagit ställning"
+    "undoTooLateBuilder": "Byggaren har redan tagit ställning",
+    "fromSite": "Från bygget"
   },
   "fieldInbox": {
     "title": "Från fältet",
