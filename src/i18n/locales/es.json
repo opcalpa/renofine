@@ -8001,6 +8001,10 @@
     "sentColon": "Enviado:",
     "receiptHours": "{{count}} h",
     "addAnotherItem": "Añadir otro",
-    "removeItem": "Quitar"
+    "removeItem": "Quitar",
+    "undo": "Deshacer",
+    "undone": "Deshecho",
+    "undoTooLate": "Demasiado tarde para deshacer",
+    "undoTooLateBuilder": "El constructor ya ha respondido"
   }
 }

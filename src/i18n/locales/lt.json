@@ -1179,7 +1179,11 @@
     "sentColon": "Išsiųsta:",
     "receiptHours": "{{count}} val.",
     "addAnotherItem": "Pridėti dar",
-    "removeItem": "Pašalinti"
+    "removeItem": "Pašalinti",
+    "undo": "Atšaukti",
+    "undone": "Atšaukta",
+    "undoTooLate": "Per vėlu atšaukti",
+    "undoTooLateBuilder": "Vadovas jau atsakė"
   },
   "worker": {
     "acknowledge": "Perskaičiau darbą",

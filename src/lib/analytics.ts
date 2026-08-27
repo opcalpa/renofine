@@ -130,6 +130,9 @@ export const AnalyticsEvents = {
   // and seconds_to_answer is the number that says whether the builder
   // actually got faster; everything else here is a vanity count.
   FIELD_REPORT_SENT: "field_report_sent",
+  // How often the safety net is actually used. A high rate means the reading
+  // is wrong too often; zero means the ten seconds cost nothing.
+  FIELD_REPORT_RETRACTED: "field_report_retracted",
   FIELD_REPORT_ANSWERED: "field_report_answered",
   WORKER_ACKNOWLEDGED: "worker_acknowledged",
 } as const;

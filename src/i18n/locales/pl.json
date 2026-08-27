@@ -7828,6 +7828,10 @@
     "sentColon": "Wysłano:",
     "receiptHours": "{{count}} godz.",
     "addAnotherItem": "Dodaj kolejne",
-    "removeItem": "Usuń"
+    "removeItem": "Usuń",
+    "undo": "Cofnij",
+    "undone": "Cofnięto",
+    "undoTooLate": "Za późno, aby cofnąć",
+    "undoTooLateBuilder": "Kierownik już zareagował"
   }
 }

@@ -8001,6 +8001,10 @@
     "sentColon": "Envoyé :",
     "receiptHours": "{{count}} h",
     "addAnotherItem": "Ajouter un autre",
-    "removeItem": "Supprimer"
+    "removeItem": "Supprimer",
+    "undo": "Annuler",
+    "undone": "Annulé",
+    "undoTooLate": "Trop tard pour annuler",
+    "undoTooLateBuilder": "Le chef de chantier a déjà répondu"
   }
 }

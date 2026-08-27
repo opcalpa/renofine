@@ -121,7 +121,7 @@ function clauses(text: string): string[] {
       // Sentence enders only when a space or the end follows, so "8.5 h" stays
       // one number. Without this, "behöver 5 säckar fog. Vilken fog?" made the
       // question part of the product name.
-      /[\n;,]+|[.!?]+(?=\s|$)|\s+(?:och|and|oraz|i|та|și|ir|ja)\s+/giu
+      /[\n;,]+|[.!?]+(?=\s|$)|\s+(?:och|samt|and|plus|oraz|a także|i|та|також|și|precum și|ir|taip pat|ja|ning)\s+/giu
     )
     .map((c) => c.trim())
     .filter(Boolean);
@@ -200,15 +200,31 @@ export function parseReport(
   }
 
   if (!seen.has('purchase')) {
+    // Every clause that asks for something, not just the first. "behöver 5
+    // säckar fog och 10 penslar" is two errands said in one breath, and the
+    // builder can strike one — a missing line cannot be struck back in.
+    const named = new Set<string>();
+    let asking = false;
     for (const clause of clauses(raw)) {
       BUY_VERBS.lastIndex = 0;
-      if (!BUY_VERBS.test(clause)) continue;
+      const hasVerb = BUY_VERBS.test(clause);
       BUY_VERBS.lastIndex = 0;
-      const need = parseNeed(clause);
-      if (need.name) {
-        add({ kind: 'purchase', value: need.quantity ?? undefined, name: need.name, reason: `from "${clause}"` });
-        break;
+      // The verb carries over: the splitter breaks "fog och 10 penslar" in two
+      // and only the first half keeps "behöver". A clause that merely starts
+      // with a quantity continues the errand; a sentence full of words starts
+      // a new thought and ends it.
+      const continues = asking && /^\d/.test(clause.trim());
+      if (!hasVerb && !continues) {
+        asking = false;
+        continue;
       }
+      const need = parseNeed(clause);
+      if (!need.name) continue;
+      asking = true;
+      const key = need.name.toLowerCase();
+      if (named.has(key)) continue;
+      named.add(key);
+      add({ kind: 'purchase', value: need.quantity ?? undefined, name: need.name, reason: `from "${clause}"` });
     }
   }
 
@@ -249,5 +265,10 @@ export function needsModelPass(text: string, parsed: ParsedReport): boolean {
   const raw = (text || '').trim();
   if (raw.length < 25) return false;
   const structural = parsed.parts.filter((p) => p.kind !== 'note' && p.kind !== 'question');
-  return structural.length === 0 && clauses(raw).length >= 2;
+  const parts = clauses(raw);
+  if (parts.length < 2) return false;
+  // Used to require that the regex found NOTHING, so "8 h" early in a message
+  // bought silence for everything after it. Ask whenever clauses outnumber
+  // what was understood — that is precisely when something is unaccounted for.
+  return structural.length < parts.length;
 }

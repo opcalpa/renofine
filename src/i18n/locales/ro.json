@@ -1179,7 +1179,11 @@
     "sentColon": "Trimis:",
     "receiptHours": "{{count}} h",
     "addAnotherItem": "Adaugă încă unul",
-    "removeItem": "Șterge"
+    "removeItem": "Șterge",
+    "undo": "Anulează",
+    "undone": "Anulat",
+    "undoTooLate": "Prea târziu pentru anulare",
+    "undoTooLateBuilder": "Constructorul a răspuns deja"
   },
   "worker": {
     "acknowledge": "Am citit lucrarea",

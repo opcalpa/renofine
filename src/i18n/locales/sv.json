@@ -8365,7 +8365,11 @@
     "sentColon": "Skickat:",
     "receiptHours": "{{count}} h",
     "addAnotherItem": "Lägg till fler",
-    "removeItem": "Ta bort"
+    "removeItem": "Ta bort",
+    "undo": "Ångra",
+    "undone": "Ångrat",
+    "undoTooLate": "För sent att ångra",
+    "undoTooLateBuilder": "Byggaren har redan tagit ställning"
   },
   "fieldInbox": {
     "title": "Från fältet",

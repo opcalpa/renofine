@@ -34,6 +34,15 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 /** Matches MAX_PURCHASE_ITEMS in worker-send-report — the server trims to this. */
 const MAX_ORDER_ITEMS = 20;
 
+/**
+ * How long Send stays take-back-able.
+ *
+ * Long enough to catch "wrong job" or a misheard voice note, short enough that
+ * nobody waits for it. The server allows two minutes so a slow phone on site
+ * never loses a legitimate undo to a stopwatch.
+ */
+const UNDO_SECONDS = 10;
+
 /** One thing to order: what it is, and how many. */
 interface OrderItem {
   name: string;
@@ -83,6 +92,11 @@ export function WorkerComposer({ token, tasks, taskId, canCreatePurchases, onSen
   const [chosenTask, setChosenTask] = useState<string | null>(taskId ?? null);
   /** The receipt: what the server made of the last report. */
   const [receipt, setReceipt] = useState<ReportPart[] | null>(null);
+  /** The ten seconds in which sending is still take-back-able. */
+  const [sentReportId, setSentReportId] = useState<string | null>(null);
+  const [undoLeft, setUndoLeft] = useState(0);
+  const [retracting, setRetracting] = useState(false);
+  const undoTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [recording, setRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -100,6 +114,18 @@ export function WorkerComposer({ token, tasks, taskId, canCreatePurchases, onSen
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, []);
+
+  // The undo window runs down on its own; when it hits zero the report is
+  // simply a report. Nothing is scheduled server-side — the row is already
+  // written, which is what makes sending feel instant.
+  const undoRunning = undoLeft > 0;
+  useEffect(() => {
+    if (!undoRunning) return;
+    undoTimerRef.current = setInterval(() => setUndoLeft((s) => Math.max(0, s - 1)), 1000);
+    return () => {
+      if (undoTimerRef.current) clearInterval(undoTimerRef.current);
+    };
+  }, [undoRunning]);
 
   useEffect(() => {
     if (!photo) {
@@ -212,6 +238,8 @@ export function WorkerComposer({ token, tasks, taskId, canCreatePurchases, onSen
       const data = await res.json();
       const parts: ReportPart[] = Array.isArray(data?.parts) ? data.parts : [];
       setReceipt(parts);
+      setSentReportId(typeof data?.reportId === 'string' ? data.reportId : null);
+      setUndoLeft(UNDO_SECONDS);
       // What a report actually carries is the question worth answering: did
       // combining parts in one message happen, or do people still send one
       // thing at a time?
@@ -273,6 +301,45 @@ export function WorkerComposer({ token, tasks, taskId, canCreatePurchases, onSen
     }
   }, [buildForm, post, t]);
 
+  const retract = async () => {
+    if (!sentReportId || retracting) return;
+    setRetracting(true);
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/worker-retract-report`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          apikey: SUPABASE_ANON_KEY,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token, reportId: sentReportId }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        // The builder got there first, or the window closed. Either way the
+        // report stands, and saying so is kinder than a generic failure.
+        toast.error(
+          data?.error === 'builder_acted'
+            ? t('field.undoTooLateBuilder', 'Byggaren har redan tagit ställning')
+            : t('field.undoTooLate', 'För sent att ångra')
+        );
+        setUndoLeft(0);
+        return;
+      }
+      analytics.capture(AnalyticsEvents.FIELD_REPORT_RETRACTED, { seconds_left: undoLeft });
+      toast.success(t('field.undone', 'Ångrat'));
+      setReceipt(null);
+      setSentReportId(null);
+      setUndoLeft(0);
+      onSent?.();
+    } catch (err) {
+      console.error('Retract failed:', err);
+      toast.error(t('common.error', 'Kunde inte ångra'));
+    } finally {
+      setRetracting(false);
+    }
+  };
+
   const send = async () => {
     if (!hasContent || sending) return;
     setSending(true);
@@ -320,13 +387,24 @@ export function WorkerComposer({ token, tasks, taskId, canCreatePurchases, onSen
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg bg-muted/50 px-3 py-2 text-sm">
           <span className="text-muted-foreground">{t('field.sentColon', 'Skickat:')}</span>
           <span className="font-medium">{receipt.map(receiptLabel).filter(Boolean).join(' · ')}</span>
-          <button
-            type="button"
-            onClick={() => setReceipt(null)}
-            className="ml-auto text-xs text-muted-foreground underline underline-offset-2"
-          >
-            {t('common.close', 'Stäng')}
-          </button>
+          {undoLeft > 0 && sentReportId ? (
+            <button
+              type="button"
+              onClick={retract}
+              disabled={retracting}
+              className="ml-auto min-h-[32px] font-medium text-primary underline underline-offset-2 disabled:opacity-50"
+            >
+              {t('field.undo', 'Ångra')} {undoLeft}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setReceipt(null)}
+              className="ml-auto text-xs text-muted-foreground underline underline-offset-2"
+            >
+              {t('common.close', 'Stäng')}
+            </button>
+          )}
         </div>
       )}
 

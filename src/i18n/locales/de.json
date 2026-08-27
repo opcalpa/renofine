@@ -8001,6 +8001,10 @@
     "sentColon": "Gesendet:",
     "receiptHours": "{{count}} Std.",
     "addAnotherItem": "Weitere hinzufügen",
-    "removeItem": "Entfernen"
+    "removeItem": "Entfernen",
+    "undo": "Rückgängig",
+    "undone": "Rückgängig gemacht",
+    "undoTooLate": "Zu spät zum Rückgängigmachen",
+    "undoTooLateBuilder": "Der Bauleiter hat bereits reagiert"
   }
 }

@@ -274,9 +274,29 @@ serve(async (req) => {
     if (needsModelPass(text, parsed)) {
       const extra = await modelParse(text);
       if (extra && extra.length > 0) {
+        // Purchases come from ONE source per report. The model read the whole
+        // message; the regex only reads clause by clause, so where they overlap
+        // the model wins outright — merging them listed "5 säckar fog" and
+        // "fog ×5" as two errands. What the worker TICKED always survives:
+        // that is their own hand, not a reading of it.
+        const ticked = parsed.parts.filter(
+          (p) => p.kind === "purchase" && p.reason === "ticked by the worker"
+        );
+        const modelBuys = extra.filter((p) => p.kind === "purchase");
+        const replaceBuys = ticked.length === 0 && modelBuys.length > 0;
+
         const kinds = new Set(parsed.parts.map((p) => p.kind));
-        const merged = [...parsed.parts];
+        const merged = replaceBuys
+          ? parsed.parts.filter((p) => p.kind !== "purchase")
+          : [...parsed.parts];
+
         for (const p of extra) {
+          if (p.kind === "purchase") {
+            // Never a second opinion on top of the worker's own list.
+            if (ticked.length > 0) continue;
+            merged.push(p);
+            continue;
+          }
           if (!kinds.has(p.kind)) {
             merged.push(p);
             kinds.add(p.kind);
@@ -454,14 +474,30 @@ serve(async (req) => {
       if (handsOff) update.progress = 100;
 
       if (Object.keys(update).length > 0) {
-        const { data: taskRow } = await sb.from("tasks").select("status").eq("id", taskId).single();
+        const { data: taskRow } = await sb
+          .from("tasks")
+          .select("status, progress")
+          .eq("id", taskId)
+          .single();
         if (handsOff && taskRow && TRANSITIONABLE_STATUSES.has(taskRow.status)) {
           update.status = "awaiting_review";
           taskStatus = "awaiting_review";
         }
         update.updated_at = new Date().toISOString();
         const { error: taskError } = await sb.from("tasks").update(update).eq("id", taskId);
-        if (taskError) console.error("Task update error:", taskError);
+        if (taskError) {
+          console.error("Task update error:", taskError);
+        } else if (taskRow) {
+          // Remember what we overwrote — Undo has ten seconds to put it back,
+          // and a status it has to guess is a status it will get wrong.
+          await sb
+            .from("field_reports")
+            .update({
+              task_prev_status: update.status ? taskRow.status : null,
+              task_prev_progress: update.progress != null ? taskRow.progress : null,
+            })
+            .eq("id", reportId);
+        }
       }
     }
 

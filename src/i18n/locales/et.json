@@ -1179,7 +1179,11 @@
     "sentColon": "Saadetud:",
     "receiptHours": "{{count}} h",
     "addAnotherItem": "Lisa veel",
-    "removeItem": "Eemalda"
+    "removeItem": "Eemalda",
+    "undo": "Võta tagasi",
+    "undone": "Tagasi võetud",
+    "undoTooLate": "Tagasivõtmiseks on hilja",
+    "undoTooLateBuilder": "Ehitusjuht on juba vastanud"
   },
   "worker": {
     "acknowledge": "Olen tööd lugenud",

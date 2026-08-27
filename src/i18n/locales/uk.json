@@ -7798,6 +7798,10 @@
     "sentColon": "Надіслано:",
     "receiptHours": "{{count}} год",
     "addAnotherItem": "Додати ще",
-    "removeItem": "Видалити"
+    "removeItem": "Видалити",
+    "undo": "Скасувати",
+    "undone": "Скасовано",
+    "undoTooLate": "Запізно скасовувати",
+    "undoTooLateBuilder": "Виконроб уже відповів"
   }
 }
