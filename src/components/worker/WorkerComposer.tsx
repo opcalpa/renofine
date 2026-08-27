@@ -37,11 +37,12 @@ const MAX_ORDER_ITEMS = 20;
 /**
  * How long Send stays take-back-able.
  *
- * Long enough to catch "wrong job" or a misheard voice note, short enough that
- * nobody waits for it. The server allows two minutes so a slow phone on site
- * never loses a legitimate undo to a stopwatch.
+ * Three, like Gmail — regret arrives in the first breath after the tap, not
+ * ten seconds later, and a countdown that outlasts the regret just makes the
+ * screen feel busy. The server still allows two minutes, so a slow phone on
+ * site never loses a legitimate undo to a stopwatch.
  */
-const UNDO_SECONDS = 10;
+const UNDO_SECONDS = 3;
 
 /** One thing to order: what it is, and how many. */
 interface OrderItem {
