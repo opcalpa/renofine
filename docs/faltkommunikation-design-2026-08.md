@@ -310,3 +310,122 @@ J. **Timmar per dag, arbete om härledbart.** "2 man 8 h" = 16 h + not.
    `time_entries.worker_token_id`, ogodkända tills byggaren säger ja.
 K. **Ett kort per rapport** i Från fältet, en åtgärdsrad per del.
 L. **"Förstått"-knapp** på välkomstkortet ⇒ `acknowledged_at`. Blockerar inget.
+
+## Omgång 4 — "Renaida förstod" (Fable-analys 2026-08-27, efter flerrads-beställningen)
+
+Carls fråga: ska flödet få mer assistans av Renaida, som tolkar fritexten och
+beställningsraderna och visar en ruta "Det här skickas" vid Skicka, med
+Ändra/Avbryt? Och ska textläsaren hitta flera beställningar i en mening?
+
+### Tre fakta som flyttar premisserna för beslut I
+
+1. **"Ändra" efter sändning byggdes aldrig.** Beslut I löd "Skickat: …-rad
+   + Ändra". Kvittot har bara "Stäng". Det som gjorde *efter* acceptabelt —
+   att arbetaren kan rätta — finns inte. Arbetaren kan i dag inte rätta en
+   felläsning alls; bara byggaren kan, och bara för det byggaren grindar.
+2. **Byggaren grindar pengar, inte allt.** Timmar och inköp väntar på ja.
+   Men "Klart" (härlett ur ordet i texten) flyttar arbetet till granskning
+   direkt, och en feltolkad fråga/notis går rakt in. Argumentet "två
+   processer" gällde pengarna; det täckte aldrig statusändringen.
+3. **Noll skarp data.** `field_reports`: 2 rader (test), 0 röst, 0 via
+   modellpasset. `needsModelPass` har aldrig körts i prod. Första gången
+   modellen läser en riktig mening är på en riktig hantverkares första
+   meddelande till sin chef.
+
+### Sortering ≠ bekräftelse
+
+Invändningen "sorteringen får inte komma före sägandet" träffar inte rutan.
+Fyra chips tvingade arbetaren att göra maskinens jobb *innan* hen sa något.
+En ruta efter Skicka-trycket ber arbetaren *kontrollera* maskinens jobb,
+efter att hen sagt allt. Det är capture → föreslå → bekräfta — husets egen
+mekanik (agentic-strategin) — och komposeraren är det enda stället vi
+hoppat över "bekräfta". Beslut I var alltså ett undantag från mönstret,
+taget på premissen att Ändra skulle finnas.
+
+### Rekommendation: villkorad ruta FÖRE, i stället för Ändra efter
+
+Rutan visas **bara när tolkningen lade till något arbetaren inte själv
+kryssade** — härledda timmar/procent/beställning/Klart — **och alltid vid
+röst** (transkriptet är det som ska kontrolleras; Whisper på polsk
+byggjargong i en bullrig lokal är den riskablaste inmatningen vi har).
+Fotot + "kaklet klart" → ruta (Klart härlett, flyttar arbetet). Kryssat
+allt + skrivit en notis → ingen ruta, skickas direkt, kvittoraden som i dag.
+
+Rutan i arbetarens eget språk (den som ser rutan). En "så ser chefen det"-
+förhandsvisning på svenska går inte att kontrollera för den som inte kan
+svenska, så den ger ingen säkerhet — skippas. Byggarens översättning finns
+redan i inkorgen.
+
+    ┌ Renaida förstod ──────────────────────┐
+    │ 🎤 "Skończyłem kafelki, potrzebuję     │  ← transkript / text
+    │     5 worków fugi i 10 pędzli"         │
+    │  ✓ Klart                        [×]    │  ← härledda delar, tas bort
+    │  5 × worków fugi                [×]    │     med ett tryck
+    │  10 × pędzli                    [×]    │
+    │            [ Ändra ]     [ Skicka ✓ ]  │
+    └────────────────────────────────────────┘
+
+Två knappar, inte tre. Ändra = tillbaka till komposeraren med de härledda
+delarna **materialiserade som kryssade tillägg** (timmar ifyllda, raderna
+ifyllda) — arbetaren redigerar i det UI som redan finns, ingen ny editor.
+Avbryt är samma sak som Ändra utan att något ändrats; en tredje knapp är
+ett Google Translate-ord till.
+
+**Varför före och inte Ändra efter:** en felläsning lämnar aldrig
+telefonen; servern behöver ingen ångra-väg (radera rapport + barn + återställa
+status inom N minuter); och röst-transkriptet kan bara kontrolleras före.
+Kostnad: ett tryck extra, bara när maskinen faktiskt gissat.
+
+### Vad det kostar (CTO)
+
+Modellanropen flyttar från commit till förhandsvisning — **antalet är
+oförändrat**. Commit tar emot de bekräftade delarna som kryssade och tolkar
+inte om (allt blir `explicit`; en tolk, kvitto och inkorg kan inte skilja
+sig). Ett extra HTTP-anrop per sändning med text (regex, ~200 ms). Ljudet
+laddas upp två gånger (~100 kB) — accepteras för enkelhetens skull.
+Risken som försvinner: att första riktiga meddelandet landar fel hos chefen,
+i den funktion som är moaten.
+
+### Punkt 2: flera beställningar ur texten — bara EFTER rutan
+
+Begränsningen sitter på **tre** ställen, inte ett: regexen bryter efter
+första träffen; `needsModelPass` kör modellen bara när regexen hittade
+*noll* strukturella delar (hittade den en beställning körs modellen aldrig);
+och merge-loopen i `worker-send-report` släpper bara in en del per art —
+**den andra beställningen modellen hittar kastas** (latent bugg, min
+REPEATABLE-ändring i går täckte bara den kryssade vägen).
+
+Utan rutan är en andra härledd beställning en ogranskad gissning i
+byggarens inkorg. Med rutan är den ett förslag arbetaren tar bort med ett
+tryck. Därför ordningen: rutan först, sedan vidga läsaren, och samtidigt
+lätta modellpasset till "kör när minst en sats saknar tolkning".
+
+Det finns inget eval för `fieldReport` i dag (`evals/` — ingen träff).
+Vidgningen ska komma med ett golden set på ~15 riktiga meningar i pl/uk/sv,
+annars är "hittar flera" en känsla.
+
+### Mätningen som gör det till en lärande loop
+
+`field_report_confirmed { inferred_count, removed_count, edited }`.
+`removed_count / inferred_count` = felläsningsgrad per språk. Det är siffran
+som säger om Renaida läser rätt — och den som styr om modellpasset ska
+köras oftare eller mer sällan. I dag finns ingen sådan siffra alls.
+
+### Skivor (Opus, i ordning)
+
+S10. `worker-send-report`: `preview=true` → transkribera + tolka, skriv
+     inget, returnera `{ text, parts }`. ~2 h.
+S11. Komposeraren: rutan, villkorad; Ändra materialiserar härledda delar i
+     tilläggen; Skicka skickar allt som kryssat. i18n ×10. ~3 h.
+S12. Läsaren: `purchase` repeterbar i regex-vägen, merge-loopen lagad,
+     `needsModelPass` lättad. Golden set + `evals/run-field-report.mjs`. ~2 h.
+S13. Mätningen ovan. ~30 min.
+
+### Beslut som väntar på Carl
+
+1. Riv upp beslut I → villkorad ruta före (rekommenderat) / behåll efter
+   och bygg Ändra / ingen ruta alls.
+2. Trigger: bara härledda delar + all röst (rekommenderat) / alltid / bara röst.
+3. Knappar: Ändra + Skicka (rekommenderat) / Ändra + Avbryt + Skicka.
+4. Textläsaren: flera beställningar, efter rutan (rekommenderat) / behåll en.
+5. Modellpasset: kör när en sats saknar tolkning (rekommenderat) / bara vid noll.
