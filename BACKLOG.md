@@ -445,12 +445,16 @@ omvänd byggmoms, timmar/ÄTA → faktura, SIE4 nåbar, offline-skal) → Fas 3 
 
 ---
 id: proffs-onboarding-lovar-osant
-status: todo
+status: done
 priority: P1
 tags: [bug, pro, onboarding, trust]
 created: 2026-08-27
 updated: 2026-08-27
 resources: [Analysen | /Users/calpa/Developer/Renofine/docs/vinn-bygglet-kunder-2026-08.md]
+
+### ✅ LEVERERAT 2026-08-27 (`f2f37b4`)
+Steg 3 säger nu det som är sant ("Lägg upp dina kunder"), steg 4 borttaget tills det byggts, i18n ×5. Snabbvalet sväljs inte (samma guard som hemägargrenen), 404-länken pekar på `/clients`.
+
 ---
 ## Proffs-onboardingen lovar två saker som inte finns
 
@@ -465,11 +469,15 @@ Samma svep: `Projects.tsx:489` saknar guard så proffsens snabbval sväljs;
 
 ---
 id: ata-tokens-anon-update
-status: todo
+status: done
 priority: P1
 tags: [security, rls, ata]
 created: 2026-08-27
 updated: 2026-08-27
+
+### ✅ LEVERERAT 2026-08-27 (`f2f37b4` + migration `20260827090000`)
+Godkännandet går via `ata-approval` (service role, uppslag by token, spent link ⇒ 409). Ordning: funktion → frontend (CF grön) → migration som droppar de tre anon-policyerna. **Bevisat mot tabellen:** före: anon listade tokens; efter: 0 rader, anon PATCH på token och `tasks.ata_status` ändrar ingenting, funktionen lever.
+
 ---
 ## ÄTA-tokens: anon får UPDATE på alla rader
 
@@ -481,11 +489,15 @@ först, testa mot TABELLEN (inte bara predikatet).
 
 ---
 id: paxml-export-tom-fil
-status: todo
+status: done
 priority: P1
 tags: [bug, pro, lon, export]
 created: 2026-08-27
 updated: 2026-08-27
+
+### ✅ LEVERERAT 2026-08-27 (`f2f37b4`)
+`time_entries.user_id` är ett profil-id — matchas nu mot `profiles.id`. Vakt: noll matchade personer ⇒ `null` (anroparens "inga timmar"-toast), aldrig en tom fil.
+
 ---
 ## PAXml-exporten säger "klart" och levererar en tom fil
 
@@ -496,11 +508,15 @@ Laga id-matchningen och lägg en vakt: noll rader ⇒ säg det, ingen fil.
 
 ---
 id: sprakbyte-oversatter-inte-arbetena
-status: todo
+status: done
 priority: P1
 tags: [bug, worker, sprak, changelog]
 created: 2026-08-27
 updated: 2026-08-27
+
+### ✅ LEVERERAT 2026-08-27 (`f2f37b4`, `get-worker-data` deployad)
+Saknas cachad översättning för det begärda språket anropas `translate-task-content` on-demand (hoppar över cachat ⇒ gratis sedan). Skarpt: rumänska på första begäran gav "Îndepărtarea vechii mobilări de bucătărie". Changelog-inlägget rättat.
+
 ---
 ## Språkbytet i arbetarvyn lämnar arbetena på svenska
 
