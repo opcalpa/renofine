@@ -34,6 +34,7 @@ import { checkRateLimit, rateLimitedBody } from "../_shared/rateLimit.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 
 const RATE_LIMIT_SCOPE = "worker-retract-report";
 const RATE_LIMIT_TIERS = { anon: 120, authenticated: 120 };
@@ -76,27 +77,56 @@ serve(async (req) => {
     const body = await req.json().catch(() => null);
     const token = String(body?.token ?? "");
     const reportId = String(body?.reportId ?? "");
-    if (!token || !reportId) return jsonResponse({ error: "Token and reportId are required" }, 400, req);
+    if (!reportId) return jsonResponse({ error: "reportId is required" }, 400, req);
+    if (!token && !body?.projectId) {
+      return jsonResponse({ error: "Token or projectId is required" }, 400, req);
+    }
 
     const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    const { data: tokenRecord } = await sb
-      .from("worker_access_tokens")
-      .select("id")
-      .eq("token", token)
-      .is("revoked_at", null)
-      .gt("expires_at", new Date().toISOString())
-      .single();
-    if (!tokenRecord) return jsonResponse({ error: "Invalid or expired token" }, 403, req);
-
-    // The report must belong to THIS token. Without this line a token could
-    // retract a colleague's report by guessing an id.
-    const { data: report } = await sb
+    // The report must belong to whoever is asking. A link worker may only take
+    // back their own token's report; a signed-in member only their own.
+    let reportQuery = sb
       .from("field_reports")
       .select("id, task_id, created_at, retracted_at, task_prev_status, task_prev_progress")
-      .eq("id", reportId)
-      .eq("worker_token_id", tokenRecord.id)
-      .single();
+      .eq("id", reportId);
+
+    if (token) {
+      const { data: tokenRecord } = await sb
+        .from("worker_access_tokens")
+        .select("id")
+        .eq("token", token)
+        .is("revoked_at", null)
+        .gt("expires_at", new Date().toISOString())
+        .single();
+      if (!tokenRecord) return jsonResponse({ error: "Invalid or expired token" }, 403, req);
+      reportQuery = reportQuery.eq("worker_token_id", tokenRecord.id);
+    } else {
+      // verify_jwt = false here too, so the signature is checked by asking the
+      // auth server rather than trusting `sub`.
+      const bearer = req.headers.get("Authorization")?.replace(/^Bearer\s+/i, "") ?? "";
+      if (!bearer) return jsonResponse({ error: "Not signed in" }, 401, req);
+      const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+        headers: { Authorization: `Bearer ${bearer}`, apikey: SUPABASE_ANON_KEY },
+      });
+      if (!userRes.ok) return jsonResponse({ error: "Not signed in" }, 401, req);
+      const authUser = await userRes.json();
+      const { data: profile } = await sb
+        .from("profiles").select("id").eq("user_id", authUser?.id ?? "").single();
+      if (!profile) return jsonResponse({ error: "Not signed in" }, 401, req);
+
+      // A member's report carries no token; the comment carries their profile.
+      const { data: own } = await sb
+        .from("comments")
+        .select("report_id")
+        .eq("report_id", reportId)
+        .eq("created_by_user_id", profile.id)
+        .maybeSingle();
+      if (!own) return jsonResponse({ error: "Report not found" }, 404, req);
+      reportQuery = reportQuery.is("worker_token_id", null);
+    }
+
+    const { data: report } = await reportQuery.single();
     if (!report) return jsonResponse({ error: "Report not found" }, 404, req);
     if (report.retracted_at) return jsonResponse({ ok: true, alreadyRetracted: true }, 200, req);
 

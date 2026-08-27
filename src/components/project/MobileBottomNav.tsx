@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { LayoutDashboard, PenTool, CheckSquare, ShoppingCart, FolderOpen, PiggyBank, Users, MessageSquare, ClipboardList, Share2, Home } from "lucide-react";
+import { LayoutDashboard, PenTool, CheckSquare, ShoppingCart, FolderOpen, PiggyBank, Users, MessageSquare, ClipboardList, Share2, Home, Timer } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -33,6 +33,10 @@ const ALL_TABS: TabConfig[] = [
   { tab: "tasks", icon: CheckSquare, labelKey: "nav.mobileNav.tasks" },
   { tab: "purchases", icon: ShoppingCart, labelKey: "nav.mobileNav.purchases" },
   { tab: "budget", icon: PiggyBank, labelKey: "nav.mobileNav.budget" },
+  // Tid saknades helt i mobilnavet: fliken gick bara att nå genom att skriva
+  // ?tab=timetracking i adressfältet. I en 2–5-mannafirma står ägaren på bygget,
+  // och timmarna rapporteras från telefonen eller inte alls.
+  { tab: "timetracking", icon: Timer, labelKey: "nav.mobileNav.time" },
   { tab: "spaceplanner", icon: PenTool, labelKey: "nav.mobileNav.plans", subTab: "floorplan" },
   { tab: "files", icon: FolderOpen, labelKey: "nav.mobileNav.files" },
   { tab: "team", icon: Users, labelKey: "nav.mobileNav.team" },

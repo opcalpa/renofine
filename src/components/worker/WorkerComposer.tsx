@@ -25,6 +25,7 @@ import { Camera, Check, Loader2, Mic, Percent, Send, ShoppingCart, Square, Timer
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { supabase } from '@/integrations/supabase/client';
 import { parseNeed } from '@/lib/fieldIntent';
 import { analytics, AnalyticsEvents } from '@/lib/analytics';
 
@@ -63,7 +64,10 @@ interface ReportPart {
 }
 
 interface Props {
-  token: string;
+  /** The link worker's token. Omitted when a signed-in member reports. */
+  token?: string;
+  /** Required when there is no token: which project the report belongs to. */
+  projectId?: string;
   tasks: ComposerTask[];
   /** Preselected when the composer sits inside one task's card. */
   taskId?: string | null;
@@ -73,7 +77,7 @@ interface Props {
 
 type AddOn = 'done' | 'progress' | 'hours' | 'purchase';
 
-export function WorkerComposer({ token, tasks, taskId, canCreatePurchases, onSent }: Props) {
+export function WorkerComposer({ token, projectId, tasks, taskId, canCreatePurchases, onSent }: Props) {
   const { t } = useTranslation();
 
   const [text, setText] = useState('');
@@ -200,7 +204,10 @@ export function WorkerComposer({ token, tasks, taskId, canCreatePurchases, onSen
   const buildForm = useCallback(
     (voice?: Blob) => {
       const fd = new FormData();
-      fd.append('token', token);
+      // A token identifies a link worker; a project id plus a session identifies
+      // a member. The server re-checks access either way.
+      if (token) fd.append('token', token);
+      else if (projectId) fd.append('projectId', projectId);
       if (effectiveTaskId) fd.append('taskId', effectiveTaskId);
       if (text.trim()) fd.append('text', text.trim());
       if (photo) fd.append('photo', photo);
@@ -225,14 +232,22 @@ export function WorkerComposer({ token, tasks, taskId, canCreatePurchases, onSen
       }
       return fd;
     },
-    [token, effectiveTaskId, text, photo, active, progress, hours, items, t]
+    [token, projectId, effectiveTaskId, text, photo, active, progress, hours, items, t]
   );
+
+  /** The anon key for a link worker; the member's own session when signed in. */
+  const authHeader = useCallback(async () => {
+    if (token) return SUPABASE_ANON_KEY;
+    const { data } = await supabase.auth.getSession();
+    return data.session?.access_token || SUPABASE_ANON_KEY;
+  }, [token]);
 
   const post = useCallback(
     async (fd: FormData) => {
+      const bearer = await authHeader();
       const res = await fetch(`${SUPABASE_URL}/functions/v1/worker-send-report`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${SUPABASE_ANON_KEY}`, apikey: SUPABASE_ANON_KEY },
+        headers: { Authorization: `Bearer ${bearer}`, apikey: SUPABASE_ANON_KEY },
         body: fd,
       });
       if (!res.ok) throw new Error(`report failed: ${res.status}`);
@@ -256,7 +271,7 @@ export function WorkerComposer({ token, tasks, taskId, canCreatePurchases, onSen
       onSent?.();
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [t, onSent]
+    [t, onSent, authHeader]
   );
 
   // ---------------------------------------------------------------------------
@@ -306,14 +321,15 @@ export function WorkerComposer({ token, tasks, taskId, canCreatePurchases, onSen
     if (!sentReportId || retracting) return;
     setRetracting(true);
     try {
+      const bearer = await authHeader();
       const res = await fetch(`${SUPABASE_URL}/functions/v1/worker-retract-report`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          Authorization: `Bearer ${bearer}`,
           apikey: SUPABASE_ANON_KEY,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ token, reportId: sentReportId }),
+        body: JSON.stringify({ token, projectId, reportId: sentReportId }),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {

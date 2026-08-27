@@ -28,6 +28,7 @@ import { parseReport, needsModelPass, type ParsedReport, type ReportPart } from 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY") ?? "";
+const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 
 const RATE_LIMIT_SCOPE = "worker-send-report";
 // One tier in practice: with trustJwt = false every caller counts as anon.
@@ -209,7 +210,13 @@ serve(async (req) => {
 
     const form = await req.formData();
     const token = String(form.get("token") ?? "");
-    if (!token) return jsonResponse({ error: "Token is required" }, 400, req);
+    const projectIdInput = String(form.get("projectId") ?? "");
+    // The owner of a 2–5 person firm stands on the site too, and used to get a
+    // WORSE tool than their own worker: an eight-tap dialog instead of two taps
+    // and a sentence. Either a link token or a signed-in user may report here.
+    if (!token && !projectIdInput) {
+      return jsonResponse({ error: "Token or projectId is required" }, 400, req);
+    }
 
     let text = String(form.get("text") ?? "").trim();
     const rawTaskId = (form.get("taskId") as string) || null;
@@ -234,18 +241,109 @@ serve(async (req) => {
 
     const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    const { data: tokenRecord } = await sb
-      .from("worker_access_tokens")
-      .select("id, project_id, assigned_task_ids, created_by_user_id, worker_name, worker_language, can_create_purchases")
-      .eq("token", token)
-      .is("revoked_at", null)
-      .gt("expires_at", new Date().toISOString())
-      .single();
+    /**
+     * Who is reporting.
+     *
+     * `tokenId` set  => a link worker: hours are attributed to the token, and
+     *                   they wait for the builder's yes.
+     * `tokenId` null => a signed-in member: hours are attributed to their
+     *                   profile (which is what payroll export reads), and the
+     *                   project owner does not queue up to approve themselves.
+     */
+    interface Author {
+      tokenId: string | null;
+      projectId: string;
+      assignedTaskIds: string[] | null;   // null = every task in the project
+      authorProfileId: string;
+      displayName: string;
+      language: string | null;
+      canCreatePurchases: boolean;
+      isProjectOwner: boolean;
+    }
+    let author: Author;
 
-    if (!tokenRecord) return jsonResponse({ error: "Invalid or expired token" }, 403, req);
+    if (token) {
+      const { data: tokenRecord } = await sb
+        .from("worker_access_tokens")
+        .select("id, project_id, assigned_task_ids, created_by_user_id, worker_name, worker_language, can_create_purchases")
+        .eq("token", token)
+        .is("revoked_at", null)
+        .gt("expires_at", new Date().toISOString())
+        .single();
+      if (!tokenRecord) return jsonResponse({ error: "Invalid or expired token" }, 403, req);
+      author = {
+        tokenId: tokenRecord.id,
+        projectId: tokenRecord.project_id,
+        assignedTaskIds: tokenRecord.assigned_task_ids || [],
+        authorProfileId: tokenRecord.created_by_user_id,
+        displayName: `${tokenRecord.worker_name} (worker)`,
+        language: tokenRecord.worker_language,
+        canCreatePurchases: tokenRecord.can_create_purchases !== false,
+        isProjectOwner: false,
+      };
+    } else {
+      // verify_jwt = false on this function, so the platform has NOT checked the
+      // signature: `sub` may not be believed. Ask the auth server instead.
+      const bearer = req.headers.get("Authorization")?.replace(/^Bearer\s+/i, "") ?? "";
+      if (!bearer) return jsonResponse({ error: "Not signed in" }, 401, req);
+      const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+        headers: { Authorization: `Bearer ${bearer}`, apikey: SUPABASE_ANON_KEY },
+      });
+      if (!userRes.ok) return jsonResponse({ error: "Not signed in" }, 401, req);
+      const authUser = await userRes.json();
+      if (!authUser?.id) return jsonResponse({ error: "Not signed in" }, 401, req);
 
-    const assignedIds: string[] = tokenRecord.assigned_task_ids || [];
-    let taskId: string | null = rawTaskId && assignedIds.includes(rawTaskId) ? rawTaskId : null;
+      const { data: profile, error: profileErr } = await sb
+        .from("profiles")
+        .select("id, name, language_preference")
+        .eq("user_id", authUser.id)
+        .single();
+      // A signed-in user with no profile row is a different failure from a bad
+      // token, and saying "Not signed in" for both hid a wrong column name
+      // behind an auth error.
+      if (profileErr) {
+        console.error("Profile lookup failed:", profileErr);
+        return jsonResponse({ error: "Profile lookup failed" }, 500, req);
+      }
+      if (!profile) return jsonResponse({ error: "No profile for this account" }, 403, req);
+
+      // Access is re-checked here, never taken from the client.
+      const { data: project } = await sb
+        .from("projects")
+        .select("id, owner_id")
+        .eq("id", projectIdInput)
+        .single();
+      if (!project) return jsonResponse({ error: "Project not found" }, 404, req);
+
+      const isOwner = project.owner_id === profile.id;
+      let allowed = isOwner;
+      if (!allowed) {
+        const { data: share } = await sb
+          .from("project_shares")
+          .select("project_id")
+          .eq("project_id", project.id)
+          .eq("shared_with_user_id", profile.id)
+          .maybeSingle();
+        allowed = !!share;
+      }
+      if (!allowed) return jsonResponse({ error: "No access to project" }, 403, req);
+
+      author = {
+        tokenId: null,
+        projectId: project.id,
+        assignedTaskIds: null,
+        authorProfileId: profile.id,
+        displayName: profile.name || "Okänd",
+        language: profile.language_preference ?? null,
+        canCreatePurchases: true,
+        isProjectOwner: isOwner,
+      };
+    }
+
+    const assignedIds: string[] = author.assignedTaskIds ?? [];
+    let taskId: string | null = author.assignedTaskIds === null
+      ? (rawTaskId || null)                       // a member may report on any task
+      : (rawTaskId && assignedIds.includes(rawTaskId) ? rawTaskId : null);
     // With exactly one assignment there is nothing to choose, so the report
     // belongs to it. Without this a report lands on the project and moves nothing.
     if (!taskId && assignedIds.length === 1) taskId = assignedIds[0];
@@ -254,7 +352,7 @@ serve(async (req) => {
     let voiceUrl: string | null = null;
     if (voiceFile) {
       const ext = (voiceFile.name?.split(".").pop() || "webm").toLowerCase();
-      const path = `projects/${tokenRecord.project_id}/voice/${crypto.randomUUID()}.${ext}`;
+      const path = `projects/${author.projectId}/voice/${crypto.randomUUID()}.${ext}`;
       const { error: upErr } = await sb.storage
         .from("project-files")
         .upload(path, new Uint8Array(await voiceFile.arrayBuffer()), {
@@ -265,7 +363,7 @@ serve(async (req) => {
       else voiceUrl = path;
 
       if (!text) {
-        text = await transcribe(voiceFile, tokenRecord.worker_language || null);
+        text = await transcribe(voiceFile, author.language || null);
       }
     }
 
@@ -307,7 +405,7 @@ serve(async (req) => {
     }
 
     // A purchase is only ever created when the worker is allowed to ask for one.
-    if (tokenRecord.can_create_purchases === false) {
+    if (author.canCreatePurchases === false) {
       parsed = { ...parsed, parts: parsed.parts.filter((p) => p.kind !== "purchase") };
     }
 
@@ -317,8 +415,8 @@ serve(async (req) => {
     const { data: report, error: reportError } = await sb
       .from("field_reports")
       .insert({
-        project_id: tokenRecord.project_id,
-        worker_token_id: tokenRecord.id,
+        project_id: author.projectId,
+        worker_token_id: author.tokenId,
         task_id: taskId,
         raw_text: text || null,
         voice_url: voiceUrl,
@@ -337,7 +435,7 @@ serve(async (req) => {
     let photoRow: { id: string; url: string; caption: string | null } | null = null;
     if (photoFile) {
       const ext = (photoFile.name?.split(".").pop() || "jpg").toLowerCase();
-      const path = `projects/${tokenRecord.project_id}/${taskId ? "task" : "project"}/${crypto.randomUUID()}.${ext}`;
+      const path = `projects/${author.projectId}/${taskId ? "task" : "project"}/${crypto.randomUUID()}.${ext}`;
       const { error: upErr } = await sb.storage
         .from("project-files")
         .upload(path, new Uint8Array(await photoFile.arrayBuffer()), {
@@ -352,9 +450,9 @@ serve(async (req) => {
           .insert({
             url: path,
             linked_to_type: taskId ? "task" : "project",
-            linked_to_id: taskId || tokenRecord.project_id,
-            uploaded_by_user_id: tokenRecord.created_by_user_id,
-            caption: tokenRecord.worker_name,
+            linked_to_id: taskId || author.projectId,
+            uploaded_by_user_id: author.authorProfileId,
+            caption: author.displayName,
             // Only a completion claim documents finished work. Anything else is
             // context for what is being said, never proof the job is done.
             kind: part("done") ? "after" : "during",
@@ -378,11 +476,11 @@ serve(async (req) => {
       .insert({
         content,
         entity_type: taskId ? "task" : "project",
-        entity_id: taskId || tokenRecord.project_id,
+        entity_id: taskId || author.projectId,
         task_id: taskId,
-        project_id: tokenRecord.project_id,
-        created_by_user_id: tokenRecord.created_by_user_id,
-        author_display_name: `${tokenRecord.worker_name} (worker)`,
+        project_id: author.projectId,
+        created_by_user_id: author.authorProfileId,
+        author_display_name: author.displayName,
         intent,
         // Only a question is owed an answer; everything else arrives settled.
         is_resolved: !questionPart,
@@ -400,16 +498,18 @@ serve(async (req) => {
     const hoursPart = part("hours");
     if (hoursPart?.value) {
       const { error: timeError } = await sb.from("time_entries").insert({
-        project_id: tokenRecord.project_id,
+        project_id: author.projectId,
         task_id: taskId,
-        // The token IS the person. Crediting the owner would put the worker's
-        // day on the owner's name.
-        user_id: null,
-        worker_token_id: tokenRecord.id,
+        // A link worker IS their token — crediting the owner would put the
+        // worker's day on the owner's name. A signed-in member is credited to
+        // their profile, which is what the payroll export reads.
+        user_id: author.tokenId ? null : author.authorProfileId,
+        worker_token_id: author.tokenId,
         date: new Date().toISOString().slice(0, 10),
         hours: hoursPart.value,
         description: hoursPart.reason,
-        approved: false,
+        // Nobody queues up to approve themselves.
+        approved: author.isProjectOwner,
         report_id: reportId,
       });
       if (timeError) console.error("Time entry insert error:", timeError);
@@ -424,11 +524,11 @@ serve(async (req) => {
       const { data: po, error: poError } = await sb
         .from("purchase_orders")
         .insert({
-          project_id: tokenRecord.project_id,
+          project_id: author.projectId,
           status: "requested",
           total: 0,
           source: "manual",
-          created_by_user_id: tokenRecord.created_by_user_id,
+          created_by_user_id: author.authorProfileId,
           notes: [...new Set(purchaseParts.map((p) => p.reason))].join("; "),
         })
         .select("id")
@@ -438,7 +538,7 @@ serve(async (req) => {
       } else {
         const { error: matError } = await sb.from("materials").insert(
           purchaseParts.map((p) => ({
-            project_id: tokenRecord.project_id,
+            project_id: author.projectId,
             purchase_order_id: po.id,
             task_id: taskId,
             name: p.name,
@@ -447,8 +547,8 @@ serve(async (req) => {
             // a Swedish word inside a Polish sentence; "5 × worków fugi" does not.
             unit: null,
             status: "submitted",
-            created_by_user_id: tokenRecord.created_by_user_id,
-            submitted_by_worker_token_id: tokenRecord.id,
+            created_by_user_id: author.authorProfileId,
+            submitted_by_worker_token_id: author.tokenId,
             exclude_from_budget: false,
             report_id: reportId,
           }))
