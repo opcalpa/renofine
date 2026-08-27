@@ -158,6 +158,9 @@ export async function addInvoiceItem(
     discount_percent?: number | null;
     source_task_id?: string | null;
     vat_rate?: number;
+    source_time_entry_id?: string | null;
+    source_material_id?: string | null;
+    source_ata_task_id?: string | null;
   }
 ) {
   const discountedTotal =
@@ -198,6 +201,9 @@ export async function replaceInvoiceItems(
     comment?: string | null;
     discount_percent?: number | null;
     vat_rate?: number;
+    source_time_entry_id?: string | null;
+    source_material_id?: string | null;
+    source_ata_task_id?: string | null;
   }[]
 ) {
   const { error: delErr } = await supabase

@@ -1415,7 +1415,10 @@ export type Database = {
           room_id: string | null
           rot_deduction: number | null
           sort_order: number | null
+          source_ata_task_id: string | null
+          source_material_id: string | null
           source_task_id: string | null
+          source_time_entry_id: string | null
           total_price: number | null
           unit: string | null
           unit_price: number
@@ -1434,7 +1437,10 @@ export type Database = {
           room_id?: string | null
           rot_deduction?: number | null
           sort_order?: number | null
+          source_ata_task_id?: string | null
+          source_material_id?: string | null
           source_task_id?: string | null
+          source_time_entry_id?: string | null
           total_price?: number | null
           unit?: string | null
           unit_price?: number
@@ -1453,7 +1459,10 @@ export type Database = {
           room_id?: string | null
           rot_deduction?: number | null
           sort_order?: number | null
+          source_ata_task_id?: string | null
+          source_material_id?: string | null
           source_task_id?: string | null
+          source_time_entry_id?: string | null
           total_price?: number | null
           unit?: string | null
           unit_price?: number
@@ -1476,10 +1485,31 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "invoice_items_source_ata_task_id_fkey"
+            columns: ["source_ata_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_items_source_material_id_fkey"
+            columns: ["source_material_id"]
+            isOneToOne: false
+            referencedRelation: "materials"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "invoice_items_source_task_id_fkey"
             columns: ["source_task_id"]
             isOneToOne: false
             referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_items_source_time_entry_id_fkey"
+            columns: ["source_time_entry_id"]
+            isOneToOne: false
+            referencedRelation: "time_entries"
             referencedColumns: ["id"]
           },
         ]

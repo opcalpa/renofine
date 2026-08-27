@@ -7,6 +7,8 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { InvoiceSourcePicker } from "@/components/invoices/InvoiceSourcePicker";
+import type { InvoiceSourceCandidate } from "@/services/invoiceSourcesService";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { AlertTriangle, ArrowLeft, Plus } from "lucide-react";
@@ -324,6 +326,39 @@ export default function CreateInvoiceV2() {
     [importRoomItemId]
   );
 
+  /**
+   * Underlaget blir fakturarader. Källans id följer med raden så att samma
+   * timme, samma materialrad och samma ÄTA aldrig kan faktureras två gånger.
+   */
+  const handleAddSources = (picked: InvoiceSourceCandidate[]) => {
+    setItems((prev) => {
+      // En tom startrad ska inte ligga kvar över det man just hämtade in.
+      const kept = prev.filter((it) => it.description || it.unitPrice > 0);
+      const added = picked.map((p) => ({
+        id: crypto.randomUUID(),
+        description: p.description,
+        quantity: p.quantity,
+        unit: p.unit,
+        unitPrice: p.unitPrice,
+        isRotEligible: p.rotEligible,
+        comment: "",
+        discountPercent: 0,
+        vatRate: 25,
+        sourceTaskId: p.taskId ?? undefined,
+        sourceTimeEntryId: p.kind === "hours" ? p.sourceId : null,
+        sourceMaterialId: p.kind === "material" ? p.sourceId : null,
+        sourceAtaTaskId: p.kind === "ata" ? p.sourceId : null,
+      }));
+      return [...kept, ...added];
+    });
+    toast.success(
+      t("invoiceSources.added", {
+        defaultValue: "{{count}} rader hämtade från projektet",
+        count: picked.length,
+      }),
+    );
+  };
+
   const handleSaveDraft = async () => {
     if (!user) return;
     if (!projectId) {
@@ -345,6 +380,12 @@ export default function CreateInvoiceV2() {
         comment: item.comment || null,
         discount_percent: item.discountPercent || null,
         vat_rate: item.vatRate ?? 25,
+        // Källan följer med raden. Databasen har ett unikt index per källa, så
+        // samma timme kan aldrig hamna på två fakturor — inte ens från två
+        // flikar samtidigt.
+        source_time_entry_id: item.sourceTimeEntryId ?? null,
+        source_material_id: item.sourceMaterialId ?? null,
+        source_ata_task_id: item.sourceAtaTaskId ?? null,
       }));
 
     if (itemPayloads.length === 0) {
@@ -605,6 +646,13 @@ export default function CreateInvoiceV2() {
           <Checkbox checked={isAta} onCheckedChange={(checked) => setIsAta(!!checked)} />
           <span className="text-sm">{t("invoices.isAta")}</span>
         </label>
+
+        {projectId && !editInvoiceId && (
+          <InvoiceSourcePicker
+            projectId={projectId}
+            onAdd={handleAddSources}
+          />
+        )}
 
         <div className="space-y-3">
           {items.length === 0 && (

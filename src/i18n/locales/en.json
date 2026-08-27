@@ -8451,5 +8451,21 @@
       "rotConflict": "ROT and reverse charge are mutually exclusive — ROT is for private individuals. Turn off ROT or remove reverse charge.",
       "missingBuyerVatNumber": "The buyer's VAT registration number is required on a reverse-charge invoice."
     }
+  },
+  "invoiceSources": {
+    "title": "Pull from the project",
+    "hint": "Approved hours, purchased material and change orders the customer approved. Anything already invoiced is hidden.",
+    "loading": "Loading project data…",
+    "empty": "Nothing uninvoiced in this project — approved hours, purchases and approved change orders appear here.",
+    "selectAll": "Select all",
+    "deselectAll": "Deselect all",
+    "add": "Add to invoice",
+    "picked": "{{count}} selected · {{amount}}",
+    "added": "{{count}} lines pulled from the project",
+    "kind": {
+      "hours": "Approved hours",
+      "material": "Material and purchases",
+      "ata": "Approved change orders"
+    }
   }
 }

@@ -4646,6 +4646,54 @@ och kontrollerade i egen sats.
 offerten men kan inte sättas direkt på en fristående faktura).
 
 ---
+id: fakturakallor-timmar-material-ata
+status: done
+priority: P1
+tags: [ekonomi, faktura, tid, ata, bygglet-epic]
+created: 2026-08-27
+---
+
+## Timmar, material och godkänd ÄTA går att fakturera
+
+**LEVERERAT 2026-08-27 (s88), fas 2 steg 5.** En faktura kunde bara komma från
+en offert. `CreateInvoiceV2` hade **noll** referenser till `time_entries` och
+`purchase_orders`, och `tasks.ata_status` skrevs och visades men konsumerades
+aldrig — en ÄTA kunden godkänt kunde inte bli en fakturarad. Tidrapporteringen
+i fält var alltså en återvändsgränd, vilket är hela poängen med att registrera
+timmar.
+
+Nu: **"Hämta från projektet"** i fakturaskaparen, med tre källor —
+godkända timmar (`approved = true`, nekade och orapporterade göms), material
+och inköp (`ordered/billed/paid`, med byggarens påslag), och ÄTA kunden faktiskt
+godkänt (`ata_status = 'approved'`).
+
+**Dubbelfaktureringsspärren sitter på fakturaraden, inte på källan**
+(`invoice_items.source_time_entry_id` / `source_material_id` /
+`source_ata_task_id`, migration `20260827140000`). En rad som tas bort frigör
+sin källa automatiskt, en borttagen faktura likaså — ingen kod behöver komma
+ihåg att städa. Och ett **unikt index per källa** i databasen, för en kontroll
+i appen räcker inte när två flikar är öppna.
+
+**Två fel som annars hade överlevt tyst:**
+1. `materials.status` har ingen `delivered` — det är inköpsorderns vokabulär.
+   Filtret hade missat allt material.
+2. `tasks.subcontractor_cost` **finns inte** (den bor på `task_costs`, trots vad
+   CLAUDE.md:s kolumnnot säger). Frågan returnerade noll rader utan ett ljud,
+   och ÄTA-gruppen var bara borta. Tjänsten kastar nu på frågefel i stället för
+   att visa en tom lista — ett tyst fel här ser exakt ut som "inget underlag".
+
+**Bevis:** hela flödet kört i appen. 8 godkända timmar (3 ogodkända göms),
+en materialrad med 10 % påslag och en godkänd ÄTA blev en faktura på 16 300 kr
+ex moms, moms 4 075, ROT −3 637,50 (bara på arbete och ÄTA). Varje rad bar sin
+källa. Nästa faktura visade "inget ofakturerat underlag", och en direkt
+SQL-dubblett avvisades av det unika indexet. All testdata borttagen och
+kontrollerad i egen sats.
+
+**Kvar:** panelen visas bara vid NY faktura, inte vid redigering av utkast
+(`replaceInvoiceItems` skriver om raderna, och en halvfärdig hämtning där kräver
+att källorna frigörs i rätt ordning).
+
+---
 id: faktura-rot-avviker-fran-offerten
 status: todo
 priority: P1

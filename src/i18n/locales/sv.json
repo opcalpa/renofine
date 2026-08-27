@@ -8450,5 +8450,21 @@
       "rotConflict": "ROT och omvänd betalningsskyldighet utesluter varandra — ROT är för privatpersoner. Stäng av ROT eller ta bort omvänd betalningsskyldighet.",
       "missingBuyerVatNumber": "Köparens momsregistreringsnummer krävs på en faktura med omvänd betalningsskyldighet."
     }
+  },
+  "invoiceSources": {
+    "title": "Hämta från projektet",
+    "hint": "Godkända timmar, inköpt material och ÄTA kunden godkänt. Det som redan fakturerats visas inte.",
+    "loading": "Hämtar underlag från projektet…",
+    "empty": "Inget ofakturerat underlag i projektet — godkända timmar, inköp och godkända ÄTA dyker upp här.",
+    "selectAll": "Välj alla",
+    "deselectAll": "Avmarkera alla",
+    "add": "Lägg till på fakturan",
+    "picked": "{{count}} valda · {{amount}}",
+    "added": "{{count}} rader hämtade från projektet",
+    "kind": {
+      "hours": "Godkända timmar",
+      "material": "Material och inköp",
+      "ata": "Godkända ÄTA"
+    }
   }
 }

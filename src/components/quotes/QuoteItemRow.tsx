@@ -34,6 +34,10 @@ export interface QuoteItem {
   aiGenerated?: boolean;
   /** Momssats i procent (25/12/6/0). Utelämnad = 25 %, bygg- och anläggningstjänster. */
   vatRate?: number;
+  /** Källan raden fakturerar — spärren mot att samma timme faktureras två gånger. */
+  sourceTimeEntryId?: string | null;
+  sourceMaterialId?: string | null;
+  sourceAtaTaskId?: string | null;
 }
 
 interface QuoteItemRowProps {
