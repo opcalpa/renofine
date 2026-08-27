@@ -419,6 +419,51 @@ edge-funktion om behovet uppstår.
 stället för 25, och Carl upptäcker appen som hans användare ser den.
 
 ---
+id: paminnelse-vid-dagens-slut
+status: todo
+priority: P2
+tags: [worker, push, pwa, retention, carl]
+created: 2026-08-27
+updated: 2026-08-27
+resources: [Omgång 4 | /Users/calpa/Developer/Renofine/docs/faltkommunikation-design-2026-08.md]
+---
+## "Hur gick det i dag?" — appen kommer till hantverkaren
+
+**Varför:** Bygglets tidrapportering fungerar för att kontoret tjatar. Vi har
+inget kontor. Ett sms känns enkelt för att det ligger i handen när tanken
+kommer; en länk man måste leta upp gör det inte. Detta är sannolikt en större
+spak för "gillar att rapportera" än något vi kan göra med formuläret.
+
+**⛔ Blockerad av en verifierad sak (2026-08-27):** push kräver att appen är
+installerad (på iOS ovillkorligen) — och `App.tsx:85` gömmer install-bannern
+i arbetarvyn, eftersom `/w/` räknas som `isPublicAppPath`. En hantverkare kan
+alltså i dag **inte ens bli tillfrågad** om att installera. Sändarsidan skulle
+ha noll möjliga mottagare. Verifierat: noll `pushManager`/VAPID i kodbasen,
+och varken `pg_cron` eller `pg_net` finns i databasen.
+
+**Ordningen som följer av det:**
+1. **Frågan om att installera + tillåta notiser** i arbetarvyn. Detta är ett
+   PRODUKTBESLUT, inte en teknikdetalj: Carls Taulant-audit handlade om just
+   vad som möter en på första skärmen. Förslag: inte vid första besöket —
+   först EFTER hantverkarens första lyckade rapport ("Vill du bli påmind i
+   morgon?"), när nyttan är bevisad.
+2. Prenumerationen: tabell + token-gated endpoint.
+3. Sändaren: `send-field-reminders`, hittar token med öppna arbeten och ingen
+   rapport i dag. Web push utan payload (VAPID-signering räcker, slipper
+   aes128gcm) — texten bor i service workern.
+4. Schemaläggning: `pg_cron` + `pg_net` måste aktiveras, eller en extern cron.
+5. VAPID-nyckelpar som Supabase-secret.
+
+**Alternativet om installationen visar sig omöjlig:** sms (~0,5 kr/st) når
+alla utan installation. Dyrare och kräver telefonnummer — men det fungerar.
+Rekommendation: bygg 1 först och mät hur många som tackar ja. Är svaret nära
+noll är sms enda vägen, och då vet vi det innan vi byggt sändaren.
+
+**Beslut som väntar på Carl:**
+- När ska frågan om notiser ställas? (rek. efter första rapporten)
+- Push först och sms sen (rek.), eller sms direkt?
+
+---
 id: inkopsbild-onskemal-malaren
 status: todo
 priority: P2
