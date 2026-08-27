@@ -4808,6 +4808,30 @@ Relaterat: huvudets summor underhålls på två sätt — `vat_total` av en trig
 trigger äga båda så att huvudet aldrig kan säga en sak och raderna en annan.
 
 ---
+id: analytics-capture-gatas-pa-init
+status: todo
+priority: P3
+tags: [analys, matning, hygien, agent-proposed]
+created: 2026-08-27
+---
+
+## `capture()` gatas på nyckeln, inte på att `init()` faktiskt kört
+
+Upptäckt när embed-ramens mätning stängdes av (2026-08-27). `init()` returnerar
+nu direkt på `/embed/*`, men `capture()` kollar bara att `VITE_POSTHOG_KEY`
+finns — inte att initieringen skedde. Ett `analytics.capture(...)` på en
+embed-sida skulle alltså gå till en **oinitierad** PostHog-instans i stället för
+att blockeras.
+
+Ofarligt i dag: embed-sidan fyrar noll events, verifierat. Men det är en fälla
+som väntar — lägger någon senare in ett event i `RenaidaLive` (den delas med
+landningssidan, där mätning ÄR önskad) läcker det tillbaka in i ramen, och då
+är siffran fel igen utan att någon ändrat i grinden.
+
+Fix: ett modulflagga-`let enabled = false` som `init()` sätter till true när den
+gått hela vägen, och som `capture()`/`identify()` kollar. Tre rader, tar bort
+hela klassen av misstag.
+---
 id: sie4-export
 status: done
 priority: P2
