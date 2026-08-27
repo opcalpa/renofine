@@ -10,6 +10,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { documentVat, vatLabel } from "@/lib/vat";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -104,6 +105,9 @@ interface InvoiceItem {
   total_price: number;
   is_rot_eligible: boolean;
   rot_deduction: number;
+  /** Härledd i databasen ur pris x sats — läses, räknas aldrig om här. */
+  vat_amount?: number | null;
+  vat_rate?: number | null;
   sort_order: number;
   comment: string | null;
   discount_percent: number | null;
@@ -327,7 +331,9 @@ export default function ViewInvoiceV2() {
   }
 
   const subtotal = items.reduce((s, i) => s + (i.total_price ?? 0), 0);
-  const vat = Math.round(subtotal * 0.25 * 100) / 100;
+  // Momsen är lagrad per rad (härledd kolumn) — den räknas inte om här.
+  const vat = documentVat(items);
+  const vatRowLabel = (base: string) => vatLabel(base, items.map((i) => i.vat_rate));
   const totalRot = items.reduce((s, i) => s + (i.rot_deduction ?? 0), 0);
   const totalToPay = subtotal + vat - totalRot;
   const hasRotEligible = items.some((i) => i.is_rot_eligible);
@@ -577,7 +583,7 @@ export default function ViewInvoiceV2() {
               <DocumentTotals
                 rows={[
                   { label: t("quotes.subtotal"), value: fmtKr(subtotal) },
-                  { label: t("quotes.vat"), value: fmtKr(vat) },
+                  { label: vatRowLabel(t("quotes.vat")), value: fmtKr(vat) },
                   ...(paidAmount > 0
                     ? [{ label: t("invoices.paidAmount", "Betalt"), value: `−${fmtKr(paidAmount)}` }]
                     : []),

@@ -1,4 +1,5 @@
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { draftVat, vatLabel } from "@/lib/vat";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import { Eye } from "lucide-react";
@@ -59,11 +60,12 @@ export function InvoicePreview({
 }: InvoicePreviewProps) {
   const { t } = useTranslation();
 
-  const subtotal = items.reduce(
-    (sum, i) => sum + i.quantity * i.unitPrice * (1 - (i.discountPercent ?? 0) / 100),
-    0
-  );
-  const vat = subtotal * 0.25;
+  const netOf = (i: (typeof items)[number]) =>
+    i.quantity * i.unitPrice * (1 - (i.discountPercent ?? 0) / 100);
+  const subtotal = items.reduce((sum, i) => sum + netOf(i), 0);
+  // Varje rad bär sin sats — 25 % är default, inte en inbyggd sanning.
+  const vat = draftVat(items.map((i) => ({ net: netOf(i), vatRate: i.vatRate })));
+  const vatRowLabel = (base: string) => vatLabel(base, items.map((i) => i.vatRate));
   const rotEligibleTotal = items
     .filter((i) => i.isRotEligible)
     .reduce((sum, i) => sum + i.quantity * i.unitPrice * (1 - (i.discountPercent ?? 0) / 100), 0);
@@ -233,7 +235,7 @@ export function InvoicePreview({
                   <span className="tabular-nums">{fmt(subtotal)} kr</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">{t("quotes.vat")}</span>
+                  <span className="text-muted-foreground">{vatRowLabel(t("quotes.vat"))}</span>
                   <span className="tabular-nums">{fmt(vat)} kr</span>
                 </div>
                 {rotDeduction > 0 && (

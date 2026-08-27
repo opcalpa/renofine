@@ -3093,7 +3093,7 @@
     "totalToPay": "Gesamtbetrag",
     "unitPrice": "Einzelpreis",
     "validUntil": "Gültig bis",
-    "vat": "MwSt. 19%",
+    "vat": "MwSt.",
     "createChangeOrder": "Nachtrag erstellen",
     "changeOrderLabel": "Nachtrag",
     "backToPlanning": "Zurück zur Planung",

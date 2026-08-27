@@ -99,6 +99,7 @@ export async function createInvoiceFromQuote(
     sort_order: number | null;
     comment: string | null;
     discount_percent: number | null;
+    vat_rate: number | null;
   }> }).quote_items || [];
 
   for (const item of items) {
@@ -112,6 +113,9 @@ export async function createInvoiceFromQuote(
       sort_order: item.sort_order ?? 0,
       comment: item.comment,
       discount_percent: item.discount_percent,
+      // Satsen måste följa med. Utan detta blev en 0 %-offert (omvänd
+      // betalningsskyldighet) tyst en 25 %-faktura.
+      vat_rate: item.vat_rate ?? 25,
     });
   }
 
@@ -134,6 +138,7 @@ export async function addInvoiceItem(
     comment?: string | null;
     discount_percent?: number | null;
     source_task_id?: string | null;
+    vat_rate?: number;
   }
 ) {
   const discountedTotal =
@@ -173,6 +178,7 @@ export async function replaceInvoiceItems(
     sort_order?: number;
     comment?: string | null;
     discount_percent?: number | null;
+    vat_rate?: number;
   }[]
 ) {
   const { error: delErr } = await supabase

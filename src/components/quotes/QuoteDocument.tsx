@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { draftVat, vatLabel } from "@/lib/vat";
 import type { QuoteItem } from "./QuoteItemRow";
 
 export interface QuoteCompanyInfo {
@@ -41,11 +42,12 @@ export function QuoteDocument({
 
   const lineItems = items.filter((i) => !i.sectionHeader);
   const hasAnyRoom = lineItems.some((i) => i.roomName);
-  const subtotal = lineItems.reduce(
-    (sum, i) => sum + i.quantity * i.unitPrice * (1 - (i.discountPercent ?? 0) / 100),
-    0
-  );
-  const vat = subtotal * 0.25;
+  const netOf = (i: (typeof lineItems)[number]) =>
+    i.quantity * i.unitPrice * (1 - (i.discountPercent ?? 0) / 100);
+  const subtotal = lineItems.reduce((sum, i) => sum + netOf(i), 0);
+  // Varje rad bär sin sats — 25 % är default, inte en inbyggd sanning.
+  const vat = draftVat(lineItems.map((i) => ({ net: netOf(i), vatRate: i.vatRate })));
+  const vatRowLabel = (base: string) => vatLabel(base, lineItems.map((i) => i.vatRate));
   const rotEligibleTotal = lineItems
     .filter((i) => i.isRotEligible)
     .reduce((sum, i) => sum + i.quantity * i.unitPrice * (1 - (i.discountPercent ?? 0) / 100), 0);
@@ -195,7 +197,7 @@ export function QuoteDocument({
             <span className="tabular-nums">{fmt(subtotal)} kr</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-muted-foreground">{t("quotes.vat")}</span>
+            <span className="text-muted-foreground">{vatRowLabel(t("quotes.vat"))}</span>
             <span className="tabular-nums">{fmt(vat)} kr</span>
           </div>
           {rotDeduction > 0 && (

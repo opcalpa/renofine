@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import type { QuoteItem } from "./QuoteItemRow";
+import { draftVat, vatLabel } from "@/lib/vat";
 
 interface QuoteSummaryProps {
   items: QuoteItem[];
@@ -9,8 +10,11 @@ export function QuoteSummary({ items }: QuoteSummaryProps) {
   const { t } = useTranslation();
 
   const lineItems = items.filter((i) => !i.sectionHeader);
-  const subtotal = lineItems.reduce((sum, i) => sum + i.quantity * i.unitPrice * (1 - (i.discountPercent ?? 0) / 100), 0);
-  const vat = subtotal * 0.25;
+  const netOf = (i: QuoteItem) => i.quantity * i.unitPrice * (1 - (i.discountPercent ?? 0) / 100);
+  const subtotal = lineItems.reduce((sum, i) => sum + netOf(i), 0);
+  // Varje rad bär sin sats, så en 0 %-rad blir rätt redan i utkastet.
+  const vat = draftVat(lineItems.map((i) => ({ net: netOf(i), vatRate: i.vatRate })));
+  const vatRowLabel = (base: string) => vatLabel(base, lineItems.map((i) => i.vatRate));
   const rotEligibleTotal = lineItems
     .filter((i) => i.isRotEligible)
     .reduce((sum, i) => sum + i.quantity * i.unitPrice * (1 - (i.discountPercent ?? 0) / 100), 0);
@@ -26,7 +30,7 @@ export function QuoteSummary({ items }: QuoteSummaryProps) {
         <span>{fmt(subtotal)} kr</span>
       </div>
       <div className="flex justify-between text-sm">
-        <span>{t("quotes.vat")}</span>
+        <span>{vatRowLabel(t("quotes.vat"))}</span>
         <span>{fmt(vat)} kr</span>
       </div>
       {rotDeduction > 0 && (

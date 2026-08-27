@@ -226,6 +226,7 @@ export default function CreateInvoiceV2() {
             roomId: item.room_id ?? undefined,
             comment: item.comment || "",
             discountPercent: item.discount_percent ?? 0,
+            vatRate: item.vat_rate ?? 25,
           }))
         );
       }
@@ -270,6 +271,7 @@ export default function CreateInvoiceV2() {
             roomId: item.room_id ?? undefined,
             comment: item.comment || "",
             discountPercent: item.discount_percent ?? 0,
+            vatRate: item.vat_rate ?? 25,
           }))
         );
         toast.success(t("invoices.itemsImportedFromQuote", { count: itemsRes.data.length }));
@@ -342,6 +344,7 @@ export default function CreateInvoiceV2() {
         sort_order: idx,
         comment: item.comment || null,
         discount_percent: item.discountPercent || null,
+        vat_rate: item.vatRate ?? 25,
       }));
 
     if (itemPayloads.length === 0) {

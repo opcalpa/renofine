@@ -104,3 +104,52 @@ export function purchaseVatFields(
   if (!split) return { vat_amount: null, net_amount: null, vat_rate: null };
   return { vat_amount: split.vat, net_amount: split.net, vat_rate: split.rate };
 }
+
+/** Momsen på ett NETTObelopp vid en känd sats (offert/faktura räknar ex moms). */
+export function vatFromNet(net: number, rate: VatRate): number {
+  return round2((net * rate) / 100);
+}
+
+/**
+ * Ett sparat dokuments moms = summan av radernas LAGRADE moms.
+ *
+ * `vat_amount` är en härledd kolumn i databasen och finns därför på varje rad
+ * som hämtats med `select("*")`. Saknas den — en vy som väljer kolumner
+ * explicit och inte fått med den — faller vi tillbaka på 25 %, vilket är exakt
+ * vad dokumentet visade före den här ändringen. Fallbacken finns för att ingen
+ * siffra ska röra sig bakåt, den är inte modellen.
+ */
+export function documentVat(
+  items: Array<{ total_price?: number | null; vat_amount?: number | null }>,
+): number {
+  return round2(
+    items.reduce(
+      (sum, i) => sum + (i.vat_amount ?? (i.total_price ?? 0) * 0.25),
+      0,
+    ),
+  );
+}
+
+/**
+ * Momsen på ett UTKAST som ännu inte sparats. Varje rad bär sin egen sats så att
+ * en 0 %-rad (omvänd betalningsskyldighet, undantag) blir rätt redan i
+ * förhandsvisningen — inte först när dokumentet sparats.
+ */
+export function draftVat(items: Array<{ net: number; vatRate?: number | null }>): number {
+  return round2(
+    items.reduce((sum, i) => sum + (i.net * (i.vatRate ?? 25)) / 100, 0),
+  );
+}
+
+/**
+ * Etiketten på momsraden. En enda sats skrivs ut ("Moms 25 %"); vid flera satser
+ * skrivs ingen siffra alls, för då är varje enskild procentsats en lögn.
+ *
+ * Fram till nu satt siffran i själva översättningen ("Moms 25%", och i tyskan
+ * "MwSt. 19%" som aldrig stämde med räkningen). Satsen hör till dokumentet, inte
+ * till språket.
+ */
+export function vatLabel(base: string, rates: Array<number | null | undefined>): string {
+  const uniq = Array.from(new Set(rates.map((r) => (r == null ? 25 : Number(r)))));
+  return uniq.length === 1 ? `${base} ${uniq[0]} %` : base;
+}

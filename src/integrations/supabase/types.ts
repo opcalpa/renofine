@@ -1419,6 +1419,8 @@ export type Database = {
           total_price: number | null
           unit: string | null
           unit_price: number
+          vat_amount: number | null
+          vat_rate: number
         }
         Insert: {
           comment?: string | null
@@ -1436,6 +1438,8 @@ export type Database = {
           total_price?: number | null
           unit?: string | null
           unit_price?: number
+          vat_amount?: number | null
+          vat_rate?: number
         }
         Update: {
           comment?: string | null
@@ -1453,6 +1457,8 @@ export type Database = {
           total_price?: number | null
           unit?: string | null
           unit_price?: number
+          vat_amount?: number | null
+          vat_rate?: number
         }
         Relationships: [
           {
@@ -1507,6 +1513,8 @@ export type Database = {
           total_amount: number | null
           total_rot_deduction: number | null
           updated_at: string | null
+          vat_breakdown: Json
+          vat_total: number
           viewed_at: string | null
         }
         Insert: {
@@ -1537,6 +1545,8 @@ export type Database = {
           total_amount?: number | null
           total_rot_deduction?: number | null
           updated_at?: string | null
+          vat_breakdown?: Json
+          vat_total?: number
           viewed_at?: string | null
         }
         Update: {
@@ -1567,6 +1577,8 @@ export type Database = {
           total_amount?: number | null
           total_rot_deduction?: number | null
           updated_at?: string | null
+          vat_breakdown?: Json
+          vat_total?: number
           viewed_at?: string | null
         }
         Relationships: [
@@ -3159,6 +3171,8 @@ export type Database = {
           total_price: number | null
           unit: string | null
           unit_price: number
+          vat_amount: number | null
+          vat_rate: number
         }
         Insert: {
           comment?: string | null
@@ -3177,6 +3191,8 @@ export type Database = {
           total_price?: number | null
           unit?: string | null
           unit_price?: number
+          vat_amount?: number | null
+          vat_rate?: number
         }
         Update: {
           comment?: string | null
@@ -3195,6 +3211,8 @@ export type Database = {
           total_price?: number | null
           unit?: string | null
           unit_price?: number
+          vat_amount?: number | null
+          vat_rate?: number
         }
         Relationships: [
           {
@@ -3244,6 +3262,8 @@ export type Database = {
           total_rot_deduction: number | null
           updated_at: string | null
           valid_until: string | null
+          vat_breakdown: Json
+          vat_total: number
           viewed_at: string | null
         }
         Insert: {
@@ -3269,6 +3289,8 @@ export type Database = {
           total_rot_deduction?: number | null
           updated_at?: string | null
           valid_until?: string | null
+          vat_breakdown?: Json
+          vat_total?: number
           viewed_at?: string | null
         }
         Update: {
@@ -3294,6 +3316,8 @@ export type Database = {
           total_rot_deduction?: number | null
           updated_at?: string | null
           valid_until?: string | null
+          vat_breakdown?: Json
+          vat_total?: number
           viewed_at?: string | null
         }
         Relationships: [

@@ -5,6 +5,7 @@
  */
 
 import { updateQuoteStatus } from "./quoteService";
+import { documentVat, vatLabel } from "@/lib/vat";
 
 export interface QuotePdfQuote {
   id: string;
@@ -22,6 +23,9 @@ export interface QuotePdfItem {
   unit_price: number;
   total_price: number;
   rot_deduction: number;
+  /** Härledd i databasen ur pris x sats — läses, räknas aldrig om här. */
+  vat_amount?: number | null;
+  vat_rate?: number | null;
   comment: string | null;
   discount_percent: number | null;
 }
@@ -66,7 +70,9 @@ export async function downloadQuotePdf({
   let y = 20;
 
   const subtotal = items.reduce((s, i) => s + (i.total_price ?? 0), 0);
-  const vat = Math.round(subtotal * 0.25 * 100) / 100;
+  // Momsen är lagrad per rad (härledd kolumn) — den räknas inte om här.
+  const vat = documentVat(items);
+  const vatRowLabel = (base: string) => vatLabel(base, items.map((i) => i.vat_rate));
   const totalRot = items.reduce((s, i) => s + (i.rot_deduction ?? 0), 0);
   const totalToPay = subtotal + vat - totalRot;
 
@@ -209,7 +215,7 @@ export async function downloadQuotePdf({
   doc.text(t("quotes.subtotal"), 15, y);
   doc.text(`${subtotal.toLocaleString()} kr`, 195, y, { align: "right" });
   y += 5;
-  doc.text(t("quotes.vat"), 15, y);
+  doc.text(vatRowLabel(t("quotes.vat")), 15, y);
   doc.text(`${vat.toLocaleString()} kr`, 195, y, { align: "right" });
   y += 5;
   if (totalRot > 0) {

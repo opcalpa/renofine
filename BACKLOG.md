@@ -4557,6 +4557,93 @@ BARA när en enda sats förklarar hela dokumentet — en proportionellt utsmetad
 summerar rätt men ljuger på varje rad, och raden är vad bokföringen läser.
 
 ---
+id: document-vat-stored
+status: done
+priority: P1
+tags: [ekonomi, moms, offert, faktura, bygglet-epic]
+created: 2026-08-27
+---
+
+## Moms sparad på offert och faktura — inte uträknad vid visning
+
+**LEVERERAT 2026-08-27 (s88), fas 2 steg 2.** Nio ytor räknade `subtotal * 0.25`
+när dokumentet visades (ViewQuote, ViewQuoteV2, ViewInvoice, ViewInvoiceV2,
+QuoteDocument, QuoteSummary, InvoicePreview, quotePdfService, invoicePdfService).
+Det gjorde varje 12/6/0 %-rad fel, gjorde omvänd byggmoms omöjlig och blockerade
+SIE4 — en verifikation kräver netto och moms per sats.
+
+Migration `20260827120000_document_vat.sql`:
+- `quote_items.vat_rate` / `invoice_items.vat_rate` (25 default, CHECK 0/6/12/25)
+- `vat_amount` som **GENERATED-kolumn** på båda — databasen härleder radens moms
+  ur pris × sats, precis som `total_price` redan gjorde. Raden kan inte drifta.
+- `quotes.vat_total` + `vat_breakdown jsonb` (underlag och moms **per sats**),
+  samma på `invoices`, underhållna av triggern `recompute_document_vat()`.
+  Ingen skrivväg — varken de nio befintliga eller nästa som skrivs — kan spara
+  ett dokument utan moms.
+- Backfill: alla 17 offerter och 8 fakturor stämmer mot sina rader (0 avvikande).
+
+Appen läser nu den lagrade momsen (`documentVat`) i stället för att räkna om.
+Satsen bärs genom hela kedjan: utkast → offert → revision → faktura. Utan det
+blev en 0 %-offert tyst en 25 %-faktura i `createInvoiceFromQuote`.
+
+**Etiketten flyttad ur språkfilen:** `quotes.vat` var "Moms 25%" — och i tyskan
+"MwSt. 19%", som aldrig stämde med räkningen. Satsen hör till dokumentet, inte
+till språket. Nu skrivs den ut ur radernas faktiska satser, och utelämnas när
+dokumentet har flera satser.
+
+**Bevis:** befintlig offert visar oförändrat 134 000 / 33 500 / 167 500 (nu ur
+databasen), triggertest med blandade satser gav
+`[{rate:25,net:8000,vat:2000},{rate:12,net:1000,vat:120}]`, alla rader till 0 %
+gav `vat_total 0`, och en faktura skapad ur offerten i appen fick 12 rader à 25 %
+med rätt huvudsumma. All testdata städad och kontrollerad i egen sats.
+
+---
+id: faktura-rot-avviker-fran-offerten
+status: todo
+priority: P1
+tags: [ekonomi, rot, faktura, fortroende, agent-proposed]
+created: 2026-08-27
+---
+
+## Fakturan drar ett annat ROT-belopp än offerten kunden accepterade
+
+Upptäckt vid momsarbetet 2026-08-27 (s88), rör inte momsen utan ROT. Samma
+underlag, två olika svar:
+
+- Offerten (`d2e16c94`, accepterad): **−21 120 kr** ROT
+- Fakturan skapad ur exakt den offerten: **−50 250 kr** ROT
+
+`createInvoiceFromQuote` kopierar raderna men räknar om ROT från grunden med
+`calculateRotDeduction` i stället för att bära över offertens `rot_deduction`.
+Kunden har accepterat ett pris och får ett annat att betala — det är
+förtroendeskadligt på det sätt som inte går att förklara bort, och det är den
+enda siffran en hemägare granskar hårdast.
+
+Bygg: bär över radens `rot_deduction` från offerten (samma princip som
+`vat_rate` nu bärs över), och skilj på "räkna ut ROT för ett nytt dokument" och
+"ärv ROT från ett accepterat dokument".
+
+---
+id: offert-med-total-men-utan-rader
+status: todo
+priority: P3
+tags: [data, offert, hygien, agent-proposed]
+created: 2026-08-27
+---
+
+## Sex offerter har en totalsumma men noll rader
+
+Sett vid momsbackfillen 2026-08-27: sex offerter har `total_amount = 134 000`
+men inga `quote_items`. De kan därför aldrig få moms per sats, och de visar
+0 kr i vyn (som summerar rader) samtidigt som listan visar 134 000.
+
+Troligen seed-/demodata eller en avbruten skapandeväg. Utred vilken väg som
+skriver ett huvud utan rader, och antingen fyll raderna eller rensa posterna.
+Relaterat: huvudets summor underhålls på två sätt — `vat_total` av en trigger,
+`total_amount` av appen (`recalculateQuoteTotals`). Överväg att låta samma
+trigger äga båda så att huvudet aldrig kan säga en sak och raderna en annan.
+
+---
 id: sie4-export
 status: todo
 priority: P2

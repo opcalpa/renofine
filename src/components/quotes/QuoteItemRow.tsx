@@ -32,6 +32,8 @@ export interface QuoteItem {
   sectionHeader?: string;
   /** Imported from AI source (QuickQuote / Intake). Surfaces a small pill on the row. */
   aiGenerated?: boolean;
+  /** Momssats i procent (25/12/6/0). Utelämnad = 25 %, bygg- och anläggningstjänster. */
+  vatRate?: number;
 }
 
 interface QuoteItemRowProps {

@@ -89,7 +89,7 @@ export async function createQuote(projectId: string, title: string, creatorId: s
   return data;
 }
 
-export async function addQuoteItem(quoteId: string, item: { description: string; quantity: number; unit_price: number; unit?: string; is_rot_eligible?: boolean; room_id?: string; sort_order?: number; comment?: string | null; discount_percent?: number | null; source_task_id?: string | null; source_type?: string | null }) {
+export async function addQuoteItem(quoteId: string, item: { description: string; quantity: number; unit_price: number; unit?: string; is_rot_eligible?: boolean; room_id?: string; sort_order?: number; comment?: string | null; discount_percent?: number | null; source_task_id?: string | null; source_type?: string | null; vat_rate?: number }) {
   const discountedTotal = item.quantity * item.unit_price * (1 - (item.discount_percent ?? 0) / 100);
   const rotDeduction = calculateRotDeduction(discountedTotal, item.is_rot_eligible ?? false);
   const { data, error } = await supabase
@@ -126,7 +126,7 @@ export async function updateQuoteDraft(quoteId: string, updates: {
   return data;
 }
 
-export async function replaceQuoteItems(quoteId: string, items: { description: string; quantity: number; unit_price: number; unit?: string; is_rot_eligible?: boolean; room_id?: string; sort_order?: number; comment?: string | null; discount_percent?: number | null; source_task_id?: string | null; source_type?: string | null }[]) {
+export async function replaceQuoteItems(quoteId: string, items: { description: string; quantity: number; unit_price: number; unit?: string; is_rot_eligible?: boolean; room_id?: string; sort_order?: number; comment?: string | null; discount_percent?: number | null; source_task_id?: string | null; source_type?: string | null; vat_rate?: number }[]) {
   // Delete existing items
   const { error: delErr } = await supabase
     .from("quote_items")
@@ -453,6 +453,8 @@ export async function reviseQuote(originalQuoteId: string): Promise<string | nul
       discount_percent: item.discount_percent ?? null,
       source_task_id: (item as Record<string, unknown>).source_task_id as string | null ?? null,
       source_type: (item as Record<string, unknown>).source_type as string | null ?? null,
+      // Satsen följer med in i revisionen — annars byter en 0 %-offert tyst sats.
+      vat_rate: ((item as Record<string, unknown>).vat_rate as number | null) ?? 25,
     });
   }
 

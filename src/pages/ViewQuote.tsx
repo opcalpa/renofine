@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { documentVat, vatLabel } from "@/lib/vat";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
@@ -52,6 +53,9 @@ interface QuoteItem {
   total_price: number;
   is_rot_eligible: boolean;
   rot_deduction: number;
+  /** Härledd i databasen ur pris x sats — läses, räknas aldrig om här. */
+  vat_amount?: number | null;
+  vat_rate?: number | null;
   sort_order: number;
   comment: string | null;
   discount_percent: number | null;
@@ -406,7 +410,9 @@ export default function ViewQuote() {
   }
 
   const subtotal = items.reduce((s, i) => s + (i.total_price ?? 0), 0);
-  const vat = Math.round(subtotal * 0.25 * 100) / 100;
+  // Momsen är lagrad per rad (härledd kolumn) — den räknas inte om här.
+  const vat = documentVat(items);
+  const vatRowLabel = (base: string) => vatLabel(base, items.map((i) => i.vat_rate));
   const totalRot = items.reduce((s, i) => s + (i.rot_deduction ?? 0), 0);
   const totalToPay = subtotal + vat - totalRot;
 
@@ -772,7 +778,7 @@ export default function ViewQuote() {
                 <span>{subtotal.toLocaleString()} kr</span>
               </div>
               <div className="flex justify-between">
-                <span>{t("quotes.vat")}</span>
+                <span>{vatRowLabel(t("quotes.vat"))}</span>
                 <span>{vat.toLocaleString()} kr</span>
               </div>
               {totalRot > 0 && (

@@ -286,6 +286,7 @@ export default function CreateQuote() {
             roomId: item.room_id ?? undefined,
             comment: item.comment || "",
             discountPercent: item.discount_percent ?? 0,
+            vatRate: item.vat_rate ?? 25,
             sourceTaskId: (item as Record<string, unknown>).source_task_id as string | undefined,
             source: (item as Record<string, unknown>).source_type as QuoteItem["source"],
           }))
@@ -746,6 +747,7 @@ export default function CreateQuote() {
         discount_percent: item.discountPercent || null,
         source_task_id: item.sourceTaskId || null,
         source_type: item.source || null,
+        vat_rate: item.vatRate ?? 25,
       }));
 
     const titlePrefix = isAta
