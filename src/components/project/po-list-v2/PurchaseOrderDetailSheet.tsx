@@ -569,6 +569,30 @@ function SheetBody(props: PurchaseOrderDetailSheetProps) {
           {maskEconomy ? "—" : formatCurrency(po.total, currency)}
         </div>
 
+        {/* Momsen syns nu i stället för att bara ha lästs ut och kastats.
+            Båda beloppen etiketteras — proffset läser netto + avdragsgill moms,
+            hemägaren läser vad som faktiskt betalades. */}
+        {!maskEconomy && po.vat_amount != null && (
+          <div
+            className="rf-num mt-1"
+            style={{ fontSize: 12, color: "var(--rf-fg-muted)" }}
+          >
+            {po.net_amount != null && (
+              <>
+                {t("purchases.netAmount", "Netto")} {formatCurrency(po.net_amount, currency)}
+                <span style={{ color: "var(--rf-hairline)" }}> · </span>
+              </>
+            )}
+            {t("purchases.vatAmount", "Moms")} {formatCurrency(po.vat_amount, currency)}
+            {po.vat_rate != null && ` (${po.vat_rate} %)`}
+          </div>
+        )}
+        {!maskEconomy && po.vat_amount == null && (po.source === "ai_receipt" || po.source === "ai_invoice") && (
+          <div className="rf-num mt-1" style={{ fontSize: 12, color: "var(--rf-fg-subtle)" }}>
+            {t("purchases.vatMissing", "Moms ej utläst — fyll i under Redigera")}
+          </div>
+        )}
+
         <div
           className="rf-num mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5"
           style={{ fontSize: 11.5, color: "var(--rf-fg-muted)" }}

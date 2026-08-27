@@ -3571,7 +3571,14 @@
     "uploadReceipt": "Upload",
     "receiptOptionalHint": "You can also attach a receipt later via the files tab.",
     "saveCompleted": "Register purchase",
-    "saveOrder": "Create order"
+    "saveOrder": "Create order",
+    "netAmount": "Net",
+    "vatAmount": "VAT",
+    "vatMissing": "VAT not extracted — add it under Edit",
+    "vatUnknown": "Unknown",
+    "vatNetHint": "VAT base {{net}} kr",
+    "vatNetHintRate": "VAT base {{net}} kr · {{rate}} %",
+    "vatEmptyHint": "Leave empty if the VAT is unknown — it will show as not extracted."
   },
   "overview": {
     "messagesHeading": "Messages",

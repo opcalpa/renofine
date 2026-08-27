@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { purchaseVatFields, lineVat } from "@/lib/vat";
 import {
   Loader2,
   Receipt,
@@ -236,6 +237,10 @@ export function LinkPurchaseDialog({
         const lineItems = extraction.line_items?.length ? extraction.line_items : null;
         const total = extraction.total_amount || 0;
         const purchaseDate = extraction.purchase_date || new Date().toISOString();
+        // Momsen som tolkningen redan läst ut sparas i stället för att kastas.
+        const vatFields = purchaseVatFields(total, extraction.vat_amount);
+        const lineVatFor = (lineTotal: number | null | undefined) =>
+          lineVat(lineTotal, vatFields.vat_rate);
 
         const { data: po, error: poErr } = await supabase
           .from("purchase_orders")
@@ -243,6 +248,7 @@ export function LinkPurchaseDialog({
             project_id: projectId,
             vendor_name: extraction.vendor_name || t("linkPurchase.unknownVendor", "Okänd leverantör"),
             total,
+            ...vatFields,
             status: "delivered",
             source: isInvoiceDoc ? "ai_invoice" : "ai_receipt",
             delivered_at: purchaseDate,
@@ -271,6 +277,7 @@ export function LinkPurchaseDialog({
               unit: "st",
               price_per_unit: li.unit_price || null,
               price_total: li.total || null,
+              ...lineVatFor(li.total),
               paid_amount: isInvoiceDoc ? 0 : li.total || 0,
               status: matStatus,
               created_by_user_id: profile.id,
@@ -285,6 +292,7 @@ export function LinkPurchaseDialog({
               quantity: 1,
               unit: "st",
               price_total: total,
+              ...lineVatFor(total),
               paid_amount: isInvoiceDoc ? 0 : total,
               status: matStatus,
               created_by_user_id: profile.id,

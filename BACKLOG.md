@@ -4520,7 +4520,7 @@ stör arbetsytan — arbetaren är där för att jobba.
 
 ---
 id: purchase-vat-capture
-status: todo
+status: done
 priority: P2
 tags: [agent-proposed, ekonomi, inkop, forutsattning]
 created: 2026-08-25
@@ -4539,6 +4539,22 @@ netto och moms per rad.
 Bygg: kolumner för netto/moms/momssats på inköpsordern, fyll dem från
 kvitto-OCR:en vid import, och visa dem i PO-detaljen (ex/inkl moms enligt
 den befintliga regeln proffs=ex, hemägare=inkl).
+
+**LEVERERAT 2026-08-27 (s88).** Migration `20260827110000_purchase_vat_capture.sql`
+(`purchase_orders.vat_amount/net_amount/vat_rate`, `materials.vat_amount/vat_rate`,
+satsen låst till 0/6/12/25). All momsmatematik i `src/lib/vat.ts` — räknas EN gång
+och sparas, aldrig om vid rendering. Inkopplad i alla fem skrivvägar: de tre
+inserterna i `QuickReceiptCaptureModal`, `LinkPurchaseDialog`, `importPurchaseOrder`
+(Renaida) och `QuoteReviewDialog`. Momsen syns i PO-detaljen och går att rätta i
+`EditPurchaseOrderDialog` (25/12/6/0-knappar). **Bevis:** riktigt Bauhaus-kvitto
+skannat i appen → order 1 177 kr, moms 235,40, netto 941,60, sats 25, och 25 % per
+rad (31,60 + 178,00 + 25,80 = 235,40 = huvudets moms). Testdatan städad och
+kontrollerad i egen sats. Matematiken har en körbar grind: `npx tsx scripts/check-vat.ts`.
+
+Två medvetna avsteg från specen: (1) kolumnerna är NULLABLE — NULL = "vet ej", för
+`not null default 0` hade påstått att varje gammal rad saknar moms; (2) radmoms sätts
+BARA när en enda sats förklarar hela dokumentet — en proportionellt utsmetad moms
+summerar rätt men ljuger på varje rad, och raden är vad bokföringen läser.
 
 ---
 id: sie4-export

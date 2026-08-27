@@ -55,6 +55,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { purchaseVatFields } from "@/lib/vat";
 import { formatCurrency } from "@/lib/currency";
 import { getFileUrl } from "@/lib/fileUrl";
 import {
@@ -353,12 +354,22 @@ export function QuoteReviewDialog({
           ?? selectedTasks.reduce((s, tk) => s + (tk.estimatedCost || tk.materialCost || 0), 0);
         const vendorName = quoteMetadata?.vendorName || t("quoteReview.unknownVendor", "Okänd leverantör");
 
+        // Offertens moms sparas i stället för att bara visas. `totalAmount` kan
+        // vara ex eller ink moms — bruttot räknas därefter, så momsunderlaget
+        // blir rätt i båda fallen.
+        const quoteVat = quoteMetadata?.vatAmount ?? null;
+        const grossAmount = quoteVat != null && quoteMetadata?.isIncludingVat === false
+          ? totalAmount + quoteVat
+          : totalAmount;
+        const vatFields = purchaseVatFields(grossAmount, quoteVat);
+
         const { data: po, error: poErr } = await supabase
           .from("purchase_orders")
           .insert({
             project_id: projectId,
             vendor_name: vendorName,
             total: totalAmount,
+            ...vatFields,
             status: "ordered",
             ordered_at: quoteMetadata?.quoteDate || new Date().toISOString(),
             source: "ai_quote",

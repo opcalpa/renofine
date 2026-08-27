@@ -11,6 +11,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { generateDocumentFilename } from "@/services/receiptAnalysisService";
 import { takeAttachment } from "./documentCapture";
+import { purchaseVatFields, lineVat } from "@/lib/vat";
 import type { ProposalAction } from "./types";
 
 export type ImportPurchaseAction = Extract<ProposalAction, { type: "import_purchase" }>;
@@ -50,12 +51,18 @@ export async function importPurchaseOrder(
   const rotAmount = action.rotAmount ?? 0;
   const netTotal = Math.max(0, grossTotal - rotAmount);
 
+  // Momsen räknas på dokumentets bruttosumma, inte på `total` — ROT sänker vad
+  // kunden betalar men rör inte momsunderlaget. Utan detta läste vi ut momsen
+  // (action.vatAmount) och kastade den vid spar.
+  const vatFields = purchaseVatFields(grossTotal, action.vatAmount);
+
   const { data: po, error: poError } = await supabase
     .from("purchase_orders")
     .insert({
       project_id: projectId,
       vendor_name: action.vendorName,
       total: netTotal,
+      ...vatFields,
       rot_amount: rotAmount || null,
       status: "delivered",
       source: isInvoice ? "ai_invoice" : "ai_receipt",
@@ -104,6 +111,7 @@ export async function importPurchaseOrder(
       }];
   const matRows = lineRows.map((row) => ({
     ...row,
+    ...lineVat(row.price_total, vatFields.vat_rate),
     project_id: projectId,
     purchase_order_id: po.id,
     vendor_name: action.vendorName,

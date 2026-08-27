@@ -2940,7 +2940,14 @@
     "uploadReceipt": "Ladda upp",
     "receiptOptionalHint": "Du kan även bifoga kvitto senare via filfliken.",
     "saveCompleted": "Registrera köp",
-    "saveOrder": "Skapa beställning"
+    "saveOrder": "Skapa beställning",
+    "netAmount": "Netto",
+    "vatAmount": "Moms",
+    "vatMissing": "Moms ej utläst — fyll i under Redigera",
+    "vatUnknown": "Okänd",
+    "vatNetHint": "Momsunderlag {{net}} kr",
+    "vatNetHintRate": "Momsunderlag {{net}} kr · {{rate}} %",
+    "vatEmptyHint": "Lämna tomt om momsen inte är känd — den syns då som ej utläst."
   },
   "overview": {
     "messagesHeading": "Meddelanden",

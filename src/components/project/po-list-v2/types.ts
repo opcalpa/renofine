@@ -20,6 +20,8 @@ export interface POMaterial {
   source_material_id?: string | null;
   purchase_order_id?: string | null;
   submitted_by_worker_token_id?: string | null;
+  vat_amount?: number | null;
+  vat_rate?: number | null;
   task?: { title: string } | null;
   room?: { name: string } | null;
 }
@@ -41,6 +43,12 @@ export interface PO {
   ocr_number?: string | null;
   invoice_due_date?: string | null;
   paid_at?: string | null;
+  /** Ingående moms i kronor. null = okänd (aldrig utläst), 0 = ingen moms. */
+  vat_amount?: number | null;
+  /** Momsunderlag = brutto − moms. */
+  net_amount?: number | null;
+  /** Satsen i procent när en enda sats förklarar dokumentet. */
+  vat_rate?: number | null;
 }
 
 export interface POStatusStyle {

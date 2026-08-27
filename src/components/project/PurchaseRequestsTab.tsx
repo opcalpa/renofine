@@ -718,7 +718,7 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
     try {
       const { data, error } = await supabase
         .from("purchase_orders")
-        .select("id, vendor_name, total, status, ordered_at, delivered_at, receipt_total, receipt_matched_at, receipt_file_path, source, notes, created_at, invoice_number, ocr_number, invoice_due_date, paid_at")
+        .select("id, vendor_name, total, status, ordered_at, delivered_at, receipt_total, receipt_matched_at, receipt_file_path, source, notes, created_at, invoice_number, ocr_number, invoice_due_date, paid_at, vat_amount, net_amount, vat_rate")
         .eq("project_id", projectId)
         .order("created_at", { ascending: false });
       if (error) throw error;

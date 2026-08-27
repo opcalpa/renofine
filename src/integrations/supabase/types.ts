@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.17"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       access_log: {
@@ -282,6 +307,7 @@ export type Database = {
         Row: {
           address: string | null
           city: string | null
+          company_id: string | null
           created_at: string | null
           email: string | null
           id: string
@@ -290,11 +316,14 @@ export type Database = {
           phone: string | null
           postal_code: string | null
           reference: string | null
+          sells_construction: boolean
           updated_at: string | null
+          vat_number: string | null
         }
         Insert: {
           address?: string | null
           city?: string | null
+          company_id?: string | null
           created_at?: string | null
           email?: string | null
           id?: string
@@ -303,11 +332,14 @@ export type Database = {
           phone?: string | null
           postal_code?: string | null
           reference?: string | null
+          sells_construction?: boolean
           updated_at?: string | null
+          vat_number?: string | null
         }
         Update: {
           address?: string | null
           city?: string | null
+          company_id?: string | null
           created_at?: string | null
           email?: string | null
           id?: string
@@ -316,9 +348,18 @@ export type Database = {
           phone?: string | null
           postal_code?: string | null
           reference?: string | null
+          sells_construction?: boolean
           updated_at?: string | null
+          vat_number?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "clients_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "clients_owner_id_fkey"
             columns: ["owner_id"]
@@ -435,10 +476,12 @@ export type Database = {
           entity_type: string | null
           id: string
           images: Json | null
+          intent: string | null
           is_resolved: boolean | null
           material_id: string | null
           parent_comment_id: string | null
           project_id: string | null
+          report_id: string | null
           task_id: string | null
           updated_at: string
           visible_to_client: boolean
@@ -453,10 +496,12 @@ export type Database = {
           entity_type?: string | null
           id?: string
           images?: Json | null
+          intent?: string | null
           is_resolved?: boolean | null
           material_id?: string | null
           parent_comment_id?: string | null
           project_id?: string | null
+          report_id?: string | null
           task_id?: string | null
           updated_at?: string
           visible_to_client?: boolean
@@ -471,10 +516,12 @@ export type Database = {
           entity_type?: string | null
           id?: string
           images?: Json | null
+          intent?: string | null
           is_resolved?: boolean | null
           material_id?: string | null
           parent_comment_id?: string | null
           project_id?: string | null
+          report_id?: string | null
           task_id?: string | null
           updated_at?: string
           visible_to_client?: boolean
@@ -523,10 +570,111 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "comments_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "field_reports"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "comments_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
             referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      companies: {
+        Row: {
+          created_at: string
+          created_by_profile_id: string
+          default_hourly_rate: number | null
+          id: string
+          name: string
+          org_number: string | null
+          sells_construction: boolean
+          updated_at: string
+          vat_number: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by_profile_id: string
+          default_hourly_rate?: number | null
+          id?: string
+          name: string
+          org_number?: string | null
+          sells_construction?: boolean
+          updated_at?: string
+          vat_number?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by_profile_id?: string
+          default_hourly_rate?: number | null
+          id?: string
+          name?: string
+          org_number?: string | null
+          sells_construction?: boolean
+          updated_at?: string
+          vat_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "companies_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "professional_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "companies_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      company_members: {
+        Row: {
+          company_id: string
+          created_at: string
+          profile_id: string
+          role: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          profile_id: string
+          role?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          profile_id?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_members_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_members_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "professional_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_members_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -870,6 +1018,70 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      field_reports: {
+        Row: {
+          created_at: string
+          id: string
+          parsed: Json
+          project_id: string
+          raw_text: string | null
+          retracted_at: string | null
+          task_id: string | null
+          task_prev_progress: number | null
+          task_prev_status: string | null
+          voice_url: string | null
+          worker_token_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          parsed?: Json
+          project_id: string
+          raw_text?: string | null
+          retracted_at?: string | null
+          task_id?: string | null
+          task_prev_progress?: number | null
+          task_prev_status?: string | null
+          voice_url?: string | null
+          worker_token_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          parsed?: Json
+          project_id?: string
+          raw_text?: string | null
+          retracted_at?: string | null
+          task_id?: string | null
+          task_prev_progress?: number | null
+          task_prev_status?: string | null
+          voice_url?: string | null
+          worker_token_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "field_reports_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "field_reports_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "field_reports_worker_token_id_fkey"
+            columns: ["worker_token_id"]
+            isOneToOne: false
+            referencedRelation: "worker_access_tokens"
             referencedColumns: ["id"]
           },
         ]
@@ -1464,6 +1676,7 @@ export type Database = {
           project_id: string | null
           purchase_order_id: string | null
           quantity: number | null
+          report_id: string | null
           room_id: string | null
           room_ids: string[] | null
           rot_amount: number | null
@@ -1474,6 +1687,8 @@ export type Database = {
           task_id: string | null
           unit: string | null
           updated_at: string
+          vat_amount: number | null
+          vat_rate: number | null
           vendor_link: string | null
           vendor_name: string | null
         }
@@ -1496,6 +1711,7 @@ export type Database = {
           project_id?: string | null
           purchase_order_id?: string | null
           quantity?: number | null
+          report_id?: string | null
           room_id?: string | null
           room_ids?: string[] | null
           rot_amount?: number | null
@@ -1506,6 +1722,8 @@ export type Database = {
           task_id?: string | null
           unit?: string | null
           updated_at?: string
+          vat_amount?: number | null
+          vat_rate?: number | null
           vendor_link?: string | null
           vendor_name?: string | null
         }
@@ -1528,6 +1746,7 @@ export type Database = {
           project_id?: string | null
           purchase_order_id?: string | null
           quantity?: number | null
+          report_id?: string | null
           room_id?: string | null
           room_ids?: string[] | null
           rot_amount?: number | null
@@ -1538,6 +1757,8 @@ export type Database = {
           task_id?: string | null
           unit?: string | null
           updated_at?: string
+          vat_amount?: number | null
+          vat_rate?: number | null
           vendor_link?: string | null
           vendor_name?: string | null
         }
@@ -1596,6 +1817,13 @@ export type Database = {
             columns: ["purchase_order_id"]
             isOneToOne: false
             referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "materials_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "field_reports"
             referencedColumns: ["id"]
           },
           {
@@ -2277,6 +2505,7 @@ export type Database = {
           role: string | null
           role_type: string | null
           shared_with_user_id: string | null
+          source: string
           space_planner_access: string | null
           tasks_access: string | null
           tasks_scope: string | null
@@ -2308,6 +2537,7 @@ export type Database = {
           role?: string | null
           role_type?: string | null
           shared_with_user_id?: string | null
+          source?: string
           space_planner_access?: string | null
           tasks_access?: string | null
           tasks_scope?: string | null
@@ -2339,6 +2569,7 @@ export type Database = {
           role?: string | null
           role_type?: string | null
           shared_with_user_id?: string | null
+          source?: string
           space_planner_access?: string | null
           tasks_access?: string | null
           tasks_scope?: string | null
@@ -2375,6 +2606,7 @@ export type Database = {
           address: string | null
           city: string | null
           client_id: string | null
+          company_id: string | null
           contract_value: number | null
           country: string
           cover_image_position: number | null
@@ -2410,6 +2642,7 @@ export type Database = {
           address?: string | null
           city?: string | null
           client_id?: string | null
+          company_id?: string | null
           contract_value?: number | null
           country?: string
           cover_image_position?: number | null
@@ -2445,6 +2678,7 @@ export type Database = {
           address?: string | null
           city?: string | null
           client_id?: string | null
+          company_id?: string | null
           contract_value?: number | null
           country?: string
           cover_image_position?: number | null
@@ -2482,6 +2716,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
           {
@@ -2746,6 +2987,7 @@ export type Database = {
           id: string
           invoice_due_date: string | null
           invoice_number: string | null
+          net_amount: number | null
           notes: string | null
           ocr_number: string | null
           ordered_at: string | null
@@ -2760,6 +3002,8 @@ export type Database = {
           supplier_id: string | null
           total: number
           updated_at: string
+          vat_amount: number | null
+          vat_rate: number | null
           vendor_name: string | null
         }
         Insert: {
@@ -2769,6 +3013,7 @@ export type Database = {
           id?: string
           invoice_due_date?: string | null
           invoice_number?: string | null
+          net_amount?: number | null
           notes?: string | null
           ocr_number?: string | null
           ordered_at?: string | null
@@ -2783,6 +3028,8 @@ export type Database = {
           supplier_id?: string | null
           total: number
           updated_at?: string
+          vat_amount?: number | null
+          vat_rate?: number | null
           vendor_name?: string | null
         }
         Update: {
@@ -2792,6 +3039,7 @@ export type Database = {
           id?: string
           invoice_due_date?: string | null
           invoice_number?: string | null
+          net_amount?: number | null
           notes?: string | null
           ocr_number?: string | null
           ordered_at?: string | null
@@ -2806,6 +3054,8 @@ export type Database = {
           supplier_id?: string | null
           total?: number
           updated_at?: string
+          vat_amount?: number | null
+          vat_rate?: number | null
           vendor_name?: string | null
         }
         Relationships: [
@@ -4029,14 +4279,18 @@ export type Database = {
           approved_by: string | null
           created_at: string | null
           date: string
+          declined_at: string | null
+          declined_by: string | null
           description: string | null
           hourly_rate: number | null
           hours: number
           id: string
           project_id: string
+          report_id: string | null
           task_id: string | null
           updated_at: string | null
-          user_id: string
+          user_id: string | null
+          worker_token_id: string | null
         }
         Insert: {
           approved?: boolean | null
@@ -4044,14 +4298,18 @@ export type Database = {
           approved_by?: string | null
           created_at?: string | null
           date: string
+          declined_at?: string | null
+          declined_by?: string | null
           description?: string | null
           hourly_rate?: number | null
           hours: number
           id?: string
           project_id: string
+          report_id?: string | null
           task_id?: string | null
           updated_at?: string | null
-          user_id: string
+          user_id?: string | null
+          worker_token_id?: string | null
         }
         Update: {
           approved?: boolean | null
@@ -4059,14 +4317,18 @@ export type Database = {
           approved_by?: string | null
           created_at?: string | null
           date?: string
+          declined_at?: string | null
+          declined_by?: string | null
           description?: string | null
           hourly_rate?: number | null
           hours?: number
           id?: string
           project_id?: string
+          report_id?: string | null
           task_id?: string | null
           updated_at?: string | null
-          user_id?: string
+          user_id?: string | null
+          worker_token_id?: string | null
         }
         Relationships: [
           {
@@ -4084,10 +4346,31 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "time_entries_declined_by_fkey"
+            columns: ["declined_by"]
+            isOneToOne: false
+            referencedRelation: "professional_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_entries_declined_by_fkey"
+            columns: ["declined_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "time_entries_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_entries_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "field_reports"
             referencedColumns: ["id"]
           },
           {
@@ -4109,6 +4392,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_entries_worker_token_id_fkey"
+            columns: ["worker_token_id"]
+            isOneToOne: false
+            referencedRelation: "worker_access_tokens"
             referencedColumns: ["id"]
           },
         ]
@@ -4157,6 +4447,7 @@ export type Database = {
       }
       worker_access_tokens: {
         Row: {
+          acknowledged_at: string | null
           assigned_task_ids: string[]
           can_create_purchases: boolean
           can_log_receipts: boolean
@@ -4177,6 +4468,7 @@ export type Database = {
           worker_phone: string | null
         }
         Insert: {
+          acknowledged_at?: string | null
           assigned_task_ids?: string[]
           can_create_purchases?: boolean
           can_log_receipts?: boolean
@@ -4197,6 +4489,7 @@ export type Database = {
           worker_phone?: string | null
         }
         Update: {
+          acknowledged_at?: string | null
           assigned_task_ids?: string[]
           can_create_purchases?: boolean
           can_log_receipts?: boolean
@@ -4483,6 +4776,7 @@ export type Database = {
         Args: { p_source_id: string; p_target_id: string }
         Returns: number
       }
+      my_company_ids: { Args: never; Returns: string[] }
       my_project_ids: { Args: never; Returns: string[] }
       property_owner_profile_id: {
         Args: { p_property_id: string }
@@ -4504,6 +4798,7 @@ export type Database = {
         Args: { p_language?: string; p_owner_id: string }
         Returns: string
       }
+      sync_company_shares: { Args: { _project_id: string }; Returns: undefined }
       user_can_access_property_file: {
         Args: { file_path: string }
         Returns: boolean
@@ -4580,6 +4875,7 @@ export type Database = {
         Args: { p_project_id: string }
         Returns: boolean
       }
+      user_is_company_admin: { Args: { _company_id: string }; Returns: boolean }
       user_is_property_member: {
         Args: { p_min_role?: string; p_property_id: string }
         Returns: boolean
@@ -4744,6 +5040,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       contractor_role: [

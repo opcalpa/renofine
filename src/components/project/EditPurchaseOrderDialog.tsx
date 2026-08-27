@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
+import { purchaseVatFields, vatFromGross, type VatRate } from "@/lib/vat";
 
 interface PurchaseOrder {
   id: string;
@@ -31,6 +32,9 @@ interface PurchaseOrder {
   ordered_at: string | null;
   delivered_at: string | null;
   notes: string | null;
+  vat_amount?: number | null;
+  net_amount?: number | null;
+  vat_rate?: number | null;
 }
 
 interface EditPurchaseOrderDialogProps {
@@ -56,6 +60,7 @@ export const EditPurchaseOrderDialog = ({
   const [orderedAt, setOrderedAt] = useState("");
   const [deliveredAt, setDeliveredAt] = useState("");
   const [notes, setNotes] = useState("");
+  const [vat, setVat] = useState("");
 
   useEffect(() => {
     if (!purchaseOrder) return;
@@ -65,7 +70,21 @@ export const EditPurchaseOrderDialog = ({
     setOrderedAt(purchaseOrder.ordered_at ? purchaseOrder.ordered_at.slice(0, 10) : "");
     setDeliveredAt(purchaseOrder.delivered_at ? purchaseOrder.delivered_at.slice(0, 10) : "");
     setNotes(purchaseOrder.notes ?? "");
+    setVat(purchaseOrder.vat_amount != null ? String(purchaseOrder.vat_amount) : "");
   }, [purchaseOrder]);
+
+  // Momsen räknas EN gång här och sparas — aldrig `total * 0.25` vid visning.
+  // Tomt fält betyder "vet ej" och nollar kolumnerna; det är en annan sak än 0 kr.
+  const parsedTotalNum = parseFloat(total);
+  const parsedVatNum = parseFloat(vat);
+  const vatPreview = purchaseVatFields(
+    Number.isFinite(parsedTotalNum) ? parsedTotalNum : 0,
+    Number.isFinite(parsedVatNum) ? parsedVatNum : null,
+  );
+  const applyRate = (rate: VatRate) => {
+    if (!Number.isFinite(parsedTotalNum) || parsedTotalNum <= 0) return;
+    setVat(String(vatFromGross(parsedTotalNum, rate)));
+  };
 
   const handleSave = async () => {
     if (!purchaseOrder) return;
@@ -81,6 +100,9 @@ export const EditPurchaseOrderDialog = ({
           ordered_at: orderedAt ? orderedAt : null,
           delivered_at: deliveredAt ? deliveredAt : null,
           notes: notes.trim() || null,
+          vat_amount: vatPreview.vat_amount,
+          net_amount: vatPreview.net_amount,
+          vat_rate: vatPreview.vat_rate,
         })
         .eq("id", purchaseOrder.id);
       if (error) throw error;
@@ -137,6 +159,47 @@ export const EditPurchaseOrderDialog = ({
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="po-vat">{t("purchases.vatAmount", "Moms")}</Label>
+            <div className="flex items-center gap-2">
+              <Input
+                id="po-vat"
+                type="number"
+                step="0.01"
+                value={vat}
+                onChange={(e) => setVat(e.target.value)}
+                placeholder={t("purchases.vatUnknown", "Okänd")}
+              />
+              <div className="flex gap-1">
+                {([25, 12, 6, 0] as VatRate[]).map((rate) => (
+                  <Button
+                    key={rate}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => applyRate(rate)}
+                  >
+                    {rate}%
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {vatPreview.vat_amount == null
+                ? t("purchases.vatEmptyHint", "Lämna tomt om momsen inte är känd — den syns då som ej utläst.")
+                : vatPreview.vat_rate != null
+                  ? t("purchases.vatNetHintRate", {
+                      defaultValue: "Momsunderlag {{net}} kr · {{rate}} %",
+                      net: vatPreview.net_amount,
+                      rate: vatPreview.vat_rate,
+                    })
+                  : t("purchases.vatNetHint", {
+                      defaultValue: "Momsunderlag {{net}} kr",
+                      net: vatPreview.net_amount,
+                    })}
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-3">

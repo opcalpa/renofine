@@ -45,6 +45,7 @@ import {
   type DocumentAnalysisResult,
 } from "@/services/receiptAnalysisService";
 import { DatePicker } from "@/components/ui/date-picker";
+import { purchaseVatFields, lineVat } from "@/lib/vat";
 import { formatLocalDate } from "@/lib/dateUtils";
 import {
   SearchableEntityPicker,
@@ -516,6 +517,14 @@ export function QuickReceiptCaptureModal({
         ? formatLocalDate(purchaseDate)
         : formatLocalDate(new Date());
 
+      // Momsen lästes ut ur dokumentet (och kan ha rättats i fältet ovan) men
+      // kastades förr vid spar. Den räknas en gång här och sparas — både på
+      // ordern och, när satsen är entydig, på varje rad.
+      const parsedVat = vatAmount.trim() === "" ? NaN : parseFloat(vatAmount);
+      const vatFields = purchaseVatFields(amount, Number.isFinite(parsedVat) ? parsedVat : null);
+      const lineVatFor = (lineTotal: number | null | undefined) =>
+        lineVat(lineTotal, vatFields.vat_rate);
+
       // Generate filename
       const filename = generateDocumentFilename(
         documentType,
@@ -542,6 +551,7 @@ export function QuickReceiptCaptureModal({
             project_id: projectId,
             vendor_name: vendorName,
             total: amount,
+            ...vatFields,
             status: "delivered",
             source: "manual",
             delivered_at: dateStr,
@@ -563,6 +573,7 @@ export function QuickReceiptCaptureModal({
               vendor_name: vendorName,
               price_per_unit: amount,
               price_total: amount,
+              ...lineVatFor(amount),
               quantity: 1,
               unit: "st",
               status: "ordered",
@@ -590,6 +601,7 @@ export function QuickReceiptCaptureModal({
             project_id: projectId,
             vendor_name: vendorName,
             total: amount,
+            ...vatFields,
             status: "delivered",
             source: "ai_invoice",
             delivered_at: dateStr,
@@ -615,6 +627,7 @@ export function QuickReceiptCaptureModal({
               unit: "st",
               price_per_unit: li.unit_price || null,
               price_total: li.total || null,
+              ...lineVatFor(li.total),
               paid_amount: 0,
               status: "billed",
               room_id: resolvedRoomId,
@@ -628,6 +641,7 @@ export function QuickReceiptCaptureModal({
               vendor_name: vendorName,
               price_per_unit: amount,
               price_total: amount,
+              ...lineVatFor(amount),
               paid_amount: 0,
               quantity: 1,
               unit: "st",
@@ -664,6 +678,7 @@ export function QuickReceiptCaptureModal({
             project_id: projectId,
             vendor_name: vendorName,
             total: amount,
+            ...vatFields,
             status: "delivered",
             source: "ai_receipt",
             delivered_at: dateStr,
@@ -686,6 +701,7 @@ export function QuickReceiptCaptureModal({
               unit: "st",
               price_per_unit: li.unit_price || null,
               price_total: li.total || null,
+              ...lineVatFor(li.total),
               paid_amount: li.total || 0,
               status: "paid",
               room_id: resolvedRoomId,
@@ -700,6 +716,7 @@ export function QuickReceiptCaptureModal({
               vendor_name: vendorName,
               price_per_unit: amount,
               price_total: amount,
+              ...lineVatFor(amount),
               paid_amount: amount,
               quantity: 1,
               unit: "st",
