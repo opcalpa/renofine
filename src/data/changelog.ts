@@ -37,8 +37,8 @@ export const changelog: ChangelogEntry[] = [
   },
   {
     date: "2026-08-26",
-    title: "Tio språk — och hela sidan byter, inte bara knapparna",
-    description: "Arbetarvyn finns på svenska, engelska, tyska, franska, spanska, polska, ukrainska, rumänska, litauiska och estniska. Byter hantverkaren språk översätts även arbetena, rummen och instruktionerna — inte bara menyerna runtomkring.",
+    title: "Tio språk i arbetarvyn",
+    description: "Arbetarvyn finns på svenska, engelska, tyska, franska, spanska, polska, ukrainska, rumänska, litauiska och estniska. Byter hantverkaren språk översätts arbetena, rummen och instruktionerna med — första gången ett nytt språk väljs tar det någon sekund extra, sedan ligger det sparat.",
     tags: ["Fältet", "Förbättring"],
   },
   {

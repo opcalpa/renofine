@@ -7606,10 +7606,8 @@
     "step1Desc": "Número de organización, régimen fiscal, dirección de facturación — para facturas y declaraciones de deducción fiscal",
     "step2Title": "Añadir miembros del equipo",
     "step2Desc": "Invite a sus carpinteros para que puedan fichar en el proyecto correcto",
-    "step3Title": "Importar registro de clientes",
-    "step3Desc": "CSV de su sistema actual, o empiece desde cero",
-    "step4Title": "Conectar contabilidad",
-    "step4Desc": "Fortnox, Visma o Bokio — las facturas fluyen automáticamente",
+    "step3Title": "Añade tus clientes",
+    "step3Desc": "Se reutilizan en presupuestos y proyectos",
     "optional": "opcional",
     "start": "Empezar"
   },

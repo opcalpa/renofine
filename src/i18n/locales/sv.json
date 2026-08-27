@@ -7363,10 +7363,8 @@
     "step1Desc": "Org.nummer, F-skatt, fakturaadress — för fakturor & ROT-anmälan",
     "step2Title": "Lägg till medarbetare",
     "step2Desc": "Bjud in dina snickare så de kan stämpla in på rätt projekt",
-    "step3Title": "Importera kundregister",
-    "step3Desc": "CSV från ditt nuvarande system, eller börja från noll",
-    "step4Title": "Anslut bokföring",
-    "step4Desc": "Fortnox, Visma eller Bokio — fakturor flödar automatiskt",
+    "step3Title": "Lägg upp dina kunder",
+    "step3Desc": "Återanvänds i offerter och projekt — slipp skriva in dem igen",
     "optional": "valfritt",
     "start": "Starta"
   },

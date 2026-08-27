@@ -7,8 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, X, AlertCircle, Loader2, Clock } from "lucide-react";
 
 interface AtaData {
-  tokenId: string;
-  taskId: string;
   taskTitle: string;
   taskDescription: string | null;
   budget: number | null;
@@ -41,56 +39,26 @@ export default function AtaApproval() {
 
   const loadData = async () => {
     try {
-      // Fetch token + task + project data directly (anon has read access)
-      const { data: tokenData, error: tokenErr } = await supabase
-        .from("ata_approval_tokens")
-        .select("id, task_id, project_id, customer_name, created_by_user_id, created_at, expires_at, used_at, response")
-        .eq("token", token!)
-        .single();
-
-      if (tokenErr || !tokenData) {
-        setError("not_found");
+      // Through the edge function, never straight at the table: the anon key
+      // ships in every bundle, so a policy the client could reach was a policy
+      // anyone could reach. The token is the gate and it is checked server-side.
+      const { data: res, error: fnErr } = await supabase.functions.invoke("ata-approval", {
+        body: { token, action: "load" },
+      });
+      if (fnErr || !res || res.error) {
+        setError(res?.error === "expired" ? "expired" : res?.error === "not_found" ? "not_found" : "error");
         return;
       }
-
-      const expired = new Date(tokenData.expires_at!) < new Date();
-      if (expired && !tokenData.used_at) {
-        setError("expired");
-        return;
-      }
-
-      // Fetch task details
-      const { data: task } = await supabase
-        .from("tasks")
-        .select("id, title, description, budget")
-        .eq("id", tokenData.task_id)
-        .single();
-
-      // Fetch project name
-      const { data: project } = await supabase
-        .from("projects")
-        .select("name")
-        .eq("id", tokenData.project_id)
-        .single();
-
-      // Fetch creator name
-      const { data: creator } = await supabase
-        .from("profiles")
-        .select("name")
-        .eq("id", tokenData.created_by_user_id)
-        .single();
 
       setData({
-        tokenId: tokenData.id,
-        taskId: tokenData.task_id,
-        taskTitle: task?.title || "–",
-        taskDescription: task?.description || null,
-        budget: task?.budget || null,
-        projectName: project?.name || "–",
-        createdByName: creator?.name || "–",
-        createdAt: tokenData.created_at,
-        alreadyResponded: tokenData.response,
-        expired,
+        taskTitle: res.taskTitle ?? "–",
+        taskDescription: res.taskDescription ?? null,
+        budget: res.budget ?? null,
+        projectName: res.projectName ?? "–",
+        createdByName: res.createdByName ?? "–",
+        createdAt: res.createdAt,
+        alreadyResponded: res.alreadyResponded,
+        expired: false,
       });
     } catch {
       setError("error");
@@ -103,27 +71,20 @@ export default function AtaApproval() {
     if (!data) return;
     setSubmitting(true);
     try {
-      // Update token
-      await supabase
-        .from("ata_approval_tokens")
-        .update({
-          response: resp,
-          used_at: new Date().toISOString(),
-        })
-        .eq("id", data.tokenId);
-
-      // Update task
-      await supabase
-        .from("tasks")
-        .update({
-          ata_status: resp,
-          ata_approved_at: resp === "approved" ? new Date().toISOString() : null,
-          ata_approved_by_name: data.alreadyResponded ? undefined : undefined, // name from token
-          ata_rejection_reason: resp === "rejected" ? rejectionReason || null : null,
-          status: resp === "approved" ? "to_do" : undefined,
-        })
-        .eq("id", data.taskId);
-
+      const { data: res, error: fnErr } = await supabase.functions.invoke("ata-approval", {
+        body: { token, action: "respond", response: resp, rejectionReason },
+      });
+      if (fnErr || !res?.ok) {
+        // A spent link is not an error the customer caused — show them the
+        // answer that already stands instead of a red box.
+        if (res?.error === "already_used") {
+          setData({ ...data, alreadyResponded: res.alreadyResponded });
+          setSubmitted(true);
+          return;
+        }
+        setError("error");
+        return;
+      }
       setResponse(resp);
       setSubmitted(true);
     } catch {

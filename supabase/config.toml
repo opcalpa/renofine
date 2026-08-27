@@ -84,6 +84,11 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/worker-send-report/index.ts"
 
+[functions.ata-approval]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/ata-approval/index.ts"
+
 [functions.worker-retract-report]
 enabled = true
 verify_jwt = false

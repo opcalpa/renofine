@@ -96,16 +96,20 @@ export async function generatePaxmlExport(
 
   if (!entries || entries.length === 0) return null;
 
-  // 4. Fetch worker profiles (personnummer + default rate)
-  const workerUserIds = [...new Set(entries.map((e) => e.user_id))];
+  // 4. Fetch worker profiles (personnummer + default rate).
+  // `time_entries.user_id` REFERENCES profiles(id) — it holds a PROFILE id, not
+  // an auth user id. Matching it against `profiles.user_id` found nobody, so
+  // every entry was skipped below and the export produced an empty file under
+  // a green "done" toast.
+  const workerProfileIds = [...new Set(entries.map((e) => e.user_id).filter(Boolean))] as string[];
   const { data: workerProfiles } = await supabase
     .from("profiles")
-    .select("id, user_id, name, personnummer, default_hourly_rate")
-    .in("user_id", workerUserIds);
+    .select("id, name, personnummer, default_hourly_rate")
+    .in("id", workerProfileIds);
 
   const workerMap: Record<string, { profileId: string; name: string; personnummer: string | null; defaultRate: number }> = {};
   for (const wp of workerProfiles || []) {
-    workerMap[wp.user_id] = {
+    workerMap[wp.id] = {
       profileId: wp.id,
       name: wp.name || "Okänd",
       personnummer: wp.personnummer,
@@ -198,6 +202,11 @@ ${employeesXml}
   const monthName = new Date(year, month - 1).toLocaleString("sv-SE", { month: "long" });
   const safeName = company.name.replace(/[^a-zA-Z0-9åäöÅÄÖ]/g, "_").substring(0, 30);
   const filename = `PAXL_${safeName}_${year}_${monthName}.xml`;
+
+  // No matched people means no payroll basis. Returning null sends the caller
+  // down its "nothing to export" path rather than handing over an empty file
+  // with a success message — the failure mode this function shipped with.
+  if (workerList.length === 0) return null;
 
   return {
     content: xml,

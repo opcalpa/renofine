@@ -486,7 +486,15 @@ const Projects = () => {
   // Homeowners share this same body — gated sections (LeadsPipeline,
   // FinancialAnalysis, ResourcePlanning) already check isContractor/module
   // visibility, and HomeownerYearlyAnalysis renders for them below.
-  if (!isGuest && isContractor && profile && nonDemoProjects.length === 0) {
+  // Same suppression as the homeowner branch below: the quick-start dialogs
+  // render inside THIS page, so returning early while one is open unmounts it
+  // and the contractor's choice is swallowed — they land back on the checklist
+  // wondering what happened.
+  if (
+    !isGuest && isContractor && profile && nonDemoProjects.length === 0 &&
+    !showWelcomeModal && !showGuidedSetup && !dialogOpen && !showAIImport &&
+    !createIntakeOpen && !showGuestMigration
+  ) {
     return (
       <Suspense fallback={<PageLoadingSkeleton />}>
         <ContractorStart />

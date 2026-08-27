@@ -7364,10 +7364,8 @@
     "step1Desc": "Org number, F-tax, invoice address — for invoices & tax deduction filings",
     "step2Title": "Add team members",
     "step2Desc": "Invite your carpenters so they can clock in on the right project",
-    "step3Title": "Import client registry",
-    "step3Desc": "CSV from your current system, or start from scratch",
-    "step4Title": "Connect accounting",
-    "step4Desc": "Fortnox, Visma or Bokio — invoices flow automatically",
+    "step3Title": "Add your customers",
+    "step3Desc": "Reused in quotes and projects — no re-typing",
     "optional": "optional",
     "start": "Start"
   },

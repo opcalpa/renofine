@@ -7606,10 +7606,8 @@
     "step1Desc": "Org.-Nummer, F-Steuer, Rechnungsadresse — für Rechnungen & Steuerabzugsanmeldungen",
     "step2Title": "Teammitglieder hinzufügen",
     "step2Desc": "Laden Sie Ihre Handwerker ein, damit sie sich beim richtigen Projekt einstempeln können",
-    "step3Title": "Kundenregister importieren",
-    "step3Desc": "CSV aus Ihrem aktuellen System oder von vorn beginnen",
-    "step4Title": "Buchhaltung verbinden",
-    "step4Desc": "Fortnox, Visma oder Bokio — Rechnungen fließen automatisch",
+    "step3Title": "Kunden anlegen",
+    "step3Desc": "Wiederverwendet in Angeboten und Projekten",
     "optional": "optional",
     "start": "Starten"
   },

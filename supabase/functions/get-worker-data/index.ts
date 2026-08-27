@@ -325,13 +325,44 @@ serve(async (req) => {
     let translationsMap: Record<string, { title: string; description: string | null; checklists: unknown }> = {};
     let roomTranslationsMap: Record<string, { name: string; description: string | null }> = {};
     if (workerLang && workerLang !== "en" && workerLang !== "sv") {
-      const { data: translations } = await sb
-        .from("task_translations")
-        .select("task_id, title, description, checklists")
-        .in("task_id", taskIds)
-        .eq("language", workerLang);
-      for (const tr of translations || []) {
-        translationsMap[tr.task_id] = { title: tr.title, description: tr.description, checklists: tr.checklists };
+      const readTaskTranslations = async () => {
+        const { data } = await sb
+          .from("task_translations")
+          .select("task_id, title, description, checklists")
+          .in("task_id", taskIds)
+          .eq("language", workerLang);
+        translationsMap = {};
+        for (const tr of data || []) {
+          translationsMap[tr.task_id] = { title: tr.title, description: tr.description, checklists: tr.checklists };
+        }
+      };
+      await readTaskTranslations();
+
+      // Translations used to be produced ONCE, at invite time, for the invite
+      // language only. Switching the flag to any other language therefore left
+      // the tasks, descriptions and checklists in Swedish — in the one feature
+      // that exists because people do not read Swedish.
+      //
+      // So: fill the gap on demand. `translate-task-content` skips whatever is
+      // already cached, which makes this free on every later load, and the
+      // switch pays the cost once per project and language.
+      if (taskIds.length > 0 && Object.keys(translationsMap).length < taskIds.length) {
+        try {
+          const res = await fetch(`${SUPABASE_URL}/functions/v1/translate-task-content`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+              apikey: SUPABASE_SERVICE_ROLE_KEY,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ taskIds, targetLanguage: workerLang }),
+          });
+          if (res.ok) await readTaskTranslations();
+          else console.error("On-demand translation failed:", res.status);
+        } catch (err) {
+          // A failed translation must never cost the worker their job list.
+          console.error("On-demand translation error:", err);
+        }
       }
 
       if (roomIds.length > 0) {

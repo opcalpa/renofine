@@ -92,7 +92,7 @@ export function ProjectCustomerCard({ projectId }: ProjectCustomerCardProps) {
           <h3 className="text-sm font-semibold">{t("customer.projectCustomer", "Projektets kund")}</h3>
         </div>
         <Link
-          to="/contractor/clients"
+          to="/clients"
           className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
         >
           <ExternalLink className="h-3 w-3" />
@@ -152,7 +152,7 @@ export function ProjectCustomerCard({ projectId }: ProjectCustomerCardProps) {
             </SelectContent>
           </Select>
           <Button asChild variant="outline" size="sm">
-            <Link to="/contractor/clients">
+            <Link to="/clients">
               <Plus className="h-3.5 w-3.5 mr-1" />
               {t("customer.newClient", "Ny kund")}
             </Link>

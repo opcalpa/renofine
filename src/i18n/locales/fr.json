@@ -7606,10 +7606,8 @@
     "step1Desc": "Numéro d'entreprise, F-skatt, adresse de facturation — pour les factures et les déclarations de déduction fiscale",
     "step2Title": "Ajoutez des membres d'équipe",
     "step2Desc": "Invitez vos ouvriers pour qu'ils puissent pointer sur le bon projet",
-    "step3Title": "Importer le registre clients",
-    "step3Desc": "CSV depuis votre système actuel, ou partez de zéro",
-    "step4Title": "Connecter la comptabilité",
-    "step4Desc": "Fortnox, Visma ou Bokio — les factures circulent automatiquement",
+    "step3Title": "Ajoutez vos clients",
+    "step3Desc": "Réutilisés dans les devis et les projets",
     "optional": "facultatif",
     "start": "Démarrer"
   },
