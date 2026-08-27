@@ -28,13 +28,21 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,700;1,9..144,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-    <!-- Google Analytics (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-4G1EY5FFZK"></script>
+    <!-- Google Analytics (gtag.js). Skipped inside embedded demos: /embed/* runs in an
+         iframe on carlpalmquist.com, so every portfolio visitor would otherwise register a
+         page view on renofine.com and inflate the traffic figures we read in interviews.
+         Same reason the PostHog init bails on /embed/ (src/lib/analytics.ts). -->
     <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'G-4G1EY5FFZK');
+      if (!location.pathname.startsWith('/embed/')) {
+        var gaScript = document.createElement('script');
+        gaScript.async = true;
+        gaScript.src = 'https://www.googletagmanager.com/gtag/js?id=G-4G1EY5FFZK';
+        document.head.appendChild(gaScript);
+        window.dataLayer = window.dataLayer || [];
+        window.gtag = function(){ dataLayer.push(arguments); };
+        gtag('js', new Date());
+        gtag('config', 'G-4G1EY5FFZK');
+      }
     </script>
   </head>
   <body>

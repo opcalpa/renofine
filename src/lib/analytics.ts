@@ -181,6 +181,10 @@ interface AnalyticsService {
  * Call this once at app startup (in main.tsx)
  */
 function init(): void {
+  // Embedded demos (/embed/*) sit in an iframe on carlpalmquist.com. Their page views would
+  // otherwise count as renofine.com visits in the shared PostHog project — every portfolio
+  // visitor inflating product traffic. No analytics in the frame.
+  if (typeof window !== "undefined" && window.location.pathname.startsWith("/embed/")) return;
   if (!POSTHOG_KEY) {
     if (!IS_PRODUCTION) {
       console.log("[Analytics] PostHog disabled (no VITE_POSTHOG_KEY)");
