@@ -4598,6 +4598,54 @@ gav `vat_total 0`, och en faktura skapad ur offerten i appen fick 12 rader à 25
 med rätt huvudsumma. All testdata städad och kontrollerad i egen sats.
 
 ---
+id: omvand-byggmoms
+status: done
+priority: P1
+tags: [ekonomi, moms, b2b, skatteverket, bygglet-epic]
+created: 2026-08-27
+---
+
+## Omvänd byggmoms — B2B-fakturan som inte gick att skriva förut
+
+**LEVERERAT 2026-08-27 (s88), fas 2 steg 3.** En byggfirma som fakturerar en
+annan byggfirma måste fakturera utan moms, med köparens momsnummer och texten
+"Omvänd betalningsskyldighet". Det gick inte alls i Renofine — momsen var
+hårdkodad till 25 %.
+
+Migration `20260827130000_reverse_charge.sql` + `src/lib/reverseCharge.ts`:
+- `reverse_charge`, `buyer_vat_number`, `vat_note` på `quotes` och `invoices`.
+  Köparvillkoret bor sedan tidigare på `clients.sells_construction`.
+- **Rutan erbjuds bara när KUNDEN säljer byggtjänster** mer än tillfälligt.
+  Byter man till en hemägare stängs den av automatiskt.
+- **Bedömningen görs per DOKUMENT, inte per rad** — dominerar byggtjänsten
+  följer materialraderna med. Villkor 1 (att det ÄR en byggtjänst) är en
+  uttrycklig bekräftelse från den som skriver, ingen gissning ur radtexten.
+- **Fyra grindar i databasen**, alla verifierade genom att prövas:
+  1. `reverse_charge` med rader som har moms → vägras
+  2. en rad med moms smugen in efteråt på ett omvänt dokument → vägras
+  3. skickat dokument utan köparens momsnummer → vägras (utkast får sakna det)
+  4. ROT + omvänd byggmoms på samma dokument → vägras (CHECK, inte tyst val)
+- `vat_note` sätts av databasen om appen glömmer.
+- Flaggan följer med offert → faktura i `createInvoiceFromQuote`.
+
+**Fälla som fångades:** kontrollen låg först i "Presentationsinställningar",
+som bara renderas vid förifyllning från projekt (`shouldPrepopulate`) — en
+laglig momsinställning hade alltså varit onåbar på en tom offert. Flyttad till
+offertkortet. Samma läxa som `feedback_verify_the_surface_renders`, och den
+slog till en andra gång: texten lades först i ett totals-block som inte är det
+som renderas (`ViewQuoteV2` har två).
+
+**Bevis:** hela flödet kört i appen som proffs. Rutan syns inte utan kund, syns
+med en byggtjänstsäljande kund, momsnumret förifylls ur kunden, spar utan
+bekräftelse stoppas med rätt meddelande, och det sparade dokumentet blev
+`reverse_charge=true`, rad 0 %, `vat_breakdown [{rate:0,net:10000,vat:0}]`,
+texten + köparens momsnummer på dokumentet. Testkund och testoffert borttagna
+och kontrollerade i egen sats.
+
+**Kvar:** samma kontroll i `CreateInvoiceV2` (fakturan ärver i dag flaggan från
+offerten men kan inte sättas direkt på en fristående faktura).
+
+---
 id: faktura-rot-avviker-fran-offerten
 status: todo
 priority: P1

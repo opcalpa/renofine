@@ -22,6 +22,10 @@ export interface Client {
   postal_code: string | null;
   city: string | null;
   reference: string | null;
+  /** Säljer kunden byggtjänster mer än tillfälligt? Villkoret för omvänd byggmoms. */
+  sells_construction?: boolean | null;
+  /** Köparens momsregistreringsnummer — obligatoriskt vid omvänd byggmoms. */
+  vat_number?: string | null;
 }
 
 interface CreateClientDialogProps {

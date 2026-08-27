@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { calculateRotDeduction, recalculateQuoteTotals } from "./quoteService";
+import { REVERSE_CHARGE_NOTE } from "@/lib/reverseCharge";
 import { analytics, AnalyticsEvents } from "@/lib/analytics";
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
@@ -121,6 +122,24 @@ export async function createInvoiceFromQuote(
 
   // Recalculate totals
   await recalculateInvoiceTotals(invoice.id);
+
+  // Omvänd betalningsskyldighet följer med offerten in på fakturan — annars blev
+  // en 0 %-offert en 25 %-faktura utan den obligatoriska texten. Sätts EFTER
+  // raderna: databasens grind kräver att alla rader redan är 0 %.
+  if (quote.reverse_charge) {
+    const { error: rcErr } = await supabase
+      .from("invoices")
+      .update({
+        reverse_charge: true,
+        buyer_vat_number: quote.buyer_vat_number,
+        vat_note: quote.vat_note ?? REVERSE_CHARGE_NOTE,
+      })
+      .eq("id", invoice.id);
+    if (rcErr) {
+      console.error("Failed to carry reverse charge to invoice:", rcErr);
+      toast.error(rcErr.message);
+    }
+  }
 
   return invoice;
 }

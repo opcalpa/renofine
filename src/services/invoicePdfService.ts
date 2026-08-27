@@ -19,6 +19,9 @@ export interface InvoicePdfInvoice {
   bankgiro: string | null;
   bank_account_number: string | null;
   ocr_reference: string | null;
+  reverse_charge?: boolean | null;
+  buyer_vat_number?: string | null;
+  vat_note?: string | null;
 }
 
 export interface InvoicePdfItem {
@@ -250,6 +253,26 @@ export async function downloadInvoicePdf({
   doc.text(t("quotes.totalToPay"), 15, y);
   doc.text(`${totalToPay.toLocaleString()} kr`, 195, y, { align: "right" });
   y += 8;
+
+  // Formellt fakturakrav vid omvänd betalningsskyldighet: texten OCH köparens
+  // momsregistreringsnummer måste finnas på fakturan.
+  if (invoice.reverse_charge) {
+    newPageIfNeeded(15);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.text(invoice.vat_note || "Omvänd betalningsskyldighet", 15, y);
+    y += 5;
+    if (invoice.buyer_vat_number) {
+      doc.setFont("helvetica", "normal");
+      doc.text(
+        `${t("reverseCharge.buyerVatNumber", "Köparens momsregistreringsnummer")}: ${invoice.buyer_vat_number}`,
+        15,
+        y,
+      );
+      y += 5;
+    }
+    y += 3;
+  }
 
   // Payment details (invoice-specific) — bankgiro / OCR / account
   const bankgiroVal = invoice.bankgiro || creator?.bankgiro;

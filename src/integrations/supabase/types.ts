@@ -1488,6 +1488,7 @@ export type Database = {
         Row: {
           bank_account_number: string | null
           bankgiro: string | null
+          buyer_vat_number: string | null
           client_id: string | null
           client_id_ref: string | null
           created_at: string | null
@@ -1506,6 +1507,7 @@ export type Database = {
           payment_terms_days: number | null
           project_id: string
           quote_id: string | null
+          reverse_charge: boolean
           sent_at: string | null
           status: string
           title: string
@@ -1514,12 +1516,14 @@ export type Database = {
           total_rot_deduction: number | null
           updated_at: string | null
           vat_breakdown: Json
+          vat_note: string | null
           vat_total: number
           viewed_at: string | null
         }
         Insert: {
           bank_account_number?: string | null
           bankgiro?: string | null
+          buyer_vat_number?: string | null
           client_id?: string | null
           client_id_ref?: string | null
           created_at?: string | null
@@ -1538,6 +1542,7 @@ export type Database = {
           payment_terms_days?: number | null
           project_id: string
           quote_id?: string | null
+          reverse_charge?: boolean
           sent_at?: string | null
           status?: string
           title?: string
@@ -1546,12 +1551,14 @@ export type Database = {
           total_rot_deduction?: number | null
           updated_at?: string | null
           vat_breakdown?: Json
+          vat_note?: string | null
           vat_total?: number
           viewed_at?: string | null
         }
         Update: {
           bank_account_number?: string | null
           bankgiro?: string | null
+          buyer_vat_number?: string | null
           client_id?: string | null
           client_id_ref?: string | null
           created_at?: string | null
@@ -1570,6 +1577,7 @@ export type Database = {
           payment_terms_days?: number | null
           project_id?: string
           quote_id?: string | null
+          reverse_charge?: boolean
           sent_at?: string | null
           status?: string
           title?: string
@@ -1578,6 +1586,7 @@ export type Database = {
           total_rot_deduction?: number | null
           updated_at?: string | null
           vat_breakdown?: Json
+          vat_note?: string | null
           vat_total?: number
           viewed_at?: string | null
         }
@@ -3242,6 +3251,7 @@ export type Database = {
         Row: {
           ata_reason: string | null
           ata_time_shift_days: number | null
+          buyer_vat_number: string | null
           client_id: string | null
           client_id_ref: string | null
           created_at: string | null
@@ -3254,6 +3264,7 @@ export type Database = {
           notes: string | null
           project_id: string
           quote_number: string | null
+          reverse_charge: boolean
           revised_from: string | null
           status: string
           title: string
@@ -3263,12 +3274,14 @@ export type Database = {
           updated_at: string | null
           valid_until: string | null
           vat_breakdown: Json
+          vat_note: string | null
           vat_total: number
           viewed_at: string | null
         }
         Insert: {
           ata_reason?: string | null
           ata_time_shift_days?: number | null
+          buyer_vat_number?: string | null
           client_id?: string | null
           client_id_ref?: string | null
           created_at?: string | null
@@ -3281,6 +3294,7 @@ export type Database = {
           notes?: string | null
           project_id: string
           quote_number?: string | null
+          reverse_charge?: boolean
           revised_from?: string | null
           status?: string
           title?: string
@@ -3290,12 +3304,14 @@ export type Database = {
           updated_at?: string | null
           valid_until?: string | null
           vat_breakdown?: Json
+          vat_note?: string | null
           vat_total?: number
           viewed_at?: string | null
         }
         Update: {
           ata_reason?: string | null
           ata_time_shift_days?: number | null
+          buyer_vat_number?: string | null
           client_id?: string | null
           client_id_ref?: string | null
           created_at?: string | null
@@ -3308,6 +3324,7 @@ export type Database = {
           notes?: string | null
           project_id?: string
           quote_number?: string | null
+          reverse_charge?: boolean
           revised_from?: string | null
           status?: string
           title?: string
@@ -3317,6 +3334,7 @@ export type Database = {
           updated_at?: string | null
           valid_until?: string | null
           vat_breakdown?: Json
+          vat_note?: string | null
           vat_total?: number
           viewed_at?: string | null
         }

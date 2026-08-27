@@ -88,6 +88,9 @@ interface QuoteData {
   creator_id: string;
   total_amount: number;
   total_rot_deduction: number;
+  reverse_charge?: boolean | null;
+  buyer_vat_number?: string | null;
+  vat_note?: string | null;
   total_after_rot: number;
   created_at: string;
   free_text: string | null;
@@ -801,6 +804,18 @@ export default function ViewQuoteV2() {
                       <span>{vatRowLabel(t("quotes.vat", "Moms"))}</span>
                       <span className="rf-num">{fmtKr(vat)}</span>
                     </div>
+                    {quote.reverse_charge && (
+                      <div className="pt-1" style={{ fontSize: 11.5, color: "var(--rf-fg-muted)" }}>
+                        <div style={{ fontWeight: 600 }}>
+                          {quote.vat_note || t("reverseCharge.note", "Omvänd betalningsskyldighet")}
+                        </div>
+                        {quote.buyer_vat_number && (
+                          <div>
+                            {t("reverseCharge.buyerVatNumber", "Köparens momsregistreringsnummer")}: {quote.buyer_vat_number}
+                          </div>
+                        )}
+                      </div>
+                    )}
                     {totalRot > 0 && (
                       <div className="flex justify-between" style={{ color: "var(--rf-green)" }}>
                         <span>{t("quotes.rotDeduction", "ROT-avdrag")}</span>
@@ -939,6 +954,24 @@ export default function ViewQuoteV2() {
               )}
 
               <DocumentLines items={lineItems} />
+
+              {/* Formellt krav vid omvänd betalningsskyldighet: texten OCH
+                  köparens momsregistreringsnummer ska stå på dokumentet. */}
+              {quote.reverse_charge && (
+                <div
+                  className="mt-3"
+                  style={{ fontSize: 12, color: "var(--rf-fg-muted)", lineHeight: 1.55 }}
+                >
+                  <div style={{ fontWeight: 600, color: "var(--rf-ink)" }}>
+                    {quote.vat_note || t("reverseCharge.note", "Omvänd betalningsskyldighet")}
+                  </div>
+                  {quote.buyer_vat_number && (
+                    <div>
+                      {t("reverseCharge.buyerVatNumber", "Köparens momsregistreringsnummer")}: {quote.buyer_vat_number}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <DocumentTotals
                 rows={[

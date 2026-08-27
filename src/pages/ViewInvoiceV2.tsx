@@ -82,6 +82,9 @@ interface InvoiceData {
   creator_id: string;
   total_amount: number;
   total_rot_deduction: number;
+  reverse_charge?: boolean | null;
+  buyer_vat_number?: string | null;
+  vat_note?: string | null;
   total_after_rot: number;
   paid_amount: number;
   created_at: string;
@@ -579,6 +582,24 @@ export default function ViewInvoiceV2() {
               )}
 
               <DocumentLines items={lineItems} />
+
+              {/* Formellt fakturakrav vid omvänd betalningsskyldighet: texten
+                  OCH köparens momsregistreringsnummer måste stå på fakturan. */}
+              {invoice.reverse_charge && (
+                <div
+                  className="mt-3"
+                  style={{ fontSize: 12, color: "var(--rf-fg-muted)", lineHeight: 1.55 }}
+                >
+                  <div style={{ fontWeight: 600, color: "var(--rf-ink)" }}>
+                    {invoice.vat_note || t("reverseCharge.note", "Omvänd betalningsskyldighet")}
+                  </div>
+                  {invoice.buyer_vat_number && (
+                    <div>
+                      {t("reverseCharge.buyerVatNumber", "Köparens momsregistreringsnummer")}: {invoice.buyer_vat_number}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <DocumentTotals
                 rows={[

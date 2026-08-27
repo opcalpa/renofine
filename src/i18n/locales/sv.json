@@ -8430,5 +8430,17 @@
     "approveHours": "Godkänn timmarna",
     "hoursApproved": "Timmarna godkända",
     "hoursDeclined": "Timmarna avslagna"
+  },
+  "reverseCharge": {
+    "toggle": "Omvänd betalningsskyldighet",
+    "confirmService": "Dokumentet avser byggtjänst enligt momslagen, utförd i Sverige. Bedömningen görs för hela fakturan — dominerar byggtjänsten följer materialraderna med.",
+    "buyerVatNumber": "Köparens momsregistreringsnummer",
+    "effect": "Alla rader sätts till 0 % moms och texten \"Omvänd betalningsskyldighet\" skrivs på dokumentet.",
+    "note": "Omvänd betalningsskyldighet",
+    "problem": {
+      "serviceNotConfirmed": "Bekräfta att dokumentet avser en byggtjänst innan du sätter omvänd betalningsskyldighet.",
+      "rotConflict": "ROT och omvänd betalningsskyldighet utesluter varandra — ROT är för privatpersoner. Stäng av ROT eller ta bort omvänd betalningsskyldighet.",
+      "missingBuyerVatNumber": "Köparens momsregistreringsnummer krävs på en faktura med omvänd betalningsskyldighet."
+    }
   }
 }

@@ -8431,5 +8431,17 @@
     "approveHours": "Approve the hours",
     "hoursApproved": "Hours approved",
     "hoursDeclined": "Hours declined"
+  },
+  "reverseCharge": {
+    "toggle": "Reverse charge (construction)",
+    "confirmService": "This document covers a construction service under Swedish VAT law, performed in Sweden. The assessment is made for the whole invoice — if the construction service dominates, material lines follow it.",
+    "buyerVatNumber": "Buyer's VAT registration number",
+    "effect": "All lines are set to 0 % VAT and the text \"Omvänd betalningsskyldighet\" is printed on the document.",
+    "note": "Omvänd betalningsskyldighet",
+    "problem": {
+      "serviceNotConfirmed": "Confirm that the document covers a construction service before enabling reverse charge.",
+      "rotConflict": "ROT and reverse charge are mutually exclusive — ROT is for private individuals. Turn off ROT or remove reverse charge.",
+      "missingBuyerVatNumber": "The buyer's VAT registration number is required on a reverse-charge invoice."
+    }
   }
 }

@@ -20,6 +20,7 @@ import { QuotePreview } from "@/components/quotes/QuotePreview";
 import { QuoteDocument } from "@/components/quotes/QuoteDocument";
 import { ImportRoomDialog } from "@/components/quotes/ImportRoomDialog";
 import { CreateClientDialog, type Client } from "@/components/quotes/CreateClientDialog";
+import { REVERSE_CHARGE_NOTE, normalizeVatNumber, reverseChargeAvailability, reverseChargeProblems } from "@/lib/reverseCharge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createQuote, addQuoteItem, updateQuoteDraft, replaceQuoteItems, generateQuoteNumber, recalculateQuoteTotals, calculateRotDeduction } from "@/services/quoteService";
@@ -76,6 +77,10 @@ export default function CreateQuoteV2() {
   const [groupByType, setGroupByType] = useState<"grouped" | "byRoom" | "mixed">("grouped");
   const [pricingFormat, setPricingFormat] = useState<"detailed" | "combined" | "fixed">("combined");
   const [applyRot, setApplyRot] = useState(true);
+  // Omvänd betalningsskyldighet — erbjuds bara när KUNDEN säljer byggtjänster.
+  const [reverseCharge, setReverseCharge] = useState(false);
+  const [buyerVatNumber, setBuyerVatNumber] = useState("");
+  const [constructionConfirmed, setConstructionConfirmed] = useState(false);
   const [compactMode, setCompactMode] = useState(false);
   // V2: default-open when prepopulating so users discover the settings.
   const [settingsOpen, setSettingsOpen] = useState(searchParams.get("prepopulate") === "true");
@@ -151,6 +156,11 @@ export default function CreateQuoteV2() {
   const [profileId, setProfileId] = useState<string | null>(null);
   const [clientId, setClientId] = useState<string>("");
   const [clients, setClients] = useState<Client[]>([]);
+  const selectedClient = clients.find((c) => c.id === clientId) ?? null;
+  const rcAvailability = reverseChargeAvailability(selectedClient);
+  // Krocken gäller RADERNA, inte inställningen: en offert utan ROT-rader krockar
+  // inte även om ROT-rutan står i på.
+  const anyRotEligibleItem = items.some((i) => !i.sectionHeader && i.isRotEligible);
   const [createClientOpen, setCreateClientOpen] = useState(false);
   const [freeText, setFreeText] = useState("");
   const [quoteNumber, setQuoteNumber] = useState("");
@@ -267,6 +277,18 @@ export default function CreateQuoteV2() {
       setProjectId(urlProjectId);
     }
   }, [urlProjectId, projectId]);
+
+  // Kunden styr om omvänd betalningsskyldighet ens får erbjudas. Byter man till
+  // en hemägare stängs den av — den får aldrig bli kvar påslagen av misstag.
+  useEffect(() => {
+    if (!rcAvailability.available && reverseCharge) {
+      setReverseCharge(false);
+      setConstructionConfirmed(false);
+    }
+    if (selectedClient?.vat_number && !buyerVatNumber) {
+      setBuyerVatNumber(selectedClient.vat_number);
+    }
+  }, [rcAvailability.available, reverseCharge, selectedClient, buyerVatNumber]);
 
   // Handle URL param for clientId
   useEffect(() => {
@@ -818,8 +840,23 @@ export default function CreateQuoteV2() {
         discount_percent: item.discountPercent || null,
         source_task_id: item.sourceTaskId || null,
         source_type: item.source || null,
-        vat_rate: item.vatRate ?? 25,
+        // Omvänd betalningsskyldighet gäller HELA dokumentet — dominerar
+        // byggtjänsten följer materialraderna med. Därför 0 % på varje rad.
+        vat_rate: reverseCharge ? 0 : item.vatRate ?? 25,
       }));
+
+    const rcProblems = reverseChargeProblems({
+      enabled: reverseCharge,
+      buyerVatNumber,
+      anyRotEligible: itemPayloads.some((i) => i.is_rot_eligible),
+      constructionServiceConfirmed: constructionConfirmed,
+    });
+    if (rcProblems.length > 0) {
+      // Felmeddelande, aldrig en tyst prioritering — särskilt ROT-krocken.
+      toast.error(t(`reverseCharge.problem.${rcProblems[0]}`));
+      setSaving(false);
+      return;
+    }
 
     const titlePrefix = isAta
       ? t("quotes.changeOrderLabel", "Tillägg")
@@ -843,10 +880,31 @@ export default function CreateQuoteV2() {
         setSaving(false);
         return;
       }
+      // Databasens grind kräver att raderna redan är 0 % när huvudet blir
+      // omvänt — och tvärtom när det stängs av. Nolla först, sätt sedan.
+      await supabase
+        .from("quotes")
+        .update({ reverse_charge: false, buyer_vat_number: null, vat_note: null })
+        .eq("id", editQuoteId);
       const ok = await replaceQuoteItems(editQuoteId, itemPayloads);
       if (!ok) {
         setSaving(false);
         return;
+      }
+      if (reverseCharge) {
+        const { error: rcErr } = await supabase
+          .from("quotes")
+          .update({
+            reverse_charge: true,
+            buyer_vat_number: normalizeVatNumber(buyerVatNumber),
+            vat_note: REVERSE_CHARGE_NOTE,
+          })
+          .eq("id", editQuoteId);
+        if (rcErr) {
+          toast.error(rcErr.message);
+          setSaving(false);
+          return;
+        }
       }
       setSaving(false);
       toast.success(t("quotes.saveDraft"));
@@ -890,6 +948,21 @@ export default function CreateQuoteV2() {
       });
       const totals = recalculateQuoteTotals(computedItems);
       await supabase.from("quotes").update(totals).eq("id", quote.id);
+      if (reverseCharge) {
+        const { error: rcErr } = await supabase
+          .from("quotes")
+          .update({
+            reverse_charge: true,
+            buyer_vat_number: normalizeVatNumber(buyerVatNumber),
+            vat_note: REVERSE_CHARGE_NOTE,
+          })
+          .eq("id", quote.id);
+        if (rcErr) {
+          toast.error(rcErr.message);
+          setSaving(false);
+          return;
+        }
+      }
       setSaving(false);
       toast.success(t("quotes.saveDraft"));
       const returnTo = projectId ? `?returnTo=${encodeURIComponent(`/projects/${projectId}`)}` : "";
@@ -1099,6 +1172,59 @@ export default function CreateQuoteV2() {
                   className="rounded-lg"
                 />
               </div>
+              {/* Omvänd betalningsskyldighet — bara när KUNDEN säljer
+                  byggtjänster mer än tillfälligt. Aldrig mot en hemägare. */}
+              {rcAvailability.available && (
+                <div className="space-y-2 rounded-lg border p-3">
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="reverse-charge-toggle"
+                        checked={reverseCharge}
+                        onCheckedChange={(c) => setReverseCharge(c === true)}
+                      />
+                      <Label htmlFor="reverse-charge-toggle" className="text-sm font-normal cursor-pointer">
+                        {t("reverseCharge.toggle", "Omvänd betalningsskyldighet")}
+                      </Label>
+                    </div>
+                    {reverseCharge && (
+                      <div className="space-y-2 pl-6">
+                        <div className="flex items-start gap-2">
+                          <Checkbox
+                            id="reverse-charge-confirm"
+                            checked={constructionConfirmed}
+                            onCheckedChange={(c) => setConstructionConfirmed(c === true)}
+                          />
+                          <Label htmlFor="reverse-charge-confirm" className="text-xs font-normal cursor-pointer leading-snug">
+                            {t(
+                              "reverseCharge.confirmService",
+                              "Dokumentet avser byggtjänst enligt momslagen, utförd i Sverige. Bedömningen görs för hela fakturan — dominerar byggtjänsten följer materialraderna med."
+                            )}
+                          </Label>
+                        </div>
+                        <div className="space-y-1">
+                          <Label htmlFor="buyer-vat" className="text-xs text-muted-foreground">
+                            {t("reverseCharge.buyerVatNumber", "Köparens momsregistreringsnummer")}*
+                          </Label>
+                          <Input
+                            id="buyer-vat"
+                            value={buyerVatNumber}
+                            onChange={(e) => setBuyerVatNumber(e.target.value)}
+                            placeholder="SE556035112801"
+                            className="h-9"
+                          />
+                        </div>
+                        {anyRotEligibleItem && (
+                          <p className="text-xs" style={{ color: "var(--rf-warn, #b3261e)" }}>
+                            {t("reverseCharge.problem.rotConflict", "ROT och omvänd betalningsskyldighet utesluter varandra — stäng av ROT.")}
+                          </p>
+                        )}
+                        <p className="text-xs text-muted-foreground">
+                          {t("reverseCharge.effect", "Alla rader sätts till 0 % moms och texten \"Omvänd betalningsskyldighet\" skrivs på dokumentet.")}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
             </div>
 
             {/* Settings panel — only shown when prepopulating from a project */}
@@ -1249,6 +1375,7 @@ export default function CreateQuoteV2() {
                         {t("quotes.applyRotDeduction")}
                       </Label>
                     </div>
+
 
                     <div className="h-px bg-border" />
 
