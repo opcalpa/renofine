@@ -4693,10 +4693,9 @@ trigger äga båda så att huvudet aldrig kan säga en sak och raderna en annan.
 
 ---
 id: sie4-export
-status: todo
+status: done
 priority: P2
 tags: [agent-proposed, integrations-strategi, standarder, bokforing]
-blocked-by: purchase-vat-capture
 created: 2026-08-25
 ---
 ## SIE4-export — en standard i stället för fyra API:er
@@ -4711,6 +4710,50 @@ koden): momsen sparas inte någonstans, se `purchase-vat-capture`. Det här är
 alltså inte "bara formatgenerering" — det förutsätter (1) att momsen fångas
 vid kvitto-import och (2) en kontoplan-mappning per kostnadsställe. Därför P2
 och blockerad, inte P1.
+
+**LEVERERAT 2026-08-27 (s88), fas 2 steg 4.** Tjänsten var färdigbyggd med
+riktiga BAS-konton men hade **ingen levande anropare** — den enda låg i
+`InvoiceListSection`, en komponent som aldrig renderas. Nu nåbar från
+"Till bokföringen" i den ekonomiska analysen på projektlistan (proffs), med
+årsväljare.
+
+Tre fel rättade i själva exporten på vägen:
+1. **Den räknade `netAmount * 0.25`** — samma sjukdom som resten. Nu läses den
+   lagrade momsen, och varje sats bokförs på sitt eget konto: 2610 (25 %),
+   2620 (12 %), 2630 (6 %). Att bokföra 12 %-moms på 2610 är fel även när
+   summan råkar stämma.
+2. **Omvänd byggmoms saknades.** Bokförs nu på 3231 (Försäljning byggtjänster,
+   omvänd skattskyldighet) utan utgående moms.
+3. **Filen sa `#FORMAT PC8` men skrevs som UTF-8.** "Björn Lundén" hade blivit
+   "BjÃ¶rn LundÃ©n" i importen. Nu skrivs riktig CP437.
+
+Och: **fakturor utan rader hoppas över och rapporteras** i stället för att
+bokföras med gissad moms. Ett underlag till Skatteverket får inte innehålla en
+gissning, och tyst utelämnande är värre än ett tråkigt meddelande.
+
+**Bevis:** genererad fil verifierad i appen. Blandade satser gav
+`2610 −2500` + `2620 −120` med verifikationen i balans (summa 0). Omvänd
+byggmoms gav `1510 11000 / 3231 −11000`. Den radlösa fakturan rapporterades
+som överhoppad. Testdata borttagen, kontrollerad i egen sats.
+
+---
+id: invoicelistsection-dod-eller-inkopplad
+status: todo
+priority: P3
+tags: [dod-kod, hygien, faktura, agent-proposed]
+created: 2026-08-27
+---
+
+## `InvoiceListSection` är 172 rader död kod med en egen SIE-knapp
+
+Komponenten renderas ingenstans (verifierat 2026-08-27). Den innehåller en
+per-projekt-fakturalista och en SIE4-knapp. Sedan SIE-exporten blev nåbar på
+en levande yta finns nu två vägar till samma fil, varav den ena är onåbar och
+kommer att drifta.
+
+Antingen: koppla in den på Budget-fliken (en fakturalista per projekt är
+rimlig), eller ta bort filen. Det är ett produktval, inte en städning — därför
+lämnat till Carl.
 
 ---
 id: scrive-esign-quotes

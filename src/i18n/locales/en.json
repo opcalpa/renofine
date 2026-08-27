@@ -6195,7 +6195,15 @@
     "budgetBreakdown": "Budget per project",
     "uninvoicedPerProject": "Uninvoiced per project",
     "profitPerProject": "Profit per project",
-    "marginPerProject": "Margin per project"
+    "marginPerProject": "Margin per project",
+    "sieTitle": "To your bookkeeping",
+    "sieHint": "SIE4 file with this year's invoices, net and VAT per rate. Imports into Fortnox, Visma, Bokio and Björn Lundén.",
+    "sieExport": "Export SIE4",
+    "sieYear": "Year",
+    "sieEmpty": "No sent invoices for {{year}} to export",
+    "sieDone": "SIE4 file created — import it into your accounting software",
+    "sieSkipped": "{{count}} invoice without lines could not be exported (VAT unknown): {{numbers}}",
+    "sieSkipped_other": "{{count}} invoices without lines could not be exported (VAT unknown): {{numbers}}"
   },
   "invoiceMethod": {
     "title": "Create Invoice",

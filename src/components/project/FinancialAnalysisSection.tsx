@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, ChevronUp, BarChart3, ExternalLink } from "lucide-react";
+import { ChevronDown, ChevronUp, BarChart3, ExternalLink, Download, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { formatCurrency } from "@/lib/currency";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -20,6 +21,58 @@ export function FinancialAnalysisSection({
   const navigate = useNavigate();
   const [isExpanded, setIsExpanded] = useState(false);
   const [invoicedByProject, setInvoicedByProject] = useState<Record<string, number>>({});
+  const [exportingSie, setExportingSie] = useState(false);
+  const currentYear = new Date().getFullYear();
+  const [sieYear, setSieYear] = useState(currentYear);
+
+  /**
+   * SIE4 är den öppna svenska standarden som Fortnox, Visma, Bokio och Björn
+   * Lundén alla importerar. Tjänsten fanns färdigbyggd men hade INGEN levande
+   * anropare — den enda låg i en komponent som aldrig renderas. Här blir den
+   * nåbar för den som faktiskt ska lämna underlaget till sin bokföring.
+   */
+  const handleSieExport = async () => {
+    setExportingSie(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
+      if (!profile) throw new Error("Profile not found");
+
+      const { generateSie4Export, downloadSieFile } = await import("@/services/sieExportService");
+      const { content, filename, skipped } = await generateSie4Export(profile.id, sieYear);
+      if (!content) {
+        toast.info(t("financialAnalysis.sieEmpty", "Inga skickade fakturor för {{year}} att exportera", { year: sieYear }));
+        return;
+      }
+      downloadSieFile(content, filename);
+      toast.success(t("financialAnalysis.sieDone", "SIE4-fil skapad — importera den i ditt bokföringsprogram"));
+      // Tyst utelämnande är värre än ett tråkigt meddelande: användaren måste
+      // veta att filen inte är komplett innan hen lämnar den till bokföringen.
+      if (skipped.length > 0) {
+        toast.warning(
+          t("financialAnalysis.sieSkipped", {
+            defaultValue:
+              "{{count}} faktura utan rader kunde inte exporteras (momsen är okänd): {{numbers}}",
+            defaultValue_plural:
+              "{{count}} fakturor utan rader kunde inte exporteras (momsen är okänd): {{numbers}}",
+            count: skipped.length,
+            numbers: skipped.map((sk) => sk.invoiceNumber).join(", "),
+          }),
+          { duration: 10000 }
+        );
+      }
+    } catch (err) {
+      console.error("SIE export failed:", err);
+      toast.error(err instanceof Error ? err.message : String(err));
+    } finally {
+      setExportingSie(false);
+    }
+  };
 
   // Fetch invoice totals when expanded
   useEffect(() => {
@@ -196,6 +249,38 @@ export function FinancialAnalysisSection({
               {t("financialAnalysis.noData", "Inga projekt med budget ännu")}
             </div>
           )}
+
+          {/* Till bokföringen. SIE4 är en fil, inte en integration — ingen
+              ansökan, ingen nyckel, ingen motpart. */}
+          <div className="border-t px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium">{t("financialAnalysis.sieTitle", "Till bokföringen")}</p>
+              <p className="text-xs text-muted-foreground">
+                {t("financialAnalysis.sieHint", "SIE4-fil med årets fakturor, netto och moms per sats. Importeras i Fortnox, Visma, Bokio och Björn Lundén.")}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <select
+                value={sieYear}
+                onChange={(e) => setSieYear(parseInt(e.target.value, 10))}
+                className="h-9 rounded-md border bg-background px-2 text-sm"
+                aria-label={t("financialAnalysis.sieYear", "År")}
+              >
+                {[currentYear, currentYear - 1, currentYear - 2].map((y) => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={handleSieExport}
+                disabled={exportingSie}
+                className="inline-flex h-9 items-center gap-2 rounded-md border px-3 text-sm hover:bg-muted disabled:opacity-50"
+              >
+                {exportingSie ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                {t("financialAnalysis.sieExport", "Exportera SIE4")}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </section>

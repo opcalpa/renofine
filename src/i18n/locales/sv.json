@@ -6194,7 +6194,15 @@
     "budgetBreakdown": "Budget per projekt",
     "uninvoicedPerProject": "Ofakturerat per projekt",
     "profitPerProject": "Resultat per projekt",
-    "marginPerProject": "Marginal per projekt"
+    "marginPerProject": "Marginal per projekt",
+    "sieTitle": "Till bokföringen",
+    "sieHint": "SIE4-fil med årets fakturor, netto och moms per sats. Importeras i Fortnox, Visma, Bokio och Björn Lundén.",
+    "sieExport": "Exportera SIE4",
+    "sieYear": "År",
+    "sieEmpty": "Inga skickade fakturor för {{year}} att exportera",
+    "sieDone": "SIE4-fil skapad — importera den i ditt bokföringsprogram",
+    "sieSkipped": "{{count}} faktura utan rader kunde inte exporteras (momsen är okänd): {{numbers}}",
+    "sieSkipped_other": "{{count}} fakturor utan rader kunde inte exporteras (momsen är okänd): {{numbers}}"
   },
   "invoiceMethod": {
     "title": "Skapa faktura",
