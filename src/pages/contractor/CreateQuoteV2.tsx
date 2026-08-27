@@ -278,6 +278,18 @@ export default function CreateQuoteV2() {
     }
   }, [urlProjectId, projectId]);
 
+  // Vad man ser ska vara vad som sparas. Utan detta visade förhandsvisningen
+  // 25 % medan det sparade dokumentet blev 0 % — samma sorts glapp som när
+  // momsen räknades om vid rendering.
+  useEffect(() => {
+    const target = reverseCharge ? 0 : 25;
+    setItems((prev) =>
+      prev.some((it) => (it.vatRate ?? 25) !== target)
+        ? prev.map((it) => ({ ...it, vatRate: target }))
+        : prev,
+    );
+  }, [reverseCharge]);
+
   // Kunden styr om omvänd betalningsskyldighet ens får erbjudas. Byter man till
   // en hemägare stängs den av — den får aldrig bli kvar påslagen av misstag.
   useEffect(() => {

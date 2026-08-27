@@ -443,6 +443,69 @@ komposerare för ägaren, egna timmar, klistra-in-import) → Fas 2 stanna (moms
 omvänd byggmoms, timmar/ÄTA → faktura, SIE4 nåbar, offline-skal) → Fas 3 pilot med
 3 firmor nära förnyelse. Fyra beslut väntar på Carl i dokumentets sista avsnitt.
 
+**LÄGE 2026-08-27 (s88): FAS 0, 1 OCH 2 LEVERERADE.** Månadsskiftet stänger nu:
+momsen sparas (inköp, offert, faktura, per sats), omvänd byggmoms går att
+fakturera med alla spärrar, timmar/material/godkänd ÄTA blir fakturarader utan
+risk för dubbelfakturering, och SIE4-filen är nåbar och korrekt (moms per konto,
+omvänd byggmoms på 3231, riktig CP437). Se korten `purchase-vat-capture`,
+`document-vat-stored`, `omvand-byggmoms`, `sie4-export`,
+`fakturakallor-timmar-material-ata`.
+
+**KVAR I EPICEN:** offline-skalet (fältet utan täckning) och fas 3 = piloten.
+Piloten kan inte startas förrän Carl tagit besluten nedan.
+
+---
+id: beslut-prismodell-proffs
+status: todo
+priority: P1
+tags: [carl, beslut, pricing, bygglet-epic]
+created: 2026-08-27
+---
+
+## BESLUT (Carl): prismodellen mot Bygglets kunder
+
+Fas 2 är byggd, så piloten är nu tekniskt möjlig — men priset måste bestämmas
+först, för det ÄR argumentet. Bygglet tar +959 kr/mån för andra kontorsplatsen
+och binder 12 månader.
+
+Rekommendation ur analysen: **per kontorsplats, obegränsat antal fältanvändare,
+ingen bindning.** Det angriper exakt de tre sår Bygglet-kunder klagar på.
+
+Behövs: ett ja/nej, eller en annan modell.
+
+---
+id: beslut-pilotens-form
+status: todo
+priority: P1
+tags: [carl, beslut, pilot, bygglet-epic]
+created: 2026-08-27
+---
+
+## BESLUT (Carl): pilotens form
+
+Rekommendation ur analysen: **tre Bygglet-firmor med förnyelse inom tre månader,
+och Carl migrerar deras data själv** (kundregistret går redan att klistra in).
+Förnyelsedatumet är det enda tillfälle då byteskostnaden känns lägre än
+stannakostnaden.
+
+Behövs: ja/nej, och i så fall vilka tre firmor.
+
+---
+id: beslut-nar-fragas-om-notiser
+status: todo
+priority: P2
+tags: [carl, beslut, falt, notiser]
+created: 2026-08-27
+---
+
+## BESLUT (Carl): när ska hantverkaren tillfrågas om notiser?
+
+Hör ihop med `paminnelse-vid-dagens-slut`. En påminnelse vid dagens slut kräver
+notistillstånd, och frågan om tillstånd är ett tillfälle man bara får en gång —
+frågar man för tidigt får man ett nej som sitter kvar.
+
+Behövs: vid vilket ögonblick i arbetarens resa frågan ska ställas.
+
 ---
 id: proffs-onboarding-lovar-osant
 status: done
@@ -4642,8 +4705,13 @@ bekräftelse stoppas med rätt meddelande, och det sparade dokumentet blev
 texten + köparens momsnummer på dokumentet. Testkund och testoffert borttagna
 och kontrollerade i egen sats.
 
-**Kvar:** samma kontroll i `CreateInvoiceV2` (fakturan ärver i dag flaggan från
-offerten men kan inte sättas direkt på en fristående faktura).
+**Även på fristående faktura (samma session):** sedan timmar och ÄTA blev
+fakturakällor är den vanliga B2B-fakturan just den som aldrig haft en offert,
+så kontrollen finns nu i `CreateInvoiceV2` också. Och **förhandsvisningen följer
+med** — den visade 25 % medan det sparade dokumentet blev 0 %, samma sorts glapp
+som när momsen räknades om vid rendering. Verifierat i appen: 20 000 kr,
+`vat_breakdown [{rate:0,net:20000,vat:0}]`, texten och köparens momsnummer på
+fakturan.
 
 ---
 id: fakturakallor-timmar-material-ata

@@ -7,6 +7,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { REVERSE_CHARGE_NOTE, normalizeVatNumber, reverseChargeAvailability, reverseChargeProblems } from "@/lib/reverseCharge";
 import { InvoiceSourcePicker } from "@/components/invoices/InvoiceSourcePicker";
 import type { InvoiceSourceCandidate } from "@/services/invoiceSourcesService";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -84,6 +85,8 @@ export default function CreateInvoiceV2() {
   const [profileId, setProfileId] = useState<string | null>(null);
   const [clientId, setClientId] = useState("");
   const [clients, setClients] = useState<Client[]>([]);
+  const selectedClient = clients.find((c) => c.id === clientId) ?? null;
+  const rcAvailability = reverseChargeAvailability(selectedClient);
   const [createClientOpen, setCreateClientOpen] = useState(false);
   const [freeText, setFreeText] = useState("");
   const [companyInfo, setCompanyInfo] = useState<{
@@ -100,6 +103,12 @@ export default function CreateInvoiceV2() {
   const [bankAccountNumber, setBankAccountNumber] = useState("");
   const [ocrReference, setOcrReference] = useState("");
   const [isAta, setIsAta] = useState(false);
+  // Omvänd betalningsskyldighet på en FRISTÅENDE faktura. Fakturor skapade ur
+  // en offert ärver flaggan, men sedan timmar och ÄTA blev fakturakällor är den
+  // vanliga B2B-fakturan just den som aldrig haft någon offert.
+  const [reverseCharge, setReverseCharge] = useState(false);
+  const [buyerVatNumber, setBuyerVatNumber] = useState("");
+  const [constructionConfirmed, setConstructionConfirmed] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -330,6 +339,30 @@ export default function CreateInvoiceV2() {
    * Underlaget blir fakturarader. Källans id följer med raden så att samma
    * timme, samma materialrad och samma ÄTA aldrig kan faktureras två gånger.
    */
+  // Vad man ser ska vara vad som sparas. Utan detta visade förhandsvisningen
+  // 25 % medan det sparade dokumentet blev 0 % — samma sorts glapp som när
+  // momsen räknades om vid rendering.
+  useEffect(() => {
+    const target = reverseCharge ? 0 : 25;
+    setItems((prev) =>
+      prev.some((it) => (it.vatRate ?? 25) !== target)
+        ? prev.map((it) => ({ ...it, vatRate: target }))
+        : prev,
+    );
+  }, [reverseCharge]);
+
+  // Kunden styr om rutan får erbjudas alls. Byter man till en hemägare stängs
+  // den av — den får aldrig bli kvar påslagen av misstag.
+  useEffect(() => {
+    if (!rcAvailability.available && reverseCharge) {
+      setReverseCharge(false);
+      setConstructionConfirmed(false);
+    }
+    if (selectedClient?.vat_number && !buyerVatNumber) {
+      setBuyerVatNumber(selectedClient.vat_number);
+    }
+  }, [rcAvailability.available, reverseCharge, selectedClient, buyerVatNumber]);
+
   const handleAddSources = (picked: InvoiceSourceCandidate[]) => {
     setItems((prev) => {
       // En tom startrad ska inte ligga kvar över det man just hämtade in.
@@ -379,7 +412,9 @@ export default function CreateInvoiceV2() {
         sort_order: idx,
         comment: item.comment || null,
         discount_percent: item.discountPercent || null,
-        vat_rate: item.vatRate ?? 25,
+        // Omvänd betalningsskyldighet gäller HELA fakturan — dominerar
+        // byggtjänsten följer materialraderna med.
+        vat_rate: reverseCharge ? 0 : item.vatRate ?? 25,
         // Källan följer med raden. Databasen har ett unikt index per källa, så
         // samma timme kan aldrig hamna på två fakturor — inte ens från två
         // flikar samtidigt.
@@ -390,6 +425,18 @@ export default function CreateInvoiceV2() {
 
     if (itemPayloads.length === 0) {
       toast.error(t("invoices.atLeastOneItem", "Add at least one item"));
+      setSaving(false);
+      return;
+    }
+
+    const rcProblems = reverseChargeProblems({
+      enabled: reverseCharge,
+      buyerVatNumber,
+      anyRotEligible: itemPayloads.some((i) => i.is_rot_eligible),
+      constructionServiceConfirmed: constructionConfirmed,
+    });
+    if (rcProblems.length > 0) {
+      toast.error(t(`reverseCharge.problem.${rcProblems[0]}`));
       setSaving(false);
       return;
     }
@@ -411,10 +458,31 @@ export default function CreateInvoiceV2() {
         setSaving(false);
         return;
       }
+      // Databasens grind kräver att raderna redan är 0 % när huvudet blir
+      // omvänt — och tvärtom när det stängs av. Nolla först, sätt sedan.
+      await supabase
+        .from("invoices")
+        .update({ reverse_charge: false, buyer_vat_number: null, vat_note: null })
+        .eq("id", editInvoiceId);
       const ok = await replaceInvoiceItems(editInvoiceId, itemPayloads);
       if (!ok) {
         setSaving(false);
         return;
+      }
+      if (reverseCharge) {
+        const { error: rcErr } = await supabase
+          .from("invoices")
+          .update({
+            reverse_charge: true,
+            buyer_vat_number: normalizeVatNumber(buyerVatNumber),
+            vat_note: REVERSE_CHARGE_NOTE,
+          })
+          .eq("id", editInvoiceId);
+        if (rcErr) {
+          toast.error(rcErr.message);
+          setSaving(false);
+          return;
+        }
       }
       setSaving(false);
       toast.success(t("invoices.saved"));
@@ -458,6 +526,21 @@ export default function CreateInvoiceV2() {
       }
       // Recalculate totals after all items are inserted
       await recalculateInvoiceTotals(invoice.id);
+      if (reverseCharge) {
+        const { error: rcErr } = await supabase
+          .from("invoices")
+          .update({
+            reverse_charge: true,
+            buyer_vat_number: normalizeVatNumber(buyerVatNumber),
+            vat_note: REVERSE_CHARGE_NOTE,
+          })
+          .eq("id", invoice.id);
+        if (rcErr) {
+          toast.error(rcErr.message);
+          setSaving(false);
+          return;
+        }
+      }
       setSaving(false);
       toast.success(t("invoices.saved"));
       const returnTo = projectId
@@ -646,6 +729,55 @@ export default function CreateInvoiceV2() {
           <Checkbox checked={isAta} onCheckedChange={(checked) => setIsAta(!!checked)} />
           <span className="text-sm">{t("invoices.isAta")}</span>
         </label>
+
+        {/* Omvänd betalningsskyldighet — bara när KUNDEN säljer byggtjänster
+            mer än tillfälligt. Aldrig mot en hemägare. */}
+        {rcAvailability.available && (
+          <div className="space-y-2 rounded-lg border p-3">
+            <label className="flex items-center gap-2">
+              <Checkbox
+                checked={reverseCharge}
+                onCheckedChange={(c) => setReverseCharge(c === true)}
+              />
+              <span className="text-sm">{t("reverseCharge.toggle", "Omvänd betalningsskyldighet")}</span>
+            </label>
+            {reverseCharge && (
+              <div className="space-y-2 pl-6">
+                <label className="flex items-start gap-2">
+                  <Checkbox
+                    checked={constructionConfirmed}
+                    onCheckedChange={(c) => setConstructionConfirmed(c === true)}
+                    className="mt-0.5"
+                  />
+                  <span className="text-xs leading-snug">
+                    {t(
+                      "reverseCharge.confirmService",
+                      "Dokumentet avser byggtjänst enligt momslagen, utförd i Sverige. Bedömningen görs för hela fakturan — dominerar byggtjänsten följer materialraderna med."
+                    )}
+                  </span>
+                </label>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">
+                    {t("reverseCharge.buyerVatNumber", "Köparens momsregistreringsnummer")}*
+                  </Label>
+                  <Input
+                    value={buyerVatNumber}
+                    onChange={(e) => setBuyerVatNumber(e.target.value)}
+                    placeholder="SE556035112801"
+                  />
+                </div>
+                {items.some((i) => i.isRotEligible) && (
+                  <p className="text-xs text-destructive">
+                    {t("reverseCharge.problem.rotConflict")}
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  {t("reverseCharge.effect")}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
 
         {projectId && !editInvoiceId && (
           <InvoiceSourcePicker
