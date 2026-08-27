@@ -4809,7 +4809,7 @@ trigger äga båda så att huvudet aldrig kan säga en sak och raderna en annan.
 
 ---
 id: analytics-capture-gatas-pa-init
-status: todo
+status: done
 priority: P3
 tags: [analys, matning, hygien, agent-proposed]
 created: 2026-08-27
@@ -4831,6 +4831,14 @@ landningssidan, där mätning ÄR önskad) läcker det tillbaka in i ramen, och 
 Fix: ett modulflagga-`let enabled = false` som `init()` sätter till true när den
 gått hela vägen, och som `capture()`/`identify()` kollar. Tre rader, tar bort
 hela klassen av misstag.
+
+**LEVERERAT 2026-08-27 (s88).** `posthogReady` sätts först när `init()` gått
+hela vägen. Det visade sig gälla **fyra** anrop, inte bara `capture()` —
+`identify()`, `reset()` och `setPersonProperties()` gatades också bara på att
+nyckeln fanns, och hade alla talat med en oinitierad instans i ramen. Även
+`isEnabled()` speglar nu verkligheten i stället för att svara ja så fort en
+nyckel är konfigurerad. Grinden bor på ETT ställe: den som vet om mätningen ska
+köra alls.
 ---
 id: sie4-export
 status: done

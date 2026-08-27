@@ -18,6 +18,13 @@ interface GtagWindow extends Window {
 const POSTHOG_KEY = import.meta.env.VITE_POSTHOG_KEY;
 const IS_PRODUCTION = import.meta.env.PROD;
 
+// Sant först när init() gått hela vägen. Nyckelns existens räcker INTE som
+// grind: init() hoppar över sig själv i embed-ramen (/embed/*), och utan den
+// här flaggan skulle capture/identify/reset ändå tala med en oinitierad
+// PostHog-instans. Grinden hör hemma på ETT ställe — den som vet om mätningen
+// ska köra alls.
+let posthogReady = false;
+
 // Current user id (set on identify), so activation fires once PER USER, not per
 // device/session. Cleared on logout.
 let currentUserId: string | null = null;
@@ -231,6 +238,8 @@ function init(): void {
     },
   });
 
+  posthogReady = true;
+
   if (!IS_PRODUCTION) {
     console.log("[Analytics] PostHog initialized");
   }
@@ -243,7 +252,7 @@ function init(): void {
  */
 function identify(userId: string, traits?: Record<string, unknown>): void {
   currentUserId = userId;
-  if (!POSTHOG_KEY) return;
+  if (!posthogReady) return;
 
   posthog.identify(userId, traits);
 }
@@ -275,8 +284,8 @@ function capture(
   event: AnalyticsEvent | string,
   properties?: Record<string, unknown>
 ): void {
-  // Send to PostHog if configured
-  if (POSTHOG_KEY) {
+  // Send to PostHog if it actually started (never inside the embed frame)
+  if (posthogReady) {
     posthog.capture(event, properties);
   }
 
@@ -296,7 +305,7 @@ function capture(
  */
 function reset(): void {
   currentUserId = null;
-  if (!POSTHOG_KEY) return;
+  if (!posthogReady) return;
 
   posthog.reset();
 }
@@ -306,7 +315,7 @@ function reset(): void {
  * @param properties - User properties to set
  */
 function setPersonProperties(properties: Record<string, unknown>): void {
-  if (!POSTHOG_KEY) return;
+  if (!posthogReady) return;
 
   posthog.setPersonProperties(properties);
 }
@@ -315,7 +324,7 @@ function setPersonProperties(properties: Record<string, unknown>): void {
  * Check if analytics is enabled
  */
 function isEnabled(): boolean {
-  return Boolean(POSTHOG_KEY) || (typeof window !== "undefined" && !!(window as GtagWindow).gtag);
+  return posthogReady || (typeof window !== "undefined" && !!(window as GtagWindow).gtag);
 }
 
 export const analytics: AnalyticsService = {
