@@ -528,6 +528,29 @@ svenska. Fix: on-demand backfill vid byte (samma funktion, nytt språk, cacha).
 texten samtidigt.
 
 ---
+id: overviewtab-villkorliga-hooks
+status: todo
+priority: P2
+tags: [bug, risk, react]
+created: 2026-08-27
+updated: 2026-08-27
+---
+## OverviewTab har sex hooks efter en tidig retur
+
+`npx eslint src/components/project/OverviewTab.tsx` ger **6 `rules-of-hooks`-fel**:
+`useContextualTips`, `useMemo`, `useProjectReminders`, `useEffect`, `useCallback`
+m.fl. anropas efter en tidig retur (rad ~285–313). Befintligt sedan tidigare —
+verifierat 6 före och 6 efter ändringarna 2026-08-27, alltså inte infört då.
+
+**Varför det är värt ett kort:** exakt det här mönstret kraschade hela Projects i
+session 78, och en grön build fångar det inte. Just nu renderar sidan rätt
+(verifierat i Chrome), så det är latent: felet slår när renderingsordningen
+ändras av en till synes ofarlig ändring ovanför returen.
+
+Fix: flytta alla hooks ovanför den tidiga returen, eller bryt ut det som ligger
+efter i en egen komponent. Kör appen efteråt — inte bara bygget.
+
+---
 id: paminnelse-vid-dagens-slut
 status: todo
 priority: P2
