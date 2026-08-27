@@ -106,7 +106,8 @@
     "selectAll": "Zaznacz wszystko",
     "hasAttachment": "Załączniki: {{count}}",
     "attachment": "Załącznik",
-    "clear": "Wyczyść"
+    "clear": "Wyczyść",
+    "showLess": "Pokaż mniej"
   },
   "beta": {
     "title": "Publiczna beta",
@@ -7834,6 +7835,12 @@
     "undone": "Cofnięto",
     "undoTooLate": "Za późno, aby cofnąć",
     "undoTooLateBuilder": "Kierownik już zareagował",
-    "fromSite": "Z budowy"
+    "fromSite": "Z budowy",
+    "myHours": "Moje godziny",
+    "hoursPending": "Oczekuje",
+    "hoursApproved": "Zatwierdzone",
+    "hoursDeclined": "Odrzucone",
+    "myHoursTotal": "{{hours}} h w ciągu ostatnich 14 dni",
+    "showAllHours": "Pokaż wszystkie ({{count}})"
   }
 }

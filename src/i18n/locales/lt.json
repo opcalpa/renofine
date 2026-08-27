@@ -39,7 +39,8 @@
     "quantity": "Kiekis",
     "unit": "Vienetas",
     "vendor": "Tiekėjas",
-    "search": "Ieškoti"
+    "search": "Ieškoti",
+    "showLess": "Rodyti mažiau"
   },
   "nav": {
     "home": "Pradžia",
@@ -1184,7 +1185,13 @@
     "undone": "Atšaukta",
     "undoTooLate": "Per vėlu atšaukti",
     "undoTooLateBuilder": "Vadovas jau atsakė",
-    "fromSite": "Iš statybvietės"
+    "fromSite": "Iš statybvietės",
+    "myHours": "Mano valandos",
+    "hoursPending": "Laukiama",
+    "hoursApproved": "Patvirtinta",
+    "hoursDeclined": "Atmesta",
+    "myHoursTotal": "{{hours}} val. per pastarąsias 14 dienų",
+    "showAllHours": "Rodyti visas ({{count}})"
   },
   "worker": {
     "acknowledge": "Perskaičiau darbą",

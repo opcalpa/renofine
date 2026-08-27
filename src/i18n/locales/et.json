@@ -39,7 +39,8 @@
     "quantity": "Kogus",
     "unit": "Ühik",
     "vendor": "Tarnija",
-    "search": "Otsi"
+    "search": "Otsi",
+    "showLess": "Näita vähem"
   },
   "nav": {
     "home": "Avaleht",
@@ -1184,7 +1185,13 @@
     "undone": "Tagasi võetud",
     "undoTooLate": "Tagasivõtmiseks on hilja",
     "undoTooLateBuilder": "Ehitusjuht on juba vastanud",
-    "fromSite": "Ehitusplatsilt"
+    "fromSite": "Ehitusplatsilt",
+    "myHours": "Minu tunnid",
+    "hoursPending": "Ootel",
+    "hoursApproved": "Kinnitatud",
+    "hoursDeclined": "Tagasi lükatud",
+    "myHoursTotal": "{{hours}} h viimase 14 päeva jooksul",
+    "showAllHours": "Näita kõiki ({{count}})"
   },
   "worker": {
     "acknowledge": "Olen tööd lugenud",

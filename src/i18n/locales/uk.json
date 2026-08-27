@@ -106,7 +106,8 @@
     "continue": "Продовжити",
     "zoomOut": "Зменшити масштаб",
     "zoomIn": "Збільшити масштаб",
-    "notFound": "Рахунок не знайдено"
+    "notFound": "Рахунок не знайдено",
+    "showLess": "Показати менше"
   },
   "beta": {
     "title": "Публічна бета",
@@ -7804,6 +7805,12 @@
     "undone": "Скасовано",
     "undoTooLate": "Запізно скасовувати",
     "undoTooLateBuilder": "Виконроб уже відповів",
-    "fromSite": "З будівництва"
+    "fromSite": "З будівництва",
+    "myHours": "Мої години",
+    "hoursPending": "Очікує",
+    "hoursApproved": "Затверджено",
+    "hoursDeclined": "Відхилено",
+    "myHoursTotal": "{{hours}} год за останні 14 днів",
+    "showAllHours": "Показати всі ({{count}})"
   }
 }

@@ -945,7 +945,8 @@
     "zoomIn": "Vergrößern",
     "notFound": "Rechnung nicht gefunden",
     "inclVat": "inkl. MwSt.",
-    "exclVat": "exkl. MwSt."
+    "exclVat": "exkl. MwSt.",
+    "showLess": "Weniger anzeigen"
   },
   "controls": {
     "redo": "Wiederherstellen",
@@ -8005,6 +8006,12 @@
     "undone": "Rückgängig gemacht",
     "undoTooLate": "Zu spät zum Rückgängigmachen",
     "undoTooLateBuilder": "Der Bauleiter hat bereits reagiert",
-    "fromSite": "Von der Baustelle"
+    "fromSite": "Von der Baustelle",
+    "myHours": "Meine Stunden",
+    "hoursPending": "Wartet",
+    "hoursApproved": "Genehmigt",
+    "hoursDeclined": "Abgelehnt",
+    "myHoursTotal": "{{hours}} h in den letzten 14 Tagen",
+    "showAllHours": "Alle anzeigen ({{count}})"
   }
 }

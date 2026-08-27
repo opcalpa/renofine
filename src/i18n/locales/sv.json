@@ -341,7 +341,8 @@
     "notFound": "Fakturan hittades inte",
     "inclVat": "inkl. moms",
     "exclVat": "exkl. moms",
-    "noResults": "Inga träffar"
+    "noResults": "Inga träffar",
+    "showLess": "Visa färre"
   },
   "beta": {
     "title": "Publik beta",
@@ -8369,7 +8370,13 @@
     "undone": "Ångrat",
     "undoTooLate": "För sent att ångra",
     "undoTooLateBuilder": "Byggaren har redan tagit ställning",
-    "fromSite": "Från bygget"
+    "fromSite": "Från bygget",
+    "myHours": "Mina timmar",
+    "hoursPending": "Väntar",
+    "hoursApproved": "Godkänd",
+    "hoursDeclined": "Nekad",
+    "myHoursTotal": "{{hours}} h senaste 14 dagarna",
+    "showAllHours": "Visa alla ({{count}})"
   },
   "fieldInbox": {
     "title": "Från fältet",

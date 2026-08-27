@@ -945,7 +945,8 @@
     "zoomIn": "Acercar",
     "notFound": "Factura no encontrada",
     "inclVat": "IVA incl.",
-    "exclVat": "IVA excl."
+    "exclVat": "IVA excl.",
+    "showLess": "Ver menos"
   },
   "controls": {
     "redo": "Rehacer",
@@ -8005,6 +8006,12 @@
     "undone": "Deshecho",
     "undoTooLate": "Demasiado tarde para deshacer",
     "undoTooLateBuilder": "El constructor ya ha respondido",
-    "fromSite": "Desde la obra"
+    "fromSite": "Desde la obra",
+    "myHours": "Mis horas",
+    "hoursPending": "Pendiente",
+    "hoursApproved": "Aprobado",
+    "hoursDeclined": "Rechazado",
+    "myHoursTotal": "{{hours}} h en los últimos 14 días",
+    "showAllHours": "Ver todo ({{count}})"
   }
 }

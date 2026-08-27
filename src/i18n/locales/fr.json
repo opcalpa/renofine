@@ -945,7 +945,8 @@
     "zoomIn": "Zoom avant",
     "notFound": "Facture introuvable",
     "inclVat": "TTC",
-    "exclVat": "HT"
+    "exclVat": "HT",
+    "showLess": "Afficher moins"
   },
   "controls": {
     "redo": "Rétablir",
@@ -8005,6 +8006,12 @@
     "undone": "Annulé",
     "undoTooLate": "Trop tard pour annuler",
     "undoTooLateBuilder": "Le chef de chantier a déjà répondu",
-    "fromSite": "Depuis le chantier"
+    "fromSite": "Depuis le chantier",
+    "myHours": "Mes heures",
+    "hoursPending": "En attente",
+    "hoursApproved": "Approuvé",
+    "hoursDeclined": "Refusé",
+    "myHoursTotal": "{{hours}} h sur les 14 derniers jours",
+    "showAllHours": "Tout afficher ({{count}})"
   }
 }

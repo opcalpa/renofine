@@ -341,7 +341,8 @@
     "notFound": "Invoice not found",
     "inclVat": "incl. VAT",
     "exclVat": "excl. VAT",
-    "noResults": "No matches"
+    "noResults": "No matches",
+    "showLess": "Show fewer"
   },
   "beta": {
     "title": "Public Beta",
@@ -8370,7 +8371,13 @@
     "undone": "Undone",
     "undoTooLate": "Too late to undo",
     "undoTooLateBuilder": "The builder has already responded",
-    "fromSite": "From the site"
+    "fromSite": "From the site",
+    "myHours": "My hours",
+    "hoursPending": "Waiting",
+    "hoursApproved": "Approved",
+    "hoursDeclined": "Declined",
+    "myHoursTotal": "{{hours}} h in the last 14 days",
+    "showAllHours": "Show all ({{count}})"
   },
   "fieldInbox": {
     "title": "From the site",

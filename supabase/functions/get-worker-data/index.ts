@@ -608,6 +608,38 @@ serve(async (req) => {
       };
     });
 
+    /**
+     * The worker's own hours, last 14 days.
+     *
+     * Hours used to be write-only from the field: reported, then invisible.
+     * Nobody trusts a timesheet they cannot read, and "did my Tuesday go
+     * through?" is a phone call to the builder — the exact call this whole
+     * feature exists to remove.
+     */
+    // Titles as the worker reads them — translated, same as everywhere else.
+    const taskTitleById: Record<string, string> = {};
+    for (const wt of workerTasks as Array<{ id: string; title: string }>) {
+      taskTitleById[wt.id] = wt.title;
+    }
+
+    const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const { data: myHoursRows } = await sb
+      .from("time_entries")
+      .select("id, date, hours, approved, declined_at, task_id")
+      .eq("worker_token_id", tokenRecord.id)
+      .gte("date", since)
+      .order("date", { ascending: false });
+
+    const myHours = (myHoursRows ?? []).map((h) => ({
+      id: h.id,
+      date: h.date,
+      hours: Number(h.hours),
+      // Three states, not a boolean: waiting is not the same as refused, and a
+      // worker who cannot tell them apart re-reports the same day.
+      status: h.declined_at ? "declined" : h.approved ? "approved" : "pending",
+      taskTitle: h.task_id ? (taskTitleById[h.task_id] ?? null) : null,
+    }));
+
     // Every file the worker sees is signed here, in one round. The worker has
     // no session of their own — the invite token is what we validated above.
     const payload = {
@@ -631,6 +663,7 @@ serve(async (req) => {
       wallObjects,
       wallSurfaces,
       wallNotes,
+      myHours,
     };
 
     return jsonResponse(await signPayloadUrls(sb, payload), 200, req);

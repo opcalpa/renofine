@@ -10,6 +10,7 @@ import type { FloorPlanObject, WallNote, WallObject, WallSurface } from "@/compo
 import { SwipeableRoomInstructions, groupWorkerTasksByRoom } from "@/components/room-instructions";
 import { WorkerPurchaseRequestDialog } from "@/components/worker/WorkerPurchaseRequestDialog";
 import { WorkerComposer } from "@/components/worker/WorkerComposer";
+import { MyHoursCard, type MyHoursEntry } from "@/components/worker/MyHoursCard";
 import {
   WorkerLanguageSelector,
   workerLangOverrideKey,
@@ -59,6 +60,7 @@ interface WorkerViewData {
   wallObjects?: WallObject[];
   wallSurfaces?: WallSurface[];
   wallNotes?: WallNote[];
+  myHours?: MyHoursEntry[];
 }
 
 type ErrorState = "not_found" | "expired" | "error" | null;
@@ -466,6 +468,15 @@ export default function WorkerView() {
             canCreatePurchases={data.canCreatePurchases !== false}
             onSent={loadWorkerData}
           />
+        </div>
+      )}
+
+      {/* What the worker reported, read back. Directly under the composer so
+          the answer to "did that go through?" is on the same screen as the
+          question. */}
+      {token && data.myHours && data.myHours.length > 0 && (
+        <div className="max-w-lg mx-auto px-4 pt-2">
+          <MyHoursCard entries={data.myHours} />
         </div>
       )}
 
