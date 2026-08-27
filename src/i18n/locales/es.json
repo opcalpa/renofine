@@ -786,7 +786,16 @@
     "phone": "Teléfono",
     "postalCode": "Código postal",
     "reference": "Referencia",
-    "title": "Registro de clientes"
+    "title": "Registro de clientes",
+    "pasteAction": "Pegar",
+    "pasteTitle": "Pegar clientes",
+    "pasteHelp": "Selecciona las filas en Excel o en tu sistema anterior y pégalas aquí. Una fila de encabezado ayuda, pero no es obligatoria.",
+    "pastePreview": "{{count}} clientes para añadir",
+    "pasteSkipped": "{{count}} filas sin nombre se omiten",
+    "pasteMore": "+ {{count}} más",
+    "pasteConfirm": "Añadir {{count}} clientes",
+    "pasteImported": "{{count}} clientes añadidos",
+    "pasteFailed": "No se pudieron añadir los clientes"
   },
   "colors": {
     "blue": "Azul",

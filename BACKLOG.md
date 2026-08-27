@@ -528,6 +528,30 @@ svenska. Fix: on-demand backfill vid byte (samma funktion, nytt språk, cacha).
 texten samtidigt.
 
 ---
+id: ratta-garddagens-timmar
+status: todo
+priority: P2
+tags: [worker, tid, falt]
+created: 2026-08-27
+updated: 2026-08-27
+---
+## Arbetaren kan se sina timmar men inte rätta gårdagen
+
+`MyHoursCard` levererad 2026-08-27: arbetaren läser nu sina 14 senaste dagar med
+tre tillstånd. Men **datumet är hårdkodat till i dag** i `worker-send-report`
+(`date: new Date().toISOString().slice(0, 10)`), så en glömd tisdag går inte att
+fylla i i efterhand, och en felrapporterad dag kan bara nekas av byggaren.
+
+**Spänningen som gör det till ett designval, inte en fix:** en datumväljare i
+komposeraren bryter "lika enkelt som ett sms". Två alternativ som inte gör det:
+- Låt tolken läsa "igår" / "i måndags" ur texten (samma mönster som timmar och
+  antal redan använder, och det är så folk faktiskt säger det).
+- Låt en väntande rad i Mina timmar tryckas på för att tas bort och rapporteras
+  om — samma ångra-filosofi som 3-sekundersfönstret.
+
+Rekommendation: det första. Det kräver ingen ny yta alls.
+
+---
 id: overviewtab-villkorliga-hooks
 status: todo
 priority: P2

@@ -1,13 +1,14 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, ClipboardPaste } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { AppHeader } from "@/components/AppHeader";
 import { CreateClientDialog, type Client } from "@/components/quotes/CreateClientDialog";
+import { PasteClientsDialog } from "@/components/clients/PasteClientsDialog";
 import {
   Table,
   TableBody,
@@ -40,6 +41,8 @@ export default function ClientRegistry() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editClient, setEditClient] = useState<Client | undefined>();
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [pasteOpen, setPasteOpen] = useState(false);
+  const [companyId, setCompanyId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -54,6 +57,15 @@ export default function ClientRegistry() {
           setProfileId(data.id);
           setUserName(data.name ?? undefined);
           setAvatarUrl(data.avatar_url ?? undefined);
+          // Pasted customers belong to the FIRM, not to one person's profile —
+          // that is the whole point of the company entity.
+          supabase
+            .from("company_members")
+            .select("company_id")
+            .eq("profile_id", data.id)
+            .limit(1)
+            .maybeSingle()
+            .then(({ data: member }) => setCompanyId(member?.company_id ?? null));
         }
       });
   }, [user]);
@@ -112,11 +124,27 @@ export default function ClientRegistry() {
       <main className="container mx-auto px-4 py-6 max-w-3xl space-y-4">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">{t("clients.title")}</h1>
-          <Button onClick={() => { setEditClient(undefined); setDialogOpen(true); }} className="min-h-[44px]">
-            <Plus className="h-4 w-4 mr-2" />
-            {t("clients.createNew")}
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setPasteOpen(true)} className="min-h-[44px]">
+              <ClipboardPaste className="h-4 w-4 mr-2" />
+              {t("clients.pasteAction", "Klistra in")}
+            </Button>
+            <Button onClick={() => { setEditClient(undefined); setDialogOpen(true); }} className="min-h-[44px]">
+              <Plus className="h-4 w-4 mr-2" />
+              {t("clients.createNew")}
+            </Button>
+          </div>
         </div>
+
+        {profileId && (
+          <PasteClientsDialog
+            open={pasteOpen}
+            onOpenChange={setPasteOpen}
+            ownerId={profileId}
+            companyId={companyId}
+            onImported={loadClients}
+          />
+        )}
 
         {clients.length === 0 ? (
           <p className="text-muted-foreground text-center py-8">{t("clients.noClients")}</p>

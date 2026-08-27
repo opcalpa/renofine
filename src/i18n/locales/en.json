@@ -4831,7 +4831,16 @@
     "deleteClient": "Delete client",
     "noClients": "No clients yet",
     "clientSaved": "Client saved",
-    "confirmDelete": "Delete this client?"
+    "confirmDelete": "Delete this client?",
+    "pasteAction": "Paste",
+    "pasteTitle": "Paste customers",
+    "pasteHelp": "Select the rows in Excel or your old system and paste them here. A header row helps, but is not required.",
+    "pastePreview": "{{count}} customers to add",
+    "pasteSkipped": "{{count}} rows without a name are skipped",
+    "pasteMore": "+ {{count}} more",
+    "pasteConfirm": "Add {{count}} customers",
+    "pasteImported": "{{count}} customers added",
+    "pasteFailed": "Could not add the customers"
   },
   "pro": {
     "title": "Pro Features"

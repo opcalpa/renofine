@@ -4830,7 +4830,16 @@
     "deleteClient": "Ta bort kund",
     "noClients": "Inga kunder ännu",
     "clientSaved": "Kund sparad",
-    "confirmDelete": "Ta bort denna kund?"
+    "confirmDelete": "Ta bort denna kund?",
+    "pasteAction": "Klistra in",
+    "pasteTitle": "Klistra in kunder",
+    "pasteHelp": "Markera raderna i Excel eller ditt gamla system och klistra in dem här. Rubrikrad hjälper, men behövs inte.",
+    "pastePreview": "{{count}} kunder att lägga till",
+    "pasteSkipped": "{{count}} rader utan namn hoppas över",
+    "pasteMore": "+ {{count}} till",
+    "pasteConfirm": "Lägg till {{count}} kunder",
+    "pasteImported": "{{count}} kunder tillagda",
+    "pasteFailed": "Kunde inte lägga till kunderna"
   },
   "pro": {
     "title": "Proffsfunktioner"

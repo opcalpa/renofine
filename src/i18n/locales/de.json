@@ -786,7 +786,16 @@
     "phone": "Telefon",
     "postalCode": "Postleitzahl",
     "reference": "Referenz",
-    "title": "Kundenverzeichnis"
+    "title": "Kundenverzeichnis",
+    "pasteAction": "Einfügen",
+    "pasteTitle": "Kunden einfügen",
+    "pasteHelp": "Markieren Sie die Zeilen in Excel oder Ihrem alten System und fügen Sie sie hier ein. Eine Kopfzeile hilft, ist aber nicht nötig.",
+    "pastePreview": "{{count}} Kunden hinzuzufügen",
+    "pasteSkipped": "{{count}} Zeilen ohne Namen werden übersprungen",
+    "pasteMore": "+ {{count}} weitere",
+    "pasteConfirm": "{{count}} Kunden hinzufügen",
+    "pasteImported": "{{count}} Kunden hinzugefügt",
+    "pasteFailed": "Kunden konnten nicht hinzugefügt werden"
   },
   "colors": {
     "blue": "Blau",

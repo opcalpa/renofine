@@ -786,7 +786,16 @@
     "phone": "Téléphone",
     "postalCode": "Code postal",
     "reference": "Référence",
-    "title": "Répertoire des clients"
+    "title": "Répertoire des clients",
+    "pasteAction": "Coller",
+    "pasteTitle": "Coller des clients",
+    "pasteHelp": "Sélectionnez les lignes dans Excel ou votre ancien système et collez-les ici. Une ligne d'en-tête aide, mais n'est pas obligatoire.",
+    "pastePreview": "{{count}} clients à ajouter",
+    "pasteSkipped": "{{count}} lignes sans nom sont ignorées",
+    "pasteMore": "+ {{count}} de plus",
+    "pasteConfirm": "Ajouter {{count}} clients",
+    "pasteImported": "{{count}} clients ajoutés",
+    "pasteFailed": "Impossible d'ajouter les clients"
   },
   "colors": {
     "blue": "Bleu",
