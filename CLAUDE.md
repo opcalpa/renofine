@@ -289,7 +289,7 @@ Filen innehåller:
 
 ## Design-filer & handoff workflow
 
-**Design-master bor UTANFÖR repot:** `~/PA/Documents/Projects/Renofine/Design/`
+**Design-master bor UTANFÖR repot:** `~/PA/Documents/Projekt/Renofine/Design/`
 (delad hjärna — nås av både Code och Cowork; se dess README.md). Repot innehåller
 ENDAST det som shippas med appen (`public/brand/` = loggor/tokens som serveras;
 repot är MASTER för dessa och de speglas till `Design/Brand/`).
@@ -299,7 +299,7 @@ repot är MASTER för dessa och de speglas till `Design/Brand/`).
 - **Designerns handoff-paket** ligger i `Design/Handoff/handoff v2 2/`
   (semver-versionerat; flyttat från repots `Design Test/` 2026-08-20).
   Om en senare version finns (`handoff v3/`, etc.), använd den nyaste —
-  kolla `find "$HOME/PA/Documents/Projects/Renofine/Design/Handoff" -maxdepth 2 -type d -iname "handoff v*"`.
+  kolla `find "$HOME/PA/Documents/Projekt/Renofine/Design/Handoff" -maxdepth 2 -type d -iname "handoff v*"`.
 
 Innan implementation av en modul:
 

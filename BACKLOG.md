@@ -455,6 +455,36 @@ omvänd byggmoms på 3231, riktig CP437). Se korten `purchase-vat-capture`,
 Piloten kan inte startas förrän Carl tagit besluten nedan.
 
 ---
+id: test-lackaget-som-forsta-painkiller
+status: todo
+priority: P1
+tags: [user-research, carl, painkiller, faktura]
+created: 2026-08-28
+resources: [Analysen | /Users/calpa/Developer/Renofine/docs/forsta-painkiller-2026-08.md]
+---
+
+## Pröva "läckaget" som första painkiller i de tio första samtalen
+
+Hypotes (`docs/forsta-painkiller-2026-08.md`): den första smärtstillande är
+**det firman gjorde och köpte men aldrig fakturerade** — kvittot som inte
+hamnade på kundfakturan, extratimmarna som glömdes. Pengar, varje månad, ägarens
+egna (ingen tredje part), och röret är byggt end-to-end sedan 2026-08-27.
+
+Igenkänningsfrågan, minut 8–14, före produkten:
+*"Hur mycket tror du att du gjorde eller köpte förra månaden som aldrig hamnade
+på en faktura?"* — och sedan tyst.
+
+Logga per samtal: siffra oombedd? exempel? "kan den visa det?" när pappersskissen
+"Ofakturerat sedan sist: 4 320 kr" visas.
+
+**Stoppregel:** <3 av 10 säger en siffra → inte painkillern, gå till obetald ÄTA.
+≥5 av 10 → först DÅ blir "summan som syns" och "knuffen i stunden" kort, med
+tio citat som skäl. Ingen kod före det.
+
+Ring först: proffskontot som gjorde 1 offert + 3 inköp + 12 arbeten på en kväll
+(6 juli) och försvann. Hen provade exakt den här kedjan.
+
+---
 id: tio-samtal-i-veckan
 status: todo
 priority: P1
