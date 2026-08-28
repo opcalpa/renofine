@@ -455,6 +455,121 @@ omvänd byggmoms på 3231, riktig CP437). Se korten `purchase-vat-capture`,
 Piloten kan inte startas förrän Carl tagit besluten nedan.
 
 ---
+id: tio-samtal-i-veckan
+status: todo
+priority: P1
+tags: [user-research, carl, beslut]
+created: 2026-08-28
+resources: [Intervjukit | /Users/calpa/Developer/Renofine/docs/intervjukit-2026-08.md, Thor-briefen | /Users/calpa/Developer/Renofine/docs/anvandarfeedback-thor-2026-08-26.md]
+---
+
+## Tio användarsamtal i veckan — rutinen som ersätter kodandet
+
+Thors råd nummer ett, 2026-08-26: sluta koda, prata med tio i veckan. Kittet
+finns (`docs/intervjukit-2026-08.md`): 20-minutersmanus, fem avgörande frågor,
+var kandidaterna finns, loggmall per samtal, veckorutin.
+
+**Utgångsläget 2026-08-28:** 11 äkta externa konton, 1 inloggad senaste 30
+dagarna, 2 fältrapporter i hela databasen. Det finns ingen data som avgör
+hemägare-mot-proffs — därför avgörs det i samtal.
+
+Stoppregel: efter 20 samtal ska hemägare/proffs vara avgjort. Är det inte det
+är det manuset som ska ändras, inte antalet.
+
+Loggen: `docs/intervjuer/YYYY-MM-DD-fornamn-roll.md` + `vecka-YYYY-WW.md`.
+
+---
+id: de-elva-som-forsvann
+status: todo
+priority: P1
+tags: [user-research, carl]
+created: 2026-08-28
+resources: [Intervjukit §Var de tio finns | /Users/calpa/Developer/Renofine/docs/intervjukit-2026-08.md]
+---
+
+## Ring de elva som skapade konto och aldrig kom tillbaka
+
+Den varmaste kandidatlistan som finns: elva personer som frivilligt registrerade
+sig (8 hemägare, 3 proffs) och sedan försvann. De kan förklara avhoppet med ord
+i stället för att vi gissar det ur en tratt. Det är den mest värdefulla
+intervjun att göra — avhopparen vet något som ingen ny användare vet.
+
+SQL:en som hämtar listan live står i kittet (personuppgifter sparas inte i
+repot). Öppningsrepliken också.
+
+Fråga att inte glömma: **"Varför kom du inte tillbaka?"** — och sedan tystnad.
+
+---
+id: en-framling-skickar-en-faltrapport
+status: todo
+priority: P1
+tags: [user-research, falt, carl]
+created: 2026-08-28
+resources: [Vitamin/smärtstillande | /Users/calpa/Developer/Renofine/docs/vitamin-eller-smartstillande-2026-08.md]
+---
+
+## Ett test, noll kod: en främmande hantverkare skickar en fältrapport
+
+Röstrapporten på tio språk är den enda äkta differentieringen — och helt
+obevisad: 12 arbetarlänkar skapade, **2 fältrapporter i hela databasen**, ingen
+från någon som inte är Carl. Det är en välbyggd hypotes, inte ett värde.
+
+Testet: skicka arbetarlänken till EN hantverkare som inte känner produkten.
+Ett arbete som är "att göra" i ett riktigt rum, ett välkomstmeddelande, och
+sedan: skickar hen något? Vad? På vilket språk?
+
+Detta ska göras **före** Bygglet-piloten — annars kan pilotens avbrottskriterium
+("ingen skickar under vecka ett") slå till på firma nummer ett och bränna tre
+varma leads på något en eftermiddag hade avslöjat.
+
+Mätning som saknas för att tolka utfallet: `worker_link_opened` (finns inte —
+utan den går det inte att skilja "fungerade inte" från "öppnade aldrig").
+Det är en rad kod och den enda som är motiverad av det här kortet.
+
+---
+id: gastplanens-konvertering-efter-ombyggnaden
+status: todo
+priority: P2
+tags: [user-research, matning, gast]
+created: 2026-08-28
+---
+
+## Läs av gästplanens konvertering — ingen mätning finns sedan ombyggnaden
+
+Före ombyggnaden (2026-08-26): 36 gäster gjorde hela personifieringen, **0
+skapade konto**. Efter: `guest_plan_shown` → `signup_completed` har aldrig
+lästs av. Att den siffran är okänd två dagar senare är i sig ett argument för
+att sluta bygga och börja titta.
+
+Ingen kod. Läs PostHog, skriv siffran här och i
+`docs/vitamin-eller-smartstillande-2026-08.md`. Baslinje 0/36, mål >10 %.
+Är den fortfarande nära noll är det inte planen som är problemet — då är
+hemägaren fel kund, och det stärker CEO-ställningstagandet i sprint-briefen.
+
+---
+id: hemagare-eller-proffs-stangs-med-data
+status: todo
+priority: P1
+tags: [user-research, carl, beslut, strategi]
+created: 2026-08-28
+resources: [CEO-sektionen | /Users/calpa/Developer/Renofine/.claude/briefs/current-sprint.md]
+---
+
+## Hemägare eller proffs — stängs efter 20 samtal, åt båda hållen
+
+CEO-personan tog ställning 2026-08-28: **proffs, firmaägaren i en 2–5-mannafirma.**
+Provisoriskt. Skälen (återkommande smärta, vitamin/smärtstillande-testet går bara
+att klara hos proffs, bevisad betalningsvilja bara där, köpare = användare) står i
+sprint-briefen.
+
+**Villkoret för att byta, nedskrivet nu:** efter 20 samtal enligt kittet, minst
+8 med proffs — om proffsen svarar "Excel funkar" på "försvann i morgon" och
+hemägarna visar oväntad oombedd smärta, byter vi. Ett ställningstagande som inte
+kan förlora är inte ett ställningstagande.
+
+Rollräkningen förs i veckorutinen (`docs/intervjuer/vecka-YYYY-WW.md`).
+
+---
 id: beslut-prismodell-proffs
 status: todo
 priority: P1
