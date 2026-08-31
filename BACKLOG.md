@@ -600,6 +600,88 @@ kan förlora är inte ett ställningstagande.
 Rollräkningen förs i veckorutinen (`docs/intervjuer/vecka-YYYY-WW.md`).
 
 ---
+id: mcp-server-fragas-innan-den-byggs
+status: todo
+priority: P3
+tags: [user-research, integration, arkitektur]
+created: 2026-08-31
+resources: [Integrationsstrategin | /Users/calpa/Developer/Renofine/docs/integrations-strategi-2026-08.md, Vitamin/smärtstillande | /Users/calpa/Developer/Renofine/docs/vitamin-eller-smartstillande-2026-08.md]
+---
+
+## MCP mot Renofine — ställ frågan i samtal 3–10 innan något byggs
+
+Carl frågade 2026-08-31 hur en MCP-server mot Renofine skulle kunna se ut, så att
+Claude Code och andra AI:er kan koppla in sig. Svaret är att den är fullt möjlig
+och billigare än väntat — men att ingen har bett om den. Därför blir det här ett
+`user-research`-kort, inte ett feature-kort.
+
+**Frågan att ställa i samtalen** (efter läckage-frågan, aldrig före):
+*"Om ditt bokföringsprogram eller din revisor kunde läsa det här direkt — vad
+skulle du vilja att den hämtade?"*
+
+**Tröskel:** ≥3 av 10 svarar konkret och oombedt (namnger ett system eller en
+återkommande avskrift) ⇒ då finns ett syfte, och först då blir det ett
+feature-kort med tio citat som skäl. Färre än så ⇒ det är vår idé, inte deras
+smärta, och kortet arkiveras.
+
+### Varför det är ett vitamin idag
+
+- Ingen av de 11 externa användarna skulle märka den.
+- Målgruppen enligt CEO-ställningen (firmaägaren i 2–5-mannafirma) kör inte
+  Claude Code.
+- Nyttan för Carl själv är redan täckt: Supabase-MCP och PostHog-MCP är
+  inkopplade, så prod-databasen och traktionssiffrorna går redan att läsa i ett
+  samtal. En Renofine-MCP tillför marginellt för honom.
+
+**Den enda öppningen som kan bli smärtstillande** är inte mot AI-verktyg utan mot
+**revisorn och ekonomisystemet** — "läs mitt Renofine och ge mig SIE4:an". Det är
+en integrationsberättelse, och rangordningen ligger redan i
+/Users/calpa/Developer/Renofine/docs/integrations-strategi-2026-08.md.
+
+### Arkitekturfyndet — sparat här så det inte behöver återupptäckas
+
+Kodgenomgång 2026-08-31:
+
+1. **Verktygsschemat finns redan skrivet.**
+   /Users/calpa/Developer/Renofine/src/services/agent/types.ts definierar 16
+   handlingstyper i proposal-envelopen (`create_task`, `log_time`,
+   `create_purchase`, `set_progress`, `import_purchase`, `assign_task`,
+   `toggle_checklist`, `create_room`, `add_note`, `set_default_rate`,
+   `open_feature`, `create_plan_sketch`, m.fl.). Ett MCP-verktyg = en
+   envelope-action. Uppfinn inte ett andra API.
+
+2. **Servern bor i en ny edge-funktion** `supabase/functions/mcp/`, bredvid de 39
+   som redan finns. Samma deploy, samma secrets, ingen ny infrastruktur.
+   Cloudflare Worker först den dag OAuth ska in.
+
+3. **Auth i tre steg.** (a) Personlig opak token — kopiera formen från
+   `worker_access_tokens` (migration `20260322100000`): scopad, återkallningsbar,
+   redan beprövad för externa anropare utan konto. (b) Remote MCP med OAuth 2.1 +
+   dynamic client registration är det som släpper in andra AI:er, och det är
+   veckor plus en permanent säkerhetsyta. (c) Scopes måste ärva rollgrindarna
+   (`user_can_view_budget`, `user_can_edit_costs`) — annars ser en hemägares
+   token firmans påslag.
+
+   **Fällan:** token får aldrig bli en service-role-genväg. Den måste agera genom
+   användarens RLS, precis som `agent-route` redan gör (den hämtar kontext med
+   anroparens JWT, aldrig service-role). Se
+   [[feedback_verify_jwt_is_not_a_gate]].
+
+4. **Det enda riktiga hindret:**
+   /Users/calpa/Developer/Renofine/src/services/agent/applyProposals.ts är 690
+   rader klientkod (webbläsarens Supabase-klient, router-navigering, File-objekt
+   i minnesregister). En server kan inte anropa den.
+
+   **Rekommendation: låt MCP:n bara FÖRESLÅ.** Ett verktygsanrop skapar en
+   väntande batch som människan bekräftar i appen, precis som ConfirmDiff gör
+   idag. Det är en tabell och en vy i stället för en refaktor av 690 rader, det
+   behåller ångra + `activity_log`-spåret, och det bevarar invarianten hela det
+   agentiska lagret vilar på: ingenting skrivs utan att en människa bekräftat.
+
+**Kostnad om det någonsin blir aktuellt:** läs-MCP med personlig token 1–2 dagar;
+föreslå-verktyg med bekräftelse i appen +2–3 dagar; publik OAuth-MCP veckor.
+
+---
 id: beslut-prismodell-proffs
 status: todo
 priority: P1
