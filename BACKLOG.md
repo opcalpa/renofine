@@ -738,6 +738,12 @@ Carls önskade granskningsflöde (2026-09-01), i fallande ordning:
    ögon och manuellt godkänna som inköp med ifyllda fält. "Övrigt" förblir
    rätt default — det som saknas är vägen tillbaka.
 
+**DELVIS LEVERERAT 2026-09-01 (kväll):** punkt 1 (kvittorad → bild i
+förhandsvisningen, via minnes-attachment + object-URL) och rumsval per inköp
+byggda; sidan fick också appens container-ram och standarden skrevs in i
+CLAUDE.md (§Sidlayout). KVAR: manuell rättning av fälten (punkt 2), dubblett
+inom släppet (punkt 3), lyft från övrigt (punkt 4), zoom i förhandsvisningen.
+
 **Prioriteras EFTER Carls 112-kvittotest** — testets tre siffror (hur många gav
 leverantör+datum+belopp, hur många blev övrigt, hur många dubbletter smet
 igenom) avgör vilka av punkterna som faktiskt gör ont och i vilken ordning.

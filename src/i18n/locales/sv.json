@@ -8254,7 +8254,9 @@
       "newRoomOption": "{{name}} (nytt)"
     },
     "purchases": {
-      "title": "Inköp"
+      "title": "Inköp",
+      "hint": "Klicka på en rad för att se kvittot i mitten. Bockar du ur en rad tas varken inköpet eller bilden in i projektet.",
+      "noRoom": "Inget rum"
     },
     "drawings": {
       "title": "Ritningar",

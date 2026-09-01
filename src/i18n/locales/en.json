@@ -8255,7 +8255,9 @@
       "newRoomOption": "{{name}} (new)"
     },
     "purchases": {
-      "title": "Purchases"
+      "title": "Purchases",
+      "hint": "Click a row to see its receipt in the middle. Unchecking a row keeps both the purchase and the image out of the project.",
+      "noRoom": "No room"
     },
     "drawings": {
       "title": "Drawings",

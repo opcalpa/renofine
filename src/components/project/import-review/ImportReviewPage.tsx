@@ -2,7 +2,9 @@ import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { peekAttachment } from '@/services/agent/documentCapture';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { AgentProposal, ProposalAction } from '@/services/agent/types';
 import type {
@@ -54,6 +56,7 @@ export function ImportReviewPage({
 }: ImportReviewPageProps) {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
+  const [selectedPurchaseId, setSelectedPurchaseId] = useState<string | null>(null);
   const [selectedFileId, setSelectedFileId] = useState<string | null>(
     () => session.files.find((f) => f.kind === 'interpreted')?.id ?? null
   );
@@ -225,11 +228,46 @@ export function ImportReviewPage({
   const purchases = purchaseProposals(session);
   const total = changeCount(session);
 
+  /**
+   * Clicking a purchase row shows ITS receipt in the preview pane. The file
+   * has no storage path yet (the order owns it on accept), but it is right
+   * there in the attachment registry — "check my reading against the image"
+   * must not have to wait for the apply (Carl, 2026-09-01).
+   */
+  const selectedPurchase = purchases.find((p) => p.id === selectedPurchaseId) ?? null;
+  const selectedAttachment = useMemo(() => {
+    if (!selectedPurchase || selectedPurchase.action.type !== 'import_purchase') return null;
+    const file = peekAttachment(selectedPurchase.action.attachmentKey);
+    if (!file) return null;
+    return { file, label: selectedPurchase.action.vendorName };
+  }, [selectedPurchase]);
+
+  const handleSelectPurchase = useCallback((proposalId: string) => {
+    setSelectedFileId(null);
+    setSelectedPurchaseId((prev) => (prev === proposalId ? null : proposalId));
+  }, []);
+
+  /** Point a purchase (and its unassigned lines) at one of the project's rooms. */
+  const handlePurchaseRoom = useCallback(
+    (proposalId: string, value: string) => {
+      patchProposal(proposalId, (action) => {
+        if (action.type !== 'import_purchase') return action;
+        if (value === NO_ROOM) return { ...action, roomId: null, roomName: null };
+        const room = session.existingRooms.find((r) => r.id === value.slice('existing:'.length));
+        return { ...action, roomId: room?.id ?? null, roomName: room?.name ?? null };
+      });
+    },
+    [patchProposal, session.existingRooms]
+  );
+
   const filesPane = (
     <ImportFilesPane
       session={session}
       selectedFileId={selectedFileId}
-      onSelectFile={(f) => setSelectedFileId(f.id)}
+      onSelectFile={(f) => {
+        setSelectedPurchaseId(null);
+        setSelectedFileId(f.id);
+      }}
       describeFile={describeFile}
       onMoveFile={handleMoveFile}
     />
@@ -256,6 +294,9 @@ export function ImportReviewPage({
         session={session}
         onToggle={handleToggle}
         highlightedIds={highlightedIds}
+        selectedId={selectedPurchaseId}
+        onSelect={handleSelectPurchase}
+        onAssignRoom={handlePurchaseRoom}
       />
       <ImportDrawingsSection
         session={session}
@@ -267,7 +308,9 @@ export function ImportReviewPage({
   );
 
   return (
-    <div className="space-y-4">
+    // `container py-…` is the app's page frame (see CLAUDE.md "Sidlayout") —
+    // this page shipped without it once and sat flush against the viewport.
+    <div className="container space-y-4 py-4 md:py-8">
       <header className="space-y-1">
         <h2 className="text-xl font-semibold">
           {t('importReview.title', 'Stäm av importen')}
@@ -328,14 +371,14 @@ export function ImportReviewPage({
             {reviewPane}
           </TabsContent>
           <TabsContent value="files" className="mt-4 space-y-4">
-            <ImportPreview file={selectedFile} />
+            <ImportPreview file={selectedFile} attachment={selectedAttachment} />
             {filesPane}
           </TabsContent>
         </Tabs>
       ) : (
         <div className="grid gap-4 lg:grid-cols-[minmax(220px,1fr)_minmax(0,1.2fr)_minmax(280px,1fr)]">
           <div className="max-h-[70vh] overflow-y-auto rounded-lg border p-3">{filesPane}</div>
-          <ImportPreview file={selectedFile} />
+          <ImportPreview file={selectedFile} attachment={selectedAttachment} />
           <div className="max-h-[70vh] overflow-y-auto rounded-lg border p-3">{reviewPane}</div>
         </div>
       )}
@@ -364,21 +407,36 @@ function ImportPurchases({
   session,
   onToggle,
   highlightedIds,
+  selectedId,
+  onSelect,
+  onAssignRoom,
 }: {
   purchases: AgentProposal[];
   session: ImportSession;
   onToggle: (id: string, keep: boolean) => void;
   highlightedIds: Set<string>;
+  selectedId: string | null;
+  onSelect: (id: string) => void;
+  onAssignRoom: (id: string, value: string) => void;
 }) {
   const { t, i18n } = useTranslation();
   if (purchases.length === 0) return null;
 
   return (
     <section className="space-y-3">
-      <h3 className="text-sm font-medium">{t('importReview.purchases.title', 'Inköp')}</h3>
+      <div className="space-y-0.5">
+        <h3 className="text-sm font-medium">{t('importReview.purchases.title', 'Inköp')}</h3>
+        <p className="text-xs text-muted-foreground">
+          {t(
+            'importReview.purchases.hint',
+            'Klicka på en rad för att se kvittot i mitten. Bockar du ur en rad tas varken inköpet eller bilden in i projektet.',
+          )}
+        </p>
+      </div>
       <ul className="space-y-1.5">
         {purchases.map((proposal) => {
           const dropped = session.rejected.has(proposal.id);
+          const action = proposal.action.type === 'import_purchase' ? proposal.action : null;
           // actionDetails takes the narrow (key, fallback, opts) shape that
           // i18next's TFunction satisfies at runtime but not structurally.
           const details = actionDetails(
@@ -389,15 +447,25 @@ function ImportPurchases({
           return (
             <li
               key={proposal.id}
-              className={`rounded-lg border p-2 ${dropped ? 'opacity-50' : ''} ${
-                highlightedIds.has(proposal.id) ? 'ring-2 ring-primary/40' : ''
+              // The row is the preview trigger; the checkbox and the room
+              // select stop propagation so deciding is not also selecting.
+              onClick={() => onSelect(proposal.id)}
+              className={`cursor-pointer rounded-lg border p-2 transition-colors hover:bg-muted/40 ${
+                dropped ? 'opacity-50' : ''
+              } ${
+                selectedId === proposal.id
+                  ? 'ring-2 ring-primary/60'
+                  : highlightedIds.has(proposal.id)
+                    ? 'ring-2 ring-primary/40'
+                    : ''
               }`}
             >
-              <label className="flex cursor-pointer items-start gap-2">
+              <div className="flex items-start gap-2">
                 <input
                   type="checkbox"
                   className="mt-1"
                   checked={!dropped}
+                  onClick={(e) => e.stopPropagation()}
                   onChange={(e) => onToggle(proposal.id, e.target.checked)}
                 />
                 <span className="min-w-0 flex-1">
@@ -412,8 +480,30 @@ function ImportPurchases({
                       {details.join(' · ')}
                     </span>
                   )}
+                  {action && !dropped && session.existingRooms.length > 0 && (
+                    <span className="mt-1.5 block" onClick={(e) => e.stopPropagation()}>
+                      <Select
+                        value={action.roomId ? `existing:${action.roomId}` : NO_ROOM}
+                        onValueChange={(value) => onAssignRoom(proposal.id, value)}
+                      >
+                        <SelectTrigger className="h-7 w-full max-w-[220px] text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={NO_ROOM}>
+                            {t('importReview.purchases.noRoom', 'Inget rum')}
+                          </SelectItem>
+                          {session.existingRooms.map((room) => (
+                            <SelectItem key={room.id} value={`existing:${room.id}`}>
+                              {room.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </span>
+                  )}
                 </span>
-              </label>
+              </div>
             </li>
           );
         })}

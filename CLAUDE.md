@@ -149,6 +149,22 @@ if (error) {
 }
 ```
 
+### Sidlayout — every full page gets the container frame, NO exceptions
+Every page-level view (a route, or a view that takes over a tab, like the
+import review) wraps its content in the app's page frame:
+```tsx
+<div className="container py-4 md:py-8 …">
+```
+`container` is the app-wide standard (20+ pages use it — it centers and adds
+horizontal padding). A page built as a bare `<div>` sits flush against the
+viewport edges and reads as broken (the import review shipped that way,
+2026-09-01). Checklist when creating ANY new page/full-tab view:
+1. Root element: `container py-4 md:py-8` (or copy the exact frame from a
+   neighboring page in the same tab).
+2. Sticky footers span the container, not the viewport.
+3. Compare side-by-side with an existing page at desktop AND mobile width
+   before calling it done — the frame is the first thing that shows.
+
 ### Dialog width — use the `size` prop, NEVER `max-w-*` in className
 `DialogContent` is a full-width bottom sheet on mobile and a centered card on
 desktop, so its desktop width cap is a **responsive** `md:max-w-lg` in the base.

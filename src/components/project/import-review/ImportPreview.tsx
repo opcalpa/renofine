@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FileText } from 'lucide-react';
 import { useFileUrl } from '@/lib/fileUrl';
@@ -23,11 +24,49 @@ function isPdf(name: string, mime?: string): boolean {
 
 interface ImportPreviewProps {
   file: ImportFileRow | null;
+  /**
+   * A file that exists only in memory so far — a receipt whose order will own
+   * it on accept, so it has no storage path to sign yet. Takes precedence over
+   * `file`: clicking a purchase row must show THAT receipt.
+   */
+  attachment?: { file: File; label: string } | null;
 }
 
-export function ImportPreview({ file }: ImportPreviewProps) {
+export function ImportPreview({ file, attachment }: ImportPreviewProps) {
   const { t } = useTranslation();
   const url = useFileUrl(file?.storagePath);
+
+  // Object URL for the in-memory receipt; revoked when the selection changes.
+  const [attachmentUrl, setAttachmentUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (!attachment) {
+      setAttachmentUrl(null);
+      return;
+    }
+    const objectUrl = URL.createObjectURL(attachment.file);
+    setAttachmentUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [attachment]);
+
+  if (attachment && attachmentUrl) {
+    const name = attachment.file.name || attachment.label;
+    if (isPdf(name, attachment.file.type)) {
+      return (
+        <div className="overflow-hidden rounded-lg border bg-muted/20">
+          <iframe
+            src={`${attachmentUrl}#navpanes=0&scrollbar=1&view=FitH`}
+            title={name}
+            className="h-[60vh] w-full border-0"
+          />
+        </div>
+      );
+    }
+    return (
+      <div className="flex max-h-[60vh] items-center justify-center overflow-auto rounded-lg border bg-muted/20 p-2">
+        <img src={attachmentUrl} alt={name} className="max-h-[58vh] max-w-full object-contain" />
+      </div>
+    );
+  }
 
   if (!file) {
     return (
