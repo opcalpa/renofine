@@ -1455,7 +1455,16 @@ const ProjectDetail = () => {
       }
       // A throttled upstream is not a verdict about the documents. Saying so is
       // the difference between "your receipts held nothing" and "try again".
-      if (outcome.classifyFailures > 0) {
+      if (outcome.quotaExhausted) {
+        // The only failure the person can act on, so it gets its own words.
+        // "Try again in a moment" is worse than useless here.
+        inertNotes.push(
+          t(
+            'folderDrop.quotaExhausted',
+            'AI-krediterna är slut, så inget kunde läsas. Fyll på hos OpenAI och släpp mappen igen — filerna ligger kvar i Filer så länge.',
+          ),
+        );
+      } else if (outcome.classifyFailures > 0) {
         inertNotes.push(
           t('folderDrop.classifyFailed', {
             count: outcome.classifyFailures,
@@ -1468,7 +1477,9 @@ const ProjectDetail = () => {
       if (proposals.length === 0) {
         const throttled = outcome.classifyFailures > 0;
         toast({
-          title: throttled
+          title: outcome.quotaExhausted
+            ? t('folderDrop.nothingFoundNoQuota', 'AI-krediterna är slut — filerna är sparade i Filer.')
+            : throttled
             ? t(
                 'folderDrop.nothingFoundThrottled',
                 'Jag kom inte åt att läsa filerna — de är sparade i Filer så länge.',

@@ -251,6 +251,13 @@ const TEXT_LIMIT_WITH_SCOPE = 60000;
 class RetryableUpstreamError extends Error {}
 
 /**
+ * The AI account has no credits left. Shares HTTP 429 with rate limiting but
+ * is its opposite: no amount of waiting or retrying changes it. Surfaced to
+ * the client under its own code so the app can say what actually has to happen.
+ */
+class QuotaExhaustedError extends Error {}
+
+/**
  * Retry a throttled classification with exponential backoff and jitter.
  *
  * Jitter matters more than the delay here: a folder drop fires several calls
@@ -342,12 +349,19 @@ async function classifyWithContent(
   if (!response.ok) {
     const errorText = await response.text();
     console.error('OpenAI API error:', response.status, errorText);
-    // 429/5xx are TEMPORARY. Carl's 112-receipt drop (2026-09-01) hit 96 of
-    // them in one go: a folder classifies every photo at once, which is
-    // exactly the burst OpenAI throttles, and each failure fell open to
-    // 'other' — so a hundred readable receipts were filed as product images
-    // and the person was told they held "no information". A transient upstream
-    // limit must never read as a verdict about the document.
+    // A 429 is TWO different situations wearing the same status code, and
+    // telling them apart is the whole point (Carl, 2026-09-01: 102 of these,
+    // every one of them an empty account, while the app said "the service was
+    // overloaded, try again in a moment" — advice that could never work).
+    //
+    //   insufficient_quota / credit_balance_exhausted → the account is empty.
+    //     Retrying is pure waste; only topping up fixes it, and the person
+    //     has to be TOLD that rather than invited to try again.
+    //   anything else 429, or 5xx                     → genuine throttling or
+    //     an outage. Worth waiting out.
+    if (response.status === 429 && /insufficient_quota|credit|billing|quota/i.test(errorText)) {
+      throw new QuotaExhaustedError('OpenAI credits exhausted');
+    }
     if (response.status === 429 || response.status >= 500) {
       throw new RetryableUpstreamError(`OpenAI API error: ${response.status}`);
     }
@@ -496,6 +510,9 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         error: error instanceof Error ? error.message : 'Unknown error',
+        // The one failure the caller must be able to name out loud, because it
+        // is the only one the person can actually do something about.
+        ...(error instanceof QuotaExhaustedError ? { error_code: 'quota_exhausted' } : {}),
         type: 'other',
         confidence: 0,
         summary: '',

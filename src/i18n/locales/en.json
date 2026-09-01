@@ -8005,7 +8005,9 @@
     "truncatedDocs_one": "{{count}} document was long enough that I only read the beginning — check that no room is missing.",
     "truncatedDocs_other": "{{count}} documents were long enough that I only read the beginning — check that no room is missing.",
     "classifyFailed": "{{count}} images could not be read right now (the service was overloaded) — drop the folder again in a moment; files already read cost nothing.",
-    "nothingFoundThrottled": "I could not get to reading the files — they are saved in Files for now."
+    "nothingFoundThrottled": "I could not get to reading the files — they are saved in Files for now.",
+    "quotaExhausted": "The AI credits have run out, so nothing could be read. Top up at OpenAI and drop the folder again — the files stay in Files meanwhile.",
+    "nothingFoundNoQuota": "The AI credits have run out — the files are saved in Files."
   },
   "addresses": {
     "picker": {

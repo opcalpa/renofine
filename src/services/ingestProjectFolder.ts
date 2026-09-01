@@ -41,6 +41,7 @@ import { captureDocument, extractQuoteLines } from './agent/documentCapture';
 import type { ImportPurchaseAction } from './agent/importPurchaseOrder';
 import {
   classifyDocument,
+  ClassifyError,
   type DocumentType,
   type DocumentPropertyAddress,
   type AddressSource,
@@ -626,6 +627,12 @@ export interface IngestOutcome {
    * offer a retry instead of reporting a temporary failure as a conclusion.
    */
   classifyFailures: number;
+  /**
+   * The AI account ran out of credits mid-drop. Distinct from throttling on
+   * purpose: it shares HTTP 429 but nothing else, and "try again in a moment"
+   * is advice that cannot work.
+   */
+  quotaExhausted: boolean;
   roomsAdded: number;
   tasksAdded: number;
   /** All receipts/invoices seen (whether counted or fully extracted). */
@@ -802,6 +809,8 @@ export async function ingestProjectFolder(
   let inertImages: File[] = photos;
   /** Photos whose classification call FAILED (throttling, outage) — not a verdict. */
   let classifyFailures = 0;
+  /** The AI account is empty. Retrying cannot help; only topping up can. */
+  let quotaExhausted = false;
   if (photos.length > 0) {
     let classified = 0;
     onProgress?.({ phase: 'classify', done: 0, total: photos.length });
@@ -817,6 +826,7 @@ export async function ingestProjectFolder(
         // (2026-09-01) came back as "100 bilder sparade utan att tolkas" when
         // the real story was that OpenAI had throttled every single call.
         classifyFailures += 1;
+        if (e instanceof ClassifyError && e.code === 'quota_exhausted') quotaExhausted = true;
         console.error('classify failed for', f.name, e);
         return 'other' as DocumentType;
       } finally {
@@ -967,6 +977,7 @@ export async function ingestProjectFolder(
     // summary honest about how much of the folder the project actually holds.
     filesRead: files.length + resumed.length,
     classifyFailures,
+    quotaExhausted,
     alreadyImportedNames: skipped.map((f) => f.name),
     roomsAdded: draft.rooms.length - roomsBefore,
     tasksAdded: draft.tasks.length - tasksBefore,

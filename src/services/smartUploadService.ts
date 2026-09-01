@@ -184,6 +184,18 @@ async function compressImage(file: File, maxSize = 1600, quality = 0.85): Promis
  * Classify a document to determine its type and suggested action.
  * Fast call (~1-2s) using GPT-4o-mini with low detail.
  */
+/**
+ * A failed classification, carrying WHY when the server could name it.
+ * `quota_exhausted` is the one the person can act on — everything else is
+ * ours to retry or live with.
+ */
+export class ClassifyError extends Error {
+  constructor(message: string, readonly code?: string) {
+    super(message);
+    this.name = "ClassifyError";
+  }
+}
+
 export async function classifyDocument(file: File): Promise<ClassificationResult> {
   let body: Record<string, string>;
 
@@ -206,8 +218,19 @@ export async function classifyDocument(file: File): Promise<ClassificationResult
   );
 
   if (error) {
-    console.error("Classification error:", error);
-    throw new Error(error.message || "Failed to classify document");
+    // The function answers a non-2xx with a BODY that names the reason, and
+    // supabase-js throws before anyone reads it. Carl's drop (2026-09-01) was
+    // diagnosed from the edge logs for exactly this reason: the console said
+    // "non-2xx" a hundred times while the body said "no credits remaining".
+    let code: string | undefined;
+    try {
+      const body = await (error as { context?: Response }).context?.json();
+      code = body?.error_code;
+      console.error("Classification error:", body?.error ?? error.message, code ?? "");
+    } catch {
+      console.error("Classification error:", error);
+    }
+    throw new ClassifyError(error.message || "Failed to classify document", code);
   }
 
   return data || { type: "other", confidence: 0, summary: "", vendor_name: null, suggested_action: "store_only" };
