@@ -13,6 +13,7 @@ import EmbedRenaida from "./pages/EmbedRenaida";
 import Auth from "./pages/Auth";
 import Projects from "./pages/Projects";
 import ProjectDetail from "./pages/ProjectDetail";
+import DevImportReview from "./pages/DevImportReview";
 import Profile from "./pages/Profile";
 import Admin from "./pages/Admin";
 import InvitationResponse from "./pages/InvitationResponse";
@@ -160,6 +161,11 @@ const App = () => (
 
               {/* ── Auth required (any role, guests allowed) ── */}
               <Route path="/start" element={<RequireAuth><Projects /></RequireAuth>} />
+              {/* Dev-only: the import review with synthetic rows, so the
+                  50–100-row layout can be checked without a real import. */}
+              {import.meta.env.DEV && (
+                <Route path="/dev/import-review" element={<DevImportReview />} />
+              )}
               <Route path="/projects" element={<Navigate to="/start" replace />} />
               <Route path="/projects/:projectId" element={<RequireAuth><ProjectDetail /></RequireAuth>} />
               <Route path="/addresses/:propertyId" element={<RequireAuth allowGuest={false}><Suspense fallback={null}><AddressDetail /></Suspense></RequireAuth>} />

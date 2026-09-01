@@ -22,14 +22,36 @@ export function folderLabel(folder: string, rootLabel: string): string {
 
 interface ImportFilingSectionProps {
   session: ImportSession;
+  /**
+   * 'footer' condenses the whole summary to one line for the Files tab's
+   * footer row (Design handoff v2): the aggregate stays visible while the
+   * per-file folder picker lives on the rows themselves. Dropping the
+   * aggregate would break the promise that a drop says WHERE it put a
+   * hundred of someone's files before they accept it.
+   */
+  variant?: 'section' | 'footer';
 }
 
-export function ImportFilingSection({ session }: ImportFilingSectionProps) {
+export function ImportFilingSection({ session, variant = 'section' }: ImportFilingSectionProps) {
   const { t } = useTranslation();
   const summary = filingSummary(session);
   if (summary.length === 0) return null;
 
   const rootLabel = t('importReview.filing.root', 'Projektets rot');
+
+  if (variant === 'footer') {
+    return (
+      <span className="flex min-w-0 items-center gap-1.5">
+        <FolderOpen className="h-3.5 w-3.5 shrink-0" />
+        <span className="min-w-0 truncate">
+          {t('importReview.filing.footerLabel', 'Hamnar i:')}{' '}
+          {summary
+            .map(({ folder, count }) => `${folderLabel(folder, rootLabel)} ${count}`)
+            .join(' · ')}
+        </span>
+      </span>
+    );
+  }
 
   return (
     <section>

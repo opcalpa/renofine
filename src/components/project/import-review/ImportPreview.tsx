@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FileText, RotateCw, ZoomIn, ZoomOut } from 'lucide-react';
+import { Crop, Expand, FileText, MessageSquare, RotateCw, ZoomIn, ZoomOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useFileUrl } from '@/lib/fileUrl';
 import type { ImportFileRow } from '@/services/agent/importSession';
 
@@ -27,11 +29,30 @@ const ZOOM_STEPS = [0.5, 0.75, 1, 1.5, 2, 3];
  * A receipt is photographed however the table allowed — sideways is the normal
  * case, not the exception — and checking "14 995,00" against a sideways photo
  * is guesswork. Rotation is view-only (a quarter turn clockwise per press);
- * nothing is written back to the file. Crop and comments are a later slice
- * (backlog: `granskningens-bildyta-crop-kommentarer-autovrid`).
+ * nothing is written back to the file.
+ *
+ * Crop draws a box over the image and shows only what it contains — a working
+ * magnifier for the A4 with several receipts stapled to it, where the number
+ * you need sits in one corner of the photo. It never rewrites the stored file:
+ * the original stays the record, which is what a tax deduction needs.
  */
-function ImageViewer({ src, alt }: { src: string; alt: string }) {
+function ImageViewer({
+  src,
+  alt,
+  comment,
+  onComment,
+}: {
+  src: string;
+  alt: string;
+  comment?: string;
+  onComment?: (text: string) => void;
+}) {
   const { t } = useTranslation();
+  const [fullscreen, setFullscreen] = useState(false);
+  const [cropping, setCropping] = useState(false);
+  const [crop, setCrop] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  const cropDraft = useRef<{ x: number; y: number } | null>(null);
+  const [commentOpen, setCommentOpen] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [zoomIdx, setZoomIdx] = useState(2); // 1x
   // Pan offset in screen pixels. A scaled image outgrows its layout box via
@@ -46,6 +67,9 @@ function ImageViewer({ src, alt }: { src: string; alt: string }) {
     setRotation(0);
     setZoomIdx(2);
     setPan({ x: 0, y: 0 });
+    setCrop(null);
+    setCropping(false);
+    setCommentOpen(false);
   }, [src]);
 
   const zoom = ZOOM_STEPS[zoomIdx];
@@ -71,6 +95,32 @@ function ImageViewer({ src, alt }: { src: string; alt: string }) {
   };
   const endDrag = () => {
     dragRef.current = null;
+  };
+
+  /** Drag a box over the image; the frame then shows only what it contains. */
+  const cropStart = (e: React.PointerEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    cropDraft.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    setCrop({ x: cropDraft.current.x, y: cropDraft.current.y, w: 0, h: 0 });
+  };
+  const cropMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const start = cropDraft.current;
+    if (!start) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    setCrop({
+      x: Math.min(start.x, x),
+      y: Math.min(start.y, y),
+      w: Math.abs(x - start.x),
+      h: Math.abs(y - start.y),
+    });
+  };
+  const cropEnd = () => {
+    cropDraft.current = null;
+    // A stray click is not a crop — anything smaller than a fingertip is noise.
+    setCrop((c) => (c && c.w > 24 && c.h > 24 ? c : null));
+    setCropping(false);
   };
 
   return (
@@ -105,17 +155,69 @@ function ImageViewer({ src, alt }: { src: string; alt: string }) {
         >
           <ZoomOut className="h-4 w-4" />
         </Button>
+        <span className="self-center px-1 font-mono text-[11px] tabular-nums text-muted-foreground">
+          {Math.round(zoom * 100)}%
+        </span>
+        <Button
+          variant="ghost"
+          size="icon"
+          className={`h-7 w-7 ${cropping || crop ? 'bg-muted' : ''}`}
+          onClick={() => {
+            if (crop) setCrop(null);
+            else setCropping((c) => !c);
+          }}
+          title={
+            crop
+              ? t('importReview.preview.cropClear', 'Visa hela bilden igen')
+              : t('importReview.preview.crop', 'Beskär — dra en ruta över det du vill se')
+          }
+        >
+          <Crop className="h-4 w-4" />
+        </Button>
+        {onComment && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className={`h-7 w-7 ${comment ? 'text-primary' : ''}`}
+            onClick={() => setCommentOpen((c) => !c)}
+            title={t('importReview.preview.comment', 'Kommentera')}
+          >
+            <MessageSquare className="h-4 w-4" />
+          </Button>
+        )}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7"
+          onClick={() => setFullscreen(true)}
+          title={t('importReview.preview.fullscreen', 'Helskärm')}
+        >
+          <Expand className="h-4 w-4" />
+        </Button>
       </div>
       <div
-        className={`flex max-h-[60vh] min-h-[240px] items-center justify-center overflow-hidden p-2 ${
-          pannable ? (dragRef.current ? 'cursor-grabbing' : 'cursor-grab') : ''
+        className={`relative flex max-h-[60vh] min-h-[240px] items-center justify-center overflow-hidden p-2 ${
+          cropping ? 'cursor-crosshair' : pannable ? (dragRef.current ? 'cursor-grabbing' : 'cursor-grab') : ''
         }`}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={endDrag}
-        onPointerLeave={endDrag}
-        onPointerCancel={endDrag}
+        onPointerDown={cropping ? cropStart : onPointerDown}
+        onPointerMove={cropping ? cropMove : onPointerMove}
+        onPointerUp={cropping ? cropEnd : endDrag}
+        onPointerLeave={cropping ? cropEnd : endDrag}
+        onPointerCancel={cropping ? cropEnd : endDrag}
+        style={
+          // A finished crop turns the frame into a window onto that region:
+          // the image keeps its transform, the box decides what shows.
+          crop && !cropping
+            ? { clipPath: `inset(${crop.y}px calc(100% - ${crop.x + crop.w}px) calc(100% - ${crop.y + crop.h}px) ${crop.x}px)` }
+            : undefined
+        }
       >
+        {cropping && crop && (
+          <div
+            className="pointer-events-none absolute z-20 border-2 border-primary bg-primary/10"
+            style={{ left: crop.x, top: crop.y, width: crop.w, height: crop.h }}
+          />
+        )}
         <img
           src={src}
           alt={alt}
@@ -133,6 +235,36 @@ function ImageViewer({ src, alt }: { src: string; alt: string }) {
           }}
         />
       </div>
+
+      {cropping && !crop && (
+        <p className="border-t bg-muted/40 px-3 py-1.5 text-[11px] text-muted-foreground">
+          {t('importReview.preview.cropHint', 'Dra en ruta över det du vill titta närmare på. Originalfilen ändras inte.')}
+        </p>
+      )}
+
+      {commentOpen && onComment && (
+        <div className="border-t bg-muted/40 p-2">
+          <Textarea
+            defaultValue={comment ?? ''}
+            rows={2}
+            placeholder={t('importReview.preview.commentPlaceholder', 'Skriv en notering om det här kvittot…')}
+            className="text-xs"
+            onBlur={(e) => onComment(e.target.value)}
+          />
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            {t('importReview.preview.commentHint', 'Noteringen följer med inköpet när du trycker Genomför.')}
+          </p>
+        </div>
+      )}
+
+      <Dialog open={fullscreen} onOpenChange={setFullscreen}>
+        <DialogContent size="6xl" className="max-h-[95vh] overflow-hidden p-2">
+          <div className="flex max-h-[88vh] items-center justify-center overflow-auto">
+            <img src={src} alt={alt} className="max-h-[86vh] max-w-full object-contain"
+              style={{ transform: `rotate(${rotation}deg)` }} />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -149,9 +281,12 @@ interface ImportPreviewProps {
    * `file`: clicking a purchase row must show THAT receipt.
    */
   attachment?: { file: File; label: string } | null;
+  /** Note attached to the previewed purchase; travels with it on accept. */
+  comment?: string;
+  onComment?: (text: string) => void;
 }
 
-export function ImportPreview({ file, attachment }: ImportPreviewProps) {
+export function ImportPreview({ file, attachment, comment, onComment }: ImportPreviewProps) {
   const { t } = useTranslation();
   const url = useFileUrl(file?.storagePath);
 
@@ -180,7 +315,7 @@ export function ImportPreview({ file, attachment }: ImportPreviewProps) {
         </div>
       );
     }
-    return <ImageViewer src={attachmentUrl} alt={name} />;
+    return <ImageViewer src={attachmentUrl} alt={name} comment={comment} onComment={onComment} />;
   }
 
   if (!file) {

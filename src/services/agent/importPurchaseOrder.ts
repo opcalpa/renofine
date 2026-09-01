@@ -72,6 +72,7 @@ export async function importPurchaseOrder(
       ocr_number: isInvoice ? action.ocrNumber ?? null : null,
       invoice_due_date: isInvoice ? action.dueDate ?? null : null,
       receipt_file_path: storagePath,
+      notes: action.userNote?.trim() || null,
       created_by_user_id: profileId,
     })
     .select("id")

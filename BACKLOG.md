@@ -709,7 +709,7 @@ en intervjuperson mitt i ett flöde — annars väntar den som allt annat.
 
 ---
 id: import-granskning-syna-kvittot-mot-bilden
-status: todo
+status: done
 priority: P3
 tags: [import, ux, user-research]
 created: 2026-09-01
@@ -822,7 +822,7 @@ journalen). Journalen töms vid godkänn och vid kasta.
 
 ---
 id: granskningens-bildyta-crop-kommentarer-autovrid
-status: todo
+status: done
 priority: P3
 tags: [import, ux, user-research]
 created: 2026-09-01
@@ -846,6 +846,14 @@ vrid + zoom byggts:
    multisektion med flikbyte, och ge förhandsvisningen den frigjorda bredden.
    Hör ihop med Carls större tanke om återanvändbara ytor/sektioner som
    flippar innehåll — designas i ett eget pass (Fable-läge), inte hastas.
+
+**LEVERERAT 2026-09-01 (natt), hela Design-handoffen v2:** fas 1 (MultiSection
+som återanvändbar komponent, tvåpanelslayout 47/53, inköpsraden i alla lägen,
+gruppen "Behöver din blick", korsmarkering, mobil med tre flikar + bottom-sheet)
+OCH fas 2 (sökfält, filterchips, bulkmeny som följer filtret, löpande facit,
+inline-rättning, crop, kommentar → purchase_orders.notes, fullskärm, zoom-procent,
+dubblettpar inom släppet, lyft fil till inköp). Verifierat i körande app via
+dev-harnessen /dev/import-review med 50 rader.
 
 Byggt före detta kort: container-ramen, klickbar kvittorad → bild, rumsval
 per inköp, vrid 90°/zoom i förhandsvisningen. Kvar från systerkortet

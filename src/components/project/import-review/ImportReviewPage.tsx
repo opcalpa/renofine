@@ -2,8 +2,8 @@ import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { MultiSection, type MultiSectionTab } from '@/components/ui/multi-section';
 import { peekAttachment } from '@/services/agent/documentCapture';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { AgentProposal, ProposalAction } from '@/services/agent/types';
@@ -12,15 +12,16 @@ import type {
   ImportFileRow,
   ImportSession,
 } from '@/services/agent/importSession';
-import { changeCount, purchaseProposals } from '@/services/agent/importSession';
-import { actionDetails } from '@/components/agent/ConfirmDiff';
-import { callsPerFile, describeModelCalls } from '@/lib/modelCalls';
+import { changeCount } from '@/services/agent/importSession';
+import { describeModelCalls } from '@/lib/modelCalls';
 import { ImportFilesPane } from './ImportFilesPane';
 import { ImportPreview } from './ImportPreview';
 import { ImportRoomsSection } from './ImportRoomsSection';
 import { ImportTasksSection } from './ImportTasksSection';
 import { ImportDrawingsSection } from './ImportDrawingsSection';
 import { ImportFilingSection } from './ImportFilingSection';
+import { PurchaseList, PurchaseToolbar, type PurchaseEdits } from './ImportPurchasesTab';
+import { buildPurchaseRows, filterRows, type PurchaseFilter } from './purchaseRowModel';
 
 /**
  * Reconcile a dropped folder against the project it landed on.
@@ -54,8 +55,14 @@ export function ImportReviewPage({
   onCancel,
   applying,
 }: ImportReviewPageProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const isMobile = useIsMobile();
+  const [activeTab, setActiveTab] = useState('purchases');
+  const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState<PurchaseFilter>('all');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  /** Mobile only: the preview lives in a bottom sheet. */
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [selectedPurchaseId, setSelectedPurchaseId] = useState<string | null>(null);
   const [selectedFileId, setSelectedFileId] = useState<string | null>(
     () => session.files.find((f) => f.kind === 'interpreted')?.id ?? null
@@ -225,26 +232,43 @@ export function ImportReviewPage({
     [session, onChange]
   );
 
-  const purchases = purchaseProposals(session);
+  const rows = useMemo(() => buildPurchaseRows(session), [session]);
+  const shownRows = useMemo(() => filterRows(rows, filter, query), [rows, filter, query]);
   const total = changeCount(session);
 
+  const filterCounts: Record<PurchaseFilter, number> = useMemo(
+    () => ({
+      all: rows.length,
+      needsLook: rows.filter((r) => r.needsLook).length,
+      noRoom: rows.filter((r) => !r.roomId).length,
+      dropped: rows.filter((r) => !r.kept).length,
+    }),
+    [rows]
+  );
+
   /**
-   * Clicking a purchase row shows ITS receipt in the preview pane. The file
-   * has no storage path yet (the order owns it on accept), but it is right
-   * there in the attachment registry — "check my reading against the image"
-   * must not have to wait for the apply (Carl, 2026-09-01).
+   * Clicking a purchase row shows ITS receipt. The file has no storage path
+   * yet (the order owns it on accept), but it is right there in the attachment
+   * registry — "check my reading against the image" must not have to wait for
+   * the apply (Carl, 2026-09-01).
    */
-  const selectedPurchase = purchases.find((p) => p.id === selectedPurchaseId) ?? null;
+  const selectedRow = rows.find((r) => r.id === selectedPurchaseId) ?? null;
   const selectedAttachment = useMemo(() => {
-    if (!selectedPurchase || selectedPurchase.action.type !== 'import_purchase') return null;
-    const file = peekAttachment(selectedPurchase.action.attachmentKey);
-    if (!file) return null;
-    return { file, label: selectedPurchase.action.vendorName };
-  }, [selectedPurchase]);
+    if (!selectedRow) return null;
+    const file = peekAttachment(selectedRow.action.attachmentKey);
+    return file ? { file, label: selectedRow.vendor } : null;
+  }, [selectedRow]);
 
   const handleSelectPurchase = useCallback((proposalId: string) => {
     setSelectedFileId(null);
     setSelectedPurchaseId((prev) => (prev === proposalId ? null : proposalId));
+    setPreviewOpen(true);
+  }, []);
+
+  const handleSelectFile = useCallback((file: ImportFileRow) => {
+    setSelectedPurchaseId(null);
+    setSelectedFileId(file.id);
+    setPreviewOpen(true);
   }, []);
 
   /** Point a purchase (and its unassigned lines) at one of the project's rooms. */
@@ -260,130 +284,307 @@ export function ImportReviewPage({
     [patchProposal, session.existingRooms]
   );
 
-  const filesPane = (
-    <ImportFilesPane
-      session={session}
-      selectedFileId={selectedFileId}
-      onSelectFile={(f) => {
-        setSelectedPurchaseId(null);
-        setSelectedFileId(f.id);
-      }}
-      describeFile={describeFile}
-      onMoveFile={handleMoveFile}
+  /** Write a correction back onto the proposal. Nothing reaches the DB until Genomför. */
+  const handleSaveEdit = useCallback(
+    (proposalId: string, edits: PurchaseEdits) => {
+      patchProposal(proposalId, (action) => {
+        if (action.type !== 'import_purchase') return action;
+        const parsedTotal = Number(edits.total.replace(/\s/g, '').replace(',', '.'));
+        return {
+          ...action,
+          vendorName: edits.vendorName.trim() || action.vendorName,
+          total: Number.isFinite(parsedTotal) && parsedTotal > 0 ? parsedTotal : action.total,
+          documentDate: edits.documentDate || action.documentDate,
+          invoiceNumber: edits.invoiceNumber.trim() || null,
+        };
+      });
+      setEditingId(null);
+    },
+    [patchProposal]
+  );
+
+  /**
+   * Bulk only ever touches what the current filter SHOWS. A bulk action that
+   * silently reached rows scrolled out of view would be the fastest way to
+   * lose trust in this screen.
+   */
+  const handleBulk = useCallback(
+    (keep: boolean) => {
+      const rejected = new Set(session.rejected);
+      for (const row of shownRows) {
+        if (keep) rejected.delete(row.id);
+        else rejected.add(row.id);
+      }
+      onChange({ ...session, rejected });
+    },
+    [session, onChange, shownRows]
+  );
+
+  /**
+   * Promote an unread file to a purchase the person fills in themselves.
+   * Creates an EMPTY proposal (no invented amounts) opened straight into the
+   * inline editor — the app must never guess money it did not read.
+   */
+  const handleLiftToPurchase = useCallback(
+    (file: ImportFileRow) => {
+      const id = `lift-${file.id}`;
+      if (session.proposals.some((p) => p.id === id)) {
+        setActiveTab('purchases');
+        setEditingId(id);
+        return;
+      }
+      const proposal: AgentProposal = {
+        id,
+        summary: t('importReview.files.liftedSummary', 'Inköp från {{file}}', { file: file.name }),
+        confidence: 1,
+        sourceFile: file.name,
+        action: {
+          type: 'import_purchase',
+          documentType: 'receipt',
+          vendorName: '',
+          total: 0,
+          lineItems: [],
+        },
+      };
+      onChange({ ...session, proposals: [...session.proposals, proposal] });
+      setActiveTab('purchases');
+      setFilter('all');
+      setEditingId(id);
+      setSelectedPurchaseId(id);
+    },
+    [session, onChange, t]
+  );
+
+  const roomTaskCount =
+    session.proposals.filter((p) =>
+      ['create_room', 'create_task', 'create_plan_sketch'].includes(p.action.type)
+    ).length;
+
+  const tabs: MultiSectionTab[] = [
+    {
+      id: 'purchases',
+      label: t('importReview.tab.purchases', 'Inköp'),
+      count: rows.length,
+      alert: filterCounts.needsLook,
+    },
+    {
+      id: 'rooms',
+      label: t('importReview.tab.rooms', 'Rum & arbeten'),
+      count: roomTaskCount,
+      alert: session.proposals.filter(
+        (p) => p.duplicateOfExisting && p.action.type !== 'import_purchase'
+      ).length,
+    },
+    {
+      id: 'files',
+      label: t('importReview.tab.files', 'Filer'),
+      count: session.files.length,
+      alert: session.outcome.unreadableCount,
+    },
+  ];
+
+  const keptRows = rows.filter((r) => r.kept);
+  const keptSum = keptRows.reduce((s, r) => s + r.total, 0);
+
+  const toolbar =
+    activeTab === 'purchases' ? (
+      <PurchaseToolbar
+        query={query}
+        onQuery={setQuery}
+        filter={filter}
+        onFilter={setFilter}
+        counts={filterCounts}
+        shownCount={shownRows.length}
+        onBulk={handleBulk}
+      />
+    ) : undefined;
+
+  const footer =
+    activeTab === 'purchases' ? (
+      <>
+        <span>
+          {t('importReview.purchases.tally', '{{kept}} av {{total}} inköp tas med', {
+            kept: keptRows.length,
+            total: rows.length,
+          })}
+        </span>
+        <span className="font-mono tabular-nums">
+          {keptSum.toLocaleString(i18n.language, { maximumFractionDigits: 0 })} kr
+        </span>
+      </>
+    ) : activeTab === 'files' ? (
+      <ImportFilingSection session={session} variant="footer" />
+    ) : undefined;
+
+  /** A note the person writes on a receipt; carried into the order's description. */
+  const handleComment = useCallback(
+    (text: string) => {
+      if (!selectedPurchaseId) return;
+      patchProposal(selectedPurchaseId, (action) =>
+        action.type === 'import_purchase' ? { ...action, userNote: text || undefined } : action
+      );
+    },
+    [patchProposal, selectedPurchaseId]
+  );
+
+  const preview = (
+    <ImportPreview
+      file={selectedFile}
+      attachment={selectedAttachment}
+      comment={selectedRow?.action.userNote ?? ''}
+      onComment={selectedRow ? handleComment : undefined}
     />
   );
 
-  const reviewPane = (
-    <div className="space-y-6">
-      <ImportRoomsSection
-        session={session}
-        highlightedIds={highlightedIds}
-        onRename={handleRename}
-        onMerge={handleMerge}
-        onToggle={handleToggle}
-      />
-      <ImportTasksSection
-        session={session}
-        highlightedIds={highlightedIds}
-        onAssign={handleAssign}
-        onToggle={handleToggle}
-        valueFor={taskValue}
-      />
-      <ImportPurchases
-        purchases={purchases}
-        session={session}
-        onToggle={handleToggle}
-        highlightedIds={highlightedIds}
-        selectedId={selectedPurchaseId}
-        onSelect={handleSelectPurchase}
-        onAssignRoom={handlePurchaseRoom}
-      />
-      <ImportDrawingsSection
-        session={session}
-        onChoice={handleDrawingChoice}
-        onTargetPlan={handleTargetPlan}
-      />
-      <ImportFilingSection session={session} />
-    </div>
+  const body = (
+    <MultiSection
+      title={t('importReview.panelTitle', 'Vad jag tror att filerna är')}
+      hint={t(
+        'importReview.panelHint',
+        'Klicka på en rad för att se bilden bredvid. Bockar du ur en rad tas varken inköpet eller bilden in i projektet.'
+      )}
+      tabs={tabs}
+      active={activeTab}
+      onTab={setActiveTab}
+      toolbar={toolbar}
+      footer={footer}
+      className={isMobile ? 'min-h-[60vh]' : 'h-[calc(100vh-19rem)]'}
+    >
+      {activeTab === 'purchases' && (
+        <PurchaseList
+          rows={shownRows}
+          session={session}
+          selectedId={selectedPurchaseId}
+          linkedIds={highlightedIds}
+          editingId={editingId}
+          onSelect={handleSelectPurchase}
+          onToggle={handleToggle}
+          onRoom={handlePurchaseRoom}
+          onEdit={setEditingId}
+          onSaveEdit={handleSaveEdit}
+        />
+      )}
+      {activeTab === 'rooms' && (
+        <div className="space-y-6 p-3">
+          <ImportRoomsSection
+            session={session}
+            highlightedIds={highlightedIds}
+            onRename={handleRename}
+            onMerge={handleMerge}
+            onToggle={handleToggle}
+          />
+          <ImportTasksSection
+            session={session}
+            highlightedIds={highlightedIds}
+            onAssign={handleAssign}
+            onToggle={handleToggle}
+            valueFor={taskValue}
+          />
+          <ImportDrawingsSection
+            session={session}
+            onChoice={handleDrawingChoice}
+            onTargetPlan={handleTargetPlan}
+          />
+        </div>
+      )}
+      {activeTab === 'files' && (
+        <div className="p-3">
+          <ImportFilesPane
+            session={session}
+            selectedFileId={selectedFileId}
+            onSelectFile={handleSelectFile}
+            describeFile={describeFile}
+            onMoveFile={handleMoveFile}
+            onLiftToPurchase={handleLiftToPurchase}
+          />
+        </div>
+      )}
+    </MultiSection>
   );
 
   return (
-    // `container py-…` is the app's page frame (see CLAUDE.md "Sidlayout") —
-    // this page shipped without it once and sat flush against the viewport.
+    // `container py-…` is the app's page frame (see CLAUDE.md "Sidlayout").
     <div className="container space-y-4 py-4 md:py-8">
-      <header className="space-y-1">
-        <h2 className="text-xl font-semibold">
-          {t('importReview.title', 'Stäm av importen')}
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          {t(
-            'importReview.lead',
-            'Jag läste {{files}} filer. Kolla att jag förstod dem rätt — särskilt rummen, som kan vara sådana du redan har.',
-            { files: session.outcome.filesRead }
-          )}
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0 space-y-1">
+          <h1 className="font-serif text-2xl font-normal tracking-tight">
+            {t('importReview.title', 'Stäm av importen')}
+          </h1>
+          <p className="max-w-[62ch] text-sm text-muted-foreground">
+            {t(
+              'importReview.leadV2',
+              'Jag läste igenom mappen och gissade vad varje fil är. Titta igenom förslagen, rätta det som blev fel och bocka ur det som inte hör hemma.'
+            )}{' '}
+            <strong className="font-semibold text-foreground">
+              {t('importReview.leadNothingYet', 'Ingenting läggs in i projektet förrän du trycker Genomför.')}
+            </strong>
+          </p>
+        </div>
+        <div className="w-full max-w-[34ch] shrink-0 space-y-0.5 text-right text-xs text-muted-foreground sm:w-auto">
+          <p className="font-mono">
+            {t('importReview.statFiles', '{{files}} filer lästa', { files: session.outcome.filesRead })}
+            {session.outcome.modelCalls?.total > 0 && (
+              <span title={describeModelCalls(session.outcome.modelCalls)}>
+                {' · '}
+                {t('importReview.statCalls', '{{calls}} AI-anrop', {
+                  calls: session.outcome.modelCalls.total,
+                })}
+              </span>
+            )}
+          </p>
           {(session.outcome.alreadyImportedNames?.length ?? 0) > 0 && (
-            <>
-              {' '}
-              {t(
-                'importReview.leadSkipped',
-                '{{count}} filer kände jag igen sedan tidigare och hoppade över helt.',
-                { count: session.outcome.alreadyImportedNames?.length ?? 0 }
-              )}
-            </>
+            <p>
+              {t('importReview.leadSkipped', '{{count}} filer kände jag igen sedan tidigare och hoppade över helt.', {
+                count: session.outcome.alreadyImportedNames?.length ?? 0,
+              })}
+            </p>
           )}
-        </p>
-        {/* A document cut off for length is the one case where a room that is
-            MISSING looks exactly like a room that was never there. A toast
-            disappears; this stays until the person has decided. */}
-        {session.outcome.truncatedDocCount > 0 && (
-          <p className="text-sm text-amber-700 dark:text-amber-500">
-            {t('importReview.truncatedDocs', {
-              count: session.outcome.truncatedDocCount,
-              defaultValue:
-                '{{count}} dokument var så långa att jag bara hann läsa början — kolla att inget rum saknas.',
-            })}
-          </p>
-        )}
-        {/* What the drop cost. Measured, not estimated — every claim about this
-            pipeline getting cheaper was a guess until this number existed. The
-            per-function breakdown sits in the tooltip so the headline stays
-            readable. */}
-        {session.outcome.modelCalls?.total > 0 && (
-          <p
-            className="text-xs text-muted-foreground"
-            title={describeModelCalls(session.outcome.modelCalls)}
-          >
-            {t('importReview.modelCalls', 'Det kostade {{calls}} AI-anrop ({{perFile}} per fil).', {
-              calls: session.outcome.modelCalls.total,
-              perFile: callsPerFile(session.outcome.modelCalls, session.outcome.filesRead) ?? 0,
-            })}
-          </p>
-        )}
+          {/* A document cut off for length is the one case where a room that is
+              MISSING looks exactly like a room that was never there. */}
+          {session.outcome.truncatedDocCount > 0 && (
+            <p className="text-amber-700 dark:text-amber-500">
+              {t('importReview.truncatedDocs', {
+                count: session.outcome.truncatedDocCount,
+                defaultValue:
+                  '{{count}} dokument var så långa att jag bara hann läsa början — kolla att inget rum saknas.',
+              })}
+            </p>
+          )}
+          {session.outcome.unreadableCount > 0 && (
+            <p className="text-rose-700 dark:text-rose-400">
+              {t('importReview.statUnreadable', '{{count}} filer gick inte att läsa', {
+                count: session.outcome.unreadableCount,
+              })}
+            </p>
+          )}
+        </div>
       </header>
 
       {isMobile ? (
-        <Tabs defaultValue="review">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="review">{t('importReview.tab.review', 'Blir i projektet')}</TabsTrigger>
-            <TabsTrigger value="files">{t('importReview.tab.files', 'Filer')}</TabsTrigger>
-          </TabsList>
-          <TabsContent value="review" className="mt-4">
-            {reviewPane}
-          </TabsContent>
-          <TabsContent value="files" className="mt-4 space-y-4">
-            <ImportPreview file={selectedFile} attachment={selectedAttachment} />
-            {filesPane}
-          </TabsContent>
-        </Tabs>
+        <>
+          {body}
+          {/* The preview is a bottom sheet on mobile: a phone cannot hold the
+              list and the document side by side, and the list is where the
+              decisions are made. */}
+          <Sheet open={previewOpen} onOpenChange={setPreviewOpen}>
+            <SheetContent side="bottom" className="h-[84vh] overflow-y-auto">
+              <SheetHeader className="text-left">
+                <SheetTitle className="text-base">
+                  {selectedRow?.vendor ?? selectedFile?.name ?? t('importReview.preview.title', 'Dokumentet')}
+                </SheetTitle>
+              </SheetHeader>
+              <div className="mt-3">{preview}</div>
+            </SheetContent>
+          </Sheet>
+        </>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-[minmax(220px,1fr)_minmax(0,1.2fr)_minmax(280px,1fr)]">
-          <div className="max-h-[70vh] overflow-y-auto rounded-lg border p-3">{filesPane}</div>
-          <ImportPreview file={selectedFile} attachment={selectedAttachment} />
-          <div className="max-h-[70vh] overflow-y-auto rounded-lg border p-3">{reviewPane}</div>
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,47fr)_minmax(0,53fr)]">
+          {body}
+          <div className="min-w-0">{preview}</div>
         </div>
       )}
 
-      <footer className="sticky bottom-0 flex flex-wrap items-center justify-between gap-2 border-t bg-background/95 py-3 backdrop-blur">
+      <footer className="sticky bottom-0 z-20 flex flex-wrap items-center justify-between gap-2 border-t bg-background/95 py-3 backdrop-blur">
         <p className="text-xs text-muted-foreground">
           {t('importReview.filesSafe', 'Filerna är redan sparade i Filer — avbryter du händer ingenting mer.')}
         </p>
@@ -398,116 +599,5 @@ export function ImportReviewPage({
         </div>
       </footer>
     </div>
-  );
-}
-
-/** Receipts and invoices — same presentation ConfirmDiff already uses. */
-function ImportPurchases({
-  purchases,
-  session,
-  onToggle,
-  highlightedIds,
-  selectedId,
-  onSelect,
-  onAssignRoom,
-}: {
-  purchases: AgentProposal[];
-  session: ImportSession;
-  onToggle: (id: string, keep: boolean) => void;
-  highlightedIds: Set<string>;
-  selectedId: string | null;
-  onSelect: (id: string) => void;
-  onAssignRoom: (id: string, value: string) => void;
-}) {
-  const { t, i18n } = useTranslation();
-  if (purchases.length === 0) return null;
-
-  return (
-    <section className="space-y-3">
-      <div className="space-y-0.5">
-        <h3 className="text-sm font-medium">{t('importReview.purchases.title', 'Inköp')}</h3>
-        <p className="text-xs text-muted-foreground">
-          {t(
-            'importReview.purchases.hint',
-            'Klicka på en rad för att se kvittot i mitten. Bockar du ur en rad tas varken inköpet eller bilden in i projektet.',
-          )}
-        </p>
-      </div>
-      <ul className="space-y-1.5">
-        {purchases.map((proposal) => {
-          const dropped = session.rejected.has(proposal.id);
-          const action = proposal.action.type === 'import_purchase' ? proposal.action : null;
-          // actionDetails takes the narrow (key, fallback, opts) shape that
-          // i18next's TFunction satisfies at runtime but not structurally.
-          const details = actionDetails(
-            proposal.action,
-            t as unknown as (key: string, fallback?: string, opts?: Record<string, unknown>) => string,
-            i18n.language,
-          );
-          return (
-            <li
-              key={proposal.id}
-              // The row is the preview trigger; the checkbox and the room
-              // select stop propagation so deciding is not also selecting.
-              onClick={() => onSelect(proposal.id)}
-              className={`cursor-pointer rounded-lg border p-2 transition-colors hover:bg-muted/40 ${
-                dropped ? 'opacity-50' : ''
-              } ${
-                selectedId === proposal.id
-                  ? 'ring-2 ring-primary/60'
-                  : highlightedIds.has(proposal.id)
-                    ? 'ring-2 ring-primary/40'
-                    : ''
-              }`}
-            >
-              <div className="flex items-start gap-2">
-                <input
-                  type="checkbox"
-                  className="mt-1"
-                  checked={!dropped}
-                  onClick={(e) => e.stopPropagation()}
-                  onChange={(e) => onToggle(proposal.id, e.target.checked)}
-                />
-                <span className="min-w-0 flex-1">
-                  <span className="block text-sm">{proposal.summary}</span>
-                  {proposal.duplicateOfExisting && (
-                    <span className="block text-[11px] text-amber-600">
-                      {t('importReview.duplicatePurchase', 'Redan bokförd — samma leverantör och fakturanummer')}
-                    </span>
-                  )}
-                  {details.length > 0 && (
-                    <span className="block text-[11px] text-muted-foreground">
-                      {details.join(' · ')}
-                    </span>
-                  )}
-                  {action && !dropped && session.existingRooms.length > 0 && (
-                    <span className="mt-1.5 block" onClick={(e) => e.stopPropagation()}>
-                      <Select
-                        value={action.roomId ? `existing:${action.roomId}` : NO_ROOM}
-                        onValueChange={(value) => onAssignRoom(proposal.id, value)}
-                      >
-                        <SelectTrigger className="h-7 w-full max-w-[220px] text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value={NO_ROOM}>
-                            {t('importReview.purchases.noRoom', 'Inget rum')}
-                          </SelectItem>
-                          {session.existingRooms.map((room) => (
-                            <SelectItem key={room.id} value={`existing:${room.id}`}>
-                              {room.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </span>
-                  )}
-                </span>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
-    </section>
   );
 }

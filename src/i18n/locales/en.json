@@ -8214,7 +8214,9 @@
     "restore": "Include again",
     "tab": {
       "review": "Goes into the project",
-      "files": "Files"
+      "files": "Files",
+      "purchases": "Purchases",
+      "rooms": "Rooms & work"
     },
     "preview": {
       "empty": "Pick a file to see it as it is.",
@@ -8222,7 +8224,15 @@
       "openFile": "Open the file",
       "rotate": "Rotate a quarter turn",
       "zoomIn": "Zoom in",
-      "zoomOut": "Zoom out"
+      "zoomOut": "Zoom out",
+      "title": "The document",
+      "fullscreen": "Fullscreen",
+      "crop": "Crop — drag a box over what you want to see",
+      "cropClear": "Show the whole image again",
+      "cropHint": "Drag a box over what you want a closer look at. The original file is unchanged.",
+      "comment": "Comment",
+      "commentPlaceholder": "Write a note about this receipt…",
+      "commentHint": "The note follows the purchase when you press Apply."
     },
     "files": {
       "interpreted": "Gave the project something",
@@ -8238,7 +8248,9 @@
       "drawing": "Drawing",
       "nothing": "Nothing new",
       "alreadyImported": "Already here — not re-read",
-      "alreadyImportedRow": "Imported earlier"
+      "alreadyImportedRow": "Imported earlier",
+      "liftToPurchase": "Add as purchase",
+      "liftedSummary": "Purchase from {{file}}"
     },
     "rooms": {
       "title": "Rooms",
@@ -8260,7 +8272,36 @@
     "purchases": {
       "title": "Purchases",
       "hint": "Click a row to see its receipt in the middle. Unchecking a row keeps both the purchase and the image out of the project.",
-      "noRoom": "No room"
+      "noRoom": "No room",
+      "groupNeedsLook": "Needs your eye",
+      "groupNeedsLookHint": "warning or duplicate",
+      "groupFine": "Looks fine",
+      "emptyFiltered": "No purchases match your filter.",
+      "keep": "Include",
+      "lines": "{{count}} lines",
+      "invoiceNo": "Invoice no",
+      "sumMismatch": "The total does not add up",
+      "sumMismatchBody": "The lines add up to {{sum}} — not to {{total}}",
+      "dupExisting": "Already booked",
+      "dupExistingBody": "Already in the project",
+      "pair": "Likely duplicate",
+      "pairBody": "Probably the same receipt as {{file}}",
+      "edit": "Correct the details",
+      "saveEdit": "Save the correction",
+      "editHint": "The change is saved only when you press Apply.",
+      "fieldVendor": "Vendor",
+      "fieldTotal": "Amount",
+      "fieldDate": "Date",
+      "fieldInvoiceNo": "Invoice no",
+      "search": "Search vendor or file",
+      "filterAll": "All",
+      "filterNeedsLook": "Needs eye",
+      "filterNoRoom": "No room",
+      "filterDropped": "Unchecked",
+      "bulk": "Act on the {{count}} shown",
+      "bulkKeep": "Check all",
+      "bulkDrop": "Uncheck all",
+      "tally": "{{kept}} of {{total}} purchases included"
     },
     "drawings": {
       "title": "Drawings",
@@ -8285,7 +8326,8 @@
       "root": "Project root",
       "move": "Move to another folder",
       "count_one": "{{count}} file",
-      "count_other": "{{count}} files"
+      "count_other": "{{count}} files",
+      "footerLabel": "Goes to:"
     },
     "doneMoved_one": "{{count}} file was moved to the folder you chose.",
     "doneMoved_other": "{{count}} files were moved to the folder you chose.",
@@ -8298,7 +8340,14 @@
       "someImagesLost": "Some receipt images could not be saved and need rescanning.",
       "open": "Open the review",
       "discard": "Discard"
-    }
+    },
+    "panelTitle": "What I think the files are",
+    "panelHint": "Click a row to see the image beside it. Unchecking a row keeps both the purchase and the image out of the project.",
+    "leadV2": "I read through the folder and guessed what each file is. Look through the suggestions, correct what went wrong and uncheck what does not belong.",
+    "leadNothingYet": "Nothing is added to the project until you press Apply.",
+    "statFiles": "{{files}} files read",
+    "statCalls": "{{calls}} AI calls",
+    "statUnreadable": "{{count}} files could not be read"
   },
   "renovationPlan": {
     "title": "Your renovation plan",

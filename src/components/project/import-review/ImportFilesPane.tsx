@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FileText, Image as ImageIcon, Home, AlertCircle, Sparkles, CheckCheck, FolderOpen } from 'lucide-react';
+import { FileText, Image as ImageIcon, Home, AlertCircle, Sparkles, CheckCheck, FolderOpen, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
@@ -80,6 +80,15 @@ interface ImportFilesPaneProps {
   describeFile: (file: ImportFileRow) => string;
   /** Move one archived file to another folder in Files. */
   onMoveFile: (fileId: string, folder: string) => void;
+  /**
+   * Turn a file the reader could not place into a purchase by hand.
+   *
+   * "Other" stays the right default — a document we did not recognise WITH
+   * CONFIDENCE must never be guessed at. What was missing was the way back:
+   * the person can read the receipt perfectly well, and had no way to say so
+   * (Carl, 2026-09-01).
+   */
+  onLiftToPurchase?: (file: ImportFileRow) => void;
 }
 
 export function ImportFilesPane({
@@ -88,6 +97,7 @@ export function ImportFilesPane({
   onSelectFile,
   describeFile,
   onMoveFile,
+  onLiftToPurchase,
 }: ImportFilesPaneProps) {
   const { t } = useTranslation();
   const rootLabel = t('importReview.filing.root', 'Projektets rot');
@@ -177,6 +187,16 @@ export function ImportFilesPane({
                             ))}
                           </DropdownMenuContent>
                         </DropdownMenu>
+                      )}
+                      {onLiftToPurchase && (file.kind === 'filed' || file.kind === 'unreadable') && (
+                        <button
+                          type="button"
+                          onClick={() => onLiftToPurchase(file)}
+                          className="ml-7 mt-0.5 flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-primary transition-colors hover:bg-primary/10"
+                        >
+                          <Plus className="h-3 w-3 shrink-0" />
+                          {t('importReview.files.liftToPurchase', 'Lägg till som inköp')}
+                        </button>
                       )}
                     </li>
                   );

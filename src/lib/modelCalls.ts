@@ -48,6 +48,10 @@ export function noteModelCall(log: ModelCallLog | undefined, kind: string): void
  * question "where did they go?" still has an answer.
  */
 export function describeModelCalls(log: ModelCallLog): string {
+  // A tooltip must never take the page down with it: a log restored from an
+  // older shape (or a journal written by a previous build) can be missing this
+  // map, and Object.entries(undefined) throws.
+  if (!log?.byKind) return '';
   return Object.entries(log.byKind)
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
     .map(([kind, n]) => `${kind} ${n}`)

@@ -109,6 +109,12 @@ export type ProposalAction =
         matchScore?: number | null;
       }[];
       attachmentKey?: string;
+      /**
+       * A note the person wrote on the receipt during the import review —
+       * lands in purchase_orders.notes. Their words about the document, kept
+       * next to it (Design handoff v2, 2026-09-01).
+       */
+      userNote?: string;
       /** D3: room attribution from the user's words at capture time
        *  ("här är kvittot, lägg det på badrummet") — allocates the order's lines. */
       roomId?: string | null;

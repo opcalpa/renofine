@@ -8213,7 +8213,9 @@
     "restore": "Ta med igen",
     "tab": {
       "review": "Blir i projektet",
-      "files": "Filer"
+      "files": "Filer",
+      "purchases": "Inköp",
+      "rooms": "Rum & arbeten"
     },
     "preview": {
       "empty": "Välj en fil för att se den som den ser ut.",
@@ -8221,7 +8223,15 @@
       "openFile": "Öppna filen",
       "rotate": "Vrid ett kvarts varv",
       "zoomIn": "Zooma in",
-      "zoomOut": "Zooma ut"
+      "zoomOut": "Zooma ut",
+      "title": "Dokumentet",
+      "fullscreen": "Helskärm",
+      "crop": "Beskär — dra en ruta över det du vill se",
+      "cropClear": "Visa hela bilden igen",
+      "cropHint": "Dra en ruta över det du vill titta närmare på. Originalfilen ändras inte.",
+      "comment": "Kommentera",
+      "commentPlaceholder": "Skriv en notering om det här kvittot…",
+      "commentHint": "Noteringen följer med inköpet när du trycker Genomför."
     },
     "files": {
       "interpreted": "Gav projektet något",
@@ -8237,7 +8247,9 @@
       "drawing": "Ritning",
       "nothing": "Inget nytt",
       "alreadyImported": "Fanns redan — lästes inte om",
-      "alreadyImportedRow": "Redan importerad tidigare"
+      "alreadyImportedRow": "Redan importerad tidigare",
+      "liftToPurchase": "Lägg till som inköp",
+      "liftedSummary": "Inköp från {{file}}"
     },
     "rooms": {
       "title": "Rum",
@@ -8259,7 +8271,36 @@
     "purchases": {
       "title": "Inköp",
       "hint": "Klicka på en rad för att se kvittot i mitten. Bockar du ur en rad tas varken inköpet eller bilden in i projektet.",
-      "noRoom": "Inget rum"
+      "noRoom": "Inget rum",
+      "groupNeedsLook": "Behöver din blick",
+      "groupNeedsLookHint": "varning eller dubblett",
+      "groupFine": "Ser bra ut",
+      "emptyFiltered": "Inga inköp matchar det du filtrerat på.",
+      "keep": "Ta med",
+      "lines": "{{count}} rader",
+      "invoiceNo": "Fakturanr",
+      "sumMismatch": "Summan stämmer inte",
+      "sumMismatchBody": "Raderna summerar till {{sum}} — inte till {{total}}",
+      "dupExisting": "Redan bokförd",
+      "dupExistingBody": "Finns redan i projektet",
+      "pair": "Trolig dubblett",
+      "pairBody": "Troligen samma kvitto som {{file}}",
+      "edit": "Rätta uppgifterna",
+      "saveEdit": "Spara rättningen",
+      "editHint": "Ändringen sparas först när du trycker Genomför.",
+      "fieldVendor": "Leverantör",
+      "fieldTotal": "Belopp",
+      "fieldDate": "Datum",
+      "fieldInvoiceNo": "Fakturanr",
+      "search": "Sök leverantör eller fil",
+      "filterAll": "Alla",
+      "filterNeedsLook": "Behöver blick",
+      "filterNoRoom": "Utan rum",
+      "filterDropped": "Urbockade",
+      "bulk": "Åtgärda de {{count}} som visas",
+      "bulkKeep": "Bocka i alla",
+      "bulkDrop": "Bocka ur alla",
+      "tally": "{{kept}} av {{total}} inköp tas med"
     },
     "drawings": {
       "title": "Ritningar",
@@ -8284,7 +8325,8 @@
       "root": "Projektets rot",
       "move": "Flytta till en annan mapp",
       "count_one": "{{count}} fil",
-      "count_other": "{{count}} filer"
+      "count_other": "{{count}} filer",
+      "footerLabel": "Hamnar i:"
     },
     "doneMoved_one": "{{count}} fil flyttades till mappen du valde.",
     "doneMoved_other": "{{count}} filer flyttades till mappen du valde.",
@@ -8297,7 +8339,14 @@
       "someImagesLost": "Några kvittobilder kunde inte sparas och behöver skannas om.",
       "open": "Öppna granskningen",
       "discard": "Kasta"
-    }
+    },
+    "panelTitle": "Vad jag tror att filerna är",
+    "panelHint": "Klicka på en rad för att se bilden bredvid. Bockar du ur en rad tas varken inköpet eller bilden in i projektet.",
+    "leadV2": "Jag läste igenom mappen och gissade vad varje fil är. Titta igenom förslagen, rätta det som blev fel och bocka ur det som inte hör hemma.",
+    "leadNothingYet": "Ingenting läggs in i projektet förrän du trycker Genomför.",
+    "statFiles": "{{files}} filer lästa",
+    "statCalls": "{{calls}} AI-anrop",
+    "statUnreadable": "{{count}} filer gick inte att läsa"
   },
   "renovationPlan": {
     "title": "Din renoveringsplan",
