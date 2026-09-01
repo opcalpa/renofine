@@ -9,8 +9,10 @@
  *                         scope in ONE call (quote/spec/contract only), so
  *                         their rooms/tasks keep that file's provenance.
  *   • text files        → read directly and parsed (own file provenance).
- *   • receipts/invoices → only COUNTED here; they belong to the post-creation
- *                         purchase flow (D1), not the birth draft.
+ *   • receipts/invoices → fully extracted via the same captureDocument path
+ *                         the camera uses (when the caller collects purchases;
+ *                         guests just get the count). Photographed AND PDF —
+ *                         a receipt is a receipt whichever way it arrives.
  *   • floor plans       → only counted (open in the planner after creation).
  *
  * The deterministic fold into the draft is the pure mergeParseIntoDraft in
@@ -548,6 +550,35 @@ async function processPhotos(
   return usable(parsed) ? { kind: 'scope', parsed, sourceKind: 'photo' } : { kind: 'unreadable' };
 }
 
+/**
+ * A photographed receipt/invoice: the same capture path the camera (D1) and
+ * the PDF document route use. On success the order owns the file
+ * (receipt_file_path via importPurchaseOrder), so no archive stamp — archiving
+ * it too would show the same receipt twice. When capture fails, or the caller
+ * does not collect purchases (guests), the photo is counted and filed under
+ * its OWN category (/Kvitton, /Fakturor) — never as a product image.
+ */
+async function processReceiptPhoto(
+  file: File,
+  type: DocumentType,
+  collectPurchases: boolean,
+  calls?: ModelCallLog
+): Promise<Contribution> {
+  const archive: ArchiveEntry = { file, category: type };
+  if (collectPurchases) {
+    try {
+      const captured = await captureDocument(file);
+      noteModelCall(calls, 'process-document-v2');
+      if (captured.kind === 'receipt' || captured.kind === 'invoice') {
+        return { kind: 'purchase', action: captured.action };
+      }
+    } catch {
+      /* fall through to a plain count */
+    }
+  }
+  return { kind: 'receipt', amount: null, archive };
+}
+
 async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
   const results: R[] = new Array(items.length);
   let cursor = 0;
@@ -723,9 +754,15 @@ export async function ingestProjectFolder(
   let planImages: File[] = [];
   // Photos whose class says they carry readable scope (a photographed quote).
   let ocrImages: File[] = [];
-  // The rest of the pile — room snaps, the holiday album, a receipt photo of
-  // someone's lunch. Filed, never interpreted: OCR over a photo the classifier
-  // could not place is exactly the noise that turns into invented rooms.
+  // Photographed receipts/invoices: Carl's 112-receipt drop (2026-09-01)
+  // proved these are the NORMAL case for a folder of phone photos, and filing
+  // them as product images threw the whole point of the drop away. They take
+  // the same captureDocument path a PDF receipt does.
+  let receiptImages: File[] = [];
+  const receiptKinds = new Map<File, DocumentType>();
+  // The rest of the pile — room snaps, the holiday album. Filed, never
+  // interpreted: OCR over a photo the classifier could not place is exactly
+  // the noise that turns into invented rooms.
   let inertImages: File[] = photos;
   if (photos.length > 0) {
     let classified = 0;
@@ -744,14 +781,24 @@ export async function ingestProjectFolder(
     });
     planImages = photos.filter((_, i) => kinds[i] === 'floor_plan');
     ocrImages = photos.filter((_, i) => SCOPE_BEARING.has(kinds[i]));
+    receiptImages = photos.filter((_, i) => kinds[i] === 'receipt' || kinds[i] === 'invoice');
+    receiptImages.forEach((f) => receiptKinds.set(f, kinds[photos.indexOf(f)]));
     inertImages = photos.filter(
-      (_, i) => kinds[i] !== 'floor_plan' && !SCOPE_BEARING.has(kinds[i])
+      (_, i) =>
+        kinds[i] !== 'floor_plan' &&
+        kinds[i] !== 'receipt' &&
+        kinds[i] !== 'invoice' &&
+        !SCOPE_BEARING.has(kinds[i])
     );
   }
 
   // Phase 1 — extract/classify/parse (network-bound, independent, bounded).
   const thunks: Array<() => Promise<Contribution | null>> = [
     () => processPhotos(ocrImages, language, calls),
+    ...receiptImages.map(
+      (f) => () =>
+        processReceiptPhoto(f, receiptKinds.get(f) ?? 'receipt', collectPurchases, calls)
+    ),
     ...planImages.map((f) => () => processFloorPlanImage(f, calls)),
     ...pdfs.map(
       (f) => () => processDocument(f, language, collectPurchases, isContractor, suggestAddress, calls)
@@ -766,6 +813,7 @@ export async function ingestProjectFolder(
   // contributes all of its images at once when it lands.
   const weights = [
     ocrImages.length, // the combined photo pass
+    ...receiptImages.map(() => 1),
     ...planImages.map(() => 1),
     ...pdfs.map(() => 1),
     ...docs.map(() => 1),

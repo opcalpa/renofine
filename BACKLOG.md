@@ -744,7 +744,7 @@ igenom) avgör vilka av punkterna som faktiskt gör ont och i vilken ordning.
 
 ---
 id: mapp-slappets-fotade-kvitton-tolkas-aldrig
-status: todo
+status: done
 priority: P1
 tags: [import, bugfix, user-research, hemagare]
 created: 2026-09-01
@@ -764,6 +764,13 @@ Kameraflödet (D1) fungerar — mapp-släppet kopplar aldrig in det för foton.
 Fixen när den byggs: foton klassade `receipt`/`invoice` → samma
 `captureDocument`-väg som PDF:erna (röret finns, det är en routing-rad) +
 arkivera under /Kvitton, inte /Bilder.
+
+**FIXAT 2026-09-01 (samma dag):** foton klassade receipt/invoice tar nu samma
+`captureDocument`-väg som PDF:er (`processReceiptPhoto` i
+`ingestProjectFolder.ts`); vid misslyckad läsning eller gäst arkiveras de under
+sin EGEN kategori (/Kvitton, /Fakturor), aldrig som produktbild. Städningen
+utförd: alla 96 felarkiverade raderade via storage-API (0 kvar, äldre Bilder
+orörda) — omkörningen avgiftad.
 
 **Förgiftningen (måste städas före omkörning):** skip-logiken jämför
 filnamn+storlek, och de 96 ligger byte-identiskt arkiverade — en omkörning
