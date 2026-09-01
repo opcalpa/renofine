@@ -821,6 +821,38 @@ obesvarad (fångar avsiktlig Cmd+R; en kastad flik kan ingen sida hindra — dä
 journalen). Journalen töms vid godkänn och vid kasta.
 
 ---
+id: granskningens-bildyta-crop-kommentarer-autovrid
+status: todo
+priority: P3
+tags: [import, ux, user-research]
+created: 2026-09-01
+---
+
+## Granskningens bildyta: crop, kommentarer, auto-vridning — och 2-panelsidén
+
+Carls önskelista från batch 1-granskningen (2026-09-01, kväll), efter att
+vrid + zoom byggts:
+
+1. **Crop, manuellt** — dra i hörnen, beskär ut bara kvittot ur fotot (A4:an
+   med fasthäftade kvitton fotas ju hel). Beskärningen bör skrivas tillbaka
+   till filen som arkiveras, inte bara vyn.
+2. **Kommentarer på kvitto-/fakturabilder** i granskningen.
+3. **Auto-vridning i tolkningskörningen** — "coolt ifall vridningen skett
+   automatiskt". Två spår: EXIF-orientering (gratis, ofta fel på skannade),
+   eller att klassificeraren får svara med textens orientering och klienten
+   roterar före arkivering. Tolkningen själv klarar roterade bilder — det här
+   är för människans ögon.
+4. **2-panelslayout:** slå ihop "Bara sparade i Filer" + Rum + Inköp till EN
+   multisektion med flikbyte, och ge förhandsvisningen den frigjorda bredden.
+   Hör ihop med Carls större tanke om återanvändbara ytor/sektioner som
+   flippar innehåll — designas i ett eget pass (Fable-läge), inte hastas.
+
+Byggt före detta kort: container-ramen, klickbar kvittorad → bild, rumsval
+per inköp, vrid 90°/zoom i förhandsvisningen. Kvar från systerkortet
+`import-granskning-syna-kvittot-mot-bilden`: manuell fältfattning, dubbletter
+inom släppet, lyft från övrigt.
+
+---
 id: beslut-prismodell-proffs
 status: todo
 priority: P1

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FileText } from 'lucide-react';
+import { FileText, RotateCw, ZoomIn, ZoomOut } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { useFileUrl } from '@/lib/fileUrl';
 import type { ImportFileRow } from '@/services/agent/importSession';
 
@@ -16,6 +17,84 @@ import type { ImportFileRow } from '@/services/agent/importSession';
 function isImage(name: string, mime?: string): boolean {
   if (mime?.startsWith('image/')) return true;
   return /\.(jpe?g|png|gif|webp|heic|avif)$/i.test(name);
+}
+
+const ZOOM_STEPS = [0.5, 0.75, 1, 1.5, 2, 3];
+
+/**
+ * The image with rotate/zoom controls.
+ *
+ * A receipt is photographed however the table allowed — sideways is the normal
+ * case, not the exception — and checking "14 995,00" against a sideways photo
+ * is guesswork. Rotation is view-only (a quarter turn clockwise per press);
+ * nothing is written back to the file. Crop and comments are a later slice
+ * (backlog: `granskningens-bildyta-crop-kommentarer-autovrid`).
+ */
+function ImageViewer({ src, alt }: { src: string; alt: string }) {
+  const { t } = useTranslation();
+  const [rotation, setRotation] = useState(0);
+  const [zoomIdx, setZoomIdx] = useState(2); // 1x
+
+  // A new document starts upright at 1x — carried-over rotation would make a
+  // straight photo look crooked.
+  useEffect(() => {
+    setRotation(0);
+    setZoomIdx(2);
+  }, [src]);
+
+  const zoom = ZOOM_STEPS[zoomIdx];
+  const quarter = rotation % 180 !== 0;
+
+  return (
+    <div className="relative rounded-lg border bg-muted/20">
+      <div className="absolute right-2 top-2 z-10 flex gap-1 rounded-md border bg-background/90 p-1 shadow-sm backdrop-blur">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7"
+          onClick={() => setRotation((r) => (r + 90) % 360)}
+          title={t('importReview.preview.rotate', 'Vrid ett kvarts varv')}
+        >
+          <RotateCw className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7"
+          disabled={zoomIdx >= ZOOM_STEPS.length - 1}
+          onClick={() => setZoomIdx((i) => Math.min(i + 1, ZOOM_STEPS.length - 1))}
+          title={t('importReview.preview.zoomIn', 'Zooma in')}
+        >
+          <ZoomIn className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7"
+          disabled={zoomIdx <= 0}
+          onClick={() => setZoomIdx((i) => Math.max(i - 1, 0))}
+          title={t('importReview.preview.zoomOut', 'Zooma ut')}
+        >
+          <ZoomOut className="h-4 w-4" />
+        </Button>
+      </div>
+      <div className="flex max-h-[60vh] min-h-[240px] items-center justify-center overflow-auto p-2">
+        <img
+          src={src}
+          alt={alt}
+          className="object-contain transition-transform duration-150"
+          style={{
+            transform: `rotate(${rotation}deg) scale(${zoom})`,
+            // A quarter-turned image is constrained by the CONTAINER's width on
+            // its (rotated) height — capping against the viewport keeps it in
+            // frame instead of clipping at the pane edge.
+            maxWidth: quarter ? '58vh' : '100%',
+            maxHeight: '58vh',
+          }}
+        />
+      </div>
+    </div>
+  );
 }
 
 function isPdf(name: string, mime?: string): boolean {
@@ -61,11 +140,7 @@ export function ImportPreview({ file, attachment }: ImportPreviewProps) {
         </div>
       );
     }
-    return (
-      <div className="flex max-h-[60vh] items-center justify-center overflow-auto rounded-lg border bg-muted/20 p-2">
-        <img src={attachmentUrl} alt={name} className="max-h-[58vh] max-w-full object-contain" />
-      </div>
-    );
+    return <ImageViewer src={attachmentUrl} alt={name} />;
   }
 
   if (!file) {
@@ -111,11 +186,7 @@ export function ImportPreview({ file, attachment }: ImportPreviewProps) {
   }
 
   if (isImage(file.name, file.mimeType)) {
-    return (
-      <div className="flex max-h-[60vh] items-center justify-center overflow-auto rounded-lg border bg-muted/20 p-2">
-        <img src={url} alt={file.name} className="max-h-[58vh] max-w-full object-contain" />
-      </div>
-    );
+    return <ImageViewer src={url} alt={file.name} />;
   }
 
   return (

@@ -8218,7 +8218,10 @@
     "preview": {
       "empty": "Välj en fil för att se den som den ser ut.",
       "notStored": "Filen kunde inte sparas i Filer, så den går inte att visa här.",
-      "openFile": "Öppna filen"
+      "openFile": "Öppna filen",
+      "rotate": "Vrid ett kvarts varv",
+      "zoomIn": "Zooma in",
+      "zoomOut": "Zooma ut"
     },
     "files": {
       "interpreted": "Gav projektet något",

@@ -8219,7 +8219,10 @@
     "preview": {
       "empty": "Pick a file to see it as it is.",
       "notStored": "This file could not be saved to Files, so it cannot be shown here.",
-      "openFile": "Open the file"
+      "openFile": "Open the file",
+      "rotate": "Rotate a quarter turn",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out"
     },
     "files": {
       "interpreted": "Gave the project something",
