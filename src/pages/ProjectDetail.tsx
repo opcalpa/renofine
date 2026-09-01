@@ -100,6 +100,15 @@ import { ImportReviewPage } from "@/components/project/import-review/ImportRevie
 import { applyImportSession, mergedRoomCount } from "@/services/agent/applyImportSession";
 import type { ImportSession } from "@/services/agent/importSession";
 import { loadImportedFingerprints, loadPurchaseKeys, loadTaskKeys } from "@/services/agent/importFingerprint";
+import {
+  clearImportJournal,
+  loadImportJournal,
+  loadImportPartials,
+  saveImportJournal,
+  saveImportPartial,
+} from "@/services/agent/importJournal";
+import type { JournaledImport } from "@/services/agent/importJournal";
+import { peekAttachment } from "@/services/agent/documentCapture";
 
 interface Project {
   id: string;
@@ -171,6 +180,13 @@ const ProjectDetail = () => {
   const [ingestBusy, setIngestBusy] = useState<IngestProgress | null>(null);
   const importSession = useRenaidaStore((st) => st.importSession);
   const [applyingImport, setApplyingImport] = useState(false);
+  /**
+   * An import found in the journal on load — a read that was never answered
+   * because the tab died. Offered, never restored behind the person's back:
+   * reopening a review they thought was gone is a surprise either way, and a
+   * banner they can dismiss is the honest version of it.
+   */
+  const [recoverableImport, setRecoverableImport] = useState<JournaledImport | null>(null);
   /**
    * P4: home papers found in a mixed drop, waiting on the one question the
    * engine cannot answer — do they belong to the address or to this job? Never
@@ -922,8 +938,76 @@ const ProjectDetail = () => {
    * The import review was cancelled. The files are already in Files, so this
    * only throws away the reading — nothing the person has to undo.
    */
+  /**
+   * Look for an unanswered import once the project is known.
+   *
+   * Carl, 2026-09-01: he dropped 112 receipts, switched tabs, and Brave
+   * discarded the page. Coming back to an app that shows no trace of ~100 paid
+   * model calls is the failure this exists to end. A browser's memory saver
+   * cannot be prevented from the page — only outlived.
+   */
+  useEffect(() => {
+    if (!project?.id || importSession) return;
+    let cancelled = false;
+    void loadImportJournal(project.id).then((found) => {
+      if (!cancelled && found) setRecoverableImport(found);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [project?.id, importSession]);
+
+  /**
+   * Warn before a DELIBERATE reload while a read is running or a review is
+   * unanswered. This does nothing for a discarded tab — browsers ignore it
+   * there, which is exactly why the journal above is the real fix — but it
+   * catches the accidental Cmd+R and the closed window.
+   */
+  useEffect(() => {
+    if (!ingestBusy && !importSession) return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [ingestBusy, importSession]);
+
+  /** Reopen a journaled import on the review page, exactly as it was left. */
+  const handleResumeImport = () => {
+    if (!recoverableImport) return;
+    useRenaidaStore.getState().setImportSession(recoverableImport.session);
+    setRecoverableImport(null);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('tab', 'files');
+      next.set('subtab', 'import');
+      return next;
+    });
+  };
+
+  /** Throw away a journaled import. The files are already in Files either way. */
+  const handleDiscardRecoverableImport = () => {
+    if (project?.id) void clearImportJournal(project.id);
+    setRecoverableImport(null);
+  };
+
+  /** The receipt images a session's purchases still need, for the journal. */
+  const collectAttachments = (session: ImportSession): Map<string, File> => {
+    const out = new Map<string, File>();
+    for (const p of session.proposals) {
+      if (p.action.type !== 'import_purchase') continue;
+      const key = p.action.attachmentKey;
+      // peek, never take: the apply step has to find these where it left them.
+      const file = peekAttachment(key);
+      if (key && file) out.set(key, file);
+    }
+    return out;
+  };
+
   const handleCancelImport = () => {
     useRenaidaStore.getState().setImportSession(null);
+    if (project?.id) void clearImportJournal(project.id);
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
       next.delete('subtab');
@@ -942,6 +1026,9 @@ const ProjectDetail = () => {
       const merged = mergedRoomCount(session);
 
       useRenaidaStore.getState().setImportSession(null);
+      // Applied — the journal has nothing left to offer, and leaving it would
+      // suggest resuming an import that already happened.
+      if (project?.id) void clearImportJournal(project.id);
       handleRoomUpdated();
 
       const notes = [
@@ -1207,17 +1294,39 @@ const ProjectDetail = () => {
       // parsing — which is the only saving that removes a call rather than
       // making it cheaper. Re-dropping a folder to add three files should cost
       // three files, not a hundred.
-      const [alreadyImported, existingTaskKeys, existingPurchaseKeys] = await Promise.all([
-        loadImportedFingerprints(project.id),
-        loadTaskKeys(project.id),
-        loadPurchaseKeys(project.id),
-      ]);
+      const [alreadyImported, existingTaskKeys, existingPurchaseKeys, resumeContributions] =
+        await Promise.all([
+          loadImportedFingerprints(project.id),
+          loadTaskKeys(project.id),
+          loadPurchaseKeys(project.id),
+          // Anything a previous, interrupted read got through. Dropping the
+          // same folder again is then a comparison, not a re-read: those files
+          // cost nothing and their results are folded in as they were.
+          loadImportPartials(project.id),
+        ]);
+
+      if (resumeContributions.size > 0) {
+        toast({
+          title: t('renaidaFlow.folder.resuming', 'Fortsätter där läsningen avbröts'),
+          description: t(
+            'renaidaFlow.folder.resumingBody',
+            '{{count}} filer var redan lästa och läses inte om.',
+            { count: resumeContributions.size },
+          ),
+        });
+      }
 
       const outcome = await ingestProjectFolder(files, emptyDraft(), i18n.language, {
         collectPurchases: true,
         isContractor: effectiveUserType === 'contractor',
         onProgress: (progress) => setIngestBusy(progress),
         alreadyImported,
+        resumeContributions,
+        // Journal each result as it lands: the tab can be discarded mid-read,
+        // and every call paid for before that must stay paid for.
+        onFileRead: (fileName, contribution) => {
+          void saveImportPartial(project.id, fileName, contribution);
+        },
       });
 
       const proposals = ingestOutcomeToProposals(
@@ -1405,6 +1514,9 @@ const ProjectDetail = () => {
       });
 
       useRenaidaStore.getState().setImportSession(session);
+      // The review can sit unanswered for a long time, and a discarded tab
+      // takes it with everything it cost. Journaled here, it comes back.
+      void saveImportJournal(session, collectAttachments(session));
       setSearchParams((prev) => {
         const next = new URLSearchParams(prev);
         next.set('tab', 'files');
@@ -2235,6 +2347,37 @@ const ProjectDetail = () => {
       {/* Skiva 4: reading a dropped folder blocks nothing, but it must not look
           like nothing is happening — it can take minutes. */}
       {ingestBusy && <IngestProgressPanel progress={ingestBusy} variant="floating" />}
+
+      {/* An import the tab died on. Offered on the way back in, so a reading
+          that was paid for is never silently thrown away. */}
+      {recoverableImport && !ingestBusy && (
+        <div className="fixed bottom-4 left-1/2 z-50 w-[min(32rem,calc(100vw-2rem))] -translate-x-1/2 rounded-lg border bg-background p-4 shadow-lg">
+          <p className="text-sm font-medium">
+            {t('importReview.recovered.title', 'Du har en oavslutad import')}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {t(
+              'importReview.recovered.body',
+              '{{files}} filer lästa, {{changes}} ändringar att granska. Sidan laddades om innan du hann godkänna.',
+              {
+                files: recoverableImport.session.outcome.filesRead,
+                changes: recoverableImport.session.proposals.length,
+              },
+            )}
+            {recoverableImport.attachmentsDropped
+              ? ` ${t('importReview.recovered.someImagesLost', 'Några kvittobilder kunde inte sparas och behöver skannas om.')}`
+              : ''}
+          </p>
+          <div className="mt-3 flex gap-2">
+            <Button size="sm" onClick={handleResumeImport}>
+              {t('importReview.recovered.open', 'Öppna granskningen')}
+            </Button>
+            <Button size="sm" variant="ghost" onClick={handleDiscardRecoverableImport}>
+              {t('importReview.recovered.discard', 'Kasta')}
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Skiva 1: folder dropped on the project page → read it or file it. */}
       {/* P4: mixed folder — the one question the engine cannot answer. */}

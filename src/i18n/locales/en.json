@@ -7782,7 +7782,9 @@
         "read": "Reading file {{done}} of {{total}}…",
         "archive": "Saving file {{done}} of {{total}} to Files…"
       },
-      "slowHint": "With {{total}} files this takes a minute — you can leave the page open."
+      "slowHint": "With {{total}} files this takes a minute — you can leave the page open.",
+      "resuming": "Picking up where the reading stopped",
+      "resumingBody": "{{count}} files were already read and will not be read again."
     },
     "source": {
       "answer": "Your answer",
@@ -8280,7 +8282,14 @@
     "doneMoved_other": "{{count}} files were moved to the folder you chose.",
     "modelCalls": "It cost {{calls}} AI calls ({{perFile}} per file).",
     "truncatedDocs_one": "{{count}} document was long enough that I only read the beginning — check that no room is missing.",
-    "truncatedDocs_other": "{{count}} documents were long enough that I only read the beginning — check that no room is missing."
+    "truncatedDocs_other": "{{count}} documents were long enough that I only read the beginning — check that no room is missing.",
+    "recovered": {
+      "title": "You have an unfinished import",
+      "body": "{{files}} files read, {{changes}} changes to review. The page reloaded before you approved it.",
+      "someImagesLost": "Some receipt images could not be saved and need rescanning.",
+      "open": "Open the review",
+      "discard": "Discard"
+    }
   },
   "renovationPlan": {
     "title": "Your renovation plan",

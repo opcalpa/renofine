@@ -779,7 +779,7 @@ hoppar över dem som "Fanns redan" även efter en fix. Städjobb: radera dagens
 
 ---
 id: import-sessionen-overlever-inte-en-reload
-status: todo
+status: done
 priority: P2
 tags: [import, bugfix, user-research]
 created: 2026-09-01
@@ -804,6 +804,15 @@ en reload; proposals är serialiserbara utom attachment-registret), (3) en
 "senaste import"-ingång som återöppnar en opplicerad session. Servern loggar
 idag ingenting om ett släpp — även en enkel import-rad i DB hade gjort
 händelsen felsökbar.
+
+**FIXAT 2026-09-01:** `importJournal.ts` (IndexedDB) skriver (a) varje fils
+resultat i samma stund det landar och (b) hela sessionen när granskningen visas,
+med kvittobilderna som blobbar. Vid sidladdning erbjuds en banner ("Du har en
+oavslutad import — N filer lästa, M ändringar"), och ett omsläpp av samma mapp
+blir en JÄMFÖRELSE: redan lästa filer kostar noll modellanrop och deras resultat
+viks in som de var. `beforeunload`-vakt medan läsning pågår eller granskning är
+obesvarad (fångar avsiktlig Cmd+R; en kastad flik kan ingen sida hindra — därav
+journalen). Journalen töms vid godkänn och vid kasta.
 
 ---
 id: beslut-prismodell-proffs

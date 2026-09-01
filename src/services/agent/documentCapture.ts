@@ -99,6 +99,21 @@ export type DocumentCaptureResult =
  */
 const attachmentRegistry = new Map<string, File>();
 
+/**
+ * Put a file back in the registry under a key that already exists in a
+ * proposal — used when an import is recovered from the journal after a reload,
+ * so a restored purchase can still upload its receipt image.
+ */
+export function registerAttachment(key: string, file: File): void {
+  attachmentRegistry.set(key, file);
+}
+
+/** Read an attachment WITHOUT consuming it — the journal needs the bytes but
+ *  the apply step still has to find the file where it left it. */
+export function peekAttachment(key: string | undefined): File | undefined {
+  return key ? attachmentRegistry.get(key) : undefined;
+}
+
 export function takeAttachment(key: string | undefined): File | undefined {
   if (!key) return undefined;
   const file = attachmentRegistry.get(key);

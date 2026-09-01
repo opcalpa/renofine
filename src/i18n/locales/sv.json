@@ -7781,7 +7781,9 @@
         "read": "Läser fil {{done}} av {{total}}…",
         "archive": "Sparar fil {{done}} av {{total}} i Filer…"
       },
-      "slowHint": "Med {{total}} filer tar det någon minut — du kan lämna sidan öppen."
+      "slowHint": "Med {{total}} filer tar det någon minut — du kan lämna sidan öppen.",
+      "resuming": "Fortsätter där läsningen avbröts",
+      "resumingBody": "{{count}} filer var redan lästa och läses inte om."
     },
     "source": {
       "answer": "Ditt svar",
@@ -8279,7 +8281,14 @@
     "doneMoved_other": "{{count}} filer flyttades till mappen du valde.",
     "modelCalls": "Det kostade {{calls}} AI-anrop ({{perFile}} per fil).",
     "truncatedDocs_one": "{{count}} dokument var så långt att jag bara hann läsa början — kolla att inget rum saknas.",
-    "truncatedDocs_other": "{{count}} dokument var så långa att jag bara hann läsa början — kolla att inget rum saknas."
+    "truncatedDocs_other": "{{count}} dokument var så långa att jag bara hann läsa början — kolla att inget rum saknas.",
+    "recovered": {
+      "title": "Du har en oavslutad import",
+      "body": "{{files}} filer lästa, {{changes}} ändringar att granska. Sidan laddades om innan du hann godkänna.",
+      "someImagesLost": "Några kvittobilder kunde inte sparas och behöver skannas om.",
+      "open": "Öppna granskningen",
+      "discard": "Kasta"
+    }
   },
   "renovationPlan": {
     "title": "Din renoveringsplan",

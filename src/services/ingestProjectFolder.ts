@@ -281,7 +281,7 @@ type ContributionKind =
  * the document as the order's receipt_file_path, and double-filing it would
  * show the same receipt twice.
  */
-type Contribution = ContributionKind & {
+export type Contribution = ContributionKind & {
   archive?: ArchiveEntry;
   /** Pages of a multi-page drawing PDF that were NOT read (never silent). */
   extraPages?: number;
@@ -714,6 +714,20 @@ export async function ingestProjectFolder(
     alreadyImported?: Set<string>;
     /** Guests are capped harder — see MAX_FILES_GUEST. */
     isGuest?: boolean;
+    /**
+     * Fired the moment one file's reading lands, so the caller can journal it
+     * (see `importJournal`). A drop takes minutes and the tab can die inside
+     * that window; without this, every call paid for before the crash is lost.
+     * Only fired for per-file work — the combined photo pass covers a batch.
+     */
+    onFileRead?: (fileName: string, contribution: Contribution) => void;
+    /**
+     * Results recovered from an interrupted run, keyed by file name. Their
+     * files are skipped (no model call) and their contributions folded in as
+     * if they had just been read — this is what makes re-dropping the same
+     * folder a RESUME rather than a re-read.
+     */
+    resumeContributions?: Map<string, Contribution>;
   }
 ): Promise<IngestOutcome> {
   const calls = makeModelCallLog();
@@ -733,13 +747,29 @@ export async function ingestProjectFolder(
   // optimisation only makes a call cheaper.
   const alreadyImported = opts?.alreadyImported;
   const skipped: File[] = [];
-  const files = alreadyImported
+  const afterImportSkip = alreadyImported
     ? capped.filter((f) => {
         if (!alreadyImported.has(fileFingerprint(f.name, f.size))) return true;
         skipped.push(f);
         return false;
       })
     : capped;
+
+  // Resume: a file whose result is already in the journal is not read again,
+  // but its File IS needed — the archive entry carries it, and the original
+  // handle died with the page that read it. Re-attaching from this drop is why
+  // the resume is a comparison against the same folder rather than a promise
+  // that the browser cannot keep.
+  const resume = opts?.resumeContributions;
+  const resumed: Contribution[] = [];
+  const files = resume?.size
+    ? afterImportSkip.filter((f) => {
+        const c = resume.get(f.name);
+        if (!c) return true;
+        resumed.push(c.archive ? { ...c, archive: { ...c.archive, file: f } } : c);
+        return false;
+      })
+    : afterImportSkip;
 
   const photos = files.filter(isImage);
   const rest = files.filter((f) => !isImage(f));
@@ -793,20 +823,25 @@ export async function ingestProjectFolder(
   }
 
   // Phase 1 — extract/classify/parse (network-bound, independent, bounded).
-  const thunks: Array<() => Promise<Contribution | null>> = [
-    () => processPhotos(ocrImages, language, calls),
-    ...receiptImages.map(
-      (f) => () =>
-        processReceiptPhoto(f, receiptKinds.get(f) ?? 'receipt', collectPurchases, calls)
-    ),
-    ...planImages.map((f) => () => processFloorPlanImage(f, calls)),
-    ...pdfs.map(
-      (f) => () => processDocument(f, language, collectPurchases, isContractor, suggestAddress, calls)
-    ),
-    ...docs.map(
-      (f) => () => processDocument(f, language, collectPurchases, isContractor, suggestAddress, calls)
-    ),
-    ...texts.map((f) => () => processTextFile(f, language, calls)),
+  // Each unit carries the file it speaks for, so a landed result can be
+  // journaled under a name the next drop can compare against. The combined
+  // photo pass speaks for a batch, so it carries no name and is not journaled.
+  const thunks: Array<{ name?: string; run: () => Promise<Contribution | null> }> = [
+    { run: () => processPhotos(ocrImages, language, calls) },
+    ...receiptImages.map((f) => ({
+      name: f.name,
+      run: () => processReceiptPhoto(f, receiptKinds.get(f) ?? 'receipt', collectPurchases, calls),
+    })),
+    ...planImages.map((f) => ({ name: f.name, run: () => processFloorPlanImage(f, calls) })),
+    ...pdfs.map((f) => ({
+      name: f.name,
+      run: () => processDocument(f, language, collectPurchases, isContractor, suggestAddress, calls),
+    })),
+    ...docs.map((f) => ({
+      name: f.name,
+      run: () => processDocument(f, language, collectPurchases, isContractor, suggestAddress, calls),
+    })),
+    ...texts.map((f) => ({ name: f.name, run: () => processTextFile(f, language, calls) })),
   ];
   // Progress is counted in FILES, not thunks — "fil 3 av 12" has to match the
   // folder the user dropped. The photo thunk covers a whole batch, so it
@@ -819,17 +854,25 @@ export async function ingestProjectFolder(
     ...docs.map(() => 1),
     ...texts.map(() => 1),
   ];
-  const progressTotal = files.length;
-  let progressDone = ignoredUpfront.length + inertImages.length;
+  // Resumed files count as done from the start — "62 av 112" has to mean what
+  // the person sees, and they are not going to be read again.
+  const progressTotal = files.length + resumed.length;
+  let progressDone = ignoredUpfront.length + inertImages.length + resumed.length;
   onProgress?.({ phase: 'read', done: progressDone, total: progressTotal });
-  const settled = (
+  const fresh = (
     await mapLimit(thunks.map((t, i) => ({ t, i })), CONCURRENCY, async ({ t, i }) => {
-      const r = await t();
+      const r = await t.run();
+      // Journal BEFORE reporting progress: the write is what makes this file's
+      // model call survive the tab, and progress is only cosmetic.
+      if (r && t.name) opts?.onFileRead?.(t.name, r);
       progressDone = Math.min(progressTotal, progressDone + weights[i]);
       onProgress?.({ phase: 'read', done: progressDone, total: progressTotal });
       return r;
     })
   ).filter((c): c is Contribution => c != null);
+  // Recovered results fold exactly like fresh ones — same shapes, same order
+  // of operations, so a resumed import cannot differ from an uninterrupted one.
+  const settled = [...resumed, ...fresh];
 
   // Phase 2 — deterministic fold into the draft.
   const roomsBefore = startDraft.rooms.length;
@@ -905,7 +948,9 @@ export async function ingestProjectFolder(
   return {
     draft,
     filesSeen: allFiles.length,
-    filesRead: files.length,
+    // Resumed files WERE read — just not in this run. Counting them keeps the
+    // summary honest about how much of the folder the project actually holds.
+    filesRead: files.length + resumed.length,
     alreadyImportedNames: skipped.map((f) => f.name),
     roomsAdded: draft.rooms.length - roomsBefore,
     tasksAdded: draft.tasks.length - tasksBefore,
