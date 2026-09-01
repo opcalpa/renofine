@@ -743,6 +743,62 @@ leverantör+datum+belopp, hur många blev övrigt, hur många dubbletter smet
 igenom) avgör vilka av punkterna som faktiskt gör ont och i vilken ordning.
 
 ---
+id: mapp-slappets-fotade-kvitton-tolkas-aldrig
+status: todo
+priority: P1
+tags: [import, bugfix, user-research, hemagare]
+created: 2026-09-01
+---
+
+## Mapp-släppet tolkar aldrig fotade kvitton — 96 av 100 lades tyst i Bilder
+
+Carls 112-kvittotest 2026-09-01, DB-bevisat: 96 kvittofoton arkiverades som
+"produktbild" i Filer→Bilder, noll inköpsförslag skapades, ~100 modellanrop
+brända. Rotorsaken är design, inte slump: foto-vägen i `ingestProjectFolder.ts`
+klassificerar varje bild men släpper bara `SCOPE_BEARING` (quote/contract/
+specification, rad 255) vidare till läsning — **`receipt`/`invoice` står inte i
+listan**, och alla övriga foton arkiveras i klump som `product_image` oavsett
+klassning. Bara PDF-kvitton når `captureDocument` (dokumentvägen, rad ~439).
+Kameraflödet (D1) fungerar — mapp-släppet kopplar aldrig in det för foton.
+
+Fixen när den byggs: foton klassade `receipt`/`invoice` → samma
+`captureDocument`-väg som PDF:erna (röret finns, det är en routing-rad) +
+arkivera under /Kvitton, inte /Bilder.
+
+**Förgiftningen (måste städas före omkörning):** skip-logiken jämför
+filnamn+storlek, och de 96 ligger byte-identiskt arkiverade — en omkörning
+hoppar över dem som "Fanns redan" även efter en fix. Städjobb: radera dagens
+`1788262273825-IMG_*.jpg` ur projektets Bilder.
+
+---
+id: import-sessionen-overlever-inte-en-reload
+status: todo
+priority: P2
+tags: [import, bugfix, user-research]
+created: 2026-09-01
+---
+
+## Importgranskningen och Renaida-chatten dör vid flikbyte — utan ett spår
+
+Carls test 2026-09-01: släppte mappen, bytte flik, Chrome kastade bakgrunds-
+fliken (minnessparning), sidan laddades om — och granskningssidan, förslagen
+och Renaida-chatten var borta. Ingen bekräftelse, ingen status, inget att
+återuppta. Ur appens perspektiv hade importen aldrig hänt, trots ~100 spenderade
+modellanrop och 96 arkiverade filer.
+
+Rotorsak: `ImportSession` + chatten bor i `renaidaStore` (Zustand, ingen
+persist). Tolkningsloopen drivs dessutom helt av fliken — en reload mitt i
+dödar den, gjorda anrop är brända, halva arkivet ligger kvar, inget går att
+återuppta.
+
+Riktning när den byggs (minst till mest): (1) `beforeunload`-varning medan
+tolkning pågår, (2) persistera sessionen (localStorage räcker för att överleva
+en reload; proposals är serialiserbara utom attachment-registret), (3) en
+"senaste import"-ingång som återöppnar en opplicerad session. Servern loggar
+idag ingenting om ett släpp — även en enkel import-rad i DB hade gjort
+händelsen felsökbar.
+
+---
 id: beslut-prismodell-proffs
 status: todo
 priority: P1
