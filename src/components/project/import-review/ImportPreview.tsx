@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FileText, RotateCw, ZoomIn, ZoomOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -34,16 +34,44 @@ function ImageViewer({ src, alt }: { src: string; alt: string }) {
   const { t } = useTranslation();
   const [rotation, setRotation] = useState(0);
   const [zoomIdx, setZoomIdx] = useState(2); // 1x
+  // Pan offset in screen pixels. A scaled image outgrows its layout box via
+  // transform, which overflow-scroll cannot follow — so panning is part of the
+  // same transform: drag to reach a corner of a zoomed receipt.
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const dragRef = useRef<{ startX: number; startY: number; panX: number; panY: number } | null>(null);
 
-  // A new document starts upright at 1x — carried-over rotation would make a
-  // straight photo look crooked.
+  // A new document starts upright at 1x, centered — carried-over rotation
+  // would make a straight photo look crooked.
   useEffect(() => {
     setRotation(0);
     setZoomIdx(2);
+    setPan({ x: 0, y: 0 });
   }, [src]);
 
   const zoom = ZOOM_STEPS[zoomIdx];
   const quarter = rotation % 180 !== 0;
+  const pannable = zoomIdx > 2;
+
+  // Zooming back out re-centers: a pan that made sense at 3x strands the
+  // image half off-screen at 1x.
+  useEffect(() => {
+    if (!pannable) setPan({ x: 0, y: 0 });
+  }, [pannable]);
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    if (!pannable) return;
+    e.preventDefault();
+    (e.target as Element).setPointerCapture?.(e.pointerId);
+    dragRef.current = { startX: e.clientX, startY: e.clientY, panX: pan.x, panY: pan.y };
+  };
+  const onPointerMove = (e: React.PointerEvent) => {
+    const d = dragRef.current;
+    if (!d) return;
+    setPan({ x: d.panX + (e.clientX - d.startX), y: d.panY + (e.clientY - d.startY) });
+  };
+  const endDrag = () => {
+    dragRef.current = null;
+  };
 
   return (
     <div className="relative rounded-lg border bg-muted/20">
@@ -78,13 +106,25 @@ function ImageViewer({ src, alt }: { src: string; alt: string }) {
           <ZoomOut className="h-4 w-4" />
         </Button>
       </div>
-      <div className="flex max-h-[60vh] min-h-[240px] items-center justify-center overflow-auto p-2">
+      <div
+        className={`flex max-h-[60vh] min-h-[240px] items-center justify-center overflow-hidden p-2 ${
+          pannable ? (dragRef.current ? 'cursor-grabbing' : 'cursor-grab') : ''
+        }`}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={endDrag}
+        onPointerLeave={endDrag}
+        onPointerCancel={endDrag}
+      >
         <img
           src={src}
           alt={alt}
-          className="object-contain transition-transform duration-150"
+          draggable={false}
+          className={`select-none object-contain ${dragRef.current ? '' : 'transition-transform duration-150'}`}
           style={{
-            transform: `rotate(${rotation}deg) scale(${zoom})`,
+            // translate FIRST so the drag moves in screen axes regardless of
+            // how the image is rotated underneath.
+            transform: `translate(${pan.x}px, ${pan.y}px) rotate(${rotation}deg) scale(${zoom})`,
             // A quarter-turned image is constrained by the CONTAINER's width on
             // its (rotated) height — capping against the viewport keeps it in
             // frame instead of clipping at the pane edge.
