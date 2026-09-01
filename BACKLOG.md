@@ -682,6 +682,67 @@ Kodgenomgång 2026-08-31:
 föreslå-verktyg med bekräftelse i appen +2–3 dagar; publik OAuth-MCP veckor.
 
 ---
+id: heic-tolkas-eller-konverteras-i-ett-svep
+status: todo
+priority: P2
+tags: [import, bugfix, hemagare]
+created: 2026-09-01
+---
+
+## HEIC vid dragsläpp: tyst miss idag — avkoda i klienten i ett svep
+
+Carls 112 renoveringskvitton (2026-09-01) avslöjade kedjan: desktop-släpp av
+rå HEIC (AirDrop/iCloud-mappar) → Chrome kan inte avkoda → `compressImage`
+faller tyst tillbaka på originalet → 3 MB HEIC laddas upp → tolken tar inte
+emot formatet. Användaren ser bara att inget hände. Mobilen är oftast INTE
+problemet (iPhone-Safari konverterar HEIC→JPEG i filväljaren som default) —
+det är desktop-dragsläppet som bits, och det är precis mapp-släppets flöde.
+
+Lösning: **wasm-avkodare i klienten, lazy-laddad** (libheif-baserad, t.ex.
+`heic-to`), hämtas bara när en `.heic`/`.heif` faktiskt upptäcks (~1–2 MB,
+cachas). Avkoda → canvas → befintliga `compressImage` → JPEG. Resten av röret
+orört. Serversidan är fel plats (Deno utan sips = wasm där också, plus
+uppladdning av rådata).
+
+Buggklassen kvalificerar för kod-undantaget i inte-koda-löftet OM den stoppar
+en intervjuperson mitt i ett flöde — annars väntar den som allt annat.
+
+---
+id: import-granskning-syna-kvittot-mot-bilden
+status: todo
+priority: P3
+tags: [import, ux, user-research]
+created: 2026-09-01
+---
+
+## Granskningen kan inte visa kvittobilden — och det Carl vill kunna göra där
+
+Kodverifierat 2026-09-01: förhandsvisningen i importgranskningen
+(`ImportPreview.tsx`) fungerar för dokument men INTE för kvitton — kvittofiler
+arkiveras först vid godkännandet ("extracted purchases carry NO archive"), och
+inköpsförslag får inget `sourceFile` (enda proposal-typen utan, se
+`ingestToProposals.ts`). Kvittoraden visar leverantör+belopp men bilden den kom
+ifrån går inte att klicka fram — ögon-mot-bild saknas för exakt den filtyp där
+det behövs mest.
+
+Carls önskade granskningsflöde (2026-09-01), i fallande ordning:
+1. **Kvittorad → dess bild**, med zoom (sourceFile + attachmentKey-preview
+   räcker; arkivering kan fortsatt ske vid apply).
+2. **Manuell rättning i granskningen**: öppna en luddig rad, fylla i
+   leverantör/datum/belopp för hand, godkänna. Idag finns bara behåll/hoppa över.
+3. **Dubblettflagga INOM samma släpp** (idag bara mot befintliga inköp):
+   två rader med samma leverantör+belopp i samma batch = troligt dubbelfoto
+   (A4-med-fasthäftade-kvitton-fallet). Fallback finns: sortera Inköpsfliken
+   på belopp.
+4. **Lyft från "övrigt"**: en oläst fil ska gå att öppna, verifiera med egna
+   ögon och manuellt godkänna som inköp med ifyllda fält. "Övrigt" förblir
+   rätt default — det som saknas är vägen tillbaka.
+
+**Prioriteras EFTER Carls 112-kvittotest** — testets tre siffror (hur många gav
+leverantör+datum+belopp, hur många blev övrigt, hur många dubbletter smet
+igenom) avgör vilka av punkterna som faktiskt gör ont och i vilken ordning.
+
+---
 id: beslut-prismodell-proffs
 status: todo
 priority: P1
