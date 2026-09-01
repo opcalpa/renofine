@@ -8002,7 +8002,9 @@
     "notUnderstoodFolder_one": "{{count}} fil visste jag inte vad den var — den ligger i {{folder}} och rör inget i projektet.",
     "notUnderstoodFolder_other": "{{count}} filer visste jag inte vad de var — de ligger i {{folder}} och rör inget i projektet.",
     "truncatedDocs_one": "{{count}} dokument var så långt att jag bara hann läsa början — kolla att inget rum saknas.",
-    "truncatedDocs_other": "{{count}} dokument var så långa att jag bara hann läsa början — kolla att inget rum saknas."
+    "truncatedDocs_other": "{{count}} dokument var så långa att jag bara hann läsa början — kolla att inget rum saknas.",
+    "classifyFailed": "{{count}} bilder kunde inte läsas just nu (tjänsten var överbelastad) — släpp mappen igen om en stund, de redan lästa filerna kostar inget.",
+    "nothingFoundThrottled": "Jag kom inte åt att läsa filerna — de är sparade i Filer så länge."
   },
   "addresses": {
     "picker": {

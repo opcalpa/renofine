@@ -247,6 +247,32 @@ function narrowAddress(
 const TEXT_LIMIT = 5000;
 const TEXT_LIMIT_WITH_SCOPE = 60000;
 
+/** An upstream limit or outage — worth waiting out, unlike a bad request. */
+class RetryableUpstreamError extends Error {}
+
+/**
+ * Retry a throttled classification with exponential backoff and jitter.
+ *
+ * Jitter matters more than the delay here: a folder drop fires several calls
+ * in the same instant, and without it they all retry in the same instant too,
+ * reproducing the burst that caused the 429.
+ */
+async function withRetry<T>(fn: () => Promise<T>, attempts = 4): Promise<T> {
+  let lastError: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      lastError = e;
+      if (!(e instanceof RetryableUpstreamError) || i === attempts - 1) throw e;
+      const backoffMs = 700 * 2 ** i + Math.floor(Math.random() * 400);
+      console.log(`classify: upstream throttled, retrying in ${backoffMs}ms (attempt ${i + 1})`);
+      await new Promise((r) => setTimeout(r, backoffMs));
+    }
+  }
+  throw lastError;
+}
+
 async function classifyWithContent(
   content: string,
   fileName: string,
@@ -315,7 +341,16 @@ async function classifyWithContent(
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('OpenAI API error:', errorText);
+    console.error('OpenAI API error:', response.status, errorText);
+    // 429/5xx are TEMPORARY. Carl's 112-receipt drop (2026-09-01) hit 96 of
+    // them in one go: a folder classifies every photo at once, which is
+    // exactly the burst OpenAI throttles, and each failure fell open to
+    // 'other' — so a hundred readable receipts were filed as product images
+    // and the person was told they held "no information". A transient upstream
+    // limit must never read as a verdict about the document.
+    if (response.status === 429 || response.status >= 500) {
+      throw new RetryableUpstreamError(`OpenAI API error: ${response.status}`);
+    }
     throw new Error(`OpenAI API error: ${response.status}`);
   }
 
@@ -404,14 +439,16 @@ serve(async (req) => {
 
       console.log('Classifying document:', fileName, 'mimeType:', mimeType, 'size:', base64.length);
 
-      const result = await classifyWithContent(
-        isImage ? base64 : '', // For images, pass base64 directly
-        fileName,
-        isImage,
-        isPdf,
-        isPdf ? base64 : undefined,
-        mimeType,
-        scopeLang,
+      const result = await withRetry(() =>
+        classifyWithContent(
+          isImage ? base64 : '', // For images, pass base64 directly
+          fileName,
+          isImage,
+          isPdf,
+          isPdf ? base64 : undefined,
+          mimeType,
+          scopeLang,
+        ),
       );
 
       console.log('Classification:', result.type, 'confidence:', result.confidence);
@@ -434,14 +471,18 @@ serve(async (req) => {
 
     console.log('Legacy path: classifying document:', fileName, 'isImage:', isImage);
 
-    const result = await classifyWithContent(
-      content,
-      fileName || 'unknown',
-      isImage,
-      false,
-      undefined,
-      undefined,
-      scopeLang,
+    const result = await withRetry(() =>
+      classifyWithContent(
+        content,
+        fileName || 'unknown',
+        isImage,
+        false,
+        undefined,
+        // The legacy path sends raw base64 with no mime type; images are JPEG
+        // by the time they reach here (the client compresses to JPEG).
+        isImage ? 'image/jpeg' : undefined,
+        scopeLang,
+      ),
     );
 
     console.log('Classification:', result.type, 'confidence:', result.confidence);

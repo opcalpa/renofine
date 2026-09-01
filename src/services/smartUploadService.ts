@@ -98,8 +98,31 @@ export interface DocumentExtractionResult {
 
 // --- Helpers ---
 
+/**
+ * The file's real media type, falling back to its extension.
+ *
+ * A drag-and-drop from Finder does not always set `File.type` — it came back
+ * empty for 4 of Carl's 112 receipts (2026-09-01), and an empty type is sent
+ * as `application/octet-stream`, which Storage rejects outright and the
+ * classifier cannot read. The extension is the only thing left to go on, and
+ * it is right far more often than "unknown" is useful.
+ */
+export function resolvedMimeType(file: File): string {
+  if (file.type && file.type !== "application/octet-stream") return file.type;
+  const ext = file.name.toLowerCase().match(/\.([a-z0-9]+)$/)?.[1];
+  const byExt: Record<string, string> = {
+    jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", gif: "image/gif",
+    webp: "image/webp", heic: "image/heic", heif: "image/heif", avif: "image/avif",
+    bmp: "image/bmp", tif: "image/tiff", tiff: "image/tiff",
+    pdf: "application/pdf", txt: "text/plain", csv: "text/csv",
+    doc: "application/msword",
+    docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  };
+  return (ext && byExt[ext]) || "application/octet-stream";
+}
+
 function isImageFile(file: File): boolean {
-  return file.type.startsWith("image/");
+  return resolvedMimeType(file).startsWith("image/");
 }
 
 function isDocumentFile(file: File): boolean {
@@ -332,7 +355,12 @@ export async function uploadToCategoryFolder(
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
   const path = `projects/${projectId}${targetFolder}/${timestamp}-${safeName}`;
 
-  const { error } = await supabase.storage.from("project-files").upload(path, file);
+  // contentType explicitly: Storage rejects `application/octet-stream`, which
+  // is what an empty `File.type` becomes — a file the person can see in Finder
+  // would otherwise be refused for having no type rather than no content.
+  const { error } = await supabase.storage
+    .from("project-files")
+    .upload(path, file, { contentType: resolvedMimeType(file) });
   if (error) {
     console.error("uploadToCategoryFolder failed", error);
     return null;

@@ -620,6 +620,12 @@ export interface IngestOutcome {
   filesSeen: number;
   /** How many were actually read (after the size + MAX_FILES filters). */
   filesRead: number;
+  /**
+   * Photos whose classification call failed outright — throttled upstream or
+   * an outage, NOT "we looked and found nothing". Surfaced so the summary can
+   * offer a retry instead of reporting a temporary failure as a conclusion.
+   */
+  classifyFailures: number;
   roomsAdded: number;
   tasksAdded: number;
   /** All receipts/invoices seen (whether counted or fully extracted). */
@@ -794,6 +800,8 @@ export async function ingestProjectFolder(
   // interpreted: OCR over a photo the classifier could not place is exactly
   // the noise that turns into invented rooms.
   let inertImages: File[] = photos;
+  /** Photos whose classification call FAILED (throttling, outage) — not a verdict. */
+  let classifyFailures = 0;
   if (photos.length > 0) {
     let classified = 0;
     onProgress?.({ phase: 'classify', done: 0, total: photos.length });
@@ -802,7 +810,14 @@ export async function ingestProjectFolder(
         const kind = asDocumentType((await classifyDocument(f)).type);
         noteModelCall(calls, 'classify-document');
         return kind;
-      } catch {
+      } catch (e) {
+        // Falling open to 'other' is right — a photo we could not place must
+        // not be guessed at. But it is NOT the same as a photo we read and
+        // found nothing in, and conflating the two is how Carl's 112 receipts
+        // (2026-09-01) came back as "100 bilder sparade utan att tolkas" when
+        // the real story was that OpenAI had throttled every single call.
+        classifyFailures += 1;
+        console.error('classify failed for', f.name, e);
         return 'other' as DocumentType;
       } finally {
         classified += 1;
@@ -951,6 +966,7 @@ export async function ingestProjectFolder(
     // Resumed files WERE read — just not in this run. Counting them keeps the
     // summary honest about how much of the folder the project actually holds.
     filesRead: files.length + resumed.length,
+    classifyFailures,
     alreadyImportedNames: skipped.map((f) => f.name),
     roomsAdded: draft.rooms.length - roomsBefore,
     tasksAdded: draft.tasks.length - tasksBefore,

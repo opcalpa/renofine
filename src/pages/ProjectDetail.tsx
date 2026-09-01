@@ -1453,15 +1453,31 @@ const ProjectDetail = () => {
           }),
         );
       }
+      // A throttled upstream is not a verdict about the documents. Saying so is
+      // the difference between "your receipts held nothing" and "try again".
+      if (outcome.classifyFailures > 0) {
+        inertNotes.push(
+          t('folderDrop.classifyFailed', {
+            count: outcome.classifyFailures,
+            defaultValue:
+              '{{count}} bilder kunde inte läsas just nu (tjänsten var överbelastad) — släpp mappen igen om en stund, de redan lästa filerna kostar inget.',
+          }),
+        );
+      }
 
       if (proposals.length === 0) {
+        const throttled = outcome.classifyFailures > 0;
         toast({
-          title:
-            archiveFailed === outcome.archiveFiles.length && archiveFailed > 0
+          title: throttled
+            ? t(
+                'folderDrop.nothingFoundThrottled',
+                'Jag kom inte åt att läsa filerna — de är sparade i Filer så länge.',
+              )
+            : archiveFailed === outcome.archiveFiles.length && archiveFailed > 0
               ? t('folderDrop.nothingFoundNothingSaved', 'Jag hittade inget att lägga till, och filerna kunde inte sparas heller.')
               : t('folderDrop.nothingFound', 'Jag hittade inget att lägga till — filerna är sparade i Filer.'),
           description: inertNotes.length > 0 ? inertNotes.join(' ') : undefined,
-          variant: archiveFailed > 0 ? 'destructive' : undefined,
+          variant: archiveFailed > 0 || throttled ? 'destructive' : undefined,
         });
         return;
       }
