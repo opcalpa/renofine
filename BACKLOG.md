@@ -5835,10 +5835,46 @@ importens `storagePath`-uppslag och Filer-flikens egen sökning.
 
 ---
 id: sok-som-nar-hela-domanen
-status: todo
+status: done
 priority: P2
 tags: [sok, arkitektur, ux]
 created: 2026-09-02
+updated: 2026-09-02
+---
+## Sökningen når hela domänen — LEVERERAT, med reviderat vägval
+
+**Levererat 2026-09-02.** Kortet föreslog en trigger-underhållen indextabell
+(eller tsvector+GIN). Det byggdes MEDVETET inte: vid Renofines datamängder är
+en denormaliserad indextabells felmod — tyst drift när en ny kolumn/tabell
+glömmer sin trigger — exakt den "sökningen ser hel ut men saknar saker"-klass
+som just rättats i klienten. I stället: **`global_search(q)`**, en SQL-funktion
+(migration `20260902200000_global_search.sql`) som UNION:ar tolv armar över de
+LEVANDE tabellerna. Samma vinst på den verkliga flaskhalsen (EN nätverksrunda
+per tangenttryck i stället för en per tabell), noll drift, en plats att utöka.
+Om latens någonsin dyker upp: pg_trgm GIN-index per kolumn — byt inte arkitektur.
+
+**Täcks nu:** arbeten (titel, beskrivning, interna anteckningar, fakturanr/OCR),
+materialrader (namn, beskrivning, leverantör), inköpsorder (leverantör,
+fakturanr, OCR, anteckning, **belopp** — "4 403" och "4403" träffar båda), rum
+(namn, beskrivning, anteckningar, material), rumsobjekt, kommentarer (innehåll
++ författare), fältrapporter, teammedlemmar (project_shares egna display-fält —
+ingen profiles-join, det RLS-minfältet undveks), arbetare (inkl. kyrilliska
+namn — verifierat med "Ілля"), offerter, fakturor, projekt (namn + beskrivning).
+
+**Säkerhet i två oberoende lager:** varje arm scopas till `my_project_ids()`
+(grinden — ingen admin-bypass, ingen demo) OCH funktionen är SECURITY INVOKER
+så anroparens RLS gäller per arm (bältet). Rollverifierat: authenticated ser
+sina projekt, anon får 0 rader.
+
+**Navigering:** offerter/fakturor djuplänkar till `/quotes/:id` / `/invoices/:id`;
+kommentarer/fältrapporter öppnar SITT ARBETE via entityId när de har ett;
+team/arbetare landar på Team-fliken.
+
+**Kvar utanför, med flit:** projektfiler ([[global-sok-hittar-filer]] — kräver
+metadatatabell), bostadens papper (property-scopade, egen grind), tidrapporter/
+foton (armar på ~8 rader var när de efterfrågas). Armar utan data på testkontot
+(offerter, fakturor, medlemmar, rumsobjekt, fältrapporter) är verifierade
+strukturellt men inte mot rader — de delar exakt form med de databevisade.
 ---
 ## Sökningen når fem tabeller på ett fält var — resten är osynligt
 

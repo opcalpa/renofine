@@ -4911,6 +4911,18 @@ export type Database = {
       get_project_overview: { Args: { p_project_id: string }; Returns: Json }
       get_project_tasks: { Args: { p_project_id: string }; Returns: Json }
       get_user_profile_id: { Args: never; Returns: string }
+      global_search: {
+        Args: { q: string; per_type?: number }
+        Returns: {
+          entity_type: string
+          entity_id: string
+          project_id: string
+          project_name: string | null
+          title: string | null
+          snippet: string | null
+          meta: Json
+        }[]
+      }
       get_visible_profile_ids: { Args: never; Returns: string[] }
       is_public_demo_project: {
         Args: { p_project_id: string }

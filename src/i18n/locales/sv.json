@@ -6680,13 +6680,22 @@
   },
   "globalSearch": {
     "placeholder": "Sök...",
-    "inputPlaceholder": "Sök arbeten, inköp, rum, projekt…",
+    "inputPlaceholder": "Sök i allt inom dina projekt…",
     "noResults": "Inga resultat hittades",
     "navigate": "navigera",
     "open": "öppna",
     "close": "stäng",
     "title": "Sök",
-    "projectsRoot": "Projekt"
+    "projectsRoot": "Projekt",
+    "types": {
+      "roomItems": "Rumsobjekt",
+      "comments": "Kommentarer",
+      "reports": "Fältrapporter",
+      "team": "Team",
+      "workers": "Arbetare",
+      "quotes": "Offerter",
+      "invoices": "Fakturor"
+    }
   },
   "analysis": {
     "title": "Rotavdrag",

@@ -6681,13 +6681,22 @@
   },
   "globalSearch": {
     "placeholder": "Search...",
-    "inputPlaceholder": "Search tasks, purchases, rooms, projects…",
+    "inputPlaceholder": "Search everything in your projects…",
     "noResults": "No results found",
     "navigate": "navigate",
     "open": "open",
     "close": "close",
     "title": "Search",
-    "projectsRoot": "Projects"
+    "projectsRoot": "Projects",
+    "types": {
+      "roomItems": "Room items",
+      "comments": "Comments",
+      "reports": "Field reports",
+      "team": "Team",
+      "workers": "Workers",
+      "quotes": "Quotes",
+      "invoices": "Invoices"
+    }
   },
   "analysis": {
     "title": "ROT deduction",

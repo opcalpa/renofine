@@ -1,54 +1,75 @@
 /**
  * GlobalSearch — the Cmd+K palette, across the projects you can actually reach.
  *
- * Four things were wrong here at once (Carl, 2026-09-02), and they compounded
- * into "search never finds what I want":
+ * One RPC, `global_search(q)`, answers every keystroke: twelve entity types
+ * unioned server-side (tasks with their descriptions and notes, materials,
+ * purchase orders incl. amounts, rooms, room items, comments, field reports,
+ * team members, workers, quotes, invoices, projects), scoped to
+ * `my_project_ids()` — the gate — under the caller's RLS — the belt. The
+ * five-parallel-queries version this replaced searched one field per table and
+ * carried an admin leak, a demo leak, a NULL-unsafe filter and dead deep-links
+ * (all fixed 2026-09-02); the RPC keeps coverage and scoping in ONE place, the
+ * SQL function, so the client only maps type → icon, label, destination.
  *
- *  1. SCOPE. Only the `projects` query used `myProjectIds()`. The policies on
- *     tasks, materials and rooms all begin with `is_system_admin() OR …`, so a
- *     system admin was searching every user's data — the exact leak that was
- *     already fixed for projects and missed on the other three.
- *  2. DEMO. Those same tables carry an "Anyone can view public demo" policy, so
- *     the shared demo project's rooms and tasks surfaced in everyone's results.
- *  3. DEAD LINKS. Results navigated with `?taskId=`, `?materialId=`, `?roomId=`
- *     — parameters NOTHING reads. Only `entityId` is. So every hit opened the
- *     right tab and then sat there, never opening the thing you searched for.
- *  4. COVERAGE. The placeholder promised "tasks, purchases, files, rooms" while
- *     `purchase_orders` and files were never queried at all; "purchases" only
- *     ever matched individual material lines.
+ * Each hit shows the path it was found at — `Projekt › Furusundsgatan 14 ›
+ * Inköp` — in the tabs' own words. Two rooms both named "Kök" stop being
+ * interchangeable.
  *
- * Results now carry the path they were found at, so a hit reads
- * `Projekt › Furusundsgatan 14 › Inköp` rather than a bare name that could be
- * anywhere. The path uses the tabs' own labels, not table names.
+ * Not covered yet: project files (no metadata table — see backlog
+ * `global-sok-hittar-filer`), home papers, time entries, photos.
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { PUBLIC_DEMO_PROJECT_TYPE } from "@/constants/publicDemo";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Input } from "@/components/ui/input";
-import { Search, CheckSquare, Package, ShoppingCart, Home, FolderOpen, Loader2 } from "lucide-react";
-import { myProjectIds } from "@/lib/myProjects";
+import {
+  Search, CheckSquare, Package, ShoppingCart, Home, FolderOpen, Loader2,
+  Puzzle, MessageSquare, ClipboardList, Users, HardHat, FileText, Receipt,
+} from "lucide-react";
+
+type EntityType =
+  | "task" | "material" | "purchaseOrder" | "room" | "roomItem"
+  | "comment" | "fieldReport" | "member" | "worker"
+  | "quote" | "invoice" | "project";
 
 interface SearchResult {
   id: string;
-  type: "task" | "material" | "purchaseOrder" | "room" | "project";
+  type: EntityType;
   title: string;
   subtitle?: string;
   projectId: string;
   projectName?: string;
-  /** i18n key for the tab this lives under — the middle of the breadcrumb. */
-  tabKey?: string;
+  /** For comments/field reports: the task to open, when there is one. */
+  taskId?: string;
 }
 
-const TYPE_ICONS = {
+/** One row from the global_search RPC. */
+interface GlobalSearchRow {
+  entity_type: string;
+  entity_id: string;
+  project_id: string;
+  project_name: string | null;
+  title: string | null;
+  snippet: string | null;
+  meta: { total?: number; task_id?: string } | null;
+}
+
+const TYPE_ICONS: Record<EntityType, typeof Search> = {
   task: CheckSquare,
   material: Package,
   purchaseOrder: ShoppingCart,
   room: Home,
+  roomItem: Puzzle,
+  comment: MessageSquare,
+  fieldReport: ClipboardList,
+  member: Users,
+  worker: HardHat,
+  quote: FileText,
+  invoice: Receipt,
   project: FolderOpen,
 };
 
@@ -61,20 +82,37 @@ const TYPE_ICONS = {
  * now; the fallback is here so a missing one degrades to a real word instead of
  * leaking the key again.
  */
-const TYPE_LABELS: Record<string, [key: string, fallback: string]> = {
+const TYPE_LABELS: Record<EntityType, [key: string, fallback: string]> = {
   task: ["tasks.tasks", "Arbeten"],
   material: ["purchases.purchases", "Inköp"],
   purchaseOrder: ["purchases.purchaseOrdersTitle", "Inköpsorder"],
   room: ["rooms.rooms", "Rum"],
+  roomItem: ["globalSearch.types.roomItems", "Rumsobjekt"],
+  comment: ["globalSearch.types.comments", "Kommentarer"],
+  fieldReport: ["globalSearch.types.reports", "Fältrapporter"],
+  member: ["globalSearch.types.team", "Team"],
+  worker: ["globalSearch.types.workers", "Arbetare"],
+  quote: ["globalSearch.types.quotes", "Offerter"],
+  invoice: ["globalSearch.types.invoices", "Fakturor"],
   project: ["projects.projects", "Projekt"],
 };
 
-/** Where each kind of hit lives, in the tabs' own words. */
-const TYPE_TAB_KEY: Record<string, string | undefined> = {
-  task: "nav.mobileNav.tasks",
-  material: "nav.mobileNav.purchases",
-  purchaseOrder: "nav.mobileNav.purchases",
-  room: "nav.mobileNav.plans",
+/**
+ * Where each kind of hit lives, in the tabs' own words. Quotes and invoices
+ * are their own pages, not project tabs, so their crumb reuses the type label.
+ */
+const TYPE_TAB_KEY: Record<EntityType, [key: string, fallback: string] | undefined> = {
+  task: ["nav.mobileNav.tasks", "Arbeten"],
+  material: ["nav.mobileNav.purchases", "Inköp"],
+  purchaseOrder: ["nav.mobileNav.purchases", "Inköp"],
+  room: ["nav.mobileNav.plans", "Yta"],
+  roomItem: ["nav.mobileNav.plans", "Yta"],
+  comment: ["nav.mobileNav.tasks", "Arbeten"],
+  fieldReport: ["nav.mobileNav.tasks", "Arbeten"],
+  member: ["nav.mobileNav.team", "Team"],
+  worker: ["nav.mobileNav.team", "Team"],
+  quote: ["globalSearch.types.quotes", "Offerter"],
+  invoice: ["globalSearch.types.invoices", "Fakturor"],
   project: undefined,
 };
 
@@ -128,113 +166,39 @@ export function GlobalSearch() {
 
   const performSearch = useCallback(async (q: string) => {
     setLoading(true);
-    const searchPattern = `%${q}%`;
-    // PostgREST's `or=` filter is comma-separated, so a comma or a quote in the
-    // term would break the whole clause. Strip them for the multi-column
-    // lookups; single-column `ilike` takes the raw term unharmed.
-    const orSafe = q.replace(/[,()"]/g, " ").trim();
-    const allResults: SearchResult[] = [];
-
     try {
-      // The reach of the person searching — owned, shared, or via the address,
-      // WITHOUT the admin bypass the raw policies grant, and without the public
-      // demo project everyone can read. Every query below is scoped to it.
-      //
-      // Fail closed: no reachable projects means no results, never "search
-      // everything". An empty palette is a visible failure; a palette full of
-      // strangers' projects is an invisible one.
-      const ids = await myProjectIds();
-      if (ids.length === 0) {
+      // ONE round trip per keystroke. Coverage and scoping live in the SQL
+      // function; an entity type this map does not know is dropped rather than
+      // guessed at, so a server ahead of the client degrades to fewer groups,
+      // never to broken rows.
+      const { data, error } = await supabase.rpc("global_search", { q, per_type: 5 });
+      if (error) {
+        console.error("global_search failed:", error);
         setResults([]);
         setSelectedIndex(0);
         return;
       }
-
-      const projectNames = new Map<string, string>();
-      const push = (r: SearchResult) =>
-        allResults.push({ ...r, tabKey: TYPE_TAB_KEY[r.type] });
-
-      const [tasks, materials, orders, rooms, projects] = await Promise.all([
-        supabase
-          .from("tasks")
-          .select("id, title, project_id, projects(name)")
-          .in("project_id", ids)
-          .ilike("title", searchPattern)
-          .limit(5),
-        supabase
-          .from("materials")
-          .select("id, name, project_id, projects(name)")
-          .in("project_id", ids)
-          .ilike("name", searchPattern)
-          .limit(5),
-        // Purchase ORDERS — the thing the placeholder always promised and never
-        // searched. "purchases" used to match only individual material lines,
-        // so an invoice number or a vendor found nothing.
-        supabase
-          .from("purchase_orders")
-          .select("id, vendor_name, total, invoice_number, ocr_number, project_id, projects(name)")
-          .in("project_id", ids)
-          .or(
-            `vendor_name.ilike.%${orSafe}%,invoice_number.ilike.%${orSafe}%,ocr_number.ilike.%${orSafe}%`
-          )
-          .limit(5),
-        supabase
-          .from("rooms")
-          .select("id, name, project_id, projects(name)")
-          .in("project_id", ids)
-          .ilike("name", searchPattern)
-          .limit(5),
-        supabase
-          .from("projects")
-          .select("id, name, description")
-          .in("id", ids)
-          .ilike("name", searchPattern)
-          // NULL-safe. `.neq()` compiles to SQL `!=`, which is UNKNOWN against
-          // NULL — and 69 of 77 projects have no project_type, so the plain
-          // `.neq(project_type, public_demo)` silently excluded almost every
-          // project in the database. Searching for a project by name returned
-          // nothing, and looked like the search was simply bad.
-          .or(`project_type.is.null,project_type.neq.${PUBLIC_DEMO_PROJECT_TYPE}`)
-          .limit(3),
-      ]);
-
-      type WithProject = { project_id: string; projects: { name: string } | null };
-      const nameOf = (row: WithProject) => {
-        const n = row.projects?.name;
-        if (n) projectNames.set(row.project_id, n);
-        return n || projectNames.get(row.project_id);
-      };
-
-      for (const t of (tasks.data ?? []) as unknown as (WithProject & { id: string; title: string })[]) {
-        push({ id: t.id, type: "task", title: t.title, projectId: t.project_id, projectName: nameOf(t) });
-      }
-      for (const m of (materials.data ?? []) as unknown as (WithProject & { id: string; name: string })[]) {
-        push({ id: m.id, type: "material", title: m.name, projectId: m.project_id, projectName: nameOf(m) });
-      }
-      for (const o of (orders.data ?? []) as unknown as (WithProject & {
-        id: string; vendor_name: string | null; total: number | null; invoice_number: string | null;
-      })[]) {
-        push({
-          id: o.id,
-          type: "purchaseOrder",
-          // A read receipt can land without a vendor; the invoice number is the
-          // next most recognisable handle, and the id is never shown raw.
+      const rows = ((data ?? []) as GlobalSearchRow[]).filter(
+        (r): r is GlobalSearchRow & { entity_type: EntityType } => r.entity_type in TYPE_LABELS
+      );
+      setResults(
+        rows.map((r) => ({
+          id: r.entity_id,
+          type: r.entity_type,
           title:
-            o.vendor_name ||
-            (o.invoice_number ? `#${o.invoice_number}` : t("purchases.unknownVendor", "Okänd leverantör")),
-          subtitle: o.total != null ? `${Math.round(o.total).toLocaleString("sv-SE")} kr` : undefined,
-          projectId: o.project_id,
-          projectName: nameOf(o),
-        });
-      }
-      for (const r of (rooms.data ?? []) as unknown as (WithProject & { id: string; name: string })[]) {
-        push({ id: r.id, type: "room", title: r.name, projectId: r.project_id, projectName: nameOf(r) });
-      }
-      for (const p of (projects.data ?? []) as { id: string; name: string; description: string | null }[]) {
-        push({ id: p.id, type: "project", title: p.name, subtitle: p.description || undefined, projectId: p.id });
-      }
-
-      setResults(allResults);
+            r.title ||
+            (r.entity_type === "purchaseOrder"
+              ? t("purchases.unknownVendor", "Okänd leverantör")
+              : "—"),
+          subtitle:
+            r.entity_type === "purchaseOrder" && r.meta?.total != null
+              ? `${Math.round(Number(r.meta.total)).toLocaleString("sv-SE")} kr`
+              : r.snippet ?? undefined,
+          projectId: r.project_id,
+          projectName: r.project_name ?? undefined,
+          taskId: r.meta?.task_id ?? undefined,
+        }))
+      );
       setSelectedIndex(0);
     } finally {
       setLoading(false);
@@ -242,29 +206,46 @@ export function GlobalSearch() {
   }, [t]);
 
   /**
-   * Open the hit — the ITEM, not just the tab it lives on.
+   * Open the hit — the ITEM where a consumer exists, honestly the tab where
+   * none does.
    *
-   * These links used to carry `?taskId=`, `?materialId=` and `?roomId=`.
-   * ProjectDetail reads exactly one deep-link parameter, `entityId`, so every
-   * one of those was inert: the tab opened and nothing else happened, which
-   * reads as "search doesn't work".
-   *
-   * Rooms have no entityId consumer yet, so they still land on the plan tab —
-   * honest, and no worse than before.
+   * entityId is read by the tasks, purchases and time tabs. Rooms and room
+   * items have no consumer yet, so they land on the plan. Comments and field
+   * reports open THEIR TASK when they have one — the report itself is not an
+   * addressable surface. Quotes and invoices are their own pages.
    */
   const handleSelect = useCallback((result: SearchResult) => {
     setOpen(false);
     const base = `/projects/${result.projectId}`;
-    if (result.type === "project") {
-      navigate(base);
-    } else if (result.type === "task") {
-      navigate(`${base}?tab=tasks&entityId=${result.id}`);
-    } else if (result.type === "material" || result.type === "purchaseOrder") {
-      navigate(`${base}?tab=purchases&entityId=${result.id}`);
-    } else if (result.type === "room") {
-      navigate(`${base}?tab=spaceplanner`);
-    } else {
-      navigate(base);
+    switch (result.type) {
+      case "project":
+        navigate(base);
+        break;
+      case "task":
+        navigate(`${base}?tab=tasks&entityId=${result.id}`);
+        break;
+      case "material":
+      case "purchaseOrder":
+        navigate(`${base}?tab=purchases&entityId=${result.id}`);
+        break;
+      case "room":
+      case "roomItem":
+        navigate(`${base}?tab=spaceplanner`);
+        break;
+      case "comment":
+      case "fieldReport":
+        navigate(result.taskId ? `${base}?tab=tasks&entityId=${result.taskId}` : base);
+        break;
+      case "member":
+      case "worker":
+        navigate(`${base}?tab=team`);
+        break;
+      case "quote":
+        navigate(`/quotes/${result.id}`);
+        break;
+      case "invoice":
+        navigate(`/invoices/${result.id}`);
+        break;
     }
   }, [navigate]);
 
@@ -315,7 +296,7 @@ export function GlobalSearch() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={t("globalSearch.inputPlaceholder", "Sök arbeten, inköp, rum, projekt…")}
+              placeholder={t("globalSearch.inputPlaceholder", "Sök i allt inom dina projekt…")}
               className="border-0 p-0 h-auto focus-visible:ring-0 text-base sm:text-sm"
             />
             {loading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground shrink-0" />}
@@ -334,7 +315,9 @@ export function GlobalSearch() {
               return (
                 <div key={type}>
                   <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide px-4 pt-3 pb-1">
-                    {TYPE_LABELS[type] ? t(TYPE_LABELS[type][0], TYPE_LABELS[type][1]) : type}
+                    {TYPE_LABELS[type as EntityType]
+                      ? t(TYPE_LABELS[type as EntityType][0], TYPE_LABELS[type as EntityType][1])
+                      : type}
                   </p>
                   {items.map((result) => {
                     flatIndex++;
@@ -359,7 +342,9 @@ export function GlobalSearch() {
                               {[
                                 t("globalSearch.projectsRoot", "Projekt"),
                                 result.projectName,
-                                result.tabKey ? t(result.tabKey) : null,
+                                TYPE_TAB_KEY[result.type]
+                                  ? t(TYPE_TAB_KEY[result.type]![0], TYPE_TAB_KEY[result.type]![1])
+                                  : null,
                               ]
                                 .filter(Boolean)
                                 .join(" › ")}
