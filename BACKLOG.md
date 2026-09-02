@@ -5663,3 +5663,114 @@ Verifierat i Chrome: vid ankomst är turen borta, planen syns oskymd och
 `guest_planning_edited` är null; efter att ett arbete lagts till sätts flaggan
 och turen kommer. Båda halvorna låsta i `e2e/guest-plan.spec.ts`.
 e2e 176/2, typecheck 336 = baseline, prod-build grön, 0 konsolfel.
+
+---
+id: inkopet-oppnar-fel-vy-i-tabellage
+status: todo
+priority: P1
+tags: [bugfix, inkop, ux]
+created: 2026-09-02
+---
+## Klick på ett inköp öppnar redigeringsrutan, inte detaljvyn
+
+Carl öppnade ett inköp från Inköp-fliken och fick en dialog utan underlag, utan
+fakturanummer och utan artikelrader — och trodde att appen saknade allt det.
+
+**Den saknar det inte.** `PurchaseOrderDetailSheet`
+(`src/components/project/po-list-v2/PurchaseOrderDetailSheet.tsx`) visar redan
+fakturanummer, OCR, förfallodatum, artikelraderna ur `materials` och det bifogade
+underlaget. Problemet är vilken vy man landar i:
+
+`PurchaseRequestsTab.tsx:189` — `poViewMode` defaultar till `'table'`. I tabellvyn
+går radklicket till `onEditPO` (`PurchaseOrdersTableView.tsx:235`), som öppnar
+`EditPurchaseOrderDialog` — ett rent redigeringsformulär med fem fält. Detaljbladet
+nås bara i kortläget. Deep-links gör samma sak: `PurchaseRequestsTab.tsx:289`
+skickar dig till `setEditingPO` när läget är tabell.
+
+Följden: i standardläget finns ingen väg till underlaget, fakturanumret eller
+raderna. Det ser ut som att datan är borta.
+
+**Fix:** radklicket ska öppna detaljbladet i BÅDA lägena. Redigering blir en
+knapp inne i detaljbladet, inte det man får av att klicka på namnet. Samma för
+deep-linken.
+
+---
+id: underlaget-syns-nar-inkopet-oppnas
+status: todo
+priority: P2
+tags: [inkop, ux, dokument]
+created: 2026-09-02
+---
+## Underlaget ska synas direkt när ett inköp öppnas, inte i en ny flik
+
+Carl: "skulle nästan vilja att det var standard att preview visas direkt i
+anslutning till när man öppnar upp specifikt kvitto, faktura etc, kanske till
+höger eller under datarutan, alltid när underlag är kopplat."
+
+Idag: `ReceiptAttachment` i `PurchaseOrderDetailSheet.tsx:303` visar en 48×48
+tumnagel i en radknapp. Klick signerar en URL och gör `window.open` i en NY
+webbläsarflik. Man lämnar alltså appen för att kontrollera sin egen siffra, och
+kan inte se belopp och kvitto samtidigt — vilket är hela poängen med att titta.
+
+**Fix:** rendera underlaget inline i detaljbladet när `receipt_file_path` finns —
+till höger om datan på desktop, under den på mobil. Bilder direkt, PDF med
+sidvisning. Behåll "öppna i ny flik" som sekundär åtgärd för den som vill zooma
+i webbläsaren.
+
+Granskningsvyn (`ImportReviewPage`) har redan en bildyta med vrid/zooma/panorera
+byggd för exakt detta. Återanvänd den i stället för att bygga en andra.
+
+**Detta är samma princip som CSV-jämförelsen och filnamnet på raden:** siffran och
+källan ska gå att se samtidigt, annars kontrollerar ingen någonting.
+
+---
+id: global-sok-tacker-hela-projektet
+status: todo
+priority: P2
+tags: [sok, ux]
+created: 2026-09-02
+---
+## Globala sökningen hittar inte det den lovar
+
+`src/components/GlobalSearch.tsx` söker i fyra tabeller: `tasks`, `materials`,
+`rooms`, `projects`. Platshållaren i rutan säger
+*"Search tasks, purchases, files, rooms..."* (rad 246).
+
+**Två av de fyra löftena är osanna.** Det finns ingen fråga mot `project_files`,
+och ingen mot `purchase_orders` — "purchases" träffar bara `materials`, alltså
+enskilda artikelrader, aldrig själva inköpet. Resultattypen `"file"` finns i
+union-typen på rad 19 men produceras aldrig av någon kodväg.
+
+Carl vill kunna söka fram matchningar överallt inom projektet, och även ovanför
+projektnivån där det finns något att hitta.
+
+**Fix:** lägg till `purchase_orders` (leverantör, fakturanummer, OCR),
+`project_files` (filnamn), dokument och kommentarer. Och gör platshållaren ärlig
+tills täckningen finns — en sökruta som lovar filer och inte söker filer lär folk
+att sökningen är trasig.
+
+---
+id: sokresultat-visar-sin-vag
+status: todo
+priority: P3
+tags: [sok, ux]
+created: 2026-09-02
+---
+## Sökresultat ska visa vägen dit, inte bara namnet
+
+Carl: "när sökresultaten visas så vore det snyggt om en Renofine motsvarande
+filsökväg visades fram till matchresultatnamnet. Typ Projekt > Furusundsgatan 14
+> Inköp > XXX".
+
+Idag visar `GlobalSearch.tsx:283` bara projektnamnet som en grå rad under
+träffen. Man ser VAD som matchade och i vilket projekt, men inte VAR i projektet
+— och en träff på "Bygma" säger inget om den ligger under Inköp, Filer eller ett
+arbete.
+
+**Fix:** bygg en brödsmula per träff av det systemet redan vet:
+`Projekt > <projektnamn> > <flik> > <namn>`, och gå ett steg till där det finns
+en förälder (`… > Inköp > Bygma > artikelrad`). Samma vokabulär som flikarna
+heter i UI:t, inte tabellnamn.
+
+Hänger ihop med [[global-sok-tacker-hela-projektet]] — brödsmulan blir först
+riktigt värd något när sökningen faktiskt når fler ytor än fyra.
