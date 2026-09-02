@@ -34,6 +34,7 @@ import {
   Check,
   X,
   Clock,
+  Search,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -190,6 +191,18 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
   const [poViewMode, setPoViewMode] = usePersistedPreference<'cards' | 'table'>(`po-view-mode-${projectId}`, 'table');
   const [showOnlyUnpaidInvoices, setShowOnlyUnpaidInvoices] = useState(false);
   const [poStatusFilter, setPoStatusFilter] = usePersistedPreference<string>(`po-status-filter-${projectId}`, 'all');
+  /**
+   * Free-text search over the purchase orders.
+   *
+   * The status and vendor dropdowns can only match exactly, on two fields. They
+   * cannot find an AMOUNT, an invoice number or a line item — and "2 948" is
+   * exactly how a person looks for a receipt they remember (Carl, 2026-09-02).
+   * A hundred rows out of one folder drop is not a list you scroll.
+   *
+   * Not persisted, unlike the filters: a forgotten search term looks like
+   * missing data the next time the tab is opened.
+   */
+  const [poSearch, setPoSearch] = useState('');
   const [poVendorFilter, setPoVendorFilter] = usePersistedPreference<string>(`po-vendor-filter-${projectId}`, 'all');
   const [receiptModalOpen, setReceiptModalOpen] = useState(false);
   const [addPlannedDialogOpen, setAddPlannedDialogOpen] = useState(false);
@@ -1268,13 +1281,35 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
         ).length;
         const distinctStatuses = Array.from(new Set(purchaseOrders.map((po) => po.status).filter(Boolean)));
         const distinctVendors = Array.from(new Set(purchaseOrders.map((po) => po.vendor_name).filter(Boolean))) as string[];
+        // Everything a person might remember about an order: who, how much,
+        // which invoice, and what was on it. Amounts are matched with the
+        // spaces stripped, so "2948" and "2 948" both find 2 948,00 kr.
+        const searchTerm = poSearch.trim().toLowerCase();
+        const searchDigits = searchTerm.replace(/[\s\u00a0]/g, '');
+        const poMatchesSearch = (po: PurchaseOrder) => {
+          if (!searchTerm) return true;
+          const haystack = [
+            po.vendor_name,
+            po.invoice_number,
+            po.ocr_number,
+            po.notes,
+            ...(materialsByPOId.get(po.id) ?? []).map((m) => m.name),
+          ]
+            .filter(Boolean)
+            .join(' ')
+            .toLowerCase();
+          if (haystack.includes(searchTerm)) return true;
+          const amount = String(po.total ?? '').replace(/[\s\u00a0]/g, '');
+          return !!searchDigits && amount.includes(searchDigits);
+        };
         const filteredPOs = purchaseOrders.filter((po) => {
           if (showOnlyUnpaidInvoices && !(po.source === 'ai_invoice' && !po.paid_at)) return false;
           if (poStatusFilter !== 'all' && po.status !== poStatusFilter) return false;
           if (poVendorFilter !== 'all' && (po.vendor_name || '') !== poVendorFilter) return false;
+          if (!poMatchesSearch(po)) return false;
           return true;
         });
-        const isFiltered = showOnlyUnpaidInvoices || poStatusFilter !== 'all' || poVendorFilter !== 'all';
+        const isFiltered = showOnlyUnpaidInvoices || poStatusFilter !== 'all' || poVendorFilter !== 'all' || !!searchTerm;
         return (
         <div className="space-y-3">
           {/* Section heading + filters + view toggle */}
@@ -1291,6 +1326,31 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
             <div className="flex items-center gap-2 flex-wrap">
               {purchaseOrders.length > 1 && (
                 <>
+                  {/* Always visible, not behind a toggle: Files already has a
+                      permanent search box, and a hidden affordance is exactly
+                      how the detail sheet went unfound for months. */}
+                  <div className="relative">
+                    <Search
+                      className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2"
+                      style={{ color: 'var(--rf-fg-muted)' }}
+                    />
+                    <Input
+                      value={poSearch}
+                      onChange={(e) => setPoSearch(e.target.value)}
+                      placeholder={t('purchases.searchPlaceholder', 'Sök leverantör, belopp, fakturanr…')}
+                      className="h-7 w-[190px] pl-7 pr-7 text-xs"
+                    />
+                    {poSearch && (
+                      <button
+                        type="button"
+                        onClick={() => setPoSearch('')}
+                        className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-accent"
+                        title={t('common.clear', 'Rensa')}
+                      >
+                        <X className="h-3 w-3" style={{ color: 'var(--rf-fg-muted)' }} />
+                      </button>
+                    )}
+                  </div>
                   <Select value={poStatusFilter} onValueChange={setPoStatusFilter}>
                     <SelectTrigger className="h-7 w-auto min-w-[104px] text-xs gap-1">
                       <SelectValue />
@@ -1378,6 +1438,7 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
               currency={currency}
               maskEconomy={maskEconomy}
               canEdit={isProjectOwner || userPurchasesAccess === 'edit'}
+              isFiltered={isFiltered}
               onOpenPO={(po) => setOpenPOId(po.id)}
               onEditPO={(po) => setEditingPO(po as PurchaseOrder)}
               onDeletePO={(po) => setPOToDelete(po as PurchaseOrder)}

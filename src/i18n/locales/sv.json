@@ -2947,7 +2947,13 @@
     "vatUnknown": "Okänd",
     "vatNetHint": "Momsunderlag {{net}} kr",
     "vatNetHintRate": "Momsunderlag {{net}} kr · {{rate}} %",
-    "vatEmptyHint": "Lämna tomt om momsen inte är känd — den syns då som ej utläst."
+    "vatEmptyHint": "Lämna tomt om momsen inte är känd — den syns då som ej utläst.",
+    "attachmentPreviewFailed": "Förhandsvisningen kunde inte laddas — öppna filen nedan.",
+    "attachmentPdfFallback": "PDF:en kan inte visas här — öppna den nedan.",
+    "attachmentOpenFull": "Öppna i full storlek",
+    "attachmentOpen": "Öppna",
+    "searchPlaceholder": "Sök leverantör, belopp, fakturanr…",
+    "noOrdersMatch": "Inga inköp matchar din sökning."
   },
   "overview": {
     "messagesHeading": "Meddelanden",

@@ -3578,7 +3578,13 @@
     "vatUnknown": "Unknown",
     "vatNetHint": "VAT base {{net}} kr",
     "vatNetHintRate": "VAT base {{net}} kr · {{rate}} %",
-    "vatEmptyHint": "Leave empty if the VAT is unknown — it will show as not extracted."
+    "vatEmptyHint": "Leave empty if the VAT is unknown — it will show as not extracted.",
+    "attachmentPreviewFailed": "The preview could not load — open the file below.",
+    "attachmentPdfFallback": "This PDF cannot be shown here — open it below.",
+    "attachmentOpenFull": "Open at full size",
+    "attachmentOpen": "Open",
+    "searchPlaceholder": "Search vendor, amount, invoice no…",
+    "noOrdersMatch": "No purchases match your search."
   },
   "overview": {
     "messagesHeading": "Messages",

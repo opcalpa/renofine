@@ -300,33 +300,61 @@ function MarkAsPaidButton({ po }: { po: PO }) {
   );
 }
 
+/**
+ * The order's document, shown where the order is — not in another browser tab.
+ *
+ * WHY (Carl, 2026-09-02): this rendered a 48x48 thumbnail in a row that did
+ * `window.open` on click. To check a total against the receipt you had to leave
+ * the app, which means you could never see the number and its source at the
+ * same time — the one thing checking actually requires. It is the same
+ * principle as the filename on the import row and the CSV second opinion: the
+ * figure and the paper it came from belong on one screen.
+ *
+ * The sheet is 540px on desktop and a drawer on mobile, so the preview goes
+ * inline above the caption rather than beside it.
+ */
 function ReceiptAttachment({ filePath }: { filePath: string }) {
   const { t } = useTranslation();
-  const [thumbUrl, setThumbUrl] = useState<string | null>(null);
+  const [url, setUrl] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
   const [opening, setOpening] = useState(false);
 
+  const isImage = isImagePath(filePath);
+  const isPdf = isPdfPath(filePath);
+  const name = fileBasename(filePath);
+  const canPreview = isImage || isPdf;
+
+  // One signed URL serves both the inline preview and "open in a new tab".
+  // An hour, not ten minutes: someone comparing a stack of receipts keeps this
+  // panel open, and a preview that silently expires mid-review looks like a
+  // broken file rather than a stale link.
   useEffect(() => {
+    if (!canPreview) return;
     let cancelled = false;
-    if (!isImagePath(filePath)) {
-      setThumbUrl(null);
-      return;
-    }
+    setUrl(null);
+    setFailed(false);
     supabase.storage
       .from("project-files")
-      .createSignedUrl(filePath, 600)
-      .then(({ data }) => {
-        if (!cancelled && data?.signedUrl) setThumbUrl(data.signedUrl);
+      .createSignedUrl(filePath, 3600)
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error || !data?.signedUrl) setFailed(true);
+        else setUrl(data.signedUrl);
       });
     return () => {
       cancelled = true;
     };
-  }, [filePath]);
+  }, [filePath, canPreview]);
 
   const handleOpen = async () => {
+    if (url) {
+      window.open(url, "_blank", "noopener,noreferrer");
+      return;
+    }
     setOpening(true);
     const { data, error } = await supabase.storage
       .from("project-files")
-      .createSignedUrl(filePath, 600);
+      .createSignedUrl(filePath, 3600);
     setOpening(false);
     if (error || !data?.signedUrl) {
       toast.error(t("files.openError", "Kunde inte öppna filen"));
@@ -335,58 +363,60 @@ function ReceiptAttachment({ filePath }: { filePath: string }) {
     window.open(data.signedUrl, "_blank", "noopener,noreferrer");
   };
 
-  const name = fileBasename(filePath);
-  const isImage = isImagePath(filePath);
-  const isPdf = isPdfPath(filePath);
-
   return (
-    <button
-      type="button"
-      onClick={handleOpen}
-      disabled={opening}
-      className="group flex w-full items-center gap-3 rounded-md border px-3 py-2.5 text-left transition-colors hover:bg-accent disabled:opacity-50"
-      style={{
-        background: "var(--rf-surface)",
-        borderColor: "var(--rf-hairline)",
-      }}
+    <div
+      className="overflow-hidden rounded-md border"
+      style={{ background: "var(--rf-surface)", borderColor: "var(--rf-hairline)" }}
     >
-      <div
-        className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded"
-        style={{ background: "var(--rf-bg-sunken)" }}
-      >
-        {isImage && thumbUrl ? (
-          <img src={thumbUrl} alt={name} className="h-full w-full object-cover" />
-        ) : isPdf ? (
-          <FileText className="h-5 w-5" style={{ color: "var(--rf-warn)" }} />
-        ) : isImage ? (
-          <ImageIcon className="h-5 w-5" style={{ color: "var(--rf-fg-muted)" }} />
-        ) : (
-          <Paperclip className="h-5 w-5" style={{ color: "var(--rf-fg-muted)" }} />
-        )}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="truncate" style={{ fontSize: 13, color: "var(--rf-ink)", fontWeight: 500 }}>
-          {name}
+      {canPreview && (
+        <div
+          className="flex items-center justify-center"
+          style={{ background: "var(--rf-bg-sunken)", minHeight: 120 }}
+        >
+          {failed ? (
+            <p className="px-3 py-6 text-center" style={{ fontSize: 12, color: "var(--rf-fg-muted)" }}>
+              {t("purchases.attachmentPreviewFailed", "Förhandsvisningen kunde inte laddas — öppna filen nedan.")}
+            </p>
+          ) : !url ? (
+            <Loader2 className="my-8 h-5 w-5 animate-spin" style={{ color: "var(--rf-fg-muted)" }} />
+          ) : isImage ? (
+            <button
+              type="button"
+              onClick={handleOpen}
+              className="w-full cursor-zoom-in"
+              title={t("purchases.attachmentOpenFull", "Öppna i full storlek")}
+            >
+              <img src={url} alt={name} className="max-h-[380px] w-full object-contain" />
+            </button>
+          ) : (
+            <object data={url} type="application/pdf" className="h-[380px] w-full">
+              <p className="px-3 py-6 text-center" style={{ fontSize: 12, color: "var(--rf-fg-muted)" }}>
+                {t("purchases.attachmentPdfFallback", "PDF:en kan inte visas här — öppna den nedan.")}
+              </p>
+            </object>
+          )}
         </div>
-        <div style={{ fontSize: 11, color: "var(--rf-fg-muted)" }}>
-          {isPdf
-            ? t("files.pdfDocument", "PDF-dokument")
-            : isImage
-              ? t("files.image", "Bild")
-              : t("files.file", "Fil")}
-          {" · "}
-          {opening ? t("common.opening", "Öppnar...") : t("files.clickToPreview", "Klicka för förhandsgranskning")}
-        </div>
-      </div>
-      {opening ? (
-        <Loader2 className="h-4 w-4 flex-shrink-0 animate-spin" style={{ color: "var(--rf-fg-muted)" }} />
-      ) : (
-        <ExternalLink className="h-4 w-4 flex-shrink-0 opacity-50 group-hover:opacity-100" style={{ color: "var(--rf-fg-muted)" }} />
       )}
-    </button>
+
+      <div className="flex items-center gap-2 px-3 py-2">
+        {isPdf ? (
+          <FileText className="h-4 w-4 shrink-0" style={{ color: "var(--rf-warn)" }} />
+        ) : isImage ? (
+          <ImageIcon className="h-4 w-4 shrink-0" style={{ color: "var(--rf-fg-muted)" }} />
+        ) : (
+          <Paperclip className="h-4 w-4 shrink-0" style={{ color: "var(--rf-fg-muted)" }} />
+        )}
+        <span className="min-w-0 flex-1 truncate" style={{ fontSize: 12, color: "var(--rf-ink)" }} title={name}>
+          {name}
+        </span>
+        <Button variant="ghost" size="sm" className="h-6 gap-1 px-2" onClick={handleOpen} disabled={opening}>
+          {opening ? <Loader2 className="h-3 w-3 animate-spin" /> : <ExternalLink className="h-3 w-3" />}
+          <span style={{ fontSize: 11 }}>{t("purchases.attachmentOpen", "Öppna")}</span>
+        </Button>
+      </div>
+    </div>
   );
 }
-
 function useIsDesktop() {
   const [isDesktop, setIsDesktop] = useState(
     typeof window !== "undefined" && window.innerWidth >= 1024

@@ -63,6 +63,12 @@ interface PurchaseOrdersTableViewProps {
    * unreachable, so the receipt, the invoice number and the line items looked
    * like they did not exist at all (Carl, 2026-09-02).
    */
+  /**
+   * True when a search or filter is narrowing the list. Without it the empty
+   * table says "no purchase orders YET" to someone whose search simply missed —
+   * which reads as "your data is gone" rather than "nothing matched".
+   */
+  isFiltered?: boolean;
   onOpenPO: (po: PurchaseOrderRow) => void;
   onEditPO: (po: PurchaseOrderRow) => void;
   onDeletePO: (po: PurchaseOrderRow) => void;
@@ -79,6 +85,7 @@ export const PurchaseOrdersTableView = ({
   currency,
   maskEconomy = false,
   canEdit,
+  isFiltered = false,
   onOpenPO,
   onEditPO,
   onDeletePO,
@@ -195,7 +202,9 @@ export const PurchaseOrdersTableView = ({
             {purchaseOrders.length === 0 && (
               <tr>
                 <td colSpan={ALL_COLUMNS.length + 2} className="px-3 py-6 text-center text-muted-foreground italic">
-                  {t("purchases.noOrders", "Inga inköpsordrar än.")}
+                  {isFiltered
+                    ? t("purchases.noOrdersMatch", "Inga inköp matchar din sökning.")
+                    : t("purchases.noOrders", "Inga inköpsordrar än.")}
                 </td>
               </tr>
             )}
