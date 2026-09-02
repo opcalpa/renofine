@@ -8303,7 +8303,10 @@
       "tally": "{{kept}} av {{total}} inköp tas med",
       "vat": "Moms",
       "docNo": "Faktura-/kvittonr",
-      "clickToEdit": "klicka för att rätta"
+      "clickToEdit": "klicka för att rätta",
+      "noRoomOption": "Inget rum",
+      "createRoom": "Skapa nytt rum…",
+      "createdRoom": "Skapa rummet {{name}}"
     },
     "drawings": {
       "title": "Ritningar",

@@ -9,13 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import type { ImportSession } from '@/services/agent/importSession';
 import type { PurchaseFilter, PurchaseRow } from './purchaseRowModel';
@@ -80,6 +74,8 @@ function EditableValue({
   mono,
   className,
   onSave,
+  armed,
+  onArm,
 }: {
   value: string;
   display: string;
@@ -88,6 +84,15 @@ function EditableValue({
   mono?: boolean;
   className?: string;
   onSave: (next: string) => void;
+  /**
+   * Whether this row is the selected one. Values on an UNSELECTED row are not
+   * editable: the first click anywhere on a row means "show me this receipt",
+   * and with fields packed into the row it was far too easy to open an editor
+   * when all you wanted was to look at the next document (Carl, 2026-09-02).
+   */
+  armed: boolean;
+  /** Select the row instead of editing, when the row is not armed yet. */
+  onArm: () => void;
 }) {
   const { t } = useTranslation();
   const hint = t('importReview.purchases.clickToEdit', 'klicka för att rätta');
@@ -123,13 +128,19 @@ function EditableValue({
   return (
     <button
       type="button"
-      title={`${label} — ${hint}`}
+      title={armed ? `${label} — ${hint}` : label}
       onClick={(e) => {
         e.stopPropagation();
+        // Not selected yet → this click selects the row and shows its image.
+        if (!armed) {
+          onArm();
+          return;
+        }
         setEditing(true);
       }}
       className={cn(
-        'rounded px-1 -mx-1 text-left transition-colors hover:bg-muted hover:ring-1 hover:ring-border',
+        'rounded px-1 -mx-1 text-left transition-colors',
+        armed && 'hover:bg-muted hover:ring-1 hover:ring-border',
         mono && 'font-mono',
         !display && 'italic text-muted-foreground/70',
         className
@@ -148,6 +159,115 @@ export type PurchaseField =
   | 'invoiceNumber'
   | 'vatAmount';
 
+
+/**
+ * Pick a room for a purchase — or name a new one right here.
+ *
+ * Every other room picker in the app offers "create new" at the bottom of the
+ * list (AIDocumentImportModal, PropertyPicker), and this one silently did not:
+ * a receipt for a room the project has never heard of had nowhere to go
+ * (Carl, 2026-09-02). The new room is only a PROPOSAL until Genomför, like
+ * everything else on this screen.
+ */
+function RoomPicker({
+  rooms,
+  value,
+  pendingName,
+  onPick,
+  onCreate,
+}: {
+  rooms: Array<{ id: string; name: string }>;
+  value: string | null;
+  /** A room this batch will create — shown as the current pick before it exists. */
+  pendingName: string | null;
+  onPick: (value: string) => void;
+  onCreate: (name: string) => void;
+}) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState('');
+  const current = rooms.find((r) => r.id === value);
+  const label = current?.name ?? pendingName ?? null;
+
+  const create = () => {
+    const name = draft.trim();
+    if (!name) return;
+    onCreate(name);
+    setDraft('');
+    setOpen(false);
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="outline" size="sm" className="h-7 w-[130px] shrink-0 justify-start gap-1 px-2 text-xs">
+          <Home className="h-3 w-3 shrink-0 text-muted-foreground" />
+          <span className={cn('truncate', !label && 'text-muted-foreground')}>
+            {label ?? t('importReview.purchases.noRoom', 'Välj rum')}
+          </span>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="max-h-72 w-56 overflow-y-auto p-1">
+        <button
+          type="button"
+          onClick={() => {
+            onPick(NO_ROOM);
+            setOpen(false);
+          }}
+          className={cn(
+            'w-full rounded px-2 py-1.5 text-left text-xs hover:bg-muted',
+            !label && 'bg-primary/5 font-medium'
+          )}
+        >
+          {t('importReview.purchases.noRoomOption', 'Inget rum')}
+        </button>
+        {rooms.map((r) => (
+          <button
+            key={r.id}
+            type="button"
+            onClick={() => {
+              onPick(`existing:${r.id}`);
+              setOpen(false);
+            }}
+            className={cn(
+              'w-full truncate rounded px-2 py-1.5 text-left text-xs hover:bg-muted',
+              current?.id === r.id && 'bg-primary/5 font-medium'
+            )}
+            title={r.name}
+          >
+            {r.name}
+          </button>
+        ))}
+        <div className="mt-1 border-t pt-1">
+          <div className="flex gap-1 px-1">
+            <Input
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              placeholder={t('importReview.purchases.createRoom', 'Skapa nytt rum…')}
+              className="h-7 text-xs"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  create();
+                }
+              }}
+            />
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 shrink-0 px-2 text-xs"
+              disabled={!draft.trim()}
+              onClick={create}
+            >
+              +
+            </Button>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 interface PurchaseListProps {
   rows: PurchaseRow[];
   session: ImportSession;
@@ -158,6 +278,8 @@ interface PurchaseListProps {
   onRoom: (id: string, value: string) => void;
   /** One corrected field on one row. Nothing reaches the DB until Genomför. */
   onField: (id: string, field: PurchaseField, value: string) => void;
+  /** Name a room that does not exist yet; becomes a create_room proposal. */
+  onCreateRoom: (purchaseId: string, name: string) => void;
 }
 
 /**
@@ -176,6 +298,7 @@ export function PurchaseList({
   onToggle,
   onRoom,
   onField,
+  onCreateRoom,
 }: PurchaseListProps) {
   const { t } = useTranslation();
 
@@ -230,6 +353,7 @@ export function PurchaseList({
               onToggle={() => onToggle(row.id, !row.kept)}
               onRoom={(value) => onRoom(row.id, value)}
               onField={(field, value) => onField(row.id, field, value)}
+              onCreateRoom={(name) => onCreateRoom(row.id, name)}
             />
           ))}
         </div>
@@ -247,6 +371,7 @@ function PurchaseRowView({
   onToggle,
   onRoom,
   onField,
+  onCreateRoom,
 }: {
   row: PurchaseRow;
   session: ImportSession;
@@ -256,6 +381,7 @@ function PurchaseRowView({
   onToggle: () => void;
   onRoom: (value: string) => void;
   onField: (field: PurchaseField, value: string) => void;
+  onCreateRoom: (name: string) => void;
 }) {
   const { t, i18n } = useTranslation();
   const off = !row.kept;
@@ -298,6 +424,8 @@ function PurchaseRowView({
               label={t('importReview.purchases.fieldVendor', 'Leverantör')}
               onSave={(v) => onField('vendorName', v)}
               className={cn('min-w-0 flex-1 truncate text-sm font-semibold', off && 'line-through')}
+                armed={selected}
+                onArm={onSelect}
             />
             <EditableValue
               value={String(row.total)}
@@ -309,6 +437,8 @@ function PurchaseRowView({
                 'shrink-0 text-[13px] tabular-nums',
                 off ? 'text-muted-foreground line-through' : 'text-foreground'
               )}
+                armed={selected}
+                onArm={onSelect}
             />
           </div>
 
@@ -323,6 +453,8 @@ function PurchaseRowView({
                 type="date"
                 mono
                 onSave={(v) => onField('documentDate', v)}
+                armed={selected}
+                onArm={onSelect}
               />
               <span aria-hidden>·</span>
               <span className="whitespace-nowrap">
@@ -333,6 +465,8 @@ function PurchaseRowView({
                   label={t('importReview.purchases.vat', 'Moms')}
                   mono
                   onSave={(v) => onField('vatAmount', v)}
+                armed={selected}
+                onArm={onSelect}
                 />
               </span>
               <span aria-hidden>·</span>
@@ -344,6 +478,8 @@ function PurchaseRowView({
                   label={t('importReview.purchases.docNo', 'Faktura-/kvittonr')}
                   mono
                   onSave={(v) => onField('invoiceNumber', v)}
+                armed={selected}
+                onArm={onSelect}
                 />
               </span>
               {row.lineCount > 0 && (
@@ -355,26 +491,15 @@ function PurchaseRowView({
                 </>
               )}
             </span>
-            {session.existingRooms.length > 0 && (
-              <span onClick={(e) => e.stopPropagation()}>
-                <Select value={row.roomId ? `existing:${row.roomId}` : NO_ROOM} onValueChange={onRoom}>
-                  <SelectTrigger className="h-7 w-[120px] shrink-0 text-xs">
-                    <Home className="mr-1 h-3 w-3 shrink-0 text-muted-foreground" />
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={NO_ROOM}>
-                      {t('importReview.purchases.noRoom', 'Välj rum')}
-                    </SelectItem>
-                    {session.existingRooms.map((r) => (
-                      <SelectItem key={r.id} value={`existing:${r.id}`}>
-                        {r.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </span>
-            )}
+            <span onClick={(e) => e.stopPropagation()}>
+              <RoomPicker
+                rooms={session.existingRooms}
+                value={row.roomId}
+                pendingName={row.roomName}
+                onPick={onRoom}
+                onCreate={onCreateRoom}
+              />
+            </span>
           </div>
 
           {flagText && (

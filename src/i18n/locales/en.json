@@ -8304,7 +8304,10 @@
       "tally": "{{kept}} of {{total}} purchases included",
       "vat": "VAT",
       "docNo": "Invoice/receipt no",
-      "clickToEdit": "click to correct"
+      "clickToEdit": "click to correct",
+      "noRoomOption": "No room",
+      "createRoom": "Create new room…",
+      "createdRoom": "Create the room {{name}}"
     },
     "drawings": {
       "title": "Drawings",

@@ -27,6 +27,8 @@ export interface PurchaseRow {
   vatAmount: number | null;
   dueDate: string | null;
   roomId: string | null;
+  /** A room this batch will CREATE — set when roomId is still null. */
+  roomName: string | null;
   /** Line amounts don't add up to the header total — check it against the image. */
   sumMismatch: number | null;
   /** Already booked in the project (same vendor + invoice no, or vendor+date+amount). */
@@ -94,6 +96,7 @@ export function buildPurchaseRows(session: ImportSession): PurchaseRow[] {
         vatAmount: action.vatAmount ?? null,
         dueDate: action.dueDate ?? null,
         roomId: action.roomId ?? null,
+        roomName: action.roomName ?? null,
         sumMismatch: mismatch,
         duplicateOfExisting: !!proposal.duplicateOfExisting,
         pairOf,
@@ -114,7 +117,7 @@ export function filterRows(
   const q = query.trim().toLowerCase();
   return rows.filter((row) => {
     if (filter === 'needsLook' && !row.needsLook) return false;
-    if (filter === 'noRoom' && row.roomId) return false;
+    if (filter === 'noRoom' && (row.roomId || row.roomName)) return false;
     if (filter === 'dropped' && row.kept) return false;
     if (!q) return true;
     return (

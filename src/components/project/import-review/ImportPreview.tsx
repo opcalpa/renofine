@@ -77,17 +77,27 @@ function ImageViewer({
   }, [src]);
 
   /**
-   * A receipt shot with a phone held upright, or an A4 laid on a table, comes
-   * out landscape more often than not — and every one of Carl's 56 needed the
-   * same first click. So a wider-than-tall image starts turned a quarter, and
-   * the button becomes a correction rather than a chore.
+   * Stand a landscape photo up by default.
    *
-   * Only when nothing is remembered: a deliberate turn always wins.
+   * WHAT THIS CANNOT KNOW (Carl, 2026-09-02): the photo itself is correctly
+   * oriented — it is the RECEIPT INSIDE it that lies sideways on the table.
+   * EXIF says nothing about that, and the aspect ratio cannot tell a quarter
+   * turn clockwise from a quarter turn anti-clockwise. It is a coin flip, and
+   * the first version called it wrong for all 56 of Carl's receipts (they came
+   * out upside down).
+   *
+   * So: anti-clockwise, because that is what his real batch needed, and a
+   * heuristic with evidence beats one without. One click corrects an outlier
+   * and the turn is remembered.
+   *
+   * The durable fix is to stop guessing — the classifier already looks at the
+   * image, so it can report which way the text runs. Backlog:
+   * `tolken-rapporterar-bildens-orientering`.
    */
   const onImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
     if (rotation !== undefined) return;
     const img = e.currentTarget;
-    onRotation(img.naturalWidth > img.naturalHeight ? 90 : 0);
+    onRotation(img.naturalWidth > img.naturalHeight ? 270 : 0);
   };
 
   const turn = rotation ?? 0;

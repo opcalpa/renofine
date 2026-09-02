@@ -375,6 +375,37 @@ export function ImportReviewPage({
     [session, onChange, t]
   );
 
+  /**
+   * Name a room from a purchase row. Adds a create_room PROPOSAL and points
+   * this purchase at it — nothing is written until Genomför, same as every
+   * other decision here. Applying rooms before purchases is already the
+   * order applyProposals uses, so the room exists by the time the order lands.
+   */
+  const handleCreateRoomForPurchase = useCallback(
+    (purchaseId: string, name: string) => {
+      const trimmed = name.trim();
+      if (!trimmed) return;
+      const roomProposal: AgentProposal = {
+        id: `room-${purchaseId}`,
+        summary: t('importReview.purchases.createdRoom', 'Skapa rummet {{name}}', { name: trimmed }),
+        confidence: 1,
+        action: { type: 'create_room', name: trimmed },
+      };
+      onChange({
+        ...session,
+        proposals: [
+          ...session.proposals.filter((p) => p.id !== roomProposal.id),
+          roomProposal,
+        ].map((p) =>
+          p.id === purchaseId && p.action.type === 'import_purchase'
+            ? { ...p, action: { ...p.action, roomId: null, roomName: trimmed } }
+            : p
+        ),
+      });
+    },
+    [session, onChange, t]
+  );
+
   const roomTaskCount =
     session.proposals.filter((p) =>
       ['create_room', 'create_task', 'create_plan_sketch'].includes(p.action.type)
@@ -484,6 +515,7 @@ export function ImportReviewPage({
           onToggle={handleToggle}
           onRoom={handlePurchaseRoom}
           onField={handleField}
+          onCreateRoom={handleCreateRoomForPurchase}
         />
       )}
       {activeTab === 'rooms' && (

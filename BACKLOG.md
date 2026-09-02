@@ -892,6 +892,35 @@ Ingen av dem blockerar 112-kvittotestet; vrid + zoom + panorera räcker för att
 verifiera manuellt.
 
 ---
+id: tolken-rapporterar-bildens-orientering
+status: todo
+priority: P2
+tags: [import, ux, ai]
+created: 2026-09-02
+---
+
+## Låt tolken säga åt vilket håll texten står — sluta gissa
+
+Insikten från Carls 56 kvitton (2026-09-02): **fotot är rätt orienterat — det är
+KVITTOT INUTI som ligger på snedden på bordet.** EXIF säger ingenting om det,
+och bildens proportioner kan inte skilja ett kvarts varv medurs från ett moturs.
+Auto-vridningen är därför en slantsingling: första versionen valde medurs och
+alla 56 kom upp och ner.
+
+Nuvarande lösning är moturs (270°), för det var vad hans verkliga hög behövde —
+en heuristik med bevis slår en utan, och ett klick rättar en avvikare.
+
+**Den hållbara fixen kostar noll extra anrop:** `classify-document` tittar redan
+på bilden. Lägg till ett fält i svaret — `text_orientation: 0 | 90 | 180 | 270`
+— bär det på förslaget, och låt förhandsvisningen använda det i stället för att
+gissa. Det gäller bara nyimporterade filer; äldre sessioner faller tillbaka på
+heuristiken.
+
+Bonus när det finns: samma siffra kan rotera bilden FÖRE arkivering, så den
+ligger rätt i Filer också (hör ihop med
+`bilden-som-arkiveras-vrids-och-beskars`).
+
+---
 id: beslut-prismodell-proffs
 status: todo
 priority: P1
