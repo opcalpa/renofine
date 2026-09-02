@@ -5832,3 +5832,57 @@ den gamla platshållaren.
 **Vad som krävs:** en filmetadata-tabell (namn, sökväg, projekt, kategori) som
 skrivs vid uppladdning, så filer blir sökbara som allt annat. Det gagnar också
 importens `storagePath`-uppslag och Filer-flikens egen sökning.
+
+---
+id: sok-som-nar-hela-domanen
+status: todo
+priority: P2
+tags: [sok, arkitektur, ux]
+created: 2026-09-02
+---
+## Sökningen når fem tabeller på ett fält var — resten är osynligt
+
+Efter fixen 2026-09-02 (`74909d5`) är sökningen KORREKT men GRUND. Carl frågade
+om den hittar allt: arbeten, inköp, kvittodetaljer, filer, arbetsdetaljer, rum,
+rumsdetaljer, användare, arbetare, instruktioner. Svaret är nej.
+
+**Söks idag** — `src/components/GlobalSearch.tsx`:
+
+| Objekt | Fält som matchas | Av tabellens kolumner |
+|---|---|---|
+| Arbeten | `title` | 47 |
+| Materialrader | `name` | 33 |
+| Inköpsorder | `vendor_name`, `invoice_number`, `ocr_number` | 24 |
+| Rum | `name` | 23 |
+| Projekt | `name` | — |
+
+**Söks inte alls:**
+- **Arbetsdetaljer** — `description`, `internal_notes`, `cost_center`,
+  `invoice_number`, `ocr_number`, ÄTA-fälten
+- **Rumsdetaljer** — `description`, `notes`, `material`, `links`
+- **Rumsobjekt** (`room_items`) — `title`, `category`, `subtype`, `series`.
+  Alltså el-uttag, blandare, vitvaror: hela objektmodellen
+- **Kvittodetaljer** — inköpets `notes`, artikelradernas fält utöver namnet, belopp
+- **Uppladdade filer** — ingen tabell alls, se [[global-sok-hittar-filer]]
+- **Användare, teammedlemmar, arbetare** — `profiles`, `project_shares`,
+  `worker_access_tokens`
+- **Kommentarer och instruktioner** — `comments.content`
+- **Fältrapporter** — `field_reports.raw_text`
+- **Offerter, fakturor, ÄTA** — `quotes`, `invoices` (titel, nummer, fritext)
+- **Bostadens papper** — `property_documents.file_name`
+- Tidrapporter, foton, företag
+
+**Varför det inte bara är "lägg till fler frågor":** varje ytterligare tabell är
+ännu en nätverksrunda per tangenttryck. Fem är redan gränsen; femton är ohållbart.
+
+**Rätt lösning är ett sökindex.** En `search_index`-tabell (eller
+Postgres-`tsvector` + GIN) som fylls av triggers: `project_id`, `entity_type`,
+`entity_id`, `title`, `body`, `updated_at`. Då blir sökningen EN fråga oavsett
+hur många objekttyper som finns, och rankning, prefixmatchning och stavfel blir
+möjliga. Det löser också filer så snart filmetadata finns.
+
+Behörighet måste in i indexet, inte ovanpå: raderna scopas på `project_id` och
+frågan filtreras med `my_project_ids()` precis som nu — se lärdomen i
+[[feedback_rls_test_the_table_not_the_predicate]], indexet ärver ingenting.
+
+Först då kan platshållaren ärligt säga "sök i allt".
