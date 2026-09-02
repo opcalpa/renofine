@@ -1220,6 +1220,79 @@ export type Database = {
         }
         Relationships: []
       }
+      import_runs: {
+        Row: {
+          applied_count: number | null
+          created_at: string
+          created_by_profile_id: string | null
+          files_read: number
+          finished_at: string | null
+          flagged_count: number
+          folder_label: string | null
+          id: string
+          project_id: string
+          proposal_count: number
+          purchase_count: number
+          session: Json
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          applied_count?: number | null
+          created_at?: string
+          created_by_profile_id?: string | null
+          files_read?: number
+          finished_at?: string | null
+          flagged_count?: number
+          folder_label?: string | null
+          id?: string
+          project_id: string
+          proposal_count?: number
+          purchase_count?: number
+          session: Json
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          applied_count?: number | null
+          created_at?: string
+          created_by_profile_id?: string | null
+          files_read?: number
+          finished_at?: string | null
+          flagged_count?: number
+          folder_label?: string | null
+          id?: string
+          project_id?: string
+          proposal_count?: number
+          purchase_count?: number
+          session?: Json
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_runs_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "professional_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "import_runs_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "import_runs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inspection_templates: {
         Row: {
           category: string

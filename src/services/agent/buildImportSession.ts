@@ -127,6 +127,9 @@ export function buildImportSession({
 
   return {
     projectId,
+    // The run's identity, minted here so the journal and the server row are
+    // two copies of ONE reading rather than two readings.
+    runId: crypto.randomUUID(),
     outcome,
     proposals,
     files: rows,

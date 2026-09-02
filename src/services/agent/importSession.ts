@@ -121,6 +121,16 @@ export interface ImportDrawing {
 
 export interface ImportSession {
   projectId: string;
+  /**
+   * Identity of this import RUN, shared by the local journal and the
+   * `import_runs` row on the server. Without it a resumed session would be
+   * saved back as a new run every time it was reopened, and the history would
+   * fill with copies of the same reading.
+   *
+   * Optional because sessions built before runs existed (and the dev harness)
+   * still have to render.
+   */
+  runId?: string;
   /** Everything the reader produced — kept whole so nothing is lost in review. */
   outcome: IngestOutcome;
   proposals: AgentProposal[];
