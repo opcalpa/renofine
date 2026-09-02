@@ -90,6 +90,7 @@ import { AddPurchaseLineDialog } from "./AddPurchaseLineDialog";
 import { NewPurchaseOrderDialog } from "./NewPurchaseOrderDialog";
 import { PurchaseOrdersTableView } from "./PurchaseOrdersTableView";
 import { PurchaseOrdersGridV2 } from "./po-list-v2/PurchaseOrdersGridV2";
+import { PurchaseOrderDetailSheet } from "./po-list-v2/PurchaseOrderDetailSheet";
 import type { PO, POMaterial } from "./po-list-v2/types";
 import { AddMaterialDialog } from "./overview/AddMaterialDialog";
 import { computePurchaseTotals } from "@/lib/purchaseTotals";
@@ -286,11 +287,10 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
     // PO match takes precedence — widgets like UpcomingPaymentsWidget pass po.id
     const po = purchaseOrders.find((p) => p.id === openEntityId);
     if (po) {
-      if (poViewMode === 'table') {
-        setEditingPO(po);
-      } else {
-        setOpenPOId(po.id);
-      }
+      // Always the detail sheet. It used to depend on the view mode, so a
+      // notification or a Renaida link landed you in a five-field edit form
+      // instead of the order you asked to see.
+      setOpenPOId(po.id);
       onEntityOpened?.();
       return;
     }
@@ -1378,6 +1378,7 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
               currency={currency}
               maskEconomy={maskEconomy}
               canEdit={isProjectOwner || userPurchasesAccess === 'edit'}
+              onOpenPO={(po) => setOpenPOId(po.id)}
               onEditPO={(po) => setEditingPO(po as PurchaseOrder)}
               onDeletePO={(po) => setPOToDelete(po as PurchaseOrder)}
               onAddLine={(po) => setAddLinePO(po as PurchaseOrder)}
@@ -1716,6 +1717,52 @@ const PurchaseRequestsTab = ({ projectId, openEntityId, onEntityOpened, currency
           fetchPurchaseOrders();
           fetchTasks();
         }}
+      />
+      {/*
+        The order's detail surface — invoice number, OCR, line items and the
+        attached receipt. Mounted HERE rather than inside PurchaseOrdersGridV2
+        so it exists in BOTH view modes. It used to live in the grid, which
+        renders only in card mode, so the default (table) had no path to any of
+        it and the data looked missing (Carl, 2026-09-02).
+
+        Reads from `purchaseOrders`, not `filteredPOs`: a deep-linked order must
+        open even when the active filter would hide it.
+      */}
+      <PurchaseOrderDetailSheet
+        po={(purchaseOrders.find((p) => p.id === openPOId) ?? null) as unknown as PO | null}
+        open={!!openPOId && purchaseOrders.some((p) => p.id === openPOId)}
+        onOpenChange={(open) => {
+          if (open) return;
+          if (selectModePoId === openPOId) exitSelectMode();
+          setOpenPOId(null);
+        }}
+        rows={(materialsByPOId.get(openPOId ?? "") ?? []) as unknown as POMaterial[]}
+        tasks={tasks.map((tt) => ({ id: tt.id, title: tt.title }))}
+        rooms={rooms.map((r) => ({ id: r.id, name: r.name }))}
+        projectId={projectId}
+        currency={currency}
+        maskEconomy={maskEconomy}
+        canEdit={isProjectOwner || userPurchasesAccess === 'edit'}
+        onEditMeta={(po) => setEditingPO(po as unknown as PurchaseOrder)}
+        onDelete={(po) => setPOToDelete(po as unknown as PurchaseOrder)}
+        allocatingPOId={allocatingPOId}
+        onAllocateAllToTask={allocateOrderToTask}
+        onAllocateAllToRoom={allocateOrderToRoom}
+        inSelectMode={!!openPOId && selectModePoId === openPOId}
+        selectedLineIds={selectedLineIds}
+        bulkActionLoading={bulkActionLoading}
+        onEnterSelectMode={() => {
+          if (openPOId) {
+            setSelectModePoId(openPOId);
+            setSelectedLineIds(new Set());
+          }
+        }}
+        onExitSelectMode={exitSelectMode}
+        onToggleLineSelection={toggleLineSelection}
+        onBulkUpdate={bulkUpdateSelectedLines}
+        onBulkDelete={bulkDeleteSelectedLines}
+        onEditLine={(mat) => openEditDialog(mat as unknown as Material)}
+        onAddLine={(po) => setAddLinePO(po as unknown as PurchaseOrder)}
       />
       <EditPurchaseOrderDialog
         open={editingPO !== null}

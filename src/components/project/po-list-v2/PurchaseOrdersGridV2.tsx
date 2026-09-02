@@ -1,6 +1,5 @@
 import { useCallback, useState } from "react";
 import { PurchaseOrderCardV2 } from "./PurchaseOrderCardV2";
-import { PurchaseOrderDetailSheet } from "./PurchaseOrderDetailSheet";
 import type { PO, POMaterial } from "./types";
 
 interface PurchaseOrdersGridV2Props {
@@ -46,8 +45,6 @@ export function PurchaseOrdersGridV2(props: PurchaseOrdersGridV2Props) {
     purchaseOrders,
     materialsByPOId,
     currency,
-    selectModePoId,
-    onExitSelectMode,
     openPOId: openPOIdProp,
     onOpenPOIdChange,
   } = props;
@@ -65,20 +62,6 @@ export function PurchaseOrdersGridV2(props: PurchaseOrdersGridV2Props) {
     },
     [isControlled, onOpenPOIdChange]
   );
-  const openPO = openPOId ? purchaseOrders.find((p) => p.id === openPOId) ?? null : null;
-  const openRows = openPO ? materialsByPOId.get(openPO.id) ?? [] : [];
-
-  const handleOpenChange = useCallback(
-    (open: boolean) => {
-      if (!open) {
-        // close detail sheet — also exit bulk-select if active for this PO
-        if (selectModePoId === openPOId) onExitSelectMode();
-        setOpenPOId(null);
-      }
-    },
-    [openPOId, selectModePoId, onExitSelectMode, setOpenPOId]
-  );
-
   return (
     <div className="rf-paper" style={{ background: "transparent" }}>
       <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -102,17 +85,6 @@ export function PurchaseOrdersGridV2(props: PurchaseOrdersGridV2Props) {
         })}
       </div>
 
-      <PurchaseOrderDetailSheet
-        {...props}
-        po={openPO}
-        open={!!openPO}
-        onOpenChange={handleOpenChange}
-        rows={openRows}
-        inSelectMode={openPO ? selectModePoId === openPO.id : false}
-        onEnterSelectMode={() => {
-          if (openPO) props.onEnterSelectMode(openPO.id);
-        }}
-      />
     </div>
   );
 }

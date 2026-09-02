@@ -55,6 +55,15 @@ interface PurchaseOrdersTableViewProps {
   currency?: string | null;
   maskEconomy?: boolean;
   canEdit: boolean;
+  /**
+   * Open the order's DETAIL sheet — invoice number, lines, attached document.
+   *
+   * Clicking the vendor name used to call `onEditPO`, which opens a five-field
+   * edit form. In table mode (the default) that made the detail sheet
+   * unreachable, so the receipt, the invoice number and the line items looked
+   * like they did not exist at all (Carl, 2026-09-02).
+   */
+  onOpenPO: (po: PurchaseOrderRow) => void;
   onEditPO: (po: PurchaseOrderRow) => void;
   onDeletePO: (po: PurchaseOrderRow) => void;
   onAddLine: (po: PurchaseOrderRow) => void;
@@ -70,6 +79,7 @@ export const PurchaseOrdersTableView = ({
   currency,
   maskEconomy = false,
   canEdit,
+  onOpenPO,
   onEditPO,
   onDeletePO,
   onAddLine,
@@ -173,6 +183,7 @@ export const PurchaseOrdersTableView = ({
                   roomsLabel={roomsLabel}
                   maskEconomy={maskEconomy}
                   canEdit={canEdit}
+                  onOpenPO={() => onOpenPO(po)}
                   onEditPO={() => onEditPO(po)}
                   onDeletePO={() => onDeletePO(po)}
                   onAddLine={() => onAddLine(po)}
@@ -207,6 +218,7 @@ interface RowProps {
   roomsLabel: React.ReactNode;
   maskEconomy?: boolean;
   canEdit: boolean;
+  onOpenPO: () => void;
   onEditPO: () => void;
   onDeletePO: () => void;
   onAddLine: () => void;
@@ -216,7 +228,7 @@ interface RowProps {
 
 const Row = ({
   po, rows, isExpanded, togglePO, visibleCols, currency, statusColor,
-  tasksLabel, roomsLabel, maskEconomy = false, canEdit, onEditPO, onDeletePO, onAddLine, onEditLine, taskMap,
+  tasksLabel, roomsLabel, maskEconomy = false, canEdit, onOpenPO, onEditPO, onDeletePO, onAddLine, onEditLine, taskMap,
 }: RowProps) => {
   const { t } = useTranslation();
   const visibleColCount = visibleCols.size + 1 + (canEdit ? 1 : 0);
@@ -232,7 +244,7 @@ const Row = ({
         {visibleCols.has("vendor") && (
           <td className="px-2 py-1.5">
             <div className="flex items-center gap-1.5">
-              <button type="button" onClick={onEditPO} className="font-medium hover:underline text-left flex items-center gap-1.5">
+              <button type="button" onClick={onOpenPO} className="font-medium hover:underline text-left flex items-center gap-1.5">
                 <ShoppingCart className="h-3 w-3 text-muted-foreground" />
                 {maskEconomy ? "—" : po.vendor_name}
               </button>
