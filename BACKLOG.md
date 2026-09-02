@@ -922,7 +922,7 @@ ligger rätt i Filer också (hör ihop med
 
 ---
 id: extern-csv-som-andra-asikt-pa-kvittohogen
-status: todo
+status: done
 priority: P2
 tags: [import, ai, idea]
 created: 2026-09-02
@@ -967,6 +967,16 @@ Efter Carls 112-kvittotest: hur många rader hade faktiskt fel? Är det <5 %
 räcker `verifyReceipt` + manuell rättning, och CSV-vägen är ett vitamin. Är
 det 20 % är en andra åsikt värd sitt bygge. **Siffran finns efter testet, inte
 före.**
+
+**LEVERERAT 2026-09-02.** `src/lib/secondOpinionCsv.ts` + `SecondOpinionPanel`.
+Kolumnmappning med gissning, `,`/`;`, svenskt decimalkomma och tre datumformat.
+Matchning i FYRA steg — nummer, leverantör+belopp, leverantör+datum+ungefärligt
+belopp, och (funnet i test) leverantör+datum UTAN belopp, för annars blev en
+felläst summa omöjlig att matcha och dök upp som "finns bara i filen" i stället
+för som avvikelsen den är. Sista steget kräver att exakt EN order matchar.
+Avvikelser visar båda värdena med källa; vår är förvald. Erbjuds automatiskt
+vid ≥20 rader. Momsen jämförs också, så en moms vi aldrig läste blir en
+avvikelse man kan ta gratis.
 
 ---
 id: beslut-prismodell-proffs

@@ -8561,5 +8561,41 @@
       "material": "Material och inköp",
       "ata": "Godkända ÄTA"
     }
+  },
+  "secondOpinion": {
+    "title": "Jämför med en annan tolkning",
+    "lead": "Har du kört samma kvitton genom ChatGPT eller Gemini och fått ut en tabell? Släpp in den här. Där båda läsningarna säger samma sak är chansen stor att de har rätt — där de skiljer sig vet du vilken rad du ska öppna. Ingenting ändras utan att du väljer det.",
+    "offer": "Många kvitton på en gång. Vill du dubbelkolla dem mot en tolkning från en annan AI?",
+    "open": "Jämför med en fil",
+    "pick": "Välj CSV-fil",
+    "unreadable": "Filen gick inte att läsa som en tabell.",
+    "howTo": "Så får du fram tabellen",
+    "howToBody": "Ladda upp samma kvittobilder i ChatGPT eller Gemini och be om:\n\n\"Läs varje kvitto och ge mig en CSV med kolumnerna leverantör, kvitto-/fakturanummer, datum (ÅÅÅÅ-MM-DD), totalbelopp, moms. En rad per kvitto. Skriv null där något inte går att läsa — gissa aldrig.\"\n\nSpara svaret som .csv och släpp in det här.",
+    "agreed": "{{count}} rader stämmer överens",
+    "differing": "{{count}} skiljer sig",
+    "onlyInFile": "{{count}} finns bara i filen",
+    "differences": "Där läsningarna skiljer sig",
+    "missing": "Finns bara i filen",
+    "missingHint": "Antingen missade vi ett kvitto — eller så hittade den andra modellen på en rad. Lägg bara till det du känner igen.",
+    "ours": "Vi",
+    "theirs": "Filen",
+    "take": "Använd filens",
+    "took": "Tagen",
+    "add": "Lägg till som inköp",
+    "fromFile": "Inköp från jämförelsefilen",
+    "col": {
+      "vendor": "Leverantör",
+      "docNumber": "Kvitto-/fakturanr",
+      "date": "Datum",
+      "total": "Totalbelopp",
+      "vat": "Moms",
+      "ignore": "Använd inte"
+    },
+    "via": {
+      "docNumber": "matchad på nummer",
+      "vendorAmount": "matchad på leverantör och belopp",
+      "vendorDateAmount": "matchad på leverantör, datum och ungefärligt belopp",
+      "vendorDateOnly": "matchad på leverantör och datum"
+    }
   }
 }

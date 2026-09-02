@@ -8562,5 +8562,41 @@
       "material": "Material and purchases",
       "ata": "Approved change orders"
     }
+  },
+  "secondOpinion": {
+    "title": "Compare with another reading",
+    "lead": "Ran the same receipts through ChatGPT or Gemini and got a table? Drop it here. Where both readings agree the odds are good that both are right — where they differ you know which row to open. Nothing changes unless you choose it.",
+    "offer": "A lot of receipts at once. Want to double-check them against another AI's reading?",
+    "open": "Compare with a file",
+    "pick": "Choose CSV file",
+    "unreadable": "The file could not be read as a table.",
+    "howTo": "How to get the table",
+    "howToBody": "Upload the same receipt images to ChatGPT or Gemini and ask for:\n\n\"Read each receipt and give me a CSV with the columns vendor, receipt/invoice number, date (YYYY-MM-DD), total amount, VAT. One row per receipt. Write null where something cannot be read — never guess.\"\n\nSave the answer as .csv and drop it here.",
+    "agreed": "{{count}} rows agree",
+    "differing": "{{count}} differ",
+    "onlyInFile": "{{count}} only in the file",
+    "differences": "Where the readings differ",
+    "missing": "Only in the file",
+    "missingHint": "Either we missed a receipt — or the other model invented a row. Only add what you recognise.",
+    "ours": "Us",
+    "theirs": "File",
+    "take": "Use the file's",
+    "took": "Taken",
+    "add": "Add as purchase",
+    "fromFile": "Purchase from the comparison file",
+    "col": {
+      "vendor": "Vendor",
+      "docNumber": "Receipt/invoice no",
+      "date": "Date",
+      "total": "Total",
+      "vat": "VAT",
+      "ignore": "Do not use"
+    },
+    "via": {
+      "docNumber": "matched on number",
+      "vendorAmount": "matched on vendor and amount",
+      "vendorDateAmount": "matched on vendor, date and approximate amount",
+      "vendorDateOnly": "matched on vendor and date"
+    }
   }
 }

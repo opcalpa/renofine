@@ -22,6 +22,8 @@ import { ImportDrawingsSection } from './ImportDrawingsSection';
 import { ImportFilingSection } from './ImportFilingSection';
 import { PurchaseList, PurchaseToolbar, type PurchaseField } from './ImportPurchasesTab';
 import { buildPurchaseRows, filterRows, type PurchaseFilter } from './purchaseRowModel';
+import { SecondOpinionPanel } from './SecondOpinionPanel';
+import type { CsvRow, FieldDiff, MatchTarget } from '@/lib/secondOpinionCsv';
 
 /**
  * Reconcile a dropped folder against the project it landed on.
@@ -68,6 +70,7 @@ export function ImportReviewPage({
    * fifty of them means leaving and returning constantly (Carl, 2026-09-02).
    */
   const [rotations, setRotations] = useState<Record<string, number>>({});
+  const [secondOpinionOpen, setSecondOpinionOpen] = useState(false);
   const [selectedPurchaseId, setSelectedPurchaseId] = useState<string | null>(null);
   const [selectedFileId, setSelectedFileId] = useState<string | null>(
     () => session.files.find((f) => f.kind === 'interpreted')?.id ?? null
@@ -406,6 +409,79 @@ export function ImportReviewPage({
     [session, onChange, t]
   );
 
+  /* ── Second opinion (CSV from another model) ─────────────────────────── */
+
+  const matchTargets: MatchTarget[] = useMemo(
+    () =>
+      rows.map((r) => ({
+        id: r.id,
+        vendor: r.vendor,
+        total: r.total,
+        date: r.date,
+        docNumber: r.invoiceNumber,
+        vat: r.vatAmount,
+      })),
+    [rows]
+  );
+
+  /** Take one value from the file. Goes through the SAME path as a typed
+   *  correction, so it is nothing more privileged than the person typing it. */
+  const handleAdopt = useCallback(
+    (targetId: string, diff: FieldDiff) => {
+      const field: PurchaseField | null =
+        diff.field === 'docNumber'
+          ? 'invoiceNumber'
+          : diff.field === 'vendor'
+            ? 'vendorName'
+            : diff.field === 'date'
+              ? 'documentDate'
+              : diff.field === 'total'
+                ? 'total'
+                : diff.field === 'vat'
+                  ? 'vatAmount'
+                  : null;
+      if (!field) return;
+      handleField(targetId, field, String(diff.theirs ?? ''));
+    },
+    [handleField]
+  );
+
+  /** A row only the file has. Created EMPTY of anything it did not state —
+   *  the file is evidence, not a source of truth. */
+  const handleLiftCsvRow = useCallback(
+    (row: CsvRow) => {
+      const id = `csv-${row.line}`;
+      if (session.proposals.some((p) => p.id === id)) return;
+      const proposal: AgentProposal = {
+        id,
+        summary: t('secondOpinion.fromFile', 'Inköp från jämförelsefilen'),
+        confidence: 0.5,
+        action: {
+          type: 'import_purchase',
+          documentType: 'receipt',
+          vendorName: row.vendor ?? '',
+          total: row.total ?? 0,
+          vatAmount: row.vat,
+          documentDate: row.date,
+          invoiceNumber: row.docNumber,
+          lineItems: [],
+        },
+      };
+      onChange({ ...session, proposals: [...session.proposals, proposal] });
+      setActiveTab('purchases');
+      setSelectedPurchaseId(id);
+    },
+    [session, onChange, t]
+  );
+
+  /**
+   * Offered, never forced — and only where it pays for itself. Checking a
+   * handful of rows by eye is quicker than running them through a second
+   * model; at thirty it is the other way round.
+   */
+  const BULK_THRESHOLD = 20;
+  const worthSecondOpinion = rows.length >= BULK_THRESHOLD;
+
   const roomTaskCount =
     session.proposals.filter((p) =>
       ['create_room', 'create_task', 'create_plan_sketch'].includes(p.action.type)
@@ -449,6 +525,21 @@ export function ImportReviewPage({
         onBulk={handleBulk}
       />
     ) : undefined;
+
+  const secondOpinionBar =
+    activeTab === 'purchases' && worthSecondOpinion && !secondOpinionOpen ? (
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-dashed bg-muted/30 px-3 py-2 text-xs">
+        <span className="min-w-0 text-muted-foreground">
+          {t(
+            'secondOpinion.offer',
+            'Många kvitton på en gång. Vill du dubbelkolla dem mot en tolkning från en annan AI?'
+          )}
+        </span>
+        <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setSecondOpinionOpen(true)}>
+          {t('secondOpinion.open', 'Jämför med en fil')}
+        </Button>
+      </div>
+    ) : null;
 
   const footer =
     activeTab === 'purchases' ? (
@@ -613,6 +704,16 @@ export function ImportReviewPage({
           )}
         </div>
       </header>
+
+      {secondOpinionBar}
+      {secondOpinionOpen && (
+        <SecondOpinionPanel
+          targets={matchTargets}
+          onAdopt={handleAdopt}
+          onLift={handleLiftCsvRow}
+          onClose={() => setSecondOpinionOpen(false)}
+        />
+      )}
 
       {isMobile ? (
         <>
