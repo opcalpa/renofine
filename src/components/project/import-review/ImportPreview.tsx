@@ -332,16 +332,46 @@ export function ImportPreview({
   const url = useFileUrl(file?.storagePath);
 
   // Object URL for the in-memory receipt; revoked when the selection changes.
-  const [attachmentUrl, setAttachmentUrl] = useState<string | null>(null);
+  /**
+   * The object URL is kept together with the FILE it was made from.
+   *
+   * Held as a bare string, it lagged one render behind the selection: click a
+   * new row and, until the effect ran, the page showed the PREVIOUS document's
+   * image beside the new row's numbers. Carl hit exactly that (2026-09-02) —
+   * a Byggmax row with a Hornbach receipt next to it — and it is the worst
+   * possible bug on this screen, because the whole point of the image is to
+   * check the numbers against it. A mismatched pair does not just fail to
+   * help; it actively misleads.
+   *
+   * Pairing them means a stale URL can never be rendered: if the file the URL
+   * belongs to is not the file we are showing, we show nothing yet.
+   */
+  const [preview, setPreview] = useState<{ url: string; file: File } | null>(null);
   useEffect(() => {
     if (!attachment) {
-      setAttachmentUrl(null);
+      setPreview(null);
       return;
     }
     const objectUrl = URL.createObjectURL(attachment.file);
-    setAttachmentUrl(objectUrl);
+    setPreview({ url: objectUrl, file: attachment.file });
     return () => URL.revokeObjectURL(objectUrl);
-  }, [attachment]);
+    // Keyed on the FILE, not the wrapper object: every edit to the session
+    // rebuilds the row objects, and re-minting the URL each time made the
+    // image blink on every keystroke.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [attachment?.file]);
+
+  const attachmentUrl = preview && attachment && preview.file === attachment.file ? preview.url : null;
+
+  // Attachment known but its URL not minted yet: show nothing rather than the
+  // "pick a file" empty state, which reads as though the row has no document.
+  if (attachment && !attachmentUrl) {
+    return (
+      <div className="flex h-full min-h-[240px] items-center justify-center rounded-lg border p-6">
+        <p className="text-xs text-muted-foreground">{t('common.loading', 'Laddar…')}</p>
+      </div>
+    );
+  }
 
   if (attachment && attachmentUrl) {
     const name = attachment.file.name || attachment.label;

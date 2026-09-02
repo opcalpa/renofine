@@ -100,19 +100,21 @@ function makeSession(count: number): ImportSession {
  * actually mounts here — rotation memory and the portrait default cannot be
  * checked against a preview that never loads an image.
  */
-function makeLandscapeBlob(): Promise<File> {
+function makeLandscapeBlob(idx: number): Promise<File> {
   const c = document.createElement('canvas');
-  c.width = 1200;
-  c.height = 800;
+  // A DIFFERENT size per row: the only way to prove the preview shows THIS
+  // row's document and not the previous one's (the stale-URL bug, 2026-09-02).
+  c.width = 1000 + idx * 100;
+  c.height = 700;
   const ctx = c.getContext('2d')!;
   ctx.fillStyle = '#FBF9F3';
   ctx.fillRect(0, 0, 1200, 800);
   ctx.fillStyle = '#2A2620';
   ctx.font = '48px monospace';
-  ctx.fillText('KVITTO (liggande)', 60, 120);
+  ctx.fillText(`KVITTO ${idx}`, 60, 120);
   ctx.fillText('ATT BETALA 2 549,00', 60, 220);
   return new Promise((resolve) =>
-    c.toBlob((b) => resolve(new File([b!], 'kvitto.jpg', { type: 'image/jpeg' })), 'image/jpeg')
+    c.toBlob((b) => resolve(new File([b!], `kvitto-${idx}.jpg`, { type: 'image/jpeg' })), 'image/jpeg')
   );
 }
 
@@ -121,12 +123,10 @@ export default function DevImportReview() {
 
   // Register a real image for the first few rows so the viewer has something.
   useEffect(() => {
-    void makeLandscapeBlob().then((file) => {
-      for (const p of session.proposals.slice(0, 5)) {
-        if (p.action.type === 'import_purchase' && p.action.attachmentKey) {
-          registerAttachment(p.action.attachmentKey, file);
-        }
-      }
+    session.proposals.slice(0, 5).forEach((p, idx) => {
+      if (p.action.type !== 'import_purchase' || !p.action.attachmentKey) return;
+      const key = p.action.attachmentKey;
+      void makeLandscapeBlob(idx).then((file) => registerAttachment(key, file));
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
