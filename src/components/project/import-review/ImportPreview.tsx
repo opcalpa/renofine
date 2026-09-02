@@ -41,11 +41,16 @@ function ImageViewer({
   alt,
   comment,
   onComment,
+  rotation,
+  onRotation,
 }: {
   src: string;
   alt: string;
   comment?: string;
   onComment?: (text: string) => void;
+  /** Remembered per document by the page, so a turn survives leaving the row. */
+  rotation: number | undefined;
+  onRotation: (deg: number) => void;
 }) {
   const { t } = useTranslation();
   const [fullscreen, setFullscreen] = useState(false);
@@ -53,7 +58,6 @@ function ImageViewer({
   const [crop, setCrop] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
   const cropDraft = useRef<{ x: number; y: number } | null>(null);
   const [commentOpen, setCommentOpen] = useState(false);
-  const [rotation, setRotation] = useState(0);
   const [zoomIdx, setZoomIdx] = useState(2); // 1x
   // Pan offset in screen pixels. A scaled image outgrows its layout box via
   // transform, which overflow-scroll cannot follow — so panning is part of the
@@ -61,10 +65,10 @@ function ImageViewer({
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const dragRef = useRef<{ startX: number; startY: number; panX: number; panY: number } | null>(null);
 
-  // A new document starts upright at 1x, centered — carried-over rotation
-  // would make a straight photo look crooked.
+  // Zoom and crop are per-visit; the ROTATION is not — the page holds it per
+  // document, so a receipt you turned upright stays upright when you come back
+  // to it (Carl, 2026-09-02).
   useEffect(() => {
-    setRotation(0);
     setZoomIdx(2);
     setPan({ x: 0, y: 0 });
     setCrop(null);
@@ -72,8 +76,24 @@ function ImageViewer({
     setCommentOpen(false);
   }, [src]);
 
+  /**
+   * A receipt shot with a phone held upright, or an A4 laid on a table, comes
+   * out landscape more often than not — and every one of Carl's 56 needed the
+   * same first click. So a wider-than-tall image starts turned a quarter, and
+   * the button becomes a correction rather than a chore.
+   *
+   * Only when nothing is remembered: a deliberate turn always wins.
+   */
+  const onImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    if (rotation !== undefined) return;
+    const img = e.currentTarget;
+    onRotation(img.naturalWidth > img.naturalHeight ? 90 : 0);
+  };
+
+  const turn = rotation ?? 0;
+
   const zoom = ZOOM_STEPS[zoomIdx];
-  const quarter = rotation % 180 !== 0;
+  const quarter = turn % 180 !== 0;
   const pannable = zoomIdx > 2;
 
   // Zooming back out re-centers: a pan that made sense at 3x strands the
@@ -130,7 +150,7 @@ function ImageViewer({
           variant="ghost"
           size="icon"
           className="h-7 w-7"
-          onClick={() => setRotation((r) => (r + 90) % 360)}
+          onClick={() => onRotation((turn + 90) % 360)}
           title={t('importReview.preview.rotate', 'Vrid ett kvarts varv')}
         >
           <RotateCw className="h-4 w-4" />
@@ -221,12 +241,13 @@ function ImageViewer({
         <img
           src={src}
           alt={alt}
+          onLoad={onImageLoad}
           draggable={false}
           className={`select-none object-contain ${dragRef.current ? '' : 'transition-transform duration-150'}`}
           style={{
             // translate FIRST so the drag moves in screen axes regardless of
             // how the image is rotated underneath.
-            transform: `translate(${pan.x}px, ${pan.y}px) rotate(${rotation}deg) scale(${zoom})`,
+            transform: `translate(${pan.x}px, ${pan.y}px) rotate(${turn}deg) scale(${zoom})`,
             // A quarter-turned image is constrained by the CONTAINER's width on
             // its (rotated) height — capping against the viewport keeps it in
             // frame instead of clipping at the pane edge.
@@ -261,7 +282,7 @@ function ImageViewer({
         <DialogContent size="6xl" className="max-h-[95vh] overflow-hidden p-2">
           <div className="flex max-h-[88vh] items-center justify-center overflow-auto">
             <img src={src} alt={alt} className="max-h-[86vh] max-w-full object-contain"
-              style={{ transform: `rotate(${rotation}deg)` }} />
+              style={{ transform: `rotate(${turn}deg)` }} />
           </div>
         </DialogContent>
       </Dialog>
@@ -284,9 +305,19 @@ interface ImportPreviewProps {
   /** Note attached to the previewed purchase; travels with it on accept. */
   comment?: string;
   onComment?: (text: string) => void;
+  /** Remembered rotation for the document on show; undefined = never turned. */
+  rotation?: number;
+  onRotation?: (deg: number) => void;
 }
 
-export function ImportPreview({ file, attachment, comment, onComment }: ImportPreviewProps) {
+export function ImportPreview({
+  file,
+  attachment,
+  comment,
+  onComment,
+  rotation,
+  onRotation,
+}: ImportPreviewProps) {
   const { t } = useTranslation();
   const url = useFileUrl(file?.storagePath);
 
@@ -315,7 +346,16 @@ export function ImportPreview({ file, attachment, comment, onComment }: ImportPr
         </div>
       );
     }
-    return <ImageViewer src={attachmentUrl} alt={name} comment={comment} onComment={onComment} />;
+    return (
+      <ImageViewer
+        src={attachmentUrl}
+        alt={name}
+        comment={comment}
+        onComment={onComment}
+        rotation={rotation}
+        onRotation={onRotation ?? (() => {})}
+      />
+    );
   }
 
   if (!file) {
@@ -361,7 +401,14 @@ export function ImportPreview({ file, attachment, comment, onComment }: ImportPr
   }
 
   if (isImage(file.name, file.mimeType)) {
-    return <ImageViewer src={url} alt={file.name} />;
+    return (
+      <ImageViewer
+        src={url}
+        alt={file.name}
+        rotation={rotation}
+        onRotation={onRotation ?? (() => {})}
+      />
+    );
   }
 
   return (

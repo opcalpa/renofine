@@ -1,6 +1,6 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle, Copy, Home, Pencil, Search } from 'lucide-react';
+import { AlertTriangle, Copy, Home, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -62,24 +62,102 @@ function Flag({
   );
 }
 
-export interface PurchaseEdits {
-  vendorName: string;
-  total: string;
-  documentDate: string;
-  invoiceNumber: string;
+
+/**
+ * A value you correct by clicking it.
+ *
+ * The full form was a modal-in-a-row: to fix one wrong date you opened four
+ * fields and pressed Save. Carl, 2026-09-02: "istället för att trycka upp
+ * maximerad edit version, kanske man kan hovra över detaljerna och klicka på
+ * dom för att enablea edit direkt på värdet". So each value edits where it
+ * stands — Enter or blur commits, Escape abandons.
+ */
+function EditableValue({
+  value,
+  display,
+  label,
+  type,
+  mono,
+  className,
+  onSave,
+}: {
+  value: string;
+  display: string;
+  label: string;
+  type?: string;
+  mono?: boolean;
+  className?: string;
+  onSave: (next: string) => void;
+}) {
+  const { t } = useTranslation();
+  const hint = t('importReview.purchases.clickToEdit', 'klicka för att rätta');
+  const [editing, setEditing] = useState(false);
+
+  if (editing) {
+    return (
+      <Input
+        autoFocus
+        type={type}
+        defaultValue={value}
+        aria-label={label}
+        onClick={(e) => e.stopPropagation()}
+        onBlur={(e) => {
+          setEditing(false);
+          if (e.target.value !== value) onSave(e.target.value);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            e.currentTarget.blur();
+          }
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            setEditing(false);
+          }
+        }}
+        className={cn('h-6 w-auto min-w-[7ch] max-w-[22ch] px-1.5 py-0 text-[11px]', mono && 'font-mono', className)}
+      />
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      title={`${label} — ${hint}`}
+      onClick={(e) => {
+        e.stopPropagation();
+        setEditing(true);
+      }}
+      className={cn(
+        'rounded px-1 -mx-1 text-left transition-colors hover:bg-muted hover:ring-1 hover:ring-border',
+        mono && 'font-mono',
+        !display && 'italic text-muted-foreground/70',
+        className
+      )}
+    >
+      {display || '—'}
+    </button>
+  );
 }
+
+/** The fields a person may correct on a purchase row, one at a time. */
+export type PurchaseField =
+  | 'vendorName'
+  | 'total'
+  | 'documentDate'
+  | 'invoiceNumber'
+  | 'vatAmount';
 
 interface PurchaseListProps {
   rows: PurchaseRow[];
   session: ImportSession;
   selectedId: string | null;
   linkedIds: Set<string>;
-  editingId: string | null;
   onSelect: (id: string) => void;
   onToggle: (id: string, keep: boolean) => void;
   onRoom: (id: string, value: string) => void;
-  onEdit: (id: string | null) => void;
-  onSaveEdit: (id: string, edits: PurchaseEdits) => void;
+  /** One corrected field on one row. Nothing reaches the DB until Genomför. */
+  onField: (id: string, field: PurchaseField, value: string) => void;
 }
 
 /**
@@ -94,12 +172,10 @@ export function PurchaseList({
   session,
   selectedId,
   linkedIds,
-  editingId,
   onSelect,
   onToggle,
   onRoom,
-  onEdit,
-  onSaveEdit,
+  onField,
 }: PurchaseListProps) {
   const { t } = useTranslation();
 
@@ -150,12 +226,10 @@ export function PurchaseList({
               session={session}
               selected={selectedId === row.id}
               linked={linkedIds.has(row.id)}
-              editing={editingId === row.id}
               onSelect={() => onSelect(row.id)}
               onToggle={() => onToggle(row.id, !row.kept)}
               onRoom={(value) => onRoom(row.id, value)}
-              onEdit={() => onEdit(editingId === row.id ? null : row.id)}
-              onSaveEdit={(edits) => onSaveEdit(row.id, edits)}
+              onField={(field, value) => onField(row.id, field, value)}
             />
           ))}
         </div>
@@ -169,23 +243,19 @@ function PurchaseRowView({
   session,
   selected,
   linked,
-  editing,
   onSelect,
   onToggle,
   onRoom,
-  onEdit,
-  onSaveEdit,
+  onField,
 }: {
   row: PurchaseRow;
   session: ImportSession;
   selected: boolean;
   linked: boolean;
-  editing: boolean;
   onSelect: () => void;
   onToggle: () => void;
   onRoom: (value: string) => void;
-  onEdit: () => void;
-  onSaveEdit: (edits: PurchaseEdits) => void;
+  onField: (field: PurchaseField, value: string) => void;
 }) {
   const { t, i18n } = useTranslation();
   const off = !row.kept;
@@ -222,38 +292,66 @@ function PurchaseRowView({
         />
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2.5">
-            <span
+            <EditableValue
+              value={row.vendor}
+              display={row.vendor}
+              label={t('importReview.purchases.fieldVendor', 'Leverantör')}
+              onSave={(v) => onField('vendorName', v)}
+              className={cn('min-w-0 flex-1 truncate text-sm font-semibold', off && 'line-through')}
+            />
+            <EditableValue
+              value={String(row.total)}
+              display={kr(row.total, i18n.language)}
+              label={t('importReview.purchases.fieldTotal', 'Belopp')}
+              mono
+              onSave={(v) => onField('total', v)}
               className={cn(
-                'min-w-0 flex-1 truncate text-sm font-semibold',
-                off && 'line-through'
-              )}
-            >
-              {row.vendor}
-            </span>
-            <span
-              className={cn(
-                'shrink-0 font-mono text-[13px] tabular-nums',
+                'shrink-0 text-[13px] tabular-nums',
                 off ? 'text-muted-foreground line-through' : 'text-foreground'
               )}
-            >
-              {kr(row.total, i18n.language)}
-            </span>
+            />
           </div>
 
-          <div className="mt-1 flex items-center gap-2">
-            <span className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground">
-              <span className="font-mono">{fmtDate(row.date, i18n.language)}</span>
+          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+            {/* Every field the person might have to correct, visible without
+                opening anything — and each one edits where it stands. */}
+            <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-1.5 text-[11px] text-muted-foreground">
+              <EditableValue
+                value={row.date ?? ''}
+                display={fmtDate(row.date, i18n.language)}
+                label={t('importReview.purchases.fieldDate', 'Datum')}
+                type="date"
+                mono
+                onSave={(v) => onField('documentDate', v)}
+              />
+              <span aria-hidden>·</span>
+              <span className="whitespace-nowrap">
+                {t('importReview.purchases.vat', 'Moms')}{' '}
+                <EditableValue
+                  value={row.vatAmount != null ? String(row.vatAmount) : ''}
+                  display={row.vatAmount != null ? kr(row.vatAmount, i18n.language) : ''}
+                  label={t('importReview.purchases.vat', 'Moms')}
+                  mono
+                  onSave={(v) => onField('vatAmount', v)}
+                />
+              </span>
+              <span aria-hidden>·</span>
+              <span className="whitespace-nowrap">
+                {t('importReview.purchases.docNo', 'Faktura-/kvittonr')}{' '}
+                <EditableValue
+                  value={row.invoiceNumber ?? ''}
+                  display={row.invoiceNumber ?? ''}
+                  label={t('importReview.purchases.docNo', 'Faktura-/kvittonr')}
+                  mono
+                  onSave={(v) => onField('invoiceNumber', v)}
+                />
+              </span>
               {row.lineCount > 0 && (
                 <>
-                  {' · '}
-                  {t('importReview.purchases.lines', '{{count}} rader', { count: row.lineCount })}
-                </>
-              )}
-              {row.invoiceNumber && (
-                <>
-                  {' · '}
-                  {t('importReview.purchases.invoiceNo', 'Fakturanr')}{' '}
-                  <span className="font-mono">{row.invoiceNumber}</span>
+                  <span aria-hidden>·</span>
+                  <span className="whitespace-nowrap">
+                    {t('importReview.purchases.lines', '{{count}} rader', { count: row.lineCount })}
+                  </span>
                 </>
               )}
             </span>
@@ -277,18 +375,6 @@ function PurchaseRowView({
                 </Select>
               </span>
             )}
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn('h-7 w-7 shrink-0', editing && 'bg-muted')}
-              title={t('importReview.purchases.edit', 'Rätta uppgifterna')}
-              onClick={(e) => {
-                e.stopPropagation();
-                onEdit();
-              }}
-            >
-              <Pencil className="h-3.5 w-3.5" />
-            </Button>
           </div>
 
           {flagText && (
@@ -314,80 +400,9 @@ function PurchaseRowView({
             </div>
           )}
 
-          {editing && <InlineEdit row={row} onSave={onSaveEdit} onCancel={onEdit} />}
         </div>
       </div>
     </div>
-  );
-}
-
-/** Correct what the AI read, without leaving the review. */
-function InlineEdit({
-  row,
-  onSave,
-  onCancel,
-}: {
-  row: PurchaseRow;
-  onSave: (edits: PurchaseEdits) => void;
-  onCancel: () => void;
-}) {
-  const { t } = useTranslation();
-  return (
-    <form
-      onClick={(e) => e.stopPropagation()}
-      onSubmit={(e) => {
-        e.preventDefault();
-        const form = e.currentTarget;
-        onSave({
-          vendorName: (form.elements.namedItem('vendorName') as HTMLInputElement).value,
-          total: (form.elements.namedItem('total') as HTMLInputElement).value,
-          documentDate: (form.elements.namedItem('documentDate') as HTMLInputElement).value,
-          invoiceNumber: (form.elements.namedItem('invoiceNumber') as HTMLInputElement).value,
-        });
-      }}
-      className="mt-2 rounded-lg border border-dashed bg-muted/50 p-2.5"
-    >
-      <div className="flex flex-wrap gap-2">
-        <Field name="vendorName" label={t('importReview.purchases.fieldVendor', 'Leverantör')} defaultValue={row.vendor} className="w-[170px]" />
-        <Field name="total" label={t('importReview.purchases.fieldTotal', 'Belopp')} defaultValue={String(row.total)} className="w-[110px] font-mono" />
-        <Field name="documentDate" label={t('importReview.purchases.fieldDate', 'Datum')} defaultValue={row.date ?? ''} type="date" className="w-[140px] font-mono" />
-        <Field name="invoiceNumber" label={t('importReview.purchases.fieldInvoiceNo', 'Fakturanr')} defaultValue={row.invoiceNumber ?? ''} className="w-[120px] font-mono" />
-      </div>
-      <div className="mt-2.5 flex flex-wrap items-center gap-2">
-        <Button type="submit" size="sm" className="h-7 text-xs">
-          {t('importReview.purchases.saveEdit', 'Spara rättningen')}
-        </Button>
-        <Button type="button" size="sm" variant="ghost" className="h-7 text-xs" onClick={onCancel}>
-          {t('common.cancel', 'Avbryt')}
-        </Button>
-        <span className="text-[11px] text-muted-foreground">
-          {t('importReview.purchases.editHint', 'Ändringen sparas först när du trycker Genomför.')}
-        </span>
-      </div>
-    </form>
-  );
-}
-
-function Field({
-  name,
-  label,
-  defaultValue,
-  className,
-  type,
-}: {
-  name: string;
-  label: string;
-  defaultValue: string;
-  className?: string;
-  type?: string;
-}) {
-  return (
-    <label className="flex flex-col gap-1">
-      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-        {label}
-      </span>
-      <Input name={name} type={type} defaultValue={defaultValue} className={cn('h-7 text-xs', className)} />
-    </label>
   );
 }
 

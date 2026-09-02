@@ -8301,7 +8301,10 @@
       "bulk": "Act on the {{count}} shown",
       "bulkKeep": "Check all",
       "bulkDrop": "Uncheck all",
-      "tally": "{{kept}} of {{total}} purchases included"
+      "tally": "{{kept}} of {{total}} purchases included",
+      "vat": "VAT",
+      "docNo": "Invoice/receipt no",
+      "clickToEdit": "click to correct"
     },
     "drawings": {
       "title": "Drawings",

@@ -20,7 +20,7 @@ import { ImportRoomsSection } from './ImportRoomsSection';
 import { ImportTasksSection } from './ImportTasksSection';
 import { ImportDrawingsSection } from './ImportDrawingsSection';
 import { ImportFilingSection } from './ImportFilingSection';
-import { PurchaseList, PurchaseToolbar, type PurchaseEdits } from './ImportPurchasesTab';
+import { PurchaseList, PurchaseToolbar, type PurchaseField } from './ImportPurchasesTab';
 import { buildPurchaseRows, filterRows, type PurchaseFilter } from './purchaseRowModel';
 
 /**
@@ -60,9 +60,14 @@ export function ImportReviewPage({
   const [activeTab, setActiveTab] = useState('purchases');
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<PurchaseFilter>('all');
-  const [editingId, setEditingId] = useState<string | null>(null);
   /** Mobile only: the preview lives in a bottom sheet. */
   const [previewOpen, setPreviewOpen] = useState(false);
+  /**
+   * Rotation per document, remembered for the life of the review. A receipt
+   * you turned upright must stay upright when you come back to it — checking
+   * fifty of them means leaving and returning constantly (Carl, 2026-09-02).
+   */
+  const [rotations, setRotations] = useState<Record<string, number>>({});
   const [selectedPurchaseId, setSelectedPurchaseId] = useState<string | null>(null);
   const [selectedFileId, setSelectedFileId] = useState<string | null>(
     () => session.files.find((f) => f.kind === 'interpreted')?.id ?? null
@@ -284,21 +289,37 @@ export function ImportReviewPage({
     [patchProposal, session.existingRooms]
   );
 
-  /** Write a correction back onto the proposal. Nothing reaches the DB until Genomför. */
-  const handleSaveEdit = useCallback(
-    (proposalId: string, edits: PurchaseEdits) => {
+  /**
+   * One corrected field, written straight back onto the proposal.
+   *
+   * A rejected value leaves the old one standing rather than blanking it: a
+   * typo in an amount must not silently zero a receipt.
+   */
+  const handleField = useCallback(
+    (proposalId: string, field: PurchaseField, raw: string) => {
       patchProposal(proposalId, (action) => {
         if (action.type !== 'import_purchase') return action;
-        const parsedTotal = Number(edits.total.replace(/\s/g, '').replace(',', '.'));
-        return {
-          ...action,
-          vendorName: edits.vendorName.trim() || action.vendorName,
-          total: Number.isFinite(parsedTotal) && parsedTotal > 0 ? parsedTotal : action.total,
-          documentDate: edits.documentDate || action.documentDate,
-          invoiceNumber: edits.invoiceNumber.trim() || null,
-        };
+        const num = () => Number(raw.replace(/\s/g, '').replace(',', '.'));
+        switch (field) {
+          case 'vendorName':
+            return { ...action, vendorName: raw.trim() || action.vendorName };
+          case 'total': {
+            const v = num();
+            return Number.isFinite(v) && v > 0 ? { ...action, total: v } : action;
+          }
+          case 'vatAmount': {
+            if (!raw.trim()) return { ...action, vatAmount: null };
+            const v = num();
+            return Number.isFinite(v) && v >= 0 ? { ...action, vatAmount: v } : action;
+          }
+          case 'documentDate':
+            return { ...action, documentDate: raw || action.documentDate };
+          case 'invoiceNumber':
+            return { ...action, invoiceNumber: raw.trim() || null };
+          default:
+            return action;
+        }
       });
-      setEditingId(null);
     },
     [patchProposal]
   );
@@ -330,7 +351,7 @@ export function ImportReviewPage({
       const id = `lift-${file.id}`;
       if (session.proposals.some((p) => p.id === id)) {
         setActiveTab('purchases');
-        setEditingId(id);
+        setSelectedPurchaseId(id);
         return;
       }
       const proposal: AgentProposal = {
@@ -349,7 +370,6 @@ export function ImportReviewPage({
       onChange({ ...session, proposals: [...session.proposals, proposal] });
       setActiveTab('purchases');
       setFilter('all');
-      setEditingId(id);
       setSelectedPurchaseId(id);
     },
     [session, onChange, t]
@@ -427,12 +447,16 @@ export function ImportReviewPage({
     [patchProposal, selectedPurchaseId]
   );
 
+  const previewKey = selectedPurchaseId ?? selectedFileId ?? '';
+
   const preview = (
     <ImportPreview
       file={selectedFile}
       attachment={selectedAttachment}
       comment={selectedRow?.action.userNote ?? ''}
       onComment={selectedRow ? handleComment : undefined}
+      rotation={rotations[previewKey]}
+      onRotation={(deg) => setRotations((r) => ({ ...r, [previewKey]: deg }))}
     />
   );
 
@@ -456,12 +480,10 @@ export function ImportReviewPage({
           session={session}
           selectedId={selectedPurchaseId}
           linkedIds={highlightedIds}
-          editingId={editingId}
           onSelect={handleSelectPurchase}
           onToggle={handleToggle}
           onRoom={handlePurchaseRoom}
-          onEdit={setEditingId}
-          onSaveEdit={handleSaveEdit}
+          onField={handleField}
         />
       )}
       {activeTab === 'rooms' && (
@@ -507,7 +529,7 @@ export function ImportReviewPage({
     <div className="container space-y-4 py-4 md:py-8">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0 space-y-1">
-          <h1 className="font-serif text-2xl font-normal tracking-tight">
+          <h1 className="font-display text-2xl font-normal tracking-tight">
             {t('importReview.title', 'Stäm av importen')}
           </h1>
           <p className="max-w-[62ch] text-sm text-muted-foreground">

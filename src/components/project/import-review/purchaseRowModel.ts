@@ -23,6 +23,8 @@ export interface PurchaseRow {
   date: string | null;
   lineCount: number;
   invoiceNumber: string | null;
+  /** VAT as read from the document — shown apart, never folded into the total. */
+  vatAmount: number | null;
   dueDate: string | null;
   roomId: string | null;
   /** Line amounts don't add up to the header total — check it against the image. */
@@ -89,6 +91,7 @@ export function buildPurchaseRows(session: ImportSession): PurchaseRow[] {
         date: action.documentDate ?? null,
         lineCount: action.lineItems.length,
         invoiceNumber: action.invoiceNumber ?? null,
+        vatAmount: action.vatAmount ?? null,
         dueDate: action.dueDate ?? null,
         roomId: action.roomId ?? null,
         sumMismatch: mismatch,

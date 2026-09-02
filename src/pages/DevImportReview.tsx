@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { registerAttachment } from '@/services/agent/documentCapture';
 import { ImportReviewPage } from '@/components/project/import-review/ImportReviewPage';
 import type { ImportSession } from '@/services/agent/importSession';
 import type { AgentProposal } from '@/services/agent/types';
@@ -44,6 +45,7 @@ function makeSession(count: number): ImportSession {
         total: i === 12 ? 749.5 : total,
         documentDate: `202${3 + (i % 3)}-0${1 + (i % 9)}-1${i % 10}`,
         invoiceNumber: i % 5 === 0 ? `5520${7000 + i}` : null,
+        attachmentKey: `att-${i}`,
         lineItems: [
           { description: 'Kortregel 45×95×2500 C24', quantity: 6, unitPrice: 199, total: 1194 },
           {
@@ -93,8 +95,41 @@ function makeSession(count: number): ImportSession {
   };
 }
 
+/**
+ * A landscape stand-in for a photographed receipt, so the image viewer
+ * actually mounts here — rotation memory and the portrait default cannot be
+ * checked against a preview that never loads an image.
+ */
+function makeLandscapeBlob(): Promise<File> {
+  const c = document.createElement('canvas');
+  c.width = 1200;
+  c.height = 800;
+  const ctx = c.getContext('2d')!;
+  ctx.fillStyle = '#FBF9F3';
+  ctx.fillRect(0, 0, 1200, 800);
+  ctx.fillStyle = '#2A2620';
+  ctx.font = '48px monospace';
+  ctx.fillText('KVITTO (liggande)', 60, 120);
+  ctx.fillText('ATT BETALA 2 549,00', 60, 220);
+  return new Promise((resolve) =>
+    c.toBlob((b) => resolve(new File([b!], 'kvitto.jpg', { type: 'image/jpeg' })), 'image/jpeg')
+  );
+}
+
 export default function DevImportReview() {
   const [session, setSession] = useState(() => makeSession(50));
+
+  // Register a real image for the first few rows so the viewer has something.
+  useEffect(() => {
+    void makeLandscapeBlob().then((file) => {
+      for (const p of session.proposals.slice(0, 5)) {
+        if (p.action.type === 'import_purchase' && p.action.attachmentKey) {
+          registerAttachment(p.action.attachmentKey, file);
+        }
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   return (
     <ImportReviewPage
       session={session}

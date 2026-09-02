@@ -71,7 +71,7 @@ export function MultiSection({
       <div className="shrink-0 px-4 pt-3.5">
         <div className="flex items-baseline justify-between gap-3">
           <div className="min-w-0">
-            <h2 className="font-serif text-lg font-normal tracking-tight">{title}</h2>
+            <h2 className="font-display text-lg font-normal tracking-tight">{title}</h2>
             {hint && (
               <p className="mt-1 max-w-[52ch] text-xs text-muted-foreground">{hint}</p>
             )}

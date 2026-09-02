@@ -8300,7 +8300,10 @@
       "bulk": "Åtgärda de {{count}} som visas",
       "bulkKeep": "Bocka i alla",
       "bulkDrop": "Bocka ur alla",
-      "tally": "{{kept}} av {{total}} inköp tas med"
+      "tally": "{{kept}} av {{total}} inköp tas med",
+      "vat": "Moms",
+      "docNo": "Faktura-/kvittonr",
+      "clickToEdit": "klicka för att rätta"
     },
     "drawings": {
       "title": "Ritningar",
