@@ -97,6 +97,7 @@ import type { IngestProgress } from "@/services/ingestProjectFolder";
 import { buildImportSession } from "@/services/agent/buildImportSession";
 import { loadPlansFromDB, loadShapesForPlan } from "@/components/floormap/utils/plans";
 import { ImportReviewPage } from "@/components/project/import-review/ImportReviewPage";
+import { ImportRunsPage, ImportRunsEntry } from "@/components/project/import-review/ImportRunsPage";
 import { applyImportSession, mergedRoomCount } from "@/services/agent/applyImportSession";
 import type { ImportSession } from "@/services/agent/importSession";
 import { loadImportedFingerprints, loadPurchaseKeys, loadTaskKeys } from "@/services/agent/importFingerprint";
@@ -108,6 +109,10 @@ import {
   saveImportPartial,
 } from "@/services/agent/importJournal";
 import type { JournaledImport } from "@/services/agent/importJournal";
+import {
+  finishImportRun,
+  saveImportRun,
+} from "@/services/agent/importRuns";
 import { peekAttachment } from "@/services/agent/documentCapture";
 
 interface Project {
@@ -187,6 +192,14 @@ const ProjectDetail = () => {
    * banner they can dismiss is the honest version of it.
    */
   const [recoverableImport, setRecoverableImport] = useState<JournaledImport | null>(null);
+  /**
+   * A review the person deliberately closed. The journal is KEPT (closing is
+   * not discarding any more), so without this the recovery toast would pop
+   * straight back up the moment they clicked away from it.
+   */
+  const closedImportRef = useRef(false);
+  /** Bumped whenever a run is created, applied or discarded, to re-count. */
+  const [runsReloadKey, setRunsReloadKey] = useState(0);
   /**
    * P4: home papers found in a mixed drop, waiting on the one question the
    * engine cannot answer — do they belong to the address or to this job? Never
@@ -947,7 +960,7 @@ const ProjectDetail = () => {
    * cannot be prevented from the page — only outlived.
    */
   useEffect(() => {
-    if (!project?.id || importSession) return;
+    if (!project?.id || importSession || closedImportRef.current) return;
     let cancelled = false;
     void loadImportJournal(project.id).then((found) => {
       if (!cancelled && found) setRecoverableImport(found);
@@ -986,9 +999,43 @@ const ProjectDetail = () => {
     });
   };
 
+  /**
+   * Open a run from the Importer list.
+   *
+   * `imagesMissing` is true when the receipt blobs are not in THIS browser —
+   * the run was read somewhere else. The review still works (every number the
+   * reading produced is in the session), but "check my reading against the
+   * photo" does not, and that has to be said before the person starts
+   * accepting rows they believe they verified.
+   */
+  const handleOpenRun = (session: ImportSession, imagesMissing: boolean) => {
+    closedImportRef.current = false;
+    useRenaidaStore.getState().setImportSession(session);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('tab', 'files');
+      next.set('subtab', 'import');
+      return next;
+    });
+    if (imagesMissing) {
+      toast({
+        title: t('importRuns.imagesElsewhere', 'Kvittobilderna finns inte på den här datorn'),
+        description: t(
+          'importRuns.imagesElsewhereBody',
+          'Importen lästes i en annan webbläsare. Siffrorna är kvar, men du kan inte jämföra mot kvittofotot här — och godkänner du raderna sparas de utan bild.',
+        ),
+      });
+    }
+  };
+
   /** Throw away a journaled import. The files are already in Files either way. */
   const handleDiscardRecoverableImport = () => {
     if (project?.id) void clearImportJournal(project.id);
+    // The run is marked discarded rather than deleted: "what happened to those
+    // 56 receipts" has to be answerable even when the answer is "you threw
+    // them away".
+    const runId = recoverableImport?.session.runId;
+    if (runId) void finishImportRun(runId, 'discarded').then(() => setRunsReloadKey((k) => k + 1));
     setRecoverableImport(null);
   };
 
@@ -1005,16 +1052,40 @@ const ProjectDetail = () => {
     return out;
   };
 
+  /**
+   * Close the review WITHOUT throwing the reading away.
+   *
+   * This used to call `clearImportJournal`, and the toast said "filerna ligger
+   * kvar i Filer" — which reads as harmless, because the files really do stay.
+   * What it actually deleted was the reading: a hundred paid model calls, gone
+   * on a button most people press to mean "close this and look at something
+   * else". Carl lost a batch that way (2026-09-02).
+   *
+   * Closing now keeps both copies and says where to find them. Discarding is
+   * its own, explicit action.
+   */
   const handleCancelImport = () => {
+    const session = useRenaidaStore.getState().importSession;
+    closedImportRef.current = true;
+    // Persist the review work done so far — the run was written when the
+    // reading finished, before any of the person's corrections existed.
+    if (session) {
+      void saveImportRun(session, { folderLabel: importFolderRef.current }).then(() =>
+        setRunsReloadKey((k) => k + 1),
+      );
+    }
     useRenaidaStore.getState().setImportSession(null);
-    if (project?.id) void clearImportJournal(project.id);
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
       next.delete('subtab');
       return next;
     });
     toast({
-      title: t('importReview.cancelled', 'Importen avbröts — filerna ligger kvar i Filer.'),
+      title: t('importReview.closed', 'Importen är sparad'),
+      description: t(
+        'importReview.closedBody',
+        'Du hittar den under Filer › Importer och kan fortsätta granska när du vill.',
+      ),
     });
   };
 
@@ -1029,6 +1100,13 @@ const ProjectDetail = () => {
       // Applied — the journal has nothing left to offer, and leaving it would
       // suggest resuming an import that already happened.
       if (project?.id) void clearImportJournal(project.id);
+      // The run stays, with the verdict on it. This is the row that answers
+      // "which import did these purchases come from?" months later.
+      if (session.runId) {
+        void finishImportRun(session.runId, 'applied', result.applied.length).then(() =>
+          setRunsReloadKey((k) => k + 1),
+        );
+      }
       handleRoomUpdated();
 
       const notes = [
@@ -1541,9 +1619,15 @@ const ProjectDetail = () => {
       });
 
       useRenaidaStore.getState().setImportSession(session);
+      closedImportRef.current = false;
       // The review can sit unanswered for a long time, and a discarded tab
       // takes it with everything it cost. Journaled here, it comes back.
       void saveImportJournal(session, collectAttachments(session));
+      // And on the server, where it survives the browser itself — the journal
+      // is one profile's IndexedDB, which a storage sweep takes without asking.
+      void saveImportRun(session, { folderLabel: importFolderRef.current }).then(() =>
+        setRunsReloadKey((k) => k + 1),
+      );
       setSearchParams((prev) => {
         const next = new URLSearchParams(prev);
         next.set('tab', 'files');
@@ -2042,7 +2126,7 @@ const ProjectDetail = () => {
             <NoAccessPlaceholder />
           ) : importSession && activeSubTab === 'import' ? (
             // A dropped folder is being reconciled — the review takes over the
-            // Files tab until it is applied or cancelled.
+            // Files tab until it is applied or closed.
             <ImportReviewPage
               session={importSession}
               applying={applyingImport}
@@ -2050,7 +2134,35 @@ const ProjectDetail = () => {
               onCancel={handleCancelImport}
               onApply={handleApplyImport}
             />
+          ) : activeSubTab === 'imports' ? (
+            // The history: every reading this project has had, and its verdict.
+            <ImportRunsPage
+              projectId={project.id}
+              onOpen={handleOpenRun}
+              onBack={() => {
+                setActiveSubTab(null);
+                setSearchParams((prev) => {
+                  const next = new URLSearchParams(prev);
+                  next.delete('subtab');
+                  return next;
+                });
+              }}
+            />
           ) : (
+            <>
+            <ImportRunsEntry
+              projectId={project.id}
+              reloadKey={runsReloadKey}
+              onOpen={() => {
+                setActiveSubTab('imports');
+                setSearchParams((prev) => {
+                  const next = new URLSearchParams(prev);
+                  next.set('tab', 'files');
+                  next.set('subtab', 'imports');
+                  return next;
+                });
+              }}
+            />
             <ProjectFilesTab
               projectId={project.id}
               projectName={project.name}
@@ -2063,6 +2175,7 @@ const ProjectDetail = () => {
               }}
               onUseAsBackground={handleUseAsBackground}
             />
+            </>
           )}
           </ErrorBoundary>
         </TabsContent>

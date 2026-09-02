@@ -8202,7 +8202,6 @@
     "title": "Stäm av importen",
     "lead": "Jag läste {{files}} filer. Kolla att jag förstod dem rätt — särskilt rummen, som kan vara sådana du redan har.",
     "apply": "Genomför ({{count}})",
-    "cancelled": "Importen avbröts — filerna ligger kvar i Filer.",
     "failed": "Kunde inte genomföra importen",
     "done": "{{count}} ändringar gjorda.",
     "doneMerged": "{{count}} rum slogs ihop med rum du redan hade.",
@@ -8374,7 +8373,9 @@
         "docNo": "Nummer",
         "all": "Hela kvittot"
       }
-    }
+    },
+    "closed": "Importen är sparad",
+    "closedBody": "Du hittar den under Filer › Importer och kan fortsätta granska när du vill."
   },
   "renovationPlan": {
     "title": "Din renoveringsplan",
@@ -8597,5 +8598,30 @@
       "vendorDateAmount": "matchad på leverantör, datum och ungefärligt belopp",
       "vendorDateOnly": "matchad på leverantör och datum"
     }
+  },
+  "importRuns": {
+    "title": "Importer",
+    "lead": "Varje mapp du har släppt på projektet, och vad läsningen hittade. En import som du inte hunnit svara på ligger kvar här tills du gör det.",
+    "back": "Filer",
+    "emptyTitle": "Inga importer än",
+    "emptyBody": "Släpp en mapp med kvitton, ritningar eller offerter på projektet, så dyker läsningen upp här.",
+    "status": {
+      "reviewing": "Väntar på dig",
+      "applied": "Genomförd",
+      "discarded": "Kastad"
+    },
+    "summary": "{{files}} filer lästa · {{purchases}} inköp · {{changes}} ändringar",
+    "appliedCount_one": "{{count}} genomförd",
+    "appliedCount_other": "{{count}} genomförda",
+    "flagged_one": "{{count}} rad behöver din blick",
+    "flagged_other": "{{count}} rader behöver din blick",
+    "folder": "Filerna ligger i {{folder}}",
+    "resume": "Fortsätt granska",
+    "view": "Öppna",
+    "discard": "Kasta importen",
+    "waitingBadge_one": "{{count}} väntar",
+    "waitingBadge_other": "{{count}} väntar",
+    "imagesElsewhere": "Kvittobilderna finns inte på den här datorn",
+    "imagesElsewhereBody": "Importen lästes i en annan webbläsare. Siffrorna är kvar, men du kan inte jämföra mot kvittofotot här — och godkänner du raderna sparas de utan bild."
   }
 }

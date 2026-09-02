@@ -8203,7 +8203,6 @@
     "title": "Check the import",
     "lead": "I read {{files}} files. Check that I understood them — especially the rooms, which may be ones you already have.",
     "apply": "Apply ({{count}})",
-    "cancelled": "Import cancelled — the files are still in Files.",
     "failed": "Could not apply the import",
     "done": "{{count}} changes made.",
     "doneMerged": "{{count}} rooms were merged into rooms you already had.",
@@ -8375,7 +8374,9 @@
         "docNo": "Number",
         "all": "Whole receipt"
       }
-    }
+    },
+    "closed": "Import saved",
+    "closedBody": "You will find it under Files › Imports and can pick up the review whenever you like."
   },
   "renovationPlan": {
     "title": "Your renovation plan",
@@ -8598,5 +8599,30 @@
       "vendorDateAmount": "matched on vendor, date and approximate amount",
       "vendorDateOnly": "matched on vendor and date"
     }
+  },
+  "importRuns": {
+    "title": "Imports",
+    "lead": "Every folder you have dropped on this project, and what the reading found. An import you have not answered stays here until you do.",
+    "back": "Files",
+    "emptyTitle": "No imports yet",
+    "emptyBody": "Drop a folder of receipts, drawings or quotes on the project and the reading will show up here.",
+    "status": {
+      "reviewing": "Waiting for you",
+      "applied": "Applied",
+      "discarded": "Discarded"
+    },
+    "summary": "{{files}} files read · {{purchases}} purchases · {{changes}} changes",
+    "appliedCount_one": "{{count}} applied",
+    "appliedCount_other": "{{count}} applied",
+    "flagged_one": "{{count}} row needs your eyes",
+    "flagged_other": "{{count}} rows need your eyes",
+    "folder": "The files are in {{folder}}",
+    "resume": "Continue review",
+    "view": "Open",
+    "discard": "Discard import",
+    "waitingBadge_one": "{{count}} waiting",
+    "waitingBadge_other": "{{count}} waiting",
+    "imagesElsewhere": "The receipt images are not on this computer",
+    "imagesElsewhereBody": "This import was read in another browser. The numbers are here, but you cannot compare them against the receipt photo — and rows you approve are saved without an image."
   }
 }
