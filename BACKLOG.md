@@ -856,9 +856,40 @@ dubblettpar inom släppet, lyft fil till inköp). Verifierat i körande app via
 dev-harnessen /dev/import-review med 50 rader.
 
 Byggt före detta kort: container-ramen, klickbar kvittorad → bild, rumsval
-per inköp, vrid 90°/zoom i förhandsvisningen. Kvar från systerkortet
-`import-granskning-syna-kvittot-mot-bilden`: manuell fältfattning, dubbletter
-inom släppet, lyft från övrigt.
+per inköp, vrid 90°/zoom i förhandsvisningen.
+
+**RÄTTELSE 2026-09-02:** kortet stängdes för tidigt. Punkt 3 (auto-vridning) är
+INTE byggd, och punkt 1 byggdes bara till hälften — cropen är en vy-mask
+(clip-path), den skriver inget till den arkiverade filen. Båda flyttade till
+`bilden-som-arkiveras-vrids-och-beskars`.
+
+---
+id: bilden-som-arkiveras-vrids-och-beskars
+status: todo
+priority: P3
+tags: [import, ux]
+created: 2026-09-02
+---
+
+## Vridning och beskärning ska nå den sparade filen — inte bara vyn
+
+Utbrutet ur `granskningens-bildyta-crop-kommentarer-autovrid`, som stängdes för
+tidigt 2026-09-01. Två punkter kvarstår:
+
+1. **Cropen är en vy-mask.** `ImportPreview` beskär med `clip-path` — bra för
+   att syna ett belopp i ett hörn, men det Carl bad om var att beskära ut
+   kvittot ur A4-fotot så att **den sparade** bilden blir kvittot. Kräver en
+   canvas-omritning före uppladdning (och ett beslut: ersätta originalet eller
+   spara beskärningen bredvid). Vid försäljning är originalet bevisunderlag —
+   luta åt att spara båda.
+2. **Auto-vridning i tolkningskörningen** är inte byggd alls. Två spår:
+   EXIF-orientering (gratis, men ofta fel på skannat) eller att
+   klassificeraren svarar med textens orientering och klienten roterar före
+   arkivering. Tolkningen klarar redan roterade bilder — det här är för
+   människans ögon, och betyder att vrid-knappen sällan behöver tryckas.
+
+Ingen av dem blockerar 112-kvittotestet; vrid + zoom + panorera räcker för att
+verifiera manuellt.
 
 ---
 id: beslut-prismodell-proffs
