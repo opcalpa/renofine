@@ -921,6 +921,54 @@ ligger rätt i Filer också (hör ihop med
 `bilden-som-arkiveras-vrids-och-beskars`).
 
 ---
+id: extern-csv-som-andra-asikt-pa-kvittohogen
+status: todo
+priority: P2
+tags: [import, ai, idea]
+created: 2026-09-02
+---
+
+## Läs in en CSV från ChatGPT/Gemini som ANDRA åsikt om samma hög
+
+Carls idé 2026-09-02: låt användaren ladda upp samma kvittobunt till en annan
+modell i webbläsaren, be om en tabell (leverantör, kvitto-/fakturanr, datum,
+totalbelopp, moms), och släppa in CSV:n i Renofine. Inte för att lita på den —
+för att ha **två oberoende läsningar av samma dokument**. Där de är överens är
+sannolikheten hög att båda har rätt; där de skiljer sig vet man exakt vilken
+rad man ska titta på.
+
+Det är samma logik som redan bär `verifyReceipt`: billig, deterministisk
+kontroll av något som annars bara är en gissning.
+
+### Designen (avgjord i förväg så bygget inte behöver uppfinna den)
+
+**Matchning.** CSV-raden mot vår rad, i fallande styrka:
+1. faktura-/kvittonr (exakt, normaliserat) — starkast
+2. leverantör (normaliserad) + belopp inom 1 kr
+3. leverantör + datum + belopp inom 1 %
+Ingen träff ⇒ raden visas som "fanns bara i filen" — den kan lyftas till ett
+eget inköp, samma väg som `liftToPurchase`.
+
+**Konfliktvisning.** Där de skiljer sig visas BÅDA värdena intill varandra med
+källa ("Renofine 2 549 · CSV 2 594"), och personen väljer. Vår läsning är
+förvald — annars byter man bara ut en gissning mot en annan.
+
+**Vad CSV:n ALDRIG får göra:** skriva tyst. Den producerar förslag, som allt
+annat på granskningssidan. En importerad CSV kan innehålla vad som helst,
+inklusive rader som aldrig fanns i mappen.
+
+**Filformat:** valfri kolumnordning med en rubrikrad; mappa kolumner i UI:t
+första gången (leverantör / nummer / datum / belopp / moms) och kom ihåg
+mappningen. Acceptera `,` och `;` som avgränsare och svenskt decimalkomma.
+
+### Innan det byggs — värt att mäta
+
+Efter Carls 112-kvittotest: hur många rader hade faktiskt fel? Är det <5 %
+räcker `verifyReceipt` + manuell rättning, och CSV-vägen är ett vitamin. Är
+det 20 % är en andra åsikt värd sitt bygge. **Siffran finns efter testet, inte
+före.**
+
+---
 id: beslut-prismodell-proffs
 status: todo
 priority: P1

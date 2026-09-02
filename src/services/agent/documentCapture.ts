@@ -34,6 +34,8 @@ async function fetchPlannedMaterials(projectId: string): Promise<PlannedMaterial
 interface UnifiedReceiptSlice {
   vendor_name: string | null;
   total_amount: number | null;
+  total_printed?: string | null;
+  field_confidence?: Record<string, number> | null;
   vat_amount: number | null;
   purchase_date: string | null;
   due_date: string | null;
@@ -221,6 +223,9 @@ export async function captureDocument(
     vendorName: r.vendor_name || "Okänd leverantör",
     total: r.total_amount ?? 0,
     vatAmount: r.vat_amount,
+    totalPrinted: r.total_printed ?? null,
+    fieldConfidence: r.field_confidence ?? null,
+    readConfidence: typeof r.confidence === "number" ? r.confidence : null,
     documentDate: r.purchase_date,
     dueDate: r.due_date,
     invoiceNumber: r.invoice_number,

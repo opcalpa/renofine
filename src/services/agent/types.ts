@@ -84,6 +84,16 @@ export type ProposalAction =
       vendorName: string;
       total: number;
       vatAmount?: number | null;
+      /**
+       * The total EXACTLY as printed on the document. The cheapest check that
+       * exists against a misread number: what the model SAW versus what it
+       * reported (Carl 2026-09-02, "även korrekta kvitton har felaktigheter").
+       */
+      totalPrinted?: string | null;
+      /** How confidently each field was read, 0–1 — drives which value is questioned. */
+      fieldConfidence?: Record<string, number> | null;
+      /** Overall read confidence for the document. */
+      readConfidence?: number | null;
       /** YYYY-MM-DD — purchase/delivery date from the document. */
       documentDate?: string | null;
       dueDate?: string | null;

@@ -8353,7 +8353,29 @@
     "leadNothingYet": "Nothing is added to the project until you press Apply.",
     "statFiles": "{{files}} files read",
     "statCalls": "{{calls}} AI calls",
-    "statUnreadable": "{{count}} files could not be read"
+    "statUnreadable": "{{count}} files could not be read",
+    "issues": {
+      "lineSum": "The lines add up to {{sum}} kr — not to {{total}} kr",
+      "printedTotal": "The receipt shows {{printed}} but the reader wrote {{parsed}}",
+      "vatRate": "VAT works out to {{rate}} % — expected {{expected}} %",
+      "vatOverTotal": "VAT is larger than the total",
+      "missingTotal": "No total was read",
+      "missingVendor": "No vendor was read",
+      "missingDate": "No date was read",
+      "dateFuture": "The date is in the future",
+      "dateOdd": "The date looks implausible",
+      "invoiceNoOnReceipt": "A receipt with an invoice number — is it an invoice?",
+      "lowConfidence": "The document was hard to read ({{confidence}} % confidence)",
+      "field": {
+        "total": "Amount",
+        "vat": "VAT",
+        "date": "Date",
+        "vendor": "Vendor",
+        "lines": "Lines",
+        "docNo": "Number",
+        "all": "Whole receipt"
+      }
+    }
   },
   "renovationPlan": {
     "title": "Your renovation plan",

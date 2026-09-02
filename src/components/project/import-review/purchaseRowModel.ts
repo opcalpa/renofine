@@ -11,6 +11,7 @@
 import type { AgentProposal, ProposalAction } from '@/services/agent/types';
 import type { ImportSession } from '@/services/agent/importSession';
 import { purchaseProposals } from '@/services/agent/importSession';
+import { verifyReceipt, type ReceiptIssue } from '@/lib/verifyReceipt';
 
 type PurchaseAction = Extract<ProposalAction, { type: 'import_purchase' }>;
 
@@ -31,6 +32,13 @@ export interface PurchaseRow {
   roomName: string | null;
   /** Line amounts don't add up to the header total — check it against the image. */
   sumMismatch: number | null;
+  /**
+   * Everything the arithmetic could not reconcile, recomputed on every edit so
+   * a value you just corrected stops being flagged the moment you correct it.
+   */
+  issues: ReceiptIssue[];
+  /** True when a field the row cannot do without is missing or contradictory. */
+  blocking: boolean;
   /** Already booked in the project (same vendor + invoice no, or vendor+date+amount). */
   duplicateOfExisting: boolean;
   /**
@@ -83,6 +91,17 @@ export function buildPurchaseRows(session: ImportSession): PurchaseRow[] {
     const action = proposal.action;
     const mismatch = lineSumMismatch(action);
     const pairOf = pairs.get(proposal.id) ?? null;
+    const issues = verifyReceipt({
+      vendor_name: action.vendorName || null,
+      total_amount: action.total,
+      vat_amount: action.vatAmount ?? null,
+      purchase_date: action.documentDate ?? null,
+      invoice_number: action.invoiceNumber ?? null,
+      document_type: action.documentType,
+      line_items: action.lineItems.map((li) => ({ total: li.total })),
+      confidence: action.readConfidence ?? null,
+      total_printed: action.totalPrinted ?? null,
+    });
     return [
       {
         proposal,
@@ -98,10 +117,13 @@ export function buildPurchaseRows(session: ImportSession): PurchaseRow[] {
         roomId: action.roomId ?? null,
         roomName: action.roomName ?? null,
         sumMismatch: mismatch,
+        issues,
+        blocking: issues.some((i) => i.level === 'blocking'),
         duplicateOfExisting: !!proposal.duplicateOfExisting,
         pairOf,
         kept: !session.rejected.has(proposal.id),
-        needsLook: mismatch !== null || !!proposal.duplicateOfExisting || pairOf !== null,
+        needsLook:
+          issues.length > 0 || !!proposal.duplicateOfExisting || pairOf !== null,
       },
     ];
   });

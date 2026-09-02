@@ -386,16 +386,40 @@ function PurchaseRowView({
   const { t, i18n } = useTranslation();
   const off = !row.kept;
 
-  const flagText = row.sumMismatch
-    ? t('importReview.purchases.sumMismatchBody', 'Raderna summerar till {{sum}} — inte till {{total}}', {
-        sum: kr(row.sumMismatch, i18n.language),
-        total: kr(row.total, i18n.language),
-      })
-    : row.duplicateOfExisting
-      ? t('importReview.purchases.dupExistingBody', 'Finns redan i projektet')
-      : row.pairOf
-        ? t('importReview.purchases.pairBody', 'Troligen samma kvitto som {{file}}', { file: row.pairOf })
-        : null;
+  /**
+   * One line per thing the arithmetic could not reconcile, each naming the
+   * FIELD to look at. "Check this row" is useless at fifty rows; "the VAT is
+   * 19 %, not 25 %" sends the eye straight to the number (Carl, 2026-09-02).
+   */
+  const issueText = (issue: (typeof row.issues)[number]): string => {
+    const d = issue.detail ?? {};
+    switch (issue.code) {
+      case 'line_sum_mismatch':
+        return t('importReview.issues.lineSum', 'Raderna summerar till {{sum}} kr — inte till {{total}} kr', d);
+      case 'printed_total_differs':
+        return t('importReview.issues.printedTotal', 'Kvittot visar {{printed}} men tolken skrev {{parsed}}', d);
+      case 'vat_rate_off':
+        return t('importReview.issues.vatRate', 'Momsen blir {{rate}} % — förväntat {{expected}} %', d);
+      case 'vat_exceeds_total':
+        return t('importReview.issues.vatOverTotal', 'Momsen är större än totalbeloppet');
+      case 'missing_total':
+        return t('importReview.issues.missingTotal', 'Inget totalbelopp lästes');
+      case 'missing_vendor':
+        return t('importReview.issues.missingVendor', 'Ingen leverantör lästes');
+      case 'missing_date':
+        return t('importReview.issues.missingDate', 'Inget datum lästes');
+      case 'date_in_future':
+        return t('importReview.issues.dateFuture', 'Datumet ligger i framtiden');
+      case 'date_implausible':
+        return t('importReview.issues.dateOdd', 'Datumet ser orimligt ut');
+      case 'invoice_number_on_receipt':
+        return t('importReview.issues.invoiceNoOnReceipt', 'Ett kvitto med fakturanummer — är det en faktura?');
+      case 'low_confidence':
+        return t('importReview.issues.lowConfidence', 'Dokumentet var svårläst ({{confidence}} % säkerhet)', d);
+      default:
+        return '';
+    }
+  };
 
   return (
     <div
@@ -502,26 +526,34 @@ function PurchaseRowView({
             </span>
           </div>
 
-          {flagText && (
-            <div className="mt-1.5 flex items-center gap-2">
-              {row.sumMismatch && (
-                <Flag tone="warn" icon={AlertTriangle}>
-                  {t('importReview.purchases.sumMismatch', 'Summan stämmer inte')}
-                </Flag>
+          {(row.issues.length > 0 || row.duplicateOfExisting || row.pairOf) && (
+            <div className="mt-1.5 space-y-1">
+              {(row.duplicateOfExisting || row.pairOf) && (
+                <div className="flex items-center gap-2">
+                  <Flag tone="dup" icon={Copy}>
+                    {row.duplicateOfExisting
+                      ? t('importReview.purchases.dupExisting', 'Redan bokförd')
+                      : t('importReview.purchases.pair', 'Trolig dubblett')}
+                  </Flag>
+                  <span className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground">
+                    {row.duplicateOfExisting
+                      ? t('importReview.purchases.dupExistingBody', 'Finns redan i projektet')
+                      : t('importReview.purchases.pairBody', 'Troligen samma kvitto som {{file}}', {
+                          file: row.pairOf ?? '',
+                        })}
+                  </span>
+                </div>
               )}
-              {row.duplicateOfExisting && (
-                <Flag tone="dup" icon={Copy}>
-                  {t('importReview.purchases.dupExisting', 'Redan bokförd')}
-                </Flag>
-              )}
-              {!row.duplicateOfExisting && row.pairOf && (
-                <Flag tone="dup" icon={Copy}>
-                  {t('importReview.purchases.pair', 'Trolig dubblett')}
-                </Flag>
-              )}
-              <span className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground">
-                {flagText}
-              </span>
+              {row.issues.map((issue) => (
+                <div key={issue.code} className="flex items-center gap-2">
+                  <Flag tone={issue.level === 'blocking' ? 'dup' : 'warn'} icon={AlertTriangle}>
+                    {t(`importReview.issues.field.${issue.field}`, issue.field)}
+                  </Flag>
+                  <span className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground">
+                    {issueText(issue)}
+                  </span>
+                </div>
+              ))}
             </div>
           )}
 

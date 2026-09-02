@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { checkRateLimit, rateLimitedBody } from '../_shared/rateLimit.ts';
+import { verifyReceipt, type ReceiptIssue } from '../_shared/verifyReceipt.ts';
 // @ts-ignore - pdf-parse types
 import pdf from 'npm:pdf-parse@1.1.1';
 // @ts-ignore - mammoth types
@@ -55,6 +56,8 @@ interface ReceiptLineItem {
 interface ReceiptData {
   vendor_name: string | null;
   total_amount: number | null;
+  /** The total EXACTLY as printed — the cheapest check there is against a misread. */
+  total_printed: string | null;
   vat_amount: number | null;
   purchase_date: string | null;
   due_date: string | null;
@@ -64,6 +67,10 @@ interface ReceiptData {
   rot_amount: number | null;
   rot_personnummer: string | null;
   confidence: number;
+  /** How confidently each field was READ; drives which value the UI questions. */
+  field_confidence: Record<string, number> | null;
+  /** Deterministic checks run on the extraction — see _shared/verifyReceipt.ts. */
+  issues: ReceiptIssue[];
 }
 
 interface ExtractedRoom {
@@ -286,6 +293,23 @@ line_items: en entry per rad om synliga. Tom array om oklart.
 - quantity = ANTALET enheter, unit_price = á-priset, total = radens summa. "VINGLAS 8 * 54,90 → 439,20" betyder quantity 8, unit_price 54.90, total 439.20 — slå ALDRIG ihop antalet i totalen utan att fylla quantity.
 - Behåll ören exakt (34,90 → 34.90, inte 35). Radernas total ska summera till kvittots totalbelopp.
 
+STEG 3 — VERIFIERA innan du svarar (det här steget hittar de flesta felen):
+1. Skriv av totalbeloppet ORDAGRANT som det står tryckt, med samma tecken och
+   decimaler, i total_printed ("2 549,00", "1 380,65 kr"). Kontrollera sedan att
+   total_amount är exakt samma tal. Skiljer de sig har du läst fel — läs om.
+2. Momsen: på svenska kvitton är totalen INKLUSIVE moms. Kontrollera att
+   moms / (total − moms) blir 25 %, 12 % eller 6 %. Blir det något annat har
+   du läst fel belopp eller fel momsrad — läs om båda.
+3. Radbeloppen ska summera till totalen. Gör de inte det: saknar du en rad,
+   eller är det rabatt/pant/avrundning? Ta med de raderna också.
+4. Ett KVITTO har inget fakturanummer och ingen förfallodag. Har du fyllt i
+   sådana är dokumentet troligen en FAKTURA — ändra document_type.
+5. Datumet ska vara i dåtid och rimligt (inte 1970, inte nästa år).
+
+Sätt field_confidence per fält (0–1) efter hur säkert du LÄSTE just det fältet —
+ett skrynkligt kvitto kan ha tydlig leverantör och otydlig moms. Gissa aldrig
+för att fylla ett fält; null är ett giltigt och önskat svar.
+
 KRITISKT — när ett fält inte syns eller är oläsligt, returnera **null** (JSON null).
 Använd ALDRIG platshållare som "<UNKNOWN>", "N/A", "okänt", "saknas", "?" eller tom sträng.
 För string-fält som är okända: skriv exakt: null. För number-fält som är okända: skriv exakt: null.
@@ -301,6 +325,10 @@ const RECEIPT_TOOL = {
       document_type: { type: 'string', enum: ['receipt', 'invoice', 'quote', 'scope', 'other'] },
       vendor_name: { type: ['string', 'null'] },
       total_amount: { type: ['number', 'null'] },
+      total_printed: {
+        type: ['string', 'null'],
+        description: 'Totalbeloppet ORDAGRANT som tryckt, t.ex. "2 549,00". Null om oläsligt.',
+      },
       vat_amount: { type: ['number', 'null'] },
       purchase_date: { type: ['string', 'null'], description: 'YYYY-MM-DD eller null' },
       due_date: { type: ['string', 'null'], description: 'YYYY-MM-DD, endast fakturor' },
@@ -322,6 +350,18 @@ const RECEIPT_TOOL = {
       rot_amount: { type: ['number', 'null'] },
       rot_personnummer: { type: ['string', 'null'] },
       confidence: { type: 'number', description: '0-1' },
+      field_confidence: {
+        type: 'object',
+        description: 'Hur säkert varje fält LÄSTES, 0-1. Ett fält kan vara otydligt även på ett i övrigt tydligt kvitto.',
+        properties: {
+          vendor_name: { type: 'number' },
+          total_amount: { type: 'number' },
+          vat_amount: { type: 'number' },
+          purchase_date: { type: 'number' },
+          invoice_number: { type: 'number' },
+        },
+        required: ['vendor_name', 'total_amount', 'vat_amount', 'purchase_date', 'invoice_number'],
+      },
     },
     required: [
       'document_type', 'vendor_name', 'total_amount', 'vat_amount', 'purchase_date',
@@ -393,6 +433,7 @@ function expandReceiptResult(raw: Record<string, unknown>): ExtractionResult {
   const receiptData: ReceiptData = {
     vendor_name: sanitizeStr(raw.vendor_name),
     total_amount: numOrNull(raw.total_amount),
+    total_printed: sanitizeStr(raw.total_printed),
     vat_amount: numOrNull(raw.vat_amount),
     purchase_date: sanitizeStr(raw.purchase_date),
     due_date: sanitizeStr(raw.due_date),
@@ -407,7 +448,13 @@ function expandReceiptResult(raw: Record<string, unknown>): ExtractionResult {
     rot_amount: numOrNull(raw.rot_amount),
     rot_personnummer: sanitizeStr(raw.rot_personnummer),
     confidence: numOrNull(raw.confidence) ?? 0.5,
+    field_confidence: (raw.field_confidence as Record<string, number> | undefined) ?? null,
+    issues: [],
   };
+
+  // Arithmetic the model cannot argue with. Run AFTER normalisation so it
+  // checks the values the app will actually use, not what the model claimed.
+  receiptData.issues = verifyReceipt({ ...receiptData, document_type: docType });
 
   return {
     rooms: [],

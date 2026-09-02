@@ -8352,7 +8352,29 @@
     "leadNothingYet": "Ingenting läggs in i projektet förrän du trycker Genomför.",
     "statFiles": "{{files}} filer lästa",
     "statCalls": "{{calls}} AI-anrop",
-    "statUnreadable": "{{count}} filer gick inte att läsa"
+    "statUnreadable": "{{count}} filer gick inte att läsa",
+    "issues": {
+      "lineSum": "Raderna summerar till {{sum}} kr — inte till {{total}} kr",
+      "printedTotal": "Kvittot visar {{printed}} men tolken skrev {{parsed}}",
+      "vatRate": "Momsen blir {{rate}} % — förväntat {{expected}} %",
+      "vatOverTotal": "Momsen är större än totalbeloppet",
+      "missingTotal": "Inget totalbelopp lästes",
+      "missingVendor": "Ingen leverantör lästes",
+      "missingDate": "Inget datum lästes",
+      "dateFuture": "Datumet ligger i framtiden",
+      "dateOdd": "Datumet ser orimligt ut",
+      "invoiceNoOnReceipt": "Ett kvitto med fakturanummer — är det en faktura?",
+      "lowConfidence": "Dokumentet var svårläst ({{confidence}} % säkerhet)",
+      "field": {
+        "total": "Belopp",
+        "vat": "Moms",
+        "date": "Datum",
+        "vendor": "Leverantör",
+        "lines": "Rader",
+        "docNo": "Nummer",
+        "all": "Hela kvittot"
+      }
+    }
   },
   "renovationPlan": {
     "title": "Din renoveringsplan",
