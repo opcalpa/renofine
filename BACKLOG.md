@@ -5727,10 +5727,11 @@ källan ska gå att se samtidigt, annars kontrollerar ingen någonting.
 
 ---
 id: global-sok-tacker-hela-projektet
-status: todo
+status: done
 priority: P2
 tags: [sok, ux]
 created: 2026-09-02
+updated: 2026-09-02
 ---
 ## Globala sökningen hittar inte det den lovar
 
@@ -5753,10 +5754,11 @@ att sökningen är trasig.
 
 ---
 id: sokresultat-visar-sin-vag
-status: todo
+status: done
 priority: P3
 tags: [sok, ux]
 created: 2026-09-02
+updated: 2026-09-02
 ---
 ## Sökresultat ska visa vägen dit, inte bara namnet
 
@@ -5803,3 +5805,30 @@ en glömd sökterm ser ut som försvunnen data nästa gång fliken öppnas.
 
 Tog med sig: tabellens tomma läge sa "Inga inköpsordrar än." även mitt i en
 sökning utan träff. Nu skiljs "det finns inga" från "inget matchade".
+
+---
+id: global-sok-hittar-filer
+status: todo
+priority: P3
+tags: [sok, filer]
+created: 2026-09-02
+---
+## Globala sökningen når fortfarande inte filerna
+
+När sökningen byggdes om 2026-09-02 lades inköpsorder till, men INTE filer — och
+platshållaren slutade därför lova dem.
+
+Skälet är att det inte finns någon filtabell. Filer bor i storage-bucketen
+`project-files`, och `useFilesData` listar dem per prefix
+(`supabase.storage.from("project-files").list(...)`). En global sökning skulle
+alltså betyda en rekursiv listning per projekt vid varje tangenttryck — dyrt och
+långsamt.
+
+`task_file_links` har `file_path` och `project_id` och vore frestande, men den
+täcker bara filer som är LÄNKADE till ett arbete eller en rad. En sökning som
+tyst hittar en delmängd är värre än ingen sökning alls — det var precis felet med
+den gamla platshållaren.
+
+**Vad som krävs:** en filmetadata-tabell (namn, sökväg, projekt, kategori) som
+skrivs vid uppladdning, så filer blir sökbara som allt annat. Det gagnar också
+importens `storagePath`-uppslag och Filer-flikens egen sökning.

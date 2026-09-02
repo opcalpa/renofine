@@ -905,7 +905,8 @@
     "filterActive": "Pågående",
     "filterCompleted": "Avslutade",
     "hideDemo": "Dölj demoprojekt",
-    "notFound": "Projektet hittades inte"
+    "notFound": "Projektet hittades inte",
+    "projects": "Projekt"
   },
   "onboarding": {
     "welcome": "Välkommen till Renofine!",
@@ -1578,7 +1579,8 @@
     "useComputedArea": "Använd beräknad yta",
     "tasksColumn": "Arbeten",
     "purchasesColumn": "Inköp",
-    "andMore": "+{{count}} till"
+    "andMore": "+{{count}} till",
+    "rooms": "Rum"
   },
   "profile": {
     "title": "Profilinställningar",
@@ -2953,7 +2955,8 @@
     "attachmentOpenFull": "Öppna i full storlek",
     "attachmentOpen": "Öppna",
     "searchPlaceholder": "Sök leverantör, belopp, fakturanr…",
-    "noOrdersMatch": "Inga inköp matchar din sökning."
+    "noOrdersMatch": "Inga inköp matchar din sökning.",
+    "purchases": "Inköp"
   },
   "overview": {
     "messagesHeading": "Meddelanden",
@@ -6677,12 +6680,13 @@
   },
   "globalSearch": {
     "placeholder": "Sök...",
-    "inputPlaceholder": "Sök arbeten, inköp, rum...",
+    "inputPlaceholder": "Sök arbeten, inköp, rum, projekt…",
     "noResults": "Inga resultat hittades",
     "navigate": "navigera",
     "open": "öppna",
     "close": "stäng",
-    "title": "Sök"
+    "title": "Sök",
+    "projectsRoot": "Projekt"
   },
   "analysis": {
     "title": "Rotavdrag",

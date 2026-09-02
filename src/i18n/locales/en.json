@@ -905,7 +905,8 @@
     "filterActive": "Ongoing",
     "filterCompleted": "Completed",
     "hideDemo": "Hide demo project",
-    "notFound": "Project not found"
+    "notFound": "Project not found",
+    "projects": "Projects"
   },
   "onboarding": {
     "welcome": "Welcome to Renofine!",
@@ -1578,7 +1579,8 @@
     "useComputedArea": "Use calculated area",
     "tasksColumn": "Tasks",
     "purchasesColumn": "Purchases",
-    "andMore": "+{{count}} more"
+    "andMore": "+{{count}} more",
+    "rooms": "Rooms"
   },
   "spacePlanner": {
     "title": "Area",
@@ -3584,7 +3586,8 @@
     "attachmentOpenFull": "Open at full size",
     "attachmentOpen": "Open",
     "searchPlaceholder": "Search vendor, amount, invoice no…",
-    "noOrdersMatch": "No purchases match your search."
+    "noOrdersMatch": "No purchases match your search.",
+    "purchases": "Purchases"
   },
   "overview": {
     "messagesHeading": "Messages",
@@ -6678,12 +6681,13 @@
   },
   "globalSearch": {
     "placeholder": "Search...",
-    "inputPlaceholder": "Search tasks, purchases, rooms...",
+    "inputPlaceholder": "Search tasks, purchases, rooms, projects…",
     "noResults": "No results found",
     "navigate": "navigate",
     "open": "open",
     "close": "close",
-    "title": "Search"
+    "title": "Search",
+    "projectsRoot": "Projects"
   },
   "analysis": {
     "title": "ROT deduction",

@@ -1,6 +1,25 @@
 /**
- * GlobalSearch — Cmd+K command palette for searching across all user projects.
- * Searches tasks, materials/purchases, files, rooms, and projects.
+ * GlobalSearch — the Cmd+K palette, across the projects you can actually reach.
+ *
+ * Four things were wrong here at once (Carl, 2026-09-02), and they compounded
+ * into "search never finds what I want":
+ *
+ *  1. SCOPE. Only the `projects` query used `myProjectIds()`. The policies on
+ *     tasks, materials and rooms all begin with `is_system_admin() OR …`, so a
+ *     system admin was searching every user's data — the exact leak that was
+ *     already fixed for projects and missed on the other three.
+ *  2. DEMO. Those same tables carry an "Anyone can view public demo" policy, so
+ *     the shared demo project's rooms and tasks surfaced in everyone's results.
+ *  3. DEAD LINKS. Results navigated with `?taskId=`, `?materialId=`, `?roomId=`
+ *     — parameters NOTHING reads. Only `entityId` is. So every hit opened the
+ *     right tab and then sat there, never opening the thing you searched for.
+ *  4. COVERAGE. The placeholder promised "tasks, purchases, files, rooms" while
+ *     `purchase_orders` and files were never queried at all; "purchases" only
+ *     ever matched individual material lines.
+ *
+ * Results now carry the path they were found at, so a hit reads
+ * `Projekt › Furusundsgatan 14 › Inköp` rather than a bare name that could be
+ * anywhere. The path uses the tabs' own labels, not table names.
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -11,32 +30,52 @@ import { PUBLIC_DEMO_PROJECT_TYPE } from "@/constants/publicDemo";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Input } from "@/components/ui/input";
-import { Search, CheckSquare, Package, FileText, Home, FolderOpen, Loader2 } from "lucide-react";
+import { Search, CheckSquare, Package, ShoppingCart, Home, FolderOpen, Loader2 } from "lucide-react";
 import { myProjectIds } from "@/lib/myProjects";
 
 interface SearchResult {
   id: string;
-  type: "task" | "material" | "file" | "room" | "project";
+  type: "task" | "material" | "purchaseOrder" | "room" | "project";
   title: string;
   subtitle?: string;
   projectId: string;
   projectName?: string;
+  /** i18n key for the tab this lives under — the middle of the breadcrumb. */
+  tabKey?: string;
 }
 
 const TYPE_ICONS = {
   task: CheckSquare,
   material: Package,
-  file: FileText,
+  purchaseOrder: ShoppingCart,
   room: Home,
   project: FolderOpen,
 };
 
-const TYPE_LABELS: Record<string, string> = {
-  task: "tasks.tasks",
-  material: "purchases.purchases",
-  file: "files.files",
-  room: "rooms.rooms",
-  project: "projects.projects",
+/**
+ * Group headings, each with the words to fall back on.
+ *
+ * `purchases.purchases`, `rooms.rooms` and `projects.projects` did not exist in
+ * any locale file, and the render called `t(key)` with no fallback — so the
+ * palette had been shouting PURCHASES.PURCHASES at people. The keys are added
+ * now; the fallback is here so a missing one degrades to a real word instead of
+ * leaking the key again.
+ */
+const TYPE_LABELS: Record<string, [key: string, fallback: string]> = {
+  task: ["tasks.tasks", "Arbeten"],
+  material: ["purchases.purchases", "Inköp"],
+  purchaseOrder: ["purchases.purchaseOrdersTitle", "Inköpsorder"],
+  room: ["rooms.rooms", "Rum"],
+  project: ["projects.projects", "Projekt"],
+};
+
+/** Where each kind of hit lives, in the tabs' own words. */
+const TYPE_TAB_KEY: Record<string, string | undefined> = {
+  task: "nav.mobileNav.tasks",
+  material: "nav.mobileNav.purchases",
+  purchaseOrder: "nav.mobileNav.purchases",
+  room: "nav.mobileNav.plans",
+  project: undefined,
 };
 
 export function GlobalSearch() {
@@ -90,88 +129,109 @@ export function GlobalSearch() {
   const performSearch = useCallback(async (q: string) => {
     setLoading(true);
     const searchPattern = `%${q}%`;
+    // PostgREST's `or=` filter is comma-separated, so a comma or a quote in the
+    // term would break the whole clause. Strip them for the multi-column
+    // lookups; single-column `ilike` takes the raw term unharmed.
+    const orSafe = q.replace(/[,()"]/g, " ").trim();
     const allResults: SearchResult[] = [];
 
     try {
-      // Search tasks
-      const { data: tasks } = await supabase
-        .from("tasks")
-        .select("id, title, project_id, projects(name)")
-        .ilike("title", searchPattern)
-        .limit(5);
-
-      if (tasks) {
-        for (const t of tasks as unknown as { id: string; title: string; project_id: string; projects: { name: string } | null }[]) {
-          allResults.push({
-            id: t.id,
-            type: "task",
-            title: t.title,
-            projectId: t.project_id,
-            projectName: t.projects?.name || undefined,
-          });
-        }
+      // The reach of the person searching — owned, shared, or via the address,
+      // WITHOUT the admin bypass the raw policies grant, and without the public
+      // demo project everyone can read. Every query below is scoped to it.
+      //
+      // Fail closed: no reachable projects means no results, never "search
+      // everything". An empty palette is a visible failure; a palette full of
+      // strangers' projects is an invisible one.
+      const ids = await myProjectIds();
+      if (ids.length === 0) {
+        setResults([]);
+        setSelectedIndex(0);
+        return;
       }
 
-      // Search materials/purchases
-      const { data: materials } = await supabase
-        .from("materials")
-        .select("id, name, project_id, projects(name)")
-        .ilike("name", searchPattern)
-        .limit(5);
+      const projectNames = new Map<string, string>();
+      const push = (r: SearchResult) =>
+        allResults.push({ ...r, tabKey: TYPE_TAB_KEY[r.type] });
 
-      if (materials) {
-        for (const m of materials as unknown as { id: string; name: string; project_id: string; projects: { name: string } | null }[]) {
-          allResults.push({
-            id: m.id,
-            type: "material",
-            title: m.name,
-            projectId: m.project_id,
-            projectName: m.projects?.name || undefined,
-          });
-        }
+      const [tasks, materials, orders, rooms, projects] = await Promise.all([
+        supabase
+          .from("tasks")
+          .select("id, title, project_id, projects(name)")
+          .in("project_id", ids)
+          .ilike("title", searchPattern)
+          .limit(5),
+        supabase
+          .from("materials")
+          .select("id, name, project_id, projects(name)")
+          .in("project_id", ids)
+          .ilike("name", searchPattern)
+          .limit(5),
+        // Purchase ORDERS — the thing the placeholder always promised and never
+        // searched. "purchases" used to match only individual material lines,
+        // so an invoice number or a vendor found nothing.
+        supabase
+          .from("purchase_orders")
+          .select("id, vendor_name, total, invoice_number, ocr_number, project_id, projects(name)")
+          .in("project_id", ids)
+          .or(
+            `vendor_name.ilike.%${orSafe}%,invoice_number.ilike.%${orSafe}%,ocr_number.ilike.%${orSafe}%`
+          )
+          .limit(5),
+        supabase
+          .from("rooms")
+          .select("id, name, project_id, projects(name)")
+          .in("project_id", ids)
+          .ilike("name", searchPattern)
+          .limit(5),
+        supabase
+          .from("projects")
+          .select("id, name, description")
+          .in("id", ids)
+          .ilike("name", searchPattern)
+          // NULL-safe. `.neq()` compiles to SQL `!=`, which is UNKNOWN against
+          // NULL — and 69 of 77 projects have no project_type, so the plain
+          // `.neq(project_type, public_demo)` silently excluded almost every
+          // project in the database. Searching for a project by name returned
+          // nothing, and looked like the search was simply bad.
+          .or(`project_type.is.null,project_type.neq.${PUBLIC_DEMO_PROJECT_TYPE}`)
+          .limit(3),
+      ]);
+
+      type WithProject = { project_id: string; projects: { name: string } | null };
+      const nameOf = (row: WithProject) => {
+        const n = row.projects?.name;
+        if (n) projectNames.set(row.project_id, n);
+        return n || projectNames.get(row.project_id);
+      };
+
+      for (const t of (tasks.data ?? []) as unknown as (WithProject & { id: string; title: string })[]) {
+        push({ id: t.id, type: "task", title: t.title, projectId: t.project_id, projectName: nameOf(t) });
       }
-
-      // Search rooms
-      const { data: rooms } = await supabase
-        .from("rooms")
-        .select("id, name, project_id, projects(name)")
-        .ilike("name", searchPattern)
-        .limit(5);
-
-      if (rooms) {
-        for (const r of rooms as unknown as { id: string; name: string; project_id: string; projects: { name: string } | null }[]) {
-          allResults.push({
-            id: r.id,
-            type: "room",
-            title: r.name,
-            projectId: r.project_id,
-            projectName: r.projects?.name || undefined,
-          });
-        }
+      for (const m of (materials.data ?? []) as unknown as (WithProject & { id: string; name: string })[]) {
+        push({ id: m.id, type: "material", title: m.name, projectId: m.project_id, projectName: nameOf(m) });
       }
-
-      // Search projects
-      const { data: projects } = await supabase
-        .from("projects")
-        .select("id, name, description")
-        // Search my own reach, not the whole database: the projects policy
-        // starts with `is_system_admin() OR …`, so an admin was searching
-        // every user's projects. See lib/myProjects.ts.
-        .in("id", await myProjectIds())
-        .ilike("name", searchPattern)
-        .neq("project_type", PUBLIC_DEMO_PROJECT_TYPE)
-        .limit(3);
-
-      if (projects) {
-        for (const p of projects) {
-          allResults.push({
-            id: p.id,
-            type: "project",
-            title: p.name,
-            subtitle: p.description || undefined,
-            projectId: p.id,
-          });
-        }
+      for (const o of (orders.data ?? []) as unknown as (WithProject & {
+        id: string; vendor_name: string | null; total: number | null; invoice_number: string | null;
+      })[]) {
+        push({
+          id: o.id,
+          type: "purchaseOrder",
+          // A read receipt can land without a vendor; the invoice number is the
+          // next most recognisable handle, and the id is never shown raw.
+          title:
+            o.vendor_name ||
+            (o.invoice_number ? `#${o.invoice_number}` : t("purchases.unknownVendor", "Okänd leverantör")),
+          subtitle: o.total != null ? `${Math.round(o.total).toLocaleString("sv-SE")} kr` : undefined,
+          projectId: o.project_id,
+          projectName: nameOf(o),
+        });
+      }
+      for (const r of (rooms.data ?? []) as unknown as (WithProject & { id: string; name: string })[]) {
+        push({ id: r.id, type: "room", title: r.name, projectId: r.project_id, projectName: nameOf(r) });
+      }
+      for (const p of (projects.data ?? []) as { id: string; name: string; description: string | null }[]) {
+        push({ id: p.id, type: "project", title: p.name, subtitle: p.description || undefined, projectId: p.id });
       }
 
       setResults(allResults);
@@ -179,20 +239,32 @@ export function GlobalSearch() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
+  /**
+   * Open the hit — the ITEM, not just the tab it lives on.
+   *
+   * These links used to carry `?taskId=`, `?materialId=` and `?roomId=`.
+   * ProjectDetail reads exactly one deep-link parameter, `entityId`, so every
+   * one of those was inert: the tab opened and nothing else happened, which
+   * reads as "search doesn't work".
+   *
+   * Rooms have no entityId consumer yet, so they still land on the plan tab —
+   * honest, and no worse than before.
+   */
   const handleSelect = useCallback((result: SearchResult) => {
     setOpen(false);
+    const base = `/projects/${result.projectId}`;
     if (result.type === "project") {
-      navigate(`/projects/${result.projectId}`);
+      navigate(base);
     } else if (result.type === "task") {
-      navigate(`/projects/${result.projectId}?tab=tasks&taskId=${result.id}`);
-    } else if (result.type === "material") {
-      navigate(`/projects/${result.projectId}?tab=purchases&materialId=${result.id}`);
+      navigate(`${base}?tab=tasks&entityId=${result.id}`);
+    } else if (result.type === "material" || result.type === "purchaseOrder") {
+      navigate(`${base}?tab=purchases&entityId=${result.id}`);
     } else if (result.type === "room") {
-      navigate(`/projects/${result.projectId}?tab=spaceplanner&roomId=${result.id}`);
+      navigate(`${base}?tab=spaceplanner`);
     } else {
-      navigate(`/projects/${result.projectId}`);
+      navigate(base);
     }
   }, [navigate]);
 
@@ -243,7 +315,7 @@ export function GlobalSearch() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={t("globalSearch.inputPlaceholder", "Search tasks, purchases, files, rooms...")}
+              placeholder={t("globalSearch.inputPlaceholder", "Sök arbeten, inköp, rum, projekt…")}
               className="border-0 p-0 h-auto focus-visible:ring-0 text-base sm:text-sm"
             />
             {loading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground shrink-0" />}
@@ -262,7 +334,7 @@ export function GlobalSearch() {
               return (
                 <div key={type}>
                   <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide px-4 pt-3 pb-1">
-                    {t(TYPE_LABELS[type] || type)}
+                    {TYPE_LABELS[type] ? t(TYPE_LABELS[type][0], TYPE_LABELS[type][1]) : type}
                   </p>
                   {items.map((result) => {
                     flatIndex++;
@@ -279,8 +351,22 @@ export function GlobalSearch() {
                         <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
                         <div className="flex-1 min-w-0">
                           <p className="truncate font-medium">{result.title}</p>
-                          {result.projectName && result.type !== "project" && (
-                            <p className="text-xs text-muted-foreground truncate">{result.projectName}</p>
+                          {/* The path to the hit. The leaf is the bold line
+                              right above, so repeating it here would only cost
+                              width — this is everything up TO the match. */}
+                          {result.type !== "project" && result.projectName && (
+                            <p className="truncate text-xs text-muted-foreground">
+                              {[
+                                t("globalSearch.projectsRoot", "Projekt"),
+                                result.projectName,
+                                result.tabKey ? t(result.tabKey) : null,
+                              ]
+                                .filter(Boolean)
+                                .join(" › ")}
+                            </p>
+                          )}
+                          {result.type === "project" && result.subtitle && (
+                            <p className="truncate text-xs text-muted-foreground">{result.subtitle}</p>
                           )}
                         </div>
                       </button>
