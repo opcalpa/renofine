@@ -514,6 +514,17 @@ function PurchaseRowView({
                   </span>
                 </>
               )}
+              {/* The file it was read from. Without it, a row that disagrees
+                  with the image beside it is unexplainable: you cannot tell a
+                  misread document from a mispaired one (Carl, 2026-09-02). */}
+              {row.sourceFile && (
+                <>
+                  <span aria-hidden>·</span>
+                  <span className="truncate font-mono" title={row.sourceFile}>
+                    {row.sourceFile}
+                  </span>
+                </>
+              )}
             </span>
             <span onClick={(e) => e.stopPropagation()}>
               <RoomPicker

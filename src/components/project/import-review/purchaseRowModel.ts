@@ -30,6 +30,8 @@ export interface PurchaseRow {
   roomId: string | null;
   /** A room this batch will CREATE — set when roomId is still null. */
   roomName: string | null;
+  /** The file this reading came from — makes a mispairing visible at a glance. */
+  sourceFile: string | null;
   /** Line amounts don't add up to the header total — check it against the image. */
   sumMismatch: number | null;
   /**
@@ -116,6 +118,7 @@ export function buildPurchaseRows(session: ImportSession): PurchaseRow[] {
         dueDate: action.dueDate ?? null,
         roomId: action.roomId ?? null,
         roomName: action.roomName ?? null,
+        sourceFile: action.sourceFileName ?? proposal.sourceFile ?? null,
         sumMismatch: mismatch,
         issues,
         blocking: issues.some((i) => i.level === 'blocking'),

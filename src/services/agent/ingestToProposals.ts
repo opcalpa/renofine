@@ -150,6 +150,7 @@ export function ingestOutcomeToProposals(
       summary: copy.purchase(action.vendorName, action.total),
       confidence: 0.8,
       action,
+      sourceFile: action.sourceFileName,
       ...(duplicate ? { duplicateOfExisting: true } : {}),
     });
   });

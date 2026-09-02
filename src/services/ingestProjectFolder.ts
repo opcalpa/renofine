@@ -447,7 +447,11 @@ async function processDocument(
         noteModelCall(calls, 'process-document-v2');
         if (captured.kind === 'receipt' || captured.kind === 'invoice') {
           // No archive stamp: the order owns this file (receipt_file_path).
-          return { kind: 'purchase', action: captured.action, address };
+          return {
+            kind: 'purchase',
+            action: { ...captured.action, sourceFileName: file.name },
+            address,
+          };
         }
       } catch {
         /* fall through to a plain count */
@@ -571,7 +575,10 @@ async function processReceiptPhoto(
       const captured = await captureDocument(file);
       noteModelCall(calls, 'process-document-v2');
       if (captured.kind === 'receipt' || captured.kind === 'invoice') {
-        return { kind: 'purchase', action: captured.action };
+        return {
+          kind: 'purchase',
+          action: { ...captured.action, sourceFileName: file.name },
+        };
       }
     } catch {
       /* fall through to a plain count */

@@ -120,6 +120,16 @@ export type ProposalAction =
       }[];
       attachmentKey?: string;
       /**
+       * The file this reading came from.
+       *
+       * Without it a purchase row is the ONLY proposal type that cannot say
+       * where it came from, and neither the person nor the app can tell a
+       * misread document from a mispaired one (Carl, 2026-09-02: a "Byggmax"
+       * row beside a Hornbach photo — and no way to know which of the two was
+       * wrong). Travels with the proposal and the journal.
+       */
+      sourceFileName?: string;
+      /**
        * A note the person wrote on the receipt during the import review —
        * lands in purchase_orders.notes. Their words about the document, kept
        * next to it (Design handoff v2, 2026-09-01).
