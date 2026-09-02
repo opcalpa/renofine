@@ -7798,7 +7798,8 @@
       "phase": {
         "classify": "Sorterar bilderna…",
         "read": "Läser fil {{done}} av {{total}}…",
-        "archive": "Sparar fil {{done}} av {{total}} i Filer…"
+        "archive": "Sparar fil {{done}} av {{total}} i Filer…",
+        "convert": "Öppnar iPhone-bild {{done}} av {{total}}…"
       },
       "slowHint": "Med {{total}} filer tar det någon minut — du kan lämna sidan öppen.",
       "resuming": "Fortsätter där läsningen avbröts",
@@ -8025,7 +8026,8 @@
     "classifyFailed": "{{count}} bilder kunde inte läsas just nu (tjänsten var överbelastad) — släpp mappen igen om en stund, de redan lästa filerna kostar inget.",
     "nothingFoundThrottled": "Jag kom inte åt att läsa filerna — de är sparade i Filer så länge.",
     "quotaExhausted": "AI-krediterna är slut, så inget kunde läsas. Fyll på hos OpenAI och släpp mappen igen — filerna ligger kvar i Filer så länge.",
-    "nothingFoundNoQuota": "AI-krediterna är slut — filerna är sparade i Filer."
+    "nothingFoundNoQuota": "AI-krediterna är slut — filerna är sparade i Filer.",
+    "heicFailed": "{{count}} iPhone-bilder kunde inte öppnas av din webbläsare — spara om dem som JPEG och släpp dem igen."
   },
   "addresses": {
     "picker": {

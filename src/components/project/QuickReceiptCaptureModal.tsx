@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
+import { isHeicFile, heicToJpeg } from "@/lib/heic";
 import { useTranslation } from "react-i18next";
-import heic2any from "heic2any";
 import { analytics, AnalyticsEvents } from "@/lib/analytics";
 import {
   Dialog,
@@ -80,41 +80,6 @@ const isSupportedFile = (file: File): boolean => {
 
 const isPdfFile = (file: File): boolean => {
   return file.type.toLowerCase() === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
-};
-
-// Check if file is HEIC/HEIF format
-const isHeicFile = (file: File): boolean => {
-  const type = file.type.toLowerCase();
-  const name = file.name.toLowerCase();
-  return (
-    type === "image/heic" ||
-    type === "image/heif" ||
-    name.endsWith(".heic") ||
-    name.endsWith(".heif")
-  );
-};
-
-// Convert HEIC to JPEG
-const convertHeicToJpeg = async (file: File): Promise<File> => {
-  try {
-    const blob = await heic2any({
-      blob: file,
-      toType: "image/jpeg",
-      quality: 0.9,
-    });
-
-    // heic2any can return a single blob or array of blobs
-    const resultBlob = Array.isArray(blob) ? blob[0] : blob;
-    const newFileName = file.name.replace(/\.(heic|heif)$/i, ".jpg");
-
-    return new File([resultBlob], newFileName, {
-      type: "image/jpeg",
-      lastModified: Date.now(),
-    });
-  } catch (error) {
-    console.error("HEIC conversion failed:", error);
-    throw new Error("Failed to convert HEIC image");
-  }
 };
 
 // Image compression utility
@@ -391,7 +356,7 @@ export function QuickReceiptCaptureModal({
       if (isHeicFile(file)) {
         try {
           toast.info(t("receipt.convertingImage"));
-          processedFile = await convertHeicToJpeg(file);
+          processedFile = await heicToJpeg(file);
         } catch {
           toast.error(t("receipt.conversionFailed"));
           return;

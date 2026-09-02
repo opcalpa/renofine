@@ -35,6 +35,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { compressImage } from '@/lib/compressImage';
+import { convertHeicFiles } from '@/lib/heic';
 import type { AIParsedResult } from '@/components/project/overview/planning-wizard/types';
 import { parseProjectDescription } from './renaidaProjectIntake';
 import { captureDocument, extractQuoteLines } from './agent/documentCapture';
@@ -606,6 +607,8 @@ async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promis
  * them silent is what made the drop look frozen.
  */
 export type IngestPhase =
+  /** Decoding iPhone photos to JPEG before anything can read them. */
+  | 'convert'
   /** Cheap vision pass that sorts photos (floor plan? quote? neither?). */
   | 'classify'
   /** Extract + parse each document. The long one. */
@@ -660,6 +663,15 @@ export interface IngestOutcome {
   notUnderstoodCount: number;
   /** Photos filed without being interpreted (no confident document class). */
   photosFiledCount: number;
+  /**
+   * iPhone photos the decoder could not convert.
+   *
+   * Counted rather than swallowed: before this existed, an undecodable HEIC
+   * became "understood nothing", which is indistinguishable from an empty
+   * receipt. The person needs to know the difference — one is a bad photo, the
+   * other is a format their browser could not open.
+   */
+  heicFailedCount: number;
   /**
    * Files that read as the HOME's papers, not the renovation's. Never folded
    * into the draft; the caller decides where they land (the address, or the
@@ -755,9 +767,26 @@ export async function ingestProjectFolder(
   const isContractor = opts?.isContractor ?? false;
   const suggestAddress = opts?.suggestAddress ?? false;
   const onProgress = opts?.onProgress;
+
+  // iPhone photos first: nothing downstream can read HEIC — not the canvas
+  // compressor, not the vision model, not the review's <img>. Converting HERE
+  // rather than inside `extractText` means the JPEG is what gets fingerprinted,
+  // journalled, archived AND attached to the purchase, so one file has one
+  // identity all the way through instead of two.
+  //
+  // Before the size cap on purpose: a 5 MB HEIC becomes a ~1 MB JPEG, and
+  // judging the original against MAX_FILE_BYTES would discard a receipt that
+  // fits comfortably once decoded.
+  const heicTotal = allFiles.filter((f) => /\.(heic|heif)$/i.test(f.name) || /heic|heif/i.test(f.type || '')).length;
+  if (heicTotal > 0) onProgress?.({ phase: 'convert', done: 0, total: heicTotal });
+  const { files: decoded, failed: heicFailed } = await convertHeicFiles(
+    allFiles,
+    (done, total, fileName) => onProgress?.({ phase: 'convert', done, total, fileName }),
+  );
+
   // Oversized files never reach the LLM — a 30 MB scan is cost, not signal.
-  const sized = allFiles.filter((f) => f.size <= MAX_FILE_BYTES);
-  const oversizedCount = allFiles.length - sized.length;
+  const sized = decoded.filter((f) => f.size <= MAX_FILE_BYTES);
+  const oversizedCount = decoded.length - sized.length;
   const fileCap = opts?.isGuest ? MAX_FILES_GUEST : MAX_FILES;
   const capped = sized.slice(0, fileCap);
   const truncated = sized.length > capped.length;
@@ -995,6 +1024,7 @@ export async function ingestProjectFolder(
     ignoredCount,
     unreadableCount,
     notUnderstoodCount,
+    heicFailedCount: heicFailed,
     photosFiledCount: inertImages.length,
     propertyDocuments,
     suggestedAddress: chosen?.best ?? null,

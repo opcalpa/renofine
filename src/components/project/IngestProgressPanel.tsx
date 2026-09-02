@@ -12,6 +12,9 @@ import type { IngestProgress } from '@/services/ingestProjectFolder';
  */
 
 const PHASE_KEY: Record<IngestProgress['phase'], { key: string; fallback: string }> = {
+  // Named, not hidden behind "sorterar": decoding a hundred iPhone photos is a
+  // visible wait, and an unexplained one reads as a freeze.
+  convert: { key: 'renaidaFlow.folder.phase.convert', fallback: 'Öppnar iPhone-bild {{done}} av {{total}}…' },
   classify: { key: 'renaidaFlow.folder.phase.classify', fallback: 'Sorterar bilderna…' },
   read: { key: 'renaidaFlow.folder.phase.read', fallback: 'Läser fil {{done}} av {{total}}…' },
   archive: { key: 'renaidaFlow.folder.phase.archive', fallback: 'Sparar fil {{done}} av {{total}} i Filer…' },

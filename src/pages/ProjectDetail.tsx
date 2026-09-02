@@ -1502,6 +1502,18 @@ const ProjectDetail = () => {
           }),
         );
       }
+      // A HEIC the browser could not decode is NOT "understood nothing" — it is
+      // a format problem the person can act on, and saying which is the whole
+      // difference between a bad photo and an unopened one.
+      if (outcome.heicFailedCount > 0) {
+        inertNotes.push(
+          t('folderDrop.heicFailed', {
+            count: outcome.heicFailedCount,
+            defaultValue:
+              '{{count}} iPhone-bilder kunde inte öppnas av din webbläsare — spara om dem som JPEG och släpp dem igen.',
+          }),
+        );
+      }
       if (outcome.notUnderstoodCount > 0) {
         inertNotes.push(
           t('folderDrop.notUnderstoodFolder', {

@@ -683,10 +683,43 @@ föreslå-verktyg med bekräftelse i appen +2–3 dagar; publik OAuth-MCP veckor
 
 ---
 id: heic-tolkas-eller-konverteras-i-ett-svep
-status: todo
+status: done
 priority: P2
 tags: [import, bugfix, hemagare]
 created: 2026-09-01
+updated: 2026-09-02
+
+**LEVERERAT 2026-09-02.** Rotorsaken var TRE fel som var för sig räckte:
+1. En `.heic` från Finder har ofta **tom** `file.type` i Chrome →
+   `compressImage`s `type.startsWith("image/")`-vakt returnerade filen orörd.
+2. Även med rätt typ: `new Image()` kan inte avkoda HEIC utanför WebKit →
+   `onerror` → catch → originalet tillbaka. (Safari KAN, därav att buggen såg
+   slumpmässig ut.)
+3. `extractText` postade sedan råa HEIC-bytes märkta `image/jpeg` — en lögn om
+   innehållet. Modellen fick något oläsbart, returnerade tomt, filen blev
+   "förstod ingenting".
+
+**Fix:** `src/lib/heic.ts` som EN motor (`isHeicFile`, `heicToJpeg`,
+`convertHeicFiles`), med **dynamisk** import av heic2any. Mapp-släppet
+konverterar UPP FRONT — före storlekstaket, så en 5 MB HEIC som blir 1 MB JPEG
+inte kastas — vilket ger filen EN identitet hela vägen: fingeravtryck, journal,
+arkiv och kvittobilagan blir alla samma `.jpg`. `compressImage` fick samma
+konvertering som skyddsnät för alla andra uppladdningsvägar.
+
+**Kameramodalen pekades om hit** och blev av med sin statiska import. Den nålade
+fast 1,35 MB wasm i huvudchunken för varje sidladdning; nu ligger heic2any i egen
+chunk och laddas bara när någon faktiskt möter en HEIC.
+
+**Ingen tyst miss kvar:** en fil som ändå inte går att avkoda räknas i
+`heicFailedCount` och rapporteras som "kunde inte öppnas av din webbläsare" —
+skilt från "förstod ingenting". Ny progress-fas `convert`, eftersom 279 ms/fil
+× 56 filer är 16 sekunder som annars ser ut som en frysning.
+
+**Verifierat mot en äkta HEIC** (skapad med `sips`, HEVC-profil) med `type: ''`
+precis som ett Finder-släpp: gamla vägen kunde bevisligen INTE avkoda
+(`new Image()` → onerror), nya vägen ger `IMG_4058.jpg`, `image/jpeg`, renderbar
+720×720 på 279 ms. Skyddsnätet i `compressImage` verifierat separat, och
+icke-bilder passerar fortfarande orörda.
 ---
 
 ## HEIC vid dragsläpp: tyst miss idag — avkoda i klienten i ett svep
