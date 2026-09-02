@@ -5666,10 +5666,11 @@ e2e 176/2, typecheck 336 = baseline, prod-build grön, 0 konsolfel.
 
 ---
 id: inkopet-oppnar-fel-vy-i-tabellage
-status: todo
+status: done
 priority: P1
 tags: [bugfix, inkop, ux]
 created: 2026-09-02
+updated: 2026-09-02
 ---
 ## Klick på ett inköp öppnar redigeringsrutan, inte detaljvyn
 
@@ -5696,10 +5697,11 @@ deep-linken.
 
 ---
 id: underlaget-syns-nar-inkopet-oppnas
-status: todo
+status: done
 priority: P2
 tags: [inkop, ux, dokument]
 created: 2026-09-02
+updated: 2026-09-02
 ---
 ## Underlaget ska synas direkt när ett inköp öppnas, inte i en ny flik
 
@@ -5774,3 +5776,30 @@ heter i UI:t, inte tabellnamn.
 
 Hänger ihop med [[global-sok-tacker-hela-projektet]] — brödsmulan blir först
 riktigt värd något när sökningen faktiskt når fler ytor än fyra.
+
+---
+id: fritextsok-i-inkop
+status: done
+priority: P2
+tags: [inkop, sok, ux]
+created: 2026-09-02
+updated: 2026-09-02
+---
+## Fritextsök över inköpen
+
+**LEVERERAT 2026-09-02** (`41308cc`).
+
+Inköp-fliken hade inget sök alls — bara Status- och Leverantör-dropdowns som
+exaktmatchar på två fält. De kan inte hitta ett BELOPP, ett fakturanummer eller
+en artikelrad, och "2 948" är precis hur en människa letar efter ett kvitto hon
+minns. Filer-fliken hade redan ett permanent sökfält; Inköp hade inget.
+
+Söket täcker leverantör, fakturanummer, OCR, anteckning och radernas namn, och
+matchar belopp med blanksteg bortstädade så både "2948" och "2 948" träffar.
+Alltid synligt, inte bakom en toggle-ikon — se resonemanget i
+[[inkopet-oppnar-fel-vy-i-tabellage]]: en gömd affordance är precis hur
+detaljbladet kunde förbli oupptäckt. Inte persistat, till skillnad från filtren:
+en glömd sökterm ser ut som försvunnen data nästa gång fliken öppnas.
+
+Tog med sig: tabellens tomma läge sa "Inga inköpsordrar än." även mitt i en
+sökning utan träff. Nu skiljs "det finns inga" från "inget matchade".
