@@ -24,7 +24,18 @@ const ANTHROPIC_VERSION = '2023-06-01';
  * expensive single request the app can make, so it gets the smallest anon budget.
  */
 const RATE_LIMIT_SCOPE = 'process-document-v2';
-const RATE_LIMIT_TIERS = { anon: 20, authenticated: 200 };
+/**
+ * The authenticated tier matches its siblings (classify-document,
+ * extract-document-text) at 400. It sat at 200 while the folder ingest caps a
+ * drop at 100 files — so dropping a folder and re-dropping it within the hour,
+ * which is exactly what checking a big receipt pile looks like, hit the wall
+ * (Carl, 2026-09-02).
+ *
+ * The ANON tier stays at 20 deliberately. It guards an endpoint anyone can
+ * reach with the publishable key, and raising it to make testing easier would
+ * trade real AI credits for convenience. Test signed in instead.
+ */
+const RATE_LIMIT_TIERS = { anon: 20, authenticated: 400 };
 
 function getCorsHeaders(req: Request) {
   const origin = req.headers.get('origin') || '';
