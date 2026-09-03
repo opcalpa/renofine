@@ -9509,7 +9509,7 @@ ar ett lagt hinder nar vem som helst kan skapa konto. Eget kort vid behov.
 
 ---
 id: token-tables-can-be-enumerated-without-the-token
-status: todo
+status: done
 priority: P1
 tags: [sakerhet, rls, token]
 created: 2026-09-03
@@ -9597,4 +9597,23 @@ lardomen fran 20260903075548 ar att sadana kedjor blir rekursiva. Anvand en
 SECURITY DEFINER-funktion, som `is_public_demo_team_profile`.
 
 Tabellen ar tom idag, sa det gar att andra utan att nagon marker nagot.
+
+### Utfall 2026-09-03 (session 92) — stangt, i ratt ordning
+
+Fonstret var oppet: noll levande lankar i bada tabellerna (0 av 11 inbjudningar,
+0 av 2 intakes), sa ingenting var i omlopp som kunde brytas.
+
+**Steg 1** (20260903091341) — tre SECURITY DEFINER-funktioner som tar token som
+ARGUMENT: `get_invitation_by_token`, `get_intake_request_by_token`,
+`submit_intake_request_by_token`. Klienten pekar om: `intakeService` (las +
+inlamning) och `InvitationResponse.fetchInvitation`. Deployad och verifierad —
+prod anropar `rpc/get_invitation_by_token` och fragar inte tabellen langre.
+
+**Steg 2** (20260903092722) — anon-policyerna dragna. Bada tabellerna ger nu `[]`
+anonymt.
+
+En detalj vard att minnas: `get_intake_request_by_token` FANNS redan, korrekt
+skriven och SECURITY DEFINER, sedan 20260211100000. Klienten anvande den bara
+aldrig — den fragade tabellen direkt. **Dorren var byggd; ingen gick igenom den.**
+Vart att leta efter samma monster pa andra stallen.
 
