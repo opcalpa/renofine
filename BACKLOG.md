@@ -9506,3 +9506,95 @@ kolumnlackan foljde med.
 `latitude`/`longitude` ligger pa PROFILEN, inte pa foretaget, och for en enskild
 firma ar det ofta hemadressen. Den lasas nu bara av inloggade — men "inloggad"
 ar ett lagt hinder nar vem som helst kan skapa konto. Eget kort vid behov.
+
+---
+id: token-tables-can-be-enumerated-without-the-token
+status: todo
+priority: P1
+tags: [sakerhet, rls, token]
+created: 2026-09-03
+---
+## Tva "by token"-policies kollar aldrig nagon token
+
+Hittade vid en systematisk svep efter samma monster som gav profiles-lackan.
+Bada heter nagot med token. Ingen av dem jamfor med en token.
+
+**`customer_intake_requests` — "Public can view by token"**
+
+```sql
+((auth.uid() IS NOT NULL) AND (creator_id = get_user_profile_id()))
+OR (status = ANY (ARRAY['pending','submitted']))
+```
+
+Andra grenen har ingen token-jamforelse. Anon kunde lista varje pagaende intake
+med `customer_name`, `customer_email` OCH `token`. **Token ar nyckeln, inte bara
+data** — det ar allvarligare an profiles-lackan, for med token kan man agera som
+den inbjudna kunden. UPDATE-policyn var lika oppen (`USING (status = 'pending')`),
+sa vem som helst kunde skriva om en kunds svar.
+
+Bevisat 2026-09-03 med ett anonymt anrop: tva rader, riktig e-postadress, bada
+tokens i klartext.
+
+**`project_invitations` — "Anyone can view invitation by token"** (TO anon)
+
+```sql
+(token IS NOT NULL) AND ((expires_at IS NULL) OR (expires_at > now()))
+```
+
+Samma sak: varje levande inbjudan ar listbar med `invited_email`,
+`invited_phone`, namn och token. Gav noll rader vid matningen bara for att det
+inte fanns nagon levande inbjudan just da. Halet finns, det vantar pa data.
+
+### Vad som redan ar gjort (20260903082220)
+
+Utgangskontroll tillagd pa intake-tabellens SELECT och UPDATE. Bada de
+exponerade raderna gick ut 2026-03-20, sa dagens faktiska exponering ar noll —
+utan att en enda levande lank rordes.
+
+**Men monstret ar kvar.** En LEVANDE intake eller inbjudan gar fortfarande att
+lista utan token.
+
+### Hela fixen — monstret finns redan i repot
+
+`supabase/migrations/20260827090000_ata_tokens_close_anon.sql` loste exakt samma
+problem for ATA-tokens: uppslaget flyttades till en edge function med service
+role, som slar upp BY TOKEN, och sedan drogs anon-policyn.
+
+Den migrationen dokumenterar ocksa ordningen, och den ar viktig:
+
+> Applied AFTER the new frontend is live: the old bundle read the table
+> directly, and pulling the policies first would have broken every approval
+> link in flight.
+
+Alltsa tva deploys:
+1. Edge function eller SECURITY DEFINER-RPC som tar token och returnerar EN rad.
+   Peka om `InvitationResponse.tsx` och intake-sidan dit. Deploya.
+2. Nar den nya bundlen ar live: dra anon-policyerna.
+
+Berorda klientytor: `src/pages/InvitationResponse.tsx` (rad 101, 194, 299, 386)
+och intake-sidan. Ovriga anrop mot bada tabellerna ar inloggade och rors inte.
+
+---
+id: comment-reactions-select-is-not-actually-scoped
+status: todo
+priority: P3
+tags: [sakerhet, rls]
+created: 2026-09-03
+---
+## Reaktionspolicyn heter "on accessible comments" men slapper igenom allt
+
+`comment_reactions` hade `USING (true)` pa SELECT — den sista tabellen i
+databasen med ett naket sant villkor. Scopad till `TO authenticated`
+2026-09-03 (20260903082220), sa anon ar ute.
+
+Men en inloggad anvandare ser fortfarande ALLA reaktioner, aven pa kommentarer i
+projekt hen inte har tillgang till. Det ar en liten lacka — vem som reagerat pa
+vad — men namnet pastar nagot policyn inte gor.
+
+Ratt villkor ar reaktioner pa kommentarer man far se. **Gor det inte med en
+inline-subquery mot `comments`**: den tabellens policy refererar `profiles`, och
+lardomen fran 20260903075548 ar att sadana kedjor blir rekursiva. Anvand en
+SECURITY DEFINER-funktion, som `is_public_demo_team_profile`.
+
+Tabellen ar tom idag, sa det gar att andra utan att nagon marker nagot.
+
