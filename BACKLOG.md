@@ -7298,10 +7298,11 @@ vända om du ändå är i filen.
 
 ---
 id: landing-page-ships-24mb-of-javascript
-status: todo
+status: done
 priority: P1
 tags: [prestanda, tratt, mobil, nattsvep]
 created: 2026-09-03
+updated: 2026-09-03
 ---
 ## En forstagangsbesokare laddar ner 2,4 MB JavaScript innan nagot syns
 
@@ -7371,6 +7372,33 @@ Mät före och efter med samma kommando:
 Notera också `heic2any` (333 kB gzip) — den är korrekt utbruten, men värd att
 kontrollera att den bara laddas när någon faktiskt släpper en HEIC-fil.
 
+
+### Utfall 2026-09-03 (session 92)
+
+Klart i tva steg. Route-splitting (94ec15f) tog entryn 2 385 → 1 155 kB gzip.
+Sedan visade det sig att **70 % av det som var kvar var oversattningar**: tio
+locale-filer, 3 MB ra JSON, statiskt importerade i `i18n/config.ts`. Varje
+besokare laddade tio sprak for att lasa ett.
+
+Nu hamtas de via `import.meta.glob` genom en liten i18next-backend (a2de54a).
+
+```
+entry FORE alltihop : 8 313 kB ra / 2 385 kB gzip
+entry EFTER         : 1 283 kB ra /   392 kB gzip   −84 %
+landningssidans JS over trad: 605 kB gzip (entry + sv + en)
+```
+
+`en` hamtas fortfarande som fallback och behovs: de/fr/es saknar 7,6 % av
+nycklarna, pl/uk 9,8 %, ro/lt/et 86 %. Den gar parallellt med det aktiva
+spraket, sa den kostar bytes men knappt vantetid.
+
+Verifierat i Chrome: bara sv + en hamtas vid start, byte till ukrainska hamtar
+uk-chunken och skriver om sidan, rumanska faller tillbaka pa engelska utan att
+lacka nycklar. e2e 173 passerade, 2 fel — bada bevisat befintliga (samma tva
+foll utan andringen).
+
+**JavaScript ar inte langre landningssidans tyngsta post.** Se
+`landing-page-images-now-outweigh-the-javascript`.
 ---
 id: three-thousand-lines-of-components-nobody-renders
 status: todo
@@ -7912,10 +7940,11 @@ principen är rätt, och den används på ett enda ställe.
 
 ---
 id: quotes-and-invoices-ignore-the-rot-cap
-status: todo
+status: done
 priority: P1
 tags: [bugfix, rot, offert, faktura, nattsvep]
 created: 2026-09-03
+updated: 2026-09-03
 ---
 ## Offerter och fakturor visar ROT-avdrag utan tak - kunden far ett pris som inte gar att fa
 
@@ -8008,6 +8037,32 @@ bredvid `vat.ts`, som redan är byggd exakt för den sortens delad matematik.
 `QuoteDocument.tsx:58` och `InvoicePreview.tsx:76` använder `0`. Sammanfattningen
 säger "12 345,67 kr", dokumentet säger "12 346 kr".
 
+
+### Utfall 2026-09-03 (session 92) — 03df29c
+
+`src/lib/rot.ts` byggd som kortet foreslog, och taket ligger nu pa **sju** ytor,
+inte tre. De fyra ovriga hittades vid genomgangen: `ViewQuoteV2`,
+`ViewInvoiceV2`, `quotePdfService` och `invoicePdfService` summerar radernas
+`rot_deduction`, vilket ar samma otakade tal. Kundvyerna och den mejlade filen
+var alltsa lika fel som dokumentkomponenterna.
+
+Utan registrerade personer antas EN person pa arets tak, och det ar ocksa vad
+som galler tills uppslaget svarat — ett dokument renderas aldrig otakat.
+Antagandet skrivs ut ("Beraknat pa ROT-utrymme 50 000 kr for 1 person(er)"), och
+nar taket bitit sags det rakt ut.
+
+Sidofyndet om decimalerna ar ocksa ratat: `QuoteSummary` foljer nu dokumentets
+avrundning.
+
+`e2e/rot-cap.spec.ts` last fast kortets egna siffror: 112 500 → 50 000, felet
+62 500, brytpunkten 133 333, tva personer → 100 000, dubblett dedupliceras.
+
+**En fanga vard att minnas:** raden jag forst andrade i `ViewQuoteV2` lag i
+ATA-grenen och renderas aldrig for en vanlig offert. Den levande vagen ar
+`DocumentTotals`. Grep pa `totalRot` gav bada; bara rendering visade vilken som
+levde.
+
+Kvar: se `stored-quote-totals-still-ignore-the-rot-cap`.
 ---
 id: two-surfaces-hardcode-their-own-vat-rate
 status: todo
@@ -9188,3 +9243,110 @@ datamängden i hela harnesset** — och den finns redan i råform.
 3. **Automatisera** när CI finns, inte före.
 
 Steg 2 är det som ger mest, och det går att göra utan steg 1 och 3.
+
+---
+id: landing-page-images-now-outweigh-the-javascript
+status: todo
+priority: P2
+tags: [prestanda, mobil, landningssida]
+created: 2026-09-03
+---
+## Landningssidan skickar 1,6 MB bilder — nu tyngre an all JavaScript
+
+Efter att JS-vikten gatt fran 2 385 till 605 kB gzip
+(`landing-page-ships-24mb-of-javascript`) ar bilderna den storsta posten kvar.
+Matt i Chrome mot produktionsbygget:
+
+```
+Budget.png       419 kB
+Renaida.png      311 kB
+Quote.png        284 kB
+ClientView.png   280 kB
+Timeline.png     252 kB
+carl-palmquist-bw.jpg   95 kB
+                ------
+summa           1 646 kB   mot 605 kB JavaScript
+```
+
+Det ar skarmbilder av appens granssnitt — precis den sortens material WebP
+komprimerar 70–85 % pa. 1,6 MB → uppskattningsvis 250–400 kB, utan synlig
+skillnad.
+
+Atgard: exportera WebP bredvid varje PNG och servera via `<picture>` med
+PNG som fallback. Ingen ny byggkedja behovs; `sips` eller `cwebp` racker.
+
+**Mat efter, tro inte pa uppskattningen.** Och kolla samtidigt om bilderna
+verkligen behover laddas alla pa en gang — de fyra sista ligger langt ner pa
+sidan och ar kandidater for `loading="lazy"`.
+
+---
+id: stored-quote-totals-still-ignore-the-rot-cap
+status: todo
+priority: P2
+tags: [bugfix, rot, offert, faktura]
+created: 2026-09-03
+---
+## De sparade summorna raknar fortfarande ROT utan tak
+
+`quotes-and-invoices-ignore-the-rot-cap` lade taket pa alla ytor som **raknar om
+fran raderna**. Kunden ser darfor ratt tal pa offerten, fakturan och i PDF:en.
+
+Men `recalculateQuoteTotals` i /Users/calpa/Developer/Renofine/src/services/quoteService.ts
+skriver fortfarande `total_rot_deduction` och `total_after_rot` till databasen som
+en rak summa av radernas avdrag, utan tak. ROT raknas per rad
+(`calculateRotDeduction`) och taket ar en egenskap hos hushallet och aret — det
+gar inte att lagga per rad, bara pa summan.
+
+Kolumnen lases pa tio stallen som **inte** raknar om:
+
+```
+components/pipeline/AllQuotesDialog.tsx:108
+components/project/CustomerBudgetSection.tsx:120, 135
+components/project/overview/ProjectInvoicesDialog.tsx:142, 178
+components/project/overview/ProjectDocumentsCard.tsx:145, 149, 165, 183
+components/project/overview/ProjectQuotesDialog.tsx:119, 152
+components/project/budget/HomeownerBudgetView.tsx:187
+hooks/useLeadsPipelineData.ts:36, 46
+```
+
+En accepterad offert over brytpunkten summeras alltsa for lagt i
+projektoversikten och i pipelinen, aven om sjalva offerten visar ratt.
+
+Fixen: lat `recalculateQuoteTotals` ta emot en `RotCapacity` och anropa `capRot`.
+Anroparna har `quoteId` och kan sla upp projektet. `src/lib/rot.ts` finns redan
+— det ar samma funktion, bara pa skrivvagen.
+
+**Rakna forst hur manga rader det galler** innan nagot skrivs om historiskt:
+
+```sql
+select count(*) from quotes where total_rot_deduction > 50000;
+select count(*) from invoices where total_rot_deduction > 50000;
+```
+
+---
+id: html-lang-never-follows-the-chosen-language
+status: done
+priority: P3
+tags: [tillganglighet, seo, i18n]
+created: 2026-09-03
+---
+## `<html lang="sv">` ar hardkodad och foljer aldrig sprakvalet
+
+/Users/calpa/Developer/Renofine/index.html rad 2 har `lang="sv"`, och ingenstans
+i `src/` skrivs `document.documentElement.lang`. En besokare som byter till
+ukrainska far alltsa en sida som pastar att den ar pa svenska.
+
+Verifierat i Chrome 2026-09-03: efter byte till uk stod attributet kvar pa `sv`
+medan hela sidan var ukrainsk.
+
+Det tras av skarmlasare (fel uttal och rost) och av sokmotorer. Fixen ar en rad
+i `i18n/config.ts`: lyssna pa `languageChanged` och satt attributet.
+
+Hittades vid sidan av `landing-page-ships-24mb-of-javascript`; ingen del av den.
+
+### Utfall 2026-09-03 (session 92)
+
+Fixad i samma andetag som den hittades: `i18n/config.ts` lyssnar nu pa
+`languageChanged` och satter attributet, plus en gang efter init for det
+sprak detektorn valde. Verifierat i Chrome — byte till ukrainska satter
+`lang="uk"`.

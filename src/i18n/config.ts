@@ -57,4 +57,13 @@ export const i18nReady = i18n
     react: { useSuspense: false },
   });
 
+// `<html lang>` var hardkodad till "sv" i index.html och foljde aldrig valet.
+// En skarmlasare las darfor ukrainska med svenskt uttal, och sokmotorer fick
+// fel sprak. Attributet ar en del av spraket, inte av markupen.
+const syncHtmlLang = (lng: string) => {
+  if (typeof document !== "undefined") document.documentElement.lang = lng;
+};
+i18n.on("languageChanged", syncHtmlLang);
+void i18nReady.then(() => syncHtmlLang(i18n.resolvedLanguage ?? i18n.language));
+
 export default i18n;
