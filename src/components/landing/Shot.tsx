@@ -71,16 +71,28 @@ export function Shot({
           </div>
         )}
         {src ? (
-          <img
-            src={src}
-            alt={alt}
-            className="block w-full"
-            style={{
-              height: chrome ? "calc(100% - 28px)" : "100%",
-              objectFit: fit,
-              objectPosition: "top left",
-            }}
-          />
+          // WebP forst, originalet som reserv. Skarmbilderna vagde 1 646 kB pa
+          // landningssidan — fyra ganger fler pixlar an de visades i, i ett
+          // format som inte komprimerar skarmbilder sarskilt bra. 82 % av
+          // trafiken ar mobil.
+          //
+          // `loading="lazy"` for att varenda Shot ligger under vecket: de
+          // hamtas nar man scrollar dit, inte fore forsta malningen.
+          <picture>
+            <source srcSet={src.replace(/\.(png|jpe?g)$/i, ".webp")} type="image/webp" />
+            <img
+              src={src}
+              alt={alt}
+              loading="lazy"
+              decoding="async"
+              className="block w-full"
+              style={{
+                height: chrome ? "calc(100% - 28px)" : "100%",
+                objectFit: fit,
+                objectPosition: "top left",
+              }}
+            />
+          </picture>
         ) : (
           <div
             className="flex items-center justify-center w-full"

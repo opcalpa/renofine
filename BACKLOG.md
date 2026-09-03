@@ -9387,7 +9387,7 @@ Steg 2 är det som ger mest, och det går att göra utan steg 1 och 3.
 
 ---
 id: landing-page-images-now-outweigh-the-javascript
-status: todo
+status: done
 priority: P2
 tags: [prestanda, mobil, landningssida]
 created: 2026-09-03
@@ -9616,4 +9616,71 @@ En detalj vard att minnas: `get_intake_request_by_token` FANNS redan, korrekt
 skriven och SECURITY DEFINER, sedan 20260211100000. Klienten anvande den bara
 aldrig — den fragade tabellen direkt. **Dorren var byggd; ingen gick igenom den.**
 Vart att leta efter samma monster pa andra stallen.
+
+### Utfall 2026-09-03 (session 92)
+
+Matt i Chrome mot produktionsbygget, inte uppskattat:
+
+```
+FORE : 1 646 kB bilder
+EFTER:   116 kB fore scroll, 197 kB efter hela sidan     −88 %
+```
+
+Tre atgarder, i storleksordning:
+
+**1. Storleken var det stora, inte formatet.** Bilderna var 2818 px breda och
+visades i 670 CSS px. Med object-fit: cover och DPR 2 behovs ~1584 px — de var
+alltsa nastan fyra ganger fler pixlar an som anvandes. Nedskalade till 1600
+(ClientView 1200).
+
+**Varst av alla:** `carl-palmquist-bw.jpg` var 720x900 och 92 kB for en avatar
+som visas i **48x48**. Storsta anvandningen nagonstans ar 144x144 pa Om oss.
+Nedskalad till 360 px: **16 kB**.
+
+**2. WebP** vid sidan av originalet, `<picture>` i `Shot.tsx` — en enda `<img>`
+i hela landningssidan, sa allt kunde goras centralt. Budget.png 409 kB →
+Budget.webp 50 kB.
+
+**3. `loading="lazy"`** pa alla skarmbilder och avatarer. Varenda Shot ligger
+under vecket, sa de hamtas nu nar man scrollar dit, inte fore forsta malningen.
+Det ar darfor siffran fore scroll (116 kB) ar lagre an totalen.
+
+Verifierat: alla sex bilder laddar, noll trasiga, WebP serveras, upplosningen
+ligger fortfarande over vad som visas. Ingen layoutforskjutning — containern har
+redan fast `aspectRatio`.
+
+**Sidofynd:** `Overview.png` (2 213 kB), `Floorplan.png` och `Kanban.png` har
+**noll referenser** i hela kodbasen. De skeppas till CDN:en men hamtas aldrig.
+Jag lat dem vara orörda med flit — det ar Carls beslut om de ska bort eller
+anvandas. Se `three-screenshots-ship-but-are-never-used`.
+
+---
+id: three-screenshots-ship-but-are-never-used
+status: todo
+priority: P4
+tags: [cleanup, assets]
+created: 2026-09-03
+---
+## Tre skarmbilder ligger i public/ utan en enda referens
+
+```
+public/screenshots/Overview.png    2 213 kB
+public/screenshots/Floorplan.png     238 kB
+public/screenshots/Kanban.png        201 kB
+```
+
+Sokt i `src/`, `public/` och `index.html` efter bade `.png` och `.webp`: noll
+traffar. De skeppas till Cloudflare vid varje deploy men hamtas aldrig av nagon
+besokare — det kostar alltsa repo och deploy, inte bandbredd.
+
+Jag rorde dem INTE nar de ovriga optimerades (2026-09-03), eftersom en tyst
+nedskalning av en bild du kanske vill anvanda i marknadsforing ar precis fel sak
+att gora utan att fraga.
+
+Tva vagar:
+- Ska de anvandas pa sidan? Da ska de igenom samma behandling som de andra
+  (nedskalning + WebP) och laggas in i en Shot.
+- Ska de inte det? Da hor de hemma i
+  /Users/calpa/PA/Documents/Projekt/Renofine/Design/Marketing/ enligt den
+  standande regeln att repot bara innehaller det som faktiskt skeppas.
 

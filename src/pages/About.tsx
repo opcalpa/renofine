@@ -42,6 +42,8 @@ const About = () => {
           <div className="flex flex-col sm:flex-row gap-8 items-start mb-12 p-8 rounded-lg border bg-card">
             <img
               src="/images/carl-palmquist-bw.jpg"
+              loading="lazy"
+              decoding="async"
               alt="Carl Palmquist"
               className="w-36 h-36 rounded-lg object-cover shrink-0"
               style={{ filter: "grayscale(1)" }}

@@ -40,6 +40,8 @@ export function TestimonialSection() {
           <div className="flex items-center justify-center gap-3.5">
             <img
               src="/images/carl-palmquist-bw.jpg"
+              loading="lazy"
+              decoding="async"
               alt="Carl Palmquist"
               className="rounded-full object-cover"
               style={{ width: 48, height: 48, filter: "grayscale(1)" }}
@@ -85,6 +87,8 @@ export function TestimonialSection() {
         <div className="flex items-center gap-2.5">
           <img
             src="/images/carl-palmquist-bw.jpg"
+            loading="lazy"
+            decoding="async"
             alt="Carl Palmquist"
             className="rounded-full object-cover shrink-0"
             style={{ width: 40, height: 40, filter: "grayscale(1)" }}
