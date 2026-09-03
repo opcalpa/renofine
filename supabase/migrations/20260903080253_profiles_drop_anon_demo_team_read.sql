@@ -1,0 +1,23 @@
+-- Steg 4 av 4: ta bort den anonyma demo-team-lasningen ocksa.
+--
+-- Efter steg 3 sag en anonym besokare exakt EN profilrad — agarens egen, med
+-- e-post, org.nr och timpris, eftersom han ligger i demo-teamet.
+--
+-- Empiriskt kontrollerat innan borttagningen: hela det publika demot laddat
+-- anonymt i Chrome, alla sju flikar, 122 REST-anrop. `profiles` forekom inte en
+-- enda gang — teamet visas ur `stakeholders` och `project_shares`. Den anonyma
+-- offertsidan gor ett profiles-anrop for offertens skapare, men det ar en annan
+-- profil an den anon kunde se, sa den fick redan ingenting.
+--
+-- Efter den har migrationen ar profiles HELT stangd for anon: noll rader.
+-- Demot verifierat anonymt igen efterat: alla flikar, 128 REST-anrop, inga
+-- JS-fel, team-avataren kvar.
+--
+-- Funktionen `is_public_demo_team_profile` lamnas kvar — den ar korrekt och
+-- billig, och behovs om nagon publik yta i framtiden ska visa demo-teamet.
+--
+-- REVERT:
+--   CREATE POLICY "Anyone can view public demo team profiles" ON public.profiles
+--     FOR SELECT USING (public.is_public_demo_team_profile(id));
+
+DROP POLICY IF EXISTS "Anyone can view public demo team profiles" ON public.profiles;

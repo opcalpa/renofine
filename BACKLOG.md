@@ -5958,7 +5958,7 @@ Först då kan platshållaren ärligt säga "sök i allt".
 
 ---
 id: profiles-rls-open-to-anon
-status: todo
+status: done
 priority: P1
 tags: [sakerhet, rls, nattsvep]
 created: 2026-09-02
@@ -6072,7 +6072,7 @@ finnas eller om `/find-pros` ska bakom inloggning.
 
 ---
 id: find-pros-exposes-more-than-it-shows
-status: todo
+status: done
 priority: P2
 tags: [sakerhet, rls, integritet]
 created: 2026-09-03
@@ -9491,3 +9491,18 @@ Fixad i samma andetag som den hittades: `i18n/config.ts` lyssnar nu pa
 `languageChanged` och satter attributet, plus en gang efter init for det
 sprak detektorn valde. Verifierat i Chrome — byte till ukrainska satter
 `lang="uk"`.
+
+### Utfall 2026-09-03 (session 92) — loste sig sjalvt
+
+Kortet utgick fran att `/find-pros` ar en publik sida. Det ar den inte:
+`FindProfessionals.tsx` rad 60-63 gor `if (!authLoading && !user)
+navigate("/auth")`. Routen saknar RequireAuth, men ingen utloggad besokare nar
+nagonsin fragan.
+
+Ingen vy behovdes darfor. `profiles` ar nu helt stangd for anon (noll rader), och
+kolumnlackan foljde med.
+
+**Produktfragan om koordinater kvarstar dock** som en ren integritetsfraga:
+`latitude`/`longitude` ligger pa PROFILEN, inte pa foretaget, och for en enskild
+firma ar det ofta hemadressen. Den lasas nu bara av inloggade — men "inloggad"
+ar ett lagt hinder nar vem som helst kan skapa konto. Eget kort vid behov.
