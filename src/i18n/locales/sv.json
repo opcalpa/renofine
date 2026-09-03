@@ -8338,7 +8338,8 @@
       "rereadFailed": "Kunde inte läsa dokumentet bättre den här gången",
       "drop": "Ta inte med",
       "pages": "{{count}} sidor",
-      "useGross": "Sätt till {{amount}}"
+      "useGross": "Sätt till {{amount}}",
+      "pairBodyPrefix": "Troligen samma kvitto som"
     },
     "drawings": {
       "title": "Ritningar",

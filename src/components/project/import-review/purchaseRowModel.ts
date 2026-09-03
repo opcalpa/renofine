@@ -49,8 +49,17 @@ export interface PurchaseRow {
    * Holds the other row's source file so the flag can name it.
    */
   pairOf: string | null;
-  /** The proposal id of that partner — what "Slå ihop" merges into. */
+  /** The proposal id of that partner — jump to it, or merge with it. */
   pairOfId: string | null;
+  /**
+   * True on the row that SURVIVES a merge. Both members of a pair carry the
+   * flag now: deciding whether two readings are one receipt means looking at
+   * both, and only flagging the second left its partner sitting silently in
+   * "Ser bra ut", pages away from the row asking about it (Carl, 2026-09-03).
+   */
+  pairPrimary: boolean;
+  /** Shared by both members, so the list can seat them next to each other. */
+  pairKey: string | null;
   kept: boolean;
   /** The person has looked at the warning and accepted the row as it stands. */
   acknowledged: boolean;
@@ -79,27 +88,41 @@ export function buildPurchaseRows(session: ImportSession): PurchaseRow[] {
   // In-batch duplicates: group by vendor+amount, and only the SECOND and later
   // members are flagged — the first is the one to keep, so the flag points at
   // what to remove rather than accusing both.
+  // A row merged into another is no longer its own row — it is a page of the
+  // one that survived. Leaving it in the list as an "excluded" row would say
+  // the person threw a receipt away, when they did the opposite.
+  const mergedAway = new Set(Object.keys(session.merged ?? {}));
+
   const byKey = new Map<string, AgentProposal[]>();
   for (const p of proposals) {
     if (p.action.type !== 'import_purchase') continue;
+    // A page that has already been folded in is not a duplicate any more, and
+    // leaving it in the grouping keeps the flag lit on a pair that no longer
+    // exists — the person resolved it and the row still nags.
+    if (mergedAway.has(p.id)) continue;
     const key = pairKey(p.action);
     byKey.set(key, [...(byKey.get(key) ?? []), p]);
   }
   const pairs = new Map<string, string>();
   const pairIds = new Map<string, string>();
-  for (const group of byKey.values()) {
+  const pairKeys = new Map<string, string>();
+  const primaries = new Set<string>();
+  for (const [key, group] of byKey.entries()) {
     if (group.length < 2) continue;
     const first = group[0];
+    primaries.add(first.id);
+    // The survivor points at the first of its duplicates; every duplicate
+    // points back at the survivor. Both directions exist so either row can
+    // open the other.
+    pairs.set(first.id, group[1].sourceFile ?? group[1].id);
+    pairIds.set(first.id, group[1].id);
+    pairKeys.set(first.id, key);
     for (const later of group.slice(1)) {
       pairs.set(later.id, first.sourceFile ?? first.id);
       pairIds.set(later.id, first.id);
+      pairKeys.set(later.id, key);
     }
   }
-
-  // A row merged into another is no longer its own row — it is a page of the
-  // one that survived. Leaving it in the list as an "excluded" row would say
-  // the person threw a receipt away, when they did the opposite.
-  const mergedAway = new Set(Object.keys(session.merged ?? {}));
 
   return proposals.flatMap((proposal) => {
     if (proposal.action.type !== 'import_purchase') return [];
@@ -140,6 +163,8 @@ export function buildPurchaseRows(session: ImportSession): PurchaseRow[] {
         duplicateOfExisting: !!proposal.duplicateOfExisting,
         pairOf,
         pairOfId: pairIds.get(proposal.id) ?? null,
+        pairPrimary: primaries.has(proposal.id),
+        pairKey: pairKeys.get(proposal.id) ?? null,
         kept: !session.rejected.has(proposal.id),
         acknowledged,
         pageCount: 1 + (action.extraPages?.length ?? 0),

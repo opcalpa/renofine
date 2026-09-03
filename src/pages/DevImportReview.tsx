@@ -30,7 +30,10 @@ function makeSession(count: number): ImportSession {
     // Deterministic variety: every ninth row disagrees with its line sum, every
     // seventh is already booked, and rows 12/13 are the same receipt twice.
     const mismatch = i % 9 === 3;
-    const dupExisting = i % 7 === 5;
+    // Not on the pair rows: an "already booked" flag on one half hides the
+    // duplicate flag on that half, and then the harness cannot show what a
+    // PAIR looks like — which is the state it exists to show.
+    const dupExisting = i % 7 === 5 && i !== 12 && i !== 13;
     // Row 4 is the case that taught us the checker could be wrong: the total was
     // read off the NET line, so VAT is a legal 25 % against the total itself and
     // the rows add up to total + VAT. It must show ONE warning ("looks like it

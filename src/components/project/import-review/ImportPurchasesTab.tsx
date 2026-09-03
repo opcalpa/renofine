@@ -317,9 +317,52 @@ export function PurchaseList({
 }: PurchaseListProps) {
   const { t } = useTranslation();
 
+  /**
+   * Open the row a flag points at, wherever it sits.
+   *
+   * Selecting it shows its image in the preview — which is the actual
+   * comparison — and scrolling centres it, because the partner may well have
+   * been accepted already and moved down into "Ser bra ut".
+   */
+  const jumpTo = (id: string) => {
+    onSelect(id);
+    requestAnimationFrame(() => {
+      document
+        .querySelector(`[data-purchase-row="${id}"]`)
+        ?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    });
+  };
+
+  /**
+   * Seat the two halves of a suspected duplicate next to each other.
+   *
+   * "Troligen samma kvitto som IMG_4083.jpg" is unanswerable if IMG_4083 is
+   * thirty rows away — the whole judgement is a comparison, and the person had
+   * to scroll off and hunt for it (Carl, 2026-09-03). Stable otherwise: a row
+   * only ever moves to sit beside its own partner.
+   */
+  const seatPairsTogether = (list: PurchaseRow[]): PurchaseRow[] => {
+    const out: PurchaseRow[] = [];
+    const placed = new Set<string>();
+    for (const row of list) {
+      if (placed.has(row.id)) continue;
+      out.push(row);
+      placed.add(row.id);
+      if (!row.pairKey) continue;
+      for (const other of list) {
+        if (other.id === row.id || placed.has(other.id)) continue;
+        if (other.pairKey === row.pairKey) {
+          out.push(other);
+          placed.add(other.id);
+        }
+      }
+    }
+    return out;
+  };
+
   const groups = useMemo(() => {
-    const look = rows.filter((r) => r.needsLook);
-    const fine = rows.filter((r) => !r.needsLook);
+    const look = seatPairsTogether(rows.filter((r) => r.needsLook));
+    const fine = seatPairsTogether(rows.filter((r) => !r.needsLook));
     return [
       {
         key: 'look',
@@ -373,6 +416,7 @@ export function PurchaseList({
               onAcknowledge={(ack) => onAcknowledge(row.id, ack)}
               onReread={() => onReread(row.id)}
               rereading={rereading.has(row.id)}
+              onJumpTo={jumpTo}
             />
           ))}
         </div>
@@ -395,6 +439,7 @@ function PurchaseRowView({
   onAcknowledge,
   onReread,
   rereading,
+  onJumpTo,
 }: {
   row: PurchaseRow;
   session: ImportSession;
@@ -409,6 +454,7 @@ function PurchaseRowView({
   onAcknowledge: (ack: boolean) => void;
   onReread: () => void;
   rereading: boolean;
+  onJumpTo: (id: string) => void;
 }) {
   const { t, i18n } = useTranslation();
   const off = !row.kept;
@@ -459,6 +505,7 @@ function PurchaseRowView({
   return (
     <div
       onClick={onSelect}
+      data-purchase-row={row.id}
       className={cn(
         'cursor-pointer border-b px-3 py-2.5 transition-colors',
         selected ? 'bg-primary/5 shadow-[inset_3px_0_0_hsl(var(--primary))]' : 'hover:bg-muted/40',
@@ -590,11 +637,25 @@ function PurchaseRowView({
                       : t('importReview.purchases.pair', 'Trolig dubblett')}
                   </Flag>
                   <span className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground">
-                    {row.duplicateOfExisting
-                      ? t('importReview.purchases.dupExistingBody', 'Finns redan i projektet')
-                      : t('importReview.purchases.pairBody', 'Troligen samma kvitto som {{file}}', {
-                          file: row.pairOf ?? '',
-                        })}
+                    {row.duplicateOfExisting ? (
+                      t('importReview.purchases.dupExistingBody', 'Finns redan i projektet')
+                    ) : (
+                      <>
+                        {t('importReview.purchases.pairBodyPrefix', 'Troligen samma kvitto som')}{' '}
+                        {/* The named file is the answer to the question the flag
+                            asks, so it has to be reachable from the question. */}
+                        <button
+                          type="button"
+                          className="font-mono underline decoration-dotted underline-offset-2 hover:text-foreground"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onJumpTo(row.pairOfId!);
+                          }}
+                        >
+                          {row.pairOf}
+                        </button>
+                      </>
+                    )}
                   </span>
                 </div>
               )}
@@ -646,8 +707,18 @@ function PurchaseRowView({
                   })}
                 </RowAction>
               )}
+              {/* Whichever half you press it on, the FIRST reading survives and
+                  the other becomes a page of it — so the result does not depend
+                  on which row you happened to be looking at. */}
               {row.pairOfId && !row.acknowledged && (
-                <RowAction icon={Layers} onClick={() => onMerge(row.id, row.pairOfId!)}>
+                <RowAction
+                  icon={Layers}
+                  onClick={() =>
+                    row.pairPrimary
+                      ? onMerge(row.pairOfId!, row.id)
+                      : onMerge(row.id, row.pairOfId!)
+                  }
+                >
                   {t('importReview.purchases.merge', 'Slå ihop till ett underlag')}
                 </RowAction>
               )}
