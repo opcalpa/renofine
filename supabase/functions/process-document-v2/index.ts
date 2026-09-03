@@ -324,6 +324,24 @@ För OFFERT/ARBETSBESKRIVNING/ANNAT: sätt bara document_type + confidence; övr
 
 STEG 2 — För KVITTO/FAKTURA: extrahera fält. Belopp i SEK som tal (inte sträng). Datum YYYY-MM-DD.
 
+**VAR TOTALEN STÅR — läs HELA kvittot innan du svarar.**
+Svenska bygghandlare trycker en summeringsrad LÄNGST NER, ofta under streckkoden
+och långt under artikelraderna, med kolumnrubrikerna i den här ordningen:
+
+    BRUTTO      MOMS      NETTO
+    1746,00   349,20    1396,80
+
+- **BRUTTO = totalbeloppet inkl moms → total_amount.** Det är det du ska ta.
+- **MOMS → vat_amount.** Finns flera momssatser (t.ex. en rad 25 % och en 12 %)
+  är det SUMMAN av momskolumnen som är vat_amount.
+- **NETTO är exkl moms — ta ALDRIG den som total_amount.**
+
+Sluta inte leta när du hittat en summa högre upp. "Summa [13] SEK 1746,00" och
+"GIVET Mastercard SEK 1746,00" är samma tal som BRUTTO, men det är
+summeringsraden längst ner som avgör när de skiljer sig. Ser du bara ett netto
+och en moms: räkna INTE ihop dem själv — sätt total_amount till det du faktiskt
+ser tryckt och låt appen fråga.
+
 För KVITTON: due_date, invoice_number, ocr_number ska vara null.
 För FAKTUROR: fyll i due_date + invoice_number + ocr_number om synligt.
 
