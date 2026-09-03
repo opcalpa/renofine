@@ -6006,6 +6006,106 @@ det bekräftat.
 triggar dess policy. Rätt ordning är: skriv om de policies som refererar
 `profiles` inline först, sedan strama åt `profiles`.
 
+### BEVISAT 2026-09-03 (session 92) — anropet ar kort
+
+```
+GET /rest/v1/profiles?select=email,org_number,default_hourly_rate&limit=3
+    apikey + Authorization: anon-nyckeln ur bundlen
+→ HTTP 200
+   [{"email":"system@renomate.demo"},{"email":"stefan.norell@…"},
+    {"email":"adam.gilborne@…"}]
+   content-range: 0-0/23
+```
+
+**23 rader, riktiga e-postadresser, utan inloggning.** Kortets misstanke var
+ratt. Skrivningarna ar daremot redan stangda: INSERT och UPDATE kraver
+`auth.uid() = user_id` och DELETE-policy saknas. Det ar bara SELECT som ar oppen.
+
+### Beroendekartan ar storre an minnet sager
+
+Fragade `pg_policies` direkt: **~35 policies i 22 tabeller** refererar `profiles`
+inline (`SELECT profiles.id FROM profiles WHERE user_id = auth.uid()`), inte tio.
+Alla utvarderas som `authenticated`.
+
+Darav foljer nyckelinsikten: **att scopa policyn `TO authenticated` med `USING
+(true)` narmar ingenting for en inloggad anvandare**, och kan alltsa inte ge om
+mars 500-or. Det var att STRAMA at vad en inloggad ser som var farligt, inte att
+stanga ute anon.
+
+### Tva publika ytor laser profiles som anon
+
+| yta | vad den behover |
+|-----|-----------------|
+| `/find-pros` (ingen RequireAuth) | 9 kolumner dar `is_professional = true` |
+| demo-teamet | tackt av befintlig policy, ororda |
+
+Kontrollerat samtidigt: anon ser exakt **1 rad** i `quotes`, `invoices` och
+`projects` — den publika demon. En riktig offertlank ar alltsa INTE anonymt
+lasbar, sa den vagen behover ingenting.
+
+`/find-pros` visar idag 4 proffs, alla med `company_name: null` och utan
+koordinater. Katalogen ar i praktiken tom.
+
+### Migration skriven, INTE pushad
+
+/Users/calpa/Developer/Renofine/supabase/migrations/20260903120000_profiles_not_readable_by_anon.sql
+
+Tva policies i stallet for en: `TO authenticated USING (true)` (oforandrat for
+inloggade) och `TO anon USING (is_professional = true)` (katalogen overlever).
+Revert-SQL ligger i filens header — en sats.
+
+Effekt: anon gar fran 23 rader till 4.
+
+**Vantar pa Carls ja.** Det ar produktionens auktorisering; jag pushar den inte
+sjalv.
+
+### Kvar aven efter migrationen
+
+De 4 listade proffsen ar fortfarande lasbara med fler kolumner an katalogen visar
+— e-post, telefon, org.nr, timpris. Att smalna av det kraver en vy
+(`public_professionals`) plus en kodandring i FindProfessionals och nya
+genererade typer. Se `find-pros-exposes-more-than-it-shows`.
+
+Och en fraga som ar Carls, inte min: **ska en utloggad besokare se proffs
+overhuvudtaget, och ska koordinater vara publika?** Svaret avgor om vyn ska
+finnas eller om `/find-pros` ska bakom inloggning.
+
+---
+id: find-pros-exposes-more-than-it-shows
+status: todo
+priority: P2
+tags: [sakerhet, rls, integritet]
+created: 2026-09-03
+---
+## Den publika proffskatalogen lacker fler kolumner an den visar
+
+`/find-pros` ar en publik route som laser `profiles` direkt och valjer nio
+kolumner. Men RLS ar radbaserad, inte kolumnbaserad: den som sjalv formulerar
+sitt PostgREST-anrop mot samma rader far ocksa `email`, `phone`, `org_number`
+och `default_hourly_rate`.
+
+Det galler aven efter `profiles-rls-open-to-anon`, som stanger 19 av 23 rader
+men lamnar de listade proffsen oppna.
+
+Ratt form ar en vy som bara innehaller de publika kolumnerna:
+
+```sql
+CREATE VIEW public.public_professionals AS
+  SELECT id, name, avatar_url, company_name, contractor_category,
+         company_city, company_description, latitude, longitude
+  FROM public.profiles WHERE is_professional = true;
+```
+
+…plus att `FindProfessionals` laser vyn i stallet, nya genererade typer, och
+att anon-policyn pa `profiles` sedan kan tas bort helt.
+
+**Produktfraga som maste besvaras forst:** ska koordinater vara publika? Faltet
+heter `latitude`/`longitude` pa profilen, inte pa foretaget. For en enskild
+firma ar det ofta hemadressen.
+
+Ordning som aldrig gar sonder: skapa vyn (additiv, inget gar sonder) → peka om
+koden → ta bort anon-policyn pa tabellen.
+
 ---
 id: legal-pages-fake-last-updated
 status: todo
