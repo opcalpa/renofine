@@ -181,6 +181,26 @@ A plain `max-w-2xl` in `className` is unprefixed → at `md+` the base's
 Sizes: `sm | md | lg | xl | 2xl | 3xl | 4xl | 5xl | 6xl | 7xl`. Same trap for
 padding: to change the base `md:p-6`, use a `md:`-prefixed class (`md:p-0`).
 
+### Button text that must wrap — put the class on the CHILD, not the Button
+`Button`'s base carries `whitespace-nowrap`, so an option-card button with a
+long hint runs off the right edge and the modal has to be scrolled sideways.
+Adding `whitespace-normal` to the Button **does nothing**: Tailwind emits
+`.whitespace-normal` before `.whitespace-nowrap` in the stylesheet, so at equal
+specificity nowrap wins regardless of the order you write the classes in.
+```tsx
+// GOOD — a declaration on the child beats the inherited value outright
+<Button className="h-auto justify-start py-4 text-left">
+  <Icon className="shrink-0" />
+  <span className="flex min-w-0 flex-col whitespace-normal">…</span>
+</Button>
+
+// BAD — same element, loses the cascade; text still refuses to wrap
+<Button className="h-auto whitespace-normal py-4">…</Button>
+```
+`min-w-0` is the other half — a flex child will not wrap until it may shrink.
+Same shape as the `max-w-*` trap above: **when a utility seems ignored, check
+the emitted CSS order before adding `!important`.**
+
 ## File Naming
 
 - Components: `PascalCase.tsx` (e.g., `WallShape.tsx`)

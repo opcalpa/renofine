@@ -83,7 +83,7 @@ export const RoomPickerDialog: React.FC<RoomPickerDialogProps> = ({
                     className="w-6 h-6 rounded border-2 border-white shadow-sm flex-shrink-0"
                     style={{ backgroundColor: room.color || 'rgba(59, 130, 246, 0.3)' }}
                   />
-                  <span className="flex flex-col items-start">
+                  <span className="flex min-w-0 flex-col items-start whitespace-normal">
                     <span className="font-medium">{room.name || t('common.unnamed', 'Namnlöst rum')}</span>
                     {isSuggested && (
                       <span className="text-xs opacity-75">

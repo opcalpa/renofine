@@ -116,7 +116,7 @@ export function RoomShapeDeletionDialog({ onRoomsChanged }: RoomShapeDeletionDia
             onClick={handleBoth}
           >
             {busy ? <Loader2 className="h-4 w-4 shrink-0 animate-spin" /> : <Trash2 className="h-4 w-4 shrink-0" />}
-            <span className="flex flex-col">
+            <span className="flex min-w-0 flex-col whitespace-normal">
               <span className="font-medium">
                 {t("roomDeleteDialog.optionBoth", "Ta bort ritningen + rummet")}
               </span>
@@ -132,7 +132,7 @@ export function RoomShapeDeletionDialog({ onRoomsChanged }: RoomShapeDeletionDia
             onClick={handleDrawingOnly}
           >
             <PencilRuler className="h-4 w-4 shrink-0" />
-            <span className="flex flex-col">
+            <span className="flex min-w-0 flex-col whitespace-normal">
               <span className="font-medium">
                 {t("roomDeleteDialog.optionDrawingOnly", "Ta bort bara ritningen")}
               </span>
