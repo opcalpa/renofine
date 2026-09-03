@@ -8272,7 +8272,12 @@
       "alreadyImported": "Already here — not re-read",
       "alreadyImportedRow": "Imported earlier",
       "liftToPurchase": "Add as purchase",
-      "liftedSummary": "Purchase from {{file}}"
+      "liftedSummary": "Purchase from {{file}}",
+      "picked": "{{count}} selected",
+      "movePicked": "Move to folder",
+      "pickGroup": "Select all in this group",
+      "pickFile": "Select this file",
+      "movedMany": "{{count}} files will move to {{folder}}"
     },
     "rooms": {
       "title": "Rooms",

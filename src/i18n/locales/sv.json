@@ -8272,7 +8272,12 @@
       "alreadyImported": "Fanns redan — lästes inte om",
       "alreadyImportedRow": "Redan importerad tidigare",
       "liftToPurchase": "Lägg till som inköp",
-      "liftedSummary": "Inköp från {{file}}"
+      "liftedSummary": "Inköp från {{file}}",
+      "picked": "{{count}} valda",
+      "movePicked": "Flytta till mapp",
+      "pickGroup": "Välj alla i gruppen",
+      "pickFile": "Välj filen",
+      "movedMany": "{{count}} filer flyttas till {{folder}}"
     },
     "rooms": {
       "title": "Rum",

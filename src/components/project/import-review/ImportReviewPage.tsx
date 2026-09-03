@@ -389,20 +389,28 @@ export function ImportReviewPage({
   );
 
   /**
-   * Move one file to another folder in Files. Recorded on the row and carried
-   * out on accept, so nothing in storage changes while the person is still
-   * making up their mind.
+   * Move files to another folder in Files. Recorded on the rows and carried out
+   * on accept, so nothing in storage changes while the person is still making
+   * up their mind — one file or fifty go through the same path.
    */
-  const handleMoveFile = useCallback(
-    (fileId: string, folder: string) => {
+  const handleMoveFiles = useCallback(
+    (fileIds: string[], folder: string) => {
+      const ids = new Set(fileIds);
+      if (ids.size === 0) return;
       onChange({
         ...session,
-        files: session.files.map((f) =>
-          f.id === fileId ? { ...f, targetFolder: folder } : f
-        ),
+        files: session.files.map((f) => (ids.has(f.id) ? { ...f, targetFolder: folder } : f)),
       });
+      if (ids.size > 1) {
+        toast.success(
+          t('importReview.files.movedMany', '{{count}} filer flyttas till {{folder}}', {
+            count: ids.size,
+            folder: folder ? folder.replace(/^\//, '') : t('importReview.filing.root', 'Projektets rot'),
+          })
+        );
+      }
     },
-    [session, onChange]
+    [session, onChange, t]
   );
 
   const rows = useMemo(() => buildPurchaseRows(session), [session]);
@@ -824,7 +832,7 @@ export function ImportReviewPage({
             selectedFileId={selectedFileId}
             onSelectFile={handleSelectFile}
             describeFile={describeFile}
-            onMoveFile={handleMoveFile}
+            onMoveFiles={handleMoveFiles}
             onLiftToPurchase={handleLiftToPurchase}
           />
         </div>
