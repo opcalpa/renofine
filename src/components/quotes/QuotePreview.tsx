@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Eye } from "lucide-react";
 import type { QuoteItem } from "./QuoteItemRow";
 import { QuoteDocument, type QuoteCompanyInfo } from "./QuoteDocument";
+import type { RotCapacity } from "@/lib/rot";
 
 interface QuotePreviewProps {
   open: boolean;
@@ -17,6 +18,7 @@ interface QuotePreviewProps {
   quoteNumber?: string | null;
   quoteDate?: string;
   onSend?: () => void;
+  rotCapacity?: RotCapacity;
   /** @deprecated use company prop */
   companyName?: string;
   /** @deprecated use company prop */
@@ -35,6 +37,7 @@ export function QuotePreview({
   quoteNumber,
   quoteDate,
   onSend,
+  rotCapacity,
   companyName,
   companyLogoUrl,
 }: QuotePreviewProps) {
@@ -71,6 +74,7 @@ export function QuotePreview({
             clientName={clientName}
             quoteNumber={quoteNumber}
             quoteDate={quoteDate}
+            rotCapacity={rotCapacity}
           />
         </div>
 

@@ -73,6 +73,8 @@ import {
   type StatusTone,
   type StampTone,
 } from "@/components/documents-v2";
+import { capRot } from "@/lib/rot";
+import { useRotCapacity } from "@/hooks/useRotCapacity";
 
 interface InvoiceData {
   id: string;
@@ -171,6 +173,8 @@ export default function ViewInvoiceV2() {
   const [loading, setLoading] = useState(true);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
+  // Fore de tidiga returerna: en hook far aldrig hamna efter en return.
+  const rotCapacityForProject = useRotCapacity(invoice?.project_id);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [markAsPaidMode, setMarkAsPaidMode] = useState(false);
@@ -306,6 +310,7 @@ export default function ViewInvoiceV2() {
       projectName,
       clientName,
       t,
+      rotCapacity: rotCapacityForProject,
       onDraftFinalized: () => {
         setInvoice({ ...invoice, status: "sent" });
         toast.success(t("invoices.invoiceFinalizedOnPdf"));
@@ -337,7 +342,13 @@ export default function ViewInvoiceV2() {
   // Momsen är lagrad per rad (härledd kolumn) — den räknas inte om här.
   const vat = documentVat(items);
   const vatRowLabel = (base: string) => vatLabel(base, items.map((i) => i.vat_rate));
-  const totalRot = items.reduce((s, i) => s + (i.rot_deduction ?? 0), 0);
+  // Radernas avdrag summeras, men arstaket ar en egenskap hos hushallet och
+  // kan darfor bara laggas pa summan — se lib/rot.ts.
+  const rot = capRot(
+    items.reduce((s, i) => s + (i.rot_deduction ?? 0), 0),
+    rotCapacityForProject,
+  );
+  const totalRot = rot.deduction;
   const totalToPay = subtotal + vat - totalRot;
   const hasRotEligible = items.some((i) => i.is_rot_eligible);
   const paidAmount = invoice.paid_amount ?? 0;
@@ -620,7 +631,27 @@ export default function ViewInvoiceV2() {
                   hasRotEligible && totalRot > 0
                     ? {
                         label: t("quotes.rotDeduction", "ROT-avdrag"),
-                        sublabel: t("quotes.afterRotHint", "Att betala efter avdrag"),
+                        sublabel: (
+                          <>
+                            {t("quotes.afterRotHint", "Att betala efter avdrag")}
+                            {/* Ett tak utan forklaring flyttar bara forvirringen till kunden. */}
+                            <span style={{ display: "block" }}>
+                              {rot.isCapped
+                                ? t("quotes.rotCappedNote", {
+                                    limit: rot.totalLimit.toLocaleString("sv-SE"),
+                                    count: rot.personCount,
+                                    defaultValue:
+                                      "Cap reached: max {{limit}} kr for {{count}} person(s) this year.",
+                                  })
+                                : t("quotes.rotCapNote", {
+                                    limit: rot.totalLimit.toLocaleString("sv-SE"),
+                                    count: rot.personCount,
+                                    defaultValue:
+                                      "Based on {{limit}} kr of ROT allowance for {{count}} person(s).",
+                                  })}
+                            </span>
+                          </>
+                        ),
                         value: `−${fmtKr(totalRot)}`,
                       }
                     : undefined

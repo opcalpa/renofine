@@ -26,6 +26,7 @@ import { Label } from "@/components/ui/label";
 import { createQuote, addQuoteItem, updateQuoteDraft, replaceQuoteItems, generateQuoteNumber, recalculateQuoteTotals, calculateRotDeduction } from "@/services/quoteService";
 import { cn } from "@/lib/utils";
 import { TASK_COSTS_EMBED, flattenTaskCostRows } from "@/lib/taskCosts";
+import { useRotCapacity } from "@/hooks/useRotCapacity";
 
 interface SimpleProject {
   id: string;
@@ -91,6 +92,9 @@ export default function CreateQuoteV2() {
   const [importedMaterialCount, setImportedMaterialCount] = useState(0);
 
   const [projectId, setProjectId] = useState<string>("");
+  // ROT-taket ar en egenskap hos hushallet, inte hos en rad — dokumentet maste
+  // veta vilket utrymme som finns innan det lovar ett slutpris.
+  const rotCapacityForProject = useRotCapacity(projectId);
   const [projects, setProjects] = useState<SimpleProject[]>([]);
   const [items, setItems] = useState<QuoteItem[]>([newItem()]);
 
@@ -1502,7 +1506,7 @@ export default function CreateQuoteV2() {
               </div>
             </div>
 
-            <QuoteSummary items={items} />
+            <QuoteSummary items={items} rotCapacity={rotCapacityForProject} />
 
             <div className="flex gap-2 pb-8">
               <Button
@@ -1601,6 +1605,7 @@ export default function CreateQuoteV2() {
                   clientName={clients.find((c) => c.id === clientId)?.name}
                   quoteNumber={quoteNumber}
                   compactMode={compactMode}
+                  rotCapacity={rotCapacityForProject}
                 />
               </div>
             </div>
@@ -1627,6 +1632,7 @@ export default function CreateQuoteV2() {
                   clientName={clients.find((c) => c.id === clientId)?.name}
                   quoteNumber={quoteNumber}
                   compactMode={compactMode}
+                  rotCapacity={rotCapacityForProject}
                 />
               </div>
             </div>
@@ -1648,6 +1654,7 @@ export default function CreateQuoteV2() {
         }}
         clientName={clients.find((c) => c.id === clientId)?.name}
         quoteNumber={quoteNumber}
+        rotCapacity={rotCapacityForProject}
       />
 
       <ImportRoomDialog

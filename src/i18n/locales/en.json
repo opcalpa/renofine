@@ -4884,6 +4884,8 @@
     "vat": "VAT",
     "totalToPay": "Total to pay",
     "rotDeduction": "ROT deduction",
+    "rotCapNote": "Based on {{limit}} kr of ROT allowance for {{count}} person(s).",
+    "rotCappedNote": "Cap reached: max {{limit}} kr for {{count}} person(s) this year.",
     "totalAfterRot": "Total after ROT",
     "validUntil": "Valid until",
     "addItem": "Add item",

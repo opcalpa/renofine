@@ -39,6 +39,7 @@ import {
   recalculateInvoiceTotals,
 } from "@/services/invoiceService";
 import { formatLocalDate } from "@/lib/dateUtils";
+import { useRotCapacity } from "@/hooks/useRotCapacity";
 
 interface SimpleProject {
   id: string;
@@ -72,6 +73,9 @@ export default function CreateInvoiceV2() {
 
   const [title, setTitle] = useState("");
   const [projectId, setProjectId] = useState("");
+  // ROT-taket ar en egenskap hos hushallet, inte hos en rad — fakturan maste
+  // veta vilket utrymme som finns innan den lovar ett slutbelopp.
+  const rotCapacityForProject = useRotCapacity(projectId);
   const [projects, setProjects] = useState<SimpleProject[]>([]);
   const [items, setItems] = useState<QuoteItem[]>([newItem()]);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -821,7 +825,7 @@ export default function CreateInvoiceV2() {
           className="min-h-[80px]"
         />
 
-        <QuoteSummary items={items} />
+        <QuoteSummary items={items} rotCapacity={rotCapacityForProject} />
 
         <div className="flex gap-2 pb-8">
           <Button
@@ -854,6 +858,7 @@ export default function CreateInvoiceV2() {
         bankgiro={bankgiro}
         bankAccountNumber={bankAccountNumber}
         ocrReference={ocrReference}
+        rotCapacity={rotCapacityForProject}
       />
 
       <ImportRoomDialog

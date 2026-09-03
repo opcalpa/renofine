@@ -3076,6 +3076,8 @@
     "rejected": "Rechazado",
     "roomArea": "Área",
     "rotDeduction": "Deducción ROT",
+    "rotCapNote": "Calculado sobre un margen ROT de {{limit}} kr para {{count}} persona(s).",
+    "rotCappedNote": "Límite alcanzado: máx. {{limit}} kr para {{count}} persona(s) este año.",
     "rotEligible": "Elegible para ROT",
     "saveDraft": "Guardar borrador",
     "saved": "Guardado",

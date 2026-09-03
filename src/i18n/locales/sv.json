@@ -4884,6 +4884,8 @@
     "vat": "Moms",
     "totalToPay": "Att betala",
     "rotDeduction": "ROT-avdrag",
+    "rotCapNote": "Beräknat på ROT-utrymme {{limit}} kr för {{count}} person(er).",
+    "rotCappedNote": "Taket är nått: max {{limit}} kr för {{count}} person(er) i år.",
     "totalAfterRot": "Totalt efter ROT",
     "validUntil": "Giltig till",
     "addItem": "Lägg till rad",

@@ -3076,6 +3076,8 @@
     "rejected": "Abgelehnt",
     "roomArea": "Fläche",
     "rotDeduction": "Steuerermäßigung Handwerkerleistungen",
+    "rotCapNote": "Berechnet auf Basis von {{limit}} kr ROT-Guthaben für {{count}} Person(en).",
+    "rotCappedNote": "Höchstbetrag erreicht: max. {{limit}} kr für {{count}} Person(en) in diesem Jahr.",
     "rotEligible": "Begünstigt (§ 35a EStG)",
     "saveDraft": "Entwurf speichern",
     "saved": "Gespeichert",

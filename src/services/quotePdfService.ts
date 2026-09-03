@@ -6,6 +6,7 @@
 
 import { updateQuoteStatus } from "./quoteService";
 import { documentVat, vatLabel } from "@/lib/vat";
+import { capRot, DEFAULT_ROT_CAPACITY, type RotCapacity } from "@/lib/rot";
 
 export interface QuotePdfQuote {
   id: string;
@@ -52,6 +53,9 @@ export interface DownloadQuotePdfParams {
   t: (key: string, fallbackOrParams?: unknown, params?: unknown) => string;
   /** Called after the PDF saves with the new status if a draft was finalized. */
   onDraftFinalized?: () => void;
+  /** Projektets ROT-utrymme. Utelämnad = en person på årets tak — hellre för
+   *  lågt avdrag än ett slutpris kunden inte kan få. */
+  rotCapacity?: RotCapacity;
 }
 
 export async function downloadQuotePdf({
@@ -62,6 +66,7 @@ export async function downloadQuotePdf({
   clientName,
   t,
   onDraftFinalized,
+  rotCapacity = DEFAULT_ROT_CAPACITY,
 }: DownloadQuotePdfParams): Promise<void> {
   const { default: jsPDF } = await import("jspdf");
   const doc = new jsPDF({ unit: "mm", format: "a4" });
@@ -73,7 +78,13 @@ export async function downloadQuotePdf({
   // Momsen är lagrad per rad (härledd kolumn) — den räknas inte om här.
   const vat = documentVat(items);
   const vatRowLabel = (base: string) => vatLabel(base, items.map((i) => i.vat_rate));
-  const totalRot = items.reduce((s, i) => s + (i.rot_deduction ?? 0), 0);
+  // Radernas avdrag summeras, men arstaket ar en egenskap hos hushallet och
+  // kan darfor bara laggas pa summan — se lib/rot.ts.
+  const rot = capRot(
+    items.reduce((s, i) => s + (i.rot_deduction ?? 0), 0),
+    rotCapacity,
+  );
+  const totalRot = rot.deduction;
   const totalToPay = subtotal + vat - totalRot;
 
   const drawFooter = () => {
@@ -221,6 +232,25 @@ export async function downloadQuotePdf({
   if (totalRot > 0) {
     doc.text(t("quotes.rotDeduction"), 15, y);
     doc.text(`-${totalRot.toLocaleString()} kr`, 195, y, { align: "right" });
+    y += 5;
+    // Ett tak utan forklaring flyttar bara forvirringen till kunden.
+    const prevSize = doc.getFontSize();
+    doc.setFontSize(7);
+    doc.text(
+      t(
+        rot.isCapped ? "quotes.rotCappedNote" : "quotes.rotCapNote",
+        {
+          limit: rot.totalLimit.toLocaleString(),
+          count: rot.personCount,
+          defaultValue: rot.isCapped
+            ? "Cap reached: max {{limit}} kr for {{count}} person(s) this year."
+            : "Based on {{limit}} kr of ROT allowance for {{count}} person(s).",
+        },
+      ),
+      15,
+      y,
+    );
+    doc.setFontSize(prevSize);
     y += 5;
   }
   doc.setFont("helvetica", "bold");

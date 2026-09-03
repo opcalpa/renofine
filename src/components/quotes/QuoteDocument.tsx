@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { draftVat, vatLabel } from "@/lib/vat";
+import { capRot, rotFromLaborNet, DEFAULT_ROT_CAPACITY, type RotCapacity } from "@/lib/rot";
 import type { QuoteItem } from "./QuoteItemRow";
 
 export interface QuoteCompanyInfo {
@@ -25,6 +26,9 @@ interface QuoteDocumentProps {
   quoteNumber?: string | null;
   quoteDate?: string;
   compactMode?: boolean;
+  /** Projektets ROT-utrymme. Utelämnad = en person på årets tak — hellre för
+   *  lågt avdrag än ett slutpris kunden inte kan få. */
+  rotCapacity?: RotCapacity;
 }
 
 export function QuoteDocument({
@@ -37,6 +41,7 @@ export function QuoteDocument({
   quoteNumber,
   quoteDate,
   compactMode = false,
+  rotCapacity = DEFAULT_ROT_CAPACITY,
 }: QuoteDocumentProps) {
   const { t } = useTranslation();
 
@@ -51,8 +56,9 @@ export function QuoteDocument({
   const rotEligibleTotal = lineItems
     .filter((i) => i.isRotEligible)
     .reduce((sum, i) => sum + i.quantity * i.unitPrice * (1 - (i.discountPercent ?? 0) / 100), 0);
-  const rotDeduction = rotEligibleTotal * 1.25 * 0.3; // 30% of inc moms (Skatteverket)
-  const totalToPay = subtotal + vat - rotDeduction;
+  // 30 % av arbetskostnaden ink moms, MED årstaket — se lib/rot.ts.
+  const rot = capRot(rotFromLaborNet(rotEligibleTotal), rotCapacity);
+  const totalToPay = subtotal + vat - rot.deduction;
 
   const fmt = (n: number) =>
     n.toLocaleString("sv-SE", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
@@ -200,11 +206,28 @@ export function QuoteDocument({
             <span className="text-muted-foreground">{vatRowLabel(t("quotes.vat"))}</span>
             <span className="tabular-nums">{fmt(vat)} kr</span>
           </div>
-          {rotDeduction > 0 && (
-            <div className="flex justify-between text-green-600">
-              <span>{t("quotes.rotDeduction")}</span>
-              <span className="tabular-nums">-{fmt(rotDeduction)} kr</span>
-            </div>
+          {rot.deduction > 0 && (
+            <>
+              <div className="flex justify-between text-green-600">
+                <span>{t("quotes.rotDeduction")}</span>
+                <span className="tabular-nums">-{fmt(rot.deduction)} kr</span>
+              </div>
+              <p className="text-[10px] text-muted-foreground pt-1">
+                {rot.isCapped
+                  ? t("quotes.rotCappedNote", {
+                      limit: fmt(rot.totalLimit),
+                      count: rot.personCount,
+                      defaultValue:
+                        "Cap reached: max {{limit}} kr for {{count}} person(s) this year.",
+                    })
+                  : t("quotes.rotCapNote", {
+                      limit: fmt(rot.totalLimit),
+                      count: rot.personCount,
+                      defaultValue:
+                        "Based on {{limit}} kr of ROT allowance for {{count}} person(s).",
+                    })}
+              </p>
+            </>
           )}
           <div className="flex justify-between font-bold text-base border-t-2 border-foreground/20 pt-2.5 mt-2">
             <span>{t("quotes.totalToPay")} ({t("budget.incVat", "ink. moms")})</span>

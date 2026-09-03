@@ -79,6 +79,8 @@ import {
   type StampTone,
 } from "@/components/documents-v2";
 import { useFileUrls } from "@/lib/fileUrl";
+import { capRot } from "@/lib/rot";
+import { useRotCapacity } from "@/hooks/useRotCapacity";
 
 interface QuoteData {
   id: string;
@@ -193,6 +195,8 @@ export default function ViewQuoteV2() {
   // ÄTA-specific: site-visit photos for the change-order grid (only fetched when is_ata)
   const [ataPhotos, setAtaPhotos] = useState<AtaPhoto[]>([]);
   const ataPhotoUrls = useFileUrls(ataPhotos.map((p) => p.url));
+  // Fore de tidiga returerna: en hook far aldrig hamna efter en return.
+  const rotCapacityForProject = useRotCapacity(quote?.project_id);
 
   // ─── effects ───────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -441,6 +445,7 @@ export default function ViewQuoteV2() {
       projectName,
       clientName,
       t,
+      rotCapacity: rotCapacityForProject,
       onDraftFinalized: () => {
         setQuote({ ...quote, status: "sent" });
         toast.success(t("quotes.quoteFinalizedOnPdf"));
@@ -487,7 +492,13 @@ export default function ViewQuoteV2() {
   // Momsen är lagrad per rad (härledd kolumn) — den räknas inte om här.
   const vat = documentVat(items);
   const vatRowLabel = (base: string) => vatLabel(base, items.map((i) => i.vat_rate));
-  const totalRot = items.reduce((s, i) => s + (i.rot_deduction ?? 0), 0);
+  // Radernas avdrag summeras, men arstaket ar en egenskap hos hushallet och
+  // kan darfor bara laggas pa summan — se lib/rot.ts.
+  const rot = capRot(
+    items.reduce((s, i) => s + (i.rot_deduction ?? 0), 0),
+    rotCapacityForProject,
+  );
+  const totalRot = rot.deduction;
   const totalToPay = subtotal + vat - totalRot;
   const hasRotEligible = items.some((i) => i.is_rot_eligible);
 
@@ -817,10 +828,28 @@ export default function ViewQuoteV2() {
                       </div>
                     )}
                     {totalRot > 0 && (
-                      <div className="flex justify-between" style={{ color: "var(--rf-green)" }}>
-                        <span>{t("quotes.rotDeduction", "ROT-avdrag")}</span>
-                        <span className="rf-num">−{fmtKr(totalRot)}</span>
-                      </div>
+                      <>
+                        <div className="flex justify-between" style={{ color: "var(--rf-green)" }}>
+                          <span>{t("quotes.rotDeduction", "ROT-avdrag")}</span>
+                          <span className="rf-num">−{fmtKr(totalRot)}</span>
+                        </div>
+                        {/* Ett tak utan forklaring flyttar bara forvirringen till kunden. */}
+                        <div style={{ fontSize: 11.5, color: "var(--rf-fg-muted)" }}>
+                          {rot.isCapped
+                      ? t("quotes.rotCappedNote", {
+                          limit: rot.totalLimit.toLocaleString("sv-SE"),
+                          count: rot.personCount,
+                          defaultValue:
+                            "Cap reached: max {{limit}} kr for {{count}} person(s) this year.",
+                        })
+                      : t("quotes.rotCapNote", {
+                          limit: rot.totalLimit.toLocaleString("sv-SE"),
+                          count: rot.personCount,
+                          defaultValue:
+                            "Based on {{limit}} kr of ROT allowance for {{count}} person(s).",
+                        })}
+                        </div>
+                      </>
                     )}
                     <div
                       className="flex justify-between pt-2 mt-2"
@@ -983,7 +1012,27 @@ export default function ViewQuoteV2() {
                   hasRotEligible && totalRot > 0
                     ? {
                         label: t("quotes.rotDeduction", "ROT-avdrag"),
-                        sublabel: t("quotes.afterRotHint", "Att betala efter avdrag"),
+                        sublabel: (
+                          <>
+                            {t("quotes.afterRotHint", "Att betala efter avdrag")}
+                            {/* Ett tak utan forklaring flyttar bara forvirringen till kunden. */}
+                            <span style={{ display: "block" }}>
+                              {rot.isCapped
+                                ? t("quotes.rotCappedNote", {
+                                    limit: rot.totalLimit.toLocaleString("sv-SE"),
+                                    count: rot.personCount,
+                                    defaultValue:
+                                      "Cap reached: max {{limit}} kr for {{count}} person(s) this year.",
+                                  })
+                                : t("quotes.rotCapNote", {
+                                    limit: rot.totalLimit.toLocaleString("sv-SE"),
+                                    count: rot.personCount,
+                                    defaultValue:
+                                      "Based on {{limit}} kr of ROT allowance for {{count}} person(s).",
+                                  })}
+                            </span>
+                          </>
+                        ),
                         value: `−${fmtKr(totalRot)}`,
                       }
                     : undefined

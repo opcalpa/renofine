@@ -3076,6 +3076,8 @@
     "rejected": "Rejeté",
     "roomArea": "Surface",
     "rotDeduction": "Déduction ROT",
+    "rotCapNote": "Calculé sur une enveloppe ROT de {{limit}} kr pour {{count}} personne(s).",
+    "rotCappedNote": "Plafond atteint : maximum {{limit}} kr pour {{count}} personne(s) cette année.",
     "rotEligible": "Éligible au ROT",
     "saveDraft": "Enregistrer le brouillon",
     "saved": "Enregistré",
