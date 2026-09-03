@@ -16,6 +16,7 @@ import {
   filingSummary,
   movedFiles,
   roomProposals,
+  savedAsDocumentIds,
   taskProposals,
 } from '../src/services/agent/importSession';
 import type { AgentProposal } from '../src/services/agent/types';
@@ -54,6 +55,24 @@ function taskProposal(id: string, title: string, roomName?: string, sourceFile?:
     confidence: 0.8,
     action: { type: 'create_task', title, ...(roomName ? { roomName } : {}) },
     sourceFile,
+  };
+}
+
+function purchaseProposal(id: string, vendor: string, total: number, sourceFile?: string): AgentProposal {
+  return {
+    id,
+    summary: `${vendor} ${total}`,
+    confidence: 0.8,
+    sourceFile,
+    action: {
+      type: 'import_purchase',
+      documentType: 'receipt',
+      vendorName: vendor,
+      total,
+      lineItems: [],
+      attachmentKey: `att-${id}`,
+      sourceFileName: sourceFile,
+    },
   };
 }
 
@@ -207,6 +226,52 @@ test.describe('changeCount — what the confirm button promises', () => {
     });
     expect(roomProposals(s)).toHaveLength(1);
     expect(taskProposals(s)).toHaveLength(1);
+  });
+
+  /**
+   * "Inte ett inköp — spara som dokument" is a WRITE, and the only one left when
+   * every reading was a misreading. Counting it is what stops Genomför sitting
+   * disabled on a session whose whole point is to rescue the papers
+   * (Carl, 2026-09-03).
+   */
+  test('a reading kept as a document still counts as a change', () => {
+    const base = buildImportSession({
+      projectId: 'p1',
+      outcome: outcome(),
+      proposals: [purchaseProposal('k-1', 'Hornbach', 496.8, 'IMG_4047.jpg')],
+      existingRooms: [],
+      existingPlans: [],
+      archivedPaths: new Map(),
+      importFolder: '/Import 2026-09-03',
+    });
+    expect(changeCount(base)).toBe(1);
+
+    // Dropped outright: nothing is written, and the paper is gone with it.
+    expect(changeCount({ ...base, rejected: new Set(['k-1']) })).toBe(0);
+
+    // Dropped as a purchase but kept as a document: still one write.
+    const rescued = {
+      ...base,
+      rejected: new Set(['k-1']),
+      savedAsDocument: { 'k-1': 'other' as const },
+    };
+    expect(changeCount(rescued)).toBe(1);
+    expect(savedAsDocumentIds(rescued)).toEqual(['k-1']);
+  });
+
+  test("the drop's dated folder rides on the session", () => {
+    const s = buildImportSession({
+      projectId: 'p1',
+      outcome: outcome(),
+      proposals: [],
+      existingRooms: [],
+      existingPlans: [],
+      archivedPaths: new Map(),
+      importFolder: '/Import 2026-09-03',
+    });
+    // Without it a rescued document lands loose in the project's root rather
+    // than in the same batch folder as the rest of the unplaced files.
+    expect(s.importFolder).toBe('/Import 2026-09-03');
   });
 });
 
