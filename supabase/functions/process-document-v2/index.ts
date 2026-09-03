@@ -334,6 +334,7 @@ ROT-avdrag (vanligt på fakturor från entreprenör):
 line_items: en entry per rad om synliga. Tom array om oklart.
 - quantity = ANTALET enheter, unit_price = á-priset, total = radens summa. "VINGLAS 8 * 54,90 → 439,20" betyder quantity 8, unit_price 54.90, total 439.20 — slå ALDRIG ihop antalet i totalen utan att fylla quantity.
 - Behåll ören exakt (34,90 → 34.90, inte 35). Radernas total ska summera till kvittots totalbelopp.
+- **MOMS PÅ RADERNA:** bygghandlarnas tilläggsdokument trycker TVÅ priskolumner per rad, "Enhetspris (exkl.moms)" och "(inkl.moms)". Kvittots totalbelopp är alltid INKLUSIVE moms, så ta priserna ur **inkl.moms-kolumnen** — annars summerar raderna till nettot och stämmer inte med totalen. Finns bara en kolumn är den redan inkl moms.
 
 STEG 3 — VERIFIERA innan du svarar (det här steget hittar de flesta felen):
 1. Skriv av totalbeloppet ORDAGRANT som det står tryckt, med samma tecken och

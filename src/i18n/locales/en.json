@@ -8396,7 +8396,8 @@
         "lines": "Lines",
         "docNo": "Number",
         "all": "Whole receipt"
-      }
+      },
+      "totalLooksNet": "The amount looks like it excludes VAT — including VAT it is {{gross}} kr"
     },
     "closed": "Import saved",
     "closedBody": "You will find it under Files › Imports and can pick up the review whenever you like."

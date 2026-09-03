@@ -400,6 +400,8 @@ function PurchaseRowView({
         return t('importReview.issues.printedTotal', 'Kvittot visar {{printed}} men tolken skrev {{parsed}}', d);
       case 'vat_rate_off':
         return t('importReview.issues.vatRate', 'Momsen blir {{rate}} % — förväntat {{expected}} %', d);
+      case 'total_looks_net':
+        return t('importReview.issues.totalLooksNet', 'Beloppet ser ut att vara exkl. moms — inkl. moms blir {{gross}} kr', d);
       case 'vat_exceeds_total':
         return t('importReview.issues.vatOverTotal', 'Momsen är större än totalbeloppet');
       case 'missing_total':

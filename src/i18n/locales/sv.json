@@ -8396,7 +8396,8 @@
         "lines": "Rader",
         "docNo": "Nummer",
         "all": "Hela kvittot"
-      }
+      },
+      "totalLooksNet": "Beloppet ser ut att vara exkl. moms — inkl. moms blir {{gross}} kr"
     },
     "closed": "Importen är sparad",
     "closedBody": "Du hittar den under Filer › Importer och kan fortsätta granska när du vill."

@@ -23,6 +23,7 @@ const VAT_RATES = [0.25, 0.12, 0.06];
 export type ReceiptIssueCode =
   | 'line_sum_mismatch'
   | 'vat_rate_off'
+  | 'total_looks_net'
   | 'vat_exceeds_total'
   | 'missing_total'
   | 'missing_vendor'
@@ -118,20 +119,49 @@ export function verifyReceipt(r: VerifiableReceipt): ReceiptIssue[] {
         Math.abs(cand - rate) < Math.abs(best - rate) ? cand : best
       );
       if (Math.abs(rate - nearest) > 0.005) {
-        issues.push({
-          code: 'vat_rate_off',
-          field: 'vat',
-          level: 'check',
-          detail: { rate: Math.round(rate * 1000) / 10, expected: nearest * 100 },
-        });
+        // Before calling it a misread: does the VAT sit at a legal rate against
+        // the total ITSELF? Then nothing was misread — the total is a NET
+        // figure. Carl's IMG_4076 (2026-09-03) read 2 544 with 636 in VAT:
+        // 33,3 % against the net, exactly 25 % against the total. Saying "the
+        // VAT is wrong" sends him to check the one number that is right.
+        const rateOnTotal = r.vat_amount / total;
+        const netMatch = VAT_RATES.find((v) => Math.abs(rateOnTotal - v) <= 0.005);
+        if (netMatch) {
+          issues.push({
+            code: 'total_looks_net',
+            field: 'total',
+            level: 'check',
+            detail: { gross: Math.round((total + r.vat_amount) * 100) / 100, rate: netMatch * 100 },
+          });
+        } else {
+          issues.push({
+            code: 'vat_rate_off',
+            field: 'vat',
+            level: 'check',
+            detail: { rate: Math.round(rate * 1000) / 10, expected: nearest * 100 },
+          });
+        }
       }
     }
   }
 
   // ── The lines against the total ───────────────────────────────────────
+  //
+  // A builders' merchant prints BOTH prices per row — "Enhetspris (exkl.moms)"
+  // and "(inkl.moms)" — while the total at the bottom is gross. Read off the
+  // ex-VAT column, the rows then sum to the NET, and the receipt is perfectly
+  // consistent. Four of the five warnings on Carl's first batch (2026-09-03)
+  // were this and nothing else: 1746/349,20 with rows at 1397, 640,60/128,12
+  // at 512, 3178/635,60 at 2542 — every one of them net to the öre.
+  //
+  // Flagging those trains the person to ignore the flag, which is worse than
+  // having no flag at all. Rows that add up to either basis are silent.
   if (total != null && r.line_items.length > 1) {
     const sum = r.line_items.reduce((s, li) => s + (li.total ?? 0), 0);
-    if (sum > 0 && Math.abs(sum - total) > 1) {
+    const net = r.vat_amount != null && r.vat_amount > 0 ? total - r.vat_amount : null;
+    const matchesGross = Math.abs(sum - total) <= 1;
+    const matchesNet = net != null && Math.abs(sum - net) <= 1;
+    if (sum > 0 && !matchesGross && !matchesNet) {
       issues.push({
         code: 'line_sum_mismatch',
         field: 'lines',
