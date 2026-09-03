@@ -9,6 +9,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { formatLocalDate } from "@/lib/dateUtils";
 
 // Swedish payroll transaction codes (lönearter)
 const LONEARTER = {
@@ -159,7 +160,7 @@ export async function generatePaxmlExport(
   let totalAmount = 0;
 
   const periodFrom = periodStart;
-  const periodTo = new Date(year, month, 0).toISOString().split("T")[0]; // Last day of month
+  const periodTo = formatLocalDate(new Date(year, month, 0)); // Last day of month
 
   const employeesXml = workerList.map((w, idx) => {
     const txns = w.entries.map((e) => {
@@ -191,7 +192,7 @@ ${txns}
     <OrgNo>${escapeXml(company.orgNumber)}</OrgNo>
     <PeriodFrom>${periodFrom}</PeriodFrom>
     <PeriodTo>${periodTo}</PeriodTo>
-    <GeneratedDate>${new Date().toISOString().split("T")[0]}</GeneratedDate>
+    <GeneratedDate>${formatLocalDate(new Date())}</GeneratedDate>
     <GeneratedBy>Renofine</GeneratedBy>
   </Header>
   <Employees>

@@ -10,6 +10,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { formatLocalDate } from "@/lib/dateUtils";
 
 // BAS-kontoplan (Swedish standard chart of accounts)
 const ACCOUNTS = {
@@ -211,7 +212,7 @@ export async function generateSie4Export(
   lines.push(`#FORMAT PC8`);
   lines.push(`#SIETYP 4`);
   lines.push(`#PROGRAM "Renofine" "1.0"`);
-  lines.push(`#GEN ${formatSieDate(new Date().toISOString().split("T")[0])}`);
+  lines.push(`#GEN ${formatSieDate(formatLocalDate(new Date()))}`);
   lines.push(`#FNAMN ${sieString(company.name)}`);
   if (company.orgNumber) {
     lines.push(`#ORGNR ${sieString(company.orgNumber)}`);

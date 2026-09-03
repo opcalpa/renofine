@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { recordPayment } from "@/services/invoiceService";
+import { formatLocalDate } from "@/lib/dateUtils";
 
 interface RecordPaymentDialogProps {
   invoiceId: string;
@@ -38,7 +39,7 @@ export function RecordPaymentDialog({
   const remaining = totalAmount - paidAmount;
   const [amount, setAmount] = useState(remaining.toString());
   const [paymentDate, setPaymentDate] = useState(
-    new Date().toISOString().split("T")[0]
+    formatLocalDate(new Date())
   );
   const [saving, setSaving] = useState(false);
 
@@ -46,7 +47,7 @@ export function RecordPaymentDialog({
     if (open) {
       const rem = totalAmount - paidAmount;
       setAmount(markAsPaid ? rem.toString() : rem.toString());
-      setPaymentDate(new Date().toISOString().split("T")[0]);
+      setPaymentDate(formatLocalDate(new Date()));
     }
   }, [open, totalAmount, paidAmount, markAsPaid]);
 

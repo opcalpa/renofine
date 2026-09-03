@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { formatLocalDate } from "@/lib/dateUtils";
 
 export interface DocumentLineItem {
   description: string;
@@ -131,7 +132,7 @@ export function generateDocumentFilename(
   invoiceNumber?: string | null
 ): string {
   const sanitizedVendor = sanitizeForFilename(vendorName);
-  const date = purchaseDate || new Date().toISOString().split("T")[0];
+  const date = purchaseDate || formatLocalDate(new Date());
   const amount = Math.round(totalAmount);
 
   if (documentType === "invoice") {

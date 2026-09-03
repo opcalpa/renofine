@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { calculateRotDeduction, recalculateQuoteTotals } from "./quoteService";
 import { REVERSE_CHARGE_NOTE } from "@/lib/reverseCharge";
 import { analytics, AnalyticsEvents } from "@/lib/analytics";
+import { formatLocalDate } from "@/lib/dateUtils";
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
   draft: ["sent"],
@@ -40,7 +41,7 @@ export async function createInvoice(
       is_ata: opts?.isAta ?? false,
       bankgiro: opts?.bankgiro ?? null,
       payment_terms_days: opts?.paymentTermsDays ?? 30,
-      due_date: dueDate.toISOString().split("T")[0],
+      due_date: formatLocalDate(dueDate),
     })
     .select()
     .single();
@@ -559,7 +560,7 @@ export function getDisplayStatus(invoice: {
   if (
     (invoice.status === "sent" || invoice.status === "partially_paid") &&
     invoice.due_date &&
-    invoice.due_date < new Date().toISOString().split("T")[0]
+    invoice.due_date < formatLocalDate(new Date())
   ) {
     return "overdue";
   }

@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { formatCurrency } from "@/lib/currency";
 import { Loader2, Receipt, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatLocalDate } from "@/lib/dateUtils";
 
 interface Invoice {
   id: string;
@@ -54,13 +55,13 @@ export function RegisterPaymentDialog({
   const [saving, setSaving] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [amount, setAmount] = useState("");
-  const [paymentDate, setPaymentDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [paymentDate, setPaymentDate] = useState(() => formatLocalDate(new Date()));
 
   useEffect(() => {
     if (!open) return;
     setSelectedId(null);
     setAmount("");
-    setPaymentDate(new Date().toISOString().split("T")[0]);
+    setPaymentDate(formatLocalDate(new Date()));
 
     async function fetchInvoices() {
       setLoading(true);

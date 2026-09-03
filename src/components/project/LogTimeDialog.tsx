@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { formatLocalDate } from "@/lib/dateUtils";
 
 interface Task {
   id: string;
@@ -25,7 +26,7 @@ interface LogTimeDialogProps {
 export function LogTimeDialog({ open, onOpenChange, tasks, defaultRate, onSave, initial }: LogTimeDialogProps) {
   const { t } = useTranslation();
   const [taskId, setTaskId] = useState(initial?.taskId || "");
-  const [date, setDate] = useState(initial?.date || new Date().toISOString().split("T")[0]);
+  const [date, setDate] = useState(initial?.date || formatLocalDate(new Date()));
   const [hours, setHours] = useState(initial?.hours?.toString() || "");
   const [description, setDescription] = useState(initial?.description || "");
   const [saving, setSaving] = useState(false);

@@ -7799,10 +7799,11 @@ Vad jag gjorde i stället var en statisk granskning, som gav
 
 ---
 id: paxml-payroll-period-ends-one-day-early
-status: todo
+status: done
 priority: P1
 tags: [bugfix, lon, export, tidszon, nattsvep]
 created: 2026-09-03
+updated: 2026-09-03
 ---
 ## Loneexportens periodslut ar fel dag - varje manad, hela aret
 
@@ -7869,6 +7870,46 @@ dag förvald och märker det inte.
 
 **Föreslagen åtgärd:** en delad `toLocalDateString(d)` i `src/lib/`, och byt ut
 alla semantiska användningar. Filnamnen kan lämnas som de är.
+
+### Utfall 2026-09-03 (session 92)
+
+Verktyget fanns redan: `formatLocalDate` i /Users/calpa/Developer/Renofine/src/lib/dateUtils.ts
+gor precis det kortet foreslar, och anvands pa tio stallen. De nitton buggiga
+stallena var de som inte anvande den.
+
+Alla nitton utbytta — bade loneexportens `PeriodTo` och `GeneratedDate`, SIE:s
+`#GEN`, de forifyllda datumen i LogTimeDialog och de tva betalningsdialogerna,
+"idag" i deadline-jamforelserna, veckonyckeln i TimeTrackingTab, `finish_date`
+som TasksTableView skriver till databasen, fakturans `due_date` och
+forfallo-jamforelsen, samt kvittotolkningens datum-fallback.
+
+`e2e/date-local.spec.ts` last fast beteendet med fem TZ-oberoende test, plus ett
+som bevisar att det gamla monstret faktiskt gav 2026-09-29 for september.
+
+**Lamnade med flit:** tre stallen som bara bygger filnamn
+(`AIFloorPlanImport`, `TemplateGallery`, `dataExportService`) och
+`guestDemoService`, dar datumen ar relativa offsets i demodata.
+
+---
+id: photo-filter-spec-is-flaky-under-parallel-workers
+status: todo
+priority: P3
+tags: [test, flakighet]
+created: 2026-09-03
+---
+## photo-filter-testet faller ungefar var tredje korning, utan kodandring
+
+`e2e/photo-filter.spec.ts:25` ("erbjuder alla fem kategorierna med antal") foll i
+tva av fem fullsvit-korningar 2026-09-03, och passerade i tre — utan att nagon
+kod mellan korningarna ror bilder. Kort ensamt passerar den varje gang, ocksa med
+`--workers=1`.
+
+Filens tre test delar samma projekt och samma dropdown. Sannolikt racknar de mot
+ett tillstand som ett parallellt test hinner andra.
+
+Det har ar dyrare an det later: ett test som faller ibland gor att man slutar
+lita pa sviten, och da doljs riktiga regressioner bakom "det ar bara flakigt".
+Fixen ar antingen `test.describe.serial` eller ett eget projekt per test.
 
 ---
 id: six-edge-functions-deployed-without-callers

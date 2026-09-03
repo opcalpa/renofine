@@ -10,6 +10,7 @@ import { LogTimeDialog } from "./LogTimeDialog";
 import { isTeamV2MaskingEnabled } from "@/lib/featureFlags";
 import { PUBLIC_DEMO_PROJECT_ID } from "@/constants/publicDemo";
 import { getViewerMode, type ViewerMode } from "@/services/projectDataService";
+import { formatLocalDate } from "@/lib/dateUtils";
 
 interface TimeTrackingTabProps {
   projectId: string;
@@ -225,7 +226,7 @@ export function TimeTrackingTab({ projectId, isReadOnly, userType, openEntityId,
     const d = new Date(entry.date);
     const weekStart = new Date(d);
     weekStart.setDate(d.getDate() - d.getDay() + 1);
-    const key = weekStart.toISOString().split("T")[0];
+    const key = formatLocalDate(weekStart);
     const arr = weekGroups.get(key) || [];
     arr.push(entry);
     weekGroups.set(key, arr);

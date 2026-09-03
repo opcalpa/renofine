@@ -7,6 +7,7 @@ import { getDisplayStatus } from "@/services/invoiceService";
 import { FileText, Receipt, Banknote, AlertTriangle, Clock, Plus, ExternalLink, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { formatLocalDate } from "@/lib/dateUtils";
 import {
   Popover,
   PopoverContent,
@@ -136,7 +137,7 @@ export function BuilderSummaryCards({ projectId, currency, onCreateInvoice }: Bu
       0
     );
 
-    const now = new Date().toISOString().split("T")[0];
+    const now = formatLocalDate(new Date());
     const overdueTotal = allInvoices
       .filter(
         (inv) =>
@@ -174,7 +175,7 @@ export function BuilderSummaryCards({ projectId, currency, onCreateInvoice }: Bu
   // For Unbilled popover: show draft invoices + non-invoiced contract quotes
   const unbilledInvoices = invoices.filter((inv) => inv.status === "draft");
   const unbilledQuotes = acceptedQuotes; // Accepted quotes that aren't fully invoiced yet
-  const now = new Date().toISOString().split("T")[0];
+  const now = formatLocalDate(new Date());
   const overdueInvoices = invoices.filter(
     (inv) =>
       (inv.status === "sent" || inv.status === "partially_paid") &&

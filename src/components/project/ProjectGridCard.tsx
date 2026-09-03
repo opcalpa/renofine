@@ -22,6 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useFileUrl } from "@/lib/fileUrl";
+import { formatLocalDate } from "@/lib/dateUtils";
 
 interface ProjectGridCardProps {
   project: {
@@ -74,7 +75,7 @@ export function ProjectGridCard({
   const { data: stats } = useQuery({
     queryKey: ["project-card-stats", project.id],
     queryFn: async () => {
-      const today = new Date().toISOString().split("T")[0];
+      const today = formatLocalDate(new Date());
 
       const [tasksRes, overdueRes, commentsRes] = await Promise.all([
         supabase

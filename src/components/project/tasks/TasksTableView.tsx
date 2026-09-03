@@ -341,7 +341,7 @@ export function TasksTableView({
                 if (depTask.finish_date) {
                   const oldFinish = new Date(depTask.finish_date);
                   oldFinish.setDate(oldFinish.getDate() + daysDiff);
-                  depUpdate.finish_date = oldFinish.toISOString().split("T")[0];
+                  depUpdate.finish_date = formatLocalDate(oldFinish);
                 }
                 await supabase.from("tasks").update(depUpdate).eq("id", dep.task_id);
               }

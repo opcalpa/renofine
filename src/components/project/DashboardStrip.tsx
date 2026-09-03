@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCurrency } from "@/lib/currency";
+import { formatLocalDate } from "@/lib/dateUtils";
 import {
   Tooltip,
   TooltipContent,
@@ -50,7 +51,7 @@ export function DashboardStrip({ projectIds, currency = "SEK" }: DashboardStripP
   const { data, isLoading } = useQuery({
     queryKey: ["dashboard-strip", projectIds],
     queryFn: async () => {
-      const today = new Date().toISOString().split("T")[0];
+      const today = formatLocalDate(new Date());
 
       const [overdueRes, commentsRes, purchasesRes, budgetRes] = await Promise.all([
         supabase

@@ -7,6 +7,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
+import { formatLocalDate } from "@/lib/dateUtils";
 
 interface CashForecastChartProps {
   projectIds: string[];
@@ -91,8 +92,8 @@ export function CashForecastChart({ projectIds }: CashForecastChartProps) {
       const endDate = new Date();
       endDate.setDate(endDate.getDate() + 35);
 
-      const startStr = startDate.toISOString().split("T")[0];
-      const endStr = endDate.toISOString().split("T")[0];
+      const startStr = formatLocalDate(startDate);
+      const endStr = formatLocalDate(endDate);
 
       // Inflow: invoices with due_date or paid_at in range
       const { data: invoices } = await supabase
