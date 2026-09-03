@@ -4871,37 +4871,15 @@ export type Database = {
       derive_viewer_mode: { Args: { p_project_id: string }; Returns: string }
       get_intake_request_by_token: {
         Args: { p_token: string }
-        Returns: {
-          attachments: Json | null
-          client_id: string | null
-          created_at: string | null
-          creator_id: string
-          customer_email: string | null
-          customer_name: string | null
-          customer_phone: string | null
-          desired_start_date: string | null
-          expires_at: string | null
-          greeting: string | null
-          id: string
-          images: Json | null
-          project_description: string | null
-          project_id: string | null
-          property_address: string | null
-          property_city: string | null
-          property_postal_code: string | null
-          property_type: string | null
-          rooms_data: Json | null
-          status: string
-          submitted_at: string | null
-          token: string
-          updated_at: string | null
-        }
-        SetofOptions: {
-          from: "*"
-          to: "customer_intake_requests"
-          isOneToOne: true
-          isSetofReturn: false
-        }
+        Returns: Json
+      }
+      get_invitation_by_token: {
+        Args: { p_token: string }
+        Returns: Json
+      }
+      submit_intake_request_by_token: {
+        Args: { p_token: string; p_payload: Json }
+        Returns: Json
       }
       get_project_as_persona: {
         Args: { p_mode: string; p_persona: string; p_project_id: string }

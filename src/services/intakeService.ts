@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 import { autoGenerateMaterials } from "./planningWizardService";
 import { scaffoldProject } from "./scaffoldProject";
 // Re-export shared types/utils from workTypeUtils for backward compatibility
@@ -228,32 +229,24 @@ export async function markIntakeAsConverted(
 export async function getIntakeRequestByToken(
   token: string
 ): Promise<IntakeRequestWithCreator | null> {
-  const { data, error } = await supabase
-    .from("customer_intake_requests")
-    .select(`
-      *,
-      creator:profiles!customer_intake_requests_creator_id_fkey (
-        id,
-        name,
-        company_name,
-        avatar_url,
-        email
-      )
-    `)
-    .eq("token", token)
-    .eq("status", "pending")
-    .gt("expires_at", new Date().toISOString())
-    .single();
+  // Uppslaget gar via en SECURITY DEFINER-funktion, inte mot tabellen. RLS ar
+  // radbaserad och kan inte se att klienten filtrerar pa token — sa lange sidan
+  // fragade tabellen direkt kunde vem som helst lista VARJE pagaende intake med
+  // kundens e-post och sjalva token. Funktionen tar token som argument.
+  const { data, error } = await supabase.rpc("get_intake_request_by_token", {
+    p_token: token,
+  });
 
   if (error) {
-    if (error.code === "PGRST116") return null; // Not found
     console.error("Failed to fetch intake request by token:", error);
     throw new Error(error.message);
   }
+  if (!data) return null;
 
+  const row = data as Record<string, unknown>;
   return {
-    ...transformIntakeRequest(data),
-    creator: data.creator,
+    ...transformIntakeRequest(row),
+    creator: row.creator as IntakeRequestWithCreator["creator"],
   };
 }
 
@@ -264,10 +257,12 @@ export async function submitIntakeRequest(
   token: string,
   input: SubmitIntakeInput
 ): Promise<IntakeRequest> {
-  const { data, error } = await supabase
-    .from("customer_intake_requests")
-    .update({
-      status: "submitted",
+  // Samma skal som lasningen: en UPDATE mot tabellen var oppen for anon utan
+  // token-kontroll, sa vem som helst kunde skriva om en kunds svar. Funktionen
+  // gor uppdateringen bara om token matchar en pending, icke-utgangen rad.
+  const { data, error } = await supabase.rpc("submit_intake_request_by_token", {
+    p_token: token,
+    p_payload: {
       customer_name: input.customer_name,
       customer_email: input.customer_email,
       customer_phone: input.customer_phone || null,
@@ -279,20 +274,20 @@ export async function submitIntakeRequest(
       desired_start_date: input.desired_start_date || null,
       rooms_data: input.rooms_data,
       images: input.images || [],
-      submitted_at: new Date().toISOString(),
-    })
-    .eq("token", token)
-    .eq("status", "pending")
-    .select()
-    .single();
+    } as unknown as Json,
+  });
 
   if (error) {
     console.error("Failed to submit intake request:", error);
     throw new Error(error.message);
   }
+  if (!data) {
+    throw new Error("Intake request not found, already submitted or expired");
+  }
 
-  return transformIntakeRequest(data);
+  return transformIntakeRequest(data as Record<string, unknown>);
 }
+
 
 // =============================================================================
 // GUIDED SETUP (self-service project creation)

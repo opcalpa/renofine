@@ -97,35 +97,20 @@ const InvitationResponse = () => {
 
   const fetchInvitation = async () => {
     try {
-      const { data, error: fetchError } = await supabase
-        .from("project_invitations")
-        .select(`
-          id,
-          email,
-          role,
-          role_type,
-          status,
-          project_id,
-          related_quote_id,
-          related_invoice_id,
-          timeline_access,
-          tasks_access,
-          tasks_scope,
-          space_planner_access,
-          purchases_access,
-          purchases_scope,
-          overview_access,
-          teams_access,
-          budget_access,
-          files_access,
-          permissions_snapshot,
-          invited_by_user_id,
-          invited_name,
-          project:projects(id, name),
-          inviter:profiles!invited_by_user_id(name, email)
-        `)
-        .eq("token", token)
-        .single();
+      // Uppslaget gar via en SECURITY DEFINER-funktion, inte mot tabellen. RLS
+      // ar radbaserad och kan inte se att klienten filtrerar pa token — sa lange
+      // sidan fragade tabellen direkt kunde vem som helst lista VARJE levande
+      // inbjudan med e-post, telefon och sjalva token. Funktionen tar token som
+      // argument och ger hogst en rad.
+      const { data: rpcData, error: fetchError } = await supabase.rpc(
+        "get_invitation_by_token",
+        { p_token: token },
+      );
+      // project_id ligger pa raden men inte pa InvitationDetails — den behovs
+      // av fallbacken nedan nar projektuppslaget inte gav nagot.
+      const data = rpcData as unknown as
+        | (InvitationDetails & { project_id: string })
+        | null;
 
       if (fetchError || !data) {
         setError("Invitation not found or expired");
