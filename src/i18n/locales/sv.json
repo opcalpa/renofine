@@ -8337,7 +8337,8 @@
       "rereadDone": "Läste om dokumentet",
       "rereadFailed": "Kunde inte läsa dokumentet bättre den här gången",
       "drop": "Ta inte med",
-      "pages": "{{count}} sidor"
+      "pages": "{{count}} sidor",
+      "useGross": "Sätt till {{amount}}"
     },
     "drawings": {
       "title": "Ritningar",

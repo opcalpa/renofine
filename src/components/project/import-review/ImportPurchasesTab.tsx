@@ -412,6 +412,12 @@ function PurchaseRowView({
 }) {
   const { t, i18n } = useTranslation();
   const off = !row.kept;
+  /** The gross the verifier computed, when the total was read off a net line. */
+  const netFix = (() => {
+    const issue = row.issues.find((i) => i.code === 'total_looks_net');
+    const gross = issue?.detail?.gross;
+    return typeof gross === 'number' ? gross : null;
+  })();
 
   /**
    * One line per thing the arithmetic could not reconcile, each naming the
@@ -623,6 +629,23 @@ function PurchaseRowView({
               className="mt-2 flex flex-wrap items-center gap-1.5"
               onClick={(e) => e.stopPropagation()}
             >
+              {/*
+                When the arithmetic already knows the answer, offering it beats
+                pointing at it. `total_looks_net` fires only when the VAT sits
+                at a legal rate against the total itself, which means the gross
+                is not a guess — it is total + VAT, and one click is the whole
+                correction (Carl, 2026-09-03).
+              */}
+              {netFix != null && !row.acknowledged && (
+                <RowAction
+                  icon={Check}
+                  onClick={() => onField('total', String(netFix))}
+                >
+                  {t('importReview.purchases.useGross', 'Sätt till {{amount}}', {
+                    amount: kr(netFix, i18n.language),
+                  })}
+                </RowAction>
+              )}
               {row.pairOfId && !row.acknowledged && (
                 <RowAction icon={Layers} onClick={() => onMerge(row.id, row.pairOfId!)}>
                   {t('importReview.purchases.merge', 'Slå ihop till ett underlag')}

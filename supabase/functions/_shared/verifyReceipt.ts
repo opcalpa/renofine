@@ -155,10 +155,18 @@ export function verifyReceipt(r: VerifiableReceipt): ReceiptIssue[] {
   // having no flag at all. Rows that add up to either basis are silent.
   if (total != null && r.line_items.length > 1) {
     const sum = r.line_items.reduce((s, li) => s + (li.total ?? 0), 0);
-    const net = r.vat_amount != null && r.vat_amount > 0 ? total - r.vat_amount : null;
+    const vat = r.vat_amount != null && r.vat_amount > 0 ? r.vat_amount : null;
     const matchesGross = Math.abs(sum - total) <= 1;
-    const matchesNet = net != null && Math.abs(sum - net) <= 1;
-    if (sum > 0 && !matchesGross && !matchesNet) {
+    // The rows are ex VAT and the total is gross — the builders' merchant case.
+    const matchesNet = vat != null && Math.abs(sum - (total - vat)) <= 1;
+    // The mirror: the rows are gross and the TOTAL was read off the net line.
+    // Same single fact, and `total_looks_net` already says it with the gross
+    // amount in plain figures. Saying it twice is how a screen full of yellow
+    // teaches someone to stop reading yellow (Carl, 2026-09-03: 2544 with 636
+    // in VAT, rows adding to 3180 — flagged as both a wrong amount AND wrong
+    // rows, when the rows were right and one number was on the wrong basis).
+    const matchesGrossFromNet = vat != null && Math.abs(sum - (total + vat)) <= 1;
+    if (sum > 0 && !matchesGross && !matchesNet && !matchesGrossFromNet) {
       issues.push({
         code: 'line_sum_mismatch',
         field: 'lines',

@@ -8337,7 +8337,8 @@
       "rereadDone": "Read the document again",
       "rereadFailed": "Could not read the document any better this time",
       "drop": "Leave out",
-      "pages": "{{count}} pages"
+      "pages": "{{count}} pages",
+      "useGross": "Set it to {{amount}}"
     },
     "drawings": {
       "title": "Drawings",

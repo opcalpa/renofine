@@ -31,7 +31,12 @@ function makeSession(count: number): ImportSession {
     // seventh is already booked, and rows 12/13 are the same receipt twice.
     const mismatch = i % 9 === 3;
     const dupExisting = i % 7 === 5;
-    const total = i === 13 ? 749.5 : 300 + i * 137.25;
+    // Row 4 is the case that taught us the checker could be wrong: the total was
+    // read off the NET line, so VAT is a legal 25 % against the total itself and
+    // the rows add up to total + VAT. It must show ONE warning ("looks like it
+    // excludes VAT") with its one-click correction — not two (Carl, 2026-09-03).
+    const netTotal = i === 4;
+    const total = i === 13 ? 749.5 : netTotal ? 2544 : 300 + i * 137.25;
     proposals.push({
       id: `p${i}`,
       summary: `Bokför inköp från ${vendor} (${Math.round(total)} kr)`,
@@ -45,8 +50,14 @@ function makeSession(count: number): ImportSession {
         total: i === 12 ? 749.5 : total,
         documentDate: `202${3 + (i % 3)}-0${1 + (i % 9)}-1${i % 10}`,
         invoiceNumber: i % 5 === 0 ? `5520${7000 + i}` : null,
+        ...(netTotal ? { vatAmount: 636 } : {}),
         attachmentKey: `att-${i}`,
-        lineItems: [
+        lineItems: netTotal
+          ? [
+              { description: 'Kortregel 45×95×2500 C24', quantity: 6, unitPrice: 199, total: 1194 },
+              { description: 'Gipsskiva 13 mm', quantity: 14, unitPrice: 142, total: 1986 },
+            ]
+          : [
           { description: 'Kortregel 45×95×2500 C24', quantity: 6, unitPrice: 199, total: 1194 },
           {
             description: 'Gipsskiva 13 mm',
@@ -62,20 +73,20 @@ function makeSession(count: number): ImportSession {
   return {
     projectId: 'dev',
     proposals,
-    files: [
+    files: ([
       // Files the reader could not place — the only ones offering "lift to
       // purchase", so the harness has to contain some.
       { id: 'IMG_9100.jpg', name: 'IMG_9100.jpg', kind: 'filed' as const, proposalIds: [], folder: '', storagePath: 'projects/dev/IMG_9100.jpg' },
       { id: 'IMG_9101.jpg', name: 'IMG_9101.jpg', kind: 'filed' as const, proposalIds: [], folder: '', storagePath: 'projects/dev/IMG_9101.jpg' },
       { id: 'kopekontrakt.pdf', name: 'kopekontrakt.pdf', kind: 'homePaper' as const, proposalIds: [], folder: '', storagePath: 'projects/dev/kopekontrakt.pdf' },
-    ].concat(proposals.map((p) => ({
+    ] as ImportSession['files']).concat(proposals.map((p) => ({
       id: p.sourceFile!,
       name: p.sourceFile!,
       kind: 'interpreted' as const,
       proposalIds: [p.id],
       folder: p.action.type === 'import_purchase' && p.action.documentType === 'invoice' ? '/Fakturor' : '/Kvitton',
       storagePath: `projects/dev/Kvitton/${p.sourceFile}`,
-    }))) as ImportSession['files'],
+    }))),
     existingRooms: [
       { id: 'r1', name: 'Kök' },
       { id: 'r2', name: 'Badrum' },
