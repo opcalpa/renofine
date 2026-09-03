@@ -262,10 +262,21 @@ export function ImportReviewPage({
    */
   const selectedRow = rows.find((r) => r.id === selectedPurchaseId) ?? null;
   const selectedAttachment = useMemo(() => {
-    if (!selectedRow) return null;
-    const file = peekAttachment(selectedRow.action.attachmentKey);
-    return file ? { file, label: selectedRow.vendor } : null;
-  }, [selectedRow]);
+    if (selectedRow) {
+      const file = peekAttachment(selectedRow.action.attachmentKey);
+      return file ? { file, label: selectedRow.vendor } : null;
+    }
+    // The SAME receipt, reached from the Files tab instead of the purchase.
+    // A file the reader turned into an order has no storage path until accept,
+    // so without this the preview said "the file could not be saved to Files"
+    // about a file that is sitting in memory two panes away — and it said it
+    // about exactly the 39 files that worked (Carl, 2026-09-03). The order
+    // owns the bytes; find the order that came from this file and borrow them.
+    if (!selectedFile) return null;
+    const owner = rows.find((r) => r.action.sourceFileName === selectedFile.name);
+    const file = owner ? peekAttachment(owner.action.attachmentKey) : null;
+    return file ? { file, label: owner?.vendor ?? selectedFile.name } : null;
+  }, [selectedRow, selectedFile, rows]);
 
   const handleSelectPurchase = useCallback((proposalId: string) => {
     setSelectedFileId(null);
