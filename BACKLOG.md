@@ -5955,3 +5955,3236 @@ frågan filtreras med `my_project_ids()` precis som nu — se lärdomen i
 [[feedback_rls_test_the_table_not_the_predicate]], indexet ärver ingenting.
 
 Först då kan platshållaren ärligt säga "sök i allt".
+
+---
+id: profiles-rls-open-to-anon
+status: todo
+priority: P1
+tags: [sakerhet, rls, nattsvep]
+created: 2026-09-02
+---
+## profiles ar last-bar for vem som helst med anon-nyckeln
+
+`supabase/migrations/20260311210000_simplify_profiles_rls.sql` satter
+
+    CREATE POLICY "Users can view all profiles" ON public.profiles
+      FOR SELECT USING (true);
+
+Ingen `TO`-klausul. Da gäller policyn rollen `public`, vilket inkluderar `anon`.
+Anon-nyckeln ligger i klientbundlen och är per definition offentlig — enligt
+`feedback_verify_jwt_is_not_a_gate` är den ingen grind.
+
+`profiles` innehåller `email`, `phone`, `org_number`, `default_hourly_rate`,
+`latitude`, `longitude`, `company_*`. Det betyder att hela användarregistret —
+inklusive varje proffs timpris och organisationsnummer — kan läsas och kopieras
+av vem som helst som öppnar app-bundlen.
+
+Migrationen är en HOTFIX från 2026-03-11 och motiverar sig själv med
+"Safe for beta: all users are invited/known, no public signup". **Den premissen
+gäller inte längre** — `/auth` har en Sign Up-flik och gästtratten har haft 813
+besökare. Filen har redan en TODO om att ersätta den med en riktig policy.
+
+Två saker hör ihop med detta:
+- `/find-pros` är en publik route som listar profiler med koordinater.
+- Enligt `feedback_rls_test_the_table_not_the_predicate` ska verifieringen ske
+  mot TABELLEN.
+
+**Kontrollerat att ingen senare migration stängt det.** Sex migrationer rör
+`profiles`-policies; `20260311210000` är den sista. Ingenting efter den ändrar
+SELECT-policyn. (Den kontrollen är värd att nämna eftersom ett annat spår samma
+natt — en TODO om tasks-scope — visade sig vara stängt dagen efter och alltså
+falskt larm. Det här är det inte.)
+
+**Inte fullt bevisat än:** jag läste policytexten, jag körde inte ett anonymt
+anrop (kommandot blockerades av sandlådan). Verifiera med ett enda anrop innan
+åtgärd — anon-nyckel som både `apikey` och `Authorization: Bearer`, GET mot
+`/rest/v1/profiles?select=email,org_number&limit=3`. Kommer rader tillbaka är
+det bekräftat.
+
+**Åtgärd, inte trivial:** att bara strama åt policyn är exakt det som orsakade
+500-orna i mars — `projects` RLS gör en inline-subquery mot `profiles` och
+triggar dess policy. Rätt ordning är: skriv om de policies som refererar
+`profiles` inline först, sedan strama åt `profiles`.
+
+---
+id: legal-pages-fake-last-updated
+status: todo
+priority: P2
+tags: [bugfix, juridik, nattsvep]
+created: 2026-09-02
+---
+## Villkor och integritetspolicy pastar att de uppdaterades idag
+
+`src/pages/Terms.tsx:26` och `src/pages/Privacy.tsx:26` renderar båda
+
+    Last updated: {new Date().toLocaleDateString()}
+
+Datumet är alltså alltid dagens, oavsett när texten faktiskt ändrades. För
+juridiska dokument är det inte en kosmetisk bugg: "senast uppdaterad" är själva
+grunden för att en användare ska kunna se om villkoren ändrats sedan de
+godkändes.
+
+Dessutom formaterar `toLocaleDateString()` efter webbläsarens språk, så samma
+sida visar olika datumformat för olika användare.
+
+Fix: hårdkoda ett faktiskt datum per dokument (eller läs det ur en konstant som
+uppdateras när texten ändras), och formatera det deterministiskt.
+
+---
+id: overview-chat-renders-duplicate-comments
+status: todo
+priority: P2
+tags: [bugfix, oversikt, nattsvep]
+created: 2026-09-02
+---
+## Samma kommentar visas tva ganger i Meddelanden
+
+React-varning vid varje laddning av Översikt:
+`Encountered two children with the same key` för `c-ae424fc8-…` och
+`c-b6b8dada-…`, från `src/components/project/overview/ProjectChatSection.tsx:212`.
+
+Det är inte bara en konsolvarning — samma kommentar renderas två gånger i
+flödet, en gång märkt `Task · Riva gammal köksinredning` och en gång märkt
+`General`.
+
+### Rotorsaken (utredd samma natt)
+
+`fetchAllProjectComments()` i `src/components/project/feed/utils.ts` kör **fyra
+separata frågor** och slår ihop dem med `results.push(...)` — **utan dedup på
+`id`**:
+
+| # | filter |
+|---|--------|
+| 1 | `task_id IS NOT NULL AND task.project_id = X` |
+| 2 | `material_id IS NOT NULL AND material.project_id = X` |
+| 3 | `drawing_object_id IS NOT NULL` (utan projektfilter — filtreras klientsidigt efteråt) |
+| 4 | `project_id = X` |
+
+**En kommentarsrad som har BÅDE `task_id` OCH `project_id` satt matchar fråga 1
+och fråga 4.** Den hamnar två gånger i `results` → samma React-nyckel `c-<id>` →
+varningen.
+
+Och det förklarar varför de två kopiorna får olika etiketter: fråga 1 selectar
+`task_id` och joinar uppgiften, fråga 4 selectar bara `project_id`. Kopian från
+fråga 4 saknar därför `task_id`, så `getContextType()` returnerar `"project"` och
+raden märks "General" — medan kopian från fråga 1 märks med uppgiftens titel.
+Samma rad, två olika kolumnprojektioner, två olika etiketter.
+
+**Fix:** dedupa på `id` innan `results.sort(...)`, och behåll den rikaste
+varianten:
+
+```ts
+const byId = new Map<string, FeedComment>();
+for (const c of results) {
+  const prev = byId.get(c.id);
+  byId.set(c.id, prev ? { ...prev, ...c } : c);
+}
+const deduped = [...byId.values()];
+```
+
+Alternativt: gör fråga 4 exklusiv med `.is("task_id", null).is("material_id", null)`
+så att en rad bara kan matcha en fråga. Det är den renare lösningen — dedup
+döljer att frågorna överlappar.
+
+### Sidofynd i samma funktion
+
+**Fråga 3 hämtar ritobjekts-kommentarer utan projektfilter** — alla kommentarer
+med `drawing_object_id` i hela databasen som RLS släpper fram, för att sedan
+filtreras klientsidigt mot `projectId`. Det fungerar (RLS gör grovjobbet), men
+det hämtar onödigt mycket data och skalar dåligt när en användare är medlem i
+många projekt. Kommentaren i koden förklarar varför joinen inte gick att göra
+("PostgREST cannot resolve the drawing_object_id FK") — en vy eller en
+`floor_map_shapes`-join via `plan_id` skulle lösa det.
+
+Reproducerat på projekt `eb919a4b-992b-4f5d-94de-f4381f6bcecc` (Worker Invite
+Test) som `carl.palmquist+pmfull@gmail.com`.
+
+---
+id: findpros-gates-on-is-professional
+status: done
+priority: P4
+tags: [roll-gating, nattsvep]
+created: 2026-09-02
+---
+## AVSKRIVET - katalogen gatar RATT, jag hade fel
+
+**Detta kort var felaktigt och är avskrivet 2026-09-03 samma natt det skrevs.**
+
+Ursprunglig anklagelse: `src/pages/FindProfessionals.tsx:74` filtrerar på
+`is_professional = true`, vilket skulle bryta mot den stående regeln
+(`feedback_role_gating_signal`) att roll-gating styrs enbart av
+`onboarding_user_type`.
+
+**Varför det var fel:** `is_professional` används inte som en *rollsignal* här.
+Den är kopplad till en `<Switch>` på profilsidan —
+`src/pages/Profile.tsx:1235-1238`, etiketten "Show me in Find Professionals",
+beskrivningen "When enabled, clients can find you via the search page". Det är
+ett **synlighetsval som proffset själv gör**, inte en härledning av vilken roll
+någon har.
+
+Katalogen filtrerar alltså på exakt den kolumn som opt-in-knappen skriver. Det
+är korrekt byggt. Den stående regeln handlar om att gata *funktioner* per roll,
+vilket är något annat.
+
+Kvarstår från kortet: sidan är publik och selectar `latitude`/`longitude` — se
+`profiles-rls-open-to-anon`. Det är en riktig fråga, oberoende av den här.
+
+---
+id: renaida-zzz-leaks-into-accessible-text
+status: todo
+priority: P3
+tags: [a11y, nattsvep]
+created: 2026-09-02
+---
+## Renaidas sov-animation lases upp som "z z"
+
+Avatarens vilo-animation är `<text class="rn-z1">z</text>` / `rn-z2` i SVG:n
+utan `aria-hidden="true"`. Bokstäverna hamnar därför i sidans textinnehåll och
+läses av skärmläsare: `… Return to Home z z Renaida Suggest first z z …`.
+
+Fix: `aria-hidden="true"` på de dekorativa `<text>`-noderna (eller på hela
+avatar-SVG:n, som ändå har en egen label).
+
+---
+id: auth-page-shown-to-logged-in-user
+status: todo
+priority: P3
+tags: [flode, nattsvep]
+created: 2026-09-02
+---
+## /auth visar inloggningsformularet for redan inloggade
+
+En inloggad användare som går till `/auth` (bokmärke, gammal länk, bakåtknapp)
+möts av "Welcome — Sign in or create an account to get started" i stället för
+att skickas vidare till `/start`. Observerat med aktiv session.
+
+Fix: redirect till `/start` när det finns en session, samma mönster som
+`RequireAuth` använder åt andra hållet.
+
+---
+id: worker-languages-shipped-mostly-untranslated
+status: todo
+priority: P2
+tags: [i18n, proffs, nattsvep]
+created: 2026-09-03
+---
+## Estniska, litauiska och rumanska erbjuds med flagga men ar 14% oversatta
+
+Täckning mot `en.json` (7 592 nycklar), mätt 2026-09-03:
+
+| språk | nycklar | täckt | saknas |
+|-------|---------|-------|--------|
+| sv    | 7 591   | 100 % | 1      |
+| de / fr / es | 7 056 | 92,4 % | 574 |
+| pl    | 6 920   | 90,2 % | 747 |
+| uk    | 6 892   | 90,2 % | 746 |
+| **ro / lt / et** | **1 084** | **13,8 %** | **6 541** |
+
+Alla tio språken är registrerade i `src/i18n/config.ts` och listas med flagga i
+BÅDA väljarna — `src/components/LanguageSelector.tsx:14-23` och
+`src/components/worker/WorkerLanguageSelector.tsx:12-21`.
+
+En rumänsk snickare väljer alltså 🇷🇴 och får engelska i 86 % av gränssnittet.
+`fallbackLng: 'en'`, så det blir engelska, inte svenska — men det är fortfarande
+inte det språk han valde, och han får ingen indikation på att det är ofullständigt.
+
+Det här är inte bara kosmetik. Enligt `reference_competitor_bygglet` är flerspråkig
+arbetarvy en av de saker Renofine har och Bygglet inte har. Att erbjuda tre språk
+på 14 % gör det argumentet svagare, inte starkare — det första en rumänsk arbetare
+ser är att språkvalet inte fungerar.
+
+**Beslut som behövs (Carl):** antingen översätt ro/lt/et till samma nivå som
+pl/uk, eller ta bort dem ur väljarna tills de är klara. Ett halvt språk är sämre
+än inget språk.
+
+Notera: uk och pl innehåller svenska ord (`ÄTA`, `Hallå konsument`) — det är
+avsiktligt och korrekt, svenska facktermer och myndighetsnamn ska stå kvar.
+
+---
+id: language-choice-silently-reverts
+status: todo
+priority: P2
+tags: [bugfix, i18n, nattsvep]
+created: 2026-09-03
+---
+## Sprakbytet i Space Planner och publika navet haller inte
+
+Två ställen byter språk utan att spara valet:
+
+- `src/components/floormap/SpacePlannerTopBar.tsx:70` — `i18n.changeLanguage(lang)`
+- `src/components/landing/PublicNav.tsx:100` och `:194` — samma
+
+Jämför `src/components/LanguageSelector.tsx:33-46`, som byter språk OCH skriver
+`profiles.language_preference`.
+
+`src/hooks/useProfileLanguage.ts` körs på Projects, Profile, ProjectDetail och
+FindProfessionals och sätter tillbaka språket från profilen vid varje montering.
+Resultatet: användaren byter språk, ser det ändras, och nästa gång sidan laddas
+är det tillbaka på det gamla — utan förklaring.
+
+Det är precis den sortens knapp som ser ut att fungera men inte levererar.
+
+Fix: låt de två ställena gå via samma väg som `LanguageSelector` (bryt ut
+`setLanguage(code, user)` till en delad hook så att det bara finns ett sätt att
+byta språk).
+
+---
+id: eleven-keys-fall-back-to-swedish-for-everyone
+status: todo
+priority: P3
+tags: [i18n, nattsvep]
+created: 2026-09-03
+---
+## Elva nycklar saknas i en.json - alla sprak visar svenska dar
+
+Konventionen i CLAUDE.md är `t('key', 'English fallback')`. På elva ställen är
+fallbacken svensk OCH nyckeln saknas i `en.json`, så texten slår igenom på
+samtliga språk:
+
+- `files.previewError` — "Kunde inte öppna filen" (ProjectFilesTab.tsx:625)
+- `renaidaFlow.folder.filesNotArchived` — "{{count}} filer kunde inte sparas i Filer." (RenaidaProjectDialog.tsx:1095)
+- `sharing.kundvy.empty` — "Ingen är inbjuden till kundvyn än…" (KundvyAccessList.tsx:96)
+- `importRuns.appliedCount` / `importRuns.flagged` / `importRuns.waitingBadge` (ImportRunsPage.tsx:160/166/251)
+- `homeownerBudget.privateCapTooltip` (HomeownerBudgetView.tsx:274)
+- `dashboard.empty.desc` (EmptyState.tsx:64)
+- `worker.micDenied` — "Mikrofonen är inte tillåten" (WorkerComposer.tsx:316)
+- `importReview.doneMoved` (ProjectDetail.tsx:1118)
+- `quotes.unlockHint` (ViewQuoteV2.tsx:1137)
+
+`sharing.kundvy.empty` är bekräftad i webbläsaren: Delning-fliken visar svensk
+text mitt i ett engelskt gränssnitt.
+
+Två av dem (`worker.micDenied`, `sharing.kundvy.empty`) träffar arbetarvyn och
+delningsvyn — alltså personer som med störst sannolikhet inte läser svenska.
+
+Fix: lägg nycklarna i `en.json` (+ `sv.json`), enligt rutinen i CLAUDE.md.
+
+---
+id: de-fr-es-missing-574-keys
+status: todo
+priority: P3
+tags: [i18n, nattsvep]
+created: 2026-09-03
+---
+## Tyska, franska och spanska saknar 574 nycklar var
+
+92,4 % täckning mot `en.json`. De 574 saknade nycklarna faller tillbaka på
+engelska (`fallbackLng: 'en'`), utom där det inline-fallbacket är svenskt — 266
+av anropen med svensk fallback saknar nyckel i de/fr/es.
+
+Alla tre filerna har exakt 7 056 nycklar och saknar exakt samma 574, vilket
+tyder på att de genererats i samma svep och inte uppdaterats sedan dess.
+
+Dessutom har 38 nycklar som bara finns i de/fr/es och inte i `en.json` — döda
+nycklar som ingen läser.
+
+---
+id: de-patch-json-is-dead-weight
+status: todo
+priority: P4
+tags: [cleanup, i18n, nattsvep]
+created: 2026-09-03
+---
+## de-patch.json importeras inte av nagon
+
+`src/i18n/locales/de-patch.json` innehåller 1 404 nycklar men refereras inte
+från `src/i18n/config.ts` eller någon annanstans i `src/` (verifierat med grep).
+Antingen ska den slås ihop in i `de.json` eller tas bort — som den ligger nu
+ser den ut som tysk täckning som inte finns.
+
+---
+id: floorplanner-ui-is-hardcoded-swedish
+status: todo
+priority: P2
+tags: [i18n, floorplanner, nattsvep]
+created: 2026-09-03
+---
+## Ritverktyget pratar svenska oavsett vilket sprak anvandaren valt
+
+CLAUDE.md säger "No hardcoded UI strings in components — use `t()`".
+En svepning av `src/**/*.tsx` efter strängliteraler med å/ä/ö som **inte** ligger
+i ett `t()`-anrop ger **412 träffar i 101 filer**. Ungefär 120 av dem sitter i
+planeraren:
+
+| fil | träffar |
+|-----|---------|
+| `floormap/UnifiedKonvaCanvas.tsx` | 40 |
+| `floormap/ToolContextMenu.tsx` | 21 |
+| `floormap/SimpleToolbar.tsx` | 21 |
+| `floormap/toolbar/LayerControls.tsx` | 13 |
+| `floormap/CanvasEmptyState.tsx` | 9 |
+| `floormap/TemplateGalleryDropdown.tsx` | 8 |
+| `floormap/ElevationObjectPanel.tsx` | 7 |
+
+Det är inte kommentarer — det är text användaren möter:
+
+- `UnifiedKonvaCanvas.tsx:676` — toast "Vänligen välj en bildfil"
+- `UnifiedKonvaCanvas.tsx:945` — "Välj en vägg att klippa"
+- `LayerControls.tsx:26` — "Markera ett objekt först"
+- `LayerControls.tsx:30` — "Flyttat framåt"
+- `SimpleToolbar.tsx:349` — "Yttervägg aktiverat (300mm)"
+- `SimpleToolbar.tsx:589/601/610` — tooltiparna "Välj (V)", "Post-it lapp", "Text (T)"
+- `CanvasEmptyState.tsx:32` — tomt-läget "Kom igång med din planritning"
+
+Även `InspectionsTab.tsx` (24 träffar, hela kontrollistan: "Fuktmätning utförd
+(RBK-metod)", "Tätskikt applicerat enligt branschregler") och `AtaApproval.tsx`
+(13, felmeddelanden på ÄTA-godkännandesidan — den sida en KUND öppnar via länk).
+
+Konsekvens: en engelsk, ukrainsk eller polsk användare får ett gränssnitt som
+byter till svenska så fort något händer. ÄTA-godkännandet är värst — det är en
+extern kund som klickar på en länk och möter "Länken är ogiltig".
+
+**Var försiktig vid åtgärd:** alla 412 är inte UI-text. `roomTypeIcons.tsx` (9)
+matchar rumsnamn som nyckelord ("kök", "kokvrå", "tvättstuga") och ska INTE
+översättas — det är matchningslogik. Gå igenom fil för fil, inte med sök-ersätt.
+
+Ordning efter vem som drabbas: `AtaApproval` (extern kund) → floormap-toasterna
+→ `InspectionsTab` → resten.
+
+---
+id: icon-buttons-have-tooltips-but-no-accessible-name
+status: todo
+priority: P3
+tags: [a11y, nattsvep]
+created: 2026-09-03
+---
+## Ikonknappar har hover-tooltip men inget namn for skarmlasare
+
+Planerarens verktygsrad är åtta ikonknappar utan text: markera, rita vägg,
+rektangel, måttband, skala, text, ångra, gör om. I DOM:en har ingen av dem
+`aria-label`, `title` eller textinnehåll.
+
+**De har dock tooltips.** `ToolButton` i `floormap/HomeownerToolbar.tsx:60-81`
+och motsvarande i `SimpleToolbar.tsx:146-164` lindar knappen i en Radix
+`<Tooltip>` med etiketten i `<TooltipContent>`. Med mus fungerar det alltså —
+det här är inte en "oanvändbar verktygsrad".
+
+Problemet är smalare men verkligt: Radix Tooltip ger en *beskrivning*
+(`aria-describedby`) när den öppnas, inte ett *namn*. En skärmläsare läser upp
+knappen som "knapp", utan etikett, även när tooltipen finns. Radix egen
+dokumentation rekommenderar `aria-label` på ikon-bara triggers.
+
+**RÄTTAD MÄTNING 2026-09-03.** Kortets första version angav siffror som var upp
+till tio gånger för höga (Budget "21 av 64"). Två fel i mätningen: den räknade
+inte `title`-attributet som ett tillgängligt namn, och den använde
+`offsetParent !== null` som synlighetstest — vilket exkluderar
+`position: fixed`-element. Omräknat med båda felen åtgärdade:
+
+| yta | namnlösa | totalt |
+|-----|----------|--------|
+| Planering | 17 | 68 |
+| Översikt | 12 | 62 |
+| Uppgifter | 7 | 28 |
+| Inköp | 7 | 27 |
+| Filer | 5 | 26 |
+| Budget | **2** | 65 |
+| Team | 2 | 17 |
+| Tabell | 2 | 51 |
+| Tid | 2 | 11 |
+
+Det verkliga mönstret syns först nu: **`arrow-left` (tillbaka) och `ellipsis`
+(overflow-menyn) är namnlösa på VARJE flik** — det är de två som ger tvåan i
+botten av tabellen. Fixar man de två i huvudkomponenten försvinner nio av
+träffarna på en gång.
+
+Resten är ytspecifika ikoner: Planering har `sparkles`, `link2`, `file-up`,
+`trash2`; Översikt har `pencil`, `search`, `camera`, `smile-plus`, `send`;
+Uppgifter har zoom- och stegningsknapparna.
+
+**Och ett positivt besked ur samma mätning: noll döda knappar.** Alla synliga
+`<button>` på samtliga nio flikar har en handler. Den ursprungliga misstanken —
+knappar som ser klickbara ut men inte gör något — bekräftades inte någonstans i
+appen.
+
+Fix: lägg `aria-label={label}` på `<button>` inuti `ToolButton` (etiketten finns
+redan som prop), och namnge `arrow-left` + `ellipsis` i projekthuvudet. Billig
+ändring, den ändrar inget visuellt.
+
+---
+id: twenty-dialogs-clipped-by-the-max-w-trap
+status: todo
+priority: P2
+tags: [bugfix, ui, dialog, nattsvep]
+created: 2026-09-03
+---
+## Tjugo dialoger klipps till fel bredd - fallan i CLAUDE.md ar fortfarande aktiv
+
+CLAUDE.md beskriver fällan: `DialogContent` har `md:max-w-lg` i basen, så en
+oprefixad `max-w-2xl` i `className` förlorar i kaskaden på desktop. Regeln säger
+att bredd ska sättas med `size`-propen.
+
+**Bekräftat live**, inte bara läst ur koden. Team-fliken, viewport 2160 px:
+
+    "Invite Member" -> dialogens faktiska bredd: 512 px
+                       klasser: max-w-lg (bas) + max-w-2xl (className)
+                       getComputedStyle().maxWidth: "512px"
+
+Efterfrågat 672 px, renderat 512 px. Inbjudningsguiden — det fyrstegsflöde som
+byggdes om i egen epic — visas alltså 24 % smalare än tänkt.
+
+En systematisk genomgång av alla 170 `DialogContent`/`SheetContent` ger **20 som
+faktiskt klipps** (har varken `size`-prop, `!`-viktning eller `md:`-prefix, och
+begär mer än basens tak):
+
+| fil | begärt | blir |
+|-----|--------|------|
+| `project/BatchSmartUploadDialog.tsx:244` | 7xl | lg |
+| `project/BudgetDashboard.tsx:682` och `:799` | 4xl | lg |
+| `project/QuoteReviewDialog.tsx:537` | 4xl | lg |
+| `project/overview/MaterialFileAttachment.tsx:232` | 4xl | lg |
+| `project/AIFloorPlanImport.tsx:493` | 95vw | lg |
+| `pinterest/PinterestPicker.tsx:215` | 3xl | lg |
+| `project/MaterialEditDialog.tsx:307` | 3xl | lg |
+| `project/NewPurchaseOrderDialog.tsx:204` | 3xl | lg |
+| `project/PurchaseRequestsTab.tsx:1506` | 3xl | lg |
+| `project/task-details/TaskEditDialog.tsx:137` | 3xl | lg |
+| `project/AllocateFromOrderDialog.tsx:185` | 2xl | lg |
+| `project/TasksTab.tsx:1249` | 2xl | lg |
+| `project/TeamManagement.tsx:1106` | 2xl | lg |
+| `project/team/invite-wizard/InstructionImagePicker.tsx:220` | 2xl | lg |
+| `floormap/FloorMapManager.tsx:102` | 2xl | lg |
+| `floormap/room-details/RoomDetailDialog.tsx:349` | 2xl | lg |
+| `floormap/room-details/RoomDetailDialog.tsx:190` och `:206` (Sheet) | 90vw | xl |
+| `project/po-list-v2/PurchaseOrderDetailSheet.tsx:1028` (Sheet) | 92vw | xl |
+
+Fix per rad: byt `className="max-w-Nxl"` mot `size="Nxl"`.
+
+**Två saker CLAUDE.md inte nämner och som bör läggas till där:**
+
+1. **`SheetContent` har samma fälla men ett annat tak.** Basen är `sm:max-w-xl`
+   (`src/components/ui/sheet.tsx:39-41`), så en oprefixad `max-w-[90vw]` klipps
+   till 576 px från `sm` och uppåt. `SheetContent` har ingen `size`-prop — de tre
+   träffarna behöver `sm:max-w-[90vw]` i stället.
+2. **`AlertDialogContent` har INTE fällan.** Dess bas är oprefixad `max-w-lg`
+   (`src/components/ui/alert-dialog.tsx:37`), så twMerge dedupar mot className
+   och className vinner. De fem `AlertDialogContent` med `max-w-sm` som dök upp i
+   den grova sökningen är alltså korrekta — rör dem inte.
+
+Fyra ställen har redan lösts med `!max-w-*` (`FilePreviewPopover`,
+`AIDocumentImportModal`, `PlanningSmartImportDialog`, `BatchSmartTolkDialog`).
+De fungerar, men `!important` är en lapp — byt till `size` när du ändå är i filen.
+`AIProjectImportModal.tsx:509` bär `!max-w-[95vw] !max-w-3xl max-w-lg` samtidigt,
+vilket ingen kan läsa sig till betydelsen av.
+
+---
+id: approve-hours-button-offscreen-on-mobile
+status: todo
+priority: P2
+tags: [bugfix, mobil, tid, nattsvep]
+created: 2026-09-03
+---
+## Godkann-knappen for timmar hamnar utanfor skarmen pa mobil
+
+Tid-fliken, iPhone-bredd (390 × 844, DPR 3, mobil + touch-emulering):
+
+    <button>Approve</button>  left: 361px   right: 433px   viewport: 390px
+
+Knappen börjar 29 px innan skärmkanten och fortsätter 43 px utanför. På
+skärmbilden syns den inte alls — den ligger utanför kortets högerkant.
+
+### Rotorsaken ar aritmetik (utredd samma natt)
+
+`src/components/project/TimeTrackingTab.tsx:348-398`. Raden är
+`flex items-center gap-3 px-4 py-3` med fem kolumner:
+
+| kolumn | klass | bredd |
+|--------|-------|-------|
+| Datum | `w-20 shrink-0` | 80 px |
+| Uppgift | `flex-1 min-w-0 truncate` | krymper till 0 |
+| Person | `w-24 shrink-0` | 96 px |
+| Timmar | `w-20 shrink-0` | 80 px |
+| Status/åtgärd | `w-24 shrink-0` | 96 px |
+| 4 × `gap-3` | | 48 px |
+| `px-4` | | 32 px |
+
+**Summa fast bredd: 432 px.** Uppgiftskolumnen kan krympa till noll, men de fyra
+`shrink-0`-kolumnerna plus mellanrum och padding kan inte. Raden kräver alltså
+432 px **oavsett innehåll**.
+
+Viewporten är 390 px. Min mätning gav att knappen slutade på **x = 433**. Det är
+inte en ungefärlig träff — det är exakt de 432 px plus en pixels avrundning.
+
+Och föräldern har `border rounded-lg overflow-hidden` (rad 345), vilket **klipper
+bort** överskottet i stället för att låta det scrollas fram. Det är därför knappen
+är osynlig och inte bara obekväm att nå.
+
+Raden visar dessutom bara ett "–" där personens namn ska stå, så den läser sig
+"26 aug. – 8h" utan att avslöja vem eller vad.
+
+**Godkännandet är inte helt blockerat på mobil.** På Översikt-fliken, i
+"Från platsen"-flödet, är "Approve the hours" fullt synlig (left 62, right 191)
+och fungerar. Det är alltså Tid-fliken som är trasig, inte funktionen — därför
+P2 och inte P1. Men Tid-fliken är den yta man går till för att gå igenom timmar
+i klump, och där går det inte.
+
+Skärmbild (390 px):
+/Users/calpa/PA/Documents/Projekt/Renofine/Nattsvep-2026-09-03/mobil-390-godkann-timmar-klipps.png
+
+### Vid 320 px blir det varre: hela sidan scrollar i sidled
+
+Testat vid 320 × 568 (iPhone SE och liknande — en fullt verklig enhetsbredd):
+
+```
+document.scrollWidth  381 px
+viewport              320 px
+överskott              61 px
+```
+
+Vid 390 px klipptes Godkänn-knappen av `overflow-hidden` och stannade inne i
+kortet. Vid 320 px är det en ANNAN rad som spiller ut, och den klipps inte:
+
+`TimeTrackingTab.tsx:263` — `<div className="flex gap-2">` med knapparna
+"Löneexport" och "Logga tid". Ingen `flex-wrap`, ingen `shrink`, och shadcn-Button
+har `whitespace-nowrap`. Raden kan alltså varken brytas eller krympa, och
+"Logga tid" slutar på x = 381 — exakt sidans `scrollWidth`.
+
+**Nio av tio flikar klarar 320 px utan sidscroll.** Bara Tid-fliken gör det, och
+den gör det på två oberoende ställen. Lägg `flex-wrap` på knappraden samtidigt
+som radlayouten fixas.
+
+**Fix:** 432 px går inte att pressa in i 390. Något måste ge:
+
+1. **Byt layout under `md`** — stapla raden i två våningar (datum + uppgift på
+   rad ett, person + timmar + åtgärd på rad två). Mest arbete, bäst resultat.
+2. **Släpp `shrink-0` på person- och timkolumnen** under `md` och låt dem
+   truncate. 432 → ~256 px, vilket ryms.
+3. **Byt `overflow-hidden` mot `overflow-x-auto`** på föräldern. Enradsfix som
+   åtminstone gör knappen nåbar genom att scrolla — men horisontell scroll i en
+   lista är en dålig upplevelse och bryter mot mönstret i resten av appen, där
+   breda tabeller redan ligger i egna scroll-containrar.
+
+Rekommendation: alternativ 2 som snabb åtgärd, alternativ 1 när Tid-fliken ändå
+ska röras.
+
+---
+id: mobile-sweep-otherwise-clean
+status: done
+priority: P4
+tags: [mobil, nattsvep, verifierat]
+created: 2026-09-03
+---
+## Mobilsvepet: ingen horisontell scroll nagonstans
+
+Tio projektflikar svepta vid äkta 390 × 844 (DPR 3, mobil + touch). Resultat:
+
+- **Noll horisontell sidscroll vid 390 px.** `scrollWidth === clientWidth === 390`
+  på samtliga tio.
+
+**RÄTTELSE 2026-09-03, samma natt:** det gäller 390 px, inte alla mobilbredder.
+Vid **320 px** (iPhone SE) orsakar Tid-fliken 61 px sidscroll — se
+`approve-hours-button-offscreen-on-mobile`. Nio av tio flikar klarar 320 px, men
+formuleringen "noll horisontell scroll på mobil" var för bred. Testa 320 innan
+den sortens påstående görs igen.
+- De breda tabellerna (Budget, Tabell, Filer) ligger korrekt i egna
+  `overflow-x`-containrar och spiller inte ut på sidan. Det stämmer med regeln i
+  CLAUDE.md och är alltså redan rätt byggt.
+- Enda överspillet i hela svepet är Godkänn-knappen på Tid-fliken, se
+  `approve-hours-button-offscreen-on-mobile`.
+
+Noteras men inte kortat som bugg: många element under 32 px på Budget (46) och
+Planering (34). Merparten är tabellrubriker och inte tryckytor, så siffran ska
+inte läsas som "46 för små knappar" — den behöver en manuell genomgång innan
+någon åtgärdar något.
+
+**Varning för framtida mätningar:** `resize_page` till 390 gav i praktiken en
+750 px viewport i headless Chrome. Använd `emulate` med
+`390x844x3,mobile,touch` — annars mäter du fel bredd och tror att mobilen är
+testad.
+
+---
+id: deeplink-to-hidden-tab-lands-silently-elsewhere
+status: todo
+priority: P3
+tags: [bugfix, navigation, nattsvep]
+created: 2026-09-03
+---
+## Djuplank till en dold flik tappar parametern utan att saga nagot
+
+`?tab=inspections` på ett projekt där Kontroll-fliken inte är påslagen:
+URL:en skrivs om till projektets bas-URL (hela query-strängen försvinner) och
+Översikt visas. Ingen toast, ingen förklaring.
+
+Verifierat på två projekt: `eb919a4b-…` (Kontroll ej påslagen, fliken syns inte —
+förra flikens innehåll blev kvar) och på demot `00000000-…-0001` som contractor
+(URL:en tömdes helt, aktiv panel föll till `overview`).
+
+Panelen finns i DOM:en i båda fallen — det är flikknappen som gatas på
+`effectiveUserType === "contractor" && (isTabEnabled("inspections") || isReviewer)`
+(`src/pages/ProjectDetail.tsx:1944`), medan URL-synken
+(`:391-414`) tyst släpper ett `tab`-värde den inte känner igen.
+
+Betyder i praktiken: en notislänk eller bokmärke till en flik som sedan stängts
+av dumpar användaren på Översikt utan att säga varför. Samma sak gäller om en
+inbjuden person får en länk till en flik deras roll inte ser.
+
+**Appen har redan rätt mönster — på tio av tretton flikar.** Verifierat natten
+2026-09-03: som hemägare på demot ger `?tab=purchases` en tydlig ruta
+"No access — You do not have access to this section." Det är precis så det ska
+se ut. Kontroll-fliken gör i stället en tyst omdirigering, och Tid-fliken gör en
+tredje sak (se `timetracking-panel-has-no-access-gate`).
+
+Fix: låt `inspections` använda samma `NoAccessPlaceholder` som de tio andra i
+stället för att inte renderas alls, så att URL:en kan säga vad som hände.
+
+---
+id: intake-requests-shows-wrong-avatar
+status: todo
+priority: P3
+tags: [bugfix, ui, nattsvep]
+created: 2026-09-03
+---
+## /intake-requests visar fel initialer i avataren
+
+Alla sidor visar "TP" (Test PM Full) i huvudets avatar. `/intake-requests` visar
+"U" — och det är inte en laddningsblink: efter sex sekunder står det fortfarande
+"U". Sidan verkar rendera en egen huvud-variant som aldrig hämtar profilen och
+faller tillbaka på en generisk initial.
+
+Litet, men det är den sortens detalj som får en sida att kännas som en annan app.
+
+---
+id: verified-vat-and-role-gating-hold
+status: done
+priority: P4
+tags: [verifierat, nattsvep, moms, roll-gating]
+created: 2026-09-03
+---
+## Verifierat: momsregeln och roll-gatingen haller
+
+Två dokumenterade invarianter testades genom att växla demo-rollen (rent
+klientsidigt, `localStorage.demo_view_role` — ingen skrivning) på demoprojektet
+`00000000-0000-0000-0000-000000000001`, Budget-fliken:
+
+**Moms** (CLAUDE.md: "Proffs ex moms, hemägare inc moms, alla belopp labellade"):
+
+- som `contractor`: `* = Estimated cost. All amounts **ex. VAT**`
+- som `homeowner`: `* = Estimated cost. All amounts **inc. VAT**`, plus en
+  ROT-kolumn (`67 000 kr / −10 560 kr / 56 440 kr`)
+
+Regeln håller, och beloppen är labellade i båda vyerna.
+
+**Roll-gating** (`feedback_dual_view_gate`): som homeowner saknas
+`inspections`-panelen helt i DOM:en; som contractor finns den. Gatingen sker
+alltså i renderingen, inte bara visuellt.
+
+Ingen åtgärd behövs. Kortet finns för att nästa granskning ska slippa göra om
+mätningen — och för att en regel som faktiskt håller är värd att veta om.
+
+---
+id: contractor-only-routes-render-clean
+status: done
+priority: P4
+tags: [verifierat, nattsvep]
+created: 2026-09-03
+---
+## Verifierat: proffsvyns egna sidor renderar rent
+
+`/quotes/new`, `/invoices/new`, `/clients` och `/intake-requests` svepta som
+contractor-profil (`carl.palmquist+pmfull@gmail.com` — kontot har
+`onboarding_user_type = contractor`, det når alla fyra `RequireRole`-skyddade
+routerna men nekas `/admin`).
+
+Alla fyra: noll konsolfel, ingen horisontell scroll, `container`-ramen på plats,
+inga döda knappar, inga råa i18n-nycklar, ingen svensk text som läcker igenom.
+`/clients` visar ett korrekt tomt läge ("No clients yet").
+
+Enda avvikelsen är avataren på `/intake-requests`, se
+`intake-requests-shows-wrong-avatar`.
+
+---
+id: mcp-server-plan-written
+status: todo
+priority: P2
+tags: [carl, mcp, arkitektur, nattsvep]
+created: 2026-09-03
+---
+## MCP-planen skriven - fyra beslut vantar pa Carl
+
+`docs/mcp-server-plan-2026-09.md` skriven natten 2026-09-03, kodverifierad mot
+`main = add0c70`.
+
+**Kärnan:** den svåra halvan är redan byggd, men den sitter på fel sida av
+kabeln. `ProposalAction` i `src/services/agent/types.ts` är sexton
+handlingstyper designade för propose → bekräfta → apply. `agent-route`
+vidarebefordrar redan anroparens token och agerar under RLS. `renaida_undo_stack`
+finns. Allt det är precis vad ett MCP-verktyg vill ha.
+
+Men `applyProposals` är **690 rader som kör i webbläsaren** och skriver till tolv
+tabeller. En extern MCP-klient har ingen webbläsare med sessionen i. Den kan
+föreslå men inte verkställa.
+
+**Hård förutsättning:** `profiles-rls-open-to-anon` måste stängas först. En
+MCP-server är en maskinvänlig dörr — den gör uttömmande läsning enkel. Att öppna
+den innan `profiles` är stängd är att bygga en motorväg till ett känt hål.
+
+**Fyra beslut i dokumentet:** vem som är första klienten, vilken av tre vägar för
+apply (rekommendation: flytta `applyProposals` till en edge-funktion, ~3–5 dagar),
+om MCP är produkt eller internt verktyg, och prioritet mot painkiller-strategin.
+
+Notera det sista: enligt `.claude/NASTA-UPP.md` är läget elva externa konton och
+noll loggade samtal. MCP flyttar inte den siffran. Dokumentet är underlag för när
+frågan blir aktuell, inte ett argument för att den är det nu.
+
+---
+id: timetracking-panel-has-no-access-gate
+status: todo
+priority: P2
+tags: [sakerhet, roll-gating, bugfix, nattsvep]
+created: 2026-09-03
+---
+## Tid-fliken doljs i navet men renderar anda via URL:en
+
+Tio av tretton `TabsContent` i `src/pages/ProjectDetail.tsx` har en
+`isTabBlocked()`-grind som visar `NoAccessPlaceholder`. Tre har det inte:
+**`timetracking`, `chat` och `inspections`** (räknat per panel i filen).
+
+För `timetracking` är det ett verkligt hål. Verifierat på demoprojektet som
+hemägare:
+
+- navet visar `Overview · Tasks · Budget · Space · Files` — **Tid saknas, korrekt**
+- men `?tab=timetracking` renderar panelen ändå:
+  `"Summary 0h / 128h estimated. No time logged yet."`
+
+Kommentaren på `ProjectDetail.tsx:287-290` visar att den här klassen av bugg
+redan är känd och delvis åtgärdad:
+
+> Tid saknades i kartan, så `isTabBlocked()` föll tillbaka på enbart
+> modulflaggan medan skrivbordsfliken ALSO kollade `permissions.timeTracking`.
+> En medlem utan tidbehörighet hade sett fliken i mobilnavet och landat på
+> "Ingen behörighet". En karta, båda navigeringarna.
+
+Kartan fixades — `timetracking: permissions.timeTracking` finns nu. **Men
+panelen fick aldrig sin grind.** Navigeringen är alltså tät, innehållet är det
+inte.
+
+Konsekvens: en inbjuden medlem utan tidbehörighet som får eller gissar en
+`?tab=timetracking`-länk ser projektets timmar och estimat. Det är den sortens
+uppgift som hör ihop med vad någon faktureras.
+
+Fix: `{isTabBlocked("timetracking") ? <NoAccessPlaceholder /> : …}` runt
+panelens innehåll, precis som de tio andra flikarna gör.
+
+Detta är samma lärdom som `feedback_rls_test_the_table_not_the_predicate`, fast
+i frontend: att navigeringen döljer något är inte samma sak som att innehållet
+är skyddat.
+
+---
+id: chat-panel-has-no-access-gate
+status: todo
+priority: P3
+tags: [roll-gating, nattsvep]
+created: 2026-09-03
+---
+## Chat-panelen saknar ocksa grind - gaster ar satta till "none"
+
+`tabPermissionMap` sätter `chat: "none"` för gäster
+(`src/pages/ProjectDetail.tsx:274`), men `<TabsContent value="chat">` har ingen
+`isTabBlocked()`-kontroll. Samma mönster som
+`timetracking-panel-has-no-access-gate`.
+
+**Verifierat live 2026-09-03**, inte bara läst ur koden. Som hemägare på demot:
+
+```
+navets flikar   : Overview · Tasks · Budget · Space · Files   (Chat saknas — korrekt)
+?tab=chat       : aktiv panel = "chat", panelen RENDERAR
+```
+
+Navet döljer alltså fliken, men URL:en når den. `ProjectChatSection` gatar sig
+inte heller själv — den använder `userType` enbart för att filtrera *innehåll*
+(`isClient` sållar bort kommentarer, aktiviteter och foton), aldrig för att neka
+åtkomst.
+
+I det här fallet blev panelen nästan tom just för att innehållsfiltret tog bort
+allt, men det är en tillfällighet i demodatan — inte en grind.
+
+Lägre prioritet därför att en gäst i praktiken befinner sig i sitt eget
+gästprojekt, så kommentarerna är deras egna. Men grinden bör finnas ändå — den
+kostar en rad, och antagandet "gästen äger alltid projektet" är inte något man
+vill vara beroende av när gästtratten byggs om.
+
+Verifiera samtidigt om `permissions.comments` kan vara `none` för en inbjuden
+medlem. Är den det gäller samma allvar som för Tid.
+
+---
+id: external-error-pages-disagree
+status: todo
+priority: P2
+tags: [bugfix, i18n, kundvy, nattsvep]
+created: 2026-09-03
+---
+## De tre lanksidorna en KUND moter sager olika saker - och en av dem pa svenska
+
+Tre publika routes nås av personer som inte har konto: kunden som godkänner en
+ÄTA, hantverkaren med en arbetarlänk, och kunden som fyller i en förfrågan. Alla
+tre testades med en ogiltig token, i ett gränssnitt satt till **engelska**:
+
+| route | vad den svarar |
+|-------|----------------|
+| `/ata/:token` | **"Något gick fel — Försök igen eller kontakta din entreprenör."** |
+| `/w/:token` | "An error occurred. Please try again later." |
+| `/intake/:token` | "Request not found. The link may be invalid or expired" |
+
+Tre problem i en bild:
+
+1. **ÄTA-sidan svarar på svenska i ett engelskt gränssnitt.** Detta är den
+   empiriska bekräftelsen på `floorplanner-ui-is-hardcoded-swedish` — samma
+   grundorsak (`src/pages/AtaApproval.tsx` har 13 hårdkodade svenska strängar,
+   raderna 112-114 är just dessa). Det drabbar den mest externa ytan appen har:
+   en kund som klickar på en länk i ett mejl för att godkänna ett tillägg.
+
+2. **Ingen av de två första säger vad som faktiskt hände.** "Något gick fel" och
+   "An error occurred" ger användaren inget att göra. `/intake/:token` gör det
+   rätt — "The link may be invalid or expired" talar om att länken är problemet,
+   inte att appen är trasig. Kunden vet då att be om en ny länk.
+
+3. **Tre olika röster på tre sidor som hör ihop.** Samma produkt, samma
+   situation, tre formuleringar.
+
+Fix: låt `/ata` och `/w` använda samma mönster som `/intake` — säg att länken är
+ogiltig eller har gått ut, via `t()`. `/ata` behöver dessutom sina strängar
+lyfta ur koden.
+
+Prioritetsordning inom kortet: ÄTA först (extern kund, fel språk), sedan
+arbetarvyn (extern hantverkare som ofta inte läser svenska OCH inte engelska —
+se `worker-languages-shipped-mostly-untranslated`).
+
+---
+id: verified-public-routes-behave
+status: done
+priority: P4
+tags: [verifierat, nattsvep]
+created: 2026-09-03
+---
+## Verifierat: /capture och /checkin gor ratt
+
+**`/capture`** omdirigerar till `/start` vid direktladdning. Det är avsiktligt,
+inte en bugg — filens egen header förklarar att sidan bara har två lägen
+(`?shared=1` från service workern och `?intent=…` från manifest-genvägar) och att
+den utan parametrar ska landa på `/start`. Verifierat mot
+`src/pages/Capture.tsx:47-63`.
+
+**`/checkin/:projectId`** renderar en publik personalliggare-blankett med
+projektets namn, utan inloggning. Också avsiktligt — en arbetare ska kunna skanna
+en QR-kod på plats. Noterat snarare än kortat: den som har ett projekt-UUID kan
+se projektnamnet. Bedöms som acceptabelt för ett personalliggarflöde, men det är
+värt att veta om att UUID:t är den enda hemligheten.
+
+**`/embed/renaida`** saknar `container`-ramen — korrekt, det är en embed som ska
+kunna bäddas in utan appens sidmarginaler.
+
+---
+id: guest-wizard-step5-blocks-without-saying-why
+status: todo
+priority: P2
+tags: [ux, tratt, gast, nattsvep]
+created: 2026-09-03
+---
+## Gastguidens steg 5 stoppar besokaren utan att saga varfor
+
+Gick igenom hela gästtratten utloggad, iPhone-bredd, i en isolerad flik:
+landningssidan → tryck "Badrummet" → `/start` med guiden öppen på **Steg 2 av 6**
+med Badrum förvalt. Så långt fungerar allt, och intent-överföringen är snyggt
+byggd (`renofine_guest_intent`, write-once-read-once).
+
+Sedan tar det stopp på **Steg 5 av 6 — "Namnge"**:
+
+- Projektnamn-fältet är tomt (`placeholder: "t.ex. Köksrenovering 2026"`)
+- "Nästa" är `disabled: true`
+- **Inget felmeddelande.** Jag sökte hela dialogen efter text med
+  "måste/krävs/obligatoriskt/ange/fyll" — noll träffar
+- Fältet är inte ens markerat `required`
+
+Besökaren ser alltså en grå Nästa-knapp och får ingen ledtråd om att det beror på
+det tomma fältet ovanför. Verifierat att det ÄR orsaken: fyller man i fältet blir
+knappen `disabled: false` direkt.
+
+**Rättelse till min egen första läsning:** knappen är inte trasig. Den är korrekt
+avstängd. Problemet är att avstängningen är stum.
+
+**Och det finns ett färdigt svar en knapptryckning bort.** Samma steg visar
+förslaget "Badrum renovering" med en "Använd detta"-knapp. Appen har alltså redan
+räknat ut vad projektet ska heta men kräver att besökaren klickar för att
+acceptera det.
+
+Sammanhang: enligt `project_traction_reality` gjorde 36 besökare HELA
+personifieringen och 0 skapade konto. Det här är steg 5 av 6 i just den tratten.
+Jag påstår inte att detta ensamt förklarar noll konverteringar — det vore att
+gissa. Men det är en punkt där en besökare kan fastna utan att förstå varför, och
+den är billig att ta bort.
+
+Två möjliga åtgärder, den första enklare:
+1. Förifyll namnfältet med förslaget. "Använd detta"-knappen blir då onödig.
+2. Om fältet ska förbli tomt: skriv ut varför Nästa är avstängd.
+
+Detta är ett UX-observationskort, inte ett feature-förslag. Enligt
+`feedback_thor_user_research_first` ska produktbeslut ur tratten vila på samtal —
+kortet beskriver vad jag såg, inte vad som borde byggas.
+
+---
+id: verified-landing-page-technically-clean
+status: done
+priority: P4
+tags: [verifierat, tratt, mobil, nattsvep]
+created: 2026-09-03
+---
+## Verifierat: landningssidan ar teknisk sett ren pa mobil
+
+Utloggad, isolerad webbläsarkontext, äkta 390 × 844 (mobil + touch), hela sidan
+scrollad igenom:
+
+- noll konsolfel och noll ohanterade promise-avvisningar
+- **noll horisontell scroll**, noll element som spiller utanför viewporten
+- inga trasiga bilder
+- inga döda knappar (alla `<button>` har en handler)
+- sidan renderas på svenska för en anonym svensk besökare — korrekt, och en
+  bekräftelse på att språkdetektionen fungerar för den som inte har profil
+
+25 unika klickbara element hittades, inklusive hela FAQ-sektionen och båda
+CTA-spåren ("Kom igång — gratis" / "Se demoprojekt" / "Boka 15 min demo").
+
+Sidan som sådan är alltså inte det som är fel med tratten. Se
+`guest-wizard-step5-blocks-without-saying-why` för det jag faktiskt hittade.
+
+---
+id: thirtyfour-raw-i18n-keys-render-literally
+status: todo
+priority: P2
+tags: [bugfix, i18n, nattsvep]
+created: 2026-09-03
+---
+## Trettiofyra stallen dar anvandaren ser sjalva nyckeln i granssnittet
+
+`t('nyckel')` anropad **utan fallback**, där nyckeln saknas i både `en.json` och
+`sv.json`. i18next har inget att falla tillbaka på och renderar då nyckelsträngen
+rakt av. Användaren ser `tasks.costCentersOptional` som fältetikett.
+
+**Bekräftat i webbläsaren**, inte bara i koden: dialogen "Add new task" på
+Uppgifter-fliken visar `tasks.costCentersOptional` som `<Label>`
+(`src/components/project/TasksTab.tsx:1421`).
+
+De 34 träffarna, grupperade efter var de gör mest skada:
+
+**Uppgifter — tomt läge vid filtrering (tre nycklar samtidigt på skärmen):**
+- `tasks.noTasksMatchFilters` (TasksTab.tsx:1617)
+- `tasks.tryAdjustingFilters` (TasksTab.tsx:1619)
+- `tasks.clearFilters` (TasksTab.tsx:1035 och :1630)
+
+**Snabboffert på startsidan — sex nycklar i felhanteringen:**
+- `pipeline.quickQuote.extractionFailed` (CreateProjectDialog.tsx:262, :275)
+- `pipeline.quickQuote.fileTooLarge` (:239)
+- `pipeline.quickQuote.noTextFound` (:268)
+- `pipeline.quickQuote.textExtracted` (:251, :266)
+- `pipeline.quickQuote.unsupportedFileType` (:271)
+
+**Filer — sex feltoaster:**
+`files.deleteError` (:719), `files.errorCreatingFolder` (:527),
+`files.errorDeletingFile` (:720), `files.errorDownloadingFile` (:666),
+`files.errorPreviewingFile` (:634), `files.errorUploadingFiles` (:594),
+plus `files.createNewFolder` (:1551), `files.importDoneShort` (:1751) och
+`files.imagePreview` (FilePreviewDialog.tsx:132)
+
+**Materiallistan — två statusetiketter:**
+`materialStatuses.to_order` och `materialStatuses.ordered`
+(MaterialsList.tsx:704-705)
+
+**Övriga:** `tasks.costCentersOptional`, `tasks.clickToRename`,
+`tasks.taskUpdated` (×2), `tasks.statusUpdated`, `tasks.dependencyAdded` +
+`…Description`, `tasks.dependencyRemoved` + `…Description`,
+`common.selectStatus` (PurchaseRequestsTab.tsx:1517, MaterialEditDialog.tsx:327),
+`purchases.orderUpdatedSuccess` (PurchaseRequestsTab.tsx:887)
+
+**En nyans:** `FloorMapEditor.tsx:492` anropar `t('Saving...')` — texten själv som
+nyckel. Den renderas som "Saving..." och ser därför rätt ut av en slump, men går
+aldrig att översätta. Räknas inte till de 34.
+
+Fix: lägg nycklarna i `en.json` + `sv.json` enligt rutinen i CLAUDE.md. Överväg
+samtidigt att sätta i18next-optionen som gör saknade nycklar synliga i dev — det
+här hade fångats direkt då.
+
+Hör ihop med `eleven-keys-fall-back-to-swedish-for-everyone`: där finns
+fallbacken men den är svensk; här finns ingen fallback alls.
+
+---
+id: renaida-panel-has-no-dialog-semantics
+status: todo
+priority: P2
+tags: [a11y, renaida, nattsvep]
+created: 2026-09-03
+---
+## Renaida-panelen ar en helskarmsoverlay utan dialog-semantik
+
+Panelen som öppnas av Renaida-knappen är en `<div>` med
+`fixed inset-0 z-50 flex flex-col bg-background h-[100dvh] md:inset-auto…`.
+Mätt i webbläsaren efter att den öppnats:
+
+```
+role          : null
+aria-modal    : null
+aria-label    : null
+aria-labelledby: null
+tabindex      : null
+```
+
+Ingen `role="dialog"`, ingen `aria-modal`, inget tillgängligt namn. Sidans
+`[role]`-inventering efter öppning innehåller inte `dialog` alls.
+
+**Escape stänger den inte.** Testat två gånger: dispatchad på `document`, och
+dispatchad från det fokuserade textfältet inuti panelen. Panelen låg kvar båda
+gångerna.
+
+På mobil täcker den hela skärmen (`inset-0`, `h-[100dvh]`). Kombinationen —
+helskärm, ingen dialog-roll, ingen Escape — betyder att en tangentbords- eller
+skärmläsaranvändare inte får veta att ett modalt lager öppnats, inte kan stänga
+det på det vanliga sättet, och att fokus kan vandra ut bakom det.
+
+Stängknappen finns — ett `×` uppe till höger i panelen — men den saknar
+tillgängligt namn (`(namnlos)` i knappinventeringen) och mäter **28 × 28 px**,
+under de 44 px som brukar anges som minsta tryckyta. På mobil, där panelen täcker
+hela skärmen, är den lilla omärkta krysset den enda vägen ut. Skicka-knappen är
+också omärkt (36 × 36).
+
+(Jag skrev först att jag inte hittade någon stängknapp alls. Det var fel — min
+sökning antog att den satt högst upp i viewporten, men panelen är förankrad
+nedtill till höger på desktop.)
+
+Fix: använd appens `Dialog`/`Sheet`-primitiv, eller lägg till `role="dialog"`,
+`aria-modal="true"`, ett `aria-label`, en Escape-hanterare och en fokusfälla.
+Radix-komponenterna som redan finns i projektet ger allt fyra gratis.
+
+Detta är den enskilt största ytan i appen som saknar den grunden — Renaida är
+enligt `project_renaida_wow_engine` tänkt som ryggraden.
+
+### Samma sak galler notispanelen — och det ar ett monster
+
+Notisklockan i huvudet öppnar en egen panel (`src/components/NotificationBell.tsx:136`,
+`{open && (…)}` runt en `div.fixed sm:absolute`). Mätt i webbläsaren: 384 × 195,
+`role: null`, `aria-label: null`. Innehållet i sig är bra — den har ett riktigt
+tomt läge ("No new notifications") och tre filterflikar.
+
+En svepning av `src/**/*.tsx` efter komponenter som villkorligt renderar ett eget
+`fixed`/`absolute`-lager med hög z-index ger **17 komponenter**, varav **9 inte
+importerar någon av appens `dialog`/`sheet`/`popover`/`dropdown-menu`-primitiver
+alls**:
+
+```
+NotificationBell.tsx:139          ui/HoverTabMenu.tsx:87
+Renaida.tsx:1596                  project/FolderDropZone.tsx:100
+project/feed/MentionTextarea.tsx:166   project/files/PdfCanvasPreview.tsx:155
+floormap/RoomElevationView.tsx:1965    floormap/editor/EditorHud.tsx:89
+pages/ProjectDetail.tsx:1986
+```
+
+**Var försiktig med listan.** Alla 17 behöver inte dialog-semantik — en HUD, en
+drop-zon-overlay och en hover-meny är inte modaler och ska inte annonseras som
+sådana. De två som är mätta och bekräftade är Renaida-panelen och notispanelen.
+Resten är kandidater för en genomgång, inte en åtgärdslista.
+
+Den gemensamma frågan är värd att ställa en gång i stället för nio: **när ska ett
+eget lager byggas för hand, och när ska det gå via `ui/dialog`?** Svaret hör
+hemma i CLAUDE.md bredvid `size`-regeln för dialoger.
+
+---
+id: three-greetings-disagree-about-the-time
+status: todo
+priority: P3
+tags: [bugfix, i18n, nattsvep]
+created: 2026-09-03
+---
+## Tre halsningar, tre olika uppfattningar om vad klockan ar
+
+Observerat live 00:53: Start-sidan skrev "**Good night**, Test." medan
+Renaida-panelen i samma app och samma minut skrev "**Good morning**, Test! 👋".
+
+Det finns tre separata implementationer av samma triviala funktion:
+
+| timme | `Renaida.tsx:231` | `Projects.tsx:562` | `GreetingBlock.tsx:10` |
+|-------|-------------------|--------------------|------------------------|
+| 00–04 | **morning**       | night              | God natt               |
+| 05–11 | morning           | morning            | God morgon             |
+| 12–16 | afternoon         | afternoon          | God eftermiddag        |
+| **17**| **afternoon**     | **evening**        | **God kväll**          |
+| 18–23 | evening           | evening            | God kväll              |
+
+Två oenigheter: före klockan fem (Renaida säger morgon, de andra natt) och under
+timmen 17–18 (Renaida säger eftermiddag, de andra kväll).
+
+`Renaida.tsx` saknar dessutom "night" helt i sin typ:
+`"morning" | "afternoon" | "evening"`.
+
+Och `GreetingBlock.tsx` **hårdkodar svenska** — "God natt", "God morgon",
+"God eftermiddag", "God kväll" — utan `t()`. Ännu en instans av
+`floorplanner-ui-is-hardcoded-swedish`, den här gången på en dashboard-yta.
+
+Fix: en delad `getTimeOfDayKey()` i `src/lib/`, med `night` inkluderad, som alla
+tre använder och som går genom `t()`.
+
+Litet, men det är den sortens spricka en användare märker utan att kunna sätta
+fingret på den: appen verkar inte veta vad klockan är.
+
+---
+id: findpros-lists-test-accounts-publicly
+status: todo
+priority: P3
+tags: [bugfix, publik-yta, nattsvep]
+created: 2026-09-03
+---
+## Proffskatalogen visar testkonton for alla INLOGGADE
+
+**RÄTTELSE 2026-09-03, samma natt.** Kortets första version påstod att sidan var
+publik. Det är fel. Jag läste routetabellen (`src/App.tsx:154` har mycket riktigt
+ingen `RequireAuth`) men missade att **komponenten gatar sig själv**:
+
+```ts
+// src/pages/FindProfessionals.tsx:60-63
+if (!authLoading && !user) {
+  navigate("/auth");
+}
+```
+
+Verifierat i en utloggad, isolerad webbläsarkontext: `/find-pros` landar på
+`/auth`. Testkontona är alltså synliga för **inloggade användare**, inte för
+världen. Prioritet sänkt från P2 till P3.
+
+Det underliggande hålet påverkas inte: `profiles-rls-open-to-anon` står kvar som
+P1 oberoende av den här sidan — vem som helst med anon-nyckeln kan läsa tabellen
+direkt, ingen sida behövs.
+
+Katalogen listar just nu fyra "proffs":
+
+```
+EK  Edward kwiatkowski
+A   Anders
+U   User
+TP  Test PM Full
+```
+
+**Två av fyra är testkonton.** "Test PM Full" är
+`carl.palmquist+pmfull@gmail.com` och "User" är ett konto utan riktigt namn.
+Vem som helst som besöker sidan ser dem. Med elva äkta externa konton totalt är
+halva den publika katalogen alltså testdata.
+
+Övrigt på samma sida:
+- Ingen av posterna visar företagsnamn, ort eller beskrivning trots att frågan
+  hämtar `company_name`, `company_city`, `company_description`
+  (`FindProfessionals.tsx:73`). Katalogen är en lista med initialer och namn.
+- "Edward kwiatkowski" har gemener i efternamnet — data som skrivits in som den
+  står, utan normalisering.
+- Sidan i övrigt är teknisk sett ren: noll konsolfel, ingen horisontell scroll,
+  `container`-ramen på plats, noll döda knappar, inga trasiga bilder.
+
+**Metodlärdom värd att spara:** en route utan `RequireAuth` betyder inte att
+sidan är öppen — grinden kan sitta i komponenten. Kontrollera alltid genom att
+faktiskt ladda sidan utloggad, inte genom att läsa routetabellen.
+
+Tre saker hör ihop och bör lösas i en och samma vända:
+1. **Uteslut testkonton** ur katalogen (och ur alla publika listor). Jämför
+   `feedback_demo_visibility_rule`, som redan säger att `public_demo` måste
+   exkluderas explicit — samma sorts läcka, annan tabell.
+2. **Gata på rätt signal** — se `findpros-gates-on-is-professional`.
+3. **Stäng RLS-hålet** — se `profiles-rls-open-to-anon`. Den här sidan är den
+   synliga symptomen på det: den läser `profiles` utan inloggning.
+
+**Rättelse till mig själv:** jag skrev först att ett proffs borde få välja att
+synas och att det "idag räcker att `is_professional` är sant". Det var fel — det
+FINNS ett aktivt val, en `<Switch>` på profilsidan ("Show me in Find
+Professionals", `Profile.tsx:1235`), och den skriver just `is_professional`.
+Opt-in fungerar alltså som den ska.
+
+Vilket i sin tur betyder att de två testkontona står i katalogen **därför att
+switchen är påslagen på dem**. Enligt `feedback_no_identity_inference` ska jag
+inte anta att det är ett misstag — du konfigurerar testkonton avsiktligt. Frågan
+till dig är alltså: ska `+pmfull` och "User" synas publikt, eller ska switchen
+slås av på dem? Om svaret är att de inte ska synas är den verkliga åtgärden
+troligen att exkludera testkonton systematiskt, inte att klicka bort dem en och
+en.
+
+---
+id: verified-changelog-clean
+status: done
+priority: P4
+tags: [verifierat, nattsvep]
+created: 2026-09-03
+---
+## Verifierat: /changelog renderar rent
+
+34 000 tecken innehåll, noll konsolfel, ingen horisontell scroll,
+`container`-ramen på plats, noll döda knappar, inga råa i18n-nycklar, inga
+trasiga bilder. En namnlös ikonknapp.
+
+Noterat: innehållet är skrivet på svenska och översätts inte med
+språkinställningen — en engelsk användare får svensk changelog. Det är rimligen
+ett medvetet redaktionellt val (posterna är handskrivna), men värt att veta om
+när/om appen får användare utanför Sverige.
+
+---
+id: profile-selects-lack-accessible-labels
+status: todo
+priority: P3
+tags: [a11y, nattsvep]
+created: 2026-09-03
+---
+## Sex falt pa profilsidan saknar tillgangligt namn
+
+Profilsidan är i övrigt ren — noll konsolfel, noll döda knappar, inga råa
+i18n-nycklar, ingen svensk text som läcker, `container`-ramen på plats, bara två
+namnlösa ikonknappar (`arrow-left` och `ellipsis`, samma två som på alla flikar).
+
+Men sex formulärkontroller har varken `<label>`, `aria-label` eller
+`placeholder`. En skärmläsare läser dem som namnlösa listrutor. De ligger vid:
+
+- **Phone** — landskodsväljaren bredvid telefonfältet
+- **Default Language** — språklistan
+- **Default Currency** — valutalistan
+- **Account number** — kontotypväljaren bredvid kontonummer
+- en kryssruta utan omgivande text
+- ytterligare en listruta utan identifierbar granne
+
+Mönstret är att den synliga etiketten sitter på syskonelementet men aldrig
+kopplas till kontrollen. Fix: `aria-label` på varje `<Select>`/`<input>`, eller
+`htmlFor`/`id`-koppling till den etikett som redan står där.
+
+Det här är inloggnings- och betalningsuppgifter — kontonummer och valuta — så
+det är en av de sidor där ett namnlöst fält kostar mest.
+
+---
+id: dark-mode-is-built-but-unreachable
+status: todo
+priority: P3
+tags: [cleanup, ui, nattsvep]
+created: 2026-09-03
+---
+## Mork-lage finns byggt men kan inte slas pa av nagon
+
+Allt utom omkopplaren finns:
+
+- `tailwind.config.js:3` — `darkMode: ["class"]`
+- `src/index.css:160` — ett komplett `.dark`-block med egna färgtokens
+- **302 `dark:`-klasser i 65 filer**
+- `next-themes` ligger som beroende i `package.json:68`
+
+Men det finns **ingen `ThemeProvider` någonstans i `src/`**, och ingenting sätter
+klassen `dark` på `<html>`.
+
+Verifierat i webbläsaren med `prefers-color-scheme: dark` påslaget:
+
+```
+OS föredrar        : dark
+<html> klasser     : (inga)
+body bakgrund      : rgb(246, 244, 238)   ← ljus
+body textfärg      : rgb(44, 46, 53)      ← mörk
+```
+
+Appen renderas alltså **konsekvent ljus** oavsett systeminställning. Det är i sig
+inte trasigt — men 302 verktygsklasser och ett helt tokenblock är kod som ingen
+någonsin ser, och som ändå måste läsas och underhållas av alla som rör filerna.
+
+Två vägar, båda bättre än dagens:
+1. **Bestäm att appen är ljus.** Ta bort `.dark`-blocket, `darkMode`-raden, de
+   302 klasserna och `next-themes`-beroendet. Minst arbete, minst tvetydighet.
+2. **Slå på det.** Lägg en `ThemeProvider` runt appen och en växlare i profilen.
+   Kräver då att alla 65 filer faktiskt granskas i mörkt läge — det är det som
+   är arbetet, inte providern.
+
+Väg 1 är rimligare tills någon användare faktiskt ber om mörkt läge.
+
+**En sak jag INTE kunde bevisa:** `src/components/ui/sonner.tsx:7` gör
+`const { theme = "system" } = useTheme()` utan provider, vilket ger `"system"`,
+vilket får Sonner att följa OS:et. På en mörk Mac skulle toasts alltså kunna
+renderas mörka i en ljus app. Men `toastOptions.classNames` tvingar
+`bg-background`/`text-foreground` — tokens som utan `.dark` löser till ljusa
+värden — så problemet är sannolikt neutraliserat. Jag kunde inte trigga en toast
+utan att skriva data, så detta är en hypotes, inte ett fynd. Kolla det i samma
+vända om du ändå är i filen.
+
+---
+id: landing-page-ships-24mb-of-javascript
+status: todo
+priority: P1
+tags: [prestanda, tratt, mobil, nattsvep]
+created: 2026-09-03
+---
+## En forstagangsbesokare laddar ner 2,4 MB JavaScript innan nagot syns
+
+Mätt på produktionsbygget i `dist/` (byggt 2026-09-02 23:31):
+
+```
+index-j0jjz1iE.js      8 313 kB rå    2 385 kB gzip   ← enda entry-scriptet
+heic2any              1 321 kB rå      333 kB gzip
+ThreeDFloorPlan         964 kB rå      264 kB gzip
+pdf                     468 kB rå      138 kB gzip
+jspdf                   381 kB rå      124 kB gzip
+index.css               210 kB rå       37 kB gzip
+                        ─────────────────────────
+totalt JS              11,7 MB rå      3,3 MB gzip
+```
+
+`dist/index.html` refererar **exakt ett** script: huvudchunken på 2,4 MB gzip.
+Ingen modulepreload av något annat, ingen uppdelning av entryn.
+
+**Vad som ligger i den chunken** (sökt på biblioteks-signaturer i den byggda
+filen): `konva` (213 träffar — ritverktygets canvas-motor), `leaflet` (107 —
+kartor), `recharts` (70 — diagram), `fabric`, `three`, `posthog`, `@supabase`,
+`i18next`, `cmdk`.
+
+En besökare som öppnar landningssidan laddar alltså ner hela planeringsverktygets
+canvas-motor, ett kartbibliotek och ett diagrambibliotek — **innan hjältebilden
+renderas**. Inget av det används på landningssidan.
+
+### Orsaken star i App.tsx
+
+26 sidor är direktimporterade, bland dem `ProjectDetail` (`src/App.tsx:15`) som
+drar in Konva, Leaflet, Recharts och fabric. Bara sju sidor är `lazy()`:
+
+```
+lazy:   WorkerView (18 kB) · AtaApproval · AttendanceCheckIn · DocPlayground
+        Capture · AddressDetail · AddressInviteAccept
+eager:  Index · Auth · Projects · ProjectDetail · Profile · Admin
+        DevImportReview · CreateQuote + CreateQuoteV2 · ViewQuote + ViewQuoteV2
+        CreateInvoice + CreateInvoiceV2 · … 26 st
+```
+
+Listan är i princip **inverterad**: de små token-sidorna är utbrutna, medan
+appens tyngsta sida ligger i entryn. Dessutom skeppas både V1 och V2 av
+offert- och fakturasidorna, trots att en flagga väljer den ena vid körning.
+
+### Varfor det ar P1
+
+Enligt `project_traction_reality`: 813 besökare på 90 dagar, **82 % mobil**, noll
+skapade konton. 2,4 MB gzippad JavaScript på mobilt nät är flera sekunder innan
+något överhuvudtaget ritas ut.
+
+Jag påstår **inte** att detta ensamt förklarar noll konverteringar — det vore att
+gissa, och `guest-wizard-step5-blocks-without-saying-why` är en annan kandidat.
+Men det är den enda av dem som drabbar *varje* besökare, inklusive de 98 % som
+aldrig ens öppnade demot.
+
+### Atgard
+
+Gör `ProjectDetail`, `Projects`, `Profile`, `Admin`, `DevImportReview` och
+offert/faktura-sidorna `lazy()`. Det flyttar Konva, Leaflet, Recharts och fabric
+ur entryn utan att ändra en rad funktionalitet. Landningssidan behöver i princip
+bara React, i18next, Supabase-klienten och sina egna komponenter.
+
+Mät före och efter med samma kommando:
+`for f in dist/assets/*.js; do echo "$(gzip -c $f | wc -c) $f"; done | sort -rn`
+
+Notera också `heic2any` (333 kB gzip) — den är korrekt utbruten, men värd att
+kontrollera att den bara laddas när någon faktiskt släpper en HEIC-fil.
+
+---
+id: three-thousand-lines-of-components-nobody-renders
+status: todo
+priority: P3
+tags: [cleanup, dod-kod, nattsvep]
+created: 2026-09-03
+---
+## Ett trettiotal komponenter ar byggda men renderas aldrig
+
+En svepning av alla `.tsx` efter exporterade React-komponenter som aldrig
+förekommer som `<Namn` någonstans i `src/`. Efter filtrering av falska positiv
+(symbolbiblioteket renderas via `SYMBOL_REGISTRY`, objektbiblioteket via
+`ObjectRenderer`) återstår **~30 komponenter med noll omnämnanden utanför sin
+egen fil**. De 21 jag mätte rader på är **2 860 rader**; med Minimap och de tre
+Worker-komponenterna är det över 3 000.
+
+De faller i två tydliga högar.
+
+### Hog 1 — floorplanner-funktioner som ar FARDIGA men aldrig inkopplade
+
+| komponent | rader |
+|-----------|-------|
+| `floormap/FloorMapManager.tsx` | 297 |
+| `floormap/room-details/sections/CanvasSettingsSection.tsx` | 341 |
+| `floormap/RoomContextMenu.tsx` | 113 |
+| `floormap/SnapGuides.tsx` | 112 |
+| `floormap/KeyboardShortcutsDialog.tsx` | 84 |
+| `floormap/GettingStartedOverlay.tsx` | 76 |
+| `floormap/RoomLegend.tsx` | 42 |
+| `floormap/OfflineIndicator.tsx` | 40 |
+| `floormap/UndoRedoControls.tsx` | 38 |
+| `floormap/Minimap.tsx` | (bekräftad, 0 externa referenser) |
+
+Det här är inte skräp — det är **funktioner en användare skulle vilja ha**. En
+minimap, snap-guider, en ångra/gör om-kontroll, en rumslegend, en
+offline-indikator, en kom-igång-overlay.
+
+Särskilt talande: `KeyboardShortcutsDialog` är död, samtidigt som CLAUDE.md
+listar femton kortkommandon som dokumenterad funktionalitet. Dialogen som skulle
+visa dem för användaren renderas aldrig.
+
+`OfflineIndicator` är död samtidigt som "offline-skalet" står som kvarvarande
+punkt i Bygglet-epicen.
+
+### Hog 2 — oversiktssidan verkar ha skrivits om och lamnat foraldralosa
+
+`overview/QuoteAttachCell.tsx` (438) · `overview/ProjectInvoicesCard.tsx` (164) ·
+`overview/ProjectQuotesCard.tsx` (135) · `overview/ProjectStatusCTA.tsx` (128) ·
+`overview/NeedsActionSection.tsx` (96) · `overview/ActiveTasksSection.tsx` (72) ·
+`overview/RecentActivitySection.tsx` (50)
+
+Plus `RoomsManagementSection.tsx` (232), `budget/InvoiceListSection.tsx` (172),
+`ClientInvoiceList.tsx` (143), `landing/Anno.tsx` (51),
+`room-details/sections/InternalNotesSection.tsx` (36) och tre hjälpkomponenter i
+`team/WorkerInvite*`.
+
+### Vad jag INTE vet
+
+Om något av detta är **medvetet parkerat** inför en kommande koppling. Det är
+skillnaden mellan "ta bort" och "koppla in", och den kan bara du avgöra. Kortet
+listar därför vad som är dött, inte vad som ska raderas.
+
+Min gissning, som är just en gissning: hög 1 är värd att **koppla in**, hög 2 är
+värd att **ta bort**.
+
+### Sidonotering
+
+`feedback_verify_the_surface_renders` i minnet säger "Städa död kod:
+`RotDetailsCard` + `RotSummaryCard` renderas aldrig". **Båda är redan borta** —
+noll träffar i `src/`. Den punkten är alltså avklarad och minnet kan uppdateras.
+
+---
+id: storage-insert-open-for-legacy-photo-prefixes
+status: todo
+priority: P3
+tags: [sakerhet, storage, rls, nattsvep]
+created: 2026-09-03
+---
+## Vem som helst med konto far skriva till tre gamla foto-prefix
+
+Den gällande INSERT-policyn på `storage.objects`
+(`supabase/migrations/20260319140000_fix_storage_insert_allow_project_members.sql`)
+har tre grenar. De två första kräver projektägarskap respektive medlemskap. Den
+tredje kräver ingenting alls utom en inloggning:
+
+```sql
+(storage.foldername(objects.name))[1] = ANY (
+  ARRAY['task-photos', 'material-photos', 'room-photos']
+)
+AND auth.uid() IS NOT NULL
+```
+
+Ingen projektkontroll, ingen ägarkontroll. **Vilken inloggad användare som helst
+kan ladda upp obegränsat med filer under de tre prefixen** — och `/auth` har öppen
+registrering.
+
+### Och ingen kan lasa dem
+
+`user_can_view_project_files(file_path)` returnerar `FALSE` direkt om sökvägen
+inte börjar med `projects/`. De tre prefixen är alltså **skriv-bara, läs-omöjliga**
+genom appens policies.
+
+### De ar dessutom legacy
+
+Koden har migrerat bort från dem:
+- `floormap/ShapePhotoSection.tsx:110` — `.from("project-files") // Reuse room-photos bucket`
+- `room-details/PhotoSection.tsx:207` — *"handle both old (room-photos) and new (project-files) bucket paths"*
+
+Det som återstår är alltså en öppen skrivrättighet till prefix appen inte längre
+skriver till och ingen kan läsa.
+
+**Konsekvens:** inte ett dataläckage — ingen kommer åt någon annans filer. Men en
+kvot- och kostnadsfråga: vem som helst kan fylla lagringen, och innehållet är
+osynligt både för appen och för dig.
+
+**Fix:** ta bort den tredje grenen ur policyn i en ny migration. Kontrollera
+först om det ligger gamla filer under prefixen som behöver flyttas eller städas.
+
+### Bakgrund: sa har hittades det
+
+En inventering av `TODO`/`FIXME`/`HACK` gav **noll träffar i hela `src/` och i
+alla 39 edge-funktioner** — den enda träffen var ordet "TODOS" i en spansk
+översättning. Det är ovanligt rent.
+
+Men i `supabase/migrations/` (338 filer) finns tre skuldmarkörer:
+
+1. `20260311160000_debug_storage_upload.sql` — *"TODO: Remove after debugging"*,
+   en policy som lät vem som helst ladda upp. **Redan åtgärdad** — den droppas i
+   `20260311170000_finalize_storage_upload_policy.sql`, en timme senare. Ingen
+   åtgärd behövs; kommentaren står bara kvar eftersom migrationer aldrig ändras.
+2. `20260311210000_simplify_profiles_rls.sql` — se `profiles-rls-open-to-anon` (P1).
+3. `20260512210000_tasks_rls_audit_fix.sql:57` — *"TODO: scope=assigned filter via
+   separate funktion (5 users aktiverade idag, **filtreras bara i frontend**)"*.
+   **UTREDD SAMMA NATT — falskt larm.** Gapet stängdes dagen efter i
+   `20260513100000_tasks_rls_scope_filtering.sql`, som inför `user_tasks_scope()`
+   och bygger in filtret i SELECT-policyn:
+   `scope='assigned' AND (created_by_user_id = mig OR assigned_to_stakeholder_id = mig)`.
+   Ingen åtgärd behövs.
+
+   **Men lärdomen är värd att spara:** kommentaren i majmigrationen är sedan länge
+   inaktuell, och eftersom migrationer aldrig ändras kommer den att stå kvar och
+   peka på ett stängt hål för all framtid. Jag lade ett helt varv på att jaga den.
+   Nästa gång ett `TODO` hittas i en migration: **sök efter en senare migration
+   som rör samma tabell innan du tror på det.**
+
+   Ett restgap som den nyare migrationen själv noterar:
+   `assigned_to_contractor_id` ingår inte i scope-filtret ("pekar på addressbook
+   och saknar user-mapping"). Det gör filtret för *strikt*, inte för öppet — en
+   person som tilldelats via den vägen ser inte sin egen uppgift. Funktionell
+   fråga, inte en säkerhetsfråga.
+
+---
+id: verified-dependencies-and-todos-are-clean
+status: done
+priority: P4
+tags: [verifierat, nattsvep]
+created: 2026-09-03
+---
+## Verifierat: beroenden och TODO-skuld ar i god ordning
+
+**73 beroenden, tre kandidater utan tydlig import:**
+
+- `@hookform/resolvers` — noll träffar i `src/`. Kan sannolikt tas bort.
+- `@types/leaflet` och `@types/uuid` — endast typreferenser, alltså korrekt
+  oanvända i kod. Men de ligger under `dependencies` i stället för
+  `devDependencies` och installeras därmed i produktion. Liten sak, lätt fixad.
+
+Resterande 70 används. För en kodbas i den här storleken är det ett bra resultat.
+
+**Noll `TODO`/`FIXME`/`HACK` i `src/` och i alla 39 edge-funktioner.** Enda
+träffen var ordet "TODOS" i `es.json` (spanska för "alla"). Skulden ligger i
+migrationerna i stället, tre stycken — se
+`storage-insert-open-for-legacy-photo-prefixes` för genomgången.
+
+---
+id: rls-sweep-profiles-is-the-only-one-left
+status: done
+priority: P4
+tags: [verifierat, sakerhet, rls, nattsvep]
+created: 2026-09-03
+---
+## RLS-svepning: 235 levande policies, ETT verkligt hal kvar
+
+Alla 338 migrationer parsades i kronologisk ordning, med `CREATE POLICY` och
+`DROP POLICY` applicerade i dokumentordning så att en policy som droppats utan
+att återskapas räknas som borta. Resultat: **235 levande policies, 35 droppade.**
+
+Levande SELECT/ALL-policies med predikatet `USING (true)`:
+
+| tabell | roll | bedömning |
+|--------|------|-----------|
+| `profiles` | **public (ingen TO)** | **verkligt hål — se `profiles-rls-open-to-anon`** |
+| `comment_reactions` | public (ingen TO) | låg — avslöjar kommentar-id och profil-id |
+| `help_bot_cache` | authenticated | rimlig — cachade hjälpsvar |
+| `rot_yearly_limits` | authenticated | rimlig — offentliga referensvärden |
+
+### Det som SÅG allvarligt ut men redan ar atgardat
+
+Fem tabeller flaggades av min första, felaktiga svepning. Alla fem visade sig
+vara stängda sedan tidigare:
+
+- **`ata_approval_tokens`** — hade `FOR SELECT TO anon USING (true)` OCH
+  `FOR UPDATE TO anon USING (true) WITH CHECK (true)`, plus `tasks_anon_ata_update`
+  som lät anon skriva godtyckliga värden till uppgifter med en öppen ÄTA-token.
+  Det hade varit nattens allvarligaste fynd. **Alla tre droppades 2026-08-27** i
+  `20260827090000_ata_tokens_close_anon.sql`.
+- **`notes`** och **`photos`** — `USING(true)` stängdes 2026-03-09 i
+  `20260309120000_fix_photos_notes_rls.sql`.
+- **`customer_intake_requests`** — stängd 2026-03-11 i
+  `20260311180000_fix_critical_rls_policies.sql`.
+- **`project_invitations`** — anon-by-token-policyn droppad 2026-03-11.
+
+Bilden som växer fram är att RLS-hållningen är **god och aktivt underhållen**.
+Det finns till och med en migration som heter `fix_critical_rls_policies`.
+`profiles` sticker ut just för att den är en medveten hotfix som aldrig blev
+återställd.
+
+### Metodvarning till nasta granskning
+
+**Två av nattens "fynd" försvann på samma kontroll.** Först ett TODO om
+tasks-scope (stängt dagen efter), sedan hela ÄTA-kedjan (stängd en vecka
+tidigare). Min första svepning missade det senare eftersom den bara följde
+`CREATE POLICY` och ignorerade `DROP POLICY`.
+
+Två regler att ta med:
+1. **Applicera DROP och CREATE i kronologisk ordning.** En policy som syns i en
+   gammal migration kan vara borta sedan länge.
+2. **Läs aldrig ett `TODO` i en migration som aktuellt.** Migrationer ändras
+   aldrig, så kommentaren står kvar långt efter att problemet lösts.
+
+Den korrigerade svepningen finns återgiven i den här filens historik och kan
+köras om; den bygger bara på filerna i `supabase/migrations/`.
+
+---
+id: two-edge-functions-write-anywhere-with-service-key
+status: todo
+priority: P2
+tags: [sakerhet, edge-functions, nattsvep]
+created: 2026-09-03
+---
+## Tva edge-funktioner skriver till VILKET projekt som helst med service-nyckeln
+
+`proxy-image` och `pinterest-oembed` tar båda emot `projectId` från anroparen,
+kontrollerar aldrig att anroparen har tillgång till projektet, och skriver sedan
+med **service-nyckeln** — som per definition kringgår RLS.
+
+```
+proxy-image/index.ts:88-93
+  const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+  const filePath = `projects/${projectId}/inspiration/${safeName}.${ext}`;
+  await supabaseAdmin.storage.from("project-files").upload(filePath, arrayBuffer)
+
+pinterest-oembed/index.ts:104-110
+  const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+  const filePath = `projects/${projectId}/Uppladdade filer/${Date.now()}-pin-${pinId}.${ext}`
+```
+
+**Grinden som ska hindra det finns inte.** Båda funktionerna gör bara:
+
+```ts
+const authHeader = req.headers.get('authorization');
+if (!authHeader) return 401;
+```
+
+De kontrollerar att headern **existerar**, aldrig vad den innehåller. Och enligt
+`feedback_verify_jwt_is_not_a_gate` är anon-nyckeln ett giltigt JWT, så även
+`verify_jwt = true` (vilket `proxy-image` har) släpper igenom vem som helst som
+läst app-bundlen.
+
+### Dessutom: proxy-image hamtar godtycklig URL
+
+`proxy-image` tar `imageUrl` från anroparen och gör `fetch(tryUrl)` utan någon
+validering av protokoll, värdnamn eller IP. Det är en SSRF-yta: servern kan
+förmås att hämta vad som helst den når, inklusive interna adresser.
+
+Innehållet returneras inte direkt till anroparen — det laddas upp till storage —
+så uttömning kräver att angriparen också kan signera en URL för den sökvägen.
+Det gör det svårare, inte omöjligt.
+
+`filename` är också ovaliderat och går rakt in i sökvägen.
+
+`pinterest-oembed` är bättre på den punkten: dess utgående anrop går alltid till
+`https://www.pinterest.com/oembed.json?url=…`, alltså fast värdnamn. Dess
+URL-kontroll är dock bara `pinUrl.includes("pinterest")`, vilket
+`https://evil.example/?x=pinterest` klarar.
+
+### Vad jag verifierat och inte
+
+Jag har **läst koden**, inte kört den. Jag har inte skickat ett enda anrop mot
+någon edge-funktion i natt — det vore en skrivning. Slutsatserna följer direkt av
+koden, men bekräfta gärna med ett testanrop mot ett projekt du inte äger innan du
+prioriterar.
+
+### Fix
+
+1. Validera anroparens token på riktigt (`supabase.auth.getUser(jwt)`) och slå
+   upp profilen — flera andra funktioner gör redan det, t.ex.
+   `extract-property-document`.
+2. Kontrollera att profilen har åtkomst till `projectId` innan skrivning.
+3. Använd anroparens token i stället för service-nyckeln där det går, så RLS
+   gör jobbet — `agent-route` visar mönstret (`Authorization: authHeader`).
+4. Vitlista protokoll och värdnamn i `proxy-image`, avvisa privata IP-intervall.
+5. Sanera `filename`.
+
+### Sammanhang: resten av de 39 funktionerna ser bra ut
+
+En genomgång av alla 39 edge-funktioner mot tre frågor — `verify_jwt`,
+service-nyckel, egen validering:
+
+- **Hela `worker-*`-familjen (10 st) validerar sin länk-token.** Konsekvent gjort.
+- `send-*`-funktionerna validerar token eller auth-header.
+- Endast dessa två kombinerar service-nyckel med noll faktisk validering.
+
+`verify_jwt`-flaggan i `supabase/config.toml` säger i praktiken ingenting — 15
+funktioner har `false`, 4 har `true`, 20 saknas helt (och får då `true` som
+default). Eftersom anon-nyckeln passerar båda är det **vad funktionen själv gör**
+som är grinden. Den kolumnen, inte flaggan, är den som ska granskas.
+
+---
+id: isvisible-timeout-trap-is-back-in-floorplanner-spec
+status: todo
+priority: P2
+tags: [e2e, bugfix, nattsvep]
+created: 2026-09-03
+---
+## Playwright-fallan som dodade 28 test ar tillbaka - tre ganger
+
+`e2e/lib/demoPlanner.ts` inleds med en varning skriven av er själva:
+
+> Three spec files each had their own copy of this, and all three shared the
+> same defect: they "dismissed" the demo guide with `isVisible({ timeout: 5000 })`.
+> Playwright's own types say that option is ignored — isVisible returns
+> immediately and never waits. The guide mounts a moment later, its
+> `fixed inset-0 z-50` backdrop swallows every click, and **28 tests died looking
+> like broken selectors for weeks**.
+>
+> The rule this encodes: to WAIT for something, use waitFor/expect. isVisible is
+> a question about right now, not an instruction to be patient.
+
+Mönstret finns nu på **tre nya ställen** i `e2e/floorplanner.spec.ts`:
+raderna **739, 788 och 848**, alla identiska:
+
+```ts
+const dialog = page.getByRole('dialog');
+if (await dialog.isVisible({ timeout: 1500 }).catch(() => false)) {
+  await dialog.getByRole('button', { name: 'Avbryt' }).click();
+}
+```
+
+Kontexten är densamma som i den ursprungliga buggen: efter att ett rum ritats
+kan en namngivningsdialog öppnas, och testet vill stänga den om den finns.
+Eftersom `isVisible` returnerar direkt hinner dialogen inte monteras — checken
+ger `false`, dialogen stängs aldrig, och dess bakgrund slukar de efterföljande
+klicken. Testet faller senare, på ett ställe som inte ser ut att ha med saken att
+göra.
+
+Det är alltså inte ett test som failar idag utan en **latent flake** som slår
+till när maskinen är långsam eller renderingen tar en millisekund extra.
+
+Fix, enligt regeln filen själv formulerar:
+
+```ts
+const dismissed = await dialog
+  .waitFor({ state: 'visible', timeout: 1500 })
+  .then(() => true)
+  .catch(() => false);
+if (dismissed) await dialog.getByRole('button', { name: 'Avbryt' }).click();
+```
+
+Överväg samtidigt ett grep som fångar `isVisible({`. **Men notera:** det finns
+ingen CI att lägga det i — `.github/` innehåller bara en `.DS_Store`. Se
+`det-finns-ingen-ci`. Att e2e aldrig körs automatiskt är sannolikt just därför
+mönstret kunde återkomma.
+
+---
+id: e2e-suite-not-run-tonight
+status: todo
+priority: P4
+tags: [e2e, nattsvep, ej-gjort]
+created: 2026-09-03
+---
+## Jag korde INTE e2e-sviten i natt - och varfor
+
+26 specar finns i `e2e/`. Jag valde medvetet att inte köra dem.
+
+Skälet: `.env.local` pekar på **prod-Supabase**, och flera specar
+(`demo-planner-save`, `import-dedup`, `import-session`, `guest-plan`) är
+skrivande till namnet att döma. Nattens hårda regel var find-only — läser och
+navigerar, sparar aldrig. Att köra en testsvit som sparar mot produktionsdata
+hade brutit mot exakt det jag lovade.
+
+Det betyder att svepet **saknar en regressionssignal**. Om du vill ha den:
+kör `npm run test:e2e` själv i morgon, eller peka `.env.local` mot en
+branch-databas först.
+
+Vad jag gjorde i stället var en statisk granskning, som gav
+`isvisible-timeout-trap-is-back-in-floorplanner-spec`.
+
+---
+id: paxml-payroll-period-ends-one-day-early
+status: todo
+priority: P1
+tags: [bugfix, lon, export, tidszon, nattsvep]
+created: 2026-09-03
+---
+## Loneexportens periodslut ar fel dag - varje manad, hela aret
+
+`src/services/paxmlExportService.ts:162`:
+
+```ts
+const periodTo = new Date(year, month, 0).toISOString().split("T")[0]; // Last day of month
+```
+
+Kommentaren säger "Last day of month". Koden ger **näst sista dagen**.
+
+`new Date(year, month, 0)` skapar midnatt **lokal tid**. I Europe/Stockholm är det
+UTC+1 på vintern och UTC+2 på sommaren — alltid positivt. Lokal midnatt är därför
+alltid föregående dag i UTC, och `toISOString()` konverterar till UTC innan
+strängen klipps.
+
+Kört i Node med `TZ=Europe/Stockholm`:
+
+```
+år=2026 mån=9   lokalt=2026-09-30   exporterat=2026-09-29
+år=2026 mån=1   lokalt=2026-01-31   exporterat=2026-01-30
+år=2026 mån=12  lokalt=2026-12-31   exporterat=2026-12-30
+```
+
+Det slår alltså **varje månad, året om** — inte bara vid sommartid.
+
+**Varför P1:** det här är PAXml, det svenska formatet för löneöverföring. Perioden
+i filen påstår att månaden slutade en dag tidigare än den gjorde. Timmar
+registrerade på månadens sista dag hamnar utanför den deklarerade perioden, och
+vad det leder till beror på vad lönesystemet i andra änden gör med
+`periodTo` — i värsta fall betalas de inte ut, i bästa fall bara en varning.
+
+Renofine har idag få användare, så sannolikt har ingen drabbats. Men det är ett
+tyst fel i en fil som går till någon annans lönesystem, och det ska inte ligga och
+vänta.
+
+**Fix:** formatera lokalt i stället för att gå via UTC.
+
+```ts
+const d = new Date(year, month, 0);
+const periodTo = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+```
+
+Eller använd `date-fns` som redan finns som beroende: `format(d, 'yyyy-MM-dd')`.
+
+### Samma monster finns pa 30 stallen till
+
+`toISOString().split("T")[0]` används **31 gånger** i `src/`. De flesta är
+ofarliga (filnamn i nedladdningar). Dessa är det inte:
+
+| fil | vad som blir fel |
+|-----|------------------|
+| `services/sieExportService.ts:214` | `#GEN`-datumet i SIE-bokföringsfilen — fel dag mellan midnatt och 01/02 |
+| `components/project/LogTimeDialog.tsx:28` | **förifyllt datum när timmar loggas** — en hantverkare som rapporterar efter kl 22 (sommar) eller 23 (vinter) får gårdagens datum förvalt |
+| `components/invoices/RecordPaymentDialog.tsx:41,49` | betalningsdatum, samma sak |
+| `components/project/RegisterPaymentDialog.tsx:57,63` | betalningsdatum, samma sak |
+| `components/project/budget/BuilderSummaryCards.tsx:139,177` | "idag" i förfallo-jämförelser |
+| `components/project/ProjectGridCard.tsx:77` | "idag" i deadline-jämförelse |
+| `components/project/DashboardStrip.tsx:53` | "idag" i deadline-jämförelse |
+
+`LogTimeDialog` är den som drabbar användare oftast: en byggarbetsplats rapporterar
+sällan kl 09 på morgonen. Den som fyller i sina timmar sent på kvällen får fel
+dag förvald och märker det inte.
+
+**Föreslagen åtgärd:** en delad `toLocalDateString(d)` i `src/lib/`, och byt ut
+alla semantiska användningar. Filnamnen kan lämnas som de är.
+
+---
+id: six-edge-functions-deployed-without-callers
+status: todo
+priority: P3
+tags: [cleanup, sakerhet, edge-functions, nattsvep]
+created: 2026-09-03
+---
+## Sex edge-funktioner ar deployade men anropas inte fran koden
+
+Sökt igenom `src/`, `e2e/`, `scripts/`, `evals/` och alla andra edge-funktioner
+efter `invoke('namn')` (med generics och radbrytning), `functions/v1/namn`, och
+namnet som ren sträng. Sex av 38 ger **noll träffar överhuvudtaget**:
+
+| funktion | service-nyckel | notering |
+|----------|----------------|----------|
+| `send-worker-sms` | **JA** | skickar SMS — kostar pengar per meddelande |
+| `worker-send-message` | **JA** | arbetarmeddelanden |
+| `process-receipt` | nej | ersatt av `process-document-v2` |
+| `ai-design` | nej | egen `import_map` i config, `verify_jwt = true` |
+| `generate-quote-items` | nej | |
+| `posthog-query` | nej | låter som något ett externt jobb anropar |
+
+**Viktig reservation:** "ingen anropare i repot" är inte samma sak som "oanvänd".
+De kan anropas utifrån — en cron, en databastrigger, Cowork, eller
+SIL-loopen. `posthog-query` låter uttryckligen som det. Kortet påstår bara att
+**koden inte anropar dem**, och du vet vilka som har en anropare någon annanstans.
+
+### Varfor det spelar roll
+
+En deployad funktion är nåbar av vem som helst med anon-nyckeln — se
+`two-edge-functions-write-anywhere-with-service-key` för varför `verify_jwt`
+inte hjälper. En funktion utan anropare är därför ren attackyta utan
+motsvarande nytta.
+
+**`send-worker-sms` är den som sticker ut.** Den har service-nyckeln och skickar
+SMS. Ett SMS kostar pengar. En endpoint som skickar SMS, är nåbar med en publik
+nyckel, och inte anropas av appen är en fakturerings-risk snarare än en
+funktion.
+
+### Tva av dem ar funktioner du tror ar levererade
+
+`send-worker-sms` och `worker-send-message` hör båda till fältkommunikationen,
+som enligt `project_field_communication` är färdig sedan 2026-08-27. Om appen
+inte anropar dem är antingen (a) SMS-vägen aldrig inkopplad, eller (b) de
+anropas på ett sätt min sökning inte fångar. **Kontrollera det innan något tas
+bort** — det är skillnaden mellan städning och att radera en levererad funktion.
+
+### Sidofynd: process-receipt tolkar svenska belopp fel
+
+Om `process-receipt` någonsin återanvänds, notera att den saknar den
+sifferhantering `process-document-v2` har:
+
+```ts
+// process-document-v2/index.ts:528  — RÄTT
+const parsed = parseFloat(v.replace(/\s/g, '').replace(',', '.'));
+
+// process-receipt/index.ts:208      — FEL
+total_amount: ... parseFloat(result.total_amount) || 0
+```
+
+Returnerar modellen `"1 234,56"` som sträng ger `parseFloat` **1**. Och `|| 0`
+fångar det inte, eftersom 1 är sanningsvärde. Ett kvitto på 1 234 kr blir 1 kr.
+
+Repot har redan en korrekt svensk talparser i
+`src/lib/secondOpinionCsv.ts:69` (`parseAmount`), med kommentaren *"Returns null
+rather than a wrong number — an unparseable amount must not become 0."* Den
+principen är rätt, och den används på ett enda ställe.
+
+---
+id: quotes-and-invoices-ignore-the-rot-cap
+status: todo
+priority: P1
+tags: [bugfix, rot, offert, faktura, nattsvep]
+created: 2026-09-03
+---
+## Offerter och fakturor visar ROT-avdrag utan tak - kunden far ett pris som inte gar att fa
+
+Tre filer räknar ROT identiskt, och ingen av dem tillämpar årstaket:
+
+```
+src/components/invoices/InvoicePreview.tsx:72
+src/components/quotes/QuoteDocument.tsx:54
+src/components/quotes/QuoteSummary.tsx:21
+
+const rotDeduction = rotEligibleTotal * 1.25 * 0.3; // 30% of inc moms (Skatteverket)
+const totalToPay = subtotal + vat - rotDeduction;
+```
+
+Sökt igenom `ViewQuoteV2`, `ViewInvoiceV2`, `invoicePdfService` och `QuoteSummary`
+efter cap/max/limit/tak — **inget tak tillämpas någonstans i dokumentvägen.**
+
+### Vad det betyder i kronor
+
+```
+arbetskostnad ex moms      300 000 kr
+ROT dokumentet visar       112 500 kr
+lagligt max (1 person)      50 000 kr
+kundens slutpris blir       62 500 kr för lågt
+```
+
+**Brytpunkten är 133 333 kr arbetskostnad ex moms.** Över det är varje offert
+fel. Det är inte ett extremfall — det är ett normalt badrum eller kök.
+
+En kund får alltså ett papper med ett slutpris som inte går att uppnå, och
+upptäcker det först vid deklarationen.
+
+### Det gor extra ont for att taket redan finns
+
+Det är inte en saknad funktion. Taket finns och används — bara inte här:
+
+- `rot_yearly_limits`-tabellen (50 000 kr/person, seedad för 2024–2026)
+- läses av `HomeownerYearlyAnalysis.tsx:99`
+- tillämpas i `task-details/tabs/EconomyTab.tsx:475` ("Tak per person/år")
+  och `TaskEditDialog.tsx:191`
+- och **utlovas på landningssidan**: *"Vi följer Skatteverkets regler för
+  ROT-arbete: 30% av arbetskostnaden, max 50 000 kr per person/år. Saldot
+  uppdateras realtid mot godkända arbeten."* (`FAQSection.tsx:28`)
+
+Appen kan alltså räkna rätt, säger till besökare att den gör det, och gör det
+ändå inte på de två dokument som faktiskt går till kunden.
+
+### Fixen ar ateranvandning, inte nykonstruktion
+
+Jag trodde först att detta krävde ett designbeslut — hur ska ett dokument veta
+hur många som delar avdraget? Det behöver det inte gissa. **Hela modellen finns
+redan byggd**, och dokumenten är det enda stället som inte använder den:
+
+| tabell | innehåll |
+|--------|----------|
+| `project_rot_persons` | `name`, `personnummer`, `custom_yearly_limit` per projekt |
+| `rot_yearly_limits` | `max_amount_per_person` per år (50 000 för 2024–2026) |
+| `material_rot_allocations` | fördelning per material |
+
+Och `HomeownerYearlyAnalysis.tsx:165-174, 336` gör redan exakt rätt sak:
+
+```ts
+// deduplicerar personer på personnummer
+const uniquePersons = …;
+// summerar deras individuella tak, med årets default som fallback
+const totalLimit = [...uniquePersons.values()]
+  .reduce((s, p) => s + (p.customLimit ?? defaultLimit), 0) || defaultLimit;
+const isOver = actual > totalLimit;
+```
+
+Den hanterar alltså flera personer, individuella tak för den som redan förbrukat
+en del av året, och markerar överskridande i rött.
+
+**Åtgärden blir därför:** bryt ut den beräkningen till `src/lib/rot.ts` (bredvid
+`vat.ts`, som är byggd för precis den sortens delad matematik) och anropa den
+från `InvoicePreview`, `QuoteDocument` och `QuoteSummary` i stället för
+`* 1.25 * 0.3`. Ingen ny logik, ingen ny datamodell, ett beslut färre.
+
+**Skriv ändå ut antagandet på dokumentet** — "Beräknat på ROT-utrymme
+{totalLimit} kr för {personCount} person(er)". Ett tak utan förklaring flyttar
+bara förvirringen till kunden.
+
+### Tva sidofynd i samma kod
+
+**Formeln är triplicerad** — samma rad i tre filer. Den hör hemma i `src/lib/`
+bredvid `vat.ts`, som redan är byggd exakt för den sortens delad matematik.
+
+**Samma offert visar olika summor beroende på var man tittar.**
+`QuoteSummary.tsx:24` formaterar med `minimumFractionDigits: 2`, medan
+`QuoteDocument.tsx:58` och `InvoicePreview.tsx:76` använder `0`. Sammanfattningen
+säger "12 345,67 kr", dokumentet säger "12 346 kr".
+
+---
+id: two-surfaces-hardcode-their-own-vat-rate
+status: todo
+priority: P3
+tags: [bugfix, moms, nattsvep]
+created: 2026-09-03
+---
+## Tva ytor har egen momssats i stallet for vat.ts
+
+`src/lib/vat.ts` är genomarbetad: rena funktioner, stöd för 25/12/6/0 %,
+öresavrundning via `round2`, och `null` när satsen är okänd — uttryckligen skilt
+från 0 kr moms. Filens header förklarar också varför den finns:
+
+> Fram till nu läste kvittotolkningen ut momsen och kastade den vid spar, och
+> varje yta som ville visa moms räknade `subtotal * 0.25` på nytt. Det gör varje
+> 12/6/0 %-rad fel och gör SIE4 omöjlig.
+
+Fjorton filer importerar den — dokumentytorna, kvittofångsten, PDF-exporten. Bra.
+
+Men två ytor har egen kopia:
+
+- `src/components/project/AIProjectImportModal.tsx:58` — `const VAT_RATE = 0.25`
+- `src/components/project/overview/MaterialFormulaPopover.tsx:24` — samma
+
+Båda antar 25 % och avrundar dessutom till **hela kronor**
+(`Math.round(amount * (1 + VAT_RATE))`) medan `vat.ts` avrundar till **ören**.
+Samma material kan därför visa olika belopp beroende på vilken yta man tittar på,
+och en 12 %-rad blir fel på båda ställena.
+
+Fix: importera `vat.ts` i stället. Ingen ny logik behövs — funktionerna finns.
+
+---
+id: sie4-can-produce-an-unbalanced-verification-silently
+status: todo
+priority: P2
+tags: [bugfix, bokforing, sie4, moms, nattsvep]
+created: 2026-09-03
+---
+## SIE4-exporten kan tyst producera en verifikation som inte balanserar
+
+`src/services/sieExportService.ts`. Fakturaverifikationen byggs så här:
+
+```
+debet   KUNDFORDRINGAR   customerOwes = brutto − rot
+debet   ROT_FORDRAN      rotDeduction
+kredit  intäktskonto     −bucket.net   (per momssats)
+kredit  momskonto        −bucket.vat   (per momssats)
+```
+
+Summan går ihop **om och endast om** `Σ bucket.net === netAmount` och
+`Σ bucket.vat === vatTotal`. Tre vägar bryter det, och ingen av dem larmar.
+
+### 1. Okand momssats tappar sin rad tyst
+
+```ts
+const VAT_ACCOUNTS: Record<number, …> = {
+  25: { account: "2610" }, 12: { account: "2620" }, 6: { account: "2630" },
+};
+…
+if (bucket.vat !== 0) {
+  const acc = VAT_ACCOUNTS[bucket.rate];
+  if (acc) invoiceRows.push({ account: acc.account, amount: -bucket.vat });
+}
+```
+
+Har en bucket en sats som inte finns i kartan och moms skild från noll,
+**hoppas raden över utan `else` och utan varning**. Verifikationen blir obalanserad
+med exakt det momsbeloppet, och felet upptäcks först när bokföringsprogrammet
+vägrar läsa filen — eller värre, läser den.
+
+Fix: kasta, eller lägg raden på ett tydligt felkonto, men fortsätt aldrig tyst.
+
+### 2. Fallbacken antar 25 % — tvartemot filens egen princip
+
+```ts
+const buckets = inv.vatBreakdown.length > 0
+  ? inv.vatBreakdown
+  : [{ rate: 25, net: netAmount, vat }];
+```
+
+Saknas `vat_breakdown` bokförs hela momsen på **2610 (utgående moms 25 %)**,
+oavsett vad den faktiskt är. Beloppet blir rätt och filen balanserar — men en
+12 %- eller 6 %-faktura hamnar på fel momskonto, och momsdeklarationen läser just
+de kontona.
+
+Det står i direkt strid med modulens egen motivering några rader ovanför:
+
+> …vilket gjorde varje 12/6/0 %-faktura och varje omvänd faktura felbokförd.
+
+Hela poängen med omskrivningen var att sluta anta 25 %. Fallbacken gör det igen.
+
+Fix: saknas breakdown, härled satsen med `inferVatRate()` från `src/lib/vat.ts` —
+den finns redan och gör exakt det. Går satsen inte att härleda: vägra exportera
+den fakturan och säg vilken.
+
+### 3. Ingen balanskontroll nagonstans
+
+Sökt igenom filen efter `balance`, `sum`, `=== 0`, `Math.abs` — det finns ingen
+kontroll av att en verifikation går ihop innan den skrivs.
+
+En verifikation som inte balanserar är inte en dålig verifikation, den är en
+ogiltig. Ett par rader i `generateVerification()` som summerar och kastar vid
+avvikelse över ett öre skulle fånga alla tre vägarna ovan, inklusive framtida.
+
+### Vad jag INTE kan veta
+
+Hur ofta väg 1 och 2 faktiskt triggas beror på vad som ligger i
+`invoices.vat_breakdown` i produktionsdatan, och den kan jag inte läsa i natt.
+Det kan mycket väl vara så att breakdown alltid är ifylld och att alla satser är
+25 %. Kortet beskriver kodvägarna, inte hur många fakturor som drabbats.
+
+Kör gärna en räkning innan du prioriterar:
+`select count(*) from invoices where vat_breakdown is null or jsonb_array_length(vat_breakdown) = 0;`
+
+### Aven har: #GEN-datumet
+
+`sieExportService.ts:214` använder `new Date().toISOString().split("T")[0]` för
+`#GEN`-datumet. Mellan midnatt och 01/02 svensk tid ger det gårdagens datum. Se
+`paxml-payroll-period-ends-one-day-early` för samma mönster på sju andra ställen.
+
+---
+id: verified-reverse-charge-module-is-exemplary
+status: done
+priority: P4
+tags: [verifierat, moms, nattsvep]
+created: 2026-09-03
+---
+## Verifierat: omvand byggmoms ar exemplariskt byggd
+
+`src/lib/reverseCharge.ts` (87 rader) förtjänar att nämnas, särskilt vid sidan av
+`quotes-and-invoices-ignore-the-rot-cap` där samma noggrannhet saknas.
+
+Vad modulen gör rätt:
+
+- **Skriver ut Skatteverkets två villkor** i headern, och skiljer på vilket som
+  är kundens egenskap (`clients.sells_construction`) och vilket som kräver en
+  mänsklig bedömning per dokument.
+- **Vägrar gissa villkor 1.** Bedömningen "dominerar byggtjänsten?" görs per
+  dokument och kan inte härledas ur radtexter — därför är den en uttrycklig
+  bekräftelse, inte en heuristik.
+- **Aldrig mot en hemägare**, med motiveringen utskriven: en privatperson säljer
+  inte byggtjänster, och felet åt det hållet ger en faktura utan moms som
+  Skatteverket underkänner.
+- **ROT och omvänd byggmoms utesluter varandra**, och kryssas båda blir det ett
+  felmeddelande — kommentaren säger uttryckligen "aldrig en tyst prioritering".
+- **Databasen har samma regler som grindar** (migration `20260827130000`).
+  Funktionerna finns för att ge användaren ett begripligt svar före spar, inte
+  som enda kontroll. Det är rätt ordning.
+
+Ingen åtgärd. Kortet finns för att den här filen är mönstret de andra
+penningvägarna borde följa.
+
+---
+id: completed-work-invoice-shows-nan-and-button-stays-enabled
+status: todo
+priority: P2
+tags: [bugfix, faktura, nattsvep]
+created: 2026-09-03
+---
+## Delfakturering visar "NaN" som summa - och Skapa-knappen forblir aktiv
+
+`src/components/invoices/CompletedWorkForm.tsx:74-79`:
+
+```ts
+const getLineAmount = (row: TaskRow): number => {
+  const pct = parseFloat(row.percent) || 0;
+  const maxPct = (row.task.remainingAmount / row.task.calculatedCost) * 100;
+  const effectivePct = Math.min(pct, maxPct);
+  return Math.round(row.task.calculatedCost * (effectivePct / 100) * 100) / 100;
+};
+```
+
+`calculatedCost` används som nämnare utan nollskydd. Kört i Node:
+
+```
+normal (50 %, kvar 1000, kostnad 1000)  ->  500
+kostnad 0, kvar 500                     ->  0      (Infinity, ofarligt)
+kostnad 0, kvar 0                       ->  NaN    <-- 0/0
+summa med en NaN-rad                    ->  NaN
+```
+
+En uppgift utan satt kostnad — vilket de flesta uppgifter är innan någon
+budgeterat dem — ger alltså `0 / 0 = NaN`.
+
+### Foljden ar en knapp som inte levererar
+
+**Rad 242:** `{formatCurrency(totalAmount)}` — användaren ser NaN som summa.
+
+**Rad 253:** `disabled={creating || totalAmount <= 0}`
+
+`NaN <= 0` är **`false`** i JavaScript. Grinden som ska hindra tomma fakturor
+släpper alltså igenom, och knappen ser klickbar ut.
+
+Två utfall, båda dåliga:
+
+1. **NaN-raden är EN av flera valda.** Fakturan skapas — men bara av de andra
+   raderna, eftersom `handleCreate` filtrerar på `getLineAmount(r) > 0` och
+   `NaN > 0` är `false`. Resultat: **en faktura vars belopp inte är det
+   användaren såg på skärmen.**
+2. **NaN-raden är den enda valda.** `selections.length === 0` → `handleCreate`
+   returnerar direkt. Knappen var aktiv, användaren klickar, och **ingenting
+   händer utan ett enda meddelande.** Det är en död knapp i praktiken.
+
+### Fix
+
+```ts
+const maxPct = row.task.calculatedCost > 0
+  ? (row.task.remainingAmount / row.task.calculatedCost) * 100
+  : 0;
+```
+
+Och gör grinden NaN-säker: `disabled={creating || !(totalAmount > 0)}`.
+`!(NaN > 0)` är `true`, alltså avstängd — vilket är det man menar.
+
+### Monstret ar vart en genomgang
+
+`NaN <= 0 === false` gör varje `disabled={x <= 0}` genomsläpplig. Sex ställen
+till använder formen. De flesta har ett `!value ||` före som fångar NaN, men
+värt att kontrollera:
+
+- `project/RegisterPaymentDialog.tsx:234` — `parsedAmount <= 0`, beror på hur
+  `parsedAmount` beräknas
+- `project/LogTimeDialog.tsx:109` — `!hours || parseFloat(hours) <= 0`; skyddad
+  så länge fältet är `type="number"`
+
+Generell regel värd att lägga i CLAUDE.md: **skriv positiva villkor i
+disabled-grindar** — `!(x > 0)` i stället för `x <= 0` — så att NaN faller på
+rätt sida.
+
+---
+id: verified-task-costs-boundary-is-done-right
+status: done
+priority: P4
+tags: [verifierat, sakerhet, rls, nattsvep]
+created: 2026-09-03
+---
+## Verifierat: task_costs-gransen ar helt genomford
+
+Granskad eftersom den rör byggarens inköpspris och påslag — det känsligaste en
+inbjuden kund inte får se. Allt stämmer.
+
+**Insikten migrationen bygger på** (`20260825120000_task_costs_boundary.sql`)
+är värd att citera, för den är samma klass som `timetracking-panel-has-no-access-gate`:
+
+> RLS är RADbaserad. Passerar en läsare tasks-policyn kommer HELA raden med,
+> inklusive `subcontractor_cost` och `markup_percent`. En inbjuden kund läste
+> alltså byggarens inköpspris och påslag. Kolumnmaskeringen fanns bara i
+> SECURITY DEFINER-RPC:erna, som är en annan läsväg som nästan ingen använder
+> (5 komponenter, mot 165 direkta `from("tasks")`-anrop).
+>
+> **Fixen är strukturell i stället för disciplinär:** flytta de hemliga
+> kolumnerna till en egen tabell med egen policy. Då blir `select("*")` på tasks
+> säkert AV KONSTRUKTION.
+
+**Kontrollerat att hela kedjan gick i mål:**
+
+1. Tabellen `task_costs` skapad med `project_id` **denormaliserat**, uttryckligen
+   för att policyn inte ska joina `tasks` — undviker både en extra
+   policyutvärdering och cirkulära beroenden. Det är lärdomen från
+   mars-incidenten (`profiles` → `projects` → 500-fel) tillämpad.
+2. `20260825130000_drop_task_cost_columns.sql` droppar faktiskt de fyra
+   kolumnerna från `tasks`.
+3. **Koden är migrerad** — noll referenser till `tasks.subcontractor_cost` eller
+   `tasks.markup_percent` i `src/`. Kvarvarande träffar är `materials`,
+   `task_costs` och `profiles.default_markup_percent`, alla legitima.
+4. **Typerna är regenererade** — `types.ts` (2026-09-02) har `markup_percent`
+   på `materials` och `task_costs`, inte på `tasks`.
+
+**Och `feedback_neq_null_unsafe` är tillämpad.** Funktionerna använder
+`role_type IS DISTINCT FROM 'client'` i stället för `!= 'client'`. Det naiva
+`!=` hade tyst uteslutit varje rad med NULL `role_type`, vilket är exakt den
+NULL-osäkra fällan som redan står i minnet. Här är den undviken medvetet.
+
+`budget_access IN ('view','edit')` är dessutom fail-closed: NULL faller igenom
+IN-kontrollen och ger nej.
+
+Ingen åtgärd. Kortet finns för att området ser skrämmande ut vid en snabb
+granskning (kostnadsdata + RLS) och inte behöver granskas om.
+
+---
+id: completed-work-invoices-can-never-be-rot-eligible
+status: todo
+priority: P2
+tags: [bugfix, rot, faktura, nattsvep]
+created: 2026-09-03
+---
+## Fakturor for utfort arbete far ALLTID noll ROT - och det gar inte att andra
+
+`src/services/invoiceMethodService.ts:171`, i `fetchProjectInvoicingSummary`:
+
+```ts
+return {
+  id: t.id,
+  title: t.title,
+  …
+  remainingAmount: Math.max(0, remainingAmount),
+  isRotEligible: false,          // ← hårdkodat
+};
+```
+
+`CompletedWorkForm.handleCreate:96` skickar sedan vidare exakt det värdet:
+
+```ts
+isRotEligible: r.task.isRotEligible,   // alltid false
+```
+
+**Varje rad på varje faktura för utfört arbete skapas alltså med
+`is_rot_eligible = false`.**
+
+### Det gar inte att kompensera i granssnittet
+
+Hela ordet "rot" förekommer **en enda gång** i `CompletedWorkForm.tsx` — på raden
+ovan. Det finns ingen kryssruta, ingen växel, inget sätt för användaren att säga
+att arbetet är ROT-berättigat.
+
+Jämför de tre ytorna som hanterar samma begrepp:
+
+| yta | ROT-flagga |
+|-----|-----------|
+| Offertrad (`QuoteItemRow.tsx:192`) | **kryssruta per rad**, användaren sätter |
+| Procentfaktura (`PercentMethodForm.tsx:206`) | **en kryssruta för hela fakturan** |
+| Utfört arbete (`CompletedWorkForm.tsx`) | **ingen alls — alltid `false`** |
+
+### Varfor hardkodningen finns
+
+Den är inte slarv, den är en konsekvens: **`tasks` har ingen `is_rot_eligible`-kolumn.**
+Sökt i alla 338 migrationer — flaggan finns på `invoice_items` och
+`quote_items`, aldrig på uppgiften. Sammanställningen har alltså inget att läsa,
+och någon satte `false` för att typen krävde ett värde.
+
+### Ihop med P1:an blir bilden riktigt daligt
+
+`quotes-and-invoices-ignore-the-rot-cap` visar att **offerten räknar ROT utan
+tak** — alltså för högt. Det här kortet visar att **fakturan för utfört arbete
+räknar noll ROT** — alltså för lågt.
+
+Samma kund, samma projekt, två dokument, fel åt varsitt håll:
+
+```
+offert   ROT 112 500 kr   (verkligt max 50 000)
+faktura  ROT 0 kr         (borde vara upp till 50 000)
+```
+
+Kunden lockas med ett avdrag som inte finns och faktureras sedan utan det som
+faktiskt fanns.
+
+### Fix — tva vagar
+
+1. **Snabbt:** lägg en ROT-kryssruta per rad i `CompletedWorkForm`, som
+   `QuoteItemRow` redan har. Löser symptomet, användaren får bestämma.
+2. **Rätt:** lägg `is_rot_eligible` på `tasks` (eller härled den från
+   uppgiftens typ — måleri och kakel är ROT, materialleverans är det inte), så
+   att flaggan följer med hela vägen offert → uppgift → faktura utan att någon
+   behöver kryssa om den i varje steg.
+
+Väg 2 hör ihop med `src/lib/rot.ts` som föreslås i P1-kortet. Görs de samtidigt
+blir ROT en sak i stället för tre.
+
+---
+id: nattsvep-2026-09-03-index
+status: todo
+priority: P1
+tags: [carl, index, nattsvep]
+created: 2026-09-03
+---
+## INDEX: nattsvepets 51 kort i atgardsordning
+
+51 kort taggade `nattsvep` är för många att möta ett i taget. Det här kortet
+grupperar dem så du fixar **kluster**, inte enskilda rader — flera av dem är
+samma arbete sett från olika håll.
+
+Full rapport:
+/Users/calpa/PA/Documents/Projekt/Renofine/Nattsvep-2026-09-03/RAPPORT.md
+
+**Läs "Där jag hade fel" i rapporten först.** Fyra kort är rättade under natten
+och två "fynd" försvann helt vid kontroll.
+
+---
+
+### 1. Bundeln — halvdag, traffar VARJE besokare
+
+`landing-page-ships-24mb-of-javascript` (P1)
+
+Gör `ProjectDetail`, `Projects`, `Profile`, `Admin` och offert/faktura-sidorna
+`lazy()`. Konva, Leaflet och Recharts lämnar entry-chunken. Ingen funktionalitet
+ändras. Störst effekt per nedlagd timme av allt i listan.
+
+Mät före/efter:
+`for f in dist/assets/*.js; do echo "$(gzip -c $f | wc -c) $f"; done | sort -rn`
+
+---
+
+### 2. Datum och tidszon — nagra timmar, en delad hjalpare
+
+`paxml-payroll-period-ends-one-day-early` (P1)
+
+Ett `toLocalDateString(d)` i `src/lib/` löser hela klustret:
+- löneexportens periodslut (fel dag varje månad)
+- SIE4:ans `#GEN`-datum
+- **förifyllt datum när timmar loggas** — den som drabbar användare oftast
+- betalningsdatum ×2, "idag" i tre deadline-jämförelser
+
+31 förekomster totalt, sju är semantiska. Resten är filnamn och kan lämnas.
+
+---
+
+### 3. ROT — en dag, men det ar kundens pengar
+
+**Läs `rot-is-modelled-six-different-ways` (P2) FÖRST.** Den förklarar varför de
+andra finns: ROT är modellerat på sex-sju ställen, och tre av dem räknar fel.
+Utan den bilden fixar du symptom.
+
+Fyra kort, ETT arbete:
+- `rot-is-modelled-six-different-ways` (P2) — kartan
+- `quotes-and-invoices-ignore-the-rot-cap` (P1) — offerten räknar för högt
+- `completed-work-invoices-can-never-be-rot-eligible` (P2) — fakturan räknar noll
+- `two-surfaces-hardcode-their-own-vat-rate` (P3) — samma sorts drift i momsen
+
+Bryt ut `src/lib/rot.ts` bredvid `vat.ts`. Person- och takmodellen finns redan
+(`project_rot_persons`, `rot_yearly_limits`), och `HomeownerYearlyAnalysis:336`
+använder den korrekt — den är den enda ytan som ser flera representationer
+samtidigt, och därför den enda som räknar rätt.
+
+Kör de fem räkne-frågorna i arkitekturkortet innan du börjar, så vet du hur
+mycket data som ligger i varje representation. `material_rot_allocations` är
+sannolikt tom — den skrivs inte av någonting.
+
+Gör dem samtidigt, annars fixar du ROT tre gånger och får en fjärde variant.
+
+---
+
+### 4. Sakerhet — kraver eftertanke, inte lang tid
+
+- `profiles-rls-open-to-anon` (P1) — **verifiera med ett anrop först**, och skriv
+  om de policies som inline-refererar `profiles` INNAN du stramar åt. Att bara
+  ändra policyn är exakt det som gav 500-orna i mars.
+- `two-edge-functions-write-anywhere-with-service-key` (P2) — `proxy-image` och
+  `pinterest-oembed`: validera token och projektåtkomst, vitlista URL:er.
+- `six-edge-functions-deployed-without-callers` (P3) — `send-worker-sms` skickar
+  SMS som kostar pengar och anropas inte. **Kontrollera innan borttagning.**
+- `intern-maskningsfunktion-ar-anropbar-av-anon` (P2) — **en `REVOKE`-rad**.
+  Hittad av Supabases egen rådgivare; kringgår både åtkomstkontroll och
+  `access_log`.
+- `storage-insert-open-for-legacy-photo-prefixes` (P3) — en gren i policyn.
+
+**Kör `get_advisors` själv efter varje DDL-ändring.** Den hittade det här på en
+sekund och kostar ingenting.
+
+---
+
+### 5. Grindar som finns i navet men inte i datan
+
+- `timetracking-panel-has-no-access-gate` (P2) — den allvarliga
+- `chat-panel-has-no-access-gate` (P3)
+- `deeplink-to-hidden-tab-lands-silently-elsewhere` (P3)
+
+Tio av tretton flikpaneler har `isTabBlocked()`. Lägg den på de tre som saknar
+den — samma rad, tre ställen. Samma lärdom som `task_costs`-migrationen redan
+dokumenterar: navigeringen är inte skyddet.
+
+---
+
+### 6. i18n — stort men mekaniskt, kan delegeras
+
+- `thirtyfour-raw-i18n-keys-render-literally` (P2) — **börja här**, användaren ser
+  nyckelsträngen
+- `external-error-pages-disagree` (P2) — ÄTA-sidan svarar på svenska till en
+  extern kund
+- `floorplanner-ui-is-hardcoded-swedish` (P2) — 412 strängar, gå fil för fil
+- `worker-languages-shipped-mostly-untranslated` (P2) — **beslut, inte kod:**
+  översätt ro/lt/et eller ta bort dem ur väljarna
+- `language-choice-silently-reverts` (P2), `eleven-keys-…` (P3),
+  `de-fr-es-missing-574-keys` (P3)
+
+---
+
+### 7. UI och mobil
+
+- `twenty-dialogs-clipped-by-the-max-w-trap` (P2) — 20 rader, `size`-propen.
+  **Rör inte de fem `AlertDialogContent`** — de är korrekta.
+- `approve-hours-button-offscreen-on-mobile` (P2) — raden kräver 432 px, vyn är 390
+- `completed-work-invoice-shows-nan-and-button-stays-enabled` (P2) — två tecken:
+  `!(x > 0)` i stället för `x <= 0`
+- `overview-chat-renders-duplicate-comments` (P2) — dedup i `fetchAllProjectComments`
+- `legal-pages-fake-last-updated` (P2) — fem minuter
+
+---
+
+### 8. Tillganglighet
+
+`renaida-panel-has-no-dialog-semantics` (P2) är den enda som är mer än kosmetisk
+— helskärm på mobil utan `role`, utan namn, och Escape stänger inte.
+Sedan `icon-buttons-…` (P3, siffrorna är rättade),
+`profile-selects-lack-accessible-labels` (P3),
+`renaida-zzz-…` (P3).
+
+---
+
+### 9. Stadning — nar du anda ar i filerna
+
+`three-thousand-lines-of-components-nobody-renders` (P3) — **läs kortet innan du
+raderar.** Halva högen är färdiga floorplanner-funktioner som aldrig kopplades in
+(minimap, snap-guider, ångra-kontroller, kortkommando-dialogen). Det är
+inkoppling, inte städning.
+
+`dark-mode-is-built-but-unreachable` (P3), `de-patch-json-is-dead-weight` (P4),
+`isvisible-timeout-trap-is-back-in-floorplanner-spec` (P2 — lägg en grep i CI).
+
+---
+
+### 10. Kort som INTE kraver nagot av dig
+
+Tio `done`-kort dokumenterar sådant jag verifierade och som är korrekt:
+momsregeln, roll-gatingen, RLS-svepningen, `reverseCharge.ts`,
+`task_costs`-gränsen, beroenden och TODO-skulden, mobilsvepet, landningssidan,
+changelog, proffsytorna.
+
+De finns för att nästa granskning ska slippa göra om arbetet — och för att
+listan ovan annars ger en orättvis bild av kodbasen.
+
+---
+
+### Vad som INTE ar tackt
+
+Arbetarvyn `/w/:token` är otestad som yta. ÄTA- och intag-innehållet likaså.
+Allt som kräver skrivning — spara, skicka, importera — är orört. E2E-sviten
+kördes inte. Inga anrop gjordes mot edge-funktioner. Prod är inte testat.
+
+---
+id: rot-is-modelled-six-different-ways
+status: todo
+priority: P2
+tags: [arkitektur, rot, nattsvep]
+created: 2026-09-03
+---
+## ROT ar modellerat pa sex stallen - darfor gar de tre ROT-buggarna inte att fixa var for sig
+
+Under natten hittade jag tre separata ROT-fel. När jag kartlade var ROT faktiskt
+bor i systemet blev orsaken tydlig: **det finns inte en modell, det finns sex.**
+
+| # | representation | skrivs av | läses av |
+|---|----------------|-----------|----------|
+| 1 | `quote_items.is_rot_eligible` + `rot_deduction` | kryssruta per rad (`QuoteItemRow:192`) | `HomeownerBudgetView:344` |
+| 2 | `invoice_items.is_rot_eligible` + `rot_deduction` | kryssruta i procentmetoden; **alltid `false`** från utfört arbete | `HomeownerAnalysisSection:267` |
+| 3 | `materials.rot_amount` | AI-dokumentimport (`AIDocumentImportModal:463`) | `HomeownerYearlyAnalysis:158` |
+| 4 | `task_file_links.rot_amount` | dokumentkoppling | `HomeownerYearlyAnalysis:160` |
+| 5 | `project_rot_persons` + `rot_yearly_limits` | `TeamManagement:1463`, `LinkPurchaseDialog:163` | `HomeownerYearlyAnalysis:336` |
+| 6 | `material_rot_allocations` (per person) | **ingenting — tabellen skrivs aldrig** | två vyer läser den |
+| 7 | `rotEligibleTotal * 1.25 * 0.3` | beräknas inline, sparas inte | tre dokumentkomponenter |
+
+Nummer 6 är värd en egen rad: tabellen skapades 2026-03-26 för att kunna dela ROT
+mellan flera personnummer på samma faktura. Två komponenter `SELECT`:ar från den.
+**Ingenstans i `src/` finns ett `insert`, `upsert`, `update` eller `delete`.**
+Per-person-fördelningen är alltså alltid tom, och vyerna som läser den kan aldrig
+visa den uppdelning de är byggda för.
+
+### Varfor det har forklarar de andra korten
+
+- `quotes-and-invoices-ignore-the-rot-cap` (P1) — dokumenten använder #7, som
+  varken känner till taket i #5 eller det som redan bokats i #3/#4.
+- `completed-work-invoices-can-never-be-rot-eligible` (P2) — #2 kan inte sättas
+  eftersom `tasks` saknar en ROT-flagga; det finns ingen representation som följer
+  med från uppgift till fakturarad.
+- `HomeownerYearlyAnalysis` är den **enda** ytan som ser #3, #4 och #5 samtidigt,
+  och det är därför den är den enda som räknar rätt.
+
+Fixar man de tre korten var för sig får man en fjärde och femte
+specialbehandling. Det är därför `src/lib/rot.ts` i P1-kortet inte är en
+förfining utan förutsättningen.
+
+### Vad jag INTE pastar
+
+Att sex representationer är fel i sig. En offertrad och en fakturarad *ska*
+kunna bära sin egen flagga — det är rimlig normalisering. Problemet är att det
+inte finns någon **gemensam beräkning** ovanpå dem: varje yta räknar själv, och
+tre av dem räknar fel.
+
+Jag har heller inte mätt hur mycket data som ligger i respektive representation.
+Innan något konsolideras, räkna:
+
+```sql
+select count(*) from material_rot_allocations;          -- väntat: 0
+select count(*) from materials where rot_amount is not null;
+select count(*) from task_file_links where rot_amount is not null;
+select count(*) from quote_items where is_rot_eligible;
+select count(*) from invoice_items where is_rot_eligible;
+```
+
+Är #6 tom kan tabellen antingen tas bort eller få sin skrivväg — men den ska
+inte ligga kvar och läsas av vyer som tror att den innehåller något.
+
+---
+id: undo-restores-a-whole-row-snapshot-up-to-48h-later
+status: todo
+priority: P2
+tags: [bugfix, renaida, dataforlust, nattsvep]
+created: 2026-09-03
+---
+## Angra skriver tillbaka hela raden - aven andringar som gjorts efterat
+
+`src/services/agent/applyProposals.ts:579`, `undoProposals`:
+
+```ts
+case "task_fields":
+  await supabase.from("tasks").update({
+    status: op.before.status ?? null,
+    progress: op.before.progress ?? null,
+    title: op.before.title ?? undefined,
+    description: op.before.description ?? null,
+    due_date: op.before.due_date ?? null,
+    start_date: op.before.start_date ?? null,
+    finish_date: op.before.finish_date ?? null,
+    budget: op.before.budget ?? null,
+    priority: op.before.priority ?? null,
+  }).eq("id", op.taskId);
+```
+
+Den skriver tillbaka **hela ögonblicksbilden** som togs när Renaida gjorde sin
+ändring, matchat enbart på `id`. Ingen kontroll av att raden fortfarande ser ut
+som den gjorde.
+
+### Fonstret ar 48 timmar, inte tre sekunder
+
+`fetchLatestUndoable` (samma fil) hämtar den nyaste ej-ångrade batchen inom
+**48 timmar**:
+
+```ts
+const cutoff = new Date(Date.now() - 48 * 3600 * 1000).toISOString();
+```
+
+Det är alltså inte ett kort ångra-fönster direkt efter handlingen — erbjudandet
+kan dyka upp två dygn senare.
+
+### Scenariot
+
+1. **Måndag 08:00** — Renaida läser ett kvitto och sätter status på tre uppgifter.
+   Ögonblicksbilden sparas: `{status: "to_do", progress: 0, title: "Kakla väggar", …}`
+2. **Måndag–tisdag** — ägaren döper om uppgiften, hantverkaren rapporterar 50 %
+   framdrift via fältvyn, någon sätter ett slutdatum.
+3. **Onsdag 09:00** — ägaren ser "Ångra: Kvitto från BILTEMA" och klickar.
+4. **Titel, framdrift, datum, budget och prioritet återställs till måndag morgon.**
+
+Två dygns arbete försvinner, tyst. Användaren bad om att ångra *kvittot*, inte om
+att rulla tillbaka uppgifterna.
+
+Det blir extra känsligt tillsammans med fältflödet: hantverkarens rapporterade
+framdrift ligger i just `progress`, som är ett av fälten som skrivs över.
+
+### Fix — tre nivaer
+
+1. **Rätt lösning:** spara både `before` OCH `after` per fält, och återställ bara
+   de fält som fortfarande har `after`-värdet. Ett fält någon rört sedan dess
+   lämnas i fred. Det är vad "ångra min ändring" faktiskt betyder.
+2. **Billigare:** jämför `tasks.updated_at` mot batchens `created_at`. Har raden
+   ändrats sedan — visa vad som skiljer och låt användaren bekräfta, i stället för
+   att skriva tyst.
+3. **Minst:** korta fönstret rejält. Löser inte problemet, men minskar ytan.
+
+Nivå 1 hör ihop med att `applyProposals` ändå ska flyttas serversidan enligt
+`docs/mcp-server-plan-2026-09.md` — gör dem samtidigt.
+
+### Vad jag INTE vet
+
+Om detta hänt någon. Med elva externa konton och en aktiv användare senaste
+månaden är sannolikheten låg idag. Men `renaida_undo_stack` är byggd för att
+användas, fältflödet skriver till samma fält, och 48 timmar är gott om tid.
+
+Notera också att **ingen del av appen har optimistisk låsning** — inga
+versionskolumner, inga `updated_at`-villkor på uppdateringar, och upserts kör
+`onConflict` (sista skrivningen vinner). Ångra är det ställe där det gör mest
+skada, men det är samma antagande överallt: att ingen annan hann emellan.
+
+---
+id: offline-stodet-gar-varken-att-na-eller-se
+status: todo
+priority: P3
+tags: [pwa, falt, offline, nattsvep]
+created: 2026-09-03
+---
+## Appen ar installerbar, planeraren hanterar offline - men anvandaren nar varken det ena eller det andra
+
+Tre beslut som var för sig är rimliga, men som tillsammans ger ett dåligt
+fältbeteende.
+
+**1. Appen är installerbar som en riktig app.**
+`public/manifest.webmanifest` deklarerar `"display": "standalone"`, app-ikoner i
+192/512 px och `start_url: "/start"`. Den får alltså en ikon på hemskärmen och
+öppnas utan adressfält.
+
+**2. Service workern cachar ingenting — medvetet.**
+`public/sw.js` (55 rader) säger det rakt ut i sin header:
+
+> Deliberately does NO caching/offline: the app deploys as a normal SPA and a
+> caching worker would add stale-bundle risk for zero need. This worker exists
+> for one thing: the PWA share sheet…
+
+Det är ett försvarbart val i sig, och välmotiverat.
+
+**3. Planeraren HAR offline-hantering.**
+`isOnline()` används på fyra ställen i `floormap/utils/plans.ts` (rad 19, 224,
+323, 493) för att spara planer lokalt när nätet är borta.
+
+### Vad kombinationen ger
+
+En hantverkare installerar appen, står i ett källarplan utan täckning och trycker
+på ikonen. Eftersom inget är cachat får han webbläsarens felsida — **inuti ett
+fönster utan adressfält**, där det varken framgår vad som hänt eller hur han tar
+sig vidare. Det är en sämre upplevelse än en vanlig webbsida, just för att
+`standalone` tog bort webbläsarens egna ledtrådar.
+
+Och planerarens offline-läge hjälper bara den som redan hade appen öppen när
+täckningen försvann. Går det inte att öppna appen går det inte heller att nå det.
+
+**Dessutom:** `floormap/OfflineIndicator.tsx` finns — den lyssnar på
+`online`/`offline`-händelser och är byggd för att visa just det här — men den
+**renderas aldrig** (se `three-thousand-lines-of-components-nobody-renders`).
+Användaren får alltså ingen signal om att hen är offline, ens när appen är öppen.
+
+### Tre atgarder, valj efter ambition
+
+1. **Minst:** cacha en enda offline-fallbacksida i service workern och svara med
+   den vid navigeringar som misslyckas. Femton rader, och användaren får veta vad
+   som hänt i stället för en systemfelsida.
+2. **Rimligt:** koppla in `OfflineIndicator` så att den som har appen öppen ser
+   när nätet försvinner — komponenten är redan skriven.
+3. **Om offline-skalet ska byggas** (det står som kvarvarande punkt i
+   Bygglet-epicen): då behövs app-shell-cachning, och då blir stale-bundle-risken
+   som sw.js varnar för en verklig fråga att lösa — inte ett skäl att låta bli.
+
+Punkt 1 och 2 är billiga och oberoende av varandra. Punkt 3 är ett projekt.
+
+### Sammanhang
+
+`landing-page-ships-24mb-of-javascript` (P1) hör ihop: även med täckning tar en
+kall laddning på mobilt nät flera sekunder. Fältupplevelsen är summan av de två.
+
+---
+id: tysta-skrivfel-samma-fil-gor-bade-ratt-och-fel
+status: todo
+priority: P3
+tags: [felhantering, nattsvep]
+created: 2026-09-03
+---
+## Skrivningar vars fel ingen tar hand om - och samma fil visar hur det ska goras
+
+CLAUDE.md är tydlig: *"Always handle errors — show toast to user."*
+
+**Verifierat exempel, `src/components/shared/EntityPhotoGallery.tsx`:**
+
+```ts
+// rad 505-509 — RÄTT
+if (error) {
+  toast.error(t('entityPhotos.moveError', 'Kunde inte flytta foto'));
+  return;
+}
+toast.success(t('entityPhotos.photoMoved', 'Foto flyttat'));
+
+// rad 514-520 — FEL, fyra rader längre ner
+onSourceChange={async (photo, kind) => {
+  await supabase.from("photos").update({ kind }).eq("id", photo.id);
+  loadPhotos();
+}}
+onCaptionChange={async (photo, caption) => {
+  await supabase.from("photos").update({ caption }).eq("id", photo.id);
+  loadPhotos();
+}}
+```
+
+Två handlers i rad gör en naken `await` utan att titta på felet, och anropar
+sedan `loadPhotos()`. Misslyckas skrivningen ritas listan om från servern med
+det **gamla** värdet — användaren ser sin ändring försvinna utan förklaring, och
+tror rimligen att appen glömde den.
+
+Det är inte en policy som saknas. Rätt mönster står fyra rader ovanför.
+
+### Om siffran: 209 ar en OVRE grans, inte ett fynd
+
+En svepning hittade **209 skrivande supabase-anrop** (`insert`/`update`/`upsert`/
+`delete`) utan synlig felkontroll inom åtta rader, av ungefär 860 totalt.
+
+**Den siffran ska inte användas rakt av.** Jag kontrollerade två av dem manuellt:
+
+- `EntityPhotoGallery.tsx:515` — **äkta**, se ovan
+- `MaterialEditDialog.tsx:287` — **falsk träff**. Det är en rollback inne i en
+  felgren som avslutas med `throw delErr`; att den inte har egen felkontroll är
+  avsiktligt.
+
+Ett av två stickprov var alltså falskt. Med den träffbilden vore det oärligt att
+påstå att det finns 209 buggar. Vad som finns är 209 ställen värda en
+genomgång, och en bekräftad bugg som visar varför genomgången är värd att göra.
+
+Filerna med flest kandidater:
+
+```
+18  services/agent/applyProposals.ts        12  overview/inspiration/hooks/useInspirationActions.ts
+15  services/quoteService.ts                 8  overview/PlanningTaskList.tsx
+13  project/ProjectFilesTab.tsx              8  services/activateProject.ts
+```
+
+`applyProposals.ts` toppar listan, vilket hänger ihop med
+`undo-restores-a-whole-row-snapshot-up-to-48h-later` — den filen skriver till
+tolv tabeller och ska ändå flyttas serversidan enligt MCP-planen. Gå igenom
+felhanteringen i samma vända.
+
+### Forslag
+
+En liten eslint-regel som kräver att `insert`/`update`/`delete`/`upsert` antingen
+destrukturerar `error` eller ligger i ett `try`. Billigare än att gå igenom 209
+ställen två gånger.
+
+**Förutsättning:** regeln behöver köras någonstans, och det finns ingen CI idag
+(se `det-finns-ingen-ci`). `npm run lint` finns som script men körs bara manuellt.
+
+---
+id: intern-maskningsfunktion-ar-anropbar-av-anon
+status: todo
+priority: P2
+tags: [sakerhet, rls, rpc, nattsvep]
+created: 2026-09-03
+---
+## Den interna maskningsfunktionen gar att anropa direkt - och da forsvinner bade grinden och loggen
+
+Hittad via Supabases egen säkerhetsrådgivare (`get_advisors`), som flaggar
+**62 SECURITY DEFINER-funktioner som `anon` kan köra** via PostgREST. De flesta
+är ofarliga (se nedan). En är det inte.
+
+### Funktionen
+
+`supabase/migrations/20260517100000_team_v2_masking_materials_links.sql:10`
+
+```sql
+CREATE OR REPLACE FUNCTION public._project_data_masked(
+  p_project_id uuid,
+  p_mode       text,     -- ← anroparen väljer själv
+  p_viewer     uuid
+) RETURNS jsonb
+LANGUAGE plpgsql STABLE SECURITY DEFINER
+AS $$
+BEGIN
+  SELECT * INTO v_project FROM projects WHERE id = p_project_id;   -- ingen åtkomstkontroll
+  …
+  'total_budget',   CASE WHEN v_full  THEN v_project.total_budget   END,
+  'spent_amount',   CASE WHEN v_full  THEN v_project.spent_amount   END,
+  'contract_value', CASE WHEN v_money THEN v_project.contract_value END
+```
+
+`SECURITY DEFINER` betyder att den kringgår RLS. Den läser projektet **utan att
+kontrollera någonting**, och `v_full` styrs av `p_mode` — som anroparen skickar in.
+`p_mode = 'full'` låser alltså upp budget, förbrukat och kontraktsvärde.
+
+### Skyddet finns - men i wrappern, inte har
+
+`get_project_overview` är den avsedda ingången, och den gör allt rätt:
+
+```sql
+v_mode := derive_viewer_mode(p_project_id);
+IF v_mode = 'none' AND NOT user_has_project_access(p_project_id) THEN
+  RAISE EXCEPTION 'No access to project %' USING ERRCODE = '42501';
+END IF;
+v_result := _project_data_masked(p_project_id, v_mode, v_profile);
+INSERT INTO access_log (…) VALUES (…, 'view', 'overview');
+```
+
+Åtkomstkontroll, härlett läge **och** en rad i `access_log`. Funktionens egen
+kommentar säger det: *"Internal: … Use the public `get_project_*` wrappers."*
+
+Men det finns ingen `REVOKE` — varken i den migrationen eller någon annan — så
+`_project_data_masked` ärver standardrättigheten där `public` inkluderar `anon`.
+Rådgivaren bekräftar det oberoende av min kodläsning.
+
+Den som anropar den direkt får alltså projektets namn, adress, status, budget,
+förbrukat belopp och kontraktsvärde — **och lämnar inget spår i `access_log`**,
+till skillnad från den avsedda vägen där varje visning loggas.
+
+### Vad som begransar det
+
+Man måste känna till ett projekt-UUID. De är inte gissningsbara, men de läcker
+naturligt: de står i URL:er användare klistrar in, i delningslänkar, och
+demoprojektets id är en publik konstant i koden. "Svårt att gissa" är ingen
+åtkomstkontroll.
+
+Jag har **inte anropat funktionen** — jag har inte skickat ett enda anrop mot
+prod i natt. Verifiera med ett anrop innan du prioriterar:
+`POST /rest/v1/rpc/_project_data_masked` med anon-nyckeln och
+`{"p_project_id":"<ett id du äger>","p_mode":"full","p_viewer":null}`.
+
+### Fix
+
+```sql
+REVOKE EXECUTE ON FUNCTION public._project_data_masked(uuid, text, uuid)
+  FROM anon, authenticated;
+```
+
+Wrapparna är SECURITY DEFINER och anropar den internt, så de påverkas inte.
+
+### De ovriga 61
+
+Rådgivaren flaggar 62 funktioner totalt. Jag gick igenom dem och de flesta är
+inte ett problem:
+
+- **Triggerfunktioner** (`log_*_activity`, `tg_*`, `sync_*`, `handle_*`,
+  `guard_reverse_charge_*`, `recompute_document_vat`) kan inte meningsfullt
+  anropas via RPC — de kräver `NEW`/`OLD` och felar direkt.
+- **Admin-funktionerna är korrekt skyddade.** `admin_user_list()` och
+  `admin_platform_stats()` börjar med
+  `IF NOT is_system_admin() THEN RAISE EXCEPTION 'Admin only'`.
+- **Token-funktioner** (`get_intake_request_by_token`) har token som grind, vilket
+  är designen.
+
+### Aven `seed_demo_project_for_user` — och den visar vad profiles-halet mojliggor
+
+Granskad i samma svep. `20260507100000_enrich_demo_materials.sql:50`:
+
+```sql
+CREATE OR REPLACE FUNCTION public.seed_demo_project_for_user(p_owner_id UUID)
+RETURNS UUID LANGUAGE plpgsql SECURITY DEFINER
+```
+
+`p_owner_id` kommer från anroparen, och det finns **ingen kontroll av att
+anroparen är den personen** — sökt efter `auth.uid`, `get_user_profile_id`,
+`is_system_admin` och `RAISE EXCEPTION` i hela funktionskroppen, noll träffar.
+`anon` kan köra den enligt rådgivaren.
+
+Skapar man ett projekt åt någon annan krävs ett giltigt profil-id, eftersom
+`projects.owner_id` har en främmande nyckel mot `profiles(id)`. Slumpade UUID
+faller alltså. **Men profil-id går att läsa** — det är precis vad
+`profiles-rls-open-to-anon` (P1) tillåter.
+
+Kedjan blir:
+
+1. Läs alla profil-id via `profiles` med anon-nyckeln
+2. Anropa `seed_demo_project_for_user(<någon annans profil-id>)`
+3. Ett demoprojekt dyker upp i deras konto — eller ett befintligt får sina
+   datum uppdaterade
+
+**Låg skada** — inget raderas, och appen skapar redan demoprojekt legitimt. Men
+det är oautentiserad skrivning i någon annans konto, och det är det första
+stället där `profiles`-hålet ger något mer än läsning. Det är värt att notera när
+P1:an prioriteras: hålet är inte bara en exponering, det är en ingrediens.
+
+Samma `REVOKE`-behandling gäller `seed_demo_project_for_user`,
+`seed_demo_content` och `seed_demo_floor_plan`. Appen anropar dem via sina egna
+kodvägar, inte som anon.
+
+### Om profiles-halet
+
+Rådgivaren flaggar **inte** `profiles`. Det motbevisar ingenting: Supabases
+lintar letar efter *saknad* RLS eller *saknad* policy, inte efter en policy som
+är för tillåtande. `USING (true)` är en policy och passerar därför.
+`profiles-rls-open-to-anon` står kvar oförändrat.
+
+---
+id: databasens-prestandaskuld-456-lints
+status: todo
+priority: P3
+tags: [prestanda, databas, nattsvep]
+created: 2026-09-03
+---
+## 456 prestandalints fran Supabase - fyra ar mekaniska att ata
+
+Kört `get_advisors(type: "performance")` mot prod. 456 lints, 368 varningar och
+88 informationsposter. Ingen av dem märks vid dagens datamängd — det här är
+förberedelse, inte brandsläckning. Men fyra grupper är billiga att åtgärda och
+blir dyrare ju längre man väntar.
+
+### 1. `auth_rls_initplan` × 50 — RLS-policies som anropar auth.uid() PER RAD
+
+```
+Table public.profiles has a row level security policy "Users can update own
+profile" that re-evaluates current_setting() or auth.<function>() for each row.
+```
+
+Fixen är mekanisk: byt `auth.uid()` mot `(select auth.uid())` i policyn. Då
+utvärderas den en gång per fråga i stället för en gång per rad. På en tabell med
+tiotusen rader är det skillnaden mellan tiotusen anrop och ett.
+
+Flest träffar: `inspection_templates`, `pinterest_tokens`, `comments`,
+`renaida_user_memory`, `renaida_undo_stack` (4 vardera), sedan `photos`, `notes`,
+`invoices`, `invoice_items` (3 vardera).
+
+### 2. `unindexed_foreign_keys` × 60 — frammande nycklar utan index
+
+`tasks` (6), `inspections` (5), `materials` (5), `quotes` (3),
+`ata_approval_tokens`, `field_reports`, `project_invitations`,
+`project_rot_persons`, `purchase_orders`, `purchase_requests` (2 vardera).
+
+Utan index blir både joins och kaskadraderingar långsamma. `tasks` och
+`materials` är appens hetaste tabeller.
+
+### 3. `multiple_permissive_policies` × 316 — flera policies utvarderas for varje frag
+
+24 lints vardera på `comments`, `floor_map_plans`, `floor_map_shapes`,
+`materials`, `projects`, `rooms`, `stakeholders`, `tasks` — alltså exakt
+kärntabellerna.
+
+Postgres utvärderar **alla** permissiva policies för en fråga, inte den första
+som matchar. Två överlappande SELECT-policies betyder dubbelt arbete per rad.
+
+Det här är samma sak som `20260512210000_tasks_rls_audit_fix.sql` redan
+konsoliderade en gång, av säkerhetsskäl:
+
+> Audit-fynd: tasks-tabellen har TVÅ SELECT-policies, ingen kollar tasks_access.
+> Båda är permissive (OR) så vem som helst med projekt-medlemskap ser ALLA tasks.
+
+Att `tasks` fortfarande ger 24 lints betyder att konsolideringen gjordes för
+SELECT men att andra operationer har kvar överlappen. **Verifiera det innan du
+agerar** — jag har inte listat policy för policy.
+
+### 4. Gratis stadning
+
+- **`duplicate_index` × 2** — `comment_mentions` har två par identiska index:
+  `{comment_mentions_comment_idx, idx_comment_mentions_comment_id}` och
+  `{comment_mentions_user_idx, idx_comment_mentions_mentioned_user_id}`.
+  Släpp en ur varje par. Rena vinster: mindre skrivkostnad, ingen risk.
+- **`unused_index` × 28** — index som aldrig använts. Kolla att statistiken
+  hunnit samlas innan något släpps.
+
+### Ordning
+
+Börja med **4** (gratis), sedan **1** (mekanisk sök-ersätt i policies), sedan
+**2** (en migration med `CREATE INDEX`). **3** kräver eftertanke och hör ihop med
+en säkerhetsgenomgång — gör den inte enbart av prestandaskäl.
+
+### Sammanhang
+
+Det här är serversidan av samma fråga som `landing-page-ships-24mb-of-javascript`
+(P1) ställer på klientsidan. Skillnaden är att bundeln drabbar varje besökare
+**idag**, medan det här drabbar dig först när det finns data. Ta bundeln först.
+
+---
+id: det-finns-ingen-ci
+status: todo
+priority: P2
+tags: [ci, kvalitet, nattsvep]
+created: 2026-09-03
+---
+## Det finns ingen CI - e2e-sviten kors aldrig automatiskt
+
+`.github/` innehåller **en enda fil: `.DS_Store`**. Inga workflows. Ingen
+CircleCI, Travis, GitLab CI, Jenkins eller Husky heller — sökt på alla.
+
+Det betyder:
+
+- **De 26 e2e-specarna körs aldrig automatiskt.** Bara när någon skriver
+  `npm run test:e2e` för hand.
+- Ingenting granskar en push innan Cloudflare Pages bygger och deployar den.
+- `npm run lint` körs aldrig.
+
+`npm run build` kör visserligen `typecheck:strict`, och Cloudflare kör bygget vid
+deploy — så typfel fångas. Men det är enda automatiska grinden, och den kommer
+**efter** att koden är pushad till main.
+
+### Varfor det spelar roll just nu
+
+Två av nattens fynd hänger direkt på det här:
+
+1. `isvisible-timeout-trap-is-back-in-floorplanner-spec` — mönstret som enligt
+   repots egen kommentar "killed 28 tests looking like broken selectors for
+   weeks" har återkommit på tre rader. **Ingen CI hade fångat det, eftersom
+   e2e aldrig körs.** Det är sannolikt just därför det kunde återkomma.
+2. `e2e-suite-not-run-tonight` — jag avstod från att köra sviten mot prod. Den
+   luckan hade inte funnits om det gick att köra mot en branch-databas i CI.
+
+### Rattelse till mina egna kort
+
+Jag föreslog "en grep i CI" i `isvisible-timeout-trap-…` och "en eslint-regel
+eller ett grep i CI" i `tysta-skrivfel-…`. **Båda förslagen förutsätter en CI som
+inte finns.** De blir alltså "bygg CI först, lägg sedan till regeln". Det är en
+större sak än jag antydde, och kortet här är förutsättningen för båda.
+
+### Minsta rimliga forsta steg
+
+En workflow på pull request och push till main:
+
+```yaml
+name: ci
+on: [push, pull_request]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version-file: .nvmrc, cache: npm }
+      - run: npx npm@10.9.2 ci          # samma npm som CF, se deploy-minnet
+      - run: npm run lint
+      - run: npm run typecheck:strict
+```
+
+Det ger lint och typkontroll **före** deploy i stället för efter, och kostar
+inget. E2E är ett andra steg och kräver att `.env.local`-hemligheter läggs som
+GitHub-secrets mot en branch-databas — inte mot prod.
+
+`.nvmrc` finns redan i repot, och `reference_deploy_pipeline` i minnet noterar att
+Cloudflare kör npm 10.9.2 medan lokal miljö har npm 11. Samma version i CI gör
+att lock-filsproblemet fångas där i stället för i en misslyckad deploy.
+
+### Sidnotering
+
+`.github/.DS_Store` bör läggas i `.gitignore` och tas bort. Den är versionerad
+just nu.
+
+---
+id: eval-grinden-finns-som-policy-men-inte-som-mekanism
+status: todo
+priority: P2
+tags: [evals, ai, kvalitet, nattsvep]
+created: 2026-09-03
+---
+## Eval-harnesset ar bra, men grinden ar en policy utan mekanism - och kvittotolkningen saknas helt
+
+CLAUDE.md beskriver SIL-loopens tredje regel: *"Shippa bakom eval-gate (bygg +
+klara eval-tröskel → deploy, annars block)."*
+
+**Harnesset är genuint bra.** `evals/README.md` beskriver tre poängsättningslager
+— deterministisk struktur, deterministisk ordagrannhet (NCS/RAL-koder, mått,
+varumärken får inte översättas), och en LLM-domare för kritiska
+betydelsefel. Formuleringen i README:n är precis rätt inställning:
+
+> This is the discipline that turns "Claude said it looks good" into "here is
+> the number, on this golden set, over time."
+
+Sju runners, fem golden sets, 83 sparade resultat. Någon har lagt riktigt arbete
+här.
+
+### Men ingenting kor den
+
+- **Inga npm-scripts.** `package.json` har varken `eval` eller `judge`. Man måste
+  komma ihåg `node evals/run-extraction.mjs`.
+- **Ingen automation.** Se `det-finns-ingen-ci` — det finns ingen CI att hänga
+  grinden i, och inget i `scripts/` heller.
+- **Senaste körningen: 2026-08-25.** Nio dagar sedan. Router-evalen kördes senast
+  2026-08-13.
+
+Under de nio dagarna ändrades AI-vägarna påtagligt — sessionerna 89 och 90
+(2026-09-02) arbetade igenom hela kvittovägen. Evalen som skulle fånga en
+regression har inte körts sedan dess.
+
+### Det verkliga hålet: kvittobeloppen har ingen eval
+
+De fem golden sets täcker:
+
+```
+agent-route.json                  parse-renovation-description.json
+classify-document-address.json    translate-task-content.json
+generate-work-checklist.json
+```
+
+`classify-document-address.json` handlar om att läsa ut **adress** ur ett
+dokument. **Ingen datamängd täcker beloppsutläsningen** —
+`process-document-v2`, alltså det som läser summa, moms och leverantör ur ett
+kvitto.
+
+Det är precis den funktion som enligt ditt eget minne har ett bevisat
+konsistensproblem:
+
+> IMG_4058 gav "Byggmax 2948 / 0,55" i en körning och "other / 0,05" i nästa.
+> Samma fil — hallucination på svår bild.
+>
+> IMG_4044 (Hornbach) läses konsekvent som 4 181 + moms 836,20. Kvittot säger
+> 5 248,96 — modellen tog nettot.
+
+Funktionen med det dokumenterade problemet är alltså den enda som saknar
+mätning. Och `feedback_self_verification_has_a_ceiling` säger redan varför en
+intern rimlighetskontroll inte räcker: momskontrollen släpper igenom 4 181 +
+836,20 eftersom de är internt konsistenta.
+
+**En golden set med Carls 112 riktiga kvitton skulle vara den mest värdefulla
+datamängden i hela harnesset** — och den finns redan i råform.
+
+### Tre steg, i ordning
+
+1. **Lägg npm-scripts** för runnerna. Fem minuter, och de blir körbara utan att
+   man minns filnamnen.
+2. **Bygg golden set för `process-document-v2`** — ett urval kvitton med
+   facit-belopp, inklusive de två kända problemfallen. Kör `--no-judge` först,
+   det är gratis enligt README.
+3. **Automatisera** när CI finns, inte före.
+
+Steg 2 är det som ger mest, och det går att göra utan steg 1 och 3.
