@@ -163,6 +163,37 @@ export async function importPurchaseOrder(
     }
   }
 
+  // Merged pages: the same document's further sheets, uploaded beside the first
+  // and hung on the ORDER (task_file_links.purchase_order_id) — which is what
+  // PurchaseOrderDetailSheet lists. Awaited, not fire-and-forget: a page that
+  // silently failed to upload is a lost receipt, and the person merged it here
+  // precisely because they wanted to keep it (Carl, 2026-09-03).
+  for (const [i, page] of (action.extraPages ?? []).entries()) {
+    const pageFile = takeAttachment(page.attachmentKey);
+    if (!pageFile) continue;
+    const pageName = `${filename.replace(/\.[^.]+$/, "")} - sida ${i + 2}${
+      pageFile.name.match(/\.[^.]+$/)?.[0] ?? ""
+    }`;
+    const pagePath = `projects/${projectId}/${isInvoice ? "Fakturor" : "Kvitton"}/${pageName}`;
+    const { error: pageErr } = await supabase.storage
+      .from("project-files")
+      .upload(pagePath, pageFile, { upsert: true });
+    if (pageErr) {
+      console.error("extra page upload failed", page.fileName, pageErr);
+      continue;
+    }
+    await supabase.from("task_file_links").insert({
+      project_id: projectId,
+      purchase_order_id: po.id,
+      file_path: pagePath,
+      file_name: pageName,
+      file_type: action.documentType,
+      file_size: pageFile.size,
+      mime_type: pageFile.type,
+      linked_by_user_id: profileId,
+    });
+  }
+
   void supabase.from("activity_log").insert({
     project_id: projectId,
     actor_id: profileId,

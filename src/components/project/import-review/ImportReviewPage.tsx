@@ -1,10 +1,11 @@
 import { useCallback, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { MultiSection, type MultiSectionTab } from '@/components/ui/multi-section';
-import { peekAttachment } from '@/services/agent/documentCapture';
+import { captureDocument, peekAttachment } from '@/services/agent/documentCapture';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { AgentProposal, ProposalAction } from '@/services/agent/types';
 import type {
@@ -107,6 +108,125 @@ export function ImportReviewPage({
       onChange({ ...session, rejected });
     },
     [session, onChange]
+  );
+
+  /**
+   * "Det stämmer" — the person has looked at the warning and accepted the row.
+   *
+   * It does not edit anything and it does not hide the flag; it takes the row
+   * out of "Behöver din blick" so the queue can actually reach zero. Before
+   * this, the only way to silence a warning on a purchase you WANTED was to
+   * switch that purchase off (Carl, 2026-09-03).
+   */
+  const handleAcknowledge = useCallback(
+    (proposalId: string, ack: boolean) => {
+      const acknowledged = new Set(session.acknowledged ?? []);
+      if (ack) acknowledged.add(proposalId);
+      else acknowledged.delete(proposalId);
+      onChange({ ...session, acknowledged });
+    },
+    [session, onChange]
+  );
+
+  /**
+   * Fold one reading into another as a further page of the same document.
+   *
+   * A receipt shot twice — page two, or a closer photo of the same paper — is
+   * read twice and flagged as a duplicate. Deleting one loses a page of the
+   * underlag; keeping both books the cost twice. Neither is what happened.
+   * So the surviving order takes the other's file (and any pages IT had
+   * already absorbed, or a second merge would drop them), and the merged row
+   * leaves the list as a page rather than as something thrown away.
+   */
+  const handleMergePurchase = useCallback(
+    (fromId: string, intoId: string) => {
+      const from = session.proposals.find((p) => p.id === fromId);
+      if (!from || from.action.type !== 'import_purchase') return;
+      const fromAction = from.action;
+      const pages = [
+        ...(fromAction.attachmentKey
+          ? [{ attachmentKey: fromAction.attachmentKey, fileName: fromAction.sourceFileName ?? from.sourceFile ?? '' }]
+          : []),
+        ...(fromAction.extraPages ?? []),
+      ];
+      if (pages.length === 0) return;
+
+      const rejected = new Set(session.rejected);
+      rejected.add(fromId);
+      onChange({
+        ...session,
+        rejected,
+        merged: { ...(session.merged ?? {}), [fromId]: intoId },
+        proposals: session.proposals.map((p) => {
+          if (p.id !== intoId || p.action.type !== 'import_purchase') return p;
+          const existing = p.action.extraPages ?? [];
+          const seen = new Set(existing.map((e) => e.attachmentKey));
+          return {
+            ...p,
+            action: {
+              ...p.action,
+              extraPages: [...existing, ...pages.filter((pg) => !seen.has(pg.attachmentKey))],
+            },
+          };
+        }),
+      });
+    },
+    [session, onChange]
+  );
+
+  /**
+   * Read the same image again.
+   *
+   * Worth a button because the reader is genuinely unstable on hard photos —
+   * the same crumpled receipt has come back "Byggmax 2948 / 0,55" on one run
+   * and "other / 0,05" on the next (s89). A second attempt is the cheapest
+   * thing that can turn a 35 %-confidence row into a usable one, and it is
+   * the only action here that can FIX a row rather than just accept it.
+   *
+   * The room, the note and the merged pages are the person's work, not the
+   * model's — they survive the re-read untouched.
+   */
+  const [rereading, setRereading] = useState<Set<string>>(new Set());
+  const handleReread = useCallback(
+    async (proposalId: string) => {
+      const proposal = session.proposals.find((p) => p.id === proposalId);
+      if (!proposal || proposal.action.type !== 'import_purchase') return;
+      const key = proposal.action.attachmentKey;
+      const file = key ? peekAttachment(key) : null;
+      if (!file) return;
+
+      setRereading((s) => new Set(s).add(proposalId));
+      try {
+        const again = await captureDocument(file);
+        if (again.kind !== 'receipt' && again.kind !== 'invoice') {
+          toast.error(t('importReview.purchases.rereadFailed', 'Kunde inte läsa dokumentet bättre den här gången'));
+          return;
+        }
+        patchProposal(proposalId, (action) => {
+          if (action.type !== 'import_purchase') return action;
+          return {
+            ...again.action,
+            // Everything below is the person's, not the reader's.
+            attachmentKey: action.attachmentKey,
+            extraPages: action.extraPages,
+            sourceFileName: action.sourceFileName,
+            userNote: action.userNote,
+            roomId: action.roomId,
+            roomName: action.roomName,
+          };
+        });
+        toast.success(t('importReview.purchases.rereadDone', 'Läste om dokumentet'));
+      } catch {
+        toast.error(t('importReview.purchases.rereadFailed', 'Kunde inte läsa dokumentet bättre den här gången'));
+      } finally {
+        setRereading((s) => {
+          const next = new Set(s);
+          next.delete(proposalId);
+          return next;
+        });
+      }
+    },
+    [session.proposals, patchProposal, t]
   );
 
   const handleRename = useCallback(
@@ -618,6 +738,10 @@ export function ImportReviewPage({
           onRoom={handlePurchaseRoom}
           onField={handleField}
           onCreateRoom={handleCreateRoomForPurchase}
+          onMerge={handleMergePurchase}
+          onAcknowledge={handleAcknowledge}
+          onReread={handleReread}
+          rereading={rereading}
         />
       )}
       {activeTab === 'rooms' && (

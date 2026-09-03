@@ -8329,7 +8329,15 @@
       "clickToEdit": "klicka för att rätta",
       "noRoomOption": "Inget rum",
       "createRoom": "Skapa nytt rum…",
-      "createdRoom": "Skapa rummet {{name}}"
+      "createdRoom": "Skapa rummet {{name}}",
+      "merge": "Slå ihop till ett underlag",
+      "acknowledge": "Det stämmer",
+      "acknowledged": "Godkänd — ångra",
+      "reread": "Läs om",
+      "rereadDone": "Läste om dokumentet",
+      "rereadFailed": "Kunde inte läsa dokumentet bättre den här gången",
+      "drop": "Ta inte med",
+      "pages": "{{count}} sidor"
     },
     "drawings": {
       "title": "Ritningar",

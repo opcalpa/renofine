@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle, Copy, Home, Search } from 'lucide-react';
+import { AlertTriangle, Check, Copy, Home, Layers, RefreshCw, Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -37,7 +37,8 @@ function Flag({
   icon: Icon,
   children,
 }: {
-  tone: 'warn' | 'dup';
+  // 'ok' is not a warning — it states a fact the person created by merging.
+  tone: 'warn' | 'dup' | 'ok';
   icon: typeof AlertTriangle;
   children: React.ReactNode;
 }) {
@@ -47,7 +48,9 @@ function Flag({
         'inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium',
         tone === 'warn'
           ? 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200'
-          : 'bg-rose-100 text-rose-900 dark:bg-rose-950 dark:text-rose-200'
+          : tone === 'ok'
+            ? 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200'
+            : 'bg-rose-100 text-rose-900 dark:bg-rose-950 dark:text-rose-200'
       )}
     >
       <Icon className="h-3 w-3" />
@@ -280,6 +283,14 @@ interface PurchaseListProps {
   onField: (id: string, field: PurchaseField, value: string) => void;
   /** Name a room that does not exist yet; becomes a create_room proposal. */
   onCreateRoom: (purchaseId: string, name: string) => void;
+  /** Fold a duplicate reading into its partner as a further page. */
+  onMerge: (fromId: string, intoId: string) => void;
+  /** "I looked, it is right" — takes the row out of the queue. */
+  onAcknowledge: (id: string, ack: boolean) => void;
+  /** Read the same image again; a hard photo often lands better on try two. */
+  onReread: (id: string) => void;
+  /** Rows with a re-read in flight. */
+  rereading: Set<string>;
 }
 
 /**
@@ -299,6 +310,10 @@ export function PurchaseList({
   onRoom,
   onField,
   onCreateRoom,
+  onMerge,
+  onAcknowledge,
+  onReread,
+  rereading,
 }: PurchaseListProps) {
   const { t } = useTranslation();
 
@@ -354,6 +369,10 @@ export function PurchaseList({
               onRoom={(value) => onRoom(row.id, value)}
               onField={(field, value) => onField(row.id, field, value)}
               onCreateRoom={(name) => onCreateRoom(row.id, name)}
+              onMerge={onMerge}
+              onAcknowledge={(ack) => onAcknowledge(row.id, ack)}
+              onReread={() => onReread(row.id)}
+              rereading={rereading.has(row.id)}
             />
           ))}
         </div>
@@ -372,6 +391,10 @@ function PurchaseRowView({
   onRoom,
   onField,
   onCreateRoom,
+  onMerge,
+  onAcknowledge,
+  onReread,
+  rereading,
 }: {
   row: PurchaseRow;
   session: ImportSession;
@@ -382,6 +405,10 @@ function PurchaseRowView({
   onRoom: (value: string) => void;
   onField: (field: PurchaseField, value: string) => void;
   onCreateRoom: (name: string) => void;
+  onMerge: (fromId: string, intoId: string) => void;
+  onAcknowledge: (ack: boolean) => void;
+  onReread: () => void;
+  rereading: boolean;
 }) {
   const { t, i18n } = useTranslation();
   const off = !row.kept;
@@ -539,6 +566,14 @@ function PurchaseRowView({
             </span>
           </div>
 
+          {row.pageCount > 1 && (
+            <div className="mt-1.5">
+              <Flag tone="ok" icon={Layers}>
+                {t('importReview.purchases.pages', '{{count}} sidor', { count: row.pageCount })}
+              </Flag>
+            </div>
+          )}
+
           {(row.issues.length > 0 || row.duplicateOfExisting || row.pairOf) && (
             <div className="mt-1.5 space-y-1">
               {(row.duplicateOfExisting || row.pairOf) && (
@@ -570,9 +605,87 @@ function PurchaseRowView({
             </div>
           )}
 
+          {/*
+            The actions a flagged row actually needs. Before these existed the
+            only thing you could DO with a warning was switch the purchase off,
+            which threw away a receipt you wanted (Carl, 2026-09-03).
+
+              Slå ihop   — the duplicate is page two; one order, two underlag
+              Läs om     — a hard photo read differently on the second try
+              Det stämmer— I looked, it is right; leave the queue
+              Ta inte med— genuinely not wanted
+
+            Shown only where there is something to resolve, so a clean row stays
+            a clean row.
+          */}
+          {(row.needsLook || row.acknowledged) && (
+            <div
+              className="mt-2 flex flex-wrap items-center gap-1.5"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {row.pairOfId && !row.acknowledged && (
+                <RowAction icon={Layers} onClick={() => onMerge(row.id, row.pairOfId!)}>
+                  {t('importReview.purchases.merge', 'Slå ihop till ett underlag')}
+                </RowAction>
+              )}
+              {row.action.attachmentKey && (
+                <RowAction icon={RefreshCw} busy={rereading} onClick={onReread}>
+                  {t('importReview.purchases.reread', 'Läs om')}
+                </RowAction>
+              )}
+              <RowAction
+                icon={Check}
+                tone={row.acknowledged ? 'done' : undefined}
+                onClick={() => onAcknowledge(!row.acknowledged)}
+              >
+                {row.acknowledged
+                  ? t('importReview.purchases.acknowledged', 'Godkänd — ångra')
+                  : t('importReview.purchases.acknowledge', 'Det stämmer')}
+              </RowAction>
+              {row.kept && (
+                <RowAction icon={X} onClick={onToggle}>
+                  {t('importReview.purchases.drop', 'Ta inte med')}
+                </RowAction>
+              )}
+            </div>
+          )}
+
         </div>
       </div>
     </div>
+  );
+}
+
+/** One small action on a purchase row. Ghost until hovered — the row is the
+ *  subject, these are what you can do to it. */
+function RowAction({
+  icon: Icon,
+  children,
+  onClick,
+  busy,
+  tone,
+}: {
+  icon: typeof Check;
+  children: React.ReactNode;
+  onClick: () => void;
+  busy?: boolean;
+  tone?: 'done';
+}) {
+  return (
+    <button
+      type="button"
+      disabled={busy}
+      onClick={onClick}
+      className={cn(
+        'inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-medium transition-colors disabled:opacity-50',
+        tone === 'done'
+          ? 'border-primary/30 bg-primary/10 text-primary'
+          : 'border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground'
+      )}
+    >
+      <Icon className={cn('h-3 w-3 shrink-0', busy && 'animate-spin')} />
+      <span className="whitespace-normal">{children}</span>
+    </button>
   );
 }
 

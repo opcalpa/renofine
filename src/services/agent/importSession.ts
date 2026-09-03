@@ -140,6 +140,17 @@ export interface ImportSession {
   drawings: ImportDrawing[];
   /** Proposal ids the person has switched off. */
   rejected: Set<string>;
+  /**
+   * Rows whose warning the person has looked at and accepted as-is.
+   *
+   * Without this the queue never empties: a flag on a row you have already
+   * judged stays lit forever, "Behöver din blick" never counts down, and the
+   * only way to make it stop is to switch the row off — which throws away a
+   * purchase you actually wanted (Carl, 2026-09-03).
+   */
+  acknowledged?: Set<string>;
+  /** proposalId → the proposal it was merged into, so the row can say so. */
+  merged?: Record<string, string>;
 }
 
 /** The room proposals in a session, in display order. */

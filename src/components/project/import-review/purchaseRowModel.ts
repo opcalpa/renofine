@@ -49,7 +49,13 @@ export interface PurchaseRow {
    * Holds the other row's source file so the flag can name it.
    */
   pairOf: string | null;
+  /** The proposal id of that partner — what "Slå ihop" merges into. */
+  pairOfId: string | null;
   kept: boolean;
+  /** The person has looked at the warning and accepted the row as it stands. */
+  acknowledged: boolean;
+  /** How many underlag this order will own: the original plus merged pages. */
+  pageCount: number;
   /** Warning or duplicate — the rows that earn "Behöver din blick". */
   needsLook: boolean;
 }
@@ -80,19 +86,28 @@ export function buildPurchaseRows(session: ImportSession): PurchaseRow[] {
     byKey.set(key, [...(byKey.get(key) ?? []), p]);
   }
   const pairs = new Map<string, string>();
+  const pairIds = new Map<string, string>();
   for (const group of byKey.values()) {
     if (group.length < 2) continue;
     const first = group[0];
     for (const later of group.slice(1)) {
       pairs.set(later.id, first.sourceFile ?? first.id);
+      pairIds.set(later.id, first.id);
     }
   }
 
+  // A row merged into another is no longer its own row — it is a page of the
+  // one that survived. Leaving it in the list as an "excluded" row would say
+  // the person threw a receipt away, when they did the opposite.
+  const mergedAway = new Set(Object.keys(session.merged ?? {}));
+
   return proposals.flatMap((proposal) => {
     if (proposal.action.type !== 'import_purchase') return [];
+    if (mergedAway.has(proposal.id)) return [];
     const action = proposal.action;
     const mismatch = lineSumMismatch(action);
     const pairOf = pairs.get(proposal.id) ?? null;
+    const acknowledged = !!session.acknowledged?.has(proposal.id);
     const issues = verifyReceipt({
       vendor_name: action.vendorName || null,
       total_amount: action.total,
@@ -124,9 +139,15 @@ export function buildPurchaseRows(session: ImportSession): PurchaseRow[] {
         blocking: issues.some((i) => i.level === 'blocking'),
         duplicateOfExisting: !!proposal.duplicateOfExisting,
         pairOf,
+        pairOfId: pairIds.get(proposal.id) ?? null,
         kept: !session.rejected.has(proposal.id),
+        acknowledged,
+        pageCount: 1 + (action.extraPages?.length ?? 0),
+        // Acknowledged rows leave the queue. The flag stays visible on the row
+        // itself — the person said "I looked", not "pretend it never happened".
         needsLook:
-          issues.length > 0 || !!proposal.duplicateOfExisting || pairOf !== null,
+          !acknowledged &&
+          (issues.length > 0 || !!proposal.duplicateOfExisting || pairOf !== null),
       },
     ];
   });

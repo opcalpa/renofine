@@ -8329,7 +8329,15 @@
       "clickToEdit": "click to correct",
       "noRoomOption": "No room",
       "createRoom": "Create new room…",
-      "createdRoom": "Create the room {{name}}"
+      "createdRoom": "Create the room {{name}}",
+      "merge": "Merge into one document",
+      "acknowledge": "Looks right",
+      "acknowledged": "Accepted — undo",
+      "reread": "Read again",
+      "rereadDone": "Read the document again",
+      "rereadFailed": "Could not read the document any better this time",
+      "drop": "Leave out",
+      "pages": "{{count}} pages"
     },
     "drawings": {
       "title": "Drawings",

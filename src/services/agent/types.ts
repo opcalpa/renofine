@@ -130,6 +130,15 @@ export type ProposalAction =
        */
       sourceFileName?: string;
       /**
+       * Further pages of the SAME document, merged in during review.
+       *
+       * A receipt photographed twice — page two, or a closer shot of the same
+       * paper — arrives as two readings and gets flagged as a duplicate. The
+       * honest resolution is not to throw one away: it is one purchase with two
+       * underlag. The kept order owns them all (Carl, 2026-09-03).
+       */
+      extraPages?: { attachmentKey: string; fileName: string }[];
+      /**
        * A note the person wrote on the receipt during the import review —
        * lands in purchase_orders.notes. Their words about the document, kept
        * next to it (Design handoff v2, 2026-09-01).
