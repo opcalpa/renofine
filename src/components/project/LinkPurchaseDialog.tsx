@@ -36,7 +36,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { formatCurrency } from "@/lib/currency";
 import {
-  analyzeDocument,
+  analyzeDocumentFile,
   generateDocumentFilename,
   type DocumentAnalysisResult,
 } from "@/services/receiptAnalysisService";
@@ -66,46 +66,6 @@ type Step = "extracting" | "choose" | "link" | "saving";
 
 // Use global formatCurrency from @/lib/currency
 
-async function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      resolve(result.split(",")[1] || result);
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
-async function compressImage(file: File, maxSize = 1600, quality = 0.85): Promise<string> {
-  if (!file.type.startsWith("image/")) {
-    return fileToBase64(file);
-  }
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      let { width, height } = img;
-      if (width > maxSize || height > maxSize) {
-        const ratio = Math.min(maxSize / width, maxSize / height);
-        width = Math.round(width * ratio);
-        height = Math.round(height * ratio);
-      }
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return reject(new Error("Canvas context failed"));
-      ctx.drawImage(img, 0, 0, width, height);
-      resolve(canvas.toDataURL("image/jpeg", quality).split(",")[1]);
-    };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Image load failed")); };
-    img.src = url;
-  });
-}
-
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -125,12 +85,15 @@ export function LinkPurchaseDialog({
   const [extraction, setExtraction] = useState<DocumentAnalysisResult | null>(null);
   const [selectedEntity, setSelectedEntity] = useState<SelectedEntity | null>(null);
   const [extracted, setExtracted] = useState(false);
+  /** The upright image the model actually read — that is what gets archived. */
+  const [uprightFile, setUprightFile] = useState<File | null>(null);
 
   const reset = useCallback(() => {
     setStep("extracting");
     setExtraction(null);
     setSelectedEntity(null);
     setExtracted(false);
+    setUprightFile(null);
   }, []);
 
   // ---- Extract on open ----
@@ -140,8 +103,9 @@ export function LinkPurchaseDialog({
 
     (async () => {
       try {
-        const base64 = await compressImage(file);
-        const result = await analyzeDocument(base64);
+        // From the file, so a rotated photo can be turned and re-read.
+        const { result, uprightFile: upright } = await analyzeDocumentFile(file);
+        setUprightFile(upright);
         setExtraction(result);
 
         // Auto-match ROT personnummer if extracted
@@ -209,7 +173,7 @@ export function LinkPurchaseDialog({
       const folder = extraction.document_type === "invoice" ? "Fakturor" : "Kvitton";
       const storagePath = `projects/${projectId}/${folder}/${smartName}`;
 
-      await supabase.storage.from("project-files").upload(storagePath, file);
+      await supabase.storage.from("project-files").upload(storagePath, uprightFile ?? file);
 
       if (mode === "link" && selectedEntity) {
         // Create task_file_link to connect document to existing entity

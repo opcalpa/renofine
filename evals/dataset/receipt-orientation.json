@@ -1,0 +1,92 @@
+{
+  "about": [
+    "Golden set for the receipt reader, built from real photographed receipts.",
+    "",
+    "WHY IT EXISTS (2026-09-03): the reader was handed raw file bytes, and Claude",
+    "never receives image metadata, so a receipt lying sideways on a table was",
+    "read sideways — and answered CONFIDENTLY WRONG. IMG_4047 is a Hornbach",
+    "receipt for 496,80 kr; raw, the reader called it 'ICA, 841,85 kr' at",
+    "confidence 0.72, and 'ICA, 524,90' on the next run. A wrong number that",
+    "looks certain walks straight through review, which is what makes this worse",
+    "than a failure. IMG_4058 is the same file that produced the unexplained",
+    "'Byggmax 2 948 kr' beside a Hornbach photo in session 89.",
+    "",
+    "EXIF cannot substitute for this: IMG_4047's orientation tag says 180 while",
+    "the paper needs 270. The tag records how the CAMERA was held, not how the",
+    "paper lay.",
+    "",
+    "The images are private receipts and are NOT in the repo. Point the runner at",
+    "the folder holding them:  RECEIPT_EVAL_DIR=/path/to/folder",
+    "",
+    "Ground truth below was read off the images by hand, not produced by a model —",
+    "a check derived from the same source as the data inherits the source's errors.",
+    "Grow this set as new failure shapes appear; five cases is a floor, not a goal."
+  ],
+  "cases": [
+    {
+      "id": "hornbach-496-sideways",
+      "file": "IMG_4047.jpg",
+      "note": "Reference case. Raw read invents an ICA receipt with a different total on every run.",
+      "expected": {
+        "document_type": "receipt",
+        "vendor_contains": "hornbach",
+        "total_amount": 496.8,
+        "vat_amount": 99.36,
+        "purchase_date": "2026-01-16",
+        "line_items_min": 6
+      }
+    },
+    {
+      "id": "hornbach-2208-giftcard-split",
+      "file": "IMG_4049.jpg",
+      "note": "Total 2208,00 is the receipt sum; 1983,00 is only the card leg (225 came off a gift card). Reading the card leg as the total is a real failure mode.",
+      "expected": {
+        "document_type": "receipt",
+        "vendor_contains": "hornbach",
+        "total_amount": 2208.0,
+        "vat_amount": 241.6,
+        "purchase_date": "2025-08-12",
+        "line_items_min": 6
+      }
+    },
+    {
+      "id": "hornbach-596-single-line",
+      "file": "IMG_4052.jpg",
+      "note": "One article bought in 8 units. 'Summa [8]' is the unit count, not the row count — reading it as 8 rows is the trap.",
+      "expected": {
+        "document_type": "receipt",
+        "vendor_contains": "hornbach",
+        "total_amount": 596.0,
+        "vat_amount": 119.2,
+        "purchase_date": "2025-08-02",
+        "line_items_min": 1
+      }
+    },
+    {
+      "id": "hornbach-1396-six-lines",
+      "file": "IMG_4054.jpg",
+      "note": "Raw read called this Hennes & Mauritz.",
+      "expected": {
+        "document_type": "receipt",
+        "vendor_contains": "hornbach",
+        "total_amount": 1396.0,
+        "vat_amount": 279.2,
+        "purchase_date": "2025-08-01",
+        "line_items_min": 6
+      }
+    },
+    {
+      "id": "hornbach-5248-two-vat-rates",
+      "file": "IMG_4058.jpg",
+      "note": "Session 89's unexplained 'Byggmax 2 948'. Two VAT rates (25 % on goods, 12 % on the energy drink), so the 25 %-check alone cannot catch a misread here.",
+      "expected": {
+        "document_type": "receipt",
+        "vendor_contains": "hornbach",
+        "total_amount": 5248.96,
+        "vat_amount": 1047.93,
+        "purchase_date": "2025-08-06",
+        "line_items_min": 10
+      }
+    }
+  ]
+}

@@ -118,6 +118,12 @@ describes the RENOVATION. They are different fields and both may be present.`;
 function buildClassifyPrompt(): string {
   return `You classify renovation project documents. Analyze the document and determine its type.
 
+ORIENTATION: a photographed document is often rotated — the person shot the paper
+as it happened to lie on the table, and no metadata records that. Judge the type
+regardless of which way up it sits. A receipt turned sideways is still a receipt,
+and calling it "product_image" is how a whole pile of them gets filed as photos
+and never read (Carl's 112-receipt drop, 2026-09-01).
+
 DOCUMENT TYPES:
 - "quote" — A price offer/estimate from a contractor or supplier. Contains line items with prices, work descriptions, totals. Swedish: "Offert", "Prisförslag", "Anbud".
 - "invoice" — A bill requesting payment. Has invoice number, due date, OCR/payment reference, bankgiro. Swedish: "Faktura".

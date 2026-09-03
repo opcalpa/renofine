@@ -134,6 +134,20 @@ interface ExtractionResult {
   // Set in receipt/invoice mode. null/undefined otherwise.
   document_type?: DocumentType;
   receiptData?: ReceiptData | null;
+  /**
+   * Whether the text sat upright in the image the model was given.
+   *
+   * Carl's 112-receipt pile (2026-09-03) is why this exists. The reader was
+   * handed raw bytes, and Claude never receives image metadata, so a receipt
+   * lying sideways on a table was read sideways — and answered with a
+   * confidently invented "ICA 841,85" for a Hornbach receipt of 496,80. EXIF
+   * cannot fix it: that file's tag said 180° while the paper needed 270°. The
+   * tag records how the CAMERA was held, not how the paper lay.
+   *
+   * It is a yes/no because that is the part the model gets right. The client
+   * turns the image and asks again; see src/services/documentRead.ts.
+   */
+  text_is_upright?: boolean;
 }
 
 // ---------- Pass 1: thin extraction (one Anthropic call) ----------
@@ -282,6 +296,23 @@ const QUOTE_TOOL = {
 
 const RECEIPT_SYSTEM = `Du analyserar svenska byggdokument (kvitton, fakturor, offerter, arbetsbeskrivningar) och extraherar strukturerade fält.
 
+STEG 0 — HUR LIGGER BILDEN? Gör detta FÖRST, före allt annat.
+Ett fotograferat kvitto ligger ofta på sned i bilden: personen fotar det som det
+råkar ligga på bordet. Kamerans egen rotationsmärkning hjälper inte — den vet
+inget om hur papperet låg, och du får ändå aldrig se den.
+
+Svara på EN fråga i text_is_upright: står dokumentets text upprätt, så att du
+kan läsa den vänster till höger utan att luta på huvudet? true eller false.
+
+Bara det. Försök INTE tala om hur mycket bilden ska vridas — appen vänder den
+och frågar dig igen tills du svarar true.
+
+Om text_is_upright är false: sätt document_type efter vad du kan se, och lämna
+ALLA andra fält null med tom line_items och confidence högst 0.2. Läs inte av
+belopp, leverantör eller datum ur en bild som ligger fel — då gissar du, och en
+gissning som ser säker ut är värre än inget svar. Ett kvitto som lästes på sned
+gav "ICA, 841,85 kr" med konfidens 0,72 om ett Hornbach-kvitto på 496,80.
+
 STEG 1 — Bestäm dokumenttyp (VIKTIGAST — fel typ ger fel flöde i appen):
 - KVITTO (receipt): kassakvitto, betalat direkt, ingen förfallodag, ingen fakturanr/OCR
 - FAKTURA (invoice): "Faktura", "Fakturanummer", "Förfallodatum", "OCR", bankgiro/plusgiro — ett KRAV på betalning för utfört arbete/levererad vara
@@ -334,6 +365,11 @@ const RECEIPT_TOOL = {
     type: 'object',
     properties: {
       document_type: { type: 'string', enum: ['receipt', 'invoice', 'quote', 'scope', 'other'] },
+      text_is_upright: {
+        type: 'boolean',
+        description:
+          'Står texten upprätt och läsbar vänster till höger? false när dokumentet ligger vridet i bilden. För PDF: alltid true.',
+      },
       vendor_name: { type: ['string', 'null'] },
       total_amount: { type: ['number', 'null'] },
       total_printed: {
@@ -375,9 +411,9 @@ const RECEIPT_TOOL = {
       },
     },
     required: [
-      'document_type', 'vendor_name', 'total_amount', 'vat_amount', 'purchase_date',
-      'due_date', 'invoice_number', 'ocr_number', 'line_items', 'rot_amount',
-      'rot_personnummer', 'confidence',
+      'document_type', 'text_is_upright', 'vendor_name', 'total_amount', 'vat_amount',
+      'purchase_date', 'due_date', 'invoice_number', 'ocr_number', 'line_items',
+      'rot_amount', 'rot_personnummer', 'confidence',
     ],
   },
 };
@@ -467,6 +503,16 @@ function expandReceiptResult(raw: Record<string, unknown>): ExtractionResult {
   // checks the values the app will actually use, not what the model claimed.
   receiptData.issues = verifyReceipt({ ...receiptData, document_type: docType });
 
+  // A yes/no, never an angle. Measured on five of Carl's receipts (2026-09-03,
+  // all of which needed 270°): asked for degrees clockwise the model answered
+  // 90, 180, 180, 0, 180 — it saw that four of the five lay wrong but named the
+  // angle right zero times. Asked WHERE the top edge sat it did worse still,
+  // calling three of them upright and inventing an ICA receipt for one.
+  // So it is asked only the thing it can do. The client turns the image and
+  // asks again, and an independent check — the arithmetic in verifyReceipt —
+  // decides when a reading is good, not the model's own confidence.
+  const text_is_upright = raw.text_is_upright !== false;
+
   return {
     rooms: [],
     tasks: [],
@@ -474,6 +520,7 @@ function expandReceiptResult(raw: Record<string, unknown>): ExtractionResult {
     quoteMetadata: null,
     document_type: docType,
     receiptData,
+    text_is_upright,
   };
 }
 

@@ -40,7 +40,7 @@ import {
   PenLine,
 } from "lucide-react";
 import {
-  analyzeDocument,
+  analyzeDocumentFile,
   generateDocumentFilename,
   type DocumentAnalysisResult,
 } from "@/services/receiptAnalysisService";
@@ -82,12 +82,19 @@ const isPdfFile = (file: File): boolean => {
   return file.type.toLowerCase() === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
 };
 
-// Image compression utility
+/**
+ * Shrink the photo before it is previewed, read and stored.
+ *
+ * 1568 px, not 1200: that is exactly the long edge Claude Haiku 4.5 works at,
+ * so anything smaller throws away detail the reader could have used, and
+ * anything larger is downscaled server-side for nothing. Quality 0.9 because
+ * JPEG artefacts are what make small receipt print unreadable.
+ */
 const compressImage = (
   file: File,
-  maxWidth = 1200,
-  maxHeight = 1200,
-  quality = 0.8
+  maxWidth = 1568,
+  maxHeight = 1568,
+  quality = 0.9
 ): Promise<File> => {
   return new Promise((resolve) => {
     const canvas = document.createElement("canvas");
@@ -136,21 +143,6 @@ const compressImage = (
     };
 
     img.src = URL.createObjectURL(file);
-  });
-};
-
-// Convert file to base64
-const fileToBase64 = (file: File): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      // Remove data:image/xxx;base64, prefix
-      const base64 = result.split(",")[1];
-      resolve(base64);
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
   });
 };
 
@@ -395,13 +387,17 @@ export function QuickReceiptCaptureModal({
     aiAbortedRef.current = false;
 
     try {
-      const base64 = await fileToBase64(selectedFile);
-      const result = await analyzeDocument(base64);
+      // From the FILE, not base64: a receipt photographed as it lay on the
+      // table is usually rotated, and only a caller holding the file can turn
+      // it and read again. What comes back is the upright image — keep it, so
+      // the receipt stored on the order is the one the model actually read.
+      const { result, uprightFile } = await analyzeDocumentFile(selectedFile);
 
       // If user pressed "Fyll i själv" mid-flight, discard the result — they
       // may already be typing values that the AI would overwrite.
       if (aiAbortedRef.current) return;
 
+      if (uprightFile !== selectedFile) setSelectedFile(uprightFile);
       setAnalysisResult(result);
 
       // Populate form with extracted values

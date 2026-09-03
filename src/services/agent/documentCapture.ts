@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { ProposalAction } from "./types";
 import type { QuoteLine } from "../renaidaProjectFlow";
 import { matchDocumentToPlanned, type PlannedMaterial } from "./matchPlannedMaterials";
+import { readDocumentUpright } from "../documentRead";
 
 /** Fetch the project's still-open planned materials (the shopping list). */
 async function fetchPlannedMaterials(projectId: string): Promise<PlannedMaterial[]> {
@@ -51,6 +52,8 @@ interface UnifiedExtractionResult {
   document_type?: "receipt" | "invoice" | "quote" | "scope" | "other";
   receiptData?: UnifiedReceiptSlice | null;
   tasks?: { title?: string; estimatedCost?: number | null }[];
+  /** Degrees clockwise the image must turn before its text can be read. */
+  image_rotation?: number;
 }
 
 /**
@@ -173,20 +176,11 @@ export async function captureDocument(
   file: File,
   opts?: { projectId?: string; userNote?: string },
 ): Promise<DocumentCaptureResult> {
-  const base64 = await fileToBase64(file);
-  const isPdf =
-    (file.type || "").toLowerCase().includes("pdf") ||
-    file.name.toLowerCase().endsWith(".pdf");
   const userNote = opts?.userNote?.trim() || undefined;
-  const { data, error } = await supabase.functions.invoke<UnifiedExtractionResult>(
-    "process-document-v2",
-    {
-      body: isPdf
-        ? { fileBase64: base64, mimeType: file.type || "application/pdf", fileName: file.name, mode_hint: "receipt", userNote }
-        : { imageBase64: base64, mimeType: file.type || "image/jpeg", mode_hint: "receipt", userNote },
-    },
-  );
-  if (error) throw new Error(error.message || "Document analysis failed");
+
+  // The image the model reads and the image the order keeps are the same one:
+  // upright, capped at the model's resolution ceiling, EXIF baked in.
+  const { data, sent } = await readDocumentUpright<UnifiedExtractionResult>(file, { userNote });
 
   const type = data?.document_type;
   if (type === "quote" || type === "scope") return { kind: type };
@@ -200,7 +194,10 @@ export async function captureDocument(
 
   const documentType = type === "invoice" ? "invoice" : "receipt";
   const attachmentKey = crypto.randomUUID();
-  attachmentRegistry.set(attachmentKey, file);
+  // The UPRIGHT image, not the original: the order's receipt is something the
+  // person opens to check a number against, and a sideways photo fails at the
+  // one job it has. The camera roll still holds the untouched original.
+  attachmentRegistry.set(attachmentKey, sent);
 
   const room = userNote && opts?.projectId
     ? await resolveRoomFromNote(opts.projectId, userNote).catch(() => null)

@@ -7,6 +7,13 @@ Features covered:
 - **`generate-work-checklist`** — generating the on-site, step-by-step work checklist for a task (safe ordering, respects the room spec, no purchasing steps). Runner: `run-checklist.mjs`.
 - **`parse-renovation-description`** — free-text → structured plan (rooms, work types, property fields). The extraction eval: scores recall/precision over rooms & work types, object fields, and the conservative global-vs-per-room rule — because a wrong extraction silently corrupts a user's project. Runner: `run-extraction.mjs`.
 
+- **`process-document-v2` (kvittoläsaren)** — reading a photographed receipt. The eval exists because the failure mode is invisible: a receipt lying sideways on a table was not read badly, it was read CONFIDENTLY WRONG ("ICA, 841,85 kr" at confidence 0.72 for a Hornbach receipt of 496,80). It scores the same receipts flat (the old behaviour) and turned (what ships). Runner: `run-receipt-orientation.mjs`.
+
+  The images are private receipts and are **not** in the repo — point the runner at a folder:
+  ```bash
+  RECEIPT_EVAL_DIR="/path/to/receipts" node evals/run-receipt-orientation.mjs
+  ```
+  Ground truth in `dataset/receipt-orientation.json` was read off the images by hand. That is deliberate: a check derived from the same source as the data inherits the source's errors, so a model may not write this file. Grow the set as new failure shapes appear.
 ## Why this exists
 
 Two things you can prove with this:

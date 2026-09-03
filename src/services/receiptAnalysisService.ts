@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { formatLocalDate } from "@/lib/dateUtils";
+import { readDocumentUpright } from "./documentRead";
 
 export interface DocumentLineItem {
   description: string;
@@ -29,6 +30,8 @@ export type ReceiptAnalysisResult = DocumentAnalysisResult;
 
 interface UnifiedExtractionResult {
   document_type?: "receipt" | "invoice" | "quote" | "scope" | "other";
+  /** Degrees clockwise the image must turn before its text can be read. */
+  image_rotation?: number;
   receiptData?: {
     vendor_name: string | null;
     total_amount: number | null;
@@ -79,7 +82,33 @@ export async function analyzeDocument(
     throw new Error("No receipt data returned from document analysis");
   }
 
-  const r = data.receiptData;
+  return toAnalysisResult(data);
+}
+
+/**
+ * The same read, but from the FILE — which is what a photographed receipt needs.
+ *
+ * A phone photo of a receipt on a table is usually rotated, and the model never
+ * sees image metadata, so reading the bytes as they arrive produces a confident
+ * invention rather than an error (measured on Carl's pile, 2026-09-03). Only a
+ * caller holding the File can turn it and ask again, so base64-only callers
+ * cannot be fixed in place — they have to hand over the file.
+ *
+ * Returns the upright image alongside the reading: archive THAT, so what the
+ * person opens later is the same picture the model read.
+ */
+export async function analyzeDocumentFile(
+  file: File,
+): Promise<{ result: DocumentAnalysisResult; uprightFile: File }> {
+  const { data, sent } = await readDocumentUpright<UnifiedExtractionResult>(file);
+  if (!data || !data.receiptData) {
+    throw new Error("No receipt data returned from document analysis");
+  }
+  return { result: toAnalysisResult(data), uprightFile: sent };
+}
+
+function toAnalysisResult(data: UnifiedExtractionResult): DocumentAnalysisResult {
+  const r = data.receiptData!;
   return {
     document_type: data.document_type === "invoice" ? "invoice" : "receipt",
     vendor_name: r.vendor_name || "",
