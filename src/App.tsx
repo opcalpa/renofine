@@ -8,48 +8,57 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import { GuestProvider } from "@/contexts/GuestContext";
 import { MeasurementProvider } from "@/contexts/MeasurementContext";
 import "@/i18n/config";
+import { lazy, Suspense } from "react";
+
+/**
+ * Route-splitting (Carl 2026-09-03): landningssidan skickade 2 385 kB gzip i EN
+ * chunk, med Konva, Leaflet, Recharts, fabric och three inbakade — allt som
+ * ProjectDetail drar in. Inget av det används på `/`.
+ *
+ * Regeln här: sidor som ingår i den PUBLIKA första kontakten laddas statiskt.
+ * Allt bakom inloggning, och allt som drar in ett tungt bibliotek, är lazy.
+ * Identifierarna är oförändrade, så JSX:en nedan behöver inte röras.
+ */
+
+// Publik första kontakt — måste vara omedelbar, är liten.
 import Index from "./pages/Index";
-import EmbedRenaida from "./pages/EmbedRenaida";
 import Auth from "./pages/Auth";
-import Projects from "./pages/Projects";
-import ProjectDetail from "./pages/ProjectDetail";
-import DevImportReview from "./pages/DevImportReview";
-import Profile from "./pages/Profile";
-import Admin from "./pages/Admin";
-import InvitationResponse from "./pages/InvitationResponse";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
-import NotFound from "./pages/NotFound";
-import PinterestCallback from "./pages/PinterestCallback";
 import Tips from "./pages/Tips";
-import Changelog from "./pages/Changelog";
-// EmailConfirmed page removed — using toast on /start?confirmed=true instead
-import Feedback from "./pages/Feedback";
-import FindProfessionals from "./pages/FindProfessionals";
-import CreateQuote from "./pages/contractor/CreateQuote";
-import CreateQuoteV2 from "./pages/contractor/CreateQuoteV2";
-import ViewQuote from "./pages/ViewQuote";
-import ViewQuoteV2 from "./pages/ViewQuoteV2";
+import NotFound from "./pages/NotFound";
 
-// Flip to false to fall back to v1 versions.
-const USE_QUOTE_VIEW_V2 = true;
-const USE_QUOTE_CREATE_V2 = true;
-import CreateInvoice from "./pages/contractor/CreateInvoice";
-import CreateInvoiceV2 from "./pages/contractor/CreateInvoiceV2";
-import ViewInvoice from "./pages/ViewInvoice";
-import ViewInvoiceV2 from "./pages/ViewInvoiceV2";
+// Appen bakom inloggning — dessa bar hela bundeln.
+const Projects = lazy(() => import("./pages/Projects"));
+const ProjectDetail = lazy(() => import("./pages/ProjectDetail"));
+const Profile = lazy(() => import("./pages/Profile"));
+const Admin = lazy(() => import("./pages/Admin"));
+const DevImportReview = lazy(() => import("./pages/DevImportReview"));
 
-const USE_INVOICE_VIEW_V2 = true;
-const USE_INVOICE_CREATE_V2 = true;
-import ClientRegistry from "./pages/contractor/ClientRegistry";
-import CustomerIntake from "./pages/CustomerIntake";
-import IntakeRequests from "./pages/contractor/IntakeRequests";
-import { RequireAuth } from "./components/auth/RequireAuth";
-import { RequireRole } from "./components/auth/RequireRole";
-import { lazy, Suspense } from "react";
+// Offert och faktura — både v1 och v2 skeppades tidigare till varje besökare.
+const CreateQuote = lazy(() => import("./pages/contractor/CreateQuote"));
+const CreateQuoteV2 = lazy(() => import("./pages/contractor/CreateQuoteV2"));
+const ViewQuote = lazy(() => import("./pages/ViewQuote"));
+const ViewQuoteV2 = lazy(() => import("./pages/ViewQuoteV2"));
+const CreateInvoice = lazy(() => import("./pages/contractor/CreateInvoice"));
+const CreateInvoiceV2 = lazy(() => import("./pages/contractor/CreateInvoiceV2"));
+const ViewInvoice = lazy(() => import("./pages/ViewInvoice"));
+const ViewInvoiceV2 = lazy(() => import("./pages/ViewInvoiceV2"));
+const ClientRegistry = lazy(() => import("./pages/contractor/ClientRegistry"));
+const IntakeRequests = lazy(() => import("./pages/contractor/IntakeRequests"));
 
+// Övriga sidor bakom en klick eller en länk.
+const EmbedRenaida = lazy(() => import("./pages/EmbedRenaida"));
+const InvitationResponse = lazy(() => import("./pages/InvitationResponse"));
+const PinterestCallback = lazy(() => import("./pages/PinterestCallback"));
+const Changelog = lazy(() => import("./pages/Changelog"));
+const Feedback = lazy(() => import("./pages/Feedback"));
+const FindProfessionals = lazy(() => import("./pages/FindProfessionals"));
+const CustomerIntake = lazy(() => import("./pages/CustomerIntake"));
+
+// Sedan tidigare lazy.
 const WorkerView = lazy(() => import("./pages/WorkerView"));
 const AtaApproval = lazy(() => import("./pages/AtaApproval"));
 const AttendanceCheckIn = lazy(() => import("./pages/AttendanceCheckIn"));
@@ -57,7 +66,19 @@ const DocPlayground = lazy(() => import("./pages/_DocPlayground"));
 const Capture = lazy(() => import("./pages/Capture"));
 const AddressDetail = lazy(() => import("./pages/AddressDetail"));
 const AddressInviteAccept = lazy(() => import("./pages/AddressInviteAccept"));
-import { Renaida } from "./components/Renaida";
+
+// Flip to false to fall back to v1 versions.
+const USE_QUOTE_VIEW_V2 = true;
+const USE_QUOTE_CREATE_V2 = true;
+const USE_INVOICE_VIEW_V2 = true;
+const USE_INVOICE_CREATE_V2 = true;
+
+import { RequireAuth } from "./components/auth/RequireAuth";
+import { RequireRole } from "./components/auth/RequireRole";
+
+// Renaida renderas aldrig på publika sidor (isPublicAppPath), så den hör inte
+// hemma i entry-chunken heller. ~2 000 rader.
+const Renaida = lazy(() => import("./components/Renaida").then((m) => ({ default: m.Renaida })));
 import { InstallPwaBanner } from "./components/InstallPwaBanner";
 import { BetaBanner } from "./components/BetaBanner";
 import { Canonical } from "./components/seo/Canonical";
@@ -81,7 +102,12 @@ function isPublicAppPath(pathname: string): boolean {
 function AuthenticatedRenaida() {
   const { pathname } = useLocation();
   if (isPublicAppPath(pathname)) return null;
-  return <Renaida />;
+  // Egen gräns: Renaida renderas utanför <Routes> och täcks inte av dess Suspense.
+  return (
+    <Suspense fallback={null}>
+      <Renaida />
+    </Suspense>
+  );
 }
 
 function AuthenticatedInstallBanner() {
@@ -106,6 +132,15 @@ const queryClient = new QueryClient({
 // the query string before the floor planner mounts, so the flag must be
 // persisted to localStorage before any param stripping happens.
 isEditorV2Enabled();
+
+/** Visas medan en lazy route hämtas. Router-flaggan v7_startTransition gör att
+ *  den gamla vyn ligger kvar vid navigering — den här syns i praktiken bara vid
+ *  en kall laddning direkt på en lazy route. */
+const RouteFallback = () => (
+  <div className="min-h-screen flex items-center justify-center">
+    <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+  </div>
+);
 
 const ErrorFallback = () => (
   <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -135,6 +170,7 @@ const App = () => (
           <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <Canonical />
             <BetaBanner />
+            <Suspense fallback={<RouteFallback />}>
             <Routes>
               {/* ── Public routes ── */}
               <Route path="/" element={<Index />} />
@@ -185,6 +221,7 @@ const App = () => (
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </Suspense>
             <AuthenticatedRenaida />
             <AuthenticatedInstallBanner />
           </BrowserRouter>
