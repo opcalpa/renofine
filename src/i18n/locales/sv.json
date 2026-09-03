@@ -3827,6 +3827,7 @@
   "comments": {
     "title": "Kommentarer",
     "noComments": "Inga kommentarer än",
+    "noCommentsHint": "Kommentarer och aktivitet från ditt team dyker upp här",
     "beFirst": "Bli först att kommentera!",
     "placeholder": "Skriv en kommentar...",
     "placeholderWithMention": "Skriv en kommentar... (använd @ för att nämna teammedlemmar)",

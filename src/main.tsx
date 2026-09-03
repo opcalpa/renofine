@@ -4,6 +4,7 @@ import App from "./App.tsx";
 import "./index.css";
 import { supabase } from "./integrations/supabase/client";
 import { analytics } from "./lib/analytics";
+import { i18nReady } from "./i18n/config";
 
 // Initialize Sentry for error tracking.
 //
@@ -53,4 +54,12 @@ if ("serviceWorker" in navigator) {
   });
 }
 
-createRoot(document.getElementById("root")!).render(<App />);
+const root = createRoot(document.getElementById("root")!);
+
+// Translations are their own chunk now (see src/i18n/config.ts), so they land
+// a beat after the entry script. Wait for the active language before the first
+// paint or the landing page flashes raw t() keys. A failed fetch still renders:
+// English keys beat a blank page.
+i18nReady
+  .catch(() => undefined)
+  .then(() => root.render(<App />));

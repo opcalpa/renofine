@@ -1,6 +1,6 @@
-import { useMemo } from "react";
+import { useEffect, useState } from "react";
 import { I18nextProvider, useTranslation } from "react-i18next";
-import i18n from "@/i18n/config";
+import i18n, { SUPPORTED_LANGUAGES } from "@/i18n/config";
 import { Logo } from "@/components/landing/Logo";
 import { Pill } from "@/components/landing/Pill";
 import { RenaidaLive } from "@/components/landing/RenaidaLive";
@@ -18,7 +18,6 @@ import { RenaidaLive } from "@/components/landing/RenaidaLive";
  *
  * Zero backend, zero tokens — same as the landing hero. Safe to expose.
  */
-const SUPPORTED = ["en", "sv", "de", "fr", "es", "pl", "uk"]; // = resources i i18n/config.ts
 const SITE = "https://renofine.com/";
 
 function EmbedBody() {
@@ -91,11 +90,27 @@ const EmbedRenaida = () => {
   // ?lng=en lets the embedding site pick the language (carlpalmquist.com is English).
   // A CLONED i18n instance keeps that choice inside the frame: the detector never caches it,
   // so a visitor's renofine.com language (shared localStorage, same origin) is left alone.
-  const framed = useMemo(() => {
+  const [framed, setFramed] = useState<typeof i18n | null>(null);
+  useEffect(() => {
     const want = new URLSearchParams(window.location.search).get("lng") || "";
-    if (!SUPPORTED.includes(want)) return i18n;
-    return i18n.cloneInstance({ lng: want, initImmediate: false });
+    if (!(SUPPORTED_LANGUAGES as readonly string[]).includes(want)) {
+      setFramed(i18n);
+      return;
+    }
+    // Locales load on demand, so pull the framed language into the shared store
+    // before cloning — a clone of an unloaded language paints raw keys.
+    let cancelled = false;
+    i18n
+      .loadLanguages(want)
+      .catch(() => undefined)
+      .then(() => {
+        if (!cancelled) setFramed(i18n.cloneInstance({ lng: want, initImmediate: false }));
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
+  if (!framed) return null;
   return (
     <I18nextProvider i18n={framed}>
       <EmbedBody />
