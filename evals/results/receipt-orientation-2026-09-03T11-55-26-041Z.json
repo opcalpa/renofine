@@ -1,0 +1,843 @@
+{
+  "totals": {
+    "raw": 4,
+    "upright": 24
+  },
+  "max": 30,
+  "rows": [
+    {
+      "id": "hornbach-496-sideways",
+      "file": "IMG_4047.jpg",
+      "raw": {
+        "checks": {
+          "document_type": true,
+          "vendor": false,
+          "total": false,
+          "vat": false,
+          "date": false,
+          "line_items": true
+        },
+        "passed": 2,
+        "of": 6,
+        "read": {
+          "vendor_name": "Bauhaus",
+          "total_amount": 1319,
+          "total_printed": "1 319,00",
+          "vat_amount": 263.8,
+          "purchase_date": "2025-01-24",
+          "due_date": null,
+          "invoice_number": null,
+          "ocr_number": null,
+          "line_items": [
+            {
+              "description": "ARMSTÖD",
+              "quantity": 1,
+              "unit_price": 99,
+              "total": 99
+            },
+            {
+              "description": "BÄRPINNE",
+              "quantity": 2,
+              "unit_price": 69,
+              "total": 138
+            },
+            {
+              "description": "GÅNGJÄRN",
+              "quantity": 4,
+              "unit_price": 35,
+              "total": 140
+            },
+            {
+              "description": "HYLLA",
+              "quantity": 2,
+              "unit_price": 22.5,
+              "total": 45
+            },
+            {
+              "description": "LÅSANORDNING",
+              "quantity": 1,
+              "unit_price": 88,
+              "total": 88
+            },
+            {
+              "description": "MÖBELPLUGG",
+              "quantity": 8,
+              "unit_price": 32,
+              "total": 256
+            },
+            {
+              "description": "PACKNINGAR",
+              "quantity": 3,
+              "unit_price": 45,
+              "total": 135
+            },
+            {
+              "description": "PLINTH",
+              "quantity": 2,
+              "unit_price": 23,
+              "total": 46
+            },
+            {
+              "description": "SKRUV",
+              "quantity": 12,
+              "unit_price": 13,
+              "total": 156
+            },
+            {
+              "description": "SPEGELHÅLLARE",
+              "quantity": 5,
+              "unit_price": 21,
+              "total": 105
+            },
+            {
+              "description": "TEXTIL",
+              "quantity": 1,
+              "unit_price": 45,
+              "total": 45
+            },
+            {
+              "description": "URTAGNING",
+              "quantity": 1,
+              "unit_price": 88,
+              "total": 88
+            }
+          ],
+          "rot_amount": null,
+          "rot_personnummer": null,
+          "confidence": 0.45,
+          "field_confidence": {
+            "vendor_name": 0.9,
+            "total_amount": 0.7,
+            "vat_amount": 0.6,
+            "purchase_date": 0.65,
+            "invoice_number": 1
+          },
+          "issues": [
+            {
+              "code": "line_sum_mismatch",
+              "field": "lines",
+              "level": "check",
+              "detail": {
+                "sum": 1341,
+                "total": 1319
+              }
+            },
+            {
+              "code": "low_confidence",
+              "field": "all",
+              "level": "check",
+              "detail": {
+                "confidence": 45
+              }
+            }
+          ]
+        },
+        "rotationApplied": 0
+      },
+      "upright": {
+        "checks": {
+          "document_type": true,
+          "vendor": true,
+          "total": true,
+          "vat": true,
+          "date": true,
+          "line_items": false
+        },
+        "passed": 5,
+        "of": 6,
+        "read": {
+          "vendor_name": "Hornbach Sundbyberg",
+          "total_amount": 496.8,
+          "total_printed": "496,80",
+          "vat_amount": 99.36,
+          "purchase_date": "2026-01-16",
+          "due_date": null,
+          "invoice_number": null,
+          "ocr_number": null,
+          "line_items": [
+            {
+              "description": "ELITE PRO LACKPENSEL",
+              "quantity": 1,
+              "unit_price": 129,
+              "total": 129
+            },
+            {
+              "description": "Latexfoe L0709 VIF",
+              "quantity": 1,
+              "unit_price": 45,
+              "total": 45
+            },
+            {
+              "description": "PL200 PowerFlex",
+              "quantity": 1,
+              "unit_price": 89,
+              "total": 89
+            },
+            {
+              "description": "HUFF SPIRO 8100 MM",
+              "quantity": 1,
+              "unit_price": 29.9,
+              "total": 29.9
+            },
+            {
+              "description": "NIPPEL SPIRO 8100 MM",
+              "quantity": 1,
+              "unit_price": 54.9,
+              "total": 54.9
+            }
+          ],
+          "rot_amount": null,
+          "rot_personnummer": null,
+          "confidence": 0.85,
+          "field_confidence": {
+            "vendor_name": 0.95,
+            "total_amount": 0.95,
+            "vat_amount": 0.85,
+            "purchase_date": 0.9,
+            "invoice_number": 1
+          },
+          "issues": [
+            {
+              "code": "line_sum_mismatch",
+              "field": "lines",
+              "level": "check",
+              "detail": {
+                "sum": 348,
+                "total": 496.8
+              }
+            }
+          ]
+        },
+        "rotationApplied": 270
+      }
+    },
+    {
+      "id": "hornbach-2208-giftcard-split",
+      "file": "IMG_4049.jpg",
+      "raw": {
+        "checks": {
+          "document_type": true,
+          "vendor": false,
+          "total": false,
+          "vat": false,
+          "date": false,
+          "line_items": false
+        },
+        "passed": 1,
+        "of": 6,
+        "read": {
+          "vendor_name": null,
+          "total_amount": null,
+          "total_printed": null,
+          "vat_amount": null,
+          "purchase_date": null,
+          "due_date": null,
+          "invoice_number": null,
+          "ocr_number": null,
+          "line_items": [],
+          "rot_amount": null,
+          "rot_personnummer": null,
+          "confidence": 0.15,
+          "field_confidence": {
+            "vendor_name": 0,
+            "total_amount": 0,
+            "vat_amount": 0,
+            "purchase_date": 0,
+            "invoice_number": 0
+          },
+          "issues": [
+            {
+              "code": "missing_total",
+              "field": "total",
+              "level": "blocking"
+            },
+            {
+              "code": "missing_vendor",
+              "field": "vendor",
+              "level": "blocking"
+            },
+            {
+              "code": "missing_date",
+              "field": "date",
+              "level": "check"
+            },
+            {
+              "code": "low_confidence",
+              "field": "all",
+              "level": "check",
+              "detail": {
+                "confidence": 15
+              }
+            }
+          ]
+        },
+        "rotationApplied": 0
+      },
+      "upright": {
+        "checks": {
+          "document_type": false,
+          "vendor": true,
+          "total": false,
+          "vat": false,
+          "date": false,
+          "line_items": true
+        },
+        "passed": 2,
+        "of": 6,
+        "read": {
+          "vendor_name": "Hornbach",
+          "total_amount": 6230.4,
+          "total_printed": "6 230,40",
+          "vat_amount": 1246.08,
+          "purchase_date": "2023-05-18",
+          "due_date": "2023-06-18",
+          "invoice_number": "7891228",
+          "ocr_number": null,
+          "line_items": [
+            {
+              "description": "SPARA PALL",
+              "quantity": 2,
+              "unit_price": 33,
+              "total": 66
+            },
+            {
+              "description": "TRÄSKRUV PZ 5X70 FÖRZ.",
+              "quantity": 2,
+              "unit_price": 156,
+              "total": 312
+            },
+            {
+              "description": "TRÄSKRUV PZ 5X90 FÖRZ.",
+              "quantity": 1,
+              "unit_price": 156,
+              "total": 156
+            },
+            {
+              "description": "TRÄSKRUV PZ 4X50 FÖRZ.",
+              "quantity": 2,
+              "unit_price": 145,
+              "total": 290
+            },
+            {
+              "description": "TRÄSKRUV PZ 3,5X40 FÖRZ.",
+              "quantity": 1,
+              "unit_price": 145,
+              "total": 145
+            },
+            {
+              "description": "TRÄSKRUV PZ 4X60 FÖRZ.",
+              "quantity": 2,
+              "unit_price": 156,
+              "total": 312
+            },
+            {
+              "description": "TRÄSKRUV PZ 5X60 FÖRZ.",
+              "quantity": 1,
+              "unit_price": 156,
+              "total": 156
+            },
+            {
+              "description": "TRÄSKRUV PZ 3,5X50 FÖRZ.",
+              "quantity": 1,
+              "unit_price": 145,
+              "total": 145
+            },
+            {
+              "description": "TRÄSKRUV PZ 3X35 FÖRZ.",
+              "quantity": 2,
+              "unit_price": 145,
+              "total": 290
+            },
+            {
+              "description": "SMÅSPIK ROSTFRITT",
+              "quantity": 1,
+              "unit_price": 292,
+              "total": 292
+            },
+            {
+              "description": "SP BLOCK TRÄ",
+              "quantity": 2,
+              "unit_price": 79,
+              "total": 158
+            },
+            {
+              "description": "PLASTDUBBAR",
+              "quantity": 2,
+              "unit_price": 23,
+              "total": 46
+            },
+            {
+              "description": "TRÄSKRUV PZ 4X35 FÖRZ.",
+              "quantity": 1,
+              "unit_price": 145,
+              "total": 145
+            },
+            {
+              "description": "TRÄSKRUV ROSTFRITT",
+              "quantity": 1,
+              "unit_price": 204,
+              "total": 204
+            },
+            {
+              "description": "TRÄSKRUV PZ 5X40 FÖRZ.",
+              "quantity": 2,
+              "unit_price": 145,
+              "total": 290
+            },
+            {
+              "description": "TRÄSKRUV PZ 4X70 FÖRZ.",
+              "quantity": 1,
+              "unit_price": 156,
+              "total": 156
+            },
+            {
+              "description": "TRÄSKRUV PZ 6X70 FÖRZ.",
+              "quantity": 1,
+              "unit_price": 213,
+              "total": 213
+            },
+            {
+              "description": "LED SPOTLAMPA",
+              "quantity": 1,
+              "unit_price": 79,
+              "total": 79
+            },
+            {
+              "description": "LAMPHÅLLARE",
+              "quantity": 3,
+              "unit_price": 33,
+              "total": 99
+            },
+            {
+              "description": "SKENA HCP",
+              "quantity": 1,
+              "unit_price": 233,
+              "total": 233
+            }
+          ],
+          "rot_amount": null,
+          "rot_personnummer": null,
+          "confidence": 0.85,
+          "field_confidence": {
+            "vendor_name": 0.95,
+            "total_amount": 0.9,
+            "vat_amount": 0.85,
+            "purchase_date": 0.9,
+            "invoice_number": 0.85
+          },
+          "issues": [
+            {
+              "code": "line_sum_mismatch",
+              "field": "lines",
+              "level": "check",
+              "detail": {
+                "sum": 3787,
+                "total": 6230.4
+              }
+            }
+          ]
+        },
+        "rotationApplied": 0
+      }
+    },
+    {
+      "id": "hornbach-596-single-line",
+      "file": "IMG_4052.jpg",
+      "raw": {
+        "checks": {
+          "document_type": false,
+          "vendor": false,
+          "total": false,
+          "vat": false,
+          "date": false,
+          "line_items": false
+        },
+        "passed": 0,
+        "of": 6,
+        "read": {
+          "vendor_name": null,
+          "total_amount": null,
+          "total_printed": null,
+          "vat_amount": null,
+          "purchase_date": null,
+          "due_date": null,
+          "invoice_number": null,
+          "ocr_number": null,
+          "line_items": [],
+          "rot_amount": null,
+          "rot_personnummer": null,
+          "confidence": 0.15,
+          "field_confidence": null,
+          "issues": [
+            {
+              "code": "missing_total",
+              "field": "total",
+              "level": "blocking"
+            },
+            {
+              "code": "missing_vendor",
+              "field": "vendor",
+              "level": "blocking"
+            },
+            {
+              "code": "missing_date",
+              "field": "date",
+              "level": "check"
+            },
+            {
+              "code": "low_confidence",
+              "field": "all",
+              "level": "check",
+              "detail": {
+                "confidence": 15
+              }
+            }
+          ]
+        },
+        "rotationApplied": 0
+      },
+      "upright": {
+        "checks": {
+          "document_type": true,
+          "vendor": true,
+          "total": true,
+          "vat": true,
+          "date": true,
+          "line_items": true
+        },
+        "passed": 6,
+        "of": 6,
+        "read": {
+          "vendor_name": "Hornbach Byggmarknad AB",
+          "total_amount": 596,
+          "total_printed": "596,00",
+          "vat_amount": 119.2,
+          "purchase_date": "2025-08-02",
+          "due_date": null,
+          "invoice_number": null,
+          "ocr_number": null,
+          "line_items": [
+            {
+              "description": "STÅLREGEL C 70 dB+L 2685 MM",
+              "quantity": 8,
+              "unit_price": 59.6,
+              "total": 476.8
+            }
+          ],
+          "rot_amount": null,
+          "rot_personnummer": null,
+          "confidence": 0.92,
+          "field_confidence": {
+            "vendor_name": 0.95,
+            "total_amount": 0.95,
+            "vat_amount": 0.9,
+            "purchase_date": 0.98,
+            "invoice_number": 1
+          },
+          "issues": []
+        },
+        "rotationApplied": 270
+      }
+    },
+    {
+      "id": "hornbach-1396-six-lines",
+      "file": "IMG_4054.jpg",
+      "raw": {
+        "checks": {
+          "document_type": false,
+          "vendor": false,
+          "total": false,
+          "vat": false,
+          "date": false,
+          "line_items": false
+        },
+        "passed": 0,
+        "of": 6,
+        "read": {
+          "vendor_name": null,
+          "total_amount": null,
+          "total_printed": null,
+          "vat_amount": null,
+          "purchase_date": null,
+          "due_date": null,
+          "invoice_number": null,
+          "ocr_number": null,
+          "line_items": [],
+          "rot_amount": null,
+          "rot_personnummer": null,
+          "confidence": 0.15,
+          "field_confidence": {
+            "vendor_name": 0,
+            "total_amount": 0,
+            "vat_amount": 0,
+            "purchase_date": 0,
+            "invoice_number": 0
+          },
+          "issues": [
+            {
+              "code": "missing_total",
+              "field": "total",
+              "level": "blocking"
+            },
+            {
+              "code": "missing_vendor",
+              "field": "vendor",
+              "level": "blocking"
+            },
+            {
+              "code": "missing_date",
+              "field": "date",
+              "level": "check"
+            },
+            {
+              "code": "low_confidence",
+              "field": "all",
+              "level": "check",
+              "detail": {
+                "confidence": 15
+              }
+            }
+          ]
+        },
+        "rotationApplied": 0
+      },
+      "upright": {
+        "checks": {
+          "document_type": true,
+          "vendor": true,
+          "total": true,
+          "vat": true,
+          "date": true,
+          "line_items": true
+        },
+        "passed": 6,
+        "of": 6,
+        "read": {
+          "vendor_name": "Hornbach Byggsmarknad AB",
+          "total_amount": 1396,
+          "total_printed": "1396,00",
+          "vat_amount": 279.2,
+          "purchase_date": "2025-08-01",
+          "due_date": null,
+          "invoice_number": null,
+          "ocr_number": null,
+          "line_items": [
+            {
+              "description": "GIPSSKIVA STANDARD 13X900X2700MM",
+              "quantity": 5,
+              "unit_price": 119,
+              "total": 595
+            },
+            {
+              "description": "HORNSKYDD HS 29 L-24",
+              "quantity": 2,
+              "unit_price": 79,
+              "total": 158
+            },
+            {
+              "description": "RATSKIVA ALUMINIUM T",
+              "quantity": 1,
+              "unit_price": 179,
+              "total": 179
+            },
+            {
+              "description": "Strip Mälarhänskje",
+              "quantity": 3,
+              "unit_price": 19,
+              "total": 57
+            },
+            {
+              "description": "BIG BAG REDIUM",
+              "quantity": 1,
+              "unit_price": 148,
+              "total": 148
+            },
+            {
+              "description": "Hasnelvettenpass 250",
+              "quantity": 1,
+              "unit_price": 259,
+              "total": 259
+            }
+          ],
+          "rot_amount": null,
+          "rot_personnummer": null,
+          "confidence": 0.92,
+          "field_confidence": {
+            "vendor_name": 0.98,
+            "total_amount": 0.98,
+            "vat_amount": 0.95,
+            "purchase_date": 0.98,
+            "invoice_number": 1
+          },
+          "issues": []
+        },
+        "rotationApplied": 270
+      }
+    },
+    {
+      "id": "hornbach-5248-two-vat-rates",
+      "file": "IMG_4058.jpg",
+      "raw": {
+        "checks": {
+          "document_type": true,
+          "vendor": false,
+          "total": false,
+          "vat": false,
+          "date": false,
+          "line_items": false
+        },
+        "passed": 1,
+        "of": 6,
+        "read": {
+          "vendor_name": null,
+          "total_amount": null,
+          "total_printed": null,
+          "vat_amount": null,
+          "purchase_date": null,
+          "due_date": null,
+          "invoice_number": null,
+          "ocr_number": null,
+          "line_items": [],
+          "rot_amount": null,
+          "rot_personnummer": null,
+          "confidence": 0.15,
+          "field_confidence": {
+            "vendor_name": 0,
+            "total_amount": 0,
+            "vat_amount": 0,
+            "purchase_date": 0,
+            "invoice_number": 0
+          },
+          "issues": [
+            {
+              "code": "missing_total",
+              "field": "total",
+              "level": "blocking"
+            },
+            {
+              "code": "missing_vendor",
+              "field": "vendor",
+              "level": "blocking"
+            },
+            {
+              "code": "missing_date",
+              "field": "date",
+              "level": "check"
+            },
+            {
+              "code": "low_confidence",
+              "field": "all",
+              "level": "check",
+              "detail": {
+                "confidence": 15
+              }
+            }
+          ]
+        },
+        "rotationApplied": 0
+      },
+      "upright": {
+        "checks": {
+          "document_type": true,
+          "vendor": true,
+          "total": true,
+          "vat": false,
+          "date": true,
+          "line_items": true
+        },
+        "passed": 5,
+        "of": 6,
+        "read": {
+          "vendor_name": "Hornbach Byggnarknad AB",
+          "total_amount": 5248.96,
+          "total_printed": "5248,96",
+          "vat_amount": 1045.79,
+          "purchase_date": "2025-08-06",
+          "due_date": null,
+          "invoice_number": null,
+          "ocr_number": null,
+          "line_items": [
+            {
+              "description": "OSB 3 Eco 11x897x2500MM",
+              "quantity": 4,
+              "unit_price": 199,
+              "total": 796
+            },
+            {
+              "description": "STALREGELSKIVA 40 70 mm 4,36 M/PAK",
+              "quantity": 3,
+              "unit_price": 296.72,
+              "total": 890.16
+            },
+            {
+              "description": "TAK & VÄGGSTÖS 125 MM",
+              "quantity": 1,
+              "unit_price": 139,
+              "total": 139
+            },
+            {
+              "description": "FOGSKUM FM610 HELAR 500 ML",
+              "quantity": 1,
+              "unit_price": 89,
+              "total": 89
+            },
+            {
+              "description": "GO SPACKELROLLER 18 CM STICK",
+              "quantity": 1,
+              "unit_price": 129,
+              "total": 129
+            },
+            {
+              "description": "SKARVREMSA 5CMX75M RULLE",
+              "quantity": 1,
+              "unit_price": 59,
+              "total": 59
+            },
+            {
+              "description": "Muif 125 mm",
+              "quantity": 2,
+              "unit_price": 39.9,
+              "total": 79.8
+            },
+            {
+              "description": "Rohboj 125 mm 45° gummidämpning",
+              "quantity": 2,
+              "unit_price": 115,
+              "total": 230
+            },
+            {
+              "description": "STICKSPROPP RÅK JORDAD VIT",
+              "quantity": 3,
+              "unit_price": 21,
+              "total": 63
+            },
+            {
+              "description": "ORIG RULLSPACKEL 10L",
+              "quantity": 6,
+              "unit_price": 459,
+              "total": 2754
+            },
+            {
+              "description": "HORNBACH ENERGIDRYCK",
+              "quantity": 1,
+              "unit_price": 20,
+              "total": 20
+            }
+          ],
+          "rot_amount": null,
+          "rot_personnummer": null,
+          "confidence": 0.92,
+          "field_confidence": {
+            "vendor_name": 0.99,
+            "total_amount": 0.95,
+            "vat_amount": 0.9,
+            "purchase_date": 0.95,
+            "invoice_number": 1
+          },
+          "issues": []
+        },
+        "rotationApplied": 270
+      }
+    }
+  ]
+}

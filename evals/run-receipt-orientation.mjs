@@ -21,9 +21,15 @@
 //   ... --cases hornbach-496-sideways        # one case
 //   ... --only upright                       # skip the baseline (half the calls)
 //
-// Needs VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY (read from .env.local) and
-// macOS `sips` for the rotation. The anon rate limit on process-document-v2 is
-// 20 calls/hour, which is one full run of five cases in both conditions.
+// Needs VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY and macOS `sips` for the
+// rotation, all read from .env.local.
+//
+// It signs in as E2E_USER_EMAIL when those credentials are present. That is not
+// a convenience: the anon tier on process-document-v2 is 20 calls/hour on
+// purpose, because anyone holding the publishable key can reach it, and one run
+// of five cases turned four ways can spend all twenty. Signed in the tier is
+// 400/hour. Without credentials it still runs, just anonymously — and will
+// likely stop halfway with RATE_LIMITED.
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { execFileSync } from "node:child_process";
@@ -61,12 +67,27 @@ function rotate(path, deg) {
   return out;
 }
 
-async function read(path, url, key) {
+/** A signed-in access token, or the anon key as a fallback. */
+async function signIn(url, key) {
+  const email = process.env.E2E_USER_EMAIL;
+  const password = process.env.E2E_USER_PASSWORD;
+  if (!email || !password) return { token: key, who: "anon (20 calls/hour)" };
+  const res = await fetch(`${url}/auth/v1/token?grant_type=password`, {
+    method: "POST",
+    headers: { apikey: key, "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  if (!res.ok) return { token: key, who: "anon (sign-in failed)" };
+  const j = await res.json();
+  return { token: j.access_token ?? key, who: `${email} (400 calls/hour)` };
+}
+
+async function read(path, url, key, token) {
   const b64 = readFileSync(path).toString("base64");
   const res = await fetch(`${url}/functions/v1/process-document-v2`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${key}`,
+      Authorization: `Bearer ${token ?? key}`,
       apikey: key,
       "Content-Type": "application/json",
     },
@@ -109,12 +130,12 @@ function rank(data) {
   return { score, good };
 }
 
-async function readUpright(path, url, key) {
+async function readUpright(path, url, key, token) {
   let best = null;
   let calls = 0;
   for (const [i, deg] of ROTATIONS.entries()) {
     const p = deg === 0 ? path : rotate(path, deg);
-    const data = await read(p, url, key);
+    const data = await read(p, url, key, token);
     calls += 1;
     const { score, good } = rank(data);
     if (!best || score > best.score) best = { result: data, rotationApplied: deg, score };
@@ -149,6 +170,9 @@ async function main() {
   if (!url || !key) throw new Error("VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY missing");
   if (!dir) throw new Error("Set RECEIPT_EVAL_DIR to the folder holding the receipt images");
 
+  const { token, who } = await signIn(url, key);
+  console.log(`  som ${who}\n`);
+
   const ds = JSON.parse(readFileSync(join(HERE, "dataset", "receipt-orientation.json"), "utf8"));
   const cases = args.cases ? ds.cases.filter((c) => args.cases.includes(c.id)) : ds.cases;
   const conditions = args.only ? [args.only] : ["raw", "upright"];
@@ -165,8 +189,8 @@ async function main() {
       try {
         const { result, rotationApplied } =
           cond === "upright"
-            ? await readUpright(path, url, key)
-            : { result: await read(path, url, key), rotationApplied: 0 };
+            ? await readUpright(path, url, key, token)
+            : { result: await read(path, url, key, token), rotationApplied: 0 };
         row[cond] = { ...score(c.expected, result), rotationApplied };
       } catch (e) {
         row[cond] = { error: e.message, passed: 0, of: 6 };
