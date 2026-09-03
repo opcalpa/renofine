@@ -8339,7 +8339,12 @@
       "drop": "Ta inte med",
       "pages": "{{count}} sidor",
       "useGross": "Sätt till {{amount}}",
-      "pairBodyPrefix": "Troligen samma kvitto som"
+      "pairBodyPrefix": "Troligen samma kvitto som",
+      "savedAsDocument": "Sparas som dokument",
+      "savedAsDocumentBody": "Filen läggs i {{folder}} — ingen kostnad bokförs",
+      "savedAsDocumentUndo": "Sparas som dokument — ångra",
+      "notAPurchase": "Inte ett inköp — spara som dokument",
+      "tallyDocuments": "{{count}} sparas som dokument"
     },
     "drawings": {
       "title": "Ritningar",
@@ -8410,7 +8415,9 @@
       "totalLooksNet": "Beloppet ser ut att vara exkl. moms — inkl. moms blir {{gross}} kr"
     },
     "closed": "Importen är sparad",
-    "closedBody": "Du hittar den under Filer › Importer och kan fortsätta granska när du vill."
+    "closedBody": "Du hittar den under Filer › Importer och kan fortsätta granska när du vill.",
+    "doneDocuments": "{{count}} filer sparades som dokument i Filer.",
+    "doneDocumentsFailed": "Dessa kunde inte sparas: {{names}}"
   },
   "renovationPlan": {
     "title": "Din renoveringsplan",

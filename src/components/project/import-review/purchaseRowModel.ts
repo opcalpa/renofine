@@ -12,6 +12,7 @@ import type { AgentProposal, ProposalAction } from '@/services/agent/types';
 import type { ImportSession } from '@/services/agent/importSession';
 import { purchaseProposals } from '@/services/agent/importSession';
 import { verifyReceipt, type ReceiptIssue } from '@/lib/verifyReceipt';
+import type { DocumentType } from '@/services/smartUploadService';
 
 type PurchaseAction = Extract<ProposalAction, { type: 'import_purchase' }>;
 
@@ -61,6 +62,14 @@ export interface PurchaseRow {
   /** Shared by both members, so the list can seat them next to each other. */
   pairKey: string | null;
   kept: boolean;
+  /**
+   * Not a purchase after all — the FILE is kept, filed under this type.
+   *
+   * The row stays in the list saying so. "Ta inte med" throws the document
+   * away with the reading; this throws only the reading away, which is what a
+   * misread följesedel actually needs (Carl, 2026-09-03).
+   */
+  savedAsDocument: DocumentType | null;
   /** The person has looked at the warning and accepted the row as it stands. */
   acknowledged: boolean;
   /** How many underlag this order will own: the original plus merged pages. */
@@ -130,6 +139,7 @@ export function buildPurchaseRows(session: ImportSession): PurchaseRow[] {
     const action = proposal.action;
     const mismatch = lineSumMismatch(action);
     const pairOf = pairs.get(proposal.id) ?? null;
+    const savedAsDocument = session.savedAsDocument?.[proposal.id] ?? null;
     const acknowledged = !!session.acknowledged?.has(proposal.id);
     const issues = verifyReceipt({
       vendor_name: action.vendorName || null,
@@ -166,12 +176,16 @@ export function buildPurchaseRows(session: ImportSession): PurchaseRow[] {
         pairPrimary: primaries.has(proposal.id),
         pairKey: pairKeys.get(proposal.id) ?? null,
         kept: !session.rejected.has(proposal.id),
+        savedAsDocument,
         acknowledged,
         pageCount: 1 + (action.extraPages?.length ?? 0),
         // Acknowledged rows leave the queue. The flag stays visible on the row
         // itself — the person said "I looked", not "pretend it never happened".
+        // A row filed as a document is a decided row: its warning was about a
+        // purchase that is no longer being made.
         needsLook:
           !acknowledged &&
+          !savedAsDocument &&
           (issues.length > 0 || !!proposal.duplicateOfExisting || pairOf !== null),
       },
     ];
@@ -189,7 +203,9 @@ export function filterRows(
   return rows.filter((row) => {
     if (filter === 'needsLook' && !row.needsLook) return false;
     if (filter === 'noRoom' && (row.roomId || row.roomName)) return false;
-    if (filter === 'dropped' && row.kept) return false;
+    // "Urbockade" means thrown away. A row saved as a document was kept — as
+    // a paper rather than as a cost — and listing it here would say otherwise.
+    if (filter === 'dropped' && (row.kept || row.savedAsDocument)) return false;
     if (!q) return true;
     return (
       row.vendor.toLowerCase().includes(q) ||

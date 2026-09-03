@@ -8339,7 +8339,12 @@
       "drop": "Leave out",
       "pages": "{{count}} pages",
       "useGross": "Set it to {{amount}}",
-      "pairBodyPrefix": "Probably the same receipt as"
+      "pairBodyPrefix": "Probably the same receipt as",
+      "savedAsDocument": "Kept as a document",
+      "savedAsDocumentBody": "The file goes to {{folder}} — no cost is booked",
+      "savedAsDocumentUndo": "Kept as a document — undo",
+      "notAPurchase": "Not a purchase — keep the document",
+      "tallyDocuments": "{{count}} kept as documents"
     },
     "drawings": {
       "title": "Drawings",
@@ -8410,7 +8415,9 @@
       "totalLooksNet": "The amount looks like it excludes VAT — including VAT it is {{gross}} kr"
     },
     "closed": "Import saved",
-    "closedBody": "You will find it under Files › Imports and can pick up the review whenever you like."
+    "closedBody": "You will find it under Files › Imports and can pick up the review whenever you like.",
+    "doneDocuments": "{{count}} files were kept as documents in Files.",
+    "doneDocumentsFailed": "These could not be saved: {{names}}"
   },
   "renovationPlan": {
     "title": "Your renovation plan",

@@ -11,7 +11,13 @@ import { applyProposals } from './applyProposals';
 import type { ApplyResult } from './applyProposals';
 import type { AgentProposal, ProposalAction } from './types';
 import { movedFiles, type ImportDrawing, type ImportSession } from './importSession';
-import { ensureFolder, moveToFolder } from '@/services/smartUploadService';
+import { peekAttachment } from './documentCapture';
+import {
+  ensureFolder,
+  moveToFolder,
+  uploadToCategoryFolder,
+  CATEGORY_FOLDERS,
+} from '@/services/smartUploadService';
 import type { PlaceRoomRequest } from '@/components/floormap/editor/placeRoomFromList';
 
 /**
@@ -32,6 +38,10 @@ export interface ImportApplyResult extends ApplyResult {
   targetPlanId: string | null;
   /** How many files the person moved to another folder, and that actually moved. */
   filesMoved: number;
+  /** Readings kept as a plain document instead of as a purchase, and filed. */
+  documentsSaved: number;
+  /** Those that could not be filed — named, never swallowed. */
+  documentsFailed: string[];
 }
 
 /**
@@ -133,6 +143,69 @@ async function applyFolderMoves(
   return { moved: newPaths.size, newPaths };
 }
 
+/**
+ * "Inte ett inköp — spara som dokument."
+ *
+ * The hole this closes: a file the reader turned into a purchase has NO storage
+ * path of its own. The order owns the bytes and uploads them at Genomför, so
+ * switching the row off threw away the DOCUMENT along with the purchase — a
+ * följesedel read as an 8 kr order left the person choosing between a false
+ * cost in the budget and losing the paper (Carl, 2026-09-03).
+ *
+ * Awaited rather than fire-and-forget, for the same reason merged pages are: a
+ * file that silently failed to upload is a lost receipt, and this action exists
+ * precisely because the person wanted to keep it. Failures come back by name.
+ */
+async function saveDroppedDocuments(
+  session: ImportSession
+): Promise<{ saved: number; failed: string[] }> {
+  const entries = Object.entries(session.savedAsDocument ?? {});
+  if (entries.length === 0) return { saved: 0, failed: [] };
+
+  const fallback = session.importFolder ?? '';
+  for (const category of new Set(entries.map(([, c]) => c))) {
+    await ensureFolder(session.projectId, CATEGORY_FOLDERS[category] || fallback);
+  }
+
+  let saved = 0;
+  const failed: string[] = [];
+  for (const [proposalId, category] of entries) {
+    const proposal = session.proposals.find((p) => p.id === proposalId);
+    if (!proposal || proposal.action.type !== 'import_purchase') continue;
+    // A row that is switched back ON is a purchase again, and the order will
+    // upload the same bytes. Filing them here too would put the receipt in
+    // Files twice — the UI keeps the two states exclusive, and this is the
+    // guard at the write boundary that makes it true regardless.
+    if (!session.rejected.has(proposalId)) continue;
+    const action = proposal.action;
+    const name = action.sourceFileName ?? proposal.sourceFile ?? proposalId;
+    // The reading is discarded; the FILE is the whole point of this action.
+    // Pages merged into this row come along: they were merged BECAUSE they are
+    // the same document, and leaving them behind would lose sheet two of the
+    // very paper being rescued.
+    const parts: Array<{ key: string | undefined; label: string }> = [
+      { key: action.attachmentKey, label: name },
+      ...(action.extraPages ?? []).map((page, i) => ({
+        key: page.attachmentKey,
+        label: page.fileName || `${name} (${i + 2})`,
+      })),
+    ];
+    for (const part of parts) {
+      // Peek, never take: an upload that fails must leave the bytes where they
+      // are rather than consume them on the way to nowhere.
+      const file = peekAttachment(part.key);
+      if (!file) {
+        failed.push(part.label);
+        continue;
+      }
+      const path = await uploadToCategoryFolder(session.projectId, file, category, fallback);
+      if (path) saved += 1;
+      else failed.push(part.label);
+    }
+  }
+  return { saved, failed };
+}
+
 export async function applyImportSession(session: ImportSession): Promise<ImportApplyResult> {
   // Moves first: everything below reads storage paths. The session belongs to
   // React, so the new paths ride along in a map instead of being written back
@@ -196,7 +269,35 @@ export async function applyImportSession(session: ImportSession): Promise<Import
     if (area) room.areaSqm = area;
   }
 
-  return { ...result, placeableRooms, targetPlanId, filesMoved };
+  // After the proposals, deliberately: a throw above means nothing was written
+  // at all and the person retries the whole session, which is the failure mode
+  // that cannot leave duplicate copies of a document in Files.
+  //
+  // Non-throwing: by this point the purchases are already in the database, and
+  // letting a storage hiccup bubble would tell the person the whole import
+  // failed when it did not. What did not land comes back by name instead.
+  const documents = await saveDroppedDocuments(session).catch((e) => {
+    console.error('applyImportSession: saving dropped documents failed', e);
+    return {
+      saved: 0,
+      failed: Object.keys(session.savedAsDocument ?? {}).map((id) => {
+        const p = session.proposals.find((x) => x.id === id);
+        return (p?.action.type === 'import_purchase' ? p.action.sourceFileName : null)
+          ?? p?.sourceFile
+          ?? id;
+      }),
+    };
+  });
+  const { saved: documentsSaved, failed: documentsFailed } = documents;
+
+  return {
+    ...result,
+    placeableRooms,
+    targetPlanId,
+    filesMoved,
+    documentsSaved,
+    documentsFailed,
+  };
 }
 
 /** Rooms the person merged into existing ones — for an honest summary. */

@@ -14,6 +14,7 @@ import type {
   ImportSession,
 } from '@/services/agent/importSession';
 import { changeCount } from '@/services/agent/importSession';
+import type { DocumentType } from '@/services/smartUploadService';
 import { describeModelCalls } from '@/lib/modelCalls';
 import { ImportFilesPane } from './ImportFilesPane';
 import { ImportPreview } from './ImportPreview';
@@ -100,14 +101,34 @@ export function ImportReviewPage({
     [session, onChange]
   );
 
-  const handleToggle = useCallback(
-    (proposalId: string, keep: boolean) => {
+  /**
+   * Switching a row back ON un-does "spara som dokument" with it.
+   *
+   * The two states are exclusive and the row can only be in one: a proposal
+   * that is kept AND marked as a document would be booked as a purchase and
+   * ALSO filed as a paper — the same receipt counted twice. Both the row's own
+   * checkbox and the bulk action come through here for that reason.
+   */
+  const keepProposals = useCallback(
+    (ids: string[], keep: boolean) => {
       const rejected = new Set(session.rejected);
-      if (keep) rejected.delete(proposalId);
-      else rejected.add(proposalId);
-      onChange({ ...session, rejected });
+      const savedAsDocument = { ...(session.savedAsDocument ?? {}) };
+      for (const id of ids) {
+        if (keep) {
+          rejected.delete(id);
+          delete savedAsDocument[id];
+        } else {
+          rejected.add(id);
+        }
+      }
+      onChange({ ...session, rejected, savedAsDocument });
     },
     [session, onChange]
+  );
+
+  const handleToggle = useCallback(
+    (proposalId: string, keep: boolean) => keepProposals([proposalId], keep),
+    [keepProposals]
   );
 
   /**
@@ -124,6 +145,30 @@ export function ImportReviewPage({
       if (ack) acknowledged.add(proposalId);
       else acknowledged.delete(proposalId);
       onChange({ ...session, acknowledged });
+    },
+    [session, onChange]
+  );
+
+  /**
+   * "Inte ett inköp — spara som dokument."
+   *
+   * The row leaves the purchase list, and the FILE is filed instead. Both
+   * halves matter: dropping the row alone loses the document, because a file
+   * the reader turned into a purchase has no storage path until the order
+   * uploads it at Genomför. Passing `null` puts the row back.
+   */
+  const handleSaveAsDocument = useCallback(
+    (proposalId: string, type: DocumentType | null) => {
+      const savedAsDocument = { ...(session.savedAsDocument ?? {}) };
+      const rejected = new Set(session.rejected);
+      if (type) {
+        savedAsDocument[proposalId] = type;
+        rejected.add(proposalId);
+      } else {
+        delete savedAsDocument[proposalId];
+        rejected.delete(proposalId);
+      }
+      onChange({ ...session, rejected, savedAsDocument });
     },
     [session, onChange]
   );
@@ -464,15 +509,8 @@ export function ImportReviewPage({
    * lose trust in this screen.
    */
   const handleBulk = useCallback(
-    (keep: boolean) => {
-      const rejected = new Set(session.rejected);
-      for (const row of shownRows) {
-        if (keep) rejected.delete(row.id);
-        else rejected.add(row.id);
-      }
-      onChange({ ...session, rejected });
-    },
-    [session, onChange, shownRows]
+    (keep: boolean) => keepProposals(shownRows.map((r) => r.id), keep),
+    [keepProposals, shownRows]
   );
 
   /**
@@ -642,6 +680,7 @@ export function ImportReviewPage({
   ];
 
   const keptRows = rows.filter((r) => r.kept);
+  const documentRows = rows.filter((r) => r.savedAsDocument);
   const keptSum = keptRows.reduce((s, r) => s + r.total, 0);
 
   const toolbar =
@@ -680,6 +719,16 @@ export function ImportReviewPage({
             kept: keptRows.length,
             total: rows.length,
           })}
+          {/* Papers rescued from rows that were not purchases — otherwise the
+              tally reads as "17 of 39" with no account of the other 22. */}
+          {documentRows.length > 0 && (
+            <>
+              {' · '}
+              {t('importReview.purchases.tallyDocuments', '{{count}} sparas som dokument', {
+                count: documentRows.length,
+              })}
+            </>
+          )}
         </span>
         <span className="font-mono tabular-nums">
           {keptSum.toLocaleString(i18n.language, { maximumFractionDigits: 0 })} kr
@@ -741,6 +790,7 @@ export function ImportReviewPage({
           onMerge={handleMergePurchase}
           onAcknowledge={handleAcknowledge}
           onReread={handleReread}
+          onSaveAsDocument={handleSaveAsDocument}
           rereading={rereading}
         />
       )}

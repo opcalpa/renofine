@@ -25,6 +25,12 @@ interface BuildArgs {
   existingPlans: ExistingPlan[];
   /** file name → storage path, from the archive pass. */
   archivedPaths: Map<string, string>;
+  /**
+   * This drop's dated folder ("/Import 2026-09-03"). Carried on the session so
+   * a document rescued at Genomför lands in the same batch folder the rest of
+   * the unplaced files went to, instead of loose in the project's root.
+   */
+  importFolder?: string;
 }
 
 /**
@@ -51,6 +57,7 @@ export function buildImportSession({
   existingRooms,
   existingPlans,
   archivedPaths,
+  importFolder,
 }: BuildArgs): ImportSession {
   // ── Drawings ───────────────────────────────────────────────────────────
   // A drawing is the one import decision the engine genuinely cannot make:
@@ -130,6 +137,7 @@ export function buildImportSession({
     // The run's identity, minted here so the journal and the server row are
     // two copies of ONE reading rather than two readings.
     runId: crypto.randomUUID(),
+    importFolder,
     outcome,
     proposals,
     files: rows,

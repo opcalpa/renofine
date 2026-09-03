@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle, Check, Copy, Home, Layers, RefreshCw, Search, X } from 'lucide-react';
+import { AlertTriangle, Check, Copy, FileText, Home, Layers, RefreshCw, Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -12,6 +12,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import type { ImportSession } from '@/services/agent/importSession';
+import type { DocumentType } from '@/services/smartUploadService';
 import type { PurchaseFilter, PurchaseRow } from './purchaseRowModel';
 
 export const NO_ROOM = '__none__';
@@ -271,6 +272,32 @@ function RoomPicker({
   );
 }
 
+/**
+ * Where a rescued document is filed.
+ *
+ * The app's own document vocabulary, not a new one — the same `DocumentType`
+ * every other filing path uses, so a följesedel saved here lands in the same
+ * place the batch upload would have put it. Övrigt is first and is the default
+ * (Carl, 2026-09-03): a delivery note is not a receipt, and inventing a folder
+ * for it would be a category nobody else in the app knows about.
+ */
+const DOCUMENT_TYPES: Array<{ value: DocumentType; labelKey: string; fallback: string }> = [
+  { value: 'other', labelKey: 'smartUpload.types.other', fallback: 'Övrigt' },
+  { value: 'receipt', labelKey: 'smartUpload.types.receipt', fallback: 'Kvitto' },
+  { value: 'invoice', labelKey: 'smartUpload.types.invoice', fallback: 'Faktura' },
+  { value: 'quote', labelKey: 'smartUpload.types.quote', fallback: 'Offert' },
+  { value: 'contract', labelKey: 'smartUpload.types.contract', fallback: 'Avtal' },
+  { value: 'specification', labelKey: 'smartUpload.types.specification', fallback: 'Specifikation' },
+  { value: 'floor_plan', labelKey: 'smartUpload.types.floorPlan', fallback: 'Planritning' },
+  { value: 'product_image', labelKey: 'smartUpload.types.productImage', fallback: 'Produktbild' },
+];
+
+/** The i18n key + Swedish fallback for one document type, for the caller's `t`. */
+function documentTypeLabel(type: DocumentType): { key: string; fallback: string } {
+  const entry = DOCUMENT_TYPES.find((d) => d.value === type);
+  return entry ? { key: entry.labelKey, fallback: entry.fallback } : { key: type, fallback: type };
+}
+
 interface PurchaseListProps {
   rows: PurchaseRow[];
   session: ImportSession;
@@ -289,6 +316,14 @@ interface PurchaseListProps {
   onAcknowledge: (id: string, ack: boolean) => void;
   /** Read the same image again; a hard photo often lands better on try two. */
   onReread: (id: string) => void;
+  /**
+   * "This is not a purchase — keep the paper." `null` undoes it.
+   *
+   * Closes the hole where switching a row off lost the FILE as well as the
+   * reading: the order owns the bytes until Genomför, so an unchecked row
+   * never uploaded anywhere (Carl, 2026-09-03).
+   */
+  onSaveAsDocument: (id: string, type: DocumentType | null) => void;
   /** Rows with a re-read in flight. */
   rereading: Set<string>;
 }
@@ -313,6 +348,7 @@ export function PurchaseList({
   onMerge,
   onAcknowledge,
   onReread,
+  onSaveAsDocument,
   rereading,
 }: PurchaseListProps) {
   const { t } = useTranslation();
@@ -415,6 +451,7 @@ export function PurchaseList({
               onMerge={onMerge}
               onAcknowledge={(ack) => onAcknowledge(row.id, ack)}
               onReread={() => onReread(row.id)}
+              onSaveAsDocument={(type) => onSaveAsDocument(row.id, type)}
               rereading={rereading.has(row.id)}
               onJumpTo={jumpTo}
             />
@@ -438,6 +475,7 @@ function PurchaseRowView({
   onMerge,
   onAcknowledge,
   onReread,
+  onSaveAsDocument,
   rereading,
   onJumpTo,
 }: {
@@ -453,6 +491,7 @@ function PurchaseRowView({
   onMerge: (fromId: string, intoId: string) => void;
   onAcknowledge: (ack: boolean) => void;
   onReread: () => void;
+  onSaveAsDocument: (type: DocumentType | null) => void;
   rereading: boolean;
   onJumpTo: (id: string) => void;
 }) {
@@ -627,6 +666,23 @@ function PurchaseRowView({
             </div>
           )}
 
+          {/* Not a cost, but not thrown away either — say which, on the row. */}
+          {row.savedAsDocument && (
+            <div className="mt-1.5 flex items-center gap-2">
+              <Flag tone="ok" icon={FileText}>
+                {t('importReview.purchases.savedAsDocument', 'Sparas som dokument')}
+              </Flag>
+              <span className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground">
+                {t('importReview.purchases.savedAsDocumentBody', 'Filen läggs i {{folder}} — ingen kostnad bokförs', {
+                  folder: t(
+                    documentTypeLabel(row.savedAsDocument).key,
+                    documentTypeLabel(row.savedAsDocument).fallback
+                  ),
+                })}
+              </span>
+            </div>
+          )}
+
           {(row.issues.length > 0 || row.duplicateOfExisting || row.pairOf) && (
             <div className="mt-1.5 space-y-1">
               {(row.duplicateOfExisting || row.pairOf) && (
@@ -680,12 +736,17 @@ function PurchaseRowView({
               Slå ihop   — the duplicate is page two; one order, two underlag
               Läs om     — a hard photo read differently on the second try
               Det stämmer— I looked, it is right; leave the queue
-              Ta inte med— genuinely not wanted
+              Inte ett inköp — keep the PAPER, drop the cost
+              Ta inte med— genuinely not wanted, paper included
 
             Shown only where there is something to resolve, so a clean row stays
             a clean row.
           */}
-          {(row.needsLook || row.acknowledged) && (
+          {/* Shown where there is something to resolve — and on the row you are
+              LOOKING at, because a clean-looking 8 kr row from a följesedel is
+              exactly the one that needs "this is not a purchase" and never had
+              a warning to hang it on (Carl, 2026-09-03). */}
+          {(row.needsLook || row.acknowledged || row.savedAsDocument || selected) && (
             <div
               className="mt-2 flex flex-wrap items-center gap-1.5"
               onClick={(e) => e.stopPropagation()}
@@ -736,6 +797,42 @@ function PurchaseRowView({
                   ? t('importReview.purchases.acknowledged', 'Godkänd — ångra')
                   : t('importReview.purchases.acknowledge', 'Det stämmer')}
               </RowAction>
+              {/*
+                The fifth action, and the only one that keeps the PAPER.
+                "Ta inte med" drops the reading AND the file — a file read as a
+                purchase has no storage path of its own until the order uploads
+                it at Genomför. A följesedel misread as 8 kr therefore left the
+                choice between a false cost and a lost document (Carl,
+                2026-09-03). Övrigt is the default and sits first.
+              */}
+              {row.savedAsDocument ? (
+                <RowAction icon={FileText} tone="done" onClick={() => onSaveAsDocument(null)}>
+                  {t('importReview.purchases.savedAsDocumentUndo', 'Sparas som dokument — ångra')}
+                </RowAction>
+              ) : (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1 rounded-md border border-transparent px-1.5 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:border-border hover:bg-muted hover:text-foreground"
+                    >
+                      <FileText className="h-3 w-3 shrink-0" />
+                      {t('importReview.purchases.notAPurchase', 'Inte ett inköp — spara som dokument')}
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="max-h-64 overflow-y-auto">
+                    {DOCUMENT_TYPES.map((doc) => (
+                      <DropdownMenuItem
+                        key={doc.value}
+                        className="text-xs"
+                        onSelect={() => onSaveAsDocument(doc.value)}
+                      >
+                        {t(doc.labelKey, doc.fallback)}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
               {row.kept && (
                 <RowAction icon={X} onClick={onToggle}>
                   {t('importReview.purchases.drop', 'Ta inte med')}

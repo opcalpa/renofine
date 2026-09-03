@@ -14,6 +14,7 @@
 
 import type { AgentProposal, ProposalAction } from './types';
 import type { IngestOutcome } from '../ingestProjectFolder';
+import type { DocumentType } from '../smartUploadService';
 
 /** Which pile a file landed in, in the language of the review page. */
 export type ImportFileKind =
@@ -151,6 +152,22 @@ export interface ImportSession {
   acknowledged?: Set<string>;
   /** proposalId → the proposal it was merged into, so the row can say so. */
   merged?: Record<string, string>;
+  /**
+   * Readings the person said are NOT purchases, but whose FILE must be kept.
+   *
+   * A file that became a purchase has no storage path of its own — the order
+   * owns it and uploads it at Genomför. So switching the row off used to throw
+   * away the DOCUMENT, not just the purchase: a följesedel read as an 8 kr
+   * order left Carl choosing between a false cost in the budget and losing the
+   * paper (2026-09-03). Recorded here as the type to file it under, and carried
+   * out as a real upload by `applyImportSession`.
+   */
+  savedAsDocument?: Record<string, DocumentType>;
+  /**
+   * This drop's dated folder ("/Import 2026-09-03"), where anything typed
+   * `other` lands instead of loose in the project's root.
+   */
+  importFolder?: string;
 }
 
 /** The room proposals in a session, in display order. */
@@ -195,6 +212,11 @@ export function assignableRooms(
   return [...existing, ...incoming];
 }
 
+/** Readings kept as a document instead of as a purchase. */
+export function savedAsDocumentIds(session: ImportSession): string[] {
+  return Object.keys(session.savedAsDocument ?? {});
+}
+
 /** How many writes the session will actually perform, for the confirm button. */
 export function changeCount(session: ImportSession): number {
   const active = session.proposals.filter((p) => !session.rejected.has(p.id)).length;
@@ -204,5 +226,9 @@ export function changeCount(session: ImportSession): number {
   const nonDrawing = session.proposals.filter(
     (p) => !session.rejected.has(p.id) && !drawingProposalIds.has(p.id)
   ).length;
-  return active === nonDrawing ? active + drawings : nonDrawing + drawings;
+  // Saving a file as a document IS a write, and it is the only one left when
+  // every reading was a misreading — without it "Genomför" sits disabled on a
+  // session whose whole point is to rescue the papers.
+  const documents = savedAsDocumentIds(session).length;
+  return (active === nonDrawing ? active + drawings : nonDrawing + drawings) + documents;
 }

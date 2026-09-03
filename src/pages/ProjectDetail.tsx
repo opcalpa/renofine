@@ -1119,13 +1119,27 @@ const ProjectDetail = () => {
               count: result.filesMoved,
             })
           : null,
+        result.documentsSaved > 0
+          ? t('importReview.doneDocuments', '{{count}} filer sparades som dokument i Filer.', {
+              count: result.documentsSaved,
+            })
+          : null,
+        // A paper the person deliberately rescued and that did NOT land is the
+        // one failure here that must be named, not counted — it is the very
+        // document they pressed the button to keep.
+        result.documentsFailed.length > 0
+          ? t('importReview.doneDocumentsFailed', 'Dessa kunde inte sparas: {{names}}', {
+              names: result.documentsFailed.join(', '),
+            })
+          : null,
         result.failed.length > 0
           ? t('importReview.doneFailed', '{{count}} misslyckades.', { count: result.failed.length })
           : null,
       ].filter(Boolean);
       toast({
         title: notes.join(' '),
-        variant: result.failed.length > 0 ? 'destructive' : undefined,
+        variant:
+          result.failed.length > 0 || result.documentsFailed.length > 0 ? 'destructive' : undefined,
       });
 
       // New rooms exist but sit nowhere. Queue them for the canvas so they can
@@ -1628,6 +1642,7 @@ const ProjectDetail = () => {
         })),
         existingPlans: planShapeCounts,
         archivedPaths,
+        importFolder: importFolderRef.current,
       });
 
       useRenaidaStore.getState().setImportSession(session);
