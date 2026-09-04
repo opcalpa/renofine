@@ -10,7 +10,8 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import { generateDocumentFilename } from "@/services/receiptAnalysisService";
-import { takeAttachment } from "./documentCapture";
+import { registerAttachment, takeAttachment } from "./documentCapture";
+import { resolvedMimeType } from "@/services/smartUploadService";
 import { purchaseVatFields, lineVat } from "@/lib/vat";
 import type { ProposalAction } from "./types";
 
@@ -19,8 +20,26 @@ export type ImportPurchaseAction = Extract<ProposalAction, { type: "import_purch
 export interface ImportPurchaseResult {
   purchaseOrderId: string;
   materialIds: string[];
+  /**
+   * Where the document actually landed — `null` when there was no file OR when
+   * the upload did not go through.
+   *
+   * It used to be set from the path we INTENDED to write, before the upload,
+   * and returned no matter what happened: `uploadError` took no branch at all,
+   * so a failed upload left the cost in the budget, `receipt_file_path`
+   * pointing at an object that does not exist, and nothing anywhere saying so
+   * (2026-09-04).
+   */
   filePath: string | null;
 }
+
+/**
+ * The `project-files` bucket's hard ceiling, verified against prod.
+ *
+ * Storage rejects anything above it, and this path never checked — so a
+ * >10 MB invoice PDF was the named, ordinary way to hit the silent branch.
+ */
+const PROJECT_FILES_MAX_BYTES = 10 * 1024 * 1024;
 
 export async function importPurchaseOrder(
   projectId: string,
@@ -132,10 +151,34 @@ export async function importPurchaseOrder(
   const materialIds = (createdMats ?? []).map((m) => m.id);
 
   // Upload the document image + link it, same shape as the manual scan flow.
+  let uploadedPath: string | null = null;
   if (file && storagePath) {
-    const { error: uploadError } = await supabase.storage
-      .from("project-files")
-      .upload(storagePath, file, { upsert: true });
+    // contentType explicitly: Storage rejects `application/octet-stream`, which
+    // is what an empty `File.type` becomes — and this file already knows the
+    // type can be missing (the isPdf line above guards for it).
+    const tooBig = file.size > PROJECT_FILES_MAX_BYTES;
+    const { error: uploadError } = tooBig
+      ? { error: new Error(`file is ${Math.round(file.size / 1024 / 1024)} MB, over the 10 MB limit`) }
+      : await supabase.storage
+          .from("project-files")
+          .upload(storagePath, file, { upsert: true, contentType: resolvedMimeType(file) });
+    if (uploadError) {
+      // Never silent. The order and its lines are already written, so the cost
+      // is in the budget either way — what must not happen is the paper going
+      // missing without a word. Put the bytes back so the retry has something
+      // to upload; `takeAttachment` consumed them at the top of this function.
+      console.error("receipt upload failed", filename, uploadError);
+      if (action.attachmentKey) registerAttachment(action.attachmentKey, file);
+      // The order was written with the path we MEANT to use. Leaving it there
+      // is the worst of both: an order that claims to have a receipt, and an
+      // "öppna underlaget" that fails whenever someone finally checks a number.
+      await supabase
+        .from("purchase_orders")
+        .update({ receipt_file_path: null })
+        .eq("id", po.id);
+    } else {
+      uploadedPath = storagePath;
+    }
     if (!uploadError && materialIds[0]) {
       void supabase.from("task_file_links").insert({
         project_id: projectId,
@@ -180,6 +223,7 @@ export async function importPurchaseOrder(
       .upload(pagePath, pageFile, { upsert: true });
     if (pageErr) {
       console.error("extra page upload failed", page.fileName, pageErr);
+      if (page.attachmentKey) registerAttachment(page.attachmentKey, pageFile);
       continue;
     }
     await supabase.from("task_file_links").insert({
@@ -204,5 +248,5 @@ export async function importPurchaseOrder(
     changes: { documentType: action.documentType, total: action.total, lines: action.lineItems.length },
   }).then(() => {}, () => {});
 
-  return { purchaseOrderId: po.id, materialIds, filePath: file ? storagePath : null };
+  return { purchaseOrderId: po.id, materialIds, filePath: uploadedPath };
 }
