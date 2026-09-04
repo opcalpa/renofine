@@ -453,7 +453,8 @@ async function processDocument(
   // ONE call for both questions: what is this document, and what work does it
   // describe. The scope comes back only for classes that may carry it.
   const cls = await classifyText(text, file.name, language, calls);
-  const type = settleDocumentType(cls?.type, cls?.confidence, cls?.type_evidence).type;
+  // The text path CAN check the quotation — pass the text in.
+  const type = settleDocumentType(cls?.type, cls?.confidence, cls?.type_evidence, text).type;
   const archive: ArchiveEntry = { file, category: type };
   const address = suggestAddress ? toCandidate(cls, type, file.name) : undefined;
   if (type === 'receipt' || type === 'invoice') {

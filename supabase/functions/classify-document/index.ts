@@ -144,11 +144,23 @@ DOCUMENT TYPES:
 - "product_image" — Photo of a product, material sample, fixture, appliance, or inspiration image.
 - "other" — Anything that doesn't fit above categories.
 
+THE DOCUMENT'S OWN HEADING DECIDES. Read the heading first — the word printed
+at the top of the form, often in the corner — and let it win over anything else
+on the page. A "FÖLJESEDEL" that mentions bankgiro, F-skattebevis, dröjsmålsränta
+or payment terms in its footer is STILL a följesedel: those words are boilerplate
+printed on every form the supplier owns, not a statement about this paper.
+Measured failure this rule exists for (2026-09-04): a Beijer följesedel headed
+"FÖLJESEDEL / PACKSEDEL, LASTORDER" was called an "invoice", justified with the
+word "Faktura" — a word that does not appear anywhere on it.
+
 EVIDENCE IS REQUIRED FOR EVERY SPECIFIC TYPE.
 Return a "type_evidence" field: the exact words IN THE DOCUMENT that told you
 the type — a heading, a form name, a labelled field ("Följesedel", "Att betala",
 "Slutbesked", "Fakturanr"). Quote them; do not paraphrase and do not invent.
 If you cannot quote anything, the type is "other" and "type_evidence" is null.
+Quote ONLY words you can actually see printed. Do not write the word you would
+expect this kind of document to carry — an invented quotation is worse than an
+honest null, because it is checked.
 This is not a formality: a type you cannot point at is a guess, and a guess is
 what we are trying to avoid. "type_evidence" is null for "other".
 

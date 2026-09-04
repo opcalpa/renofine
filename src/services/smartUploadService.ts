@@ -136,6 +136,14 @@ export function settleDocumentType(
   raw: string | undefined,
   confidence: number | undefined,
   typeEvidence?: string | null,
+  /**
+   * The document's text, when we have it. Then the quotation is CHECKED rather
+   * than believed — the gate's weak point, proven on a real paper: a Beijer
+   * följesedel came back as `invoice` justified with "Faktura", a word that
+   * appears nowhere on it (2026-09-04). A photo has no text here, so this is
+   * only available on the text/PDF path; that is a smaller gate, not none.
+   */
+  documentText?: string,
 ): SettledType {
   const suggested = asDocumentType(raw);
   const demotable = suggested !== "other" && suggested !== "product_image";
@@ -148,7 +156,15 @@ export function settleDocumentType(
   // `undefined` means the caller does not carry the field yet (an older cached
   // reading, the legacy path). Absence of the field is not evidence of a guess,
   // so it must not demote — only an explicit null does.
-  return missingEvidence || weak
+  // A quotation we can look for and cannot find is a fabrication, and it is
+  // the ONLY case where we know the reading is wrong rather than merely unsure.
+  const fabricated =
+    !!documentText &&
+    typeof typeEvidence === "string" &&
+    !!typeEvidence.trim() &&
+    !documentText.toLowerCase().includes(typeEvidence.trim().toLowerCase());
+
+  return missingEvidence || weak || fabricated
     ? { type: "other", suggested, needsTypeReview: true }
     : { type: suggested, suggested, needsTypeReview: false };
 }

@@ -10340,3 +10340,56 @@ låta dem se ut som misslyckade tolkningar.
 
 **För användaren:** man släpper 56 kvitton, får veta att de är sedda men att
 inget blev inköp, och har ingen aning om att det räcker att vänta en timme.
+
+---
+id: classifier-reads-photos-sideways-and-invents-the-heading
+status: todo
+priority: P1
+tags: [import, kvitton, dokumenttyper, carl, matt]
+created: 2026-09-04
+---
+## Klassificeraren läser foton liggande — och hittar då på rubriken
+
+Kvittoläsningen fick orientering fixad i s93 (13 % → 80 %). **Klassificeraren
+fick aldrig samma behandling**, och den körs FÖRE läsningen — den avgör vilken
+hög filen hamnar i.
+
+### Mätt på Carls egen följesedel (IMG_4089), samma bild, tre vridningar
+
+| vridning | typ | bevis | dom |
+|---|---|---|---|
+| 0° (som den ligger) | `invoice` | `"Faktura"` | **PÅHITTAT** — ordet finns inte på pappret |
+| 90° | `other` | — (conf 0) | ärligt misslyckande |
+| 270° (upprätt) | `delivery_note` | `"Följesedel"` | **rätt, med äkta bevis** |
+
+Dokumentet är rubricerat "FÖLJESEDEL" och "PACKSEDEL, LASTORDER". Ordet
+"Faktura" förekommer ingenstans på det.
+
+### Varför det är värre än ett fel
+
+Liggande gissar modellen på formens *sort* (leverantörspapper med bankgiro och
+dröjsmålsränta) och **konstruerar ett citat som passar gissningen**. Bevisgrinden
+(2026-09-04) fångar "jag kan inte peka på något" men inte "jag pekar på något
+som inte finns" — det är exakt fabriceringsfallet, och orienteringen orsakar det.
+
+### Motbevisförsök
+- *"prompten kan lösa det"* — nej, prövat och mätt. En regel om att rubriken
+  vinner, med det här fallet namngivet, ändrade ingenting: IMG_4089 svarade
+  likadant efteråt, och IMG_4045 blev SÄMRE (såg "Följesedel", sa ändå invoice).
+- *"EXIF räcker"* — nej, samma läxa som s93: taggen vet hur kameran hölls, inte
+  hur papperet låg.
+- *"fråga modellen om vinkeln"* — nej, mätt i s93: 90/180/180/0/180 på fem
+  kvitton som alla behövde 270.
+- *"det är bara den här filen"* — nej, 0° gav fabricerat bevis på IMG_4089 OCH
+  IMG_4045 i samma körning.
+
+### Fixen
+Samma mönster som bevisligen fungerade för läsningen: låt klassificeraren svara
+på ja/nej-frågan `text_is_upright`, och klassificera om på 270° när svaret är
+nej (90/180 vid behov). ETT extra anrop, och bara för sneda foton.
+
+**Kostnad att väga in:** Carls högar är sneda, så det kan bli ~+50 anrop på en
+56-filsbatch, ovanpå 110–220 läsningar mot taket 400/timme.
+
+**För användaren:** följesedeln blir en följesedel i stället för en faktura på
+8 kr — och appen slutar uppfinna belägg för sina gissningar.
