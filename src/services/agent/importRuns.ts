@@ -51,15 +51,46 @@ export interface ImportRunSummary {
   finishedAt: string | null;
 }
 
-/** `rejected` is a Set, and a Set is not JSON. */
-type StoredSession = Omit<ImportSession, 'rejected'> & { rejected: string[] };
+/**
+ * A Set is not JSON — `JSON.stringify(new Set(['a']))` is `{}`.
+ *
+ * EVERY Set field on the session has to be listed here. `acknowledged` was not
+ * (it arrived in s93, after this module), so it round-tripped as `{}` — which
+ * is truthy enough to slip past `session.acknowledged?.has(...)` and throw
+ * `.has is not a function`, taking the review page down for exactly the person
+ * who had done the most work (the only save after review IS the Stäng button).
+ * Prefer a `Record` for new fields; if a Set is right, add it here too.
+ */
+type StoredSession = Omit<ImportSession, 'rejected' | 'acknowledged'> & {
+  rejected: string[];
+  acknowledged?: string[];
+};
+
+/**
+ * Rebuild a Set from whatever the column actually holds.
+ *
+ * Rows written before the fix carry `{}` where an array belongs. Reading them
+ * must not crash — those acknowledgements are already lost, and losing them
+ * quietly beats a flag the person cannot dismiss.
+ */
+function toIdSet(value: unknown): Set<string> {
+  return new Set(Array.isArray(value) ? (value as string[]) : []);
+}
 
 function toStored(session: ImportSession): StoredSession {
-  return { ...session, rejected: [...session.rejected] };
+  return {
+    ...session,
+    rejected: [...session.rejected],
+    acknowledged: session.acknowledged ? [...session.acknowledged] : undefined,
+  };
 }
 
 function fromStored(stored: StoredSession): ImportSession {
-  return { ...stored, rejected: new Set(stored.rejected ?? []) };
+  return {
+    ...stored,
+    rejected: toIdSet(stored.rejected),
+    acknowledged: toIdSet(stored.acknowledged),
+  };
 }
 
 interface RunRow {
