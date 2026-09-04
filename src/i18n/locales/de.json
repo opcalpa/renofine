@@ -7034,7 +7034,6 @@
       "specification": "Spezifikation",
       "productImage": "Produktbild",
       "other": "Sonstiges",
-      "ata": "Nachtrag (ÄTA)",
       "deliveryNote": "Lieferschein",
       "inspectionReport": "Abnahmeprotokoll",
       "certificate": "Nachweise & Eigenkontrollen",
@@ -7976,7 +7975,9 @@
       "title": "Purchases",
       "mergeWith": "Zusammenführen mit…",
       "mergeWithHint": "Die gewählte Zeile wird zu einer Seite dieser hier. Der gültige Betrag wird {{amount}}.",
-      "mergeWithNone": "Keine Zeile passt"
+      "mergeWithNone": "Keine Zeile passt",
+      "ata": "Als Nachtrag buchen",
+      "ataOn": "Nachtrag — außerhalb des Budgets"
     },
     "drawings": {
       "title": "Drawings",

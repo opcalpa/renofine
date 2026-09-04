@@ -150,6 +150,34 @@ export function ImportReviewPage({
   );
 
   /**
+   * Book this cost OUTSIDE the accepted budget — an ÄTA.
+   *
+   * Carl's model (2026-09-04), and the app already agreed with it: ÄTA is not
+   * a kind of paper. A homeowner accepts a quote, that becomes the budget, and
+   * ordinary invoices and receipts land inside it. Then work nobody planned
+   * turns out to be necessary — and it arrives as an ordinary invoice too, with
+   * nothing on the paper saying ÄTA. So it is marked HERE, on the cost, and
+   * rides the action's existing `bookAsAta` into `exclude_from_budget`, which
+   * is what BudgetDashboard already splits "betalningar" from "löpande
+   * kostnader" on.
+   *
+   * Default off: a running invoice normally belongs to the accepted budget.
+   */
+  const handleBookAsAta = useCallback(
+    (proposalId: string, ata: boolean) => {
+      onChange({
+        ...session,
+        proposals: session.proposals.map((p) =>
+          p.id === proposalId && p.action.type === 'import_purchase'
+            ? { ...p, action: { ...p.action, bookAsAta: ata } }
+            : p
+        ),
+      });
+    },
+    [session, onChange]
+  );
+
+  /**
    * "Inte ett inköp — spara som dokument."
    *
    * The row leaves the purchase list, and the FILE is filed instead. Both
@@ -797,6 +825,7 @@ export function ImportReviewPage({
           onCreateRoom={handleCreateRoomForPurchase}
           onMerge={handleMergePurchase}
           onAcknowledge={handleAcknowledge}
+          onBookAsAta={handleBookAsAta}
           onReread={handleReread}
           onSaveAsDocument={handleSaveAsDocument}
           rereading={rereading}

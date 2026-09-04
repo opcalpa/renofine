@@ -12,7 +12,6 @@ export type DocumentType =
   | "quote"
   | "invoice"
   | "receipt"
-  | "ata"
   | "delivery_note"
   // Juridik & ansvar — kostar mest när de saknas
   | "contract"
@@ -41,6 +40,15 @@ export type DocumentType =
  * up — `certificate` (våtrumsintyg) is rare and the most expensive of all to
  * lack when a flat is sold.
  *
+ * NO `ata` HERE, deliberately (Carl, 2026-09-04). ÄTA is not a kind of paper —
+ * it is a RELATIONSHIP between a cost and the accepted budget, and the paper
+ * itself is usually a perfectly ordinary invoice or receipt that says nothing
+ * about ÄTA at all. The app already carries that relationship in the two right
+ * places: `quotes.is_ata` for the additional quote, and
+ * `materials.exclude_from_budget` for the cost. A document type would have been
+ * a third, competing home that can contradict them. A heading that DOES say
+ * "ÄTA" still matters — it suggests the FLAG, never the type.
+ *
  * Machine-readable on purpose (agent-readable architecture): the picker, the
  * folders, the classifier's enum and the i18n keys all derive from this array,
  * so a new type is one entry rather than four edits that can drift apart.
@@ -59,7 +67,6 @@ export const DOCUMENT_TYPE_CATALOG: ReadonlyArray<{
   { value: "quote", group: "economy", labelKey: "smartUpload.types.quote", fallback: "Offert", folder: "/Offerter", scopeBearing: true },
   { value: "invoice", group: "economy", labelKey: "smartUpload.types.invoice", fallback: "Faktura", folder: "/Fakturor" },
   { value: "receipt", group: "economy", labelKey: "smartUpload.types.receipt", fallback: "Kvitto", folder: "/Kvitton" },
-  { value: "ata", group: "economy", labelKey: "smartUpload.types.ata", fallback: "ÄTA", folder: "/ÄTA", scopeBearing: true },
   { value: "delivery_note", group: "economy", labelKey: "smartUpload.types.deliveryNote", fallback: "Följesedel", folder: "/Följesedlar" },
   { value: "contract", group: "legal", labelKey: "smartUpload.types.contract", fallback: "Avtal", folder: "/Kontrakt", scopeBearing: true },
   { value: "inspection_report", group: "legal", labelKey: "smartUpload.types.inspectionReport", fallback: "Besiktningsprotokoll", folder: "/Besiktning" },

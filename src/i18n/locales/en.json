@@ -6782,7 +6782,6 @@
       "specification": "Specification",
       "productImage": "Product image",
       "other": "Other",
-      "ata": "ÄTA (variation)",
       "deliveryNote": "Delivery note",
       "inspectionReport": "Inspection report",
       "certificate": "Certificates & self-inspections",
@@ -8366,7 +8365,9 @@
       "savedAsDocumentBody": "The file goes to {{folder}} — no cost is booked",
       "savedAsDocumentUndo": "Kept as a document — undo",
       "notAPurchase": "Not a purchase — keep the document",
-      "tallyDocuments": "{{count}} kept as documents"
+      "tallyDocuments": "{{count}} kept as documents",
+      "ata": "Book as variation (ÄTA)",
+      "ataOn": "ÄTA — outside the budget"
     },
     "drawings": {
       "title": "Drawings",

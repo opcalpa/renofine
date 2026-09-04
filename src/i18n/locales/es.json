@@ -7034,7 +7034,6 @@
       "specification": "Especificación",
       "productImage": "Imagen de producto",
       "other": "Otro",
-      "ata": "Modificación (ÄTA)",
       "deliveryNote": "Albarán",
       "inspectionReport": "Acta de inspección",
       "certificate": "Certificados y autocontroles",
@@ -7976,7 +7975,9 @@
       "title": "Purchases",
       "mergeWith": "Combinar con…",
       "mergeWithHint": "La fila que elijas pasa a ser una página de esta. El importe válido será {{amount}}.",
-      "mergeWithNone": "Ninguna fila coincide"
+      "mergeWithNone": "Ninguna fila coincide",
+      "ata": "Registrar como modificación",
+      "ataOn": "Modificación — fuera del presupuesto"
     },
     "drawings": {
       "title": "Drawings",

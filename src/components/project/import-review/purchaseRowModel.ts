@@ -74,6 +74,16 @@ export interface PurchaseRow {
   acknowledged: boolean;
   /** How many underlag this order will own: the original plus merged pages. */
   pageCount: number;
+  /**
+   * Booked OUTSIDE the accepted budget — an ÄTA.
+   *
+   * Not a document type: the paper is an ordinary invoice or receipt and
+   * usually says nothing about ÄTA at all. This is the RELATIONSHIP between
+   * the cost and the accepted quote (Carl, 2026-09-04), and it rides the
+   * action's existing `bookAsAta` into `materials.exclude_from_budget`, which
+   * is what the budget already splits on.
+   */
+  bookAsAta: boolean;
   /** Warning or duplicate — the rows that earn "Behöver din blick". */
   needsLook: boolean;
 }
@@ -170,6 +180,7 @@ export function buildPurchaseRows(session: ImportSession): PurchaseRow[] {
         sumMismatch: mismatch,
         issues,
         blocking: issues.some((i) => i.level === 'blocking'),
+        bookAsAta: !!action.bookAsAta,
         duplicateOfExisting: !!proposal.duplicateOfExisting,
         pairOf,
         pairOfId: pairIds.get(proposal.id) ?? null,

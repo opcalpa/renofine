@@ -19,6 +19,7 @@ import {
   savedAsDocumentIds,
   taskProposals,
 } from '../src/services/agent/importSession';
+import { buildPurchaseRows } from '../src/components/project/import-review/purchaseRowModel';
 import type { AgentProposal } from '../src/services/agent/types';
 import type { IngestOutcome } from '../src/services/ingestProjectFolder';
 
@@ -370,5 +371,69 @@ test.describe('filing — where the dropped files go', () => {
     expect(row.folder).toBeUndefined();
     expect(destinationFolder(row)).toBeUndefined();
     expect(filingSummary(session)).toEqual([]);
+  });
+});
+
+/**
+ * ÄTA is a RELATIONSHIP, not a kind of paper (Carl, 2026-09-04).
+ *
+ * A homeowner accepts a quote, that becomes the budget, and ordinary invoices
+ * land inside it. Then unplanned work turns out to be necessary and arrives as
+ * an ordinary invoice too — nothing on the paper says ÄTA. So the mark lives on
+ * the COST, and these pin the two things that must stay true about it.
+ */
+test.describe('ÄTA på inköpsraden', () => {
+  const ataProposal = (id: string, ata: boolean): AgentProposal => ({
+    id,
+    summary: id,
+    sourceFile: `${id}.jpg`,
+    action: {
+      type: 'import_purchase',
+      documentType: 'invoice',
+      vendorName: 'Hantverkaren AB',
+      total: 25000,
+      lineItems: [],
+      bookAsAta: ata,
+      attachmentKey: `key-${id}`,
+    },
+  } as unknown as AgentProposal);
+
+  test('flaggan följer med raden och ändrar INTE beloppet', () => {
+    const session = {
+      projectId: 'p',
+      outcome: outcome(),
+      proposals: [ataProposal('inside', false), ataProposal('extra', true)],
+      files: [],
+      existingRooms: [],
+      existingPlans: [],
+      drawings: [],
+      rejected: new Set<string>(),
+    };
+    const rows = buildPurchaseRows(session);
+    const inside = rows.find((r) => r.id === 'inside');
+    const extra = rows.find((r) => r.id === 'extra');
+
+    expect(inside?.bookAsAta).toBe(false);
+    expect(extra?.bookAsAta).toBe(true);
+    // The cost is real either way — ÄTA moves which side of the accepted
+    // budget it counts on, never how much it is.
+    expect(inside?.action.total).toBe(25000);
+    expect(extra?.action.total).toBe(25000);
+  });
+
+  test('en ÄTA-rad räknas fortfarande som en ändring att genomföra', () => {
+    const session = {
+      projectId: 'p',
+      outcome: outcome(),
+      proposals: [ataProposal('extra', true)],
+      files: [],
+      existingRooms: [],
+      existingPlans: [],
+      drawings: [],
+      rejected: new Set<string>(),
+    };
+    // Booking something outside the budget is not the same as excluding it:
+    // it still has to be written, or the cost simply vanishes.
+    expect(changeCount(session)).toBe(1);
   });
 });

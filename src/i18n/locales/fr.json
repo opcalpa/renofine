@@ -7034,7 +7034,6 @@
       "specification": "Spécification",
       "productImage": "Image produit",
       "other": "Autre",
-      "ata": "Avenant (ÄTA)",
       "deliveryNote": "Bon de livraison",
       "inspectionReport": "Rapport de réception",
       "certificate": "Attestations et autocontrôles",
@@ -7976,7 +7975,9 @@
       "title": "Purchases",
       "mergeWith": "Fusionner avec…",
       "mergeWithHint": "La ligne choisie devient une page de celle-ci. Le montant retenu sera {{amount}}.",
-      "mergeWithNone": "Aucune ligne ne correspond"
+      "mergeWithNone": "Aucune ligne ne correspond",
+      "ata": "Comptabiliser en avenant",
+      "ataOn": "Avenant — hors budget"
     },
     "drawings": {
       "title": "Drawings",

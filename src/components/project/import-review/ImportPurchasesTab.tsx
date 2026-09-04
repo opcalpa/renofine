@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle, Check, Copy, FileText, Home, Layers, RefreshCw, Search, X } from 'lucide-react';
+import { AlertTriangle, Check, Copy, FileText, Home, Layers, RefreshCw, Search, Split, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -324,6 +324,8 @@ interface PurchaseListProps {
   onMerge: (fromId: string, intoId: string) => void;
   /** "I looked, it is right" — takes the row out of the queue. */
   onAcknowledge: (id: string, ack: boolean) => void;
+  /** Book the cost outside the accepted budget (ÄTA). */
+  onBookAsAta: (id: string, ata: boolean) => void;
   /** Read the same image again; a hard photo often lands better on try two. */
   onReread: (id: string) => void;
   /**
@@ -357,6 +359,7 @@ export function PurchaseList({
   onCreateRoom,
   onMerge,
   onAcknowledge,
+  onBookAsAta,
   onReread,
   onSaveAsDocument,
   rereading,
@@ -461,6 +464,7 @@ export function PurchaseList({
               onCreateRoom={(name) => onCreateRoom(row.id, name)}
               onMerge={onMerge}
               onAcknowledge={(ack) => onAcknowledge(row.id, ack)}
+              onBookAsAta={(ata) => onBookAsAta(row.id, ata)}
               onReread={() => onReread(row.id)}
               onSaveAsDocument={(type) => onSaveAsDocument(row.id, type)}
               rereading={rereading.has(row.id)}
@@ -486,6 +490,7 @@ function PurchaseRowView({
   onCreateRoom,
   onMerge,
   onAcknowledge,
+  onBookAsAta,
   onReread,
   onSaveAsDocument,
   rereading,
@@ -504,6 +509,7 @@ function PurchaseRowView({
   onCreateRoom: (name: string) => void;
   onMerge: (fromId: string, intoId: string) => void;
   onAcknowledge: (ack: boolean) => void;
+  onBookAsAta: (ata: boolean) => void;
   onReread: () => void;
   onSaveAsDocument: (type: DocumentType | null) => void;
   rereading: boolean;
@@ -824,6 +830,27 @@ function PurchaseRowView({
               {row.action.attachmentKey && (
                 <RowAction icon={RefreshCw} busy={rereading} onClick={onReread}>
                   {t('importReview.purchases.reread', 'Läs om')}
+                </RowAction>
+              )}
+              {/*
+                ÄTA — extra work outside the accepted budget.
+
+                Shown on EVERY row that stays a purchase, not only flagged ones,
+                because an ÄTA invoice looks completely ordinary: the paper says
+                nothing about it (Carl, 2026-09-04). Hiding it behind a warning
+                would mean the rows that need it are the ones that never offer
+                it. It does not touch the amount — the cost is real either way;
+                it moves which side of the accepted budget it counts on.
+              */}
+              {row.kept && !row.savedAsDocument && (
+                <RowAction
+                  icon={Split}
+                  tone={row.bookAsAta ? 'done' : undefined}
+                  onClick={() => onBookAsAta(!row.bookAsAta)}
+                >
+                  {row.bookAsAta
+                    ? t('importReview.purchases.ataOn', 'ÄTA — utanför budget')
+                    : t('importReview.purchases.ata', 'Bokför som ÄTA')}
                 </RowAction>
               )}
               <RowAction

@@ -36,7 +36,7 @@ function getCorsHeaders(req: Request) {
 }
 
 type DocumentType =
-  | 'quote' | 'invoice' | 'receipt' | 'ata' | 'delivery_note'
+  | 'quote' | 'invoice' | 'receipt' | 'delivery_note'
   | 'contract' | 'inspection_report' | 'certificate' | 'permit'
   | 'floor_plan' | 'specification' | 'product_image' | 'other';
 
@@ -64,8 +64,8 @@ interface PropertyAddress {
  * because it runs on the server where the model's answer lands first.
  */
 // Mirrors `scopeBearing` in src/services/smartUploadService.ts's catalog.
-// ÄTA carries scope by definition — it IS a change to the agreed work.
-const SCOPE_BEARING: readonly DocumentType[] = ['quote', 'contract', 'specification', 'ata'];
+// An additional quote (ÄTA) classifies as `quote` and is scope-bearing there.
+const SCOPE_BEARING: readonly DocumentType[] = ['quote', 'contract', 'specification'];
 
 interface ClassificationResult {
   type: DocumentType;
@@ -103,7 +103,7 @@ function buildSystemPrompt(scopeLang: string | null): string {
   return `${base}
 
 ADDITIONALLY — WORK SCOPE:
-If (and only if) the type you chose is "quote", "contract", "specification" or "ata",
+If (and only if) the type you chose is "quote", "contract" or "specification",
 also extract the renovation scope the document describes, as a "scope" field.
 For EVERY other type — including "other" — set "scope": null. Do not guess a
 scope out of a document you could not place: a CV, a bank statement or a
@@ -130,10 +130,9 @@ and calling it "product_image" is how a whole pile of them gets filed as photos
 and never read (Carl's 112-receipt drop, 2026-09-01).
 
 DOCUMENT TYPES:
-- "quote" — A price offer/estimate from a contractor or supplier. Contains line items with prices, work descriptions, totals. Swedish: "Offert", "Prisförslag", "Anbud".
+- "quote" — A price offer/estimate from a contractor or supplier. Contains line items with prices, work descriptions, totals. Swedish: "Offert", "Prisförslag", "Anbud". An ADDITIONAL quote for extra work (ÄTA, tilläggsoffert) is also a "quote" — whether it counts as ÄTA is a budget question the app decides, not a kind of document.
 - "invoice" — A bill requesting payment. Has invoice number, due date, OCR/payment reference, bankgiro. Swedish: "Faktura".
 - "receipt" — Proof of payment already made. From retail stores, hardware stores. Swedish: "Kvitto", "Kassakvitto".
-- "ata" — A change to work ALREADY agreed: extra, altered or removed work against an existing contract or quote. Swedish: "ÄTA", "ÄTA-arbete", "Ändrings- och tilläggsarbete", "Tilläggsbeställning". Distinguish from "quote": a quote proposes a NEW job; an ÄTA amends one that is already running, and usually references the original order or contract.
 - "delivery_note" — A DELIVERY document listing what was shipped, NOT what it cost. Swedish: "Följesedel", "Packsedel", "Leveranssedel", "Lastorder". Tell it apart from a receipt/invoice by what it is missing: no "Att betala", no total to pay, often quantities only, or prices that are clearly not a demand for payment. A följesedel with a small stray number on it is STILL a följesedel — do not call it a receipt because you found a figure.
 - "inspection_report" — Inspection or survey report. Swedish: "Besiktningsprotokoll", "Slutbesiktning", "Garantibesiktning", "Överlåtelsebesiktning", "Statusbesiktning".
 - "certificate" — A certificate or self-inspection proving work was done correctly. Swedish: "Våtrumsintyg", "Kvalitetsdokument", "GVK", "BKR", "Säker Vatten", "Egenkontroll", "Elinstallationsintyg", "Injusteringsprotokoll".
@@ -153,7 +152,10 @@ and word-spotting therefore cannot tell the two apart.
 
 "signals": {
   "heading": "<the words printed as the document's own heading, at the top or in
-              a corner — e.g. FÖLJESEDEL, FAKTURA, KVITTO, OFFERT. null if none>",
+              a corner — e.g. FÖLJESEDEL, FAKTURA, KVITTO, OFFERT, ÄTA. null if
+              none. Report ÄTA/TILLÄGG here when the paper says so: it does not
+              make the document a different TYPE, but the app uses it to suggest
+              that the cost falls outside the agreed budget>",
   "text_is_upright": <true if the text runs left-to-right the normal way in the
                       image as given; false if you had to read it sideways or
                       upside down. Answer honestly — this is used to turn the
@@ -206,7 +208,7 @@ used to move weak answers to "Övrigt", never to promote them. Do not emit a
 habitual 0.95 — a number you give every document carries no information.
 
 SUGGESTED ACTIONS:
-- "extract_tasks" — For quotes, specifications, contracts and ÄTA with work items → extract as tasks with budget
+- "extract_tasks" — For quotes, specifications and contracts with work items → extract as tasks with budget
 - "extract_purchase" — For invoices, receipts → extract as purchase/material record. NEVER for "delivery_note": a delivery note is proof of what arrived, not of what was paid, and booking one as a purchase invents a cost.
 - "import_to_canvas" — For floor plans → import as background image on canvas
 - "store_only" — For product images, other documents → just save to files
@@ -495,7 +497,7 @@ async function classifyWithContent(
 
   try {
     const result = JSON.parse(jsonText);
-    const validTypes: DocumentType[] = ['quote', 'invoice', 'receipt', 'ata', 'delivery_note', 'contract', 'inspection_report', 'certificate', 'permit', 'floor_plan', 'specification', 'product_image', 'other'];
+    const validTypes: DocumentType[] = ['quote', 'invoice', 'receipt', 'delivery_note', 'contract', 'inspection_report', 'certificate', 'permit', 'floor_plan', 'specification', 'product_image', 'other'];
     const validActions = ['extract_tasks', 'extract_purchase', 'import_to_canvas', 'store_only'];
 
     const type: DocumentType = validTypes.includes(result.type) ? result.type : 'other';

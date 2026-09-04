@@ -6782,7 +6782,6 @@
       "specification": "Specifikation",
       "productImage": "Produktbild",
       "other": "Övrigt",
-      "ata": "ÄTA",
       "deliveryNote": "Följesedel",
       "inspectionReport": "Besiktningsprotokoll",
       "certificate": "Intyg & egenkontroller",
@@ -8366,7 +8365,9 @@
       "savedAsDocumentBody": "Filen läggs i {{folder}} — ingen kostnad bokförs",
       "savedAsDocumentUndo": "Sparas som dokument — ångra",
       "notAPurchase": "Inte ett inköp — spara som dokument",
-      "tallyDocuments": "{{count}} sparas som dokument"
+      "tallyDocuments": "{{count}} sparas som dokument",
+      "ata": "Bokför som ÄTA",
+      "ataOn": "ÄTA — utanför budget"
     },
     "drawings": {
       "title": "Ritningar",
