@@ -20,8 +20,25 @@ på fem språk samtidigt.
 | quote | Offert | finns |
 | invoice | Faktura | finns |
 | receipt | Kvitto | finns |
-| ata | ÄTA | NY — begreppet finns redan i offert/faktura/ROT-tak |
 | delivery_note | Följesedel | NY — stäms mot faktura; ska INTE läsas som inköp |
+
+**`ata` STRUKEN som dokumenttyp (Carl, 2026-09-04, samma dag den lades in).**
+ÄTA är inte en sorts papper — det är ett FÖRHÅLLANDE mellan en kostnad och den
+accepterade budgeten, och underlaget säger sällan "ÄTA" (en ÄTA-kostnad kommer
+som vanlig faktura eller vanligt kvitto). Appen bär redan förhållandet på två
+rätta ställen: `quotes.is_ata` (tilläggsofferten) och
+`materials.exclude_from_budget` (kostnadsflaggan, som Budget-fliken redan delar
+på). En dokumenttyp hade blivit ett TREDJE konkurrerande hem som kan säga emot
+de två. Typ = vad pappret är; ÄTA = hur det räknas. En "ÄTA-underlag"-vy i
+Filer härleds ur flaggan — härledning slår dubblering.
+
+**ÄTA-flaggan sätts som förslag + bekräftelse, aldrig tyst:** starkast är att
+pappret faktiskt säger ÄTA/tillägg (rubriksignalen föreslår FLAGGAN, inte
+typen); därnäst att kostnaden saknar motsvarighet i accepterad offert (finns i
+agent-flödet); tidssignaler färgar bara förslaget. Standard = inom budget.
+**Invariant att pinna med test:** ÄTA räknas ÄNDÅ i totalkostnad och ROT-tak.
+**"Tillgängliga medel":** ett informativt fält på projektet (accepterad budget ·
+totalt inkl ÄTA · kvar av medel). Byggs sist eller stryks.
 
 ### Juridik & ansvar
 | contract | Avtal | finns (mappen /Kontrakt behålls, etiketten byts) |
@@ -61,6 +78,16 @@ till typens mapp. Samma yta får rum- och arbetsväljare (room_id/task_id finns
 redan i tabellen — bara skrivvägen saknas).
 
 ## Byggskivor (exekveras på Opus)
+
+0. **STRYK `ata`** ur DocumentType-katalogen, klassificerarens enum/prompt,
+   SCOPE_BEARING (tilläggsofferten klassas som quote och är redan scope-bearing),
+   i18n och mappen /ÄTA — inga rader hann skrivas med typen. Behåll
+   rubrikdetektionen ("ÄTA", "tilläggs…") som FÖRSLAG på ÄTA-flaggan.
+4. **ÄTA-kryssruta per inköpsrad i granskningen** (styr `bookAsAta` →
+   `exclude_from_budget`), förbockad av signalerna ovan, alltid ändringsbar.
+   Test som pinnar: flaggad ÄTA räknas ändå i totalkostnad + ROT-tak.
+5. *(valfri, Carls "kanske")* `available_funds` på projektet + raden
+   "accepterad budget · totalt inkl ÄTA · kvar av medel" i Budget-fliken.
 
 1. Typlistan: DocumentType-union, CATEGORY_FOLDERS (nya mappar /Foljesedlar,
    /Besiktning, /Intyg, /Tillstand, /ATA), klassificerarens enum + prompt,
