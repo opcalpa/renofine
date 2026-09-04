@@ -6777,11 +6777,16 @@
       "quote": "Offert",
       "invoice": "Faktura",
       "receipt": "Kvitto",
-      "floorPlan": "Planritning",
+      "floorPlan": "Ritning",
       "contract": "Avtal",
       "specification": "Specifikation",
       "productImage": "Produktbild",
-      "other": "Övrigt"
+      "other": "Övrigt",
+      "ata": "ÄTA",
+      "deliveryNote": "Följesedel",
+      "inspectionReport": "Besiktningsprotokoll",
+      "certificate": "Intyg & egenkontroller",
+      "permit": "Tillstånd & beslut"
     },
     "actions": {
       "extractTasks": "Extrahera arbeten & budget",
@@ -6791,7 +6796,13 @@
     },
     "linkExisting": "Koppla till befintlig",
     "createNew": "Skapa ny",
-    "linkPrompt": "Är detta en befintlig post eller vill du skapa en ny?"
+    "linkPrompt": "Är detta en befintlig post eller vill du skapa en ny?",
+    "groups": {
+      "economy": "Ekonomi",
+      "legal": "Juridik & ansvar",
+      "technical": "Teknik",
+      "fallback": "Vet inte"
+    }
   },
   "linkPurchase": {
     "titleInvoice": "Faktura mottagen",

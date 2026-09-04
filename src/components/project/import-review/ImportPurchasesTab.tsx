@@ -7,12 +7,18 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import type { ImportSession } from '@/services/agent/importSession';
-import type { DocumentType } from '@/services/smartUploadService';
+import {
+  DOCUMENT_TYPE_CATALOG,
+  PICKABLE_DOCUMENT_TYPES,
+  type DocumentType,
+} from '@/services/smartUploadService';
 import type { PurchaseFilter, PurchaseRow } from './purchaseRowModel';
 
 export const NO_ROOM = '__none__';
@@ -281,20 +287,24 @@ function RoomPicker({
  * (Carl, 2026-09-03): a delivery note is not a receipt, and inventing a folder
  * for it would be a category nobody else in the app knows about.
  */
-const DOCUMENT_TYPES: Array<{ value: DocumentType; labelKey: string; fallback: string }> = [
-  { value: 'other', labelKey: 'smartUpload.types.other', fallback: 'Övrigt' },
-  { value: 'receipt', labelKey: 'smartUpload.types.receipt', fallback: 'Kvitto' },
-  { value: 'invoice', labelKey: 'smartUpload.types.invoice', fallback: 'Faktura' },
-  { value: 'quote', labelKey: 'smartUpload.types.quote', fallback: 'Offert' },
-  { value: 'contract', labelKey: 'smartUpload.types.contract', fallback: 'Avtal' },
-  { value: 'specification', labelKey: 'smartUpload.types.specification', fallback: 'Specifikation' },
-  { value: 'floor_plan', labelKey: 'smartUpload.types.floorPlan', fallback: 'Planritning' },
-  { value: 'product_image', labelKey: 'smartUpload.types.productImage', fallback: 'Produktbild' },
-];
+/**
+ * The picker, grouped, straight off the catalog.
+ *
+ * Övrigt keeps its place at the TOP even though the catalog lists it last:
+ * here it is the default, and the whole point of the action is that the person
+ * does not have to know what the paper is called to keep it (Carl,
+ * 2026-09-03). Everywhere else Övrigt is the last resort and sorts last.
+ */
+const TYPE_GROUPS: Array<{ key: string; fallback: string; types: typeof PICKABLE_DOCUMENT_TYPES }> = [
+  { key: 'smartUpload.groups.fallback', fallback: 'Vet inte', types: PICKABLE_DOCUMENT_TYPES.filter((d) => d.group === 'fallback') },
+  { key: 'smartUpload.groups.economy', fallback: 'Ekonomi', types: PICKABLE_DOCUMENT_TYPES.filter((d) => d.group === 'economy') },
+  { key: 'smartUpload.groups.legal', fallback: 'Juridik & ansvar', types: PICKABLE_DOCUMENT_TYPES.filter((d) => d.group === 'legal') },
+  { key: 'smartUpload.groups.technical', fallback: 'Teknik', types: PICKABLE_DOCUMENT_TYPES.filter((d) => d.group === 'technical') },
+].filter((g) => g.types.length > 0);
 
 /** The i18n key + Swedish fallback for one document type, for the caller's `t`. */
 function documentTypeLabel(type: DocumentType): { key: string; fallback: string } {
-  const entry = DOCUMENT_TYPES.find((d) => d.value === type);
+  const entry = DOCUMENT_TYPE_CATALOG.find((d) => d.value === type);
   return entry ? { key: entry.labelKey, fallback: entry.fallback } : { key: type, fallback: type };
 }
 
@@ -848,15 +858,23 @@ function PurchaseRowView({
                       {t('importReview.purchases.notAPurchase', 'Inte ett inköp — spara som dokument')}
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="max-h-64 overflow-y-auto">
-                    {DOCUMENT_TYPES.map((doc) => (
-                      <DropdownMenuItem
-                        key={doc.value}
-                        className="text-xs"
-                        onSelect={() => onSaveAsDocument(doc.value)}
-                      >
-                        {t(doc.labelKey, doc.fallback)}
-                      </DropdownMenuItem>
+                  <DropdownMenuContent align="start" className="max-h-72 overflow-y-auto">
+                    {TYPE_GROUPS.map((group, i) => (
+                      <div key={group.key}>
+                        {i > 0 && <DropdownMenuSeparator />}
+                        <DropdownMenuLabel className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                          {t(group.key, group.fallback)}
+                        </DropdownMenuLabel>
+                        {group.types.map((doc) => (
+                          <DropdownMenuItem
+                            key={doc.value}
+                            className="text-xs"
+                            onSelect={() => onSaveAsDocument(doc.value)}
+                          >
+                            {t(doc.labelKey, doc.fallback)}
+                          </DropdownMenuItem>
+                        ))}
+                      </div>
                     ))}
                   </DropdownMenuContent>
                 </DropdownMenu>

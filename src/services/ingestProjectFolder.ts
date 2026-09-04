@@ -43,6 +43,8 @@ import type { ImportPurchaseAction } from './agent/importPurchaseOrder';
 import {
   classifyDocument,
   ClassifyError,
+  SCOPE_BEARING_TYPES,
+  settleDocumentType,
   type DocumentType,
   type DocumentPropertyAddress,
   type AddressSource,
@@ -153,6 +155,18 @@ async function extractText(file: File, calls?: ModelCallLog): Promise<string> {
 
 interface ClassifyResult {
   type: string;
+  /**
+   * The words in the document that justify the type — a heading, a form name,
+   * a labelled field. `null` when the model could not point at anything, which
+   * is what demotes the reading to Övrigt. Checkable, which self-reported
+   * confidence is not (measured constant at 0.95 across 47 files).
+   */
+  type_evidence?: string | null;
+  /**
+   * How sure the model was. Read ONLY to demote a weak answer to Övrigt — the
+   * server has always returned it and nothing used it until 2026-09-04.
+   */
+  confidence?: number;
   invoice_amount: number | null;
   property_address?: DocumentPropertyAddress | null;
   address_source?: AddressSource | null;
@@ -181,15 +195,6 @@ export interface AddressCandidate {
   rank: number;
 }
 
-const DOCUMENT_TYPES: readonly DocumentType[] = [
-  'quote', 'invoice', 'receipt', 'floor_plan',
-  'contract', 'specification', 'product_image', 'other',
-];
-
-/** The classifier returns a bare string — narrow it before it becomes a path. */
-function asDocumentType(raw: string | undefined): DocumentType {
-  return DOCUMENT_TYPES.includes(raw as DocumentType) ? (raw as DocumentType) : 'other';
-}
 
 /**
  * Classify already-extracted text (base64-free legacy path — no storage).
@@ -257,11 +262,9 @@ export interface PropertyDocCandidate {
  * Anything outside this set is filed and left alone — the difference between
  * "the app read my quote" and "the app invented three rooms out of my CV".
  */
-const SCOPE_BEARING: ReadonlySet<DocumentType> = new Set<DocumentType>([
-  'quote',
-  'contract',
-  'specification',
-]);
+// Derived from the catalog (`scopeBearing`), so adding a scope-carrying type
+// is one entry there rather than a second list that can silently disagree.
+const SCOPE_BEARING = SCOPE_BEARING_TYPES;
 
 /** A single file's contribution, before the deterministic fold. */
 type ContributionKind =
@@ -450,7 +453,7 @@ async function processDocument(
   // ONE call for both questions: what is this document, and what work does it
   // describe. The scope comes back only for classes that may carry it.
   const cls = await classifyText(text, file.name, language, calls);
-  const type = asDocumentType(cls?.type);
+  const type = settleDocumentType(cls?.type, cls?.confidence, cls?.type_evidence).type;
   const archive: ArchiveEntry = { file, category: type };
   const address = suggestAddress ? toCandidate(cls, type, file.name) : undefined;
   if (type === 'receipt' || type === 'invoice') {
@@ -901,9 +904,11 @@ export async function ingestProjectFolder(
     onProgress?.({ phase: 'classify', done: 0, total: photos.length });
     const kinds = await mapLimit(photos, CONCURRENCY, async (f) => {
       try {
-        const kind = asDocumentType((await classifyDocument(f)).type);
+        const cls = await classifyDocument(f);
         noteModelCall(calls, 'classify-document');
-        return kind;
+        // A weak reading becomes Övrigt rather than a confident-looking wrong
+        // folder. The person is asked in the review instead.
+        return settleDocumentType(cls.type, cls.confidence, cls.type_evidence).type;
       } catch (e) {
         // Falling open to 'other' is right — a photo we could not place must
         // not be guessed at. But it is NOT the same as a photo we read and

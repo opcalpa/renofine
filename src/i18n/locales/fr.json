@@ -7033,7 +7033,12 @@
       "contract": "Contrat",
       "specification": "Spécification",
       "productImage": "Image produit",
-      "other": "Autre"
+      "other": "Autre",
+      "ata": "Avenant (ÄTA)",
+      "deliveryNote": "Bon de livraison",
+      "inspectionReport": "Rapport de réception",
+      "certificate": "Attestations et autocontrôles",
+      "permit": "Autorisations et décisions"
     },
     "actions": {
       "extractTasks": "Extraire tâches et budget",
@@ -7043,7 +7048,13 @@
     },
     "linkExisting": "Lier à un élément existant",
     "createNew": "Créer un nouveau",
-    "linkPrompt": "S'agit-il d'un élément existant ou souhaitez-vous en créer un nouveau ?"
+    "linkPrompt": "S'agit-il d'un élément existant ou souhaitez-vous en créer un nouveau ?",
+    "groups": {
+      "economy": "Finances",
+      "legal": "Juridique et responsabilité",
+      "technical": "Technique",
+      "fallback": "Je ne sais pas"
+    }
   },
   "linkPurchase": {
     "titleInvoice": "Facture reçue",

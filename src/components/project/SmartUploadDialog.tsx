@@ -37,12 +37,18 @@ import {
   CheckCircle2,
   ArrowRight,
   RefreshCw,
+  FilePlus,
+  Truck,
+  ClipboardCheck,
+  BadgeCheck,
+  Stamp,
 } from "lucide-react";
 import {
   classifyDocument,
   type ClassificationResult,
   type DocumentType,
   type SuggestedAction,
+  DOCUMENT_TYPE_CATALOG,
 } from "@/services/smartUploadService";
 
 // ---------------------------------------------------------------------------
@@ -88,8 +94,13 @@ const TYPE_ICONS: Record<DocumentType, typeof FileText> = {
   quote: ScrollText,
   invoice: Receipt,
   receipt: ShoppingCart,
+  ata: FilePlus,
+  delivery_note: Truck,
   floor_plan: FileImage,
   contract: FileText,
+  inspection_report: ClipboardCheck,
+  certificate: BadgeCheck,
+  permit: Stamp,
   specification: FileText,
   product_image: Image,
   other: HelpCircle,
@@ -99,8 +110,13 @@ const TYPE_COLORS: Record<DocumentType, string> = {
   quote: "bg-blue-100 text-blue-800",
   invoice: "bg-amber-100 text-amber-800",
   receipt: "bg-green-100 text-green-800",
+  ata: "bg-orange-100 text-orange-800",
+  delivery_note: "bg-lime-100 text-lime-800",
   floor_plan: "bg-purple-100 text-purple-800",
   contract: "bg-slate-100 text-slate-800",
+  inspection_report: "bg-teal-100 text-teal-800",
+  certificate: "bg-emerald-100 text-emerald-800",
+  permit: "bg-indigo-100 text-indigo-800",
   specification: "bg-cyan-100 text-cyan-800",
   product_image: "bg-pink-100 text-pink-800",
   other: "bg-gray-100 text-gray-800",
@@ -202,17 +218,11 @@ export function SmartUploadDialog({
 
   // ---- Render helpers ----
   const typeLabel = (type: DocumentType): string => {
-    const labels: Record<DocumentType, string> = {
-      quote: t("smartUpload.types.quote", "Offert"),
-      invoice: t("smartUpload.types.invoice", "Faktura"),
-      receipt: t("smartUpload.types.receipt", "Kvitto"),
-      floor_plan: t("smartUpload.types.floorPlan", "Planritning"),
-      contract: t("smartUpload.types.contract", "Avtal"),
-      specification: t("smartUpload.types.specification", "Specifikation"),
-      product_image: t("smartUpload.types.productImage", "Produktbild"),
-      other: t("smartUpload.types.other", "Övrigt"),
-    };
-    return labels[type] || type;
+    // From the catalog rather than a parallel list: the two drifted apart
+    // before (this one still said "Planritning" after the label became
+    // "Ritning"), and a stale label is a paper the person cannot find.
+    const entry = DOCUMENT_TYPE_CATALOG.find((d) => d.value === type);
+    return entry ? t(entry.labelKey, entry.fallback) : type;
   };
 
   const actionLabel = (action: SuggestedAction): string => {

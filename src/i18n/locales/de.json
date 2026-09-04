@@ -7029,11 +7029,16 @@
       "quote": "Angebot",
       "invoice": "Rechnung",
       "receipt": "Quittung",
-      "floorPlan": "Grundriss",
+      "floorPlan": "Zeichnung",
       "contract": "Vertrag",
       "specification": "Spezifikation",
       "productImage": "Produktbild",
-      "other": "Sonstiges"
+      "other": "Sonstiges",
+      "ata": "Nachtrag (ÄTA)",
+      "deliveryNote": "Lieferschein",
+      "inspectionReport": "Abnahmeprotokoll",
+      "certificate": "Nachweise & Eigenkontrollen",
+      "permit": "Genehmigungen & Bescheide"
     },
     "actions": {
       "extractTasks": "Aufgaben & Budget extrahieren",
@@ -7043,7 +7048,13 @@
     },
     "linkExisting": "Mit vorhandenem verknüpfen",
     "createNew": "Neu erstellen",
-    "linkPrompt": "Ist dies ein vorhandener Posten oder möchten Sie einen neuen erstellen?"
+    "linkPrompt": "Ist dies ein vorhandener Posten oder möchten Sie einen neuen erstellen?",
+    "groups": {
+      "economy": "Finanzen",
+      "legal": "Recht & Haftung",
+      "technical": "Technik",
+      "fallback": "Weiß nicht"
+    }
   },
   "linkPurchase": {
     "titleInvoice": "Rechnung erhalten",

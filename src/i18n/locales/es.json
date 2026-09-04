@@ -7033,7 +7033,12 @@
       "contract": "Contrato",
       "specification": "Especificación",
       "productImage": "Imagen de producto",
-      "other": "Otro"
+      "other": "Otro",
+      "ata": "Modificación (ÄTA)",
+      "deliveryNote": "Albarán",
+      "inspectionReport": "Acta de inspección",
+      "certificate": "Certificados y autocontroles",
+      "permit": "Permisos y resoluciones"
     },
     "actions": {
       "extractTasks": "Extraer tareas y presupuesto",
@@ -7043,7 +7048,13 @@
     },
     "linkExisting": "Vincular a existente",
     "createNew": "Crear nuevo",
-    "linkPrompt": "¿Es este un elemento existente o quiere crear uno nuevo?"
+    "linkPrompt": "¿Es este un elemento existente o quiere crear uno nuevo?",
+    "groups": {
+      "economy": "Economía",
+      "legal": "Legal y responsabilidad",
+      "technical": "Técnico",
+      "fallback": "No lo sé"
+    }
   },
   "linkPurchase": {
     "titleInvoice": "Factura recibida",

@@ -7,14 +7,151 @@ export { folderOfPath, importFolderName } from "@/lib/projectFolders";
 // --- Classification types ---
 
 export type DocumentType =
+  // Ekonomi — driver siffror i appen
   | "quote"
   | "invoice"
   | "receipt"
-  | "floor_plan"
+  | "ata"
+  | "delivery_note"
+  // Juridik & ansvar — kostar mest när de saknas
   | "contract"
+  | "inspection_report"
+  | "certificate"
+  | "permit"
+  // Teknik
+  | "floor_plan"
   | "specification"
+  // Routing, inte vokabulär — aldrig i en väljare
   | "product_image"
   | "other";
+
+/**
+ * The one place the document vocabulary is defined. Decided 2026-09-04,
+ * written up in docs/dokumenttyper-2026-09.md — change that first.
+ *
+ * Two principles decide what belongs here:
+ *  1. A type is what the PAPER IS, not what the app does with it. That is why
+ *     `product_image` is marked internal: it is routing.
+ *  2. A wrongly-guessed specific type is worse than "other". A receipt filed
+ *     as "Avtal" is a paper you stop looking for; one in Övrigt says honestly
+ *     that we do not know.
+ *
+ * Ranked by what it COSTS when the paper is missing, not by how often it turns
+ * up — `certificate` (våtrumsintyg) is rare and the most expensive of all to
+ * lack when a flat is sold.
+ *
+ * Machine-readable on purpose (agent-readable architecture): the picker, the
+ * folders, the classifier's enum and the i18n keys all derive from this array,
+ * so a new type is one entry rather than four edits that can drift apart.
+ */
+export const DOCUMENT_TYPE_CATALOG: ReadonlyArray<{
+  value: DocumentType;
+  /** Which heading it sits under in a picker. `null` = never shown to a person. */
+  group: "economy" | "legal" | "technical" | "fallback" | null;
+  labelKey: string;
+  /** Swedish fallback, so a missing key never renders a raw key. */
+  fallback: string;
+  folder: string;
+  /** May carry a work scope the reader is allowed to extract tasks from. */
+  scopeBearing?: true;
+}> = [
+  { value: "quote", group: "economy", labelKey: "smartUpload.types.quote", fallback: "Offert", folder: "/Offerter", scopeBearing: true },
+  { value: "invoice", group: "economy", labelKey: "smartUpload.types.invoice", fallback: "Faktura", folder: "/Fakturor" },
+  { value: "receipt", group: "economy", labelKey: "smartUpload.types.receipt", fallback: "Kvitto", folder: "/Kvitton" },
+  { value: "ata", group: "economy", labelKey: "smartUpload.types.ata", fallback: "ÄTA", folder: "/ÄTA", scopeBearing: true },
+  { value: "delivery_note", group: "economy", labelKey: "smartUpload.types.deliveryNote", fallback: "Följesedel", folder: "/Följesedlar" },
+  { value: "contract", group: "legal", labelKey: "smartUpload.types.contract", fallback: "Avtal", folder: "/Kontrakt", scopeBearing: true },
+  { value: "inspection_report", group: "legal", labelKey: "smartUpload.types.inspectionReport", fallback: "Besiktningsprotokoll", folder: "/Besiktning" },
+  { value: "certificate", group: "legal", labelKey: "smartUpload.types.certificate", fallback: "Intyg & egenkontroller", folder: "/Intyg" },
+  { value: "permit", group: "legal", labelKey: "smartUpload.types.permit", fallback: "Tillstånd & beslut", folder: "/Tillstånd" },
+  { value: "floor_plan", group: "technical", labelKey: "smartUpload.types.floorPlan", fallback: "Ritning", folder: "/Ritningar" },
+  { value: "specification", group: "technical", labelKey: "smartUpload.types.specification", fallback: "Specifikation", folder: "/Specifikationer", scopeBearing: true },
+  { value: "product_image", group: null, labelKey: "smartUpload.types.productImage", fallback: "Produktbild", folder: "/Bilder" },
+  { value: "other", group: "fallback", labelKey: "smartUpload.types.other", fallback: "Övrigt", folder: "" },
+];
+
+/** Every valid value — for narrowing a string the classifier returned. */
+export const DOCUMENT_TYPES: ReadonlyArray<DocumentType> = DOCUMENT_TYPE_CATALOG.map((d) => d.value);
+
+/** The classifier returns a bare string; never let one become a folder path. */
+export function asDocumentType(raw: string | undefined): DocumentType {
+  return DOCUMENT_TYPES.includes(raw as DocumentType) ? (raw as DocumentType) : "other";
+}
+
+/** Types a person may choose, in picker order, grouped. */
+export const PICKABLE_DOCUMENT_TYPES = DOCUMENT_TYPE_CATALOG.filter((d) => d.group !== null);
+
+/** Types whose text may be mined for rooms and tasks. */
+export const SCOPE_BEARING_TYPES: ReadonlySet<DocumentType> = new Set(
+  DOCUMENT_TYPE_CATALOG.filter((d) => d.scopeBearing).map((d) => d.value),
+);
+
+/** Label for a type, with the Swedish fallback built in. */
+export function documentTypeFallback(type: DocumentType): string {
+  return DOCUMENT_TYPE_CATALOG.find((d) => d.value === type)?.fallback ?? type;
+}
+
+/**
+ * Below this, a classification is a guess rather than a reading.
+ *
+ * SECONDARY net, and measured to be nearly inert: across all 47 classifications
+ * in Carl's 2026-09-03 batch the server returned confidence **0.95 every single
+ * time** — a habit, not a belief. A floor on that number would have been a
+ * placebo. It is kept only because a MISSING confidence defaults to 0.5 on the
+ * server, and that case should demote.
+ *
+ * The real gate is `type_evidence` below. Same lesson as the receipt angles: a
+ * model can answer "what did you see?" far better than "how sure are you?".
+ */
+export const TYPE_CONFIDENCE_FLOOR = 0.7;
+
+/** A classification after the floor is applied, and whether it was demoted. */
+export interface SettledType {
+  type: DocumentType;
+  /** The type the model actually named — kept so the picker can pre-select it. */
+  suggested: DocumentType;
+  /** True when we filed it as Övrigt because the reading could not be backed up. */
+  needsTypeReview: boolean;
+}
+
+/**
+ * Decide the type we will actually FILE it under.
+ *
+ * A specific type has to be backed by words the model says it read in the
+ * document — a heading, a form name, a labelled field. A type it cannot point
+ * at is a guess, and a wrong specific type is worse than Övrigt: it is a paper
+ * the person stops looking for, while Övrigt says honestly that we do not know
+ * and can be corrected in one click.
+ *
+ * Checkable, unlike self-reported confidence: the evidence is a string that can
+ * be looked for in the document. That is the whole reason it replaced the
+ * number (which measured constant at 0.95).
+ *
+ * `product_image` and `other` are exempt — they are already the humble answers,
+ * and demoting them costs the person a question they cannot usefully answer.
+ * `product_image` in particular is decided from the image, not from text there
+ * is any evidence to quote.
+ */
+export function settleDocumentType(
+  raw: string | undefined,
+  confidence: number | undefined,
+  typeEvidence?: string | null,
+): SettledType {
+  const suggested = asDocumentType(raw);
+  const demotable = suggested !== "other" && suggested !== "product_image";
+  if (!demotable) return { type: suggested, suggested, needsTypeReview: false };
+
+  const unbacked = typeof typeEvidence === "string" && !typeEvidence.trim();
+  const missingEvidence = typeEvidence === null || unbacked;
+  const weak = typeof confidence === "number" && confidence < TYPE_CONFIDENCE_FLOOR;
+
+  // `undefined` means the caller does not carry the field yet (an older cached
+  // reading, the legacy path). Absence of the field is not evidence of a guess,
+  // so it must not demote — only an explicit null does.
+  return missingEvidence || weak
+    ? { type: "other", suggested, needsTypeReview: true }
+    : { type: suggested, suggested, needsTypeReview: false };
+}
 
 export type SuggestedAction =
   | "extract_tasks"
@@ -38,6 +175,13 @@ export type AddressSource = 'property_document' | 'site_field';
 export interface ClassificationResult {
   type: DocumentType;
   confidence: number;
+  /**
+   * The words in the document that justify the type — a heading, a form name,
+   * a labelled field. `null` when the model could not point at anything, which
+   * is what demotes the reading to Övrigt. Checkable, which self-reported
+   * confidence is not (measured constant at 0.95 across 47 files).
+   */
+  type_evidence?: string | null;
   summary: string;
   vendor_name: string | null;
   invoice_date: string | null;
@@ -314,16 +458,10 @@ export async function uploadToProjectStorage(
  * Single source of truth — the batch upload dialog AND Renaida's folder ingest
  * both file through here, so a document always lands in the same place.
  */
-export const CATEGORY_FOLDERS: Record<DocumentType, string> = {
-  quote: "/Offerter",
-  invoice: "/Fakturor",
-  receipt: "/Kvitton",
-  floor_plan: "/Ritningar",
-  contract: "/Kontrakt",
-  specification: "/Specifikationer",
-  product_image: "/Bilder",
-  other: "",
-};
+/** Derived from the catalog, so a new type cannot forget to get a folder. */
+export const CATEGORY_FOLDERS: Record<DocumentType, string> = Object.fromEntries(
+  DOCUMENT_TYPE_CATALOG.map((d) => [d.value, d.folder]),
+) as Record<DocumentType, string>;
 
 /** Storage keeps no empty directories — a placeholder makes the folder appear. */
 export async function ensureFolder(projectId: string, folder: string): Promise<void> {

@@ -5,7 +5,27 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  PICKABLE_DOCUMENT_TYPES,
+  type DocumentType,
+} from "@/services/smartUploadService";
+
+/** Picker headings, in the order the taxonomy ranks them. */
+const TYPE_GROUP_ORDER = [
+  { group: "economy" as const, key: "smartUpload.groups.economy", fallback: "Ekonomi" },
+  { group: "legal" as const, key: "smartUpload.groups.legal", fallback: "Juridik & ansvar" },
+  { group: "technical" as const, key: "smartUpload.groups.technical", fallback: "Teknik" },
+  { group: "fallback" as const, key: "smartUpload.groups.fallback", fallback: "Vet inte" },
+];
 import {
   Dialog,
   DialogContent,
@@ -55,7 +75,12 @@ export const LinkFileToTaskDialog = ({
   const [search, setSearch] = useState("");
   const [selectedTaskId, setSelectedTaskId] = useState<string>("");
   const [selectedRoomId, setSelectedRoomId] = useState<string>("");
-  const [fileType, setFileType] = useState<string>("invoice");
+  // Not "invoice": a default that names a specific type is a wrong answer for
+  // every other paper, and the whole taxonomy rests on Övrigt being the honest
+  // starting point (docs/dokumenttyper-2026-09.md).
+  const [fileType, setFileType] = useState<DocumentType>("other");
+  /** The existing link row, when this file already has one — then we UPDATE. */
+  const [existingLinkId, setExistingLinkId] = useState<string | null>(null);
   const [linking, setLinking] = useState(false);
   const [loadingTasks, setLoadingTasks] = useState(false);
 
@@ -63,10 +88,11 @@ export const LinkFileToTaskDialog = ({
     if (open) {
       fetchTasks();
       fetchRooms();
-      setSelectedTaskId("");
-      setSelectedRoomId("");
-      setFileType("invoice");
       setSearch("");
+      // Load what this file ALREADY is, rather than resetting it. Opening the
+      // dialog on a typed file used to blank it back to "invoice", so a person
+      // checking a room assignment could silently retype a certificate.
+      void loadExistingLink();
     }
   }, [open, projectId]);
 
@@ -110,6 +136,35 @@ export const LinkFileToTaskDialog = ({
     }
   };
 
+  /** The file's current link row — the values the dialog starts from. */
+  const loadExistingLink = async () => {
+    setExistingLinkId(null);
+    setSelectedTaskId("");
+    setSelectedRoomId("");
+    setFileType("other");
+    if (!file) return;
+    const { data, error } = await supabase
+      .from("task_file_links")
+      .select("id, task_id, room_id, file_type")
+      .eq("project_id", projectId)
+      .eq("file_path", file.path)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) {
+      // Not fatal: the dialog still works as a fresh link. Saying nothing is
+      // right here — the person asked to link a file, not to hear about a
+      // lookup — but it must not be silent in the console.
+      console.error("LinkFileToTaskDialog: existing link lookup failed", error);
+      return;
+    }
+    if (!data) return;
+    setExistingLinkId(data.id);
+    setSelectedTaskId(data.task_id ?? "");
+    setSelectedRoomId(data.room_id ?? "");
+    if (data.file_type) setFileType(data.file_type as DocumentType);
+  };
+
   const handleLink = async () => {
     if (!file || (!selectedTaskId && !selectedRoomId)) return;
 
@@ -125,17 +180,30 @@ export const LinkFileToTaskDialog = ({
       profileId = profile?.id ?? null;
     }
 
-    const { error } = await supabase.from("task_file_links").insert({
-      project_id: projectId,
-      task_id: selectedTaskId || null,
-      room_id: selectedRoomId || null,
-      file_path: file.path,
-      file_name: file.name,
-      file_type: fileType,
-      file_size: file.size,
-      mime_type: file.type,
-      linked_by_user_id: profileId,
-    });
+    // Update when this file already has a link row. It used to INSERT every
+    // time, which meant the type could never be CHANGED — only a second,
+    // contradicting row added, and `file_type` was in practice write-once
+    // across the whole app (verified 2026-09-04: no UPDATE of it anywhere).
+    const { error } = existingLinkId
+      ? await supabase
+          .from("task_file_links")
+          .update({
+            task_id: selectedTaskId || null,
+            room_id: selectedRoomId || null,
+            file_type: fileType,
+          })
+          .eq("id", existingLinkId)
+      : await supabase.from("task_file_links").insert({
+          project_id: projectId,
+          task_id: selectedTaskId || null,
+          room_id: selectedRoomId || null,
+          file_path: file.path,
+          file_name: file.name,
+          file_type: fileType,
+          file_size: file.size,
+          mime_type: file.type,
+          linked_by_user_id: profileId,
+        });
 
     setLinking(false);
 
@@ -153,7 +221,10 @@ export const LinkFileToTaskDialog = ({
     onLinked?.();
   };
 
-  const canLink = selectedTaskId || selectedRoomId;
+  // Naming the paper IS the change. Requiring a room or a task first meant a
+  // våtrumsintyg could not be typed at all unless it also belonged somewhere,
+  // which is backwards: you know what it is before you know where it goes.
+  const canLink = !!(selectedTaskId || selectedRoomId || fileType);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -170,15 +241,27 @@ export const LinkFileToTaskDialog = ({
           {/* File type */}
           <div className="space-y-2">
             <Label>{t("files.fileType", "File Type")}</Label>
-            <Select value={fileType} onValueChange={setFileType}>
+            <Select value={fileType} onValueChange={(v) => setFileType(v as DocumentType)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="invoice">{t("files.invoice", "Invoice")}</SelectItem>
-                <SelectItem value="receipt">{t("files.receipt", "Receipt")}</SelectItem>
-                <SelectItem value="contract">{t("files.contract", "Contract")}</SelectItem>
-                <SelectItem value="other">{t("files.other", "Other")}</SelectItem>
+                {/* From the catalog — this list used to offer four of thirteen
+                    types, so nine papers could only ever be "Other". */}
+                {TYPE_GROUP_ORDER.map((group) => {
+                  const types = PICKABLE_DOCUMENT_TYPES.filter((d) => d.group === group.group);
+                  if (types.length === 0) return null;
+                  return (
+                    <SelectGroup key={group.group}>
+                      <SelectLabel>{t(group.key, group.fallback)}</SelectLabel>
+                      {types.map((d) => (
+                        <SelectItem key={d.value} value={d.value}>
+                          {t(d.labelKey, d.fallback)}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>

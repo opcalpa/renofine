@@ -6777,11 +6777,16 @@
       "quote": "Quote",
       "invoice": "Invoice",
       "receipt": "Receipt",
-      "floorPlan": "Floor plan",
+      "floorPlan": "Drawing",
       "contract": "Contract",
       "specification": "Specification",
       "productImage": "Product image",
-      "other": "Other"
+      "other": "Other",
+      "ata": "ÄTA (variation)",
+      "deliveryNote": "Delivery note",
+      "inspectionReport": "Inspection report",
+      "certificate": "Certificates & self-inspections",
+      "permit": "Permits & decisions"
     },
     "actions": {
       "extractTasks": "Extract tasks & budget",
@@ -6791,7 +6796,13 @@
     },
     "linkExisting": "Link to existing",
     "createNew": "Create new",
-    "linkPrompt": "Is this an existing item or do you want to create a new one?"
+    "linkPrompt": "Is this an existing item or do you want to create a new one?",
+    "groups": {
+      "economy": "Money",
+      "legal": "Legal & liability",
+      "technical": "Technical",
+      "fallback": "Don't know"
+    }
   },
   "linkPurchase": {
     "titleInvoice": "Invoice received",

@@ -35,7 +35,10 @@ function getCorsHeaders(req: Request) {
   };
 }
 
-type DocumentType = 'quote' | 'invoice' | 'receipt' | 'floor_plan' | 'contract' | 'product_image' | 'specification' | 'other';
+type DocumentType =
+  | 'quote' | 'invoice' | 'receipt' | 'ata' | 'delivery_note'
+  | 'contract' | 'inspection_report' | 'certificate' | 'permit'
+  | 'floor_plan' | 'specification' | 'product_image' | 'other';
 
 /**
  * P1: where the document's OBJECT address came from.
@@ -60,7 +63,9 @@ interface PropertyAddress {
  * src/services/ingestProjectFolder.ts — and this copy is the one that decides,
  * because it runs on the server where the model's answer lands first.
  */
-const SCOPE_BEARING: readonly DocumentType[] = ['quote', 'contract', 'specification'];
+// Mirrors `scopeBearing` in src/services/smartUploadService.ts's catalog.
+// ÄTA carries scope by definition — it IS a change to the agreed work.
+const SCOPE_BEARING: readonly DocumentType[] = ['quote', 'contract', 'specification', 'ata'];
 
 interface ClassificationResult {
   type: DocumentType;
@@ -98,7 +103,7 @@ function buildSystemPrompt(scopeLang: string | null): string {
   return `${base}
 
 ADDITIONALLY — WORK SCOPE:
-If (and only if) the type you chose is "quote", "contract" or "specification",
+If (and only if) the type you chose is "quote", "contract", "specification" or "ata",
 also extract the renovation scope the document describes, as a "scope" field.
 For EVERY other type — including "other" — set "scope": null. Do not guess a
 scope out of a document you could not place: a CV, a bank statement or a
@@ -128,15 +133,38 @@ DOCUMENT TYPES:
 - "quote" — A price offer/estimate from a contractor or supplier. Contains line items with prices, work descriptions, totals. Swedish: "Offert", "Prisförslag", "Anbud".
 - "invoice" — A bill requesting payment. Has invoice number, due date, OCR/payment reference, bankgiro. Swedish: "Faktura".
 - "receipt" — Proof of payment already made. From retail stores, hardware stores. Swedish: "Kvitto", "Kassakvitto".
+- "ata" — A change to work ALREADY agreed: extra, altered or removed work against an existing contract or quote. Swedish: "ÄTA", "ÄTA-arbete", "Ändrings- och tilläggsarbete", "Tilläggsbeställning". Distinguish from "quote": a quote proposes a NEW job; an ÄTA amends one that is already running, and usually references the original order or contract.
+- "delivery_note" — A DELIVERY document listing what was shipped, NOT what it cost. Swedish: "Följesedel", "Packsedel", "Leveranssedel", "Lastorder". Tell it apart from a receipt/invoice by what it is missing: no "Att betala", no total to pay, often quantities only, or prices that are clearly not a demand for payment. A följesedel with a small stray number on it is STILL a följesedel — do not call it a receipt because you found a figure.
+- "inspection_report" — Inspection or survey report. Swedish: "Besiktningsprotokoll", "Slutbesiktning", "Garantibesiktning", "Överlåtelsebesiktning", "Statusbesiktning".
+- "certificate" — A certificate or self-inspection proving work was done correctly. Swedish: "Våtrumsintyg", "Kvalitetsdokument", "GVK", "BKR", "Säker Vatten", "Egenkontroll", "Elinstallationsintyg", "Injusteringsprotokoll".
+- "permit" — A decision or permission from an authority or a housing association. Swedish: "Bygglov", "Startbesked", "Slutbesked", "Rivningslov", "Kontrollplan", "Styrelsens godkännande", "Tillstånd från föreningen".
 - "floor_plan" — Architectural drawing, blueprint, or floor plan image. Shows rooms, walls, dimensions. Can be a photo of a printed drawing.
-- "contract" — Legal agreement, construction contract, work order. Swedish: "Avtal", "Kontrakt", "Beställning".
+- "contract" — Legal agreement, construction contract, work order. Swedish: "Avtal", "Kontrakt", "Beställning", "Hantverkarformuläret", "ABS 18", "Entreprenadkontrakt".
 - "specification" — Technical specification, material list, scope of work document without prices. Swedish: "Beskrivning", "Specifikation", "Arbetsbeskrivning".
 - "product_image" — Photo of a product, material sample, fixture, appliance, or inspiration image.
 - "other" — Anything that doesn't fit above categories.
 
+EVIDENCE IS REQUIRED FOR EVERY SPECIFIC TYPE.
+Return a "type_evidence" field: the exact words IN THE DOCUMENT that told you
+the type — a heading, a form name, a labelled field ("Följesedel", "Att betala",
+"Slutbesked", "Fakturanr"). Quote them; do not paraphrase and do not invent.
+If you cannot quote anything, the type is "other" and "type_evidence" is null.
+This is not a formality: a type you cannot point at is a guess, and a guess is
+what we are trying to avoid. "type_evidence" is null for "other".
+
+WHEN YOU ARE NOT SURE, CHOOSE "other". This is an instruction, not a fallback.
+A specific type you guessed wrong is WORSE than "other": a receipt filed as
+"Avtal" is a paper the person stops looking for, while one in "Övrigt" says
+honestly that we do not know, and they can correct it in one click. Only pick a
+specific type when the document itself gives you clear evidence — a heading, a
+form name, a field. Do not infer the type from the sender, the file name, or
+what would be most useful. Set "confidence" to what you actually believe; it is
+used to move weak answers to "Övrigt", never to promote them. Do not emit a
+habitual 0.95 — a number you give every document carries no information.
+
 SUGGESTED ACTIONS:
-- "extract_tasks" — For quotes, specifications, contracts with work items → extract as tasks with budget
-- "extract_purchase" — For invoices, receipts → extract as purchase/material record
+- "extract_tasks" — For quotes, specifications, contracts and ÄTA with work items → extract as tasks with budget
+- "extract_purchase" — For invoices, receipts → extract as purchase/material record. NEVER for "delivery_note": a delivery note is proof of what arrived, not of what was paid, and booking one as a purchase invents a cost.
 - "import_to_canvas" — For floor plans → import as background image on canvas
 - "store_only" — For product images, other documents → just save to files
 
@@ -163,6 +191,7 @@ Return ONLY valid JSON:
 {
   "type": "invoice",
   "confidence": 0.95,
+  "type_evidence": "Följesedel",
   "summary": "Faktura från Bauhaus för golvmaterial, totalt 4 500 kr.",
   "vendor_name": "Bauhaus",
   "invoice_date": "2026-03-15",
@@ -214,6 +243,9 @@ function narrowAddress(
 ): { property_address: PropertyAddress | null; address_source: AddressSource } {
   const none = { property_address: null, address_source: null as AddressSource };
   if (type === 'receipt' || type === 'product_image' || type === 'floor_plan') return none;
+  // A följesedel's address is the DELIVERY address, which is the site — but the
+  // form has no field naming it as such, so trusting it would be a guess.
+  if (type === 'delivery_note') return none;
 
   const source = raw.address_source;
   if (source !== 'property_document' && source !== 'site_field') return none;
@@ -386,7 +418,7 @@ async function classifyWithContent(
 
   try {
     const result = JSON.parse(jsonText);
-    const validTypes: DocumentType[] = ['quote', 'invoice', 'receipt', 'floor_plan', 'contract', 'product_image', 'specification', 'other'];
+    const validTypes: DocumentType[] = ['quote', 'invoice', 'receipt', 'ata', 'delivery_note', 'contract', 'inspection_report', 'certificate', 'permit', 'floor_plan', 'specification', 'product_image', 'other'];
     const validActions = ['extract_tasks', 'extract_purchase', 'import_to_canvas', 'store_only'];
 
     const type: DocumentType = validTypes.includes(result.type) ? result.type : 'other';
@@ -404,6 +436,13 @@ async function classifyWithContent(
     return {
       type,
       confidence: typeof result.confidence === 'number' ? result.confidence : 0.5,
+      // What the model says it SAW. Checkable, unlike the confidence number —
+      // measured 2026-09-04 across 47 real classifications, every single one
+      // came back 0.95, so that field carries no signal at all.
+      type_evidence:
+        typeof result.type_evidence === 'string' && result.type_evidence.trim()
+          ? result.type_evidence.trim().slice(0, 200)
+          : null,
       summary: result.summary || '',
       vendor_name: result.vendor_name || null,
       invoice_date: result.invoice_date || null,
@@ -416,7 +455,7 @@ async function classifyWithContent(
     };
   } catch {
     console.error('Failed to parse classification:', jsonText.substring(0, 500));
-    return { type: 'other', confidence: 0, summary: '', vendor_name: null, invoice_date: null, invoice_amount: null, suggested_action: 'store_only', property_address: null, address_source: null, scope: null, text_truncated: truncated };
+    return { type: 'other', confidence: 0, type_evidence: null, summary: '', vendor_name: null, invoice_date: null, invoice_amount: null, suggested_action: 'store_only', property_address: null, address_source: null, scope: null, text_truncated: truncated };
   }
 }
 
@@ -431,7 +470,7 @@ serve(async (req) => {
     // checked the signature, so `sub` can be believed). See _shared/rateLimit.ts.
     const rl = await checkRateLimit(req, RATE_LIMIT_SCOPE, RATE_LIMIT_TIERS, true);
     if (!rl.allowed) {
-      return new Response(JSON.stringify(rateLimitedBody({ type: 'other', confidence: 0 })), {
+      return new Response(JSON.stringify(rateLimitedBody({ type: 'other', confidence: 0, type_evidence: null })), {
         status: 429,
         headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
       });

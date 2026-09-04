@@ -41,6 +41,7 @@ import {
   uploadToCategoryFolder,
   type DocumentType,
   type ClassificationResult,
+  DOCUMENT_TYPE_CATALOG,
 } from '@/services/smartUploadService';
 import { toast } from 'sonner';
 
@@ -67,16 +68,10 @@ interface BatchSmartUploadDialogProps {
   onComplete: () => void;
 }
 
-const CATEGORY_LABELS: Record<DocumentType, string> = {
-  quote: 'Offert',
-  invoice: 'Faktura',
-  receipt: 'Kvitto',
-  floor_plan: 'Ritning',
-  contract: 'Kontrakt',
-  specification: 'Specifikation',
-  product_image: 'Produktbild',
-  other: 'Övrigt',
-};
+/** Derived, never hand-listed: a new document type must not need an edit here. */
+const CATEGORY_LABELS: Record<DocumentType, string> = Object.fromEntries(
+  DOCUMENT_TYPE_CATALOG.map((d) => [d.value, d.fallback]),
+) as Record<DocumentType, string>;
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
