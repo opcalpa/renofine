@@ -9836,7 +9836,7 @@ den går sönder exakt för den som hunnit granska mest.
 
 ---
 id: import-journal-saves-the-reading-not-the-review
-status: todo
+status: done
 priority: P2
 tags: [nattsvep-2026-09-04, import, dataförlust]
 created: 2026-09-04
@@ -10168,9 +10168,9 @@ skiva av det skyddet har ett hål i sig:
 **UTFALL 2026-09-04 (session 95): tre av fyra klara, plus kort 3 utanför
 listan.** `partial-apply…` (fd822762), `import-run-loses-acknowledged…`
 (35c4b093), `purchase-receipt-upload-fails-silently` (d8f3d101) och
-`throttled-receipt-reads…` (ed74f7ea). **Kvar: `import-journal-saves-the-reading-not-the-review`**
-— den största av de fyra (debouncad omsparning), och den enda som inte gjordes.
-Ta `extraPages` i `attachmentKeys` samtidigt.
+`throttled-receipt-reads…` (ed74f7ea). **Alla fyra klara** — `import-journal-saves-the-reading-not-the-review`
+togs sist (debouncad omsparning + `extraPages` i `attachmentKeys`), utlöst av
+att Carl förlorade en granskning av 39 kvitton till en omladdning samma dag.
 
 **Åtgärdsordning, kortast väg till mest värde:**
 
