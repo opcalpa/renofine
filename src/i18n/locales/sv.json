@@ -8392,6 +8392,7 @@
       "title": "Du har en oavslutad import",
       "body": "{{files}} filer lästa, {{changes}} ändringar att granska. Sidan laddades om innan du hann godkänna.",
       "someImagesLost": "Några kvittobilder kunde inte sparas och behöver skannas om.",
+      "noImagesHere": "Kvittobilderna finns inte i den här webbläsaren — siffrorna är kvar, men du kan inte jämföra mot fotot.",
       "open": "Öppna granskningen",
       "discard": "Kasta"
     },

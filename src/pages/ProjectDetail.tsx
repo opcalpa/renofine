@@ -106,11 +106,13 @@ import {
   loadImportJournal,
   loadImportPartials,
   saveImportJournal,
+  saveImportJournalSession,
   saveImportPartial,
 } from "@/services/agent/importJournal";
 import type { JournaledImport } from "@/services/agent/importJournal";
 import {
   finishImportRun,
+  receiptImagesAreLocal,
   saveImportRun,
 } from "@/services/agent/importRuns";
 import { peekAttachment } from "@/services/agent/documentCapture";
@@ -969,6 +971,27 @@ const ProjectDetail = () => {
       cancelled = true;
     };
   }, [project?.id, importSession]);
+
+  /**
+   * Journal the review as it is made, not just as it was read.
+   *
+   * `importSession` is replaced on every edit, so this effect re-arms on each
+   * one and only fires once the person pauses — a debounce without a debounce
+   * helper. Session only: the full save reads every receipt blob, and doing
+   * that per keystroke would freeze the page.
+   *
+   * Carl lost an hour of review on a 39-receipt batch this way (2026-09-04):
+   * the tab reloaded, the journal handed back the reading, and every
+   * correction, room and unticked row was gone. The reading surviving while
+   * the work on it does not is the gap this closes.
+   */
+  useEffect(() => {
+    if (!importSession) return;
+    const id = window.setTimeout(() => {
+      void saveImportJournalSession(importSession);
+    }, 1200);
+    return () => window.clearTimeout(id);
+  }, [importSession]);
 
   /**
    * Warn before a DELIBERATE reload while a read is running or a review is
@@ -2575,9 +2598,17 @@ const ProjectDetail = () => {
                 changes: recoverableImport.session.proposals.length,
               },
             )}
+            {/* `attachmentsDropped` alone stopped being enough once the journal
+                started being re-saved during review: a run opened from the
+                server in ANOTHER browser now writes a journal row with no
+                blobs at all, and that row is not "dropped for size" — it never
+                had them. Asking the registry is the answer that is true either
+                way. */}
             {recoverableImport.attachmentsDropped
               ? ` ${t('importReview.recovered.someImagesLost', 'Några kvittobilder kunde inte sparas och behöver skannas om.')}`
-              : ''}
+              : !receiptImagesAreLocal(recoverableImport.session)
+                ? ` ${t('importReview.recovered.noImagesHere', 'Kvittobilderna finns inte i den här webbläsaren — siffrorna är kvar, men du kan inte jämföra mot fotot.')}`
+                : ''}
           </p>
           <div className="mt-3 flex gap-2">
             <Button size="sm" onClick={handleResumeImport}>

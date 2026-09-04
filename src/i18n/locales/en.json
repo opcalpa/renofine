@@ -8392,6 +8392,7 @@
       "title": "You have an unfinished import",
       "body": "{{files}} files read, {{changes}} changes to review. The page reloaded before you approved it.",
       "someImagesLost": "Some receipt images could not be saved and need rescanning.",
+      "noImagesHere": "The receipt photos are not in this browser — the numbers are here, but you cannot compare against the photo.",
       "open": "Open the review",
       "discard": "Discard"
     },
