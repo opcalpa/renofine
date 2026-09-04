@@ -3128,6 +3128,26 @@ dem att skapa konto — värsta möjliga första intryck på betalvägen.
 `hasGuestProjectsToMigrate` överlever medvetet `exitGuestMode`. Radera data bara bakom en
 explicit, separat märkt "Radera mina lokala projekt"-bekräftelse.
 
+
+### Kontrollerat 2026-09-04 (nattsvep) — lever, med en detalj till
+
+`handleSkip` anropar `clearAllGuestData()`, som sveper **varje** localStorage-
+nyckel med prefixet `renofine_guest_` och tar bort dem. Ingen bekraftelse.
+Verifierat i `guestStorageService.ts:311-321`.
+
+Detaljen som saknades i kortet: **den bekraftande knappen blir en andra
+Skip-knapp.** `handleMigrate` (rad 68-71) anropar `handleSkip()` nar noll
+projekt ar valda, och `toggleAll` (rad 60-62) avmarkerar allt med **ett klick**.
+Da star tva knappar bredvid varandra som bada sager "Skip", och bada raderar
+allt permanent.
+
+**Mitt eget pastaende foll delvis:** jag trodde forst att knappen fortfarande
+sager "Migrera" medan den raderar. Det gor den inte — etiketten byts till "Skip"
+vid noll valda (rad 211). Den ljuger alltsa inte. Kvar star att den inte ar
+disabled, att det inte finns nagon bekraftelse, och att vagen dit ar ett klick.
+
+Fixen bor darfor vara: disabla den bekraftande knappen vid noll valda i stallet
+for att gora om den till en Skip, och lagg en bekraftelse pa den riktiga Skip.
 ---
 id: define-activation-event
 status: done
@@ -6656,6 +6676,34 @@ som radlayouten fixas.
 Rekommendation: alternativ 2 som snabb åtgärd, alternativ 1 när Tid-fliken ändå
 ska röras.
 
+
+### Mätt vid 320 px (nattsvep 2026-09-04) — kortet lever, och siffran ar skarpare
+
+Nio flikar matta i ett svep vid ETT ekta 320 px-viewport (emulerat, innerWidth
+verifierad till 320). Metodregel 4 tillampad: varje flik mattes forst nar
+DOM-noderna slutat andras, inte efter en fast fordrojning — oversikten behovde
+5,4 sekunder att stabilisera sig, vilket ar precis den falla som gav forra
+svepet ett falskt "tom".
+
+```
+flik            settle    doc-overflow   varsta kontroll utanfor
+budget           3,0 s          0 px            —
+overview         5,4 s          0 px            —
+tasks            3,0 s          0 px            —
+timetracking     2,7 s         61 px          113 px   ← "Godkann" x2
+purchases/table/sharing/team/files              0 px    —
+```
+
+**Godkann-knappen ligger 113 px utanfor hogerkanten** och sitter INTE i nagon
+scrollbar behallare (matningen exkluderar element med scrollbar forfader).
+"Logga tid" ligger 61 px utanfor.
+
+Skarmbild:
+/Users/calpa/PA/Documents/Projekt/Renofine/Nattsvep-2026-09-04/tid-320px-godkann-utanfor.png
+
+### Vad matningen ocksa BEVISAR — och det ar goda nyheter
+Tid-fliken ar den **enda** av nio som overhuvudtaget scrollar horisontellt vid
+320 px. Det har ar alltsa en punktfix, inte en mobilaudit.
 ---
 id: mobile-sweep-otherwise-clean
 status: done
@@ -7817,6 +7865,25 @@ funktioner har `false`, 4 har `true`, 20 saknas helt (och får då `true` som
 default). Eftersom anon-nyckeln passerar båda är det **vad funktionen själv gör**
 som är grinden. Den kolumnen, inte flaggan, är den som ska granskas.
 
+
+### Kontrollerat 2026-09-04 (nattsvep) — oforandrat
+
+Bada funktionerna ser likadana ut i dag. Sokt efter en grind, och den finns inte:
+
+```
+proxy-image/index.ts        rad 27-28  authHeader existens-koll
+                            rad 85-86  service role key
+pinterest-oembed/index.ts   rad 29-30  authHeader existens-koll
+                            rad 104    service role key
+
+user_has_project_access     0 traffar i bada filerna
+getUser / auth.getUser      0 traffar i bada filerna
+```
+
+Session 92 stangde tabell-niva-hal och session 93 rorde inte edge-funktionerna,
+sa kortet ar orort sedan det skrevs. Det hor ihop med
+`intern-maskningsfunktion-ar-anropbar-av-anon`: bada ar grindar som sitter i
+FEL lager — wrappern respektive klienten — i stallet for dar skrivningen sker.
 ---
 id: isvisible-timeout-trap-is-back-in-floorplanner-spec
 status: todo
@@ -9023,6 +9090,7 @@ status: todo
 priority: P2
 tags: [sakerhet, rls, rpc, nattsvep]
 created: 2026-09-03
+updated: 2026-09-04
 ---
 ## Den interna maskningsfunktionen gar att anropa direkt - och da forsvinner bade grinden och loggen
 
@@ -9155,6 +9223,29 @@ lintar letar efter *saknad* RLS eller *saknad* policy, inte efter en policy som
 är för tillåtande. `USING (true)` är en policy och passerar därför.
 `profiles-rls-open-to-anon` står kvar oförändrat.
 
+
+### Verifierat mot PROD 2026-09-04 (nattsvep 2026-09-04) — kortet lever
+
+Forra svepet las migrationsfilen. Den har gangen fragades den KORANDE funktionen,
+vilket ar skillnaden metodregeln om migrationer handlar om:
+
+```
+proname               _project_data_masked
+security_definer      true
+anon_can_execute      true
+body_checks_access    false   (ingen user_has_project_access)
+body_derives_mode     false   (p_mode kommer alltsa fran anroparen, inte harledd)
+body_raises           false   (ingen grind alls)
+```
+
+Session 92 stangde tabell-niva-halen (`profiles`, `customer_intake_requests`,
+`project_invitations`, `comment_reactions`). Den har sitter pa FUNKTIONSNIVA och
+ar orord. Ingen data hamtades vid kontrollen — privilegiet och kroppen racker.
+
+**Oppen fraga till Carl:** kortet ar P2. S92 behandlade likvardiga hal som P1.
+Skillnaden ar att det har kraver ett projekt-UUID, som inte gar att gissa — men
+ett UUID lacker latt (delningslankar, URL:er, tidigare exponeringar). Vard ett
+prioriteringsbeslut, inte en tyst uppgradering.
 ---
 id: databasens-prestandaskuld-456-lints
 status: todo
@@ -9684,3 +9775,561 @@ Tva vagar:
   /Users/calpa/PA/Documents/Projekt/Renofine/Design/Marketing/ enligt den
   standande regeln att repot bara innehaller det som faktiskt skeppas.
 
+
+---
+id: import-run-loses-acknowledged-on-reopen
+status: todo
+priority: P2
+tags: [nattsvep-2026-09-04, import, dataförlust]
+created: 2026-09-04
+---
+## Att återuppta en import från Filer › Importer kraschar fliken
+
+`import_runs.session` skrivs som JSON. `toStored()` i
+/Users/calpa/Developer/Renofine/src/services/agent/importRuns.ts
+konverterar bara `rejected` till en array. `acknowledged` är också en `Set` —
+och `JSON.stringify(new Set([...]))` är `{}`.
+
+Vid återöppning gör `buildPurchaseRows`:
+
+```ts
+const acknowledged = !!session.acknowledged?.has(proposal.id);
+```
+
+`{}` är truthy, så optional-chainen släpper igenom, och `.has` finns inte.
+Bevisat i webbläsaren, inte gissat:
+
+```
+acknowledged efter JSON-rundtur: {}
+truthy: true
+TypeError: roundTripped.acknowledged?.has is not a function
+```
+
+Kastet sker i en `useMemo` i `ImportReviewPage` → renderingen faller. En
+`ErrorBoundary` runt Filer-fliken fångar det, så det blir inte vit skärm — men
+granskningen går inte att öppna, och den går inte att öppna nästa gång heller.
+Enda vägen ur är att slänga omgången.
+
+**Träffar bara den som gjort mest arbete.** Raden med tomt `acknowledged` skrivs
+vid `handleCancelImport` (Stäng), och `acknowledged` fylls bara av "Det stämmer".
+Alltså: granska, tryck "Det stämmer" på minst en rad, stäng, öppna igen.
+
+### Motbevisförsök
+- *"`acknowledged` hinner aldrig fyllas före en spar"* — nej. Den enda sparningen
+  som sker efter granskningsarbete ÄR Stäng-knappen, och "Det stämmer" var hela
+  poängen med s93.
+- *"supabase-js bevarar Set"* — nej, PostgREST skickar JSON över HTTP.
+- *"`?.`-vakten skyddar"* — nej, `{}` är truthy. Bevisat ovan.
+- *"redan fixat"* — nej. `importRuns.ts` har exakt en commit (`f8ac33a1`, s90);
+  `acknowledged` kom i `138a12d1` (s93) utan att serialiseraren rördes.
+- *"en ErrorBoundary gör det ofarligt"* — den begränsar kraschen till fliken.
+  Därför P2 och inte P1.
+
+### Fixen
+Spegla `rejected`: platta `acknowledged` till en array i `toStored` och bygg
+tillbaka den till en `Set` i `fromStored`. Kolla samtidigt att inget annat
+`Set`-fält smyger sig in — `merged` och `savedAsDocument` är `Record` och klarar
+sig, och nya fält bör vara det av samma skäl.
+
+**För användaren:** importen som skulle överleva webbläsaren gör det inte, och
+den går sönder exakt för den som hunnit granska mest.
+
+---
+id: import-journal-saves-the-reading-not-the-review
+status: todo
+priority: P2
+tags: [nattsvep-2026-09-04, import, dataförlust]
+created: 2026-09-04
+---
+## Journalen skrivs en gång och aldrig igen — granskningsarbetet överlever inte en flikkrasch
+
+`saveImportJournal` har **ett** anropsställe:
+/Users/calpa/Developer/Renofine/src/pages/ProjectDetail.tsx rad 1652, inne i
+drop-hanteraren. Ingen `useEffect`, ingen spar vid `onChange`.
+
+Journalen håller alltså sessionen **som den såg ut när läsningen blev klar**.
+Allt personen gör därefter — rättade belopp, rumstilldelningar, dubbletter som
+slagits ihop, "Det stämmer", urbockade rader, och nu "spara som dokument" — bor
+bara i React-state plus i serveromgången som skrivs vid **Stäng**.
+
+En flik som webbläsaren slänger är inte en stängning. Det är precis den händelse
+journalen byggdes för (Carl 2026-09-01, Brave slängde bakgrundsfliken), och den
+räddar läsningen men inte timmen som lades på att rätta den.
+
+### Motbevisförsök
+- *"det finns en effekt som sparar om"* — nej, ett anropsställe i hela `src/`.
+- *"serveromgången täcker det"* — nej. `saveImportRun` körs vid bygget och vid
+  Stäng. En slängd flik gör ingetdera.
+- *"journalens docstring lovar bara läsningen"* — sant, och det är därför det här
+  är ett hål i **löftet**, inte en bugg i koden. Kortet är formulerat därefter.
+
+### Latent i samma familj (ingen åtgärd i dag, men fixa ihop)
+`attachmentKeys()` i `importJournal.ts` går bara på `p.action.attachmentKey`,
+aldrig på `extraPages[].attachmentKey`. Sammanslagna sidor journalförs alltså
+inte, och `clearImportJournal` städar dem inte heller. I dag ofarligt eftersom
+journalen skrivs innan någon sammanslagning finns — men det slutar vara ofarligt
+i samma sekund som journalen börjar sparas om, vilket är fixen ovan.
+
+### Fixen
+Spara om journalen (debouncad) när sessionen ändras, och låt `attachmentKeys`
+gå igenom `extraPages` samtidigt.
+
+**För användaren:** en timmes granskning av 39 kvitton överlever att fliken dör.
+I dag gör bara läsningen det.
+
+---
+id: purchase-receipt-upload-fails-silently
+status: todo
+priority: P2
+tags: [nattsvep-2026-09-04, import, dataförlust, kvitton]
+created: 2026-09-04
+---
+## Kvittots uppladdning kan misslyckas helt tyst — kostnaden bokförs, papperet finns inte
+
+/Users/calpa/Developer/Renofine/src/services/agent/importPurchaseOrder.ts rad 135:
+
+```ts
+const { error: uploadError } = await supabase.storage
+  .from("project-files").upload(storagePath, file, { upsert: true });
+if (!uploadError && materialIds[0]) {
+  // task_file_links + photos
+}
+```
+
+Ett `uploadError` tar **ingen gren alls**. Ingen `console.error`, ingen toast,
+inget i returvärdet — `filePath` sätts före uppladdningen och returneras oavsett.
+Vid det laget är inköpsordern och materialraderna redan skrivna, och
+`takeAttachment` har redan konsumerat den enda kopian av filen ur registret.
+
+Resultatet är den värsta formen: **beloppet ligger i budgeten, `receipt_file_path`
+pekar på ett objekt som inte finns, och ingenting någonstans säger det.** Det
+upptäcks först när någon öppnar inköpet för att kolla ett belopp mot underlaget.
+
+**Kontrasten sitter i samma funktion.** Femtio rader längre ned laddas
+sammanslagna sidor upp — och där finns `console.error("extra page upload failed")`
+med en kommentar om att en sida som tyst inte laddades upp är ett förlorat kvitto.
+Sida 2 behandlas alltså varsammare än sida 1.
+
+### Vad som gör felet nåbart
+Uppladdningen sätter **inte** `contentType`. `uploadToCategoryFolder` gör det,
+med en uttrycklig kommentar: Storage avvisar `application/octet-stream`, vilket
+är vad ett tomt `File.type` blir. Att det kan vara tomt vet den här filen redan
+— raden ovanför skriver `(file.type || "").includes("pdf")` just för att MIME kan
+saknas.
+
+### Motbevisförsök
+- *"typen är alltid `image/jpeg` här"* — nej. Foton som går genom canvas får rätt
+  typ, men `normalizeForReading` returnerar originalet för allt som inte är en
+  bild, och koden gardera sig redan mot att `file.type` saknas.
+- *"felet rapporteras någon annanstans"* — nej. Returvärdet bär ingen
+  framgångsflagga; anroparen i `applyProposals` bygger bara en ångra-operation
+  av `filePath`.
+- *"redan fixat"* — nej. Blocket rördes så sent som `138a12d1` (s93) och den
+  tysta grenen överlevde.
+- *"tom MIME kommer från HEIC, och HEIC konverteras"* — stämmer, och det smalnar
+  av fallet: `isHeicFile` kollar filändelsen först, så en `.heic` med tom MIME
+  konverteras till `image/jpeg`. Kortet vilar därför INTE på HEIC-vägen utan på
+  den tysta grenen, som är fel oavsett vad som utlöser den.
+
+### Fixen
+Sätt `contentType: resolvedMimeType(file)` som de härdade vägarna gör, logga
+felet, och låt `ImportPurchaseResult.filePath` bli `null` när uppladdningen inte
+gick igenom så anroparen kan säga det högt. Överväg att lägga tillbaka filen i
+registret vid fel i stället för att konsumera den.
+
+**För användaren:** ett inköp i budgeten vars kvitto inte går att öppna — och
+inget varnade när det hände.
+
+
+### En NAMNGIVEN utlosare, verifierad mot prod (nattsvep 2026-09-04)
+
+Bucketens konfiguration i prod:
+
+```
+avatars             public=true    ingen storleksgrans
+company-logos       public=true    ingen storleksgrans
+project-files       public=false   file_size_limit = 10 485 760  (10 MB)
+property-documents  public=false   file_size_limit = 26 214 400  (25 MB)
+```
+
+`project-files` har alltsa ett **hart tak pa 10 MB**, och `importPurchaseOrder`
+kontrollerar aldrig storleken fore uppladdningen. En faktura-PDF over 10 MB
+avvisas av Storage — och tas av den tysta grenen. Det ar inte langre ett
+hypotetiskt `uploadError`: det finns ett konkret, vanligt fall.
+
+**Kontrasten igen:** arkivvagen traffar samma tak, men dar RAKNAS felen
+(`archiveFailed` i ProjectDetail) och anvandaren far veta: "X filer kunde inte
+sparas i Filer." Inkopsvagen sager ingenting.
+---
+id: pwa-shortcut-spec-asserts-labels-deleted-16-days-ago
+status: todo
+priority: P3
+tags: [nattsvep-2026-09-04, e2e, i18n, dead-code]
+created: 2026-09-04
+---
+## E2E-testet för hemskärmsgenvägen har varit rött i 16 dagar — mot text som togs bort
+
+`e2e/pwa-share-target.spec.ts:83` väntar på `Berätta vad som hänt` och sedan
+`Fota kvitto`. Ingen av dem finns i gränssnittet längre.
+
+**Produkten fungerar.** Sidsnapshoten från felet visar att `/capture?intent=receipt`
+landar på `/start` och att Renaida-panelen ÄR öppen — med hälsningen, "Föreslå
+först", och knapparna `Berätta` och `Fota underlag`. Det är bara etiketterna som
+bytt namn.
+
+### Kronologin (metodregel 6: kolla datum före allt annat)
+
+```
+2026-08-13  0923e98c  specen skrivs, mot dåvarande voice-hero
+2026-08-19  954bdc0a  "två jämnstora capture-knappar" ersätter voice-heron
+                      → voiceHero försvinner ur src, voiceShort kommer in
+            specen uppdateras aldrig
+```
+
+Testet har alltså fallit sedan **19 augusti — sexton dagar.** Att ingen märkt det
+är exakt vad kortet `det-finns-ingen-ci` handlar om: en svit som ingen kör
+automatiskt går sönder tyst, och ett rött test som alla vant sig vid är sämre än
+inget test, för nästa verkliga regression drunknar i det.
+
+### Bonus: sexton föräldralösa i18n-strängar
+`helpBot.agent.voiceHero` och `voiceHeroHint` ligger kvar i **åtta** språkfiler
+(sv, en, de, fr, es, uk, pl) och refereras från **noll** ställen i `src/`.
+Översatta till sju språk, varav några i LLM-batchen 2026-08-18 — dagen innan de
+blev döda.
+
+### Motbevisförsök
+- *"heron är dold för gäster, texten finns för inloggade"* — nej. `rg voiceHero src/`
+  ger noll träffar. Strängen refereras ingenstans, för någon.
+- *"nyckeln byggs dynamiskt"* — nej, ingen `helpBot.agent.${...}`-konstruktion finns.
+- *"testet kördes på fel språk"* — nej, appen renderade svenska och påståendet är
+  svenskt.
+- *"redan fixat"* — nej, specens senaste commit är från 13 augusti, före bytet.
+
+### Fixen
+Uppdatera påståendena till `helpBot.capture.voiceShort` och
+`helpBot.quickAction.document` (hellre via `t()`-nyckel än hårdkodad svenska, så
+nästa etikettbyte inte gör om det här), och ta bort `voiceHero`/`voiceHeroHint`
+ur alla åtta språkfiler.
+
+**För användaren:** ingenting — genvägen fungerar. Det som är trasigt är
+larmet som ska säga till när den slutar fungera.
+
+---
+id: language-switching-spec-looks-for-a-button-that-moved
+status: todo
+priority: P3
+tags: [nattsvep-2026-09-04, e2e, testhygien]
+created: 2026-09-04
+---
+## Språkbytes-testet letar efter en knapp som flyttade in i avatarmenyn — och skulle skriva till Carls profil om det fungerade
+
+`e2e/language-switching.spec.ts:12`:
+
+```ts
+await page.getByRole('button', { name: /language|globe|språk/i }).click();
+```
+
+Felet är `locator.click: Test timeout of 30000ms exceeded` på **första** klicket —
+alltså innan något språkbyte ens försöks.
+
+**Produkten fungerar.** Språkväljaren finns, men den är ingen toppnivåknapp: den
+är en **undermeny inne i avatarmenyn** (`src/components/AppHeader.tsx:461`,
+`DropdownMenuSub` → `DropdownMenuSubTrigger` med `Globe` + "Language"). Toppnivå-
+knappen är avataren, vars tillgängliga namn är initialen — i felsnapshoten
+`button "G"`. Ingen knapp matchar alltså `/language|globe|språk/`.
+
+### Motbevisförsök
+- *"det finns ingen språkväljare för inloggade alls"* — **detta trodde jag först,
+  och det var fel.** `LanguageSelector` renderas bara på kundintaget, men
+  `AppHeader` har en egen. Kortet skrevs om efter motbeviset.
+- *"triggern har ett matchande namn"* — nej, den är ett undermenyobjekt, inte en
+  knapp på toppnivå.
+- *"testet kördes bara parallellt/flakigt"* — nej, det faller likadant med
+  `--workers=1`, och likadant på `main`.
+
+### Det andra problemet: testet skulle mutera Carls riktiga konto
+`handleLanguageChange` skriver `profiles.language_preference` för den inloggade
+användaren. Specen loggar in med Carls e2e-credentials. **Om den lagades rakt av
+skulle den permanent ändra språket på hans konto** — precis det stående
+förbudet mot att e2e muterar hans konto. Just nu räddas den av att vara trasig.
+
+Fixa därför BÅDA delarna samtidigt: peka locatorn rätt (öppna avatarmenyn, gå in
+i språkundermenyn) **och** ställ tillbaka språket i en `afterEach`, eller kör
+testet mot ett engångskonto.
+
+### Samma familj
+Se `pwa-shortcut-spec-asserts-labels-deleted-16-days-ago`. Två av sviten två
+kvarvarande fel är samma sort: testet beskriver en gammal gränssnittsform. Det
+är vad `det-finns-ingen-ci` kostar — ingen körning, ingen signal, och rött blir
+normaltillståndet.
+
+**För användaren:** ingenting direkt. Men båda röda testen gör att nästa
+verkliga regression drunknar i brus.
+
+---
+id: partial-apply-reports-a-count-and-destroys-the-retry
+status: todo
+priority: P2
+tags: [nattsvep-2026-09-04, import, dataförlust, carl]
+created: 2026-09-04
+---
+## Om Genomför delvis misslyckas får du en siffra — och den enda vägen tillbaka dubbelbokför
+
+`applyProposals` är byggd rätt: varje förslag har egen `try/catch`, ett fel
+avbryter inte batchen, och det som gick igenom behålls (`applyProposals.ts:494`).
+Det är hanteringen EFTERÅT som är hålet.
+
+I `ProjectDetail.handleApplyImport` sker detta oavsett hur många som föll:
+
+```ts
+const result = await applyImportSession(session);
+useRenaidaStore.getState().setImportSession(null);   // granskningen borta
+if (project?.id) void clearImportJournal(project.id); // journalen borta
+finishImportRun(session.runId, 'applied', result.applied.length);
+```
+
+och rapporten till användaren är:
+
+```
+'{{count}} misslyckades.'
+```
+
+**En siffra, inga namn.** Med 39 inköp säger "3 misslyckades" ingenting om VILKA
+tre kvitton som inte kom in — och granskningen är redan stängd, så det går inte
+att titta efter. Du får jämföra 39 papper mot inköpslistan för hand.
+
+### Och återöppningen dubbelbokför
+
+Det verkar först finnas en väg tillbaka: en genomförd omgång går att öppna igen
+(`ImportRunsPage.tsx:181` renderar knappen för allt utom `discarded`). Det är
+värre än ingen väg alls:
+
+- `finishImportRun` **skriver aldrig om sessionen** — dess egen docstring säger
+  det rakt ut. Den lagrade sessionen är den från läsningen (eller från ett
+  tidigare Stäng), utan minne av vilka 36 som lyckades.
+- `duplicateOfExisting` är en **lagrad flagga**, satt en gång under ingesten.
+  Den räknas aldrig om vid återöppning — verifierat: fältet läses på sju ställen
+  i granskningsytan och sätts på noll.
+
+Att öppna omgången igen för att göra om de tre skulle alltså erbjuda **alla 39
+ikryssade**, mot ett projekt som redan har 36 av dem.
+
+### Motbevisförsök
+- *"ett fel avbryter batchen, så inget halvläge uppstår"* — nej, motsatsen:
+  `applyProposals` samlar fel och fortsätter. Halvläget är designat.
+- *"man kan öppna omgången igen och göra om"* — man kan, och det är just det som
+  gör det farligt. Verifierat i koden, inte antaget.
+- *"dubblettskyddet fångar det vid återöppning"* — nej, flaggan är lagrad, inte
+  omräknad.
+- *"kvittobilderna finns kvar så det går att köra om"* — nej.
+  `importPurchaseOrder` anropar `takeAttachment` **överst** i funktionen, före
+  allt DB-arbete, så även ett misslyckat inköp har konsumerat sin bild. Och
+  journalen rensas av samma Genomför.
+
+### Vad som INTE är verifierat
+Jag har inte framkallat ett partiellt fel — det hade krävt en skrivning mot
+prod, vilket svepet inte gör. Kortet beskriver hanteringsvägen som den är läst,
+inte ett observerat haveri.
+
+### Fixen
+Namnge de fallerade raderna i stället för att räkna dem, och **behåll sessionen
+och journalen när `result.failed` inte är tom** — rensa dem först när allt gick
+igenom. Skriv om körningens session vid Genomför så den vet vad som lyckades,
+eller markera de applicerade förslagen så en återöppning startar dem urbockade.
+
+**För användaren:** 39 kvitton in, "3 misslyckades" ut, och inget sätt att veta
+vilka tre — eller att göra om dem utan att bokföra de 36 en gång till.
+
+---
+id: nattsvep-2026-09-04-index
+status: todo
+priority: P2
+tags: [nattsvep-2026-09-04, index]
+created: 2026-09-04
+---
+## INDEX: nattsvepet 2026-09-04 — sex kort, ett tema
+
+Läs det här före de andra korten. Flera av dem är samma jobb sett från olika
+håll, och lagas de var för sig görs samma arbete tre gånger.
+
+### Temat: importen överlever inte att något går fel
+
+Fyra av sex kort är samma mening. `import_runs` och `importJournal` byggdes i
+session 90 och 93 för att en läsning inte skulle kunna gå förlorad — och varje
+skiva av det skyddet har ett hål i sig:
+
+| kort | var det brister |
+|------|-----------------|
+| `import-run-loses-acknowledged-on-reopen` | återöppningen **kraschar** |
+| `import-journal-saves-the-reading-not-the-review` | journalen minns bara läsningen |
+| `purchase-receipt-upload-fails-silently` | filen kan försvinna vid Genomför |
+| `partial-apply-reports-a-count-and-destroys-the-retry` | halvt Genomför går inte att göra om |
+
+**Åtgärdsordning, kortast väg till mest värde:**
+
+1. **`partial-apply-reports-a-count-and-destroys-the-retry`** — Carl står med 39
+   granskade inköp och har inte tryckt Genomför. Det här är det enda kortet som
+   kan kosta honom något **i morgon**. Behåll session + journal när
+   `result.failed` inte är tom, och namnge raderna.
+2. **`import-run-loses-acknowledged-on-reopen`** — en rad i `toStored`/`fromStored`.
+   Minst arbete av alla fyra, och det är en krasch.
+3. **`purchase-receipt-upload-fails-silently`** — sätt `contentType`, logga felet,
+   låt `filePath` bli `null` vid fel. Samma fil som 4 rör.
+4. **`import-journal-saves-the-reading-not-the-review`** — störst av de fyra
+   (debouncad omsparning). Ta den sist, och ta `extraPages` i `attachmentKeys`
+   samtidigt.
+
+### De två andra korten är testhygien, inte produkt
+
+`pwa-shortcut-spec-asserts-labels-deleted-16-days-ago` och
+`language-switching-spec-looks-for-a-button-that-moved`: **i båda fallen
+fungerar produkten.** Sviten har varit röd i sexton dagar mot gränssnitt som
+ändrats. De hör ihop med `det-finns-ingen-ci` — utan körning ingen signal, och
+rött blir normaltillståndet.
+
+Fixa dem tillsammans, och ta `voiceHero`/`voiceHeroHint` ur åtta språkfiler i
+samma veva.
+
+### Kort från förra svepet som kontrollerades i natt
+
+Inga av dem var inaktuella. Tre lever, och två blev bättre underbyggda:
+
+- `intern-maskningsfunktion-ar-anropbar-av-anon` — nu **prod-verifierad** mot den
+  körande funktionen, inte mot migrationsfilen. Bär en öppen prio-fråga.
+- `approve-hours-button-offscreen-on-mobile` — nu **mätt vid 320 px**: Godkänn
+  ligger 113 px utanför, och Tid-fliken är den enda av nio flikar som scrollar.
+
+### Vad natten INTE gjorde
+Framkallade inga fel (det kräver skrivningar), rörde inte edge-funktionerna,
+och kontrollerade inte de 26 återstående öppna P2-korten från förra svepet.
+Rapport: /Users/calpa/PA/Documents/Projekt/Renofine/Nattsvep-2026-09-04/RAPPORT.md
+
+---
+id: file-size-limits-disagree-with-the-buckets-they-write-to
+status: todo
+priority: P3
+tags: [nattsvep-2026-09-04, import, storage]
+created: 2026-09-04
+---
+## Tre storleksgränser i koden, och ingen matchar hinken de skriver till
+
+Hinkarnas verkliga tak, hämtade från prod:
+
+```
+project-files       file_size_limit = 10 485 760   (10 MB)
+property-documents  file_size_limit = 26 214 400   (25 MB)
+```
+
+Kodens gränser, satta oberoende av dem:
+
+```
+src/services/ingestProjectFolder.ts:89    MAX_FILE_BYTES   = 20 MB   → project-files      (10 MB)
+src/services/propertyFolderIngest.ts:24   MAX_FILE_BYTES   = 20 MB   → property-documents (25 MB)
+src/services/aiDocumentService.ts:10      MAX_FILE_SIZE_MB = 10      (modellens gräns, inte hinkens)
+```
+
+**De är fel åt varsitt håll.**
+
+### För slapp: mappimporten läser filer den inte kan spara
+`ingestProjectFolder` släpper igenom allt upp till 20 MB. En fil mellan 10 och
+20 MB blir alltså **läst** — klassificerad, tolkad, betalda modellanrop — och
+avvisas sedan av Storage när den ska arkiveras. Kommentaren på raden säger
+"Files larger than this are skipped outright (and said out loud)", vilket
+stämmer för >20 MB men inte för 10–20 MB: de sägs inte alls.
+
+Arkivvägen räknar i alla fall felet (`archiveFailed` → "X filer kunde inte
+sparas i Filer"). Inköpsvägen gör det inte — se
+`purchase-receipt-upload-fails-silently`, där det här är den namngivna utlösaren.
+
+### För sträng: bostadens papper avvisas i onödan
+`propertyFolderIngest` stoppar vid 20 MB mot en hink som tar 25. Ett inskannat
+köpekontrakt på 22 MB avvisas trots att det hade gått igenom.
+
+### Motbevisförsök
+- *"hinkgränsen är rådgivande"* — nej, Storage upprätthåller `file_size_limit`
+  och svarar med ett fel. Det är samma fel som fynd 3 sväljer.
+- *"bilderna komprimeras före uppladdning så storleken spelar ingen roll"* — nej.
+  Läsvägen normaliserar en kopia, men ARKIVET sparar originalet:
+  `uploadToCategoryFolder(projectId, a.file, ...)` får filen som den kom.
+- *"filer på 10–20 MB finns inte i praktiken"* — **inte verifierat.** Ett
+  telefonfoto är 2–5 MB och en HEIC 1–3 MB, så vanliga kvitton klarar sig. Ett
+  flersidigt inskannat PDF eller en filmsnutt gör det inte. Jag har inte mätt
+  storleksfördelningen i Carls egna mappar.
+
+### Fixen
+Läs hinkens tak från EN källa i stället för tre handskrivna konstanter, och
+avvisa före läsningen — inte efter. Att betala för att tolka en fil som ändå
+inte kan sparas är den dyraste ordningen som finns.
+
+**För användaren:** en stor fil kan läsas, kosta pengar, och ändå inte hamna i
+Filer. Och ett stort kontrakt som hade fått plats avvisas ändå.
+
+---
+id: throttled-receipt-reads-are-invisible-unlike-throttled-classifies
+status: todo
+priority: P2
+tags: [nattsvep-2026-09-04, import, kvitton, carl]
+created: 2026-09-04
+---
+## Strypta kvittoläsningar är osynliga — fast klassificeringen lärde sig läxan
+
+Samma pipeline, två anrop, två helt olika sätt att hantera samma fel.
+
+**Klassificeringen (`ingestProjectFolder.ts:862`) gör allt rätt:**
+
+```ts
+} catch (e) {
+  classifyFailures += 1;
+  if (e instanceof ClassifyError && e.code === 'quota_exhausted') quotaExhausted = true;
+  console.error('classify failed for', f.name, e);
+```
+
+Kommentaren ovanför namnger till och med varför: *"conflating the two is how
+Carl's 112 receipts (2026-09-01) came back as '100 bilder sparade utan att
+tolkas' when the real story was that OpenAI had throttled every single call."*
+
+**Läsningen, ett steg senare i samma pipeline (`processReceiptPhoto:585`):**
+
+```ts
+} catch {
+  /* fall through to a plain count */
+}
+return { kind: 'receipt', amount: null, archive };
+```
+
+Ingen räknare. Ingen kvot-detektering. Ingen loggning. Filen blir "ett kvitto vi
+såg men inte gjorde något inköp av" — exakt den sammanblandning som stängdes ett
+steg tidigare.
+
+### Varför det träffar batch 2 hårdast
+
+Taket är 400 anrop per funktion och timme. För 56 kvitton:
+
+```
+klassificeringar   ~56     ← skyddade, räknas, rapporteras
+läsningar         110–220  ← OSKYDDADE (flera vändningar per kvitto)
+```
+
+**Läsningarna är både majoriteten av anropen och de oskyddade.** Slår batchen i
+taket får du "56 kvitton sedda, 0 inköp" utan att något antyder att det var
+strypning och inte oläsbara kvitton.
+
+### Motbevisförsök
+- *"`captureDocument` kastar inte vid 429, så catch-blocket är inte problemet"* —
+  troligen sant, och det gör det **värre**, inte bättre. Vid ett fel från
+  funktionen blir `data` null, `receiptData` undefined, och `captureDocument`
+  returnerar `{kind:'unreadable'}` — som faller ned till exakt samma tysta
+  `return { kind: 'receipt', amount: null }`. Båda vägarna är osynliga.
+- *"summeringen visar ju gapet mellan kvitton och inköp"* — den visar en siffra,
+  inte en orsak. Och i granskningen står raden som "Inget nytt".
+- *"redan fixat"* — nej. `classifyFailures` finns i samma fil, tillagd av just
+  den incidenten, och den här grenen rördes inte.
+
+### Fixen
+Ge läsningen samma behandling som klassificeringen: en `readFailures`-räknare,
+`quota_exhausted` vidare från samma felklass, och en rad i summeringen som säger
+"N kvitton kunde inte läsas just nu — försök igen om en stund" i stället för att
+låta dem se ut som misslyckade tolkningar.
+
+**För användaren:** man släpper 56 kvitton, får veta att de är sedda men att
+inget blev inköp, och har ingen aning om att det räcker att vänta en timme.
