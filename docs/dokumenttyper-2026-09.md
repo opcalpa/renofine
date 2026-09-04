@@ -77,6 +77,31 @@ Bygg: typväljare på filrad/detalj i Filer → uppdatera file_type + flytta fil
 till typens mapp. Samma yta får rum- och arbetsväljare (room_id/task_id finns
 redan i tabellen — bara skrivvägen saknas).
 
+## ÄTA-förslaget — "budgetvakten" (designad på Fable 2026-09-04)
+
+Jobbet är inte att klassificera papper utan att BEVARA BERÄTTELSEN om budgeten
+i stunden användaren vet svaret. Mekanik:
+
+- Signal = ARITMETIK PÅ EGEN DATA, inget modellomdöme: `contract_value`
+  (triggerunderhållen summa av accepterade offerter) mot löpande utfall +
+  batchens rader i datumordning. Dagens mätningar fällde varje omätt
+  modellsignal (confidence konstant, fabricerade citat, text_is_upright ljuger).
+- Tyst under budget. Först när en rad tar projektet FÖRBI det accepterade får
+  just den raden en FRÅGA med siffran: "tar projektet X kr över det ni kom
+  överens om (Y). Extra arbete?" → [Bokför som ÄTA] / [Ingår i avtalet].
+- Aldrig förbockning: slutfakturan för planerat arbete kommer också sist, och
+  en tyst felbokning är värre än ingen hjälp. Frågan + siffran, användaren dömer.
+- "Ingår i avtalet" minns per rad i sessionen (Record, inte Set — importRuns-
+  läxan) så frågan inte tjatar vid återöppning.
+- Ingen accepterad offert (`contract_value` null) → ingen chip alls. Retro-
+  projekt (Carls eget) ser aldrig förslaget; manuella knappen täcker dem.
+- Egna materialkvitton ingår inte i hantverkarens avtal men räknas i utfallet —
+  v1 accepterar oskärpan öppet, siffran visar läget och personen dömer.
+- Hjälparen (`ataSuggestion.ts`, ren funktion + två selects) skrivs återanvändbar:
+  nästa yta är enstaka kvittofoto/manuellt inköp i levande projekt.
+- Rader som redan flaggats ÄTA konsumerar INTE det accepterade i löpsumman.
+- Senare, mäts först: "pappret säger ÄTA" ur extraktionen som samma chip.
+
 ## Byggskivor (exekveras på Opus)
 
 0. **STRYK `ata`** ur DocumentType-katalogen, klassificerarens enum/prompt,
@@ -84,8 +109,12 @@ redan i tabellen — bara skrivvägen saknas).
    i18n och mappen /ÄTA — inga rader hann skrivas med typen. Behåll
    rubrikdetektionen ("ÄTA", "tilläggs…") som FÖRSLAG på ÄTA-flaggan.
 4. **ÄTA-kryssruta per inköpsrad i granskningen** (styr `bookAsAta` →
-   `exclude_from_budget`), förbockad av signalerna ovan, alltid ändringsbar.
-   Test som pinnar: flaggad ÄTA räknas ändå i totalkostnad + ROT-tak.
+   `exclude_from_budget`), alltid ändringsbar. ✅ KLAR 2026-09-04 (13fa934f) —
+   manuell, ingen förbockning.
+6. **Budgetvakten** enligt designen ovan: `ataSuggestion.ts` (ren, testbar),
+   chip i granskningen på rader förbi gränsen, dismissal-minne i sessionen,
+   e2e på ren funktion (gränspassage, datumordning, null-avtal → tyst,
+   ÄTA-rader utanför löpsumman).
 5. *(valfri, Carls "kanske")* `available_funds` på projektet + raden
    "accepterad budget · totalt inkl ÄTA · kvar av medel" i Budget-fliken.
 
