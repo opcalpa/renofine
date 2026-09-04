@@ -7913,6 +7913,8 @@
     "done": "{{count}} changes made.",
     "doneMerged": "{{count}} rooms were merged into rooms you already had.",
     "doneFailed": "{{count}} failed.",
+    "doneFailedNamed": "Diese sind nicht durchgegangen: {{names}}",
+    "doneRetry": "Die Prüfung bleibt bestehen, nur mit dem, was fehlt — drücke erneut auf Übernehmen, um es noch einmal zu versuchen.",
     "filesSafe": "The files are already saved in Files — cancelling changes nothing else.",
     "fromFile": "From {{file}}",
     "remove": "Remove",
@@ -7960,7 +7962,10 @@
       "newRoomOption": "{{name}} (new)"
     },
     "purchases": {
-      "title": "Purchases"
+      "title": "Purchases",
+      "mergeWith": "Zusammenführen mit…",
+      "mergeWithHint": "Die gewählte Zeile wird zu einer Seite dieser hier. Der gültige Betrag wird {{amount}}.",
+      "mergeWithNone": "Keine Zeile passt"
     },
     "drawings": {
       "title": "Drawings",

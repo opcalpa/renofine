@@ -440,6 +440,7 @@ export function PurchaseList({
             <PurchaseRowView
               key={row.id}
               row={row}
+              allRows={rows}
               session={session}
               selected={selectedId === row.id}
               linked={linkedIds.has(row.id)}
@@ -464,6 +465,7 @@ export function PurchaseList({
 
 function PurchaseRowView({
   row,
+  allRows,
   session,
   selected,
   linked,
@@ -480,6 +482,8 @@ function PurchaseRowView({
   onJumpTo,
 }: {
   row: PurchaseRow;
+  /** Every row in the batch — the pool "Slå ihop med…" chooses a partner from. */
+  allRows: PurchaseRow[];
   session: ImportSession;
   selected: boolean;
   linked: boolean;
@@ -497,6 +501,16 @@ function PurchaseRowView({
 }) {
   const { t, i18n } = useTranslation();
   const off = !row.kept;
+  /**
+   * Rows that could be another sheet of this one.
+   *
+   * Everything except this row, rows already merged away, and the partner the
+   * one-click button above already handles — offering it twice would give the
+   * same action two different names.
+   */
+  const mergeCandidates = allRows.filter(
+    (r) => r.id !== row.id && !r.savedAsDocument && r.id !== row.pairOfId
+  );
   /** The gross the verifier computed, when the total was read off a net line. */
   const netFix = (() => {
     const issue = row.issues.find((i) => i.code === 'total_looks_net');
@@ -783,6 +797,20 @@ function PurchaseRowView({
                   {t('importReview.purchases.merge', 'Slå ihop till ett underlag')}
                 </RowAction>
               )}
+              {/*
+                The pair detector only fires on the SAME vendor and the SAME
+                amount to the öre, so it never sees sheet 1 and sheet 2 of one
+                invoice — which is exactly the case that needs merging, and the
+                one that had no button at all (Carl, 2026-09-04). This picker
+                is the general form: any row can become a page of this one.
+              */}
+              {!row.acknowledged && mergeCandidates.length > 0 && (
+                <MergeWithPicker
+                  row={row}
+                  candidates={mergeCandidates}
+                  onMerge={onMerge}
+                />
+              )}
               {row.action.attachmentKey && (
                 <RowAction icon={RefreshCw} busy={rereading} onClick={onReread}>
                   {t('importReview.purchases.reread', 'Läs om')}
@@ -880,6 +908,103 @@ function RowAction({
   );
 }
 
+/**
+ * "Slå ihop med…" — pick which other reading is another sheet of this one.
+ *
+ * The automatic pair only fires on identical vendor AND identical amount, so
+ * page 1 and page 2 of one invoice (different totals) never got a button. This
+ * is the manual form, and it is deliberately explicit about direction: the row
+ * you opened the picker on is the one that SURVIVES, keeping its amount, and
+ * the row you choose becomes a page of it. Getting that backwards would book
+ * the wrong total, so it is written on the menu rather than implied.
+ */
+function MergeWithPicker({
+  row,
+  candidates,
+  onMerge,
+}: {
+  row: PurchaseRow;
+  candidates: PurchaseRow[];
+  onMerge: (fromId: string, intoId: string) => void;
+}) {
+  const { t, i18n } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+
+  const q = query.trim().toLowerCase();
+  const shown = q
+    ? candidates.filter((c) =>
+        `${c.action.vendorName} ${c.sourceFile ?? ''}`.toLowerCase().includes(q)
+      )
+    : candidates;
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <Layers className="h-3 w-3 shrink-0" />
+          <span className="whitespace-normal">
+            {t('importReview.purchases.mergeWith', 'Slå ihop med…')}
+          </span>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-72 p-1">
+        <p className="px-2 py-1.5 text-[11px] leading-snug text-muted-foreground">
+          {t('importReview.purchases.mergeWithHint', {
+            amount: kr(row.action.total, i18n.language),
+            defaultValue:
+              'Raden du väljer blir en sida av den här. Beloppet som gäller blir {{amount}}.',
+          })}
+        </p>
+        {candidates.length > 6 && (
+          <div className="px-1 pb-1">
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={t('importReview.purchases.search', 'Sök leverantör eller fil')}
+              className="h-7 text-xs"
+            />
+          </div>
+        )}
+        <div className="max-h-64 overflow-y-auto">
+          {shown.length === 0 && (
+            <p className="px-2 py-3 text-center text-[11px] text-muted-foreground">
+              {t('importReview.purchases.mergeWithNone', 'Ingen rad matchar')}
+            </p>
+          )}
+          {shown.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => {
+                onMerge(c.id, row.id);
+                setOpen(false);
+                setQuery('');
+              }}
+              className="w-full rounded px-2 py-1.5 text-left text-xs hover:bg-muted"
+            >
+              <span className="flex items-baseline justify-between gap-2">
+                <span className="truncate font-medium">{c.action.vendorName}</span>
+                <span className="shrink-0 font-mono text-[11px] tabular-nums text-muted-foreground">
+                  {kr(c.action.total, i18n.language)}
+                </span>
+              </span>
+              {c.sourceFile && (
+                <span className="block truncate text-[11px] text-muted-foreground">
+                  {c.sourceFile}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 /** Search + filter chips + bulk menu — the toolbar that flips with this tab. */
 export function PurchaseToolbar({
   query,
@@ -899,12 +1024,29 @@ export function PurchaseToolbar({
   onBulk: (keep: boolean) => void;
 }) {
   const { t } = useTranslation();
-  const chips: Array<{ id: PurchaseFilter; label: string }> = [
+  const allChips: Array<{ id: PurchaseFilter; label: string }> = [
     { id: 'all', label: t('importReview.purchases.filterAll', 'Alla') },
     { id: 'needsLook', label: t('importReview.purchases.filterNeedsLook', 'Behöver blick') },
     { id: 'noRoom', label: t('importReview.purchases.filterNoRoom', 'Utan rum') },
     { id: 'dropped', label: t('importReview.purchases.filterDropped', 'Urbockade') },
   ];
+
+  /**
+   * Only chips that would actually change what is on screen.
+   *
+   * A fresh batch showed "Alla 39 · Behöver blick 14 · Utan rum 39 ·
+   * Urbockade 0" — two of the four are noise the person still has to read past
+   * every time (Carl, 2026-09-04). A chip whose count is 0 filters to an empty
+   * list, and one whose count equals the total filters nothing away; neither
+   * is a choice. `all` always stays, and so does whatever is selected, so the
+   * row cannot drop the way out from under the person who clicked it.
+   */
+  const chips = allChips.filter(
+    ({ id }) =>
+      id === 'all' ||
+      id === filter ||
+      (counts[id] > 0 && counts[id] < counts.all)
+  );
 
   return (
     <>
