@@ -9778,7 +9778,7 @@ Tva vagar:
 
 ---
 id: import-run-loses-acknowledged-on-reopen
-status: todo
+status: done
 priority: P2
 tags: [nattsvep-2026-09-04, import, dataförlust]
 created: 2026-09-04
@@ -9879,7 +9879,7 @@ I dag gör bara läsningen det.
 
 ---
 id: purchase-receipt-upload-fails-silently
-status: todo
+status: done
 priority: P2
 tags: [nattsvep-2026-09-04, import, dataförlust, kvitton]
 created: 2026-09-04
@@ -10068,7 +10068,7 @@ verkliga regression drunknar i brus.
 
 ---
 id: partial-apply-reports-a-count-and-destroys-the-retry
-status: todo
+status: done
 priority: P2
 tags: [nattsvep-2026-09-04, import, dataförlust, carl]
 created: 2026-09-04
@@ -10164,6 +10164,13 @@ skiva av det skyddet har ett hål i sig:
 | `import-journal-saves-the-reading-not-the-review` | journalen minns bara läsningen |
 | `purchase-receipt-upload-fails-silently` | filen kan försvinna vid Genomför |
 | `partial-apply-reports-a-count-and-destroys-the-retry` | halvt Genomför går inte att göra om |
+
+**UTFALL 2026-09-04 (session 95): tre av fyra klara, plus kort 3 utanför
+listan.** `partial-apply…` (fd822762), `import-run-loses-acknowledged…`
+(35c4b093), `purchase-receipt-upload-fails-silently` (d8f3d101) och
+`throttled-receipt-reads…` (ed74f7ea). **Kvar: `import-journal-saves-the-reading-not-the-review`**
+— den största av de fyra (debouncad omsparning), och den enda som inte gjordes.
+Ta `extraPages` i `attachmentKeys` samtidigt.
 
 **Åtgärdsordning, kortast väg till mest värde:**
 
@@ -10266,7 +10273,7 @@ Filer. Och ett stort kontrakt som hade fått plats avvisas ändå.
 
 ---
 id: throttled-receipt-reads-are-invisible-unlike-throttled-classifies
-status: todo
+status: done
 priority: P2
 tags: [nattsvep-2026-09-04, import, kvitton, carl]
 created: 2026-09-04
