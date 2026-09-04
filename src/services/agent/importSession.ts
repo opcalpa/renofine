@@ -164,6 +164,17 @@ export interface ImportSession {
    */
   savedAsDocument?: Record<string, DocumentType>;
   /**
+   * Proposals a previous Genomför already wrote to the database.
+   *
+   * A partial apply hands back this same session minus what landed, and the
+   * landed rows come back UNTICKED. Unticked is a display state, though, and a
+   * person looking at a receipt they wanted can tick it again — which would
+   * book it a second time. So the ids are recorded, and `applyImportSession`
+   * refuses them at the write boundary regardless of what the checkbox says
+   * (2026-09-04).
+   */
+  appliedProposalIds?: string[];
+  /**
    * This drop's dated folder ("/Import 2026-09-03"), where anything typed
    * `other` lands instead of loose in the project's root.
    */

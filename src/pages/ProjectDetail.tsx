@@ -1095,17 +1095,32 @@ const ProjectDetail = () => {
     try {
       const result = await applyImportSession(session);
       const merged = mergedRoomCount(session);
+      // A partial apply is a designed state — `applyProposals` collects errors
+      // and carries on — but everything downstream used to treat it as done:
+      // review closed, journal cleared, run marked applied. The only way back
+      // was to reopen the run, which still offered every row ticked against a
+      // project that already had most of them (2026-09-04). So: when something
+      // failed, the review STAYS, holding only what did not land.
+      const retry = result.retrySession;
 
-      useRenaidaStore.getState().setImportSession(null);
-      // Applied — the journal has nothing left to offer, and leaving it would
-      // suggest resuming an import that already happened.
-      if (project?.id) void clearImportJournal(project.id);
-      // The run stays, with the verdict on it. This is the row that answers
-      // "which import did these purchases come from?" months later.
-      if (session.runId) {
-        void finishImportRun(session.runId, 'applied', result.applied.length).then(() =>
+      if (retry) {
+        useRenaidaStore.getState().setImportSession(retry);
+        void saveImportJournal(retry, collectAttachments(retry));
+        void saveImportRun(retry, { folderLabel: importFolderRef.current }).then(() =>
           setRunsReloadKey((k) => k + 1),
         );
+      } else {
+        useRenaidaStore.getState().setImportSession(null);
+        // Applied — the journal has nothing left to offer, and leaving it would
+        // suggest resuming an import that already happened.
+        if (project?.id) void clearImportJournal(project.id);
+        // The run stays, with the verdict on it. This is the row that answers
+        // "which import did these purchases come from?" months later.
+        if (session.runId) {
+          void finishImportRun(session.runId, 'applied', result.applied.length).then(() =>
+            setRunsReloadKey((k) => k + 1),
+          );
+        }
       }
       handleRoomUpdated();
 
@@ -1132,8 +1147,19 @@ const ProjectDetail = () => {
               names: result.documentsFailed.join(', '),
             })
           : null,
-        result.failed.length > 0
-          ? t('importReview.doneFailed', '{{count}} misslyckades.', { count: result.failed.length })
+        // Named, not counted. "3 misslyckades" out of 39 receipts tells the
+        // person nothing they can act on, and the review used to be closed by
+        // the time they read it.
+        result.failedNames.length > 0
+          ? t('importReview.doneFailedNamed', 'Dessa gick inte in: {{names}}', {
+              names: result.failedNames.join(', '),
+            })
+          : null,
+        retry
+          ? t(
+              'importReview.doneRetry',
+              'Granskningen är kvar med bara det som saknas — tryck Genomför igen när du vill försöka om.',
+            )
           : null,
       ].filter(Boolean);
       toast({
@@ -1148,17 +1174,21 @@ const ProjectDetail = () => {
         useFloorMapStore.getState().setPendingPlaceRooms(result.placeableRooms);
       }
 
-      const goToPlanner = result.placeableRooms.length > 0 || result.targetPlanId;
-      setSearchParams((prev) => {
-        const next = new URLSearchParams(prev);
-        if (goToPlanner) {
-          next.set('tab', 'spaceplanner');
-          next.set('subtab', 'floorplan');
-        } else {
-          next.delete('subtab');
-        }
-        return next;
-      });
+      // Staying put is the point when a retry is waiting: the `else` below
+      // drops `subtab`, which is what closes the review.
+      if (!retry) {
+        const goToPlanner = result.placeableRooms.length > 0 || result.targetPlanId;
+        setSearchParams((prev) => {
+          const next = new URLSearchParams(prev);
+          if (goToPlanner) {
+            next.set('tab', 'spaceplanner');
+            next.set('subtab', 'floorplan');
+          } else {
+            next.delete('subtab');
+          }
+          return next;
+        });
+      }
     } catch (e) {
       console.error('ProjectDetail: import apply failed', e);
       toast({
@@ -1568,18 +1598,32 @@ const ProjectDetail = () => {
             'AI-krediterna är slut, så inget kunde läsas. Fyll på hos OpenAI och släpp mappen igen — filerna ligger kvar i Filer så länge.',
           ),
         );
-      } else if (outcome.classifyFailures > 0) {
-        inertNotes.push(
-          t('folderDrop.classifyFailed', {
-            count: outcome.classifyFailures,
-            defaultValue:
-              '{{count}} bilder kunde inte läsas just nu (tjänsten var överbelastad) — släpp mappen igen om en stund, de redan lästa filerna kostar inget.',
-          }),
-        );
+      } else {
+        if (outcome.classifyFailures > 0) {
+          inertNotes.push(
+            t('folderDrop.classifyFailed', {
+              count: outcome.classifyFailures,
+              defaultValue:
+                '{{count}} bilder kunde inte läsas just nu (tjänsten var överbelastad) — släpp mappen igen om en stund, de redan lästa filerna kostar inget.',
+            }),
+          );
+        }
+        // The reads are the bigger half of a receipt batch's calls (110–220 of
+        // them for 56 receipts, ceiling 400/h), and until now the ONLY phase
+        // whose throttling was invisible: the row just said "Inget nytt".
+        if (outcome.receiptReadFailures > 0) {
+          inertNotes.push(
+            t('folderDrop.receiptReadFailed', {
+              count: outcome.receiptReadFailures,
+              defaultValue:
+                '{{count}} kvitton kunde inte läsas just nu (tjänsten var överbelastad) — släpp dem igen om en stund, de är sparade i Filer så länge.',
+            }),
+          );
+        }
       }
 
       if (proposals.length === 0) {
-        const throttled = outcome.classifyFailures > 0;
+        const throttled = outcome.classifyFailures > 0 || outcome.receiptReadFailures > 0;
         toast({
           title: outcome.quotaExhausted
             ? t('folderDrop.nothingFoundNoQuota', 'AI-krediterna är slut — filerna är sparade i Filer.')

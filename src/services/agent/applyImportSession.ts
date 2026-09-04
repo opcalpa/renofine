@@ -42,6 +42,21 @@ export interface ImportApplyResult extends ApplyResult {
   documentsSaved: number;
   /** Those that could not be filed — named, never swallowed. */
   documentsFailed: string[];
+  /** What did not land, by the name on the paper. A count cannot be acted on. */
+  failedNames: string[];
+  /**
+   * The same review, minus everything that DID land — or null when all of it did.
+   *
+   * A partial apply used to end with the review closed, the journal cleared and
+   * the run marked applied, so the only way back was to reopen the run: which
+   * still held every proposal ticked, against a project that now had most of
+   * them (2026-09-04). Retrying meant booking the successes a second time.
+   *
+   * Handing the retry back from HERE is what makes it honest — the successes,
+   * the layers that were drawn, the folder moves that happened and the
+   * documents that were filed are all known in this function and nowhere else.
+   */
+  retrySession: ImportSession | null;
 }
 
 /**
@@ -158,9 +173,9 @@ async function applyFolderMoves(
  */
 async function saveDroppedDocuments(
   session: ImportSession
-): Promise<{ saved: number; failed: string[] }> {
+): Promise<{ saved: number; failed: string[]; savedIds: string[] }> {
   const entries = Object.entries(session.savedAsDocument ?? {});
-  if (entries.length === 0) return { saved: 0, failed: [] };
+  if (entries.length === 0) return { saved: 0, failed: [], savedIds: [] };
 
   const fallback = session.importFolder ?? '';
   for (const category of new Set(entries.map(([, c]) => c))) {
@@ -169,6 +184,7 @@ async function saveDroppedDocuments(
 
   let saved = 0;
   const failed: string[] = [];
+  const savedIds: string[] = [];
   for (const [proposalId, category] of entries) {
     const proposal = session.proposals.find((p) => p.id === proposalId);
     if (!proposal || proposal.action.type !== 'import_purchase') continue;
@@ -190,20 +206,28 @@ async function saveDroppedDocuments(
         label: page.fileName || `${name} (${i + 2})`,
       })),
     ];
+    let allParts = true;
     for (const part of parts) {
       // Peek, never take: an upload that fails must leave the bytes where they
       // are rather than consume them on the way to nowhere.
       const file = peekAttachment(part.key);
       if (!file) {
         failed.push(part.label);
+        allParts = false;
         continue;
       }
       const path = await uploadToCategoryFolder(session.projectId, file, category, fallback);
       if (path) saved += 1;
-      else failed.push(part.label);
+      else {
+        failed.push(part.label);
+        allParts = false;
+      }
     }
+    // Only a paper filed in FULL is done. One that lost sheet two is retried
+    // whole — a duplicate page is recoverable, a missing one is not.
+    if (allParts) savedIds.push(proposalId);
   }
-  return { saved, failed };
+  return { saved, failed, savedIds };
 }
 
 export async function applyImportSession(session: ImportSession): Promise<ImportApplyResult> {
@@ -219,7 +243,11 @@ export async function applyImportSession(session: ImportSession): Promise<Import
 
   // Drawings the person wants as a layer must NOT go through the tracing
   // action — that is the whole point of the choice.
+  // Already written by an earlier Genomför on this same session. Checked here
+  // rather than trusting `rejected`, because a person can tick a row back on.
+  const alreadyApplied = new Set(session.appliedProposalIds ?? []);
   const accepted: AgentProposal[] = session.proposals.filter((p) => {
+    if (alreadyApplied.has(p.id)) return false;
     if (session.rejected.has(p.id)) return false;
     const drawing = drawingsByProposal.get(p.id);
     if (drawing) return drawing.choice === 'trace';
@@ -231,10 +259,17 @@ export async function applyImportSession(session: ImportSession): Promise<Import
   // Layers, after the proposals — a new plan created here should not collide
   // with one a traced sketch just made.
   let targetPlanId: string | null = null;
+  // Layers land outside `applyProposals`, so nothing else records that they
+  // happened — and a retry that redrew them would put the same image on the
+  // plan twice.
+  const layeredProposalIds: string[] = [];
   for (const drawing of session.drawings) {
     if (drawing.choice !== 'layer') continue;
     const planId = await addDrawingAsLayer(atCurrentPath(drawing), session.projectId);
-    if (planId) targetPlanId = planId;
+    if (planId) {
+      targetPlanId = planId;
+      layeredProposalIds.push(drawing.proposalId);
+    }
   }
   if (!targetPlanId) {
     // A traced sketch reports its new plan through its undo op (delete_plan) —
@@ -280,6 +315,7 @@ export async function applyImportSession(session: ImportSession): Promise<Import
     console.error('applyImportSession: saving dropped documents failed', e);
     return {
       saved: 0,
+      savedIds: [],
       failed: Object.keys(session.savedAsDocument ?? {}).map((id) => {
         const p = session.proposals.find((x) => x.id === id);
         return (p?.action.type === 'import_purchase' ? p.action.sourceFileName : null)
@@ -288,7 +324,9 @@ export async function applyImportSession(session: ImportSession): Promise<Import
       }),
     };
   });
-  const { saved: documentsSaved, failed: documentsFailed } = documents;
+  const { saved: documentsSaved, failed: documentsFailed, savedIds } = documents;
+
+  const failedNames = result.failed.map(({ proposal }) => proposalLabel(proposal));
 
   return {
     ...result,
@@ -297,7 +335,74 @@ export async function applyImportSession(session: ImportSession): Promise<Import
     filesMoved,
     documentsSaved,
     documentsFailed,
+    failedNames,
+    retrySession:
+      result.failed.length > 0 || documentsFailed.length > 0
+        ? buildRetrySession(session, {
+            appliedIds: result.applied.map((p) => p.id),
+            layeredProposalIds,
+            documentSavedIds: savedIds,
+            newPaths,
+          })
+        : null,
   };
+}
+
+/** What to call a proposal in a message to a person. */
+function proposalLabel(proposal: AgentProposal): string {
+  const fromFile =
+    proposal.action.type === 'import_purchase' ? proposal.action.sourceFileName : null;
+  return fromFile ?? proposal.sourceFile ?? proposal.summary?.trim() ?? proposal.id;
+}
+
+/**
+ * The same review with everything that already landed taken out of it.
+ *
+ * Pressing Genomför again on this session must write ONLY what failed. Each
+ * branch below is a way the first pass changed the world without the session
+ * knowing:
+ *
+ *  - applied proposals are switched off (`rejected` is what the apply reads);
+ *  - drawings already laid on a plan drop to `fileOnly`;
+ *  - files already moved have their move folded in, so the move is not retried
+ *    from a path that no longer exists;
+ *  - documents already filed leave `savedAsDocument`, so the paper is not
+ *    filed in Files a second time.
+ *
+ * Deliberately conservative in one direction: anything this cannot prove
+ * happened is left to be retried. A duplicate is visible and fixable; a
+ * silently skipped receipt is neither.
+ */
+export function buildRetrySession(
+  session: ImportSession,
+  done: {
+    appliedIds: string[];
+    layeredProposalIds: string[];
+    documentSavedIds: string[];
+    newPaths: Map<string, string>;
+  }
+): ImportSession {
+  const rejected = new Set(session.rejected);
+  for (const id of done.appliedIds) rejected.add(id);
+  // Untick AND record. The tick is what the person sees; this is what the
+  // write boundary obeys.
+  const appliedProposalIds = [...new Set([...(session.appliedProposalIds ?? []), ...done.appliedIds])];
+
+  const savedAsDocument = { ...(session.savedAsDocument ?? {}) };
+  for (const id of done.documentSavedIds) delete savedAsDocument[id];
+
+  const layered = new Set(done.layeredProposalIds);
+  const drawings = session.drawings.map((d) =>
+    layered.has(d.proposalId) ? { ...d, choice: 'fileOnly' as const } : d
+  );
+
+  const files = session.files.map((f) => {
+    const moved = f.storagePath ? done.newPaths.get(f.storagePath) : undefined;
+    if (!moved) return f;
+    return { ...f, storagePath: moved, folder: f.targetFolder, targetFolder: undefined };
+  });
+
+  return { ...session, rejected, savedAsDocument, drawings, files, appliedProposalIds };
 }
 
 /** Rooms the person merged into existing ones — for an honest summary. */
