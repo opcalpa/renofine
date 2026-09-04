@@ -111,6 +111,33 @@ function rank(data: AttemptData): { score: number; good: boolean } {
 
 type AttemptData = UprightReadable | null;
 
+/**
+ * A failed READ, carrying why when the server named it.
+ *
+ * Mirrors `ClassifyError`. Classification learned this in s93 after Carl's 112
+ * receipts came back as "sparade utan att tolkas" when the truth was that every
+ * call had been throttled — but the read one step later still threw a bare
+ * `Error`, so the reason was gone before anyone could count it. Reads are
+ * 110–220 of a 56-receipt batch's calls against a ceiling of 400 per hour, so
+ * they are the MORE likely half to be throttled, not the less.
+ */
+export class DocumentReadError extends Error {
+  constructor(message: string, readonly code?: string) {
+    super(message);
+    this.name = "DocumentReadError";
+  }
+}
+
+/** The edge function answers non-2xx with a body that names the reason. */
+async function readErrorCode(error: unknown): Promise<string | undefined> {
+  try {
+    const body = await (error as { context?: Response }).context?.json();
+    return body?.error_code;
+  } catch {
+    return undefined;
+  }
+}
+
 export async function readDocumentUpright<T extends UprightReadable>(
   file: File,
   opts?: { userNote?: string },
@@ -127,7 +154,12 @@ export async function readDocumentUpright<T extends UprightReadable>(
         ? { fileBase64: base64, mimeType: f.type || "application/pdf", fileName: f.name, mode_hint: "receipt", userNote }
         : { imageBase64: base64, mimeType: f.type || "image/jpeg", fileName: f.name, mode_hint: "receipt", userNote },
     });
-    if (error) throw new Error(error.message || "Document analysis failed");
+    if (error) {
+      throw new DocumentReadError(
+        error.message || "Document analysis failed",
+        await readErrorCode(error),
+      );
+    }
     return data;
   };
 

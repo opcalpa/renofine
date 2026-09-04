@@ -54,6 +54,7 @@ import {
   type PropertyDocumentCategory,
 } from './propertyDocumentService';
 import { extractPdfTextLocally, rasterizePdfFirstPage } from '@/lib/pdfRaster';
+import { DocumentReadError } from './documentRead';
 import { analyzeFloorPlanFile, type AIConversionResult } from './aiVisionService';
 import {
   mergeParseIntoDraft,
@@ -295,6 +296,19 @@ export type Contribution = ContributionKind & {
   truncatedText?: boolean;
   /** P1: what this one document said the home's address is, if anything. */
   address?: AddressCandidate;
+  /**
+   * The receipt READ failed — throttled, an outage, a crash — as opposed to
+   * "we read it and it was not a purchase".
+   *
+   * Classification has carried this distinction since Carl's 112 receipts came
+   * back as "sparade utan att tolkas" (2026-09-01) when every call had in fact
+   * been throttled. The read one step later still fell through to a plain
+   * count, which is the same conflation in the phase that makes MOST of the
+   * calls: ~56 classifications against 110–220 reads, ceiling 400 per hour.
+   */
+  readFailed?: boolean;
+  /** The AI account is out of credits. Waiting cannot help; topping up can. */
+  readQuotaExhausted?: boolean;
 };
 
 /**
@@ -454,8 +468,18 @@ async function processDocument(
             address,
           };
         }
-      } catch {
-        /* fall through to a plain count */
+      } catch (e) {
+        // Counted, not swallowed: a receipt we could not READ must not look
+        // like a receipt we read and found nothing in.
+        console.error('receipt read failed for', file.name, e);
+        return {
+          kind: 'receipt',
+          amount: cls?.invoice_amount ?? null,
+          archive,
+          address,
+          readFailed: true,
+          readQuotaExhausted: isQuotaExhausted(e),
+        };
       }
     }
     return { kind: 'receipt', amount: cls?.invoice_amount ?? null, archive, address };
@@ -581,11 +605,25 @@ async function processReceiptPhoto(
           action: { ...captured.action, sourceFileName: file.name },
         };
       }
-    } catch {
-      /* fall through to a plain count */
+    } catch (e) {
+      console.error('receipt read failed for', file.name, e);
+      return {
+        kind: 'receipt',
+        amount: null,
+        archive,
+        readFailed: true,
+        readQuotaExhausted: isQuotaExhausted(e),
+      };
     }
   }
   return { kind: 'receipt', amount: null, archive };
+}
+
+/** Out of credits, whichever call reported it. */
+function isQuotaExhausted(e: unknown): boolean {
+  return (
+    (e instanceof DocumentReadError || e instanceof ClassifyError) && e.code === 'quota_exhausted'
+  );
 }
 
 async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
@@ -637,6 +675,16 @@ export interface IngestOutcome {
    * offer a retry instead of reporting a temporary failure as a conclusion.
    */
   classifyFailures: number;
+  /**
+   * Receipts whose READ call failed — throttled or an outage, NOT "we read it
+   * and it was not a purchase".
+   *
+   * These are the calls a batch makes most of (110–220 for 56 receipts, against
+   * a ceiling of 400 an hour), so a drop that hits the ceiling looks like "56
+   * kvitton sedda, 0 inköp" unless this number is on screen. Waiting an hour
+   * fixes it, and nothing else says so.
+   */
+  receiptReadFailures: number;
   /**
    * The AI account ran out of credits mid-drop. Distinct from throttling on
    * purpose: it shares HTTP 429 but nothing else, and "try again in a moment"
@@ -846,6 +894,7 @@ export async function ingestProjectFolder(
   /** Photos whose classification call FAILED (throttling, outage) — not a verdict. */
   let classifyFailures = 0;
   /** The AI account is empty. Retrying cannot help; only topping up can. */
+  // Set by the classify pass below AND by the receipt reads in the fold.
   let quotaExhausted = false;
   if (photos.length > 0) {
     let classified = 0;
@@ -958,11 +1007,15 @@ export async function ingestProjectFolder(
 
   let skippedPlanPages = 0;
   let truncatedDocCount = 0;
+  /** Receipts whose READ call failed — a wait, not a verdict. */
+  let receiptReadFailures = 0;
   for (const c of settled) {
     if (c.archive) archiveFiles.push(c.archive);
     if (c.extraPages) skippedPlanPages += c.extraPages;
     if (c.truncatedText) truncatedDocCount += 1;
     if (c.address) addressCandidates.push(c.address);
+    if (c.readFailed) receiptReadFailures += 1;
+    if (c.readQuotaExhausted) quotaExhausted = true;
     switch (c.kind) {
       case 'scope':
         draft = mergeParseIntoDraft(c.parsed, draft, { sourceKind: c.sourceKind, fileName: c.fileName });
@@ -1013,6 +1066,7 @@ export async function ingestProjectFolder(
     // summary honest about how much of the folder the project actually holds.
     filesRead: files.length + resumed.length,
     classifyFailures,
+    receiptReadFailures,
     quotaExhausted,
     alreadyImportedNames: skipped.map((f) => f.name),
     roomsAdded: draft.rooms.length - roomsBefore,
