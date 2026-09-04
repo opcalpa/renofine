@@ -7977,7 +7977,10 @@
       "mergeWithHint": "Die gewählte Zeile wird zu einer Seite dieser hier. Der gültige Betrag wird {{amount}}.",
       "mergeWithNone": "Keine Zeile passt",
       "ata": "Als Nachtrag buchen",
-      "ataOn": "Nachtrag — außerhalb des Budgets"
+      "ataOn": "Nachtrag — außerhalb des Budgets",
+      "ataAsk": "Bringt das Projekt {{over}} über das Vereinbarte ({{contract}}). Ist das Zusatzarbeit?",
+      "ataYes": "Als Nachtrag buchen",
+      "ataNo": "Im Vertrag enthalten"
     },
     "drawings": {
       "title": "Drawings",

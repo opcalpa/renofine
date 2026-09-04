@@ -20,6 +20,7 @@ import {
   taskProposals,
 } from '../src/services/agent/importSession';
 import { buildPurchaseRows } from '../src/components/project/import-review/purchaseRowModel';
+import { suggestAta, type AtaCandidateRow } from '../src/services/agent/ataSuggestion';
 import type { AgentProposal } from '../src/services/agent/types';
 import type { IngestOutcome } from '../src/services/ingestProjectFolder';
 
@@ -435,5 +436,91 @@ test.describe('ÄTA på inköpsraden', () => {
     // Booking something outside the budget is not the same as excluding it:
     // it still has to be written, or the cost simply vanishes.
     expect(changeCount(session)).toBe(1);
+  });
+});
+
+/**
+ * Budgetvakten — the ÄTA question fires exactly when a row passes the agreement.
+ *
+ * The arithmetic is the whole feature, so it is pinned here rather than left to
+ * be discovered in a real batch. Each case is a way it could quietly do harm.
+ */
+test.describe('budgetvakten', () => {
+  const row = (
+    proposalId: string,
+    total: number,
+    date: string | null,
+    over: Partial<AtaCandidateRow> = {},
+  ): AtaCandidateRow => ({ proposalId, total, date, bookAsAta: false, dismissed: false, ...over });
+
+  test('tyst så länge raderna ryms i det accepterade', () => {
+    const out = suggestAta(
+      [row('a', 300_000, '2026-01-10'), row('b', 400_000, '2026-02-10')],
+      { contractValue: 1_000_000, committedBefore: 0 },
+    );
+    expect(out).toEqual([]);
+  });
+
+  test('frågan hamnar på raden som passerar gränsen, med siffran', () => {
+    const out = suggestAta(
+      [row('a', 600_000, '2026-01-10'), row('b', 500_000, '2026-02-10')],
+      { contractValue: 1_000_000, committedBefore: 0 },
+    );
+    expect(out.map((s) => s.proposalId)).toEqual(['b']);
+    expect(out[0].overBy).toBe(100_000);
+    expect(out[0].contractValue).toBe(1_000_000);
+  });
+
+  test('utan accepterad offert är den helt tyst — retroprojekt ser den aldrig', () => {
+    const rows = [row('a', 900_000, '2026-01-10'), row('b', 900_000, '2026-02-10')];
+    expect(suggestAta(rows, { contractValue: null, committedBefore: 0 })).toEqual([]);
+    expect(suggestAta(rows, { contractValue: 0, committedBefore: 0 })).toEqual([]);
+  });
+
+  test('datumordning avgör, inte listordningen', () => {
+    // Samma rader, omvänd ordning i listan: den KRONOLOGISKT sista ska få frågan.
+    const out = suggestAta(
+      [row('sen', 500_000, '2026-06-01'), row('tidig', 600_000, '2026-01-01')],
+      { contractValue: 1_000_000, committedBefore: 0 },
+    );
+    expect(out.map((s) => s.proposalId)).toEqual(['sen']);
+  });
+
+  test('en rad som redan är ÄTA äter inte upp avtalet', () => {
+    // Utan skyddet skulle ÄTA-raden dra den oskyldiga raden över gränsen.
+    const out = suggestAta(
+      [row('ata', 900_000, '2026-01-01', { bookAsAta: true }), row('vanlig', 200_000, '2026-02-01')],
+      { contractValue: 1_000_000, committedBefore: 0 },
+    );
+    expect(out).toEqual([]);
+  });
+
+  test('"ingår i avtalet" tystar raden men förbrukar den ändå', () => {
+    const out = suggestAta(
+      [
+        row('avfärdad', 1_100_000, '2026-01-01', { dismissed: true }),
+        row('efter', 50_000, '2026-02-01'),
+      ],
+      { contractValue: 1_000_000, committedBefore: 0 },
+    );
+    // Den avfärdade tiger, men nästa rad ligger fortfarande över.
+    expect(out.map((s) => s.proposalId)).toEqual(['efter']);
+    expect(out[0].overBy).toBe(150_000);
+  });
+
+  test('det som redan är bokfört i projektet räknas med', () => {
+    const out = suggestAta([row('a', 100_000, '2026-03-01')], {
+      contractValue: 1_000_000,
+      committedBefore: 950_000,
+    });
+    expect(out[0].overBy).toBe(50_000);
+  });
+
+  test('odaterade rader sorteras sist och drar ingen daterad rad över', () => {
+    const out = suggestAta(
+      [row('odaterad', 900_000, null), row('daterad', 200_000, '2026-01-01')],
+      { contractValue: 1_000_000, committedBefore: 0 },
+    );
+    expect(out.map((s) => s.proposalId)).toEqual(['odaterad']);
   });
 });

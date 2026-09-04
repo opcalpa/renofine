@@ -164,6 +164,15 @@ export interface ImportSession {
    */
   savedAsDocument?: Record<string, DocumentType>;
   /**
+   * Rows where the person answered "ingår i avtalet" to the ÄTA question.
+   *
+   * A Record, not a Set, on purpose: `import_runs.session` goes through JSON,
+   * which turns a Set into `{}` — truthy enough to slip past `?.has` and crash
+   * the review for whoever had done the most work (fixed 2026-09-04, and the
+   * cheapest way not to repeat it is to stop adding Sets).
+   */
+  ataDismissed?: Record<string, true>;
+  /**
    * Proposals a previous Genomför already wrote to the database.
    *
    * A partial apply hands back this same session minus what landed, and the

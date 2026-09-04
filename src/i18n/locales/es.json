@@ -7977,7 +7977,10 @@
       "mergeWithHint": "La fila que elijas pasa a ser una página de esta. El importe válido será {{amount}}.",
       "mergeWithNone": "Ninguna fila coincide",
       "ata": "Registrar como modificación",
-      "ataOn": "Modificación — fuera del presupuesto"
+      "ataOn": "Modificación — fuera del presupuesto",
+      "ataAsk": "Supera en {{over}} lo acordado ({{contract}}). ¿Es trabajo adicional?",
+      "ataYes": "Registrar como modificación",
+      "ataNo": "Incluido en el acuerdo"
     },
     "drawings": {
       "title": "Drawings",

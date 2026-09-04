@@ -7977,7 +7977,10 @@
       "mergeWithHint": "La ligne choisie devient une page de celle-ci. Le montant retenu sera {{amount}}.",
       "mergeWithNone": "Aucune ligne ne correspond",
       "ata": "Comptabiliser en avenant",
-      "ataOn": "Avenant — hors budget"
+      "ataOn": "Avenant — hors budget",
+      "ataAsk": "Dépasse de {{over}} le montant convenu ({{contract}}). S'agit-il de travaux supplémentaires ?",
+      "ataYes": "Comptabiliser en avenant",
+      "ataNo": "Inclus dans le contrat"
     },
     "drawings": {
       "title": "Drawings",

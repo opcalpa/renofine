@@ -146,6 +146,12 @@ export default function DevImportReview() {
   }, []);
   return (
     <ImportReviewPage
+      // Budgetvakten needs an agreement to be outside of; the harness has no
+      // real project, so it supplies one. ?contract=… to try other numbers.
+      ataBudgetOverride={{
+        contractValue: Number(new URLSearchParams(window.location.search).get('contract') ?? 0) || null,
+        committedBefore: 0,
+      }}
       session={session}
       onChange={setSession}
       onApply={async () => {}}

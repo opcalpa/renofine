@@ -8367,7 +8367,10 @@
       "notAPurchase": "Not a purchase — keep the document",
       "tallyDocuments": "{{count}} kept as documents",
       "ata": "Book as variation (ÄTA)",
-      "ataOn": "ÄTA — outside the budget"
+      "ataOn": "ÄTA — outside the budget",
+      "ataAsk": "Takes the project {{over}} past what was agreed ({{contract}}). Is this extra work?",
+      "ataYes": "Book as ÄTA",
+      "ataNo": "Included in the agreement"
     },
     "drawings": {
       "title": "Drawings",

@@ -8367,7 +8367,10 @@
       "notAPurchase": "Inte ett inköp — spara som dokument",
       "tallyDocuments": "{{count}} sparas som dokument",
       "ata": "Bokför som ÄTA",
-      "ataOn": "ÄTA — utanför budget"
+      "ataOn": "ÄTA — utanför budget",
+      "ataAsk": "Tar projektet {{over}} över det ni kom överens om ({{contract}}). Är det extra arbete?",
+      "ataYes": "Bokför som ÄTA",
+      "ataNo": "Ingår i avtalet"
     },
     "drawings": {
       "title": "Ritningar",

@@ -20,6 +20,7 @@ import {
   type DocumentType,
 } from '@/services/smartUploadService';
 import type { PurchaseFilter, PurchaseRow } from './purchaseRowModel';
+import type { AtaSuggestion } from '@/services/agent/ataSuggestion';
 
 export const NO_ROOM = '__none__';
 
@@ -326,6 +327,10 @@ interface PurchaseListProps {
   onAcknowledge: (id: string, ack: boolean) => void;
   /** Book the cost outside the accepted budget (ÄTA). */
   onBookAsAta: (id: string, ata: boolean) => void;
+  /** "Ingår i avtalet" — stop asking about this row. */
+  onDismissAta: (id: string) => void;
+  /** Rows budgetvakten wants a decision on, by proposal id. */
+  ataSuggestions: Map<string, AtaSuggestion>;
   /** Read the same image again; a hard photo often lands better on try two. */
   onReread: (id: string) => void;
   /**
@@ -360,6 +365,8 @@ export function PurchaseList({
   onMerge,
   onAcknowledge,
   onBookAsAta,
+  onDismissAta,
+  ataSuggestions,
   onReread,
   onSaveAsDocument,
   rereading,
@@ -465,6 +472,8 @@ export function PurchaseList({
               onMerge={onMerge}
               onAcknowledge={(ack) => onAcknowledge(row.id, ack)}
               onBookAsAta={(ata) => onBookAsAta(row.id, ata)}
+              onDismissAta={() => onDismissAta(row.id)}
+              ataSuggestion={ataSuggestions.get(row.id) ?? null}
               onReread={() => onReread(row.id)}
               onSaveAsDocument={(type) => onSaveAsDocument(row.id, type)}
               rereading={rereading.has(row.id)}
@@ -491,6 +500,8 @@ function PurchaseRowView({
   onMerge,
   onAcknowledge,
   onBookAsAta,
+  onDismissAta,
+  ataSuggestion,
   onReread,
   onSaveAsDocument,
   rereading,
@@ -510,6 +521,8 @@ function PurchaseRowView({
   onMerge: (fromId: string, intoId: string) => void;
   onAcknowledge: (ack: boolean) => void;
   onBookAsAta: (ata: boolean) => void;
+  onDismissAta: () => void;
+  ataSuggestion: AtaSuggestion | null;
   onReread: () => void;
   onSaveAsDocument: (type: DocumentType | null) => void;
   rereading: boolean;
@@ -831,6 +844,36 @@ function PurchaseRowView({
                 <RowAction icon={RefreshCw} busy={rereading} onClick={onReread}>
                   {t('importReview.purchases.reread', 'Läs om')}
                 </RowAction>
+              )}
+              {/*
+                Budgetvakten's question, on the row that passes the agreement.
+
+                A QUESTION, never a pre-tick: the final invoice for work that
+                was always included also arrives last, so "past the budget" is
+                not the same as "extra work", and a silently wrong booking is
+                worse than no help (Carl, 2026-09-04). It names the SUM rather
+                than warning — a 400 kr overshoot explains itself and gets
+                ignored, which is the correct outcome for a 400 kr overshoot.
+                Silent under budget, and silent entirely when there is no
+                accepted quote to be outside of.
+              */}
+              {ataSuggestion && !row.bookAsAta && (
+                <span className="flex w-full flex-wrap items-center gap-1.5 rounded-md border border-amber-300/60 bg-amber-50/60 px-2 py-1.5 text-[11px] dark:border-amber-500/30 dark:bg-amber-500/10">
+                  <span className="min-w-0 flex-1 whitespace-normal text-amber-900 dark:text-amber-200">
+                    {t('importReview.purchases.ataAsk', {
+                      over: kr(ataSuggestion.overBy, i18n.language),
+                      contract: kr(ataSuggestion.contractValue, i18n.language),
+                      defaultValue:
+                        'Tar projektet {{over}} över det ni kom överens om ({{contract}}). Är det extra arbete?',
+                    })}
+                  </span>
+                  <RowAction icon={Split} onClick={() => onBookAsAta(true)}>
+                    {t('importReview.purchases.ataYes', 'Bokför som ÄTA')}
+                  </RowAction>
+                  <RowAction icon={Check} onClick={onDismissAta}>
+                    {t('importReview.purchases.ataNo', 'Ingår i avtalet')}
+                  </RowAction>
+                </span>
               )}
               {/*
                 ÄTA — extra work outside the accepted budget.

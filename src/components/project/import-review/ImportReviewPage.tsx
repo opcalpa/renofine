@@ -1,5 +1,7 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { suggestAta, type AtaBudgetContext } from '@/services/agent/ataSuggestion';
+import { loadAtaBudgetContext } from '@/services/agent/ataBudgetContext';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -49,6 +51,8 @@ interface ImportReviewPageProps {
   onChange: (session: ImportSession) => void;
   onApply: (session: ImportSession) => Promise<void>;
   onCancel: () => void;
+  /** Dev harness only: stand in for the project's real accepted budget. */
+  ataBudgetOverride?: AtaBudgetContext;
   applying: boolean;
 }
 
@@ -57,6 +61,7 @@ export function ImportReviewPage({
   onChange,
   onApply,
   onCancel,
+  ataBudgetOverride,
   applying,
 }: ImportReviewPageProps) {
   const { t, i18n } = useTranslation();
@@ -145,6 +150,24 @@ export function ImportReviewPage({
       if (ack) acknowledged.add(proposalId);
       else acknowledged.delete(proposalId);
       onChange({ ...session, acknowledged });
+    },
+    [session, onChange]
+  );
+
+  /**
+   * "Ingår i avtalet" — stop asking about this row.
+   *
+   * A Record, not a Set: `import_runs.session` goes through JSON, and a Set
+   * becomes `{}` there (fixed 2026-09-04; the cheapest way not to repeat it is
+   * to stop adding Sets). The row still CONSUMES the agreement — saying it is
+   * part of the deal is not the same as saying it costs nothing.
+   */
+  const handleDismissAta = useCallback(
+    (proposalId: string) => {
+      onChange({
+        ...session,
+        ataDismissed: { ...(session.ataDismissed ?? {}), [proposalId]: true },
+      });
     },
     [session, onChange]
   );
@@ -441,7 +464,50 @@ export function ImportReviewPage({
     [session, onChange, t]
   );
 
+  /**
+   * Budgetvakten: what the project agreed to, so the review can ask about ÄTA
+   * on the rows that pass it. Loaded once — an import is not long enough for
+   * the contract value to change under it, and re-reading per keystroke would
+   * be a query storm for a number that does not move.
+   */
+  const [ataBudget, setAtaBudget] = useState<AtaBudgetContext>({
+    contractValue: null,
+    committedBefore: 0,
+  });
+  useEffect(() => {
+    // The dev harness has no real project, so it hands the budget in directly —
+    // otherwise the guard could only ever be verified against production data.
+    if (ataBudgetOverride) {
+      setAtaBudget(ataBudgetOverride);
+      return;
+    }
+    if (!session.projectId) return;
+    let cancelled = false;
+    void loadAtaBudgetContext(session.projectId).then((ctx) => {
+      if (!cancelled) setAtaBudget(ctx);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [session.projectId, ataBudgetOverride]);
+
   const rows = useMemo(() => buildPurchaseRows(session), [session]);
+
+  /** Rows the guard wants a decision on, by proposal id. */
+  const ataSuggestions = useMemo(() => {
+    const dismissed = session.ataDismissed ?? {};
+    const suggestions = suggestAta(
+      rows.map((r) => ({
+        proposalId: r.id,
+        total: r.action.total,
+        date: r.action.documentDate ?? null,
+        bookAsAta: r.bookAsAta,
+        dismissed: !!dismissed[r.id],
+      })),
+      ataBudget
+    );
+    return new Map(suggestions.map((s) => [s.proposalId, s]));
+  }, [rows, session.ataDismissed, ataBudget]);
   const shownRows = useMemo(() => filterRows(rows, filter, query), [rows, filter, query]);
   const total = changeCount(session);
 
@@ -826,6 +892,8 @@ export function ImportReviewPage({
           onMerge={handleMergePurchase}
           onAcknowledge={handleAcknowledge}
           onBookAsAta={handleBookAsAta}
+          onDismissAta={handleDismissAta}
+          ataSuggestions={ataSuggestions}
           onReread={handleReread}
           onSaveAsDocument={handleSaveAsDocument}
           rereading={rereading}
