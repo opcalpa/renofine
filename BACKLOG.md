@@ -10383,10 +10383,23 @@ som inte finns" — det är exakt fabriceringsfallet, och orienteringen orsakar 
 - *"det är bara den här filen"* — nej, 0° gav fabricerat bevis på IMG_4089 OCH
   IMG_4045 i samma körning.
 
-### Fixen
-Samma mönster som bevisligen fungerade för läsningen: låt klassificeraren svara
-på ja/nej-frågan `text_is_upright`, och klassificera om på 270° när svaret är
-nej (90/180 vid behov). ETT extra anrop, och bara för sneda foton.
+### Fixen — och varför den första varianten INTE räcker (mätt 2026-09-04)
+
+Ja/nej-frågan `text_is_upright` är byggd och deployad, men **mätningen fäller
+den**: på exakt den sneda följesedeln svarade modellen `true`, och rapporterade
+dessutom rubrik "FAKTURA", betalsumma och moms — inget av det finns på pappret.
+Den hittar alltså på SIGNALERNA också, inte bara citatet. Grenen hjälper bara
+när modellen är ärlig om vinkeln, och konfabuleringsfallet går rakt förbi.
+
+Kvar står den variant som bevisligen fungerade för läsningen: **prova båda
+vinklarna och låt en OBEROENDE kontroll döma** — här: föredra den läsning vars
+rubrik och struktur hänger ihop. Kostnaden är ett andra anrop för VARJE foto,
+inte bara de sneda: 56 foton blir 112 klassificeringar, ovanpå 110–220
+läsningar mot taket 400/timme. Det är ett takbeslut för Carl, inte ett kodbeslut.
+
+Strukturrankningen (`documentTypeRanking.ts`) är byggd och testad och fångar
+fallet SÅ FORT signalerna är sanna — den är alltså rätt maskineri som väntar på
+en ärlig indata.
 
 **Kostnad att väga in:** Carls högar är sneda, så det kan bli ~+50 anrop på en
 56-filsbatch, ovanpå 110–220 läsningar mot taket 400/timme.

@@ -144,6 +144,37 @@ DOCUMENT TYPES:
 - "product_image" — Photo of a product, material sample, fixture, appliance, or inspiration image.
 - "other" — Anything that doesn't fit above categories.
 
+OBSERVATIONS — report what you SEE, and let the app decide the money family.
+Return a "signals" object. These are observations, not judgements: answer each
+one from the page in front of you and do not reason about what the document
+"must" be. The app ranks the type from them, because a följesedel legitimately
+mentions "faktura" in small print (payment terms, dröjsmålsränta, F-skattebevis)
+and word-spotting therefore cannot tell the two apart.
+
+"signals": {
+  "heading": "<the words printed as the document's own heading, at the top or in
+              a corner — e.g. FÖLJESEDEL, FAKTURA, KVITTO, OFFERT. null if none>",
+  "text_is_upright": <true if the text runs left-to-right the normal way in the
+                      image as given; false if you had to read it sideways or
+                      upside down. Answer honestly — this is used to turn the
+                      image, not to judge you>,
+  "has_payable_total": <true only if a SUM TO PAY is printed: "Att betala",
+                        "Summa att betala", "Totalt att betala", "Att erlägga">,
+  "has_vat": <true if a VAT/moms AMOUNT is printed (not merely a VAT number)>,
+  "has_invoice_number": <true if a field names an invoice number: "Fakturanr",
+                         "Fakturanummer">,
+  "has_due_date": <true if a payment due date or terms are printed:
+                   "Förfallodatum", "Betalningsvillkor", "Förfaller">,
+  "has_payment_reference": <true if OCR, bankgiro or plusgiro is given AS A
+                            PAYMENT INSTRUCTION for this document>,
+  "amount_count": <"none" | "one" | "few" | "many" — roughly how many monetary
+                   amounts appear anywhere on the page>
+}
+
+A delivery note lists WHAT ARRIVED: quantities, article numbers, often no prices
+at all, and no sum to pay. An invoice or receipt is ABOUT money: a total, VAT,
+and a way to pay. That structural difference is what separates them — not a word.
+
 THE DOCUMENT'S OWN HEADING DECIDES. Read the heading first — the word printed
 at the top of the form, often in the corner — and let it win over anything else
 on the page. A "FÖLJESEDEL" that mentions bankgiro, F-skattebevis, dröjsmålsränta
@@ -199,11 +230,21 @@ RULES:
 - summary: 1-2 sentences in Swedish describing what the document is.
 - confidence: 0.0-1.0
 
-Return ONLY valid JSON:
+Return ONLY valid JSON. Every key below is REQUIRED, "signals" included:
 {
   "type": "invoice",
-  "confidence": 0.95,
-  "type_evidence": "Följesedel",
+  "confidence": 0.9,
+  "type_evidence": "Faktura",
+  "signals": {
+    "heading": "FAKTURA",
+    "text_is_upright": true,
+    "has_payable_total": true,
+    "has_vat": true,
+    "has_invoice_number": true,
+    "has_due_date": true,
+    "has_payment_reference": true,
+    "amount_count": "many"
+  },
   "summary": "Faktura från Bauhaus för golvmaterial, totalt 4 500 kr.",
   "vendor_name": "Bauhaus",
   "invoice_date": "2026-03-15",
@@ -211,7 +252,13 @@ Return ONLY valid JSON:
   "suggested_action": "extract_purchase",
   "property_address": {"street": "Storgatan 5", "postal_code": "114 25", "city": "Stockholm"},
   "address_source": "site_field"
-}`;
+}
+
+Note how "type_evidence" and "signals.heading" AGREE with "type" in that
+example. A delivery note would instead be:
+{"type": "delivery_note", "type_evidence": "FÖLJESEDEL", "signals":
+ {"heading": "FÖLJESEDEL", "has_payable_total": false, "has_vat": false,
+  "amount_count": "few"}, "invoice_amount": null, "suggested_action": "store_only"}`;
 }
 
 /** Fetch file from Supabase Storage (server-to-server, fast) */
@@ -249,6 +296,24 @@ async function fetchFileFromStorage(filePath: string): Promise<{ base64: string;
  * label the model invented is dropped rather than trusted. Street is required;
  * a "city only" address is no address.
  */
+/** Keep only the shapes we asked for; a missing signal is `null`, never a guess. */
+function narrowSignals(raw: unknown): Record<string, unknown> | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+  const bool = (v: unknown) => (typeof v === 'boolean' ? v : null);
+  const count = ['none', 'one', 'few', 'many'];
+  return {
+    heading: typeof r.heading === 'string' && r.heading.trim() ? r.heading.trim().slice(0, 120) : null,
+    text_is_upright: bool(r.text_is_upright),
+    has_payable_total: bool(r.has_payable_total),
+    has_vat: bool(r.has_vat),
+    has_invoice_number: bool(r.has_invoice_number),
+    has_due_date: bool(r.has_due_date),
+    has_payment_reference: bool(r.has_payment_reference),
+    amount_count: typeof r.amount_count === 'string' && count.includes(r.amount_count) ? r.amount_count : null,
+  };
+}
+
 function narrowAddress(
   type: DocumentType,
   raw: { property_address?: unknown; address_source?: unknown },
@@ -455,6 +520,10 @@ async function classifyWithContent(
         typeof result.type_evidence === 'string' && result.type_evidence.trim()
           ? result.type_evidence.trim().slice(0, 200)
           : null,
+      // Observations, not a verdict. The client ranks the money family from
+      // these — a följesedel mentions "faktura" in its own small print, so no
+      // amount of word-spotting can separate it from one (Carl, 2026-09-04).
+      signals: narrowSignals(result.signals),
       summary: result.summary || '',
       vendor_name: result.vendor_name || null,
       invoice_date: result.invoice_date || null,
@@ -467,7 +536,7 @@ async function classifyWithContent(
     };
   } catch {
     console.error('Failed to parse classification:', jsonText.substring(0, 500));
-    return { type: 'other', confidence: 0, type_evidence: null, summary: '', vendor_name: null, invoice_date: null, invoice_amount: null, suggested_action: 'store_only', property_address: null, address_source: null, scope: null, text_truncated: truncated };
+    return { type: 'other', confidence: 0, type_evidence: null, signals: null, summary: '', vendor_name: null, invoice_date: null, invoice_amount: null, suggested_action: 'store_only', property_address: null, address_source: null, scope: null, text_truncated: truncated };
   }
 }
 
@@ -482,7 +551,7 @@ serve(async (req) => {
     // checked the signature, so `sub` can be believed). See _shared/rateLimit.ts.
     const rl = await checkRateLimit(req, RATE_LIMIT_SCOPE, RATE_LIMIT_TIERS, true);
     if (!rl.allowed) {
-      return new Response(JSON.stringify(rateLimitedBody({ type: 'other', confidence: 0, type_evidence: null })), {
+      return new Response(JSON.stringify(rateLimitedBody({ type: 'other', confidence: 0, type_evidence: null, signals: null })), {
         status: 429,
         headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
       });

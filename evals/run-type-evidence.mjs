@@ -40,6 +40,35 @@ async function signIn(url, key) {
   return { token: j.access_token ?? key, who: `${email} (400 anrop/timme)` };
 }
 
+/** Mirrors rankDocumentType in src/services/documentTypeRanking.ts. */
+const MONEY = new Set(["invoice", "receipt", "delivery_note"]);
+const HEADING_WORDS = [
+  { type: "delivery_note", words: ["följesedel", "foljesedel", "packsedel", "leveranssedel", "lastorder", "plocksedel"] },
+  { type: "invoice", words: ["faktura"] },
+  { type: "receipt", words: ["kvitto", "kassakvitto"] },
+];
+function headingSays(h) {
+  if (!h) return null;
+  const l = h.toLowerCase();
+  for (const { type, words } of HEADING_WORDS) if (words.some((w) => l.includes(w))) return type;
+  return null;
+}
+function rank(modelType, sg) {
+  if (!sg || !MONEY.has(modelType)) return { type: modelType, overruled: false };
+  const heading = headingSays(sg.heading);
+  const noMoney = sg.has_payable_total === false && sg.has_vat === false;
+  const money = sg.has_payable_total === true || sg.has_vat === true;
+  if (heading && heading !== modelType) {
+    if (heading === "delivery_note" && money) return { type: modelType, overruled: false };
+    return { type: heading, overruled: true };
+  }
+  if (!heading && noMoney && modelType !== "delivery_note") return { type: "delivery_note", overruled: true };
+  if (!heading && modelType === "delivery_note" && sg.has_payable_total === true && sg.has_vat === true) {
+    return { type: sg.has_invoice_number === true || sg.has_due_date === true ? "invoice" : "receipt", overruled: true };
+  }
+  return { type: modelType, overruled: false };
+}
+
 /** Mirrors settleDocumentType in src/services/smartUploadService.ts. */
 function settle(type, confidence, evidence) {
   const exempt = type === "other" || type === "product_image";
@@ -81,22 +110,30 @@ async function main() {
     } catch (e) { console.log(`  ${name}: ${e.message}`); continue; }
 
     const ev = r.type_evidence ?? null;
-    const s = settle(r.type, r.confidence, ev);
-    rows.push({ name, said: r.type, conf: r.confidence, ev, filed: s.type, demoted: s.demoted });
+    const sg = r.signals ?? null;
+    const rk = rank(r.type, sg);
+    const s = settle(rk.type, r.confidence, ev);
+    rows.push({ name, said: r.type, ranked: rk.type, overruled: rk.overruled, sg, filed: s.type, demoted: s.demoted });
+    const shape = sg
+      ? `rubrik=${JSON.stringify(sg.heading)} upprätt=${sg.text_is_upright} total=${sg.has_payable_total} moms=${sg.has_vat} belopp=${sg.amount_count}`
+      : "inga signaler";
     console.log(
-      `  ${name.padEnd(10)} sa "${String(r.type).padEnd(17)}" conf ${String(r.confidence).padEnd(5)}` +
-      ` bevis ${ev === null ? "— SAKNAS" : JSON.stringify(ev)}` +
-      (s.demoted ? `  => Övrigt (FRÅGA)` : `  => ${s.type}`)
+      `  ${name.padEnd(11)} sa "${String(r.type).padEnd(14)}"` +
+      (rk.overruled ? ` -> RANKAT ${rk.type}` : ``) +
+      (s.demoted ? `  => Övrigt (FRÅGA)` : `  => ${s.type}`) +
+      `\n${" ".repeat(15)}${shape}`
     );
   }
 
   const demoted = rows.filter((r) => r.demoted).length;
-  const withEv = rows.filter((r) => r.ev !== null).length;
-  const confs = [...new Set(rows.map((r) => r.conf))];
+  const overruled = rows.filter((r) => r.overruled).length;
+  const withSignals = rows.filter((r) => r.sg).length;
+  const sideways = rows.filter((r) => r.sg?.text_is_upright === false).length;
   console.log(`\n  ${rows.length} filer`);
-  console.log(`  bevis angivet:      ${withEv}/${rows.length}`);
+  console.log(`  signaler angivna:   ${withSignals}/${rows.length}`);
+  console.log(`  liggande foton:     ${sideways}/${rows.length}  <- får ett extra anrop i appen`);
+  console.log(`  rankningen körde över modellen: ${overruled}/${rows.length}`);
   console.log(`  degraderade:        ${demoted}/${rows.length}  <- grindens KOSTNAD`);
-  console.log(`  confidence-varianter: ${confs.join(", ")}${confs.length === 1 ? "  <- konstant, alltså värdelös" : ""}`);
 }
 
 main().catch((e) => { console.error(e.message); process.exit(1); });

@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import type { DocumentSignals } from "./documentTypeRanking";
 import { getFileUrl } from "@/lib/fileUrl";
 import { pathInFolder } from "@/lib/projectFolders";
 
@@ -198,6 +199,8 @@ export interface ClassificationResult {
    * confidence is not (measured constant at 0.95 across 47 files).
    */
   type_evidence?: string | null;
+  /** What the classifier reports SEEING — the app ranks the money family from it. */
+  signals?: DocumentSignals | null;
   summary: string;
   vendor_name: string | null;
   invoice_date: string | null;

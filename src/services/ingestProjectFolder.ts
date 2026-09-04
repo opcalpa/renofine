@@ -40,7 +40,10 @@ import type { AIParsedResult } from '@/components/project/overview/planning-wiza
 import { parseProjectDescription } from './renaidaProjectIntake';
 import { captureDocument, extractQuoteLines } from './agent/documentCapture';
 import type { ImportPurchaseAction } from './agent/importPurchaseOrder';
+import { normalizeForReading } from '@/lib/imageNormalize';
+import { rankDocumentType, type DocumentSignals } from './documentTypeRanking';
 import {
+  asDocumentType,
   classifyDocument,
   ClassifyError,
   SCOPE_BEARING_TYPES,
@@ -162,6 +165,8 @@ interface ClassifyResult {
    * confidence is not (measured constant at 0.95 across 47 files).
    */
   type_evidence?: string | null;
+  /** Structural observations — the app ranks the money family from these. */
+  signals?: DocumentSignals | null;
   /**
    * How sure the model was. Read ONLY to demote a weak answer to Övrigt — the
    * server has always returned it and nothing used it until 2026-09-04.
@@ -454,7 +459,8 @@ async function processDocument(
   // describe. The scope comes back only for classes that may carry it.
   const cls = await classifyText(text, file.name, language, calls);
   // The text path CAN check the quotation — pass the text in.
-  const type = settleDocumentType(cls?.type, cls?.confidence, cls?.type_evidence, text).type;
+  const ranked = rankDocumentType(asDocumentType(cls?.type), cls?.signals);
+  const type = settleDocumentType(ranked.type, cls?.confidence, cls?.type_evidence, text).type;
   const archive: ArchiveEntry = { file, category: type };
   const address = suggestAddress ? toCandidate(cls, type, file.name) : undefined;
   if (type === 'receipt' || type === 'invoice') {
@@ -905,11 +911,37 @@ export async function ingestProjectFolder(
     onProgress?.({ phase: 'classify', done: 0, total: photos.length });
     const kinds = await mapLimit(photos, CONCURRENCY, async (f) => {
       try {
-        const cls = await classifyDocument(f);
+        let cls = await classifyDocument(f);
         noteModelCall(calls, 'classify-document');
+        // Sideways is not a small problem here: measured on Carl's own
+        // följesedel (2026-09-04), the SAME image gave `invoice` justified with
+        // a word that is not on the paper when read sideways, and
+        // `delivery_note` with a real quotation when turned upright. The reader
+        // learned this in s93; the classifier runs BEFORE it and never did.
+        //
+        // MEASURED LIMIT, said out loud: `text_is_upright` is NOT reliable here.
+        // On that same sideways följesedel the model answered `true`, and
+        // reported heading "FAKTURA", a payable total and VAT — none of which
+        // are on the paper. So this branch only helps when the model is honest
+        // about the angle, and the confabulating case walks straight past it.
+        // The proven fix is the receipt path's: try both angles and let an
+        // INDEPENDENT check judge, at the cost of a second call for every
+        // photo. That is a rate-limit decision, not a code one — see the card
+        // `classifier-reads-photos-sideways-and-invents-the-heading`.
+        if (cls.signals?.text_is_upright === false) {
+          const turned = await normalizeForReading(f, 270);
+          if (turned !== f) {
+            const second = await classifyDocument(turned);
+            noteModelCall(calls, 'classify-document');
+            // Keep the upright reading only if it actually saw more. A second
+            // blank answer is not an improvement worth trusting.
+            if (second.signals?.text_is_upright !== false) cls = second;
+          }
+        }
+        const ranked = rankDocumentType(asDocumentType(cls.type), cls.signals);
         // A weak reading becomes Övrigt rather than a confident-looking wrong
         // folder. The person is asked in the review instead.
-        return settleDocumentType(cls.type, cls.confidence, cls.type_evidence).type;
+        return settleDocumentType(ranked.type, cls.confidence, cls.type_evidence).type;
       } catch (e) {
         // Falling open to 'other' is right — a photo we could not place must
         // not be guessed at. But it is NOT the same as a photo we read and
